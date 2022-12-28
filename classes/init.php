@@ -1,0 +1,44 @@
+<?php
+
+if ( class_exists( 'MeowPro_MWAI_Core' ) && class_exists( 'Meow_MWAI_Core' ) ) {
+	function mwai_thanks_admin_notices() {
+		echo '<div class="error"><p>' . __( 'Thanks for installing the Pro version of AI Engine :) However, the free version is still enabled. Please disable or uninstall it.', 'ai-engine' ) . '</p></div>';
+	}
+	add_action( 'admin_notices', 'mwai_thanks_admin_notices' );
+	return;
+}
+
+spl_autoload_register(function ( $class ) {
+  $necessary = true;
+  $file = null;
+  if ( strpos( $class, 'Meow_MWAI' ) !== false ) {
+    $file = MWAI_PATH . '/classes/' . str_replace( 'meow_mwai_', '', strtolower( $class ) ) . '.php';
+  }
+  else if ( strpos( $class, 'MeowCommon_' ) !== false ) {
+    $file = MWAI_PATH . '/common/' . str_replace( 'meowcommon_', '', strtolower( $class ) ) . '.php';
+  }
+  else if ( strpos( $class, 'MeowCommonPro_' ) !== false ) {
+    $file = MWAI_PATH . '/common/premium/' . str_replace( 'meowcommonpro_', '', strtolower( $class ) ) . '.php';
+  }
+  else if ( strpos( $class, 'MeowPro_MWAI' ) !== false ) {
+    $necessary = false;
+    $file = MWAI_PATH . '/premium/' . str_replace( 'meowpro_mwai_', '', strtolower( $class ) ) . '.php';
+  }
+  if ( $file ) {
+    if ( !$necessary && !file_exists( $file ) ) {
+      return;
+    }
+    if ( !file_exists( $file ) ) {
+      return;
+    }
+    require( $file );
+  }
+});
+
+//require_once( MWAI_PATH . '/classes/api.php');
+require_once( MWAI_PATH . '/common/helpers.php');
+
+global $mwai_core;
+$mwai_core = new Meow_MWAI_Core();
+
+?>
