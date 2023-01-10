@@ -1,52 +1,36 @@
-// Previous: 0.0.3
-// Current: 0.1.0
+// Previous: 0.1.0
+// Current: 0.1.9
 
 const { render } = wp.element;
-import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
-const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
 // Neko UI
 import { Dashboard } from '@common';
 
 // Components
-import Settings from '@app/screens/Settings';
-import Playground from '@app/screens/Playground';
-import PostsListTools from './modules/PostsListTools';
-import ContentGenerator from './screens/ContentGenerator';
-import ImageGenerator from './screens/ImageGenerator';
-import SlotFills from './modules/SlotFills';
+import Settings from '@app/components/Settings';
+import Playground from '@app/components/Playground';
+import PostsListTools from './components/PostsListTools';
+import Generator from './components/Generator';
+import SlotFills from './components/SlotFills';
 
-// Gutenberg Blocks
-import initBlocks from './blocks/index';
-import WooCommerceAssistant from './modules/WooCommerce';
-initBlocks();
-
-document.addEventListener('DOMContentLoaded', function() {
-
-	SlotFills();
+document.addEventListener('DOMContentLoaded', function(event) {
 
 	// Settings
 	const settings = document.getElementById('mwai-admin-settings');
 	if (settings) {
-		render((<QueryClientProvider client={queryClient}><Settings /></QueryClientProvider>), settings);
+		render((<Settings />), settings);
 	}
 
-	// Content Generator
-	const generator = document.getElementById('mwai-content-generator');
+	// Generator
+	const generator = document.getElementById('mwai-generator');
 	if (generator) {
-		render((<QueryClientProvider client={queryClient}><ContentGenerator /></QueryClientProvider>), generator);
-	}
-
-	// Image Generator
-	const imgGen = document.getElementById('mwai-image-generator');
-	if (imgGen) {
-		render((<QueryClientProvider client={queryClient}><ImageGenerator /></QueryClientProvider>), imgGen);
+		render((<Generator />), generator);
 	}
 
 	// Dashboard
 	const dashboard = document.getElementById('mwai-playground');
 	if (dashboard) {
-		render((<QueryClientProvider client={queryClient}><Playground /></QueryClientProvider>), dashboard);
+		render((<Playground />), dashboard);
 	}
 
 	// Admin Tools
@@ -55,15 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		render((<PostsListTools />), postsListTools);
 	}
 
-	// Admin Tools
-	const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
-	if (wcAssistant) {
-		render((<WooCommerceAssistant />), wcAssistant);
-	}
-
 	// Common
 	const meowDashboard = document.getElementById('meow-common-dashboard');
 	if (meowDashboard) {
-		render(<Dashboard />, meowDashboard);
+		render((<Dashboard />), meowDashboard);
 	}
+
 });

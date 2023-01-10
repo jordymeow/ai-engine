@@ -7,21 +7,16 @@
     "dev": "webpack --watch --mode development",
     "build": "webpack --mode production",
     "analysis": "webpack --mode production --env analysis='true'",
-    "zip": "zip -r ~/Desktop/ai-engine-pro.zip . -x node_modules/\\* .git/\\* logs/\\*"
+    "zip": "zip -r ~/Desktop/ai-engine.zip . -x node_modules/\\* .git/\\* logs/\\*"
   },
   "author": "Jordy Meow",
   "license": "GPL-3.0-or-later",
   "sideEffects": false,
   "dependencies": {
     "@babel/preset-react": "^7.0.0",
-    "@tanstack/react-query": "^4.22.0",
     "@wordpress/scripts": "^25.1.0",
     "babel-loader": "^9.1.2",
     "babel-polyfill": "^6.26.0",
-    "clean-webpack-plugin": "^4.0.0",
-    "csv-reader": "^1.0.11",
-    "papaparse": "^5.3.2",
-    "react-colorful": "^5.6.1",
     "styled-components": "^5.3.6",
     "swr": "^2.0.0",
     "webpack": "^5.75.0",

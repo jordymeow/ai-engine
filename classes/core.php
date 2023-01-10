@@ -2,121 +2,18 @@
 
 require_once( MWAI_PATH . '/vendor/autoload.php' );
 
-#region Constants
-
-// Price as of January 2023: https://openai.com/api/pricing/
-define( 'MWAI_OPENAI_PRICING', [
-  // Base models:
-  [ "model" => "davinci", "price" => 0.02, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 4000 ],
-  [ "model" => "curie", "price" => 0.002, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "babbage", "price" => 0.0005, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "ada", "price" => 0.0004, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  // Image models:
-  [ "model" => "dall-e", "type" => "image", "unit" => 1, "options" => [
-      [ "option" => "1024x1024", "price" => 0.02 ],
-      [ "option" => "512x512", "price" => 0.018 ],
-      [ "option" => "256x256", "price" => 0.016 ]
-    ],
-  ],
-  // Fine-tuned models:
-  [ "model" => "fn-davinci", "price" => 0.12, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 4000 ],
-  [ "model" => "fn-curie", "price" => 0.012, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "fn-babbage", "price" => 0.0024, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "fn-ada", "price" => 0.0016, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-]);
-
-define( 'MWAI_CHATBOT_PARAMS', [
-	// UI Parameters
-	'id' => '',
-	'env' => 'chatbot',
-	'mode' => 'chat',
-	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
-	'ai_name' => "AI: ",
-	'user_name' => "User: ",
-	'guest_name' => "Guest: ",
-	'sys_name' => "System: ",
-	'start_sentence' => "Hi! How can I help you?",
-	'text_send' => 'Send',
-	'text_clear' => 'Clear',
-	'text_input_placeholder' => 'Type your message...',
-	'max_sentences' => 15,
-	'style' => 'chatgpt',
-	'window' => false,
-	'icon_text' => '',
-	'icon_position' => 'bottom-right',
-	'fullscreen' => false,
-	// Chatbot System Parameters
-	'casually_fine_tuned' => false,
-	'content_aware' => false, 
-	'prompt_ending' => null,
-	'completion_ending' => null,
-	// AI Parameters
-	'model' => 'text-davinci-003',
-	'temperature' => 0.8,
-	'max_tokens' => 1024,
-	'max_results' => 3,
-	'api_key' => null
-] );
-
-define( 'MWAI_LANGUAGES', [
-  'en' => 'English',
-	'de' => 'German',
-	'fr' => 'French',
-  'es' => 'Spanish',
-  'it' => 'Italian',
-	'zh' => 'Chinese',
-	'ja' => 'Japanese',
-  'pt' => 'Portuguese',
-  //'ru' => 'Russian',
-] );
-
-define ( 'MWAI_LIMITS', [
-	'enabled' => true,
-	'guests' => [
-		'credits' => 3,
-		'creditType' => 'queries',
-		'timeFrame' => 'day',
-		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit.",
-	],
-	'users' => [
-		'credits' => 10,
-		'creditType' => 'price',
-		'timeFrame' => 'month',
-		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit.",
-		'ignoredUsers' => "administrator,editor",
-	],
-] );
-
 define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
-	'module_woocommerce' => true,
-	'module_forms' => false,
 	'module_blocks' => false,
-	'module_playground' => true,
-	'module_generator_content' => true,
-	'module_generator_images' => true,
 	'shortcode_chat' => true,
-	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
-	'shortcode_chat_params_override' => false,
+	'shortcode_chat_style' => true,
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
-	'shortcode_chat_syntax_highlighting' => false,
-	'shortcode_chat_logs' => '', // 'file', 'db', 'file,db'
-	'shortcode_chat_inject' => false,
-	'shortcode_chat_styles' => [],
-	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
 	'openai_usage' => [],
-	'openai_finetunes' => [],
-	'openai_finetunes_deleted' => [],
-	'extra_models' => "",
-	'debug_mode' => true,
-	'languages' => MWAI_LANGUAGES
+	'extra_models' => ""
 ]);
-#endregion
 
 class Meow_MWAI_Core
 {
@@ -126,7 +23,6 @@ class Meow_MWAI_Core
 	public $site_url = null;
 	public $ai = null;
 	private $option_name = 'mwai_options';
-	public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
 
 	public function __construct() {
 		$this->site_url = get_site_url();
@@ -142,18 +38,10 @@ class Meow_MWAI_Core
 		}
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
-			new Meow_MWAI_Modules_Assistants( $this );
+			new Meow_MWAI_UI( $this );
 		}
-		else {
-			//new Meow_MWAI_UI( $this );
-			if ( $this->get_option( 'shortcode_chat' ) ) {
-				new Meow_MWAI_Modules_Chatbot();
-			}
-		}
-
-		// Advanced core
-		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
-			new MeowPro_MWAI_Core( $this );
+		if ( $this->get_option( 'shortcode_chat' ) ) {
+			new Meow_MWAI_Shortcodes();
 		}
 	}
 
@@ -163,51 +51,8 @@ class Meow_MWAI_Core
 	}
 
 	function can_access_features() {
-		$editor_or_admin = current_user_can( 'editor' ) || current_user_can( 'administrator' );
-		return apply_filters( 'mwai_allow_usage', $editor_or_admin );
+		return apply_filters( 'mwai_allow_usage', current_user_can( 'administrator' ) );
 	}
-
-	function isUrl( $url ) {
-		return strpos( $url, 'http' ) === 0 ? true : false;
-	}
-
-	// Clean the text perfectly, resolve shortcodes, etc, etc.
-  function clean_text( $rawText = "" ) {
-    $text = strip_tags( $rawText );
-    $text = strip_shortcodes( $text );
-    $text = html_entity_decode( $text );
-    $text = str_replace( array( "\r", "\n" ), "", $text );
-    $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
-    foreach ( $sentences as $key => $sentence ) {
-      $sentences[$key] = trim( $sentence );
-    }
-    $text = implode( " ", $sentences );
-    $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
-    return $text . " ";
-  }
-
-  // Make sure there are no duplicate sentences, and keep the length under a maximum length.
-  function clean_sentences( $text, $maxLength = 1024 ) {
-    $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
-    $hashes = array();
-    $uniqueSentences = array();
-    $length = 0;
-    foreach ( $sentences as $sentence ) {
-      $sentence = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $sentence );
-      $hash = md5( $sentence );
-      if ( !in_array( $hash, $hashes ) ) {
-        if ( $length + strlen( $sentence ) > $maxLength ) {
-          continue;
-        }
-        $hashes[] = $hash;
-        $uniqueSentences[] = $sentence;
-        $length += strlen( $sentence );
-      }
-    }
-    $text = implode( " ", $uniqueSentences );
-    $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
-    return $text;
-  }
 
 	function get_text_from_postId( $postId ) {
 		$post = get_post( $postId );
@@ -215,54 +60,10 @@ class Meow_MWAI_Core
 			return false;
 		}
 		$post->post_content = apply_filters( 'the_content', $post->post_content );
-		$text = $this->clean_text( $post->post_content );
-		$text = $this->clean_sentences( $text );
+		$text = strip_tags( $post->post_content );
+		$text = preg_replace( '/^\h*\v+/m', '', $text );
+		$text = html_entity_decode( $text );
 		return $text;
-	}
-
-	function get_session_id() {
-		if ( isset( $_COOKIE['mwai_session_id'] ) ) {
-			return $_COOKIE['mwai_session_id'];
-		}
-		return "N/A";
-	}
-
-	// Get the UserID from the data, or from the current user
-  function get_user_id( $data = null ) {
-    if ( isset( $data ) && isset( $data['userId'] ) ) {
-      return (int)$data['userId'];
-    }
-    if ( is_user_logged_in() ) {
-      $current_user = wp_get_current_user();
-      if ( $current_user->ID > 0 ) {
-        return $current_user->ID;
-      }
-    }
-    return null;
-  }
-
-	function get_ip_address( $data = null ) {
-    if ( isset( $data ) && isset( $data['ip'] ) ) {
-      $data['ip'] = (string)$data['ip'];
-    }
-    else {
-      if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-        $data['ip'] = $_SERVER['REMOTE_ADDR'];
-      }
-      else if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-        $data['ip'] = $_SERVER['HTTP_CLIENT_IP'];
-      }
-      else if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-        $data['ip'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
-      }
-    }
-    return $data['ip'];
-  }
-
-	function markdown_to_html( $content ) {
-		$Parsedown = new Parsedown();
-		$content = $Parsedown->text( $content );
-		return $content;
 	}
 	#endregion
 
@@ -273,14 +74,7 @@ class Meow_MWAI_Core
 			if ( !isset( $options[$key] ) ) {
 				$options[$key] = $value;
 			}
-			if ( $key === 'languages' ) {
-				// TODO: If we decide to make a set of options for languages, we can keep it in the settings
-				$options[$key] = MWAI_LANGUAGES;
-				$options[$key] = apply_filters( 'mwai_languages', $options[$key] );
-			}
 		}
-		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;
-		$options['default_limits'] = MWAI_LIMITS;
 		return $options;
 	}
 
@@ -317,6 +111,12 @@ class Meow_MWAI_Core
 		return $options[$option] ?? $default;
 	}
 	#endregion
+
+	function markdown_to_html( $content ) {
+		$Parsedown = new Parsedown();
+		$content = $Parsedown->text( $content );
+		return $content;
+	}
 }
 
 ?>

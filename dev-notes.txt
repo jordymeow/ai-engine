@@ -1,43 +1,145 @@
-# FILTERS
+# Dev Note
 
-## AI
+This is boilerplate/starter plugin with NekoUI.
 
-- mwai_ai_query( $query ) => Allow to modify a query before it's made
-- mwai_ai_allowed( $allowed, $query, $limits ) => Allow or not a query to be made
-- mwai_ai_reply( $answer, $query ) => Allow to modify the answer before it's sent
-- mwai_ai_exception( $message ) => Modify the error message
+# Steps to make a new plugin with this repository
 
-## Chatbot
-- mwai_chatbot_params_defaults( $defaults_params ) => Allow to modify the default params
-- mwai_chatbot_params_before( $params ) => Allow to modify the params before the query is made
-- mwai_chatbot_params( $params ) => Allow to modify the params before the query is made
-- mwai_chatbot_style( $style, $id ) => Allow to modify the style of the chatbot
-- mwai_chatbot( $output, $atts ) => Allow to modify the chatbot itself (HTML, JS, CSS)
-- mwai_contentaware_content( $content ) => To support more ways to look into the content
-- mwai_chatbot_reply( $rawText, $query, $params ) => Allow to modify the answer before it's sent
+## 1. Update the main file
 
-## Forms
-- mwai_form_answer( $rawText ) => Allow to modify the answer before it's sent
+The main file is `ai-engine.php` on root directory.
 
-## Limits
-- mwai_stats_credits( $credits, $userId ) => Allow to modify the number of credits
+- Rename the main file name to new plugin name.
+- Update the information in comment.
+- Rename the prefix "MWAI" to new plugin's one.
+- Change the 6 constants(below).
+- Constants:
+  - version
+  - prefix
+  - domain
+  - entry(*)
+  - path(*)
+  - url(*)
+(*) it does not need to change in basically.
 
-## UI
-- mwai_languages( $languages ) => Allow to modify the list of languages
+## 2. Update php files in /classes directory
 
-## Roles
-- mwai_allow_setup 
-- mwai_allow_usage
+The files in /classes directory are main php files for new plugin.
+The files are also minimum. You can add any files if needed.
 
-# ACTIONS
+- Rename the prefix "MWAI" and "mwai to new plugin's one.
+- Rename the plugin name "ai-engine" and "meow_plugin" to new plugin name.
 
-# API
+## 3. Set up Webpacks
 
-# SHORTCODES
+- Update the name, description, and main in package.json to new plugin name.
+- Run `yarn install` to install packages.
 
-[mwai_chat]
-[mwai_stats_current]
-[mwai-form-field]
-[mwai-form-submit]
-[mwai-form-output]
-[mwai-form-container]
+## 4. Prepare for the Settings/Dashboard page
+
+These page genarated by webpack.
+The entry file is index.js in /app/js and each page are under /app/js/components.
+
+- Rename the prefix "MWAI" and "mwai to new plugin's one.
+- Rename the "mwai_meow_plugin" to new plugin name. Which is defined (Localize and options) in admin_enqueue_scripts() in /classes/admin.php.
+- Make sure the ids of the render elements.
+    - Settings : admin_settings() in /classes/admin.php
+    - Dashboard : cleaner_dashboard() in /classes/ui.php
+- Run `yarn dev` to start webpack, and make sure to check the page is shown.
+
+## 5. Creating the Settings/Dashboard page
+
+Ta-da! Ready for creating the pages. Let’s start coding!
+
+- Reference: http://neko-ui.com
+- The plugin options defined by list_options() in /classes/admin.php. And function call their options is get_all_options() in /classes/admin.php.
+- About the APIs, like call and update options, are in /classes/rest.php. If you add a new endpoint, please make sure set the "permission_callback", value is can_access_settings or can_access_features. They are defined in /classes/core.php.
+- Also, when call Apis using the SWR, don't forget to set the restNonce. Check the Settings.js. (There are two patterns, using useSWR and postFetch.)
+
+----------
+
+# Steps to convert from no NekoUI plugin to using NekoUI plugin.
+
+## 1. Replace common directory
+
+- Replace this directory with new one. Just copy/paste from other plugin which uses NekoUI.
+- It probably cause many errors though, it's okay for now. Later it will be fixed.
+
+## 2. Update the main file (the plugin name file in top directory)
+
+- Define 6 constants and load init file.
+- Constants:
+  - version
+  - prefix
+  - domain
+  - entry
+  - path
+  - url
+- The init file is able to load by `require_once( 'classes/init.php' );` in basically.
+- Old codes should be better to be kept by commented out until finished update to NekoUI.
+
+## 3. Make classes directory for php files.
+
+- Create classes directy
+- Copy/paste all main php files into it with including any php files which are not on top directory. (but keep the structure)
+- The file names pasted at the just before remove the prefix.
+- Make init file in classes directory. The file is also copy/pasted from other plugin and adjust the content like prefix or so.
+- Rename php class names for spl_autoload_register.
+- Remove all require and include keyword which are no-needed anymore.
+
+## 4. Set up Webpacks.
+
+- copy/paste the files below:
+	- .eslintrc.json
+	- package.json
+	- webpack.config.js
+	- yarn.lock
+- update the name, description, and main in package.json to the plugin's name
+- run `yarn install`
+
+## 5. Prepare for the Settings/Dashboard page.
+
+In this step, we will prepare for using Neko-UI.
+
+- Copy/paste i18n.js, index.js, settings.js files into /app/js.
+- Copy/paste Settings.js file into /app/js/components. (Dashboard as well if needed)
+- Adjust the comments and code in i18n.js, index.js, and settings.js. Also, remove unused variables.
+- Update classes/core.php
+	- Add public member variables, which are in common in plugins:
+		- $admin = null;
+		- $is_rest = false;
+		- $is_cli = false;
+		- $site_url = null;
+		- The others are if needed.
+	- Edit constructor method to initialize variables added above.
+		- Replace is_rest method with MeowCommon_Helpers::is_rest()
+		- About the others, referrence other plugins.
+	- Edit init method to load Admin, Core, and Rest classes. (The others are if needed)
+- Update classes/admin.php
+	- Add load scripts code in constructor. (the admin_enqueue_scripts is important. That’s the method for it.)
+	- Add admin_enqueue_scripts function if not exist.
+	- Update admin_settings method to load self component (div with "id" which is key for rendering)
+	- Add get_all_options for loading the options. This is used from Apis as well.
+- Update the Settings.js
+	- Just return <p>test</p> for testing. And make sure to check the working.
+- To check the behavior, run `yarn dev`
+- If the page is empty, we got an error. Check the console in devtools.
+
+## 6. Creating the Settings/Dashboard page.
+
+At first, simply updating the style to use Neko UI.
+The APIs are commented out for now.
+
+- Update the app/js/components/Settings/Dashboard.js to apply Neko UI
+- Reference: http://neko-ui.com
+
+## 7. Update the rest.php and connect them to the page.
+
+- Add rest.php for calling REST apis if it does not exist.
+	- Update $namespace
+	- Remove unused endpoints
+	- Add endpoints needed
+	- At least, update_option and all_settings endpoints are needed.
+
+- Update the api calls in Settings/Dashboard.js
+  - In basically, it would work to adjust the variable name (which in using "swr").
+  - Don’t forget to update the values in Form element.
