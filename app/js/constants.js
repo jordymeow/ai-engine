@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.1.9
+// Previous: 0.1.9
+// Current: 0.2.0
 
 const OpenAI_models = [
   {
@@ -55,6 +55,7 @@ const OpenAI_PricingPerModel = [
   { model: 'curie', price: 0.002 },
   { model: 'babbage', price: 0.0005 },
   { model: 'ada', price: 0.0004 },
+  { model: 'dall-e', price: 0.02 }
 ];
 
 const WritingStyles = [

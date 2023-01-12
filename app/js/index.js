@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.1.9
+// Previous: 0.1.9
+// Current: 0.2.0
 
 const { render } = wp.element;
 
@@ -10,10 +10,13 @@ import { Dashboard } from '@common';
 import Settings from '@app/components/Settings';
 import Playground from '@app/components/Playground';
 import PostsListTools from './components/PostsListTools';
-import Generator from './components/Generator';
+import ContentGenerator from './components/ContentGenerator';
+import ImageGenerator from './components/ImageGenerator';
 import SlotFills from './components/SlotFills';
 
 document.addEventListener('DOMContentLoaded', function(event) {
+
+	SlotFills();
 
 	// Settings
 	const settings = document.getElementById('mwai-admin-settings');
@@ -21,10 +24,16 @@ document.addEventListener('DOMContentLoaded', function(event) {
 		render((<Settings />), settings);
 	}
 
-	// Generator
-	const generator = document.getElementById('mwai-generator');
+	// Content Generator
+	const generator = document.getElementById('mwai-content-generator');
 	if (generator) {
-		render((<Generator />), generator);
+		render((<ContentGenerator />), generator);
+	}
+
+	// Image Generator
+	const imgGen = document.getElementById('mwai-image-generator');
+	if (imgGen) {
+		render((<ImageGenerator />), imgGen);
 	}
 
 	// Dashboard

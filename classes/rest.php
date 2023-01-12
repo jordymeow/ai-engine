@@ -30,6 +30,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'make_completions' ),
 			) );
+			register_rest_route( $this->namespace, '/make_images', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'make_images' ),
+			) );
 			register_rest_route( $this->namespace, '/make_titles', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
@@ -54,6 +59,11 @@ class Meow_MWAI_Rest
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'create_post' ),
+			) );
+			register_rest_route( $this->namespace, '/create_image', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'create_image' ),
 			) );
 		}
 		catch ( Exception $e ) {
@@ -107,6 +117,9 @@ class Meow_MWAI_Rest
 		if ( isset( $params['apiKey'] ) ) {
 			$query->setApiKey( $params['apiKey'] );
 		}
+		if ( isset( $params['maxResults'] ) ) {
+			$query->setMaxResults( $params['maxResults'] );
+		}
 		return $query;
 	}
 
@@ -114,10 +127,24 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
-			$query = new Meow_MWAI_Query( $prompt, 2048 );
+			$query = new Meow_MWAI_QueryText( $prompt, 2048 );
 			$query = $this->setup_query_based_on_params( $query, $params );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result, 'usage' => $answer->usage ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function make_images( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$prompt = $params['prompt'];
+			$query = new Meow_MWAI_QueryImage( $prompt );
+			$query = $this->setup_query_based_on_params( $query, $params );
+			$answer = $this->core->ai->run( $query );
+			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results, 'usage' => $answer->usage ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -130,7 +157,7 @@ class Meow_MWAI_Rest
 			$postId = intval( $params['postId'] );
 			$text = $this->core->get_text_from_postId( $postId );
 			$prompt = "Create short SEO-friendly title for this text: " . $text;
-			$query = new Meow_MWAI_Query( $prompt, 40 );
+			$query = new Meow_MWAI_QueryText( $prompt, 40 );
 			$query->setMaxResults( 5 );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
@@ -146,7 +173,7 @@ class Meow_MWAI_Rest
 			$postId = intval( $params['postId'] );
 			$text = $this->core->get_text_from_postId( $postId );
 			$prompt = "Create SEO-friendly introduction to this text, 120 to 170 characters max, no URLs: " . $text;
-			$query = new Meow_MWAI_Query( $prompt, 140 );
+			$query = new Meow_MWAI_QueryText( $prompt, 140 );
 			$query->setMaxResults( 5 );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
@@ -210,6 +237,73 @@ class Meow_MWAI_Rest
 			$post->post_content = $this->core->markdown_to_html( $post->post_content );
 			$postId = wp_insert_post( $post );
 			return new WP_REST_Response([ 'success' => true, 'postId' => $postId ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function curl_download( $Url ) {
+		if ( !function_exists( 'curl_init' ) ) {
+			die( 'CURL is not installed!' );
+		}
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_URL, $Url );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+		$output = curl_exec( $ch );
+		curl_close( $ch );
+		return $output;
+	}
+
+	function create_image( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$title = sanitize_text_field( $params['title'] );
+			$caption = sanitize_text_field( $params['caption'] );
+			$alt = sanitize_text_field( $params['alt'] );
+			$description = sanitize_text_field( $params['description'] );
+			$url = $params['url'];
+			$filename = sanitize_text_field( $params['filename'] );
+			$image_data = $this->curl_download( $url );
+			if ( !$image_data ) {
+				throw new Exception( 'Could not download the image.' );
+			}
+			$upload_dir = wp_upload_dir();
+			if ( empty( $filename ) ) {
+				$filename = basename( $url );
+			}
+			$wp_filetype = wp_check_filetype( $filename );
+			if ( wp_mkdir_p( $upload_dir['path'] ) ) {
+				$file = $upload_dir['path'] . '/' . $filename;
+			}
+			else {
+				$file = $upload_dir['basedir'] . '/' . $filename;
+			}
+			
+			// Make sure the file is unique, if not, add a number to the end of the file before the extension
+			$i = 1;
+			$parts = pathinfo( $file );
+			while ( file_exists( $file ) ) {
+				$file = $parts['dirname'] . '/' . $parts['filename'] . '-' . $i . '.' . $parts['extension'];
+				$i++;
+			}
+
+			// Write the file
+			file_put_contents( $file, $image_data );
+			$attachment = [
+				'post_mime_type' => $wp_filetype['type'],
+				'post_title' => $title,
+				'post_content' => $description,
+				'post_excerpt' => $caption,
+				'post_status' => 'inherit'
+			];
+			// Register the file as a Media Library attachment
+			$attachmentId = wp_insert_attachment( $attachment, $file );
+			require_once( ABSPATH . 'wp-admin/includes/image.php' );
+			$attachment_data = wp_generate_attachment_metadata( $attachmentId, $file );
+			wp_update_attachment_metadata( $attachmentId, $attachment_data );
+			update_post_meta( $attachmentId, '_wp_attachment_image_alt', $alt );
+			return new WP_REST_Response([ 'success' => true, 'attachmentId' => $attachmentId ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

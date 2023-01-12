@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.1.9
+// Previous: 0.1.9
+// Current: 0.2.0
 
 const { useState, useEffect, useMemo } = wp.element;
 const { __ } = wp.i18n;
@@ -25,8 +25,6 @@ const doOnClick = () => {
 	alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
 };
 
-// Paragraph Block: Menu
-
 const MWAI_ParagraphBlock_Menu_Generate = () => (
   <>
     <PluginBlockSettingsMenuItem
@@ -47,8 +45,6 @@ const MWAI_ParagraphBlock_Menu_Generate = () => (
 registerPlugin('ai-engine-menu-paragraph-generate', {
   render: MWAI_ParagraphBlock_Menu_Generate,
 });
-
-// Document Settings: Panel
 
 const MWAI_DocumentSettings = () => {
   const [postForTitle, setPostForTitle] = useState();
@@ -94,6 +90,10 @@ const MWAI_DocumentSettings = () => {
   );
 };
 
-registerPlugin('ai-engine-document-settings', {
-  render: MWAI_DocumentSettings
-});
+const setUISlotFill = () => {
+  registerPlugin('ai-engine-document-settings', {
+    render: MWAI_DocumentSettings
+  });
+};
+
+export default setUISlotFill;

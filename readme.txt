@@ -1,15 +1,15 @@
-=== AI Engine: ChatGPT, GPT-3 Content Generation, AI Tools & Playground ===
+=== AI Engine: ChatGPT, GPT3 Content & Image Generator, Playground ===
 Contributors: TigrouMeow
 Tags: gpt-3, openai, ai, chatgpt, chatbot, content generation, automation, translation, title, excerpt, toolbox
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.1.9
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Elevate your WordPress site with AI Engine! This plugin generates content, suggests ways to improve your content, adds a ChatGPT-style chatbot, and includes an AI Playground. It also tracks your OpenAI usage and offers an internal API for other plugins. 
+Elevate your WordPress site with AI Engine! This plugin generates content, images, suggests ways to improve your content, adds a ChatGPT-style chatbot, and includes an AI Playground. It also tracks your OpenAI usage and offers an internal API for other plugins. 
 
 == Description ==
 
@@ -31,13 +31,21 @@ With the AI Engine, the possibilities are endless. Let's get started and make th
 
 == Content Generator ==
 
-Looking to add some fresh content to your site? Head to the Content Generator under Tools or Posts (look for Generate New or Content Generator). With this beta feature, you can generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to create exactly the content you need. We'd love to hear your feedback and ideas on how to make this feature even better, so don't hesitate to let us know how you're using it and what improvements you'd like to see.
+Looking to add some fresh content to your site? With this feature, you can generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to create exactly the content you need.
+
+== Image Generator ==
+
+You can generate custom images using DALL-E model and various customizable parameters. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations, but the plugin will adapt as the limitations change.
 
 == Shortcode: ChatGPT on your website! ==
 
 Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use. And since there's no CSS included, you have complete control over the styling - we even share some tips on how to make it look like ChatGPT on our website. The chatbot is accessible through a shortcode with lots of customizable parameters, so you can add it anywhere on your site and even have multiple instances on the same page to experiment with different options. Here's the shortcode and how to use it:
 
 [mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend." ]
+
+== Meow Apps + AI ==
+
+I am really excited about the amazing possibilities that AI technology brings to the world of online content creation. I believe that by working together, AI and humans can create something truly special. However, I don't want to see a boring web full of robot-generated content. Instead, I want AI to be used to boost and amplify the unique voice of human creators. New voices will be heard, new ideas will be shared, and new perspectives will be explored. Together, let's do this! 💕
 
 == Open AI ==
 
@@ -54,9 +62,12 @@ Languages: English.
 
 == Changelog ==
 
+= 0.2.0 (2023/01/12) =
+* Add: Images Generator! After getting your feedback, I will implement this Image Generator in a modal in the Post Editor.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.1.9 (2023/01/09) =
 * Add: Many improvements to the chatbot! By default, it now uses ChatGPT style, and it also support replies from the AI using Markdown (and will convert it properly into HTML). Basically, you can have properly displayed code and better formatting in the chat!
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.1.7 (2023/01/08) =
 * Add: Handle the errors better in the UI.

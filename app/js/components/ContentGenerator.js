@@ -1,16 +1,19 @@
 // Previous: none
-// Current: 0.1.9
+// Current: 0.2.0
 
+// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
+// NekoUI
 import { postFetch } from '@neko-ui';
-import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal,
+import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoContainer,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
 
 import { apiUrl, restNonce, options } from '@app/settings';
 import { OpenAI_models, Languages, WritingStyles, WritingTones } from "../constants";
 import { cleanNumbering, extractTextData, OptionsCheck, useModels } from "../helpers";
+import { AiNekoHeader } from "./CommonStyles";
 
 const StyledSidebar = Styled.div`
   background: white;
@@ -64,6 +67,7 @@ const StyledTitleWithButton = Styled.div`
   }
 `;
 
+// Function that returns a message with SEO recommendations based on the title
 const getSeoMessage = (title) => {
   const words = title.split(' ');
   const wordCount = words.length;
@@ -95,7 +99,7 @@ const DefaultTitle = isTest ? 'Gunkanjima : An Illegal Travel to the Battleship 
 const DefaultHeadings = isTest ? `An In-Depth Look at the Illegality of Traveling to Gunkanjima
 How Digital Technology is Uncovering the Stories of the People Who Lived There` : '';
 
-const Generator = () => {
+const ContentGenerator = () => {
   const [error, setError] = useState();
   const [title, setTitle] = useState(DefaultTitle);
   const [headingsCount, setHeadingsCount] = useState(5);
@@ -115,7 +119,7 @@ const Generator = () => {
   const [showModelParams, setShowModelParams] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
   const [createdPostId, setCreatedPostId] = useState();
-
+  
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
 
   useEffect(() => {
@@ -129,8 +133,8 @@ const Generator = () => {
     if (title && headings) {
       const humanLanguage = Languages.find(l => l.value === language).label;
       const cleanHeadings = headings.split('\n').filter(x => x);
-      const newHeadingsCount = cleanHeadings.length;
-      setPromptForContent(`Write an article about "${title}" in ${humanLanguage}. With an introduction, and conclusion. The article has ${paragraphsCount * newHeadingsCount + 2} paragraphs, organized by the following headings:\n\n${headings}\n\nStyle: ${writingStyle}. Tone: ${writingTone}. Use Markdown formatting.`);
+      const headingsCount = cleanHeadings.length;
+      setPromptForContent(`Write an article about "${title}" in ${humanLanguage}. With an introduction, and conclusion. The article has ${paragraphsCount * headingsCount + 2} paragraphs, organized by the following headings:\n\n${headings}\n\nStyle: ${writingStyle}. Tone: ${writingTone}. Use Markdown formatting.`);
     }
   }, [title, headings, writingTone, writingStyle, language, paragraphsCount]);
 
@@ -140,7 +144,7 @@ const Generator = () => {
     }
   }, [title]);
 
-  const onSubmitPrompt = async (promptToUse = promptForHeadings) => {
+  const onSubmitPrompt = async (promptToUse = prompt) => {
     const res = await postFetch(`${apiUrl}/make_completions`, { json: { 
       prompt: promptToUse, temperature, model
     }, nonce: restNonce });
@@ -166,6 +170,9 @@ const Generator = () => {
     setBusy(true);
     setContent("");
     let text = await onSubmitPrompt(promptForContent);
+    // text = text.split('\n').filter(x => !x.match(/^(Introduction|Conclusion)(:)?$/)).join('\n');
+    // text = text.replace(/\n{3,}/g, text);
+    // text = text.trim();
     if (text) {
       setContent(text);
     }
@@ -204,24 +211,23 @@ const Generator = () => {
     setCreatedPostId();
   };
 
-  console.log(error);
-
   return (
     <NekoPage nekoErrors={[]}>
 
+      <AiNekoHeader title="Content Generator" />
+
       <NekoWrapper>
 
-        <NekoColumn full>
-          <h1 style={{ marginTop: 0 }} class="wp-heading-inline">🪄 Post Generator (Beta)</h1>
-
-          <NekoTypo p style={{ fontSize: 15, marginBottom: 0 }}>
+        <NekoContainer style={{ borderRadius: 0, marginBottom: 0 }}>
+        
+          <NekoTypo p style={{ marginBottom: 0 }}>
             <b>Using the Post Generator is simple; write a Title, click on Generate Headings, then Generate Content, then (optionally) on Generate Excerpt, and Create Post.</b> That's it!
           </NekoTypo>
 
-          <NekoTypo p style={{ fontSize: 15, marginBottom: 0 }}>As you go, you can also modify the prompts (they represent exactly what will be sent to the AI). If you find a prompt that gives you really good result, or have any other remark, idea, or request, please come and chat with me on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>. Let's make this better together 💕
+          <NekoTypo p style={{ marginBottom: 0 }}>As you go, you can also modify the prompts (they represent exactly what will be sent to the AI). If you find a prompt that gives you really good result, or have any other remark, idea, or request, please come and chat with me on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>. Let's make this better together 💕
           </NekoTypo>
 
-        </NekoColumn>
+        </NekoContainer>
 
         <OptionsCheck options={options} />
 
@@ -260,7 +266,8 @@ const Generator = () => {
               <h2>Content</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Heading: </label>
-                <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy} style={{ marginRight: 10 }}
+                <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy}
+                  style={{ marginRight: 10 }}
                   value={paragraphsCount} description="" onChange={setParagraphsCount}>
                     <NekoOption key={1} id={1} value={1} label={1} />
                     <NekoOption key={2} id={2} value={2} label={2} />
@@ -339,12 +346,12 @@ const Generator = () => {
                 onChange={setTemperature} onBlur={setTemperature} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
-                  </span> Higher values means the model will be at more risks.
+                  </span> Higher values means the model will take more risks.
                 </>} />
               <label>Model:</label>
               <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
+                  <NekoOption value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <p style={{ marginBottom: 0 }}>
@@ -398,7 +405,8 @@ const Generator = () => {
       />
       
     </NekoPage>
+    
   );
 };
 
-export default Generator;
+export default ContentGenerator;

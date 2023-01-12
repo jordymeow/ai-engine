@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.1.9
+// Previous: 0.1.9
+// Current: 0.2.0
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -11,6 +11,7 @@ import { NekoButton, NekoPage, NekoHeader, NekoSelect, NekoOption, NekoModal, Ne
 import { apiUrl, restNonce, options } from '@app/settings';
 import { OpenAI_models, OpenAI_PricingPerModel } from "../constants";
 import { OptionsCheck, useModels } from "../helpers";
+import { AiNekoHeader } from "./CommonStyles";
 
 const templates = [
   {
@@ -127,10 +128,9 @@ const StyledNekoInput = Styled(NekoInput)`
   }
 `;
 
-
 const Dashboard = () => {
   const [error, setError] = useState();
-  const [prompt, setPrompt] = useState();
+  const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState('chat');
   const [entry, setEntry] = useState('');
   const { models, model, setModel } = useModels(options);
@@ -141,11 +141,11 @@ const Dashboard = () => {
   const [template, setTemplate] = useState(templates[1]);
 
   const onValidateEntry = () => {
-    const newPrompt = prompt + "\nHuman: " + entry;
+    const newPrompt = `${prompt}\nHuman: ${entry}`;
     setPrompt(newPrompt);
-    setEntry("");
+    setEntry('');
     onSubmitPrompt(newPrompt);
-  }
+  };
 
   useEffect(() => {
     const desc = template.description;
@@ -158,7 +158,7 @@ const Dashboard = () => {
   const onResetUsage = () => {
     setSessionUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
     setLastUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
-  }
+  };
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
     console.log('onSubmitPrompt', { promptToUse });
@@ -176,8 +176,7 @@ const Dashboard = () => {
         total_tokens: sessionUsage.total_tokens + res.usage.total_tokens,
       };
       setSessionUsage(newSessionUsage);
-    }
-    else {
+    } else {
       setError(res.message);
     }
     setBusy(false);
@@ -197,14 +196,7 @@ const Dashboard = () => {
   return (
     <NekoPage nekoErrors={[]}>
 
-      <NekoHeader title='AI Engine | Playground' subtitle='By Jordy Meow'>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <NekoButton icon='cog' className='header'
-            onClick={() => location.href = 'admin.php?page=mwai_settings'}>
-              Settings
-          </NekoButton>
-        </div>
-      </NekoHeader>
+      <AiNekoHeader title="Playground" />
 
       <NekoWrapper>
 
@@ -223,13 +215,13 @@ const Dashboard = () => {
             <h3 style={{ marginTop: 0 }}>Templates</h3>
             <ul>
               {templates.map((x) => (
-                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                <li key={x.id} className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
                   {x.name}
                 </li>
               ))}
             </ul>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
-            <NekoSelect scrolldown id="mode" name="mode" disabled={true && busy} 
+            <NekoSelect scrolldown id="mode" name="mode" disabled={busy} 
               value={mode} description="" onChange={setMode}>
               <NekoOption key='chat' id='chat' value='chat' label="Chat" />
               <NekoOption key='query' id='query' value='query' label="Query" />
@@ -241,8 +233,8 @@ const Dashboard = () => {
           <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
           {mode === 'chat' && 
             <div style={{ display: 'flex', position: 'relative' }}>
-              <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
-                zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
+              <span className="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
+                zIndex: 200, fontSize: 28, top: 12, left: 10 }}></span>
               <StyledNekoInput id="entry" value={entry} onChange={(val) => setEntry(val)} onEnter={onValidateEntry} disabled={busy} />
             </div>
           }
@@ -257,14 +249,14 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>Settings</h3>
             <label>Model:</label>
-            <NekoSelect id="models" value={model} scrolldown={true} onChange={(val) => setModel(val)}>
+            <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
                 <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onChange={(val) => setTemperature(val)} onBlur={() => setTemperature(temperature)} description={<>
+              onChange={setTemperature} onBlur={(e) => setTemperature(parseFloat(e.target.value))} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   Between 0 and 1.
                 </span> Higher values means the model will take more risks.
@@ -289,7 +281,7 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
+      <NekoModal isOpen={Boolean(error)}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"

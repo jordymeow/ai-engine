@@ -11,15 +11,20 @@ class Meow_MWAI_UI {
 	}
 
 	function admin_menu() {
+		// Under Posts:
+		add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'manage_options', 'mwai_content_generator', 
+			array( $this, 'ai_content_generator' ), 2 );
 		add_management_page( 'AI Playground', __( 'AI Playground', 'ai-engine' ), 'manage_options', 
 			'mwai_dashboard', array( $this, 'ai_playground' ) );
-		add_action( 'admin_bar_menu', array( $this, 'admin_bar_menu' ), 100 );
-		add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'manage_options', 'mwai_generate', 
-			array( $this, 'ai_generate' ), 2 );
 
-		// Add the mwai_generate page under Tools
-		add_management_page( 'Content Generator', 'Content Generator', 'manage_options', 'mwai_generate', 
-			array( $this, 'ai_generate' ) );
+		// Under tools:
+		add_management_page( 'Content Generator', 'Content Generator', 'manage_options', 'mwai_content_generator', 
+			array( $this, 'ai_content_generator' ) );
+		add_management_page( 'Image Generator', 'Image Generator', 'manage_options', 'mwai_image_generator', 
+			array( $this, 'ai_image_generator' ) );
+
+		// In the Admin Bar:
+		add_action( 'admin_bar_menu', array( $this, 'admin_bar_menu' ), 100 );
 	}
 
 	function admin_bar_menu( $wp_admin_bar ) {
@@ -39,8 +44,12 @@ class Meow_MWAI_UI {
 		echo '<div id="mwai-playground"></div>';
 	}
 
-	public function ai_generate() {
-		echo '<div id="mwai-generator"></div>';
+	public function ai_content_generator() {
+		echo '<div id="mwai-content-generator"></div>';
+	}
+
+	public function ai_image_generator() {
+		echo '<div id="mwai-image-generator"></div>';
 	}
 
 	function post_row_actions( $actions, $post ) {
