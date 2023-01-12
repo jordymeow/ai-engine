@@ -166,7 +166,7 @@ class Meow_MWAI_Shortcodes {
       $aiName = $params['aiName'];
       $temperature = $params['temperature'];
       $apiKey = $params['apiKey'];
-			$query = new Meow_MWAI_Query( $prompt, 1024 );
+			$query = new Meow_MWAI_QueryText( $prompt, 1024 );
       if ( $model ) {
         $query->setModel( $model );
       }
