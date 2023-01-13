@@ -1,5 +1,5 @@
-// Previous: 0.1.9
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.2
 
 const { useState } = wp.element;
 
@@ -27,6 +27,7 @@ const Settings = () => {
   const shortcode_chat = options?.shortcode_chat;
   const shortcode_chat_style = options?.shortcode_chat_style;
   const shortcode_chat_formatting = options?.shortcode_chat_formatting;
+  const shortcode_imagesbot = options?.shortcode_imagesbot;
   const openai_apikey = options?.openai_apikey ? options?.openai_apikey : '';
   const openai_usage = options?.openai_usage;
   const extra_models = options?.extra_models;
@@ -57,10 +58,10 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="module_titles" label="Titles" value="1" checked={module_titles}
           description="Create a choice of titles based on your content."
-          onChange={(value) => updateOption(value, 'module_titles')} />
+          onChange={(val, id) => updateOption(val, id)} />
         <NekoCheckbox id="module_excerpts" label="Excerpt" value="1" checked={module_excerpts}
         description="Create a choice of excerpts based on your content."
-          onChange={(value) => updateOption(value, 'module_excerpts')} />
+          onChange={(val, id) => updateOption(val, id)} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -69,20 +70,28 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="module_blocks" label="Enable (Coming soon)" disabled={true} value="1" checked={module_blocks}
           description="Add Gutenberg AI Blocks in the editor. They will allow you to easily create content with AI."
-          onChange={(value) => updateOption(value, 'module_blocks')} />
+          onChange={(val, id) => updateOption(val, id)} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
   const jsxShortcodes =
     <NekoSettings title="Shortcodes">
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="shortcode_chat" label="Chatbot" value="1" checked={shortcode_chat}
+        <NekoCheckbox id="shortcode_chat" label="ChatBot" value="1" checked={shortcode_chat}
           description={<>
             Create a chatbot similar to ChatGPT with a shortcode:<br /><br />
             [mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend."]<br /><br />
             You can also add temperature (between 0 and 1, default is 0.8) and a model (default is text-davinci-003, but you can try text-babbage-001 and the others).
           </>}
-          onChange={(value) => updateOption(value, 'shortcode_chat')} />
+          onChange={(val, id) => updateOption(val, id)} />
+      </NekoCheckboxGroup>
+      <NekoCheckboxGroup max="1">
+        <NekoCheckbox id="shortcode_imagesbot" label="ImagesBot" value="1" checked={shortcode_imagesbot}
+          description={<>
+            Create a special chatbot that will take your input and generate images. It works like this:<br /><br />
+            [mwai_imagesbot ai_name="AI: " user_name="You: " start_sentence="Hey there! Can you tell me what kind of images you need?" max_results="6"]
+          </>}
+          onChange={(val, id) => updateOption(val, id)} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -90,8 +99,8 @@ const Settings = () => {
     <NekoSettings title="Styles">
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_chat_style" label="Enable" value="1" checked={shortcode_chat_style}
-          description="The chatbot will look like a bit similar to ChatGPT."
-          onChange={(value) => updateOption(value, 'shortcode_chat_style')} />  
+          description="The ChatBot and ImagesBot will look a bit like ChatGPT."
+          onChange={(val, id) => updateOption(val, id)} />  
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -100,20 +109,20 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_chat_formatting" label="Enable" value="1" checked={shortcode_chat_formatting}
           description={<>Convert the reply from the AI into HTML.<br /><b>Markdown is supported, so it is highly recommended to add 'Use Markdown.' in your context.</b></>}
-          onChange={(value) => updateOption(value, 'shortcode_chat_formatting')} />
+          onChange={(val, id) => updateOption(val, id)} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
   const jsxExtraModels =
     <NekoSettings title="Extra Models">
       <NekoInput id="extra_models" name="extra_models" value={extra_models}
-        description={<>You can enter additional models you would like to use (separated by a comma), including your fine-tuned models. This option is beta and will be modified/enhanced later.</>} onBlur={(value) => updateOption(value, 'extra_models')} />
+        description={<>You can enter additional models you would like to use (separated by a comma), including your fine-tuned models. This option is beta and will be modified/enhanced later.</>} onBlur={(val, id) => updateOption(val, id)} />
     </NekoSettings>;
 
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={(value) => updateOption(value, 'openai_apikey')} />
+        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={(val, id) => updateOption(val, id)} />
     </NekoSettings>;
 
   const jsxOpenAiUsage =
@@ -152,8 +161,6 @@ const Settings = () => {
                         {!isImageModel(model) && <>
                           <strong>• Model: {model}</strong>
                           <ul style={{ marginTop: 5, marginLeft: 5 }}>
-                            {/* <li>Prompt Tokens: {modelUsage.prompt_tokens}</li>
-                            <li>Completion Tokens: {modelUsage.completion_tokens}</li> */}
                             <li>
                               💰 Tokens:&nbsp;
                               <b>{modelUsage.total_tokens}</b> {price && <> = <b>{price}$</b></>}</li>
@@ -214,13 +221,18 @@ const Settings = () => {
               </NekoWrapper>
             </NekoTab>
 
-            {shortcode_chat && <NekoTab title='Chatbot'>
+            {(shortcode_chat || shortcode_imagesbot) && <NekoTab title='Shortcodes'>
               <NekoWrapper>
 
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title="Chatbot" className="primary">
-                    {jsxShortcodeStyle}
                     {jsxShortcodeFormatting}
+                  </NekoBlock>
+                </NekoColumn>
+
+                <NekoColumn minimal>
+                  <NekoBlock busy={busy} title="UI" className="primary">
+                    {jsxShortcodeStyle}
                   </NekoBlock>
                 </NekoColumn>
 

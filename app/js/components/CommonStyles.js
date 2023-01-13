@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.2
 
 import Styled from "styled-components";
 import { NekoTextArea, NekoHeader, NekoButton } from '@neko-ui';
@@ -28,6 +28,9 @@ const AiNekoHeader = ({ title = "Settings" }) => {
     </NekoHeader>
   );
 }
+
+const AiButton = Styled(NekoButton)`
+`;
 
 const StyledTitleWithButton = Styled.div`
   display: flex;
@@ -69,4 +72,4 @@ const StyledTextField = Styled(NekoTextArea)`
   }
 `;
 
-export { AiNekoHeader, StyledTitleWithButton, StyledGallery, StyledTextField }
+export { AiButton, AiNekoHeader, StyledTitleWithButton, StyledGallery, StyledTextField }

@@ -14,6 +14,9 @@ spl_autoload_register(function ( $class ) {
   if ( strpos( $class, 'Meow_MWAI' ) !== false ) {
     $file = MWAI_PATH . '/classes/' . str_replace( 'meow_mwai_', '', strtolower( $class ) ) . '.php';
   }
+  if ( strpos( $class, 'Meow_MWAI_Modules' ) !== false ) {
+    $file = MWAI_PATH . '/classes/modules/' . str_replace( 'meow_mwai_modules_', '', strtolower( $class ) ) . '.php';
+  }
   else if ( strpos( $class, 'MeowCommon_' ) !== false ) {
     $file = MWAI_PATH . '/common/' . str_replace( 'meowcommon_', '', strtolower( $class ) ) . '.php';
   }

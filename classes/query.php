@@ -6,7 +6,6 @@ class Meow_MWAI_Query {
   public $maxResults = 1;
 
   public function __construct( $prompt = '' ) {
-    $this->apiKey = get_option( 'meowapps_wai_api_key' );
     $this->prompt = $prompt;
   }
 

@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Shortcodes {
+class Meow_MWAI_Modules_Chatbot {
   private $core = null;
   private $namespace = 'ai-engine/v1';
 
@@ -85,8 +85,20 @@ class Meow_MWAI_Shortcodes {
           overflow: hidden;
         }
 
+        #mwai-chat-$id a {
+          color: #2196f3;
+        }
+
         #mwai-chat-$id h2 {
-          font-size: 20px;
+          font-size: 24px;
+        }
+
+        #mwai-chat-$id h3 {
+          font-size: 18px;
+        }
+
+        #mwai-chat-$id h4 {
+          font-size: 16px;
         }
 
         #mwai-chat-$id pre {
@@ -132,16 +144,22 @@ class Meow_MWAI_Shortcodes {
         #mwai-chat-$id .mwai-input {
           display: flex;
           padding: 15px;
+          border-top: 1px solid #454654;
         }
 
         #mwai-chat-$id .mwai-input input {
           background: #40414f;
           color: white;
           flex: auto;
-          padding: 15px;
+          height: 40px;
+          padding: 0px 15px;
           border: none;
           border-radius: 5px;
           font-size: 15px;
+        }
+
+        #mwai-chat-$id .mwai-input input:focus {
+          outline: none;
         }
 
         #mwai-chat-$id .mwai-input button {
@@ -152,6 +170,30 @@ class Meow_MWAI_Shortcodes {
           width: 80px;
           border-radius: 5px;
           cursor: pointer;
+        }
+
+        #mwai-chat-$id .mwai-input button:hover {
+          background: #353640;
+        }
+
+        @media (max-width: 600px) {
+          #mwai-chat-$id .mwai-reply {
+            flex-direction: column;
+          }
+
+          #mwai-chat-$id .mwai-input {
+            flex-direction: column;
+          }
+
+          #mwai-chat-$id .mwai-input button {
+            margin: 15px 0 0 0;
+            height: 40px;
+            width: inherit;
+          }
+
+          #mwai-chat-$id .mwai-name {
+            margin-right: 0;
+          }
         }
       </style>
     " . $html;
@@ -197,9 +239,11 @@ class Meow_MWAI_Shortcodes {
       'start_sentence' => "Hi! How can I help you?",
       'model' => 'text-davinci-003',
       'temperature' => 0.8,
+      'text_send' => 'Send',
+      'text_input_placeholder' => 'Type your message...',
       'api_key' => ''
     ] );
-    $atts = shortcode_atts( $defaults, $atts, 'meow_ai' );
+    $atts = shortcode_atts( $defaults, $atts, 'mwai_chat_atts' );
     $id = $atts['id'];
     $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
     $onSentClickFn = "mwai_{$id}_onSendClick";
@@ -209,6 +253,8 @@ class Meow_MWAI_Shortcodes {
     $userName = addslashes( trim($atts['user_name']) );
     $sysName = addslashes( trim($atts['sys_name']) );
     $context = addslashes( trim( $atts['context'] ) );
+    $textSend = addslashes( trim( $atts['text_send'] ) );
+    $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
     ob_start();
     ?>
@@ -217,8 +263,8 @@ class Meow_MWAI_Shortcodes {
         <div class="mwai-conversation">
         </div>
         <div class="mwai-input">
-          <input type="text" placeholder="Type your message here..." />
-          <button><span>Send</span></button>
+          <input type="text" placeholder="<?= $textInputPlaceholder ?>" />
+          <button><span><?= $textSend ?></span></button>
         </div>
       </div>
 
@@ -304,6 +350,7 @@ class Meow_MWAI_Shortcodes {
             }
             button.disabled = false;
             input.disabled = false;
+            input.focus();
           })
           .catch(error => {
             console.error(error);

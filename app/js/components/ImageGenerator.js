@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.2
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -20,7 +20,7 @@ function generateFilename(prompt, maxLength = 42) {
   const words = cleaned.split("-");
   let filename = words[0];
   let i = 1;
-  while (filename.length + words[i]?.length < maxLength && i < words.length) {
+  while (filename.length + words[i].length < maxLength && i < words.length) {
     filename += "-" + words[i];
     i++;
   }
@@ -74,8 +74,10 @@ const ImageGenerator = () => {
   }, [selectedUrl])
 
   const onGoBack = () => {
-    if (urlIndex > 0 && urls.length > 0) {
+    if (urlIndex > 0) {
       setSelectedUrl(urls[urlIndex - 1]);
+    } else {
+      setSelectedUrl(undefined);
     }
   }
 
@@ -94,7 +96,7 @@ const ImageGenerator = () => {
     setBusy(false);
     if (res.success) {
       if (continuousMode) {
-        setUrls(prevUrls => [...prevUrls, ...res.data]);
+        setUrls([...urls, ...res.data]);
       }
       else {
         setUrls(res.data);
@@ -112,13 +114,23 @@ const ImageGenerator = () => {
     }, nonce: restNonce });
     setBusy(false);
     if (res.success) {
-      setCreatedMediaIds(prevIds => [...prevIds, {
+      setCreatedMediaIds(prev => [...prev, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
     }
     setError(res.message);
     return null;
+  }
+
+  const onDownload = () => {
+    const link = document.createElement('a');
+    link.href = selectedUrl;
+    link.target = '_blank';
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   const currentCreatedMediaId = useMemo(() => {
@@ -153,7 +165,7 @@ const ImageGenerator = () => {
               <StyledTitleWithButton style={{ paddingBottom: 10 }}>
                 <h2>Images Generator</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
+                  <NekoButton disabled={urlIndex <= 0 || busy} onClick={() => onGoBack()}>
                     &lt;
                   </NekoButton>
                   <NekoButton disabled={busy} onClick={() => setSelectedUrl()}>
@@ -172,26 +184,30 @@ const ImageGenerator = () => {
                 <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                   <StyledInputWrapper>
                     <label>Title:</label>
-                    <StyledTextField value={title} onBlur={() => setTitle(title)} />
+                    <StyledTextField value={title} onBlur={setTitle} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Caption:</label>
-                    <StyledTextField value={caption} onBlur={() => setCaption(caption)} />
+                    <StyledTextField value={caption} onBlur={setCaption} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Description:</label>
-                    <StyledTextField value={description} onBlur={() => setDescription(description)} />
+                    <StyledTextField value={description} onBlur={setDescription} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Alternative Text:</label>
-                    <StyledTextField value={alt} onBlur={() => setAlt(alt)} />
+                    <StyledTextField value={alt} onBlur={setAlt} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Filename:</label>
-                    <NekoInput value={filename} onChange={(e) => setFilename(e.target.value)} />
+                    <NekoInput value={filename} onChange={setFilename} />
                   </StyledInputWrapper>
                   <NekoButton fullWidth style={{ marginTop: 7 }} isBusy={busy} onClick={() => onAdd()}>
                     Add to Media Library
+                  </NekoButton>
+                  <NekoButton fullWidth style={{ marginLeft: 0, marginTop: 7 }} isBusy={busy}
+                    onClick={() => onDownload()}>
+                    Download
                   </NekoButton>
                   {currentCreatedMediaId && <NekoMessageSuccess
                     style={{ fontSize: 13, padding: '10px 5px' }}>
@@ -212,7 +228,7 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(e) => setMaxResults(parseInt(e.target.value))}>
+                    value={maxResults} description="" onChange={setMaxResults}>
                     {ImagesCount.map((count) => {
                       return <NekoOption key={count} id={count} value={count} label={count} />
                     })}
@@ -222,14 +238,14 @@ const ImageGenerator = () => {
                   </NekoButton>
                 </div>
               </StyledTitleWithButton>
-              <StyledTextField value={prompt} onBlur={() => setPrompt(prompt)} style={{ marginTop: 20 }} />
+              <StyledTextField value={prompt} onBlur={setPrompt} style={{ marginTop: 20 }} />
               {urls.length > 0 && <StyledGallery>
-                {urls.map((url) => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
+                {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} />)}
               </StyledGallery>}
               {!urls.length && <StyledGallery>
-                <div className="empty-image" />
-                <div className="empty-image" />
-                <div className="empty-image" />
+                <div class="empty-image" />
+                <div class="empty-image" />
+                <div class="empty-image" />
               </StyledGallery>}
             </NekoContainer>
           </>}
@@ -247,7 +263,7 @@ const ImageGenerator = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
+      <NekoModal isOpen={error}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"
@@ -258,5 +274,3 @@ const ImageGenerator = () => {
     
   );
 };
-
-export default ImageGenerator;

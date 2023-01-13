@@ -10,6 +10,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_style' => true,
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
+	'shortcode_imagesbot' => false,
 	'openai_apikey' => false,
 	'openai_usage' => [],
 	'extra_models' => ""
@@ -38,10 +39,15 @@ class Meow_MWAI_Core
 		}
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
+		}
+		else {
 			new Meow_MWAI_UI( $this );
 		}
 		if ( $this->get_option( 'shortcode_chat' ) ) {
-			new Meow_MWAI_Shortcodes();
+			new Meow_MWAI_Modules_Chatbot();
+		}
+		if ( $this->get_option( 'shortcode_imagesbot' ) ) {
+			new Meow_MWAI_Modules_ImagesBot();
 		}
 	}
 
