@@ -85,6 +85,10 @@ class Meow_MWAI_Modules_Chatbot {
           overflow: hidden;
         }
 
+        #mwai-chat-$id * {
+          box-sizing: border-box;
+        }
+
         #mwai-chat-$id a {
           color: #2196f3;
         }
@@ -147,18 +151,20 @@ class Meow_MWAI_Modules_Chatbot {
           border-top: 1px solid #454654;
         }
 
-        #mwai-chat-$id .mwai-input input {
+        #mwai-chat-$id .mwai-input textarea {
           background: #40414f;
           color: white;
           flex: auto;
-          height: 40px;
-          padding: 0px 15px;
+          padding: 10px 15px;
           border: none;
           border-radius: 5px;
           font-size: 15px;
+          resize: none;
+          font-family: inherit;
+          line-height: 30px;
         }
 
-        #mwai-chat-$id .mwai-input input:focus {
+        #mwai-chat-$id .mwai-input textarea:focus {
           outline: none;
         }
 
@@ -248,6 +254,7 @@ class Meow_MWAI_Modules_Chatbot {
     $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
     $onSentClickFn = "mwai_{$id}_onSendClick";
     $addReplyFn = "mwai_{$id}_addReply";
+    $initChatBotFn = "mwai_{$id}_initChatBot";
     $convertToHtmlFn = "mwai_{$id}_convertToHtml";
     $aiName = addslashes( trim($atts['ai_name']) );
     $userName = addslashes( trim($atts['user_name']) );
@@ -263,7 +270,7 @@ class Meow_MWAI_Modules_Chatbot {
         <div class="mwai-conversation">
         </div>
         <div class="mwai-input">
-          <input type="text" placeholder="<?= $textInputPlaceholder ?>" />
+          <textarea rows="1" placeholder="<?= $textInputPlaceholder ?>"></textarea>
           <button><span><?= $textSend ?></span></button>
         </div>
       </div>
@@ -307,7 +314,7 @@ class Meow_MWAI_Modules_Chatbot {
 
         // Function to request the completion
         function <?= $onSentClickFn ?>() {
-          let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input input');
+          let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
           let inputText = input.value.trim();
 
           if (inputText === '') {
@@ -322,6 +329,7 @@ class Meow_MWAI_Modules_Chatbot {
           <?= $addReplyFn ?>(inputText, 'user');
           <?= $onGoingPrompt ?> += '<?= $userName ?>' + inputText + '\n';
           input.value = '';
+          input.setAttribute('rows', 1);
           input.disabled = true;
 
           // Request the completion
@@ -359,19 +367,42 @@ class Meow_MWAI_Modules_Chatbot {
           });
         }
 
-        var input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input input');
-        input.addEventListener('keypress', (event) => {
-          if (event.keyCode === 13) {
-            <?= $onSentClickFn ?>(); 
+        function mwaiSetTextAreaHeight(textarea, lines) {
+          var rows = textarea.getAttribute('rows');
+          if (lines !== rows) {
+            textarea.setAttribute('rows', lines > 5 ? 5 : lines);
           }
-        });
+        }
 
-        var button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
-        button.addEventListener('click', (event) => {
-          <?= $onSentClickFn ?>(); 
-        });
+        function <?= $initChatBotFn ?>() {
+          var input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
+          input.addEventListener('keypress', (event) => {
+            if (event.keyCode === 13 && !event.shiftKey) {
+              <?= $onSentClickFn ?>(); 
+            }
+          });
+          input.addEventListener('keydown', (event) => {
+            var rows = input.getAttribute('rows');
+            if (event.keyCode === 13 && event.shiftKey) {
+              var lines = input.value.split('\n').length + 1;
+              mwaiSetTextAreaHeight(input, lines);
+            }
+          });
+          input.addEventListener('keyup', (event) => {
+            var rows = input.getAttribute('rows');
+              var lines = input.value.split('\n').length ;
+              mwaiSetTextAreaHeight(input, lines);
+          });
+          var button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
+          button.addEventListener('click', (event) => {
+            <?= $onSentClickFn ?>(); 
+          });
 
-        <?= $addReplyFn ?>('<?= $atts['start_sentence'] ?>', 'ai');
+          <?= $addReplyFn ?>('<?= $atts['start_sentence'] ?>', 'ai');
+        }
+
+        <?= $initChatBotFn ?>();
+        
       </script>
 
     <?php

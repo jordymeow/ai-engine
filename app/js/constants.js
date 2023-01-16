@@ -1,34 +1,39 @@
-// Previous: 0.1.9
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.3
 
 const OpenAI_models = [
   {
     id: 'text-davinci-003',
     name: 'text-davinci-003',
+    short: 'davinci',
     description: 'Most capable GPT-3 model. Can do any task the other models can do, often with higher quality, longer output and better instruction-following. Also supports inserting completions within text.',
     strength: 'Complex intent, cause and effect, summarization for audience'
   },
   {
     id: 'text-curie-001',
     name: 'text-curie-001',
+    short: 'curie',
     description: 'Very capable, but faster and lower cost than Davinci.',
     strength: 'Language translation, complex classification, text sentiment, summarization'
   },
   {
     id: 'text-babbage-001',
     name: 'text-babbage-001',
+    short: 'babbage',
     description: 'Capable of straightforward tasks, very fast, and lower cost.',
     strength: 'Moderate classification, semantic search classification'
   },
   {
     id: 'text-ada-001',
     name: 'text-ada-001',
+    short: 'ada',
     description: 'Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost.',
     strength: 'Parsing text, simple classification, address correction, keywords'
   },
   {
     id: 'code-davinci-002',
     name: 'code-davinci-002',
+    short: 'davinci',
     description: 'Most capable Codex model. Particularly good at translating natural language to code. In addition to completing code, also supports inserting completions within code.',
   },
   // {

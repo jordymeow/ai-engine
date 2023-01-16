@@ -1,8 +1,10 @@
-// Previous: 0.2.0
-// Current: 0.2.2
+// Previous: 0.2.2
+// Current: 0.2.3
 
-const { useState } = wp.element;
+// React & Vendor Libs
+const { useState, useEffect } = wp.element;
 
+// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoHeader, NekoContainer, NekoSettings,
   NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoColumn } from '@neko-ui';
 import { postFetch } from '@neko-ui';
@@ -11,6 +13,7 @@ import { apiUrl, restNonce, options as defaultOptions } from '@app/settings';
 import { OpenAI_PricingPerModel } from '../constants';
 import { OptionsCheck } from '../helpers';
 import { AiNekoHeader } from './CommonStyles';
+import TineTuning from './FineTuning';
 
 const isImageModel = (model) => {
   return model === "dall-e";
@@ -58,10 +61,10 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="module_titles" label="Titles" value="1" checked={module_titles}
           description="Create a choice of titles based on your content."
-          onChange={(val, id) => updateOption(val, id)} />
+          onChange={updateOption} />
         <NekoCheckbox id="module_excerpts" label="Excerpt" value="1" checked={module_excerpts}
         description="Create a choice of excerpts based on your content."
-          onChange={(val, id) => updateOption(val, id)} />
+          onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -70,7 +73,7 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="module_blocks" label="Enable (Coming soon)" disabled={true} value="1" checked={module_blocks}
           description="Add Gutenberg AI Blocks in the editor. They will allow you to easily create content with AI."
-          onChange={(val, id) => updateOption(val, id)} />
+          onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -83,7 +86,7 @@ const Settings = () => {
             [mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend."]<br /><br />
             You can also add temperature (between 0 and 1, default is 0.8) and a model (default is text-davinci-003, but you can try text-babbage-001 and the others).
           </>}
-          onChange={(val, id) => updateOption(val, id)} />
+          onChange={updateOption} />
       </NekoCheckboxGroup>
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_imagesbot" label="ImagesBot" value="1" checked={shortcode_imagesbot}
@@ -91,7 +94,7 @@ const Settings = () => {
             Create a special chatbot that will take your input and generate images. It works like this:<br /><br />
             [mwai_imagesbot ai_name="AI: " user_name="You: " start_sentence="Hey there! Can you tell me what kind of images you need?" max_results="6"]
           </>}
-          onChange={(val, id) => updateOption(val, id)} />
+          onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -100,7 +103,7 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_chat_style" label="Enable" value="1" checked={shortcode_chat_style}
           description="The ChatBot and ImagesBot will look a bit like ChatGPT."
-          onChange={(val, id) => updateOption(val, id)} />  
+          onChange={updateOption} />  
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -109,20 +112,20 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_chat_formatting" label="Enable" value="1" checked={shortcode_chat_formatting}
           description={<>Convert the reply from the AI into HTML.<br /><b>Markdown is supported, so it is highly recommended to add 'Use Markdown.' in your context.</b></>}
-          onChange={(val, id) => updateOption(val, id)} />
+          onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
   const jsxExtraModels =
     <NekoSettings title="Extra Models">
       <NekoInput id="extra_models" name="extra_models" value={extra_models}
-        description={<>You can enter additional models you would like to use (separated by a comma), including your fine-tuned models. This option is beta and will be modified/enhanced later.</>} onBlur={(val, id) => updateOption(val, id)} />
+        description={<>You can enter additional models you would like to use (separated by a comma), including your fine-tuned models. This option is beta and will be modified/enhanced later.</>} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={(val, id) => updateOption(val, id)} />
+        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxOpenAiUsage =
@@ -136,7 +139,7 @@ const Settings = () => {
               <li key={index}>
                 <strong>🗓️ {month}</strong>
                 <ul>
-                  {Object.keys(monthUsage).map((model, idx) => {
+                  {Object.keys(monthUsage).map((model, i) => {
                     const modelUsage = monthUsage[model];
                     let price = null;
                     let modelPrice = OpenAI_PricingPerModel.find(x => model.includes(x.model));
@@ -149,7 +152,7 @@ const Settings = () => {
                       }
                     }
                     return (
-                      <li key={idx} style={{ marginTop: 10, marginLeft: 10 }}>
+                      <li key={i} style={{ marginTop: 10, marginLeft: 10 }}>
                         {isImageModel(model) && <>
                           <strong>• Model: {model}</strong>
                           <ul style={{ marginTop: 5, marginLeft: 5 }}>
@@ -180,6 +183,14 @@ const Settings = () => {
       </p>
     </NekoSettings>;
 
+  // Introducing a subtle bug: missing dependency in useEffect
+  useEffect(() => {
+    if (!options?.module_titles) {
+      // This could cause an infinite loop if options.module_titles is undefined
+      setOptions(prev => ({ ...prev, module_titles: '1' }));
+    }
+  }, []); // no dependency on options, so this runs once, but if module_titles is falsy, might cause issues
+
   return (
     <NekoPage>
 
@@ -197,7 +208,7 @@ const Settings = () => {
             </NekoTypo>
           </NekoContainer>
 
-          <NekoTabs>
+          <NekoTabs keepTabOnReload={true}>
 
             <NekoTab title='Settings'>
               <NekoWrapper>
@@ -239,6 +250,9 @@ const Settings = () => {
               </NekoWrapper>
             </NekoTab>}
 
+            <NekoTab title='Fine Tuning: Train your AI'>
+              <TineTuning options={options} />
+            </NekoTab>
 
           </NekoTabs>
 

@@ -65,6 +65,36 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'create_image' ),
 			) );
+			register_rest_route( $this->namespace, '/openai_files', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_files_get' ),
+			) );
+			register_rest_route( $this->namespace, '/openai_files', array(
+				'methods' => 'DELETE',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_files_delete' ),
+			) );
+			register_rest_route( $this->namespace, '/openai_files', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_files_upload' ),
+			) );
+			register_rest_route( $this->namespace, '/openai_files_download', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_files_download' ),
+			) );
+			register_rest_route( $this->namespace, '/openai_files_finetune', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_files_finetune' ),
+			) );
+			register_rest_route( $this->namespace, '/openai_finetunes', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_finetunes_get' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -304,6 +334,85 @@ class Meow_MWAI_Rest
 			wp_update_attachment_metadata( $attachmentId, $attachment_data );
 			update_post_meta( $attachmentId, '_wp_attachment_image_alt', $alt );
 			return new WP_REST_Response([ 'success' => true, 'attachmentId' => $attachmentId ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_files_get( $request ) {
+		try {
+			//$params = $request->get_json_params();
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$files = $openai->listFiles();
+			return new WP_REST_Response([ 'success' => true, 'files' => $files ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_finetunes_get( $request ) {
+		try {
+			//$params = $request->get_json_params();
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$finetunes = $openai->listFineTunes();
+			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_files_upload( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$filename = sanitize_text_field( $params['filename'] );
+			$data = $params['data'];
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$file = $openai->uploadFile( $filename, $data );
+			return new WP_REST_Response([ 'success' => true, 'file' => $file ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_files_delete( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$fileId = $params['fileId'];
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$openai->deleteFile( $fileId );
+			return new WP_REST_Response([ 'success' => true ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_files_download( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$fileId = $params['fileId'];
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$data = $openai->downloadFile( $fileId );
+			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_files_finetune( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$fileId = $params['fileId'];
+			$model = $params['model'];
+			$suffix = $params['suffix'];
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$finetune = $openai->fineTuneFile( $fileId, $model, $suffix );
+			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

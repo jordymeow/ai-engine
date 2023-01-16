@@ -1,7 +1,9 @@
-// Previous: 0.1.9
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.3
 
 const { render } = wp.element;
+import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
+const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
 // Neko UI
 import { Dashboard } from '@common';
@@ -21,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function(event) {
 	// Settings
 	const settings = document.getElementById('mwai-admin-settings');
 	if (settings) {
-		render((<Settings />), settings);
+		render((<QueryClientProvider client={queryClient}><Settings /></QueryClientProvider>), settings);
 	}
 
 	// Content Generator
@@ -51,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function(event) {
 	// Common
 	const meowDashboard = document.getElementById('meow-common-dashboard');
 	if (meowDashboard) {
-		render((<Dashboard />), meowDashboard);
+		render(<Dashboard />, meowDashboard);
 	}
 
 });
