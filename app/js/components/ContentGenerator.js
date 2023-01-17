@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.4
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -8,18 +8,22 @@ import Styled from "styled-components";
 // NekoUI
 import { postFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoContainer,
-  NekoTextArea, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
+  NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
 
 import { apiUrl, restNonce, options } from '@app/settings';
 import { OpenAI_models, Languages, WritingStyles, WritingTones } from "../constants";
 import { cleanNumbering, extractTextData, OptionsCheck, useModels } from "../helpers";
-import { AiNekoHeader } from "./CommonStyles";
+import { AiNekoHeader, StyledTitleWithButton } from "./CommonStyles";
 
 const StyledSidebar = Styled.div`
   background: white;
   padding: 15px;
   border-radius: 5px;
 
+  h2 {
+    margin-bottom: 8px;
+  }
+  
   h3:first-child {
     margin-top: 0;
   }
@@ -50,20 +54,10 @@ const StyledSidebar = Styled.div`
   }
 
   .information {
-    color: #737373;
+    color: #a3a3a3;
     margin-top: 5px;
     font-size: 12px;
-  }
-`;
-
-const StyledTitleWithButton = Styled.div`
-  display: flex;
-  justify-content: unset;
-  align-items: center;
-  justify-content: space-between;
-
-  h2 {
-    margin: 0;
+    line-height: 100%;
   }
 `;
 
@@ -102,7 +96,8 @@ How Digital Technology is Uncovering the Stories of the People Who Lived There` 
 const ContentGenerator = () => {
   const [error, setError] = useState();
   const [title, setTitle] = useState(DefaultTitle);
-  const [headingsCount, setHeadingsCount] = useState(5);
+  const [topic, setTopic] = useState('');
+  const [headingsCount, setHeadingsCount] = useState(4);
   const [headings, setHeadings] = useState(DefaultHeadings);
   const [paragraphsCount, setParagraphsCount] = useState(2);
   const [content, setContent] = useState('');
@@ -119,7 +114,7 @@ const ContentGenerator = () => {
   const [showModelParams, setShowModelParams] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
   const [createdPostId, setCreatedPostId] = useState();
-  
+
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
 
   useEffect(() => {
@@ -231,83 +226,19 @@ const ContentGenerator = () => {
 
         <OptionsCheck options={options} />
 
-        <NekoColumn style={{ flex: 3 }}>
+        <NekoColumn style={{ flex: 1 }}>
 
           <StyledSidebar style={{ marginBottom: 25, paddingBottom: 20 }}>
-            <h2 style={{ marginTop: 0 }}>Title</h2>
-            <NekoInput value={title} onChange={setTitle} />
-            {titleMessage && <div className="information">Advice: {titleMessage}</div>}
-          </StyledSidebar>
-
-          <StyledSidebar style={{ paddingTop: 5, marginBottom: 25,  }}>
-            
-            <StyledTitleWithButton style={{ paddingTop: 5, paddingBottom: 10 }}>
-              <h2>Headings</h2>
-              <div style={{ display: 'flex' }}>
-                <NekoSelect scrolldown id="headingsCount" disabled={!title || busy} style={{ marginRight: 10 }}
-                  value={headingsCount} description="" onChange={setHeadingsCount}>
-                    <NekoOption key={3} id={3} value={3} label={3} />
-                    <NekoOption key={5} id={5} value={5} label={5} />
-                    <NekoOption key={8} id={8} value={8} label={8} />
-                    <NekoOption key={12} id={12} value={12} label={12} />
-                </NekoSelect>
-                <NekoButton disabled={!title} isBusy={busy} onClick={onSubmitPromptForHeadings}>
-                  Generate Headings
-                </NekoButton>
-              </div>
-            </StyledTitleWithButton>
-
-            <NekoTextArea value={headings} onBlur={setHeadings} />
-            <div className="information">
-              You can modify the content before using "Generate Content". Add, rewrite, remove, or reorganize the headings as you wish before going further.
-            </div>
-
-            <StyledTitleWithButton style={{ paddingTop: 5, paddingBottom: 10 }}>
-              <h2>Content</h2>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Heading: </label>
-                <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy}
-                  style={{ marginRight: 10 }}
-                  value={paragraphsCount} description="" onChange={setParagraphsCount}>
-                    <NekoOption key={1} id={1} value={1} label={1} />
-                    <NekoOption key={2} id={2} value={2} label={2} />
-                    <NekoOption key={3} id={3} value={3} label={3} />
-                    <NekoOption key={4} id={4} value={4} label={4} />
-                    <NekoOption key={6} id={6} value={6} label={6} />
-                    <NekoOption key={8} id={8} value={8} label={8} />
-                    <NekoOption key={10} id={10} value={10} label={10} />
-                </NekoSelect>
-                <NekoButton disabled={!title} isBusy={busy} onClick={onSubmitPromptForContent}>
-                  Generate Content
-                </NekoButton>
-              </div>
-            </StyledTitleWithButton>
-
-            <NekoTextArea value={content} onBlur={setContent} />
-            <div className="information">
-              You can modify the content before using "Create Post". Markdown is supported, and will be converted to HTML when the post is created.
-            </div>
-
-            <StyledTitleWithButton style={{ paddingTop: 5, paddingBottom: 10 }}>
-              <h2>Excerpt</h2>
-              <NekoButton disabled={!title} isBusy={busy} onClick={onSubmitPromptForExcerpt}>
-                Generate Excerpt
-              </NekoButton>
-            </StyledTitleWithButton>
-
-            <NekoTextArea value={excerpt} onBlur={setExcerpt} />
-
-            <NekoButton style={{ marginTop: 30, width: '100%' }} 
-              onClick={onSubmitNewPost} isBusy={busy}
-              disabled={!content}>
-              Create Post
+            <h2 style={{ marginTop: 0 }}>Topic</h2>
+            <NekoInput disabled={true} value={topic} onChange={setTopic} />
+            <NekoButton style={{ marginTop: 5, marginBottom: 15 }} disabled={true || busy} fullWidth>
+              One-Click Generate
             </NekoButton>
-
+            <div className="information">
+              The Topic feature is coming soon! Add a topic followed by some keywords, and it will all be generated in one-click. Let me know if that interests you!
+            </div>
           </StyledSidebar>
 
-        </NekoColumn>
-
-        <NekoColumn>
           <StyledSidebar style={{ marginBottom: 25 }}>
             <h2 style={{ marginTop: 0 }}>Content Params</h2>
             <label>Language:</label>
@@ -332,6 +263,94 @@ const ContentGenerator = () => {
                 })}
             </NekoSelect>
           </StyledSidebar>
+
+        </NekoColumn>
+
+        <NekoColumn style={{ flex: 3 }}>
+
+          <StyledSidebar style={{ marginBottom: 25, paddingBottom: 20 }}>
+
+            <h2 style={{ marginTop: 0 }}>Title</h2>
+            <NekoInput value={title} onChange={setTitle} />
+            {titleMessage && <div className="information">Advice: {titleMessage}</div>}
+
+            <NekoSpacer height={5} />
+            
+            <StyledTitleWithButton>
+              <h2>Sections</h2>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <label style={{ margin: '0 5px 0 0' }}># of Sections: </label>
+                <NekoSelect scrolldown id="headingsCount" disabled={!title || busy} style={{ marginRight: 10 }}
+                  value={headingsCount} description="" onChange={setHeadingsCount}>
+                    <NekoOption key={3} id={3} value={3} label={3} />
+                    <NekoOption key={4} id={4} value={4} label={4} />
+                    <NekoOption key={5} id={5} value={5} label={5} />
+                    <NekoOption key={8} id={8} value={8} label={8} />
+                    <NekoOption key={12} id={12} value={12} label={12} />
+                </NekoSelect>
+                <NekoButton disabled={!title} isBusy={busy} onClick={onSubmitPromptForHeadings}>
+                  Generate Sections
+                </NekoButton>
+              </div>
+            </StyledTitleWithButton>
+
+            <NekoSpacer height={5} />
+
+            <NekoTextArea rows={4} value={headings} onBlur={setHeadings} />
+            <div className="information">
+              You can modify the content before using "Generate Content". Add, rewrite, remove, or reorganize the headings as you wish before going further.
+            </div>
+
+            <NekoSpacer height={5} />
+
+            <StyledTitleWithButton>
+              <h2>Content</h2>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Heading: </label>
+                <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy}
+                  style={{ marginRight: 10 }}
+                  value={paragraphsCount} description="" onChange={setParagraphsCount}>
+                    <NekoOption key={1} id={1} value={1} label={1} />
+                    <NekoOption key={2} id={2} value={2} label={2} />
+                    <NekoOption key={3} id={3} value={3} label={3} />
+                    <NekoOption key={4} id={4} value={4} label={4} />
+                    <NekoOption key={6} id={6} value={6} label={6} />
+                    <NekoOption key={8} id={8} value={8} label={8} />
+                    <NekoOption key={10} id={10} value={10} label={10} />
+                </NekoSelect>
+                <NekoButton disabled={!title} isBusy={busy} onClick={onSubmitPromptForContent}>
+                  Generate Content
+                </NekoButton>
+              </div>
+            </StyledTitleWithButton>
+
+            <NekoSpacer height={5} />
+
+            <NekoTextArea rows={18} value={content} onBlur={setContent} />
+            <div className="information">
+              You can modify the content before using "Create Post". Markdown is supported, and will be converted to HTML when the post is created.
+            </div>
+
+            <StyledTitleWithButton>
+              <h2>Excerpt</h2>
+              <NekoButton disabled={!title} isBusy={busy} onClick={onSubmitPromptForExcerpt}>
+                Generate Excerpt
+              </NekoButton>
+            </StyledTitleWithButton>
+
+            <NekoTextArea value={excerpt} onBlur={setExcerpt} rows={3} />
+
+            <NekoSpacer height={10} />
+
+            <NekoButton fullWidth onClick={onSubmitNewPost} isBusy={busy} disabled={!content}>
+              Create Post
+            </NekoButton>
+
+          </StyledSidebar>
+
+        </NekoColumn>
+
+        <NekoColumn>
 
           <StyledSidebar style={{ marginBottom: 25 }}>
             <StyledTitleWithButton>
@@ -369,7 +388,7 @@ const ContentGenerator = () => {
             </StyledTitleWithButton>
             {showPrompts && <>
               <p>The prompts are automatically generated for you, but you can fine-tune them once everything is set.</p>
-              <label>Prompt for <b>Generate Headings</b></label>
+              <label>Prompt for <b>Generate Sections</b></label>
               <NekoTextArea disabled={busy} value={promptForHeadings} onChange={setPromptForHeadings}  />
               <label>Prompt for <b>Generate Content</b></label>
               <NekoTextArea disabled={busy} value={promptForContent} onChange={setPromptForContent}  />

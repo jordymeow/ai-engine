@@ -77,6 +77,7 @@ class Meow_MWAI_AI {
       "body" => json_encode( array(
         "model" => $query->model,
         "prompt" => $query->prompt,
+        "stop" => $query->stop,
         "n" => $query->maxResults,
         "max_tokens" => $query->maxTokens,
         "temperature" => $query->temperature,

@@ -1,5 +1,5 @@
-// Previous: 0.1.9
-// Current: 0.2.0
+// Previous: 0.2.0
+// Current: 0.2.4
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -20,6 +20,11 @@ const templates = [
     mode: 'query',
     description: ''
   }, {
+    id: 'custom_model',
+    name: 'Custom Model Prompt',
+    mode: 'query',
+    description: `Hello! What's your name?\n\n###\n\n`
+  }, {
     id: 'wp_assistant',
     name: 'WordPress Assistant',
     mode: 'chat',
@@ -29,8 +34,7 @@ const templates = [
     id: 'article_translator',
     name: 'Article Translator',
     mode: 'query',
-    description: `Translate this article into French:\n
-      Uchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.\n\n`,
+    description: `Translate this article into French:\n\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.\n\n`,
   }, {
     id: 'article_writer',
     name: 'Article Writer',
@@ -130,7 +134,7 @@ const StyledNekoInput = Styled(NekoInput)`
 
 const Dashboard = () => {
   const [error, setError] = useState();
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState();
   const [mode, setMode] = useState('chat');
   const [entry, setEntry] = useState('');
   const { models, model, setModel } = useModels(options);
@@ -138,14 +142,15 @@ const Dashboard = () => {
   const [busy, setBusy] = useState(false);
   const [sessionUsage, setSessionUsage] = useState({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
   const [lastUsage, setLastUsage] = useState({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
-  const [template, setTemplate] = useState(templates[1]);
+  const [template, setTemplate] = useState(templates[2]);
+  const [stopSequence, setStopSequence] = useState('\\n\\n');
 
   const onValidateEntry = () => {
-    const newPrompt = `${prompt}\nHuman: ${entry}`;
+    const newPrompt = prompt + "\nHuman: " + entry;
     setPrompt(newPrompt);
-    setEntry('');
+    setEntry("");
     onSubmitPrompt(newPrompt);
-  };
+  }
 
   useEffect(() => {
     const desc = template.description;
@@ -158,13 +163,13 @@ const Dashboard = () => {
   const onResetUsage = () => {
     setSessionUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
     setLastUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
-  };
+  }
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
-    console.log('onSubmitPrompt', { promptToUse });
     setBusy(true);
+    const stop = stopSequence.replace(/\\n/g, '\n');
     const res = await postFetch(`${apiUrl}/make_completions`, { json: { 
-      prompt: promptToUse, temperature, model
+      prompt: promptToUse, temperature, model, stop: stop
     }, nonce: restNonce });
     console.log("Completions", { prompt: promptToUse, result: res });
     if (res.success) {
@@ -176,11 +181,16 @@ const Dashboard = () => {
         total_tokens: sessionUsage.total_tokens + res.usage.total_tokens,
       };
       setSessionUsage(newSessionUsage);
-    } else {
+    }
+    else {
       setError(res.message);
     }
     setBusy(false);
   };
+
+  const onResetPrompt = () => {
+    setPrompt(template.description);
+  }
 
   const { sessionPrice, lastRequestPrice } = useMemo(() => {
     let sessionPrice = 0;
@@ -215,13 +225,13 @@ const Dashboard = () => {
             <h3 style={{ marginTop: 0 }}>Templates</h3>
             <ul>
               {templates.map((x) => (
-                <li key={x.id} className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
                   {x.name}
                 </li>
               ))}
             </ul>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
-            <NekoSelect scrolldown id="mode" name="mode" disabled={busy} 
+            <NekoSelect scrolldown id="mode" name="mode" disabled={true || busy} 
               value={mode} description="" onChange={setMode}>
               <NekoOption key='chat' id='chat' value='chat' label="Chat" />
               <NekoOption key='query' id='query' value='query' label="Query" />
@@ -232,16 +242,22 @@ const Dashboard = () => {
         <NekoColumn style={{ flex: 3 }}>
           <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
           {mode === 'chat' && 
-            <div style={{ display: 'flex', position: 'relative' }}>
-              <span className="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
-                zIndex: 200, fontSize: 28, top: 12, left: 10 }}></span>
+            <div style={{ display: 'flex' }}>
+              <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
+                zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
               <StyledNekoInput id="entry" value={entry} onChange={(val) => setEntry(val)} onEnter={onValidateEntry} disabled={busy} />
             </div>
           }
-          {mode !== 'chat' && <NekoButton onClick={() => { onSubmitPrompt() }} disabled={busy}
-            style={{ height: 50, fontSize: 18, width: '100%' }}>
-              Submit
-          </NekoButton>}
+          {mode !== 'chat' && <div style={{ display: 'flex' }}>
+            <NekoButton onClick={() => { onResetPrompt() }} disabled={busy}
+              style={{ height: 50, fontSize: 14, flex: 1 }}>
+                Reset
+            </NekoButton>
+            <NekoButton onClick={() => { onSubmitPrompt() }} disabled={busy}
+              style={{ height: 50, fontSize: 14, flex: 4 }}>
+                Submit
+            </NekoButton>
+          </div>}
         </NekoColumn>
 
         <NekoColumn>
@@ -249,18 +265,25 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>Settings</h3>
             <label>Model:</label>
-            <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
+            <NekoSelect id="models" value={model} scrolldown={true} onChange={(val) => setModel(val)}>
               {models.map((x) => (
-                <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                <NekoOption value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onChange={setTemperature} onBlur={(e) => setTemperature(parseFloat(e.target.value))} description={<>
+              onChange={(val) => setTemperature(val)} onBlur={() => { setTemperature(temperature); }} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
-                  Between 0 and 1.
-                </span> Higher values means the model will take more risks.
+                  Between 0 and 1. Higher values means the model will take more risks.
+                </span>
               </>} />
+            <label>Stop Sequence:</label>
+            <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
+              onChange={(val) => setStopSequence(val)} onBlur={() => { setStopSequence(stopSequence); }} description={<>
+              <span>
+                The sequence of tokens that will cause the model to stop generating text. You absolutely need this with your own models.
+              </span>
+            </>} />
           </StyledSidebar>
 
           <StyledSidebar style={{ marginTop: 20 }}>
@@ -281,9 +304,9 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+      <NekoModal isOpen={error}
+        onRequestClose={() => { setError(); }}
+        onOkClick={() => { setError(); }}
         title="Error"
         content={<p>{error}</p>}
       />

@@ -13,8 +13,38 @@ class Meow_MWAI_OpenAI {
     return $this->run( 'GET', '/files' );
   }
 
+  function getSuffixForModel($model) {
+    preg_match( "/:([a-zA-Z\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches );
+    if ( count( $matches ) > 0) {
+      return $matches[1] . ' (' . $matches[2] . '/' . $matches[3] . '/' . $matches[4] . ')';
+    }
+    return 'N/A';
+}
+
   public function listFineTunes() {
-    return $this->run( 'GET', '/fine-tunes' );
+    $finetunes = $this->run( 'GET', '/fine-tunes' );
+    $finetunes['data'] = array_map( function( $finetune ) {
+      $finetune['suffix'] = $this->getSuffixForModel( $finetune['fine_tuned_model'] );
+      return $finetune;
+    }, $finetunes['data']);
+
+    $finetunes_option = $this->core->get_option( 'openai_finetunes' );
+    $fresh_finetunes_options = array_map( function( $finetune ) use ( $finetunes_option ) {
+      $entry = [];
+      $model = $finetune['fine_tuned_model'];
+      $entry['suffix'] = $finetune['suffix'];
+      $entry['model'] = $model;
+      $entry['enabled'] = true;
+      for ( $i = 0; $i < count( $finetunes_option ); $i++ ) {
+        if ( $finetunes_option[$i]['model'] === $model ) {
+          $entry['enabled'] = $finetunes_option[$i]['enabled'];
+          break;
+        }
+      }
+      return $entry;
+    }, $finetunes['data']);
+    $this->core->update_option( 'openai_finetunes', $fresh_finetunes_options );
+    return $finetunes;
   }
 
   public function uploadFile( $filename, $data ) {
@@ -24,6 +54,10 @@ class Meow_MWAI_OpenAI {
 
   public function deleteFile( $fileId ) {
     return $this->run( 'DELETE', '/files/' . $fileId );
+  }
+
+  public function deleteFineTune( $modelId ) {
+    return $this->run( 'DELETE', '/models/' . $modelId );
   }
 
   public function downloadFile( $fileId ) {

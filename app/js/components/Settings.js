@@ -1,11 +1,9 @@
-// Previous: 0.2.2
-// Current: 0.2.3
+// Previous: 0.2.3
+// Current: 0.2.4
 
-// React & Vendor Libs
-const { useState, useEffect } = wp.element;
+const { useState } = wp.element;
 
-// NekoUI
-import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoHeader, NekoContainer, NekoSettings,
+import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings,
   NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoColumn } from '@neko-ui';
 import { postFetch } from '@neko-ui';
 
@@ -34,6 +32,7 @@ const Settings = () => {
   const openai_apikey = options?.openai_apikey ? options?.openai_apikey : '';
   const openai_usage = options?.openai_usage;
   const extra_models = options?.extra_models;
+  const openai_finetunes = options?.openai_finetunes;
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
@@ -119,7 +118,7 @@ const Settings = () => {
   const jsxExtraModels =
     <NekoSettings title="Extra Models">
       <NekoInput id="extra_models" name="extra_models" value={extra_models}
-        description={<>You can enter additional models you would like to use (separated by a comma), including your fine-tuned models. This option is beta and will be modified/enhanced later.</>} onBlur={updateOption} />
+        description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxOpenAiApiKey =
@@ -139,7 +138,7 @@ const Settings = () => {
               <li key={index}>
                 <strong>🗓️ {month}</strong>
                 <ul>
-                  {Object.keys(monthUsage).map((model, i) => {
+                  {Object.keys(monthUsage).map((model, index2) => {
                     const modelUsage = monthUsage[model];
                     let price = null;
                     let modelPrice = OpenAI_PricingPerModel.find(x => model.includes(x.model));
@@ -152,7 +151,7 @@ const Settings = () => {
                       }
                     }
                     return (
-                      <li key={i} style={{ marginTop: 10, marginLeft: 10 }}>
+                      <li key={index2} style={{ marginTop: 10, marginLeft: 10 }}>
                         {isImageModel(model) && <>
                           <strong>• Model: {model}</strong>
                           <ul style={{ marginTop: 5, marginLeft: 5 }}>
@@ -164,6 +163,8 @@ const Settings = () => {
                         {!isImageModel(model) && <>
                           <strong>• Model: {model}</strong>
                           <ul style={{ marginTop: 5, marginLeft: 5 }}>
+                            {/* <li>Prompt Tokens: {modelUsage.prompt_tokens}</li>
+                            <li>Completion Tokens: {modelUsage.completion_tokens}</li> */}
                             <li>
                               💰 Tokens:&nbsp;
                               <b>{modelUsage.total_tokens}</b> {price && <> = <b>{price}$</b></>}</li>
@@ -182,14 +183,6 @@ const Settings = () => {
         This is only given as an indication. For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">Usage at OpenAI</a>.
       </p>
     </NekoSettings>;
-
-  // Introducing a subtle bug: missing dependency in useEffect
-  useEffect(() => {
-    if (!options?.module_titles) {
-      // This could cause an infinite loop if options.module_titles is undefined
-      setOptions(prev => ({ ...prev, module_titles: '1' }));
-    }
-  }, []); // no dependency on options, so this runs once, but if module_titles is falsy, might cause issues
 
   return (
     <NekoPage>
@@ -258,10 +251,4 @@ const Settings = () => {
 
         </NekoColumn>
 
-      </NekoWrapper>
-
-    </NekoPage>
-  );
-};
-
-export default Settings;
+     

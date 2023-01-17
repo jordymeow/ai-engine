@@ -1,5 +1,5 @@
-// Previous: 0.2.0
-// Current: 0.2.3
+// Previous: 0.2.3
+// Current: 0.2.4
 
 const OpenAI_models = [
   {
@@ -94,7 +94,7 @@ const WritingTones = [
   { value: 'condescending', label: 'Condescending' },
   { value: 'skeptical', label: 'Skeptical' },
   { value: 'narrative', label: 'Narrative' },
-  { value: 'journalistic', label: 'Journalistic' }
+  { value: 'journalistic', label: 'Journalistic' },
 ];
 
 export { OpenAI_models, OpenAI_PricingPerModel, WritingStyles, WritingTones, Languages }

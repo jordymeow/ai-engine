@@ -1,5 +1,5 @@
-// Previous: 0.2.0
-// Current: 0.2.2
+// Previous: 0.2.2
+// Current: 0.2.4
 
 import Styled from "styled-components";
 import { NekoTextArea, NekoHeader, NekoButton } from '@neko-ui';
@@ -37,10 +37,11 @@ const StyledTitleWithButton = Styled.div`
   justify-content: unset;
   align-items: center;
   justify-content: space-between;
-  margin-top: -5px;
+  padding: 0 0 2px 0;
 
   h2 {
-    margin: 0;
+    margin: 7px 0 0 0;
+    padding: 0;
   }
 `;
 

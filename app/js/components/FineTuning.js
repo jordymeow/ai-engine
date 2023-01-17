@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.2.3
+// Previous: 0.2.3
+// Current: 0.2.4
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,9 +13,11 @@ import { apiUrl, restNonce } from '@app/settings';
 import { useModels } from '../helpers';
 
 const builderColumns = [
-  { accessor: 'line', title: '', width: 55, align: 'center' },
-  { accessor: 'prompt', title: 'Prompt', width: '45%', verticalAlign: 'top' },
-  { accessor: 'completion', title: 'Completion', width: '45%', verticalAlign: 'top' },
+  { accessor: 'row', title: "#", width: 15, verticalAlign: 'top' },
+  { accessor: 'validPrompt', title: "", width: 15, verticalAlign: 'top' },
+  { accessor: 'prompt', title: 'Prompt', width: '42%', verticalAlign: 'top' },
+  { accessor: 'validCompletion', title: "", width: 15, verticalAlign: 'top' },
+  { accessor: 'completion', title: 'Completion', width: '42%', verticalAlign: 'top' },
   { accessor: 'actions', title: '', width: 55, align: 'center' }
 ];
 
@@ -32,11 +34,15 @@ const fileColumns = [
 const fineTuneColumns = [
   { accessor: 'status', title: 'Status', sortable: true },
   { accessor: 'id', title: 'ID' },
+  { accessor: 'suffix', title: 'Suffix' },
   { accessor: 'model', title: 'Model' },
   { accessor: 'base_model', title: 'Based On' },
   { accessor: 'createdOn', title: 'Date', sortable: true },
   { accessor: 'actions', title: '' }
 ];
+
+let defaultPromptEnding = "\n\n###\n\n";
+let defaultCompletionEnding = "\n\n";
 
 const StatusIcon = ({ status, includeText = false }) => {
   const orange = NekoTheme.orange;
@@ -46,10 +52,14 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
+      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
+      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
     case 'succeeded':
+      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
+      break;
     case 'processed':
       icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
       break;
@@ -65,7 +75,7 @@ const StatusIcon = ({ status, includeText = false }) => {
   }
   if (includeText) {
     return <div style={{ display: 'flex', alignItems: 'center' }}>
-      {icon}
+      {icon} 
       <span style={{ textTransform: 'uppercase', fontSize: 10, marginLeft: 5 }}>{status}</span>
     </div>;
   }
@@ -82,37 +92,34 @@ const retrieveFineTunes = async () => {
   return res?.finetunes?.data;
 }
 
-const EditableText = ({ children, onChange = () => {} }) => {
+const EditableText = ({ children, data, onChange = () => {} }) => {
   const [ isEdit, setIsEdit ] = useState(false);
 
   const onSave = (value) => {
     setIsEdit(false);
-    if (value !== children) {
+    if (value !== data) {
       onChange(value);
     }
   }
 
   const onKeyPress = (e) => {
     if (e.key === 'Escape') {
-      onSave(children);
+      onSave(data);
     }
   }
 
   if (isEdit) {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
-      onBlur={onSave} value={children}/ >
-      <NekoButton onClick={() => onSave(children)} fullWidth style={{ marginTop: 10, height: 35 }}>Save</NekoButton>
+        onEnter={onSave}
+        onBlur={onSave} value={data}/ >
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
-  if (!children) {
-    return <div style={{ height: '100%', display: 'flex', alignItems: 'center' }} onClick={() => setIsEdit(true)}><i>
-      Click to edit...
-    </i></div>;
-  }
-
-  return <pre style={{ width: '100%', whiteSpace: 'break-spaces', fontSize: 12, fontFamily: 'inherit' }}
+  return <pre style={{ width: '100%', height: '100%', whiteSpace: 'break-spaces',
+    margin: 0, padding: 0,
+    fontSize: 13, fontFamily: 'inherit' }}
     onClick={() => setIsEdit(true)}>{children}</pre>;
 }
 
@@ -173,7 +180,7 @@ const TineTuning = ({ options }) => {
       await refreshFineTunes();
       alert("Fine-tuning started! Check its progress in the 'Models' section. Depending on your dataset size, it may take a while (from a few minutes to days).");
       setSection('finetunes');
-      setFileForFineTune(); // <-- intentional bug: should be undefined, but this sets to undefined element
+      setFileForFineTune();
     }
     else {
       alert(res.message);
@@ -199,7 +206,10 @@ const TineTuning = ({ options }) => {
     setFilename(`MEOW-${prefix}.jsonl`);
   }
 
-  const onResetBuilder = () => {
+  const onResetBuilder = (askForConfirmation = true) => {
+    if (askForConfirmation && !confirm('This will delete all the rows in the builder. Are you sure?')) {
+      return;
+    }
     setBuilderData([]);
     updateLocalStorage([]);
   };
@@ -251,19 +261,26 @@ const TineTuning = ({ options }) => {
 
   const builderRows = useMemo(() => {
     let line = (currentPage - 1) * rowsPerPage;
-    let chunkOfBuilderData = builderData.slice((currentPage - 1) * rowsPerPage,
+    let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
+
     return chunkOfBuilderData?.map(x => {
-      const currentLine = ++line; // Precise bug: mutating line in map
+      const currentLine = ++line;
+      const isValidPrompt = x.prompt?.endsWith(defaultPromptEnding);
+      const isValidCompletion = x.completion?.endsWith(defaultCompletionEnding);
       return {
-        line: currentLine,
+        row: currentLine,
+        validPrompt: isValidPrompt ? '✅' : '❌',
         prompt: 
-          <EditableText onChange={value => onUpdateDataRow(currentLine, value)}>
-            {x.prompt}
+          <EditableText data={x.prompt} onChange={value => onUpdateDataRow(currentLine, value)}>
+            {isValidPrompt ?
+              x.prompt.substring(0, x.prompt.length - defaultPromptEnding.length) : x.prompt}
           </EditableText>,
+        validCompletion: isValidCompletion ? '✅' : '❌',
         completion: 
-          <EditableText onChange={value => onUpdateDataRow(currentLine, value, true)}>
-            {x.completion}
+          <EditableText data={x.completion} onChange={value => onUpdateDataRow(currentLine, value, true)}>
+            {isValidCompletion ?
+              x.completion.substring(0, x.completion.length - defaultCompletionEnding.length) : x.completion}
           </EditableText>,
         actions: <NekoButton rounded icon="trash" onClick={() => onDeleteRow(currentLine)} />
       }
@@ -276,6 +293,27 @@ const TineTuning = ({ options }) => {
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'DELETE', nonce: restNonce, json: { fileId } });
       if (res.success) {
         await refreshFiles();
+      }
+      else {
+        alert(res.message);
+      }
+    }
+    catch (err) {
+      console.log(err);
+      alert("Error! Check your console.");
+    }
+    setBusyAction(false);
+  };
+
+  const deleteFineTune = async (modelId) => {
+    if (!confirm('You are going to delete this fine-tune. Are you sure?\n\nPlease note that it will take a while before it is actually deleted. This might be a temporary issue of OpenAI.')) {
+      return;
+    }
+    setBusyAction(true);
+    try {
+      const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { method: 'DELETE', nonce: restNonce, json: { modelId } });
+      if (res.success) {
+        await refreshFineTunes();
       }
       else {
         alert(res.message);
@@ -339,14 +377,18 @@ const TineTuning = ({ options }) => {
 
   const fineTuneRows = useMemo(() => {
     return dataFineTunes?.sort((a, b) => b.created_at - a.created_at).map(x => {
+      const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
         status: <StatusIcon status={(x.status)} includeText />,
         id: x.id,
+        suffix: x.suffix,
         model: x.fine_tuned_model,
         base_model: x.model,
         createdOn: createdOn.toLocaleDateString() + ' ' + createdOn.toLocaleTimeString(),
-        actions: <NekoButton rounded icon="trash" onClick={() => {}}></NekoButton>
+        actions: <NekoButton className="danger" rounded icon="trash"
+          onClick={() => deleteFineTune(currentModel)}>
+        </NekoButton>
       }
     })
   }, [dataFineTunes]);
@@ -370,15 +412,15 @@ const TineTuning = ({ options }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataString = builderData.map(x => {
+      const data = builderData.map(x => {
         let json = JSON.stringify(x);
         return json;
       }).join("\n");
-      console.log(dataString);
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataString } });
+      console.log(data);
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
-        onResetBuilder();
+        onResetBuilder(false);
         alert("Uploaded successfully! You can now train a model based on this dataset.");
         setSection('files');
         setIsModeTrain(true);
@@ -397,7 +439,7 @@ const TineTuning = ({ options }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1;
+    const month = date.getMonth() + 1; // getMonth returns a 0-based value
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -438,27 +480,64 @@ const TineTuning = ({ options }) => {
           });
         }
         else if (isCsv) {
+          console.log("YO");
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
+          console.log('The CSV was loaded.', data);
         }
-        data = data.map(x => {
-          return { prompt: x.prompt, completion: x.completion }
+        const formattedData = data.map(x => {
+          const values = Object.keys(x).reduce((acc, key) => {
+            acc[key.toLowerCase()] = x[key];
+            return acc;
+          }, {});
+
+          const promptColumns = ['prompt', 'question', 'q'];
+          const completionColumns = ['completion', 'answer', 'a'];
+          const promptKey = promptColumns.find(x => values[x]);
+          const completionKey = completionColumns.find(x => values[x]);
+
+          return {
+            prompt: values[promptKey],
+            completion: values[completionKey]
+          }
         });
-        setBuilderData(data);
+        const cleanData = formattedData.filter(x => x.prompt && x.completion);
+        const hadEmptyLines = formattedData.length !== cleanData.length;
+        if (hadEmptyLines) {
+          alert("Some are were empty. Make sure the CSV has a header row and that the columns are named 'prompt' and 'completion'. For debugging, an empty line was logged to the console.");
+          const findEmpty = formattedData.find(x => !x.prompt || !x.completion);
+          console.log('Empty line: ', findEmpty);
+        }
+        setBuilderData(cleanData);
       }
       reader.readAsText(file);
     }
   }
 
   const addRow = () => {
-    setBuilderData([...builderData, { prompt: '', completion: '' }]);
+    setBuilderData([...builderData, { prompt: 'Text...\n\n###\n\n', completion: 'Text...\n\n' }]);
+  }
+
+  const onFormatWithDefaults = () => {
+    const newBuilderData = builderData.map(x => {
+      let prompt = x.prompt;
+      let completion = x.completion;
+      if (!prompt.endsWith(defaultPromptEnding)) {
+        prompt += defaultPromptEnding;
+      }
+      if (!completion.endsWith(defaultCompletionEnding)) {
+        completion += defaultCompletionEnding;
+      }
+      return { prompt, completion };
+    });
+    setBuilderData(newBuilderData);
   }
 
   const ref = useRef(null);
 
   return (
     <NekoContainer style={{ margin: 10 }}>
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ marginRight: 15 }}>
           <NekoSwitch 
             onLabel="Model Finetune" offLabel="Dataset Builder" width={145}
@@ -483,17 +562,24 @@ const TineTuning = ({ options }) => {
             Refresh Datasets
           </NekoButton>
         </>}
-        {!isModeTrain && <>
-          <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
-            onChange={setFilename} style={{ width: 210, marginRight: 5 }} />
-          <NekoButton disabled={!totalRows || busyAction} icon="upload" onClick={onUploadDataSet} className="primary">
-            Upload
-          </NekoButton>
+        {!isModeTrain && <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: '#ecf3ff',
+            padding: '3px 3px 3px 8px', borderRadius: 5, border: '1px solid #cce1ee' }}>
+            <label style={{ marginRight: 10 }}>Filename:</label>
+            <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
+              onChange={setFilename} style={{ width: 210, marginRight: 5 }} />
+            <NekoButton disabled={!totalRows || busyAction} icon="upload"
+              onClick={onUploadDataSet} className="primary">
+              Upload
+            </NekoButton>
+          </div>
           <div style={{ flex: 'auto' }} />
-          <NekoButton icon="trash" onClick={onResetBuilder} className="danger">
-            Reset
-          </NekoButton>
-        </>}
+          <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>
+            <NekoButton style={{ marginLeft: 5 }} onClick={() => ref.current.click() }>
+              Import File
+            </NekoButton>
+          </NekoUploadDropArea>
+        </div>}
       </div>
 
       {isModeTrain && section === 'finetunes' && <>
@@ -518,19 +604,22 @@ const TineTuning = ({ options }) => {
 
       {!isModeTrain && <>
         <p>
-          You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>.</b> Is your dataset ready? Click on <b>Upload</b> 😎
+          You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload</b>! 😎
         </p>
         {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>Caution: The data is too large to be saved in your browser's local storage.</p>}
         <div style={{ display: 'flex' }}>
-          <NekoButton icon="plus" onClick={addRow}>Add entry</NekoButton>
-          <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>
-            <NekoButton className="secondary" style={{ marginLeft: 5 }} onClick={() => ref.current.click() }>
-              Import File
-            </NekoButton>
-            <NekoButton disabled={!totalRows} className="secondary" style={{ marginLeft: 5 }} onClick={exportAsCSV}>
-              Export as CSV
-            </NekoButton>
-          </NekoUploadDropArea>
+          <NekoButton icon="plus" onClick={addRow} style={{ paddingLeft: 10, paddingRight: 10 }}>Add Entry</NekoButton>
+          <NekoButton icon="wand" disabled={true} onClick={() => alert("Coming soon! ✌️")}>Generate Entries</NekoButton>
+          <NekoButton disabled={!totalRows} className="secondary" onClick={onFormatWithDefaults}>
+            Format with Defaults
+          </NekoButton>
+          <NekoButton disabled={!totalRows} className="secondary" style={{ marginLeft: 5 }}
+            onClick={exportAsCSV}>
+            Export as CSV
+          </NekoButton>
+          <NekoButton disabled={!totalRows} onClick={onResetBuilder} className="danger">
+            Reset Entries
+          </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
               onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
@@ -539,13 +628,26 @@ const TineTuning = ({ options }) => {
         <NekoTable alternateRowColor
           busy={busyAction}
           data={builderRows} columns={builderColumns}
-          emptyMessage={<>You can import a file, or create manually each entry by clicking <b>Add entry</b>.</>}
+          emptyMessage={<>You can import a file, or create manually each entry by clicking <b>Add Entry</b>.</>}
         />
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
             onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
+        <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
+        <p>
+          <b>Notes:</b>
+        </p>
+        <p>
+          • The prompt and the completion should both end with their own special ending. For now, they are set by default: <b>\n\n===\n\n</b> for the prompt, and <b>\n\n</b> for the completion. The icon ✅ will be shown next to the prompt and/or completion when this format has been validated, and the ending will be hidden for clarity.
+        </p>
+        <p>
+          • <b>\n</b> is a line break. You can add line breaks by using <b>SHIFT+ENTER</b> while editing.
+        </p>
+        <p>
+          • The <b>Format with Defaults</b> button will add the default endings to the prompt and completion, if they are missing.
+        </p>
       </>}
 
       <NekoModal isOpen={fileForFineTune}
@@ -577,7 +679,7 @@ const TineTuning = ({ options }) => {
           <NekoSpacer height={5} />
           <NekoInput value={suffix} onChange={setSuffix} />
           <NekoSpacer height={5} />
-          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/create-suffix" target="_blank">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
+          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
         </>
         }
       />

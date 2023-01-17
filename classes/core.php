@@ -13,6 +13,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_imagesbot' => false,
 	'openai_apikey' => false,
 	'openai_usage' => [],
+	'openai_finetunes' => [],
 	'extra_models' => ""
 ]);
 

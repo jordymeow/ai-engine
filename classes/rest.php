@@ -95,6 +95,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'openai_finetunes_get' ),
 			) );
+			register_rest_route( $this->namespace, '/openai_finetunes', array(
+				'methods' => 'DELETE',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_finetunes_delete' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -143,6 +148,9 @@ class Meow_MWAI_Rest
 		}
 		if ( isset( $params['temperature'] ) ) {
 			$query->setTemperature( $params['temperature'] );
+		}
+		if ( isset( $params['stop'] ) ) {
+			$query->setStop( $params['stop'] );
 		}
 		if ( isset( $params['apiKey'] ) ) {
 			$query->setApiKey( $params['apiKey'] );
@@ -384,6 +392,19 @@ class Meow_MWAI_Rest
 			$fileId = $params['fileId'];
 			$openai = new Meow_MWAI_OpenAI( $this->core );
 			$openai->deleteFile( $fileId );
+			return new WP_REST_Response([ 'success' => true ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_finetunes_delete( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$modelId = $params['modelId'];
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$openai->deleteFineTune( $modelId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
