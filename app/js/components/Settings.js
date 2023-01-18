@@ -1,5 +1,5 @@
-// Previous: 0.2.3
-// Current: 0.2.4
+// Previous: 0.2.4
+// Current: 0.2.5
 
 const { useState } = wp.element;
 
@@ -11,7 +11,7 @@ import { apiUrl, restNonce, options as defaultOptions } from '@app/settings';
 import { OpenAI_PricingPerModel } from '../constants';
 import { OptionsCheck } from '../helpers';
 import { AiNekoHeader } from './CommonStyles';
-import TineTuning from './FineTuning';
+import FineTuning from './FineTuning';
 
 const isImageModel = (model) => {
   return model === "dall-e";
@@ -81,8 +81,8 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_chat" label="ChatBot" value="1" checked={shortcode_chat}
           description={<>
-            Create a chatbot similar to ChatGPT with a shortcode:<br /><br />
-            [mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend."]<br /><br />
+            Create a chatbot similar to ChatGPT with a shortcode:<br /><br /> 
+            [mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend."]<br /><br /> 
             You can also add temperature (between 0 and 1, default is 0.8) and a model (default is text-davinci-003, but you can try text-babbage-001 and the others).
           </>}
           onChange={updateOption} />
@@ -138,7 +138,7 @@ const Settings = () => {
               <li key={index}>
                 <strong>🗓️ {month}</strong>
                 <ul>
-                  {Object.keys(monthUsage).map((model, index2) => {
+                  {Object.keys(monthUsage).map((model, idx) => {
                     const modelUsage = monthUsage[model];
                     let price = null;
                     let modelPrice = OpenAI_PricingPerModel.find(x => model.includes(x.model));
@@ -151,7 +151,7 @@ const Settings = () => {
                       }
                     }
                     return (
-                      <li key={index2} style={{ marginTop: 10, marginLeft: 10 }}>
+                      <li key={idx} style={{ marginTop: 10, marginLeft: 10 }}>
                         {isImageModel(model) && <>
                           <strong>• Model: {model}</strong>
                           <ul style={{ marginTop: 5, marginLeft: 5 }}>
@@ -163,8 +163,6 @@ const Settings = () => {
                         {!isImageModel(model) && <>
                           <strong>• Model: {model}</strong>
                           <ul style={{ marginTop: 5, marginLeft: 5 }}>
-                            {/* <li>Prompt Tokens: {modelUsage.prompt_tokens}</li>
-                            <li>Completion Tokens: {modelUsage.completion_tokens}</li> */}
                             <li>
                               💰 Tokens:&nbsp;
                               <b>{modelUsage.total_tokens}</b> {price && <> = <b>{price}$</b></>}</li>
@@ -244,11 +242,17 @@ const Settings = () => {
             </NekoTab>}
 
             <NekoTab title='Fine Tuning: Train your AI'>
-              <TineTuning options={options} />
+              <FineTuning options={options} updateOption={updateOption} />
             </NekoTab>
 
           </NekoTabs>
 
         </NekoColumn>
 
-     
+      </NekoWrapper>
+
+    </NekoPage>
+  );
+};
+
+export default Settings;

@@ -14,6 +14,7 @@ define( 'MWAI_OPTIONS', [
 	'openai_apikey' => false,
 	'openai_usage' => [],
 	'openai_finetunes' => [],
+	'openai_finetunes_deleted' => [],
 	'extra_models' => ""
 ]);
 

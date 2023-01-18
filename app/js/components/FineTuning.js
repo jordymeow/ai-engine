@@ -1,12 +1,12 @@
-// Previous: 0.2.3
-// Current: 0.2.4
+// Previous: 0.2.4
+// Current: 0.2.5
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
-import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon, NekoSpacer, NekoInput,
-  NekoSelect, NekoOption,
+import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
+  NekoSpacer, NekoInput, NekoSelect, NekoOption,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
 import { nekoFetch, formatBytes } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
@@ -123,7 +123,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     onClick={() => setIsEdit(true)}>{children}</pre>;
 }
 
-const TineTuning = ({ options }) => {
+const FineTuning = ({ options, updateOption }) => {
   const queryClient = useQueryClient();
   const [ fileForFineTune, setFileForFineTune ] = useState();
   const [ busyAction, setBusyAction ] = useState(false);
@@ -137,6 +137,7 @@ const TineTuning = ({ options }) => {
   const { isLoading: isBusyFineTunes, error: errFineTunes, data: dataFineTunes } = useQuery({
     queryKey: ['finetunes'], queryFn: retrieveFineTunes
   });
+  const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const rowsPerPage = 10;
   const [ hasStorageBackup, setHasStorageBackup ] = useState(true);
@@ -264,7 +265,7 @@ const TineTuning = ({ options }) => {
     let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
-    return chunkOfBuilderData?.map(x => {
+    return (chunkOfBuilderData || []).map(x => {
       const currentLine = ++line;
       const isValidPrompt = x.prompt?.endsWith(defaultPromptEnding);
       const isValidCompletion = x.completion?.endsWith(defaultCompletionEnding);
@@ -313,10 +314,18 @@ const TineTuning = ({ options }) => {
     try {
       const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { method: 'DELETE', nonce: restNonce, json: { modelId } });
       if (res.success) {
+        await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
         await refreshFineTunes();
       }
       else {
-        alert(res.message);
+        if (res.message.indexOf('does not exist') > -1) {
+          alert("This fine-tune was already deleted. It will be removed from the list.");
+          await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
+          await refreshFineTunes();
+        }
+        else {
+          alert(res.message);
+        }
       }
     }
     catch (err) {
@@ -376,7 +385,10 @@ const TineTuning = ({ options }) => {
   }, [dataFiles]);
 
   const fineTuneRows = useMemo(() => {
-    return dataFineTunes?.sort((a, b) => b.created_at - a.created_at).map(x => {
+    if (!dataFineTunes) {
+      return [];
+    }
+    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
@@ -439,7 +451,7 @@ const TineTuning = ({ options }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; // getMonth returns a 0-based value
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -477,6 +489,7 @@ const TineTuning = ({ options }) => {
               console.log(e, x);
               return null
             }
+            
           });
         }
         else if (isCsv) {
@@ -687,4 +700,4 @@ const TineTuning = ({ options }) => {
   );
 };
 
-export default TineTuning;
+export default FineTuning;

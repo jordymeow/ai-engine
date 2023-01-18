@@ -213,6 +213,7 @@ class Meow_MWAI_Modules_Chatbot {
       $userName = $params['userName'];
       $aiName = $params['aiName'];
       $temperature = $params['temperature'];
+      $maxTokens = intval( $params['maxTokens'] );
       $apiKey = $params['apiKey'];
 			$query = new Meow_MWAI_QueryText( $prompt, 1024 );
       if ( $model ) {
@@ -220,6 +221,9 @@ class Meow_MWAI_Modules_Chatbot {
       }
       if ( $temperature ) {
         $query->setTemperature( $temperature );
+      }
+      if ( $maxTokens ) {
+        $query->setMaxTokens( $maxTokens );
       }
       if ( $apiKey ) {
         $query->setApiKey( $apiKey );
@@ -237,31 +241,50 @@ class Meow_MWAI_Modules_Chatbot {
 
   function chat( $atts ) {
     $defaults = apply_filters( 'mwai_chat_atts', [
+      // UI Parameters
       'id' => uniqid(),
       'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
       'ai_name' => "AI: ",
       'user_name' => "User: ",
       'sys_name' => "System: ",
       'start_sentence' => "Hi! How can I help you?",
-      'model' => 'text-davinci-003',
-      'temperature' => 0.8,
       'text_send' => 'Send',
       'text_input_placeholder' => 'Type your message...',
+      // Chatbot System Parameters
+      'fineTuned' => 'false',
+      // AI Parameters
+      'model' => 'text-davinci-003',
+      'temperature' => 0.8,
+      'max_tokens' => 1024,
       'api_key' => ''
     ] );
     $atts = shortcode_atts( $defaults, $atts, 'mwai_chat_atts' );
     $id = $atts['id'];
     $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
+
+    // Functions
     $onSentClickFn = "mwai_{$id}_onSendClick";
     $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
     $convertToHtmlFn = "mwai_{$id}_convertToHtml";
+
+    // UI Parameters
     $aiName = addslashes( trim($atts['ai_name']) );
     $userName = addslashes( trim($atts['user_name']) );
     $sysName = addslashes( trim($atts['sys_name']) );
     $context = addslashes( trim( $atts['context'] ) );
     $textSend = addslashes( trim( $atts['text_send'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
+
+    // Chatbot System Parameters
+    $fineTuned = $atts['fineTuned'];
+
+    // OpenAI Parameters
+    $model = $atts['model'];
+    $temperature = $atts['temperature'];
+    $maxTokens = $atts['max_tokens'];
+    $apiKey = $atts['api_key'];
+
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
     ob_start();
     ?>
@@ -338,9 +361,10 @@ class Meow_MWAI_Modules_Chatbot {
             prompt: <?= $onGoingPrompt ?>,
             userName: '<?= $userName ?>',
             aiName: '<?= $aiName ?>',
-            model: '<?= $atts['model'] ?>',
-            temperature: '<?= $atts['temperature'] ?>',
-            apiKey: '<?= $atts['api_key'] ?>',
+            model: '<?= $model ?>',
+            temperature: '<?= $temperature ?>',
+            maxTokens: '<?= $maxTokens ?>',
+            apiKey: '<?= $apiKey ?>',
           };
           console.log('[BOT] Sent: ', data);
           fetch('<?= $apiUrl ?>', { method: 'POST', headers: { 'Content-Type': 'application/json' },

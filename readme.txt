@@ -1,11 +1,11 @@
-=== AI Engine: ChatGPT, GPT3 Content & Image Generator, Playground, AI Training ===
+=== AI Engine (ChatGPT-like Chatbot, Content/Image Generator, AI Playground, AI Fine-tuning) ===
 Contributors: TigrouMeow
-Tags: gpt-3, openai, ai, chatgpt, chatbot, content generation, automation, translation, title, excerpt, toolbox
+Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, image generator
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.2.4
+Stable tag: 0.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,16 @@ With the AI Engine, the possibilities are endless. Let's get started and make th
 * Upcoming features include translation to any language and the ability to improve specific paragraphs
 * And so much more on the way!
 
+== Shortcode: ChatGPT && Image Generation Bot ==
+
+Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with this shortcode:
+
+[mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend." ]
+
+There are a lot of parameters for the shortcode. And since there's no CSS included by default, you have complete control over the styling. However, there is an option to apply ChatGPT styling to the chatbot.
+
+Please visite the [official documentation](https://meowapps.com/ai-engine/) for more information. 
+
 == Content Generator ==
 
 Looking to add some fresh content to your site? With this feature, you can generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to create exactly the content you need.
@@ -37,14 +47,6 @@ Looking to add some fresh content to your site? With this feature, you can gener
 == Image Generator ==
 
 You can generate custom images using DALL-E model and various customizable parameters. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations, but the plugin will adapt as the limitations change.
-
-== Shortcode: ChatGPT ==
-
-Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with a shortcode:
-
-[mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend." ]
-
-There are a lot of parameters for the shorcode. And since there's no CSS included by default, you have complete control over the styling. However, there is an option to apply ChatGPT styling to the chatbot. Please visite the [official documentation](https://meowapps.com/ai-engine/) for more information. 
 
 == Train your AI ==
 
@@ -69,10 +71,14 @@ Languages: English.
 
 == Changelog ==
 
+= 0.2.5 (2023/01/18) =
+* Update: Little UI enhancements and fixes.
+* Add: "max_tokens" parameter for the ChatGPT shortcode.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.2.4 (2023/01/17) =
 * Update: Perfected the fine-tuning module (UI and features). 
 * Update: A few UI fixes but a lot more to come. 
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.2.3 (2023/01/16) =
 * Add: Module to train your own AI model (visit the Settings > Fine Tuning). My user interface makes it look easy, but creating datasets and training models is not easy. Let's go through this together and I'll enhance AI Engine to make it easier.

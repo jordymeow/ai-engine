@@ -28,6 +28,14 @@ class Meow_MWAI_OpenAI {
       return $finetune;
     }, $finetunes['data']);
 
+    // Get option openai_finetunes_deleted
+    $deleted_finetunes = $this->core->get_option( 'openai_finetunes_deleted' );
+    // Remove all deleted finetunes from the list, make a new array, without using array_filter
+
+    $finetunes['data'] = array_values( array_filter( $finetunes['data'], function( $finetune ) use ( $deleted_finetunes ) {
+      return !in_array( $finetune['fine_tuned_model'], $deleted_finetunes );
+    } ) );
+
     $finetunes_option = $this->core->get_option( 'openai_finetunes' );
     $fresh_finetunes_options = array_map( function( $finetune ) use ( $finetunes_option ) {
       $entry = [];
@@ -92,21 +100,6 @@ class Meow_MWAI_OpenAI {
         }
     }
     $body .= "--$boundary--\r\n";
-  
-
-    // $body  = '';
-    // $body .= '--' . $boundary;
-    // $body .= "\r\n";
-    // // '"; filename="' . $file['filename'] . '"'
-    // $body .= 'Content-Disposition: form-data; name="photo_upload_file_name"; filename="' . $_FILES['resume']['name'] . '"' . "\r\n";
-    // //$body .= 'Content-Disposition: form-data; baba="yo"; file="' . $file['filename'] . '"; purpose="fine-tune"' .  "\r\n";
-    // //$body .= 'Content-Type: ' . $format . '\r\n'; //
-    // //$body .= 'Content-Transfer-Encoding: binary' . "\r\n";
-    // $body .= "\r\n";
-    // $body .= $file['data'];
-    // $body .= "\r\n";
-    // $body .= '--' . $boundary . '--';
-    // $body .= "\r\n\r\n";
     return $body;
   } 
 

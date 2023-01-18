@@ -5,11 +5,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $model = 'text-davinci-003';
   public $type = 'completion';
 
-  public $maxTokens = 16;
-  public $temperature = 1;
+  public $maxTokens = 150;
+  public $temperature = 0.9;
   public $stop = null;
   
-  public function __construct( $prompt = '', $maxTokens = 16, $model = 'text-davinci-003' ) {
+  public function __construct( $prompt = '', $maxTokens = 150, $model = 'text-davinci-003' ) {
     $this->prompt = $prompt;
     $this->maxTokens = $maxTokens;
     $this->model = $model;
@@ -21,9 +21,6 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setModel( $model ) {
     $this->model = $model;
-    if ( $model !== 'text-davinci-003' && $this->maxTokens > 512 ) {
-      $this->maxTokens = 512;
-    }
   }
 
   /**

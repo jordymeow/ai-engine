@@ -146,6 +146,9 @@ class Meow_MWAI_Rest
 		if ( isset( $params['model'] ) ) {
 			$query->setModel( $params['model'] );
 		}
+		if ( isset( $params['maxTokens'] ) ) {
+			$query->setTemperature( $params['maxTokens'] );
+		}
 		if ( isset( $params['temperature'] ) ) {
 			$query->setTemperature( $params['temperature'] );
 		}
@@ -165,7 +168,7 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
-			$query = new Meow_MWAI_QueryText( $prompt, 2048 );
+			$query = new Meow_MWAI_QueryText( $prompt );
 			$query = $this->setup_query_based_on_params( $query, $params );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result, 'usage' => $answer->usage ], 200 );
