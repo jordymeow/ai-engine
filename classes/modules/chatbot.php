@@ -210,11 +210,12 @@ class Meow_MWAI_Modules_Chatbot {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
       $model = $params['model'];
-      $userName = $params['userName'];
-      $aiName = $params['aiName'];
+      //$userName = $params['userName'];
+      //$aiName = $params['aiName'];
       $temperature = $params['temperature'];
       $maxTokens = intval( $params['maxTokens'] );
       $apiKey = $params['apiKey'];
+      $stop = $params['stop'];
 			$query = new Meow_MWAI_QueryText( $prompt, 1024 );
       if ( $model ) {
         $query->setModel( $model );
@@ -224,6 +225,9 @@ class Meow_MWAI_Modules_Chatbot {
       }
       if ( $maxTokens ) {
         $query->setMaxTokens( $maxTokens );
+      }
+      if ( $stop ) {
+        $query->setStop( $stop );
       }
       if ( $apiKey ) {
         $query->setApiKey( $apiKey );
@@ -251,7 +255,9 @@ class Meow_MWAI_Modules_Chatbot {
       'text_send' => 'Send',
       'text_input_placeholder' => 'Type your message...',
       // Chatbot System Parameters
-      'fineTuned' => 'false',
+      'casually_fined_tuned' => 'false',
+      'prompt_ending' => '',
+      'completion_ending' => '',
       // AI Parameters
       'model' => 'text-davinci-003',
       'temperature' => 0.8,
@@ -277,7 +283,13 @@ class Meow_MWAI_Modules_Chatbot {
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
 
     // Chatbot System Parameters
-    $fineTuned = $atts['fineTuned'];
+    $casuallyFineTuned = $atts['casually_fined_tuned'];
+    $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
+    $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
+    if ( $casuallyFineTuned ) {
+      $promptEnding = "\\n\\n===\\n\\n";
+      $completionEnding = "\\n\\n";
+    }
 
     // OpenAI Parameters
     $model = $atts['model'];
@@ -357,13 +369,23 @@ class Meow_MWAI_Modules_Chatbot {
 
           // Request the completion
           <?= $onGoingPrompt ?> += '<?= $aiName ?>';
+
+          // Let's build the prompt depending on the system
+          // If it's fine tuned casually, we simply use the inputText with the promptEnding
+          // If it's not, we simply use the $onGoingPrompt
+          let prompt = <?= $onGoingPrompt ?>;
+          if (<?= $casuallyFineTuned ?>) {
+            prompt = inputText + '<?= $promptEnding ?>';
+          }
+
           const data = { 
-            prompt: <?= $onGoingPrompt ?>,
+            prompt: prompt,
             userName: '<?= $userName ?>',
             aiName: '<?= $aiName ?>',
             model: '<?= $model ?>',
             temperature: '<?= $temperature ?>',
             maxTokens: '<?= $maxTokens ?>',
+            stop: '<?= $completionEnding ?>',
             apiKey: '<?= $apiKey ?>',
           };
           console.log('[BOT] Sent: ', data);

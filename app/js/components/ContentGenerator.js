@@ -1,18 +1,16 @@
-// Previous: 0.2.0
-// Current: 0.2.4
+// Previous: 0.2.4
+// Current: 0.2.6
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
-// NekoUI
 import { postFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoContainer,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
 
 import { apiUrl, restNonce, options } from '@app/settings';
-import { OpenAI_models, Languages, WritingStyles, WritingTones } from "../constants";
-import { cleanNumbering, extractTextData, OptionsCheck, useModels } from "../helpers";
+import { Languages, WritingStyles, WritingTones } from "../constants";
+import { cleanNumbering, OptionsCheck, useModels } from "../helpers";
 import { AiNekoHeader, StyledTitleWithButton } from "./CommonStyles";
 
 const StyledSidebar = Styled.div`
@@ -61,7 +59,6 @@ const StyledSidebar = Styled.div`
   }
 `;
 
-// Function that returns a message with SEO recommendations based on the title
 const getSeoMessage = (title) => {
   const words = title.split(' ');
   const wordCount = words.length;
@@ -87,9 +84,7 @@ const getSeoMessage = (title) => {
 };
 
 const isTest = false;
-
 const DefaultTitle = isTest ? 'Gunkanjima : An Illegal Travel to the Battleship Island' : '';
-
 const DefaultHeadings = isTest ? `An In-Depth Look at the Illegality of Traveling to Gunkanjima
 How Digital Technology is Uncovering the Stories of the People Who Lived There` : '';
 
@@ -106,30 +101,36 @@ const ContentGenerator = () => {
   const [language, setLanguage] = useState('en');
   const [writingStyle, setWritingStyle] = useState('informative');
   const [writingTone, setWritingTone] = useState('neutral');
+  const [promptForTopic, setPromptForTopic] = useState();
   const [promptForHeadings, setPromptForHeadings] = useState();
   const [promptForContent, setPromptForContent] = useState();
   const [promptForExcerpt, setPromptForExcerpt] = useState();
-  const [temperature, setTemperature] = useState(1);
+  const [temperature, setTemperature] = useState(0.6);
+  const [maxTokens, setMaxTokens] = useState(2048);
   const [busy, setBusy] = useState(false);
   const [showModelParams, setShowModelParams] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
   const [createdPostId, setCreatedPostId] = useState();
-
+  
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
+
+  useEffect(() => {
+    if (topic) {
+      setPromptForTopic(`Write a title for an article about "${topic}". Should be between 40 and 60 characters. Do not use quotes around the title.`);
+    }
+  }, [topic]);
 
   useEffect(() => {
     if (title) {
       const humanLanguage = Languages.find(l => l.value === language).label;
-      setPromptForHeadings(`Generate ${headingsCount} short blog headings about "${title}", in ${humanLanguage}. Style: ${writingStyle}. Tone: ${writingTone}.`);
+      setPromptForHeadings(`Generate ${headingsCount} consecutive headings for an article about "${title}", in ${humanLanguage}. Style: ${writingStyle}. Tone: ${writingTone}.\n\nEach heading is between 40 and 60 characters.\n\nUse Markdown for the headings (## ).`);
     }
   }, [title, headingsCount, writingStyle, writingTone, language]);
 
   useEffect(() => {
     if (title && headings) {
       const humanLanguage = Languages.find(l => l.value === language).label;
-      const cleanHeadings = headings.split('\n').filter(x => x);
-      const headingsCount = cleanHeadings.length;
-      setPromptForContent(`Write an article about "${title}" in ${humanLanguage}. With an introduction, and conclusion. The article has ${paragraphsCount * headingsCount + 2} paragraphs, organized by the following headings:\n\n${headings}\n\nStyle: ${writingStyle}. Tone: ${writingTone}. Use Markdown formatting.`);
+      setPromptForContent(`Write an article about "${title}" in ${humanLanguage}. The article is organized by the following headings:\n\n${headings}\n\nWrite ${paragraphsCount} paragraphs per heading.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: ${writingStyle}. Tone: ${writingTone}.`);
     }
   }, [title, headings, writingTone, writingStyle, language, paragraphsCount]);
 
@@ -141,7 +142,10 @@ const ContentGenerator = () => {
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
     const res = await postFetch(`${apiUrl}/make_completions`, { json: { 
-      prompt: promptToUse, temperature, model
+      prompt: promptToUse,
+      temperature,
+      maxTokens: 2048,
+      model
     }, nonce: restNonce });
     console.log("Completions", { prompt: promptToUse, result: res });
     if (res.success) {
@@ -149,6 +153,22 @@ const ContentGenerator = () => {
     }
     setError(res.message);
     return null;
+  };
+
+  const onOneClickGenerate = async () => {
+    setBusy(true);
+    const text = await onSubmitPrompt(promptForTopic);
+    setBusy(false);
+    if (text) {
+      setTitle(text);
+      const headingsText = await onSubmitPromptForHeadings();
+      if (headingsText) {
+        const contentText = await onSubmitPromptForContent();
+        if (contentText) {
+          await onSubmitPromptForExcerpt();
+        }
+      }
+    }
   };
 
   const onSubmitPromptForHeadings = async () => {
@@ -159,19 +179,19 @@ const ContentGenerator = () => {
       setHeadings(cleanNumbering(text));
     }
     setBusy(false);
+    return text;
   };
 
   const onSubmitPromptForContent = async () => {
     setBusy(true);
     setContent("");
     let text = await onSubmitPrompt(promptForContent);
-    // text = text.split('\n').filter(x => !x.match(/^(Introduction|Conclusion)(:)?$/)).join('\n');
-    // text = text.replace(/\n{3,}/g, text);
-    // text = text.trim();
     if (text) {
+      text = text.replace(/^===INTRO: /, '').replace(/^===OUTRO: /, '');
       setContent(text);
     }
     setBusy(false);
+    return text;
   };
 
   const onSubmitPromptForExcerpt = async () => {
@@ -182,6 +202,7 @@ const ContentGenerator = () => {
       setExcerpt(text);
     }
     setBusy(false);
+    return text;
   };
 
   const onSubmitNewPost = async () => {
@@ -231,7 +252,8 @@ const ContentGenerator = () => {
           <StyledSidebar style={{ marginBottom: 25, paddingBottom: 20 }}>
             <h2 style={{ marginTop: 0 }}>Topic</h2>
             <NekoInput disabled={true} value={topic} onChange={setTopic} />
-            <NekoButton style={{ marginTop: 5, marginBottom: 15 }} disabled={true || busy} fullWidth>
+            <NekoButton fullWidth disabled={true || busy} style={{ marginTop: 5, marginBottom: 5 }}
+              onClick={onOneClickGenerate}>
               One-Click Generate
             </NekoButton>
             <div className="information">
@@ -298,7 +320,7 @@ const ContentGenerator = () => {
 
             <NekoTextArea rows={4} value={headings} onBlur={setHeadings} />
             <div className="information">
-              You can modify the content before using "Generate Content". Add, rewrite, remove, or reorganize the headings as you wish before going further.
+              Add, rewrite, remove, or reorganize those sections as you wish before clicking "Generate Content". I recommend using Markdown.
             </div>
 
             <NekoSpacer height={5} />
@@ -306,7 +328,7 @@ const ContentGenerator = () => {
             <StyledTitleWithButton>
               <h2>Content</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Heading: </label>
+                <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Section: </label>
                 <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy}
                   style={{ marginRight: 10 }}
                   value={paragraphsCount} description="" onChange={setParagraphsCount}>
@@ -360,22 +382,26 @@ const ContentGenerator = () => {
               </NekoButton>
             </StyledTitleWithButton>
             {showModelParams && <>
+              <label>Model:</label>
+              <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
+                {models.map((x) => (
+                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                ))}
+              </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={setTemperature} onBlur={setTemperature} description={<>
+                onChange={setTemperature} onBlur={() => setTemperature(temperature)} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
-              <label>Model:</label>
-              <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
-                {models.map((x) => (
-                  <NekoOption value={x.id} label={x.name}></NekoOption>
-                ))}
-              </NekoSelect>
-              <p style={{ marginBottom: 0 }}>
-                More parameters will be added here later! 😇
-              </p>
+              <label>Max Tokens:</label>
+              <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
+                onChange={setMaxTokens} onBlur={() => setMaxTokens(maxTokens)} description={<>
+                  <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
+                    Between 1 and 2048.
+                  </span> Higher values means the model will generate more content.
+                </>} />
             </>}
           </StyledSidebar>
 
@@ -387,7 +413,9 @@ const ContentGenerator = () => {
               </NekoButton>
             </StyledTitleWithButton>
             {showPrompts && <>
-              <p>The prompts are automatically generated for you, but you can fine-tune them once everything is set.</p>
+              <p>The prompts are automatically generated for you, but you can enhance them once the values are set.</p>
+              <label>Prompt for <b>One-Click Generate</b></label>
+              <NekoTextArea disabled={!content || busy} value={promptForTopic} onChange={setPromptForTopic}  />
               <label>Prompt for <b>Generate Sections</b></label>
               <NekoTextArea disabled={busy} value={promptForHeadings} onChange={setPromptForHeadings}  />
               <label>Prompt for <b>Generate Content</b></label>

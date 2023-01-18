@@ -1,10 +1,12 @@
-// Previous: 0.2.4
-// Current: 0.2.5
+// Previous: 0.2.5
+// Current: 0.2.6
 
+// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
+// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
   NekoSpacer, NekoInput, NekoSelect, NekoOption,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
@@ -265,7 +267,7 @@ const FineTuning = ({ options, updateOption }) => {
     let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
-    return (chunkOfBuilderData || []).map(x => {
+    return chunkOfBuilderData?.map(x => {
       const currentLine = ++line;
       const isValidPrompt = x.prompt?.endsWith(defaultPromptEnding);
       const isValidCompletion = x.completion?.endsWith(defaultCompletionEnding);
@@ -338,10 +340,8 @@ const FineTuning = ({ options, updateOption }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
-      console.log({ fileId, filename });
       const res = await nekoFetch(`${apiUrl}/openai_files_download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
-        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -363,6 +363,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const fileRows = useMemo(() => {
+    // Sort the dataFiles by created_at
     return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
@@ -376,7 +377,7 @@ const FineTuning = ({ options, updateOption }) => {
         filesize: formatBytes(x.bytes),
         createdOn: createdOn.toLocaleDateString() + ' ' + createdOn.toLocaleTimeString(),
         actions: <>
-          <NekoButton disabled={!forFineTune} rounded icon="wand" onClick={() => setFileForFineTune(currentId)}></NekoButton>
+          <NekoButton disabled={!forFineTune} icon="wand" onClick={() => setFileForFineTune(currentId)}>Train Model</NekoButton>
           <NekoButton rounded icon="arrow-down" onClick={() => downloadFile(currentId, currentFilename)}></NekoButton>
           <NekoButton className="danger" rounded icon="trash" onClick={() => deleteFile(currentId)}></NekoButton>
         </>
@@ -428,14 +429,13 @@ const FineTuning = ({ options, updateOption }) => {
         let json = JSON.stringify(x);
         return json;
       }).join("\n");
-      console.log(data);
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
         alert("Uploaded successfully! You can now train a model based on this dataset.");
         setSection('files');
-        setIsModeTrain(true);
+        setIsModeTrain(false);
       }
       else {
         alert(res.message);
@@ -451,7 +451,7 @@ const FineTuning = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1;
+    const month = date.getMonth() + 1; // getMonth returns a 0-based value
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -583,7 +583,7 @@ const FineTuning = ({ options, updateOption }) => {
               onChange={setFilename} style={{ width: 210, marginRight: 5 }} />
             <NekoButton disabled={!totalRows || busyAction} icon="upload"
               onClick={onUploadDataSet} className="primary">
-              Upload
+              Upload to OpenAI
             </NekoButton>
           </div>
           <div style={{ flex: 'auto' }} />
@@ -617,7 +617,7 @@ const FineTuning = ({ options, updateOption }) => {
 
       {!isModeTrain && <>
         <p>
-          You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload</b>! 😎
+          You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
         </p>
         {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>Caution: The data is too large to be saved in your browser's local storage.</p>}
         <div style={{ display: 'flex' }}>
@@ -653,13 +653,16 @@ const FineTuning = ({ options, updateOption }) => {
           <b>Notes:</b>
         </p>
         <p>
-          • The prompt and the completion should both end with their own special ending. For now, they are set by default: <b>\n\n===\n\n</b> for the prompt, and <b>\n\n</b> for the completion. The icon ✅ will be shown next to the prompt and/or completion when this format has been validated, and the ending will be hidden for clarity.
+          • The prompt and the completion should both end with their own special endings. By default, it is <b>\n\n===\n\n</b> for the prompt, and <b>\n\n</b> for the completion. The icon ✅ will be shown next to the prompt and/or completion when this format has been validated, and the ending will be hidden for clarity. I refer to this format (and models trained on it) by the term of <b>Casually Fine Tuned</b>.
         </p>
         <p>
           • <b>\n</b> is a line break. You can add line breaks by using <b>SHIFT+ENTER</b> while editing.
         </p>
         <p>
-          • The <b>Format with Defaults</b> button will add the default endings to the prompt and completion, if they are missing.
+          • The <b>Format with Defaults</b> button will add the <i>Casually Fine Tuned</i> endings format to the prompt and completion, if they are missing.
+        </p>
+        <p>
+          • If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casuallyFineTuned="true"</i>  in the parameter for the shortcode.
         </p>
       </>}
 
@@ -699,5 +702,3 @@ const FineTuning = ({ options, updateOption }) => {
     </NekoContainer>
   );
 };
-
-export default FineTuning;

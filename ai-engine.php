@@ -2,8 +2,8 @@
 /*
 Plugin Name: AI Engine: ChatGPT, GPT3 Content & Image Generator, Playground
 Plugin URI: https://wordpress.org/plugins/ai-engine/
-Description: Elevate your WordPress site with AI Engine! This plugin generates content, images, suggests ways to improve your content, adds a ChatGPT-style chatbot, and includes an AI Playground. It also tracks your OpenAI usage and offers an internal API for other plugins. 
-Version: 0.2.5
+Description: Elevate your WordPress site with AI! Generate content and images, add a ChatGPT-style bot that can be trained with your data, fine-tune AI models, have fun in the AI Playground, and more! It also tracks the OpenAI usage and offers an internal API for other plugins.
+Version: 0.2.6
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '0.2.5' );
+define( 'MWAI_VERSION', '0.2.6' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );

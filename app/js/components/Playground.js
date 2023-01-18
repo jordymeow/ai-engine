@@ -1,5 +1,5 @@
-// Previous: 0.2.0
-// Current: 0.2.4
+// Previous: 0.2.4
+// Current: 0.2.6
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -18,32 +18,50 @@ const templates = [
     id: 'none',
     name: 'None',
     mode: 'query',
+    temperature: 0.8,
+    stopSequence: '',
+    maxTokens: 2048,
     description: ''
   }, {
-    id: 'custom_model',
-    name: 'Custom Model Prompt',
+    id: 'casually_fined_tuned',
+    name: 'Casually Fined Tuned',
     mode: 'query',
+    temperature: 0.4,
+    stopSequence: '\\n\\n',
+    maxTokens: 1024,
     description: `Hello! What's your name?\n\n###\n\n`
   }, {
     id: 'wp_assistant',
     name: 'WordPress Assistant',
     mode: 'chat',
+    temperature: 0.8,
+    stopSequence: '',
+    maxTokens: 150,
     description: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n
       AI: Hi! How can I help you with WP today?`
   }, {
     id: 'article_translator',
     name: 'Article Translator',
     mode: 'query',
+    temperature: 0.3,
+    stopSequence: '',
+    maxTokens: 2048,
     description: `Translate this article into French:\n\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.\n\n`,
   }, {
     id: 'article_writer',
     name: 'Article Writer',
     mode: 'query',
+    temperature: 0.8,
+    stopSequence: '',
+    maxTokens: 2048,
     description: 'Write an article about what to do in Paris, in summer, with a few recommendations of restaurants and cafes.\n\n',
   }, {
     id: 'bulk_articles_writer',
     name: 'Bulk Articles Writer',
     mode: 'query',
+    temperature: 0.8,
+    stopSequence: '',
+    maxTokens: 2048,
     description: `Write titles (TITLE: ) and very short paragraphs (CONTENT: ) for each following topic. Keywords for each topic will be added between parenthesis.\n
       - When to travel to France (seasons, food, ambiance, celebrations)
       - Why one should visit the French countryside (beach, forest, mountain, food, people)
@@ -53,11 +71,17 @@ const templates = [
     id: 'article_corrector',
     name: 'Article Corrector',
     mode: 'query',
+    temperature: 0.2,
+    stopSequence: '',
+    maxTokens: 2048,
     description: 'Fix the grammar and spelling mistakes in this text:\n\nI wake up at eleben yesderday, I will go bed eary tonigt.\n',
   }, {
     id: 'seo_assistant',
     name: 'SEO Assistant',
     mode: 'query',
+    temperature: 0.6,
+    stopSequence: '',
+    maxTokens: 1024,
     description: `For the following article, write a SEO-friendly and short title, keywords for Google, and a short excerpt to introduce it. Use this format:
 
       Title: 
@@ -132,6 +156,7 @@ const StyledNekoInput = Styled(NekoInput)`
   }
 `;
 
+
 const Dashboard = () => {
   const [error, setError] = useState();
   const [prompt, setPrompt] = useState();
@@ -143,7 +168,8 @@ const Dashboard = () => {
   const [sessionUsage, setSessionUsage] = useState({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
   const [lastUsage, setLastUsage] = useState({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
   const [template, setTemplate] = useState(templates[2]);
-  const [stopSequence, setStopSequence] = useState('\\n\\n');
+  const [stopSequence, setStopSequence] = useState('');
+  const [maxTokens, setMaxTokens] = useState(2048);
 
   const onValidateEntry = () => {
     const newPrompt = prompt + "\nHuman: " + entry;
@@ -157,6 +183,9 @@ const Dashboard = () => {
     let lines = desc.split('\n').map(line => line.trim());
     lines = lines.join('\n');
     setPrompt(lines);
+    setStopSequence(template.stopSequence);
+    setTemperature(template.temperature);
+    setMaxTokens(template.maxTokens);
     setMode(template.mode);
   }, [template]);
 
@@ -169,7 +198,11 @@ const Dashboard = () => {
     setBusy(true);
     const stop = stopSequence.replace(/\\n/g, '\n');
     const res = await postFetch(`${apiUrl}/make_completions`, { json: { 
-      prompt: promptToUse, temperature, model, stop: stop
+      prompt: promptToUse,
+      temperature,
+      model,
+      maxTokens: maxTokens,
+      stop: stop
     }, nonce: restNonce });
     console.log("Completions", { prompt: promptToUse, result: res });
     if (res.success) {
@@ -245,7 +278,7 @@ const Dashboard = () => {
             <div style={{ display: 'flex' }}>
               <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
                 zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-              <StyledNekoInput id="entry" value={entry} onChange={(val) => setEntry(val)} onEnter={onValidateEntry} disabled={busy} />
+              <StyledNekoInput id="entry" value={entry} onChange={setEntry} onEnter={onValidateEntry} disabled={busy} />
             </div>
           }
           {mode !== 'chat' && <div style={{ display: 'flex' }}>
@@ -265,21 +298,28 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>Settings</h3>
             <label>Model:</label>
-            <NekoSelect id="models" value={model} scrolldown={true} onChange={(val) => setModel(val)}>
+            <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
                 <NekoOption value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onChange={(val) => setTemperature(val)} onBlur={() => { setTemperature(temperature); }} description={<>
+              onBlur={value => setTemperature(parseFloat(value))} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   Between 0 and 1. Higher values means the model will take more risks.
                 </span>
               </>} />
+            <label>Max Tokens:</label>
+            <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
+              onBlur={value => setMaxTokens(parseInt(value))} description={<>
+              <span>
+                The maximum number of tokens to generate. The model will stop generating once it hits this limit.
+              </span>
+            </>} />
             <label>Stop Sequence:</label>
             <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
-              onChange={(val) => setStopSequence(val)} onBlur={() => { setStopSequence(stopSequence); }} description={<>
+              onChange={setStopSequence} onBlur={setStopSequence} description={<>
               <span>
                 The sequence of tokens that will cause the model to stop generating text. You absolutely need this with your own models.
               </span>
@@ -305,8 +345,8 @@ const Dashboard = () => {
       </NekoWrapper>
 
       <NekoModal isOpen={error}
-        onRequestClose={() => { setError(); }}
-        onOkClick={() => { setError(); }}
+        onRequestClose={() => { setError() }}
+        onOkClick={() => { setError() }}
         title="Error"
         content={<p>{error}</p>}
       />

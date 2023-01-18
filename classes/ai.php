@@ -102,6 +102,10 @@ class Meow_MWAI_AI {
         }
         throw new Exception( $message );
       }
+      if ( !$data['model'] ) {
+        error_log( print_r( $data, 1 ) );
+        throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
+      }
       $answer = new Meow_MWAI_Answer( $query );
       $usage = $this->record_usage( $data['model'], $data['usage']['prompt_tokens'],
         $data['usage']['completion_tokens'] );

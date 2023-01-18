@@ -147,7 +147,7 @@ class Meow_MWAI_Rest
 			$query->setModel( $params['model'] );
 		}
 		if ( isset( $params['maxTokens'] ) ) {
-			$query->setTemperature( $params['maxTokens'] );
+			$query->setMaxTokens( $params['maxTokens'] );
 		}
 		if ( isset( $params['temperature'] ) ) {
 			$query->setTemperature( $params['temperature'] );
@@ -198,7 +198,7 @@ class Meow_MWAI_Rest
 			$postId = intval( $params['postId'] );
 			$text = $this->core->get_text_from_postId( $postId );
 			$prompt = "Create short SEO-friendly title for this text: " . $text;
-			$query = new Meow_MWAI_QueryText( $prompt, 40 );
+			$query = new Meow_MWAI_QueryText( $prompt, 64 );
 			$query->setMaxResults( 5 );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
@@ -214,7 +214,7 @@ class Meow_MWAI_Rest
 			$postId = intval( $params['postId'] );
 			$text = $this->core->get_text_from_postId( $postId );
 			$prompt = "Create SEO-friendly introduction to this text, 120 to 170 characters max, no URLs: " . $text;
-			$query = new Meow_MWAI_QueryText( $prompt, 140 );
+			$query = new Meow_MWAI_QueryText( $prompt, 160 );
 			$query->setMaxResults( 5 );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );

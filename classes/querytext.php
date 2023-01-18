@@ -4,12 +4,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 
   public $model = 'text-davinci-003';
   public $type = 'completion';
-
-  public $maxTokens = 150;
-  public $temperature = 0.9;
+  public $maxTokens = 16;
+  public $temperature = 0.8;
   public $stop = null;
   
-  public function __construct( $prompt = '', $maxTokens = 150, $model = 'text-davinci-003' ) {
+  public function __construct( $prompt = '', $maxTokens = 16, $model = 'text-davinci-003' ) {
     $this->prompt = $prompt;
     $this->maxTokens = $maxTokens;
     $this->model = $model;
@@ -55,6 +54,8 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * @param float $stop The stop.
    */
   public function setStop( $stop ) {
-    $this->stop = $stop;
+    if ( !empty( $stop ) ) {
+      $this->stop = $stop;
+    }
   }
 }

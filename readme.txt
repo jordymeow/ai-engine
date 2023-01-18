@@ -5,11 +5,11 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.2.5
+Stable tag: 0.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Elevate your WordPress site with AI Engine! This plugin generates content, images, suggests ways to improve your content, adds a ChatGPT-style chatbot, and includes an AI Playground. It also tracks your OpenAI usage and offers an internal API for other plugins. 
+Elevate your WordPress site with AI! Generate content and images, add a ChatGPT-style bot that can be trained with your data, fine-tune AI models, have fun in the AI Playground, and more! It also tracks the OpenAI usage and offers an internal API for other plugins.
 
 == Description ==
 
@@ -71,9 +71,10 @@ Languages: English.
 
 == Changelog ==
 
-= 0.2.5 (2023/01/18) =
+= 0.2.6 (2023/01/18) =
 * Update: Little UI enhancements and fixes.
-* Add: "max_tokens" parameter for the ChatGPT shortcode.
+* Add: "max_tokens" parameter for the chatbot shortcode.
+* Add: "casually_fined_tuned" parameter for the chatbot shorcode (for fine-tuned models).
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.2.4 (2023/01/17) =
