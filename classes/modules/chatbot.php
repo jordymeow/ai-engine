@@ -15,8 +15,9 @@ class Meow_MWAI_Modules_Chatbot {
     add_shortcode( 'mwai_chatbot', array( $this, 'chat' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 
+    add_action( 'wp_print_footer_scripts', function () { die; } );
     if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
-      add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+      add_action( 'wp_body_open', array( $this, 'inject_chat' ) );
     }
     // Only for test now, but later we should probably import the JS/CSS
     if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
@@ -111,11 +112,17 @@ class Meow_MWAI_Modules_Chatbot {
     $textSend = addslashes( trim( $atts['text_send'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );
-    $window = ( !!$atts['window'] || $atts['window'] === 'true' ) ? 'true' : 'false';
+    $window = boolval( $atts['window'] );
     $style = $atts['style'];
 
     // Chatbot System Parameters
-    $casuallyFineTuned = $atts['casually_fined_tuned'] === "true";
+    $casuallyFineTuned = boolval( $atts['casually_fined_tuned'] );
+    //print_r( $atts );
+    // echo $casuallyFineTuned;
+    // echo '-';
+    // echo $window;
+    //exit;
+
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
     if ( $casuallyFineTuned ) {
@@ -131,7 +138,7 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Variables
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
-    $baseClasses = "mwai-chat" . ( $window === 'true' ? " mwai-window" : "" );
+    $baseClasses = "mwai-chat" . ( $window ? " mwai-window" : "" );
 
     // Output CSS, HTML and JS
     ob_start();
@@ -142,7 +149,7 @@ class Meow_MWAI_Modules_Chatbot {
     echo apply_filters( 'mwai_chatbot_style', $style_content, $id );
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
-        <?php if ( $window === 'true' ) { ?>
+        <?php if ( $window ) { ?>
           <div class="mwai-close-button">⨯</div>
           <div class="mwai-open-button">
             <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
@@ -160,6 +167,7 @@ class Meow_MWAI_Modules_Chatbot {
 
       <script>
         var <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
+        var isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
 
         // Push the reply in the conversation
         function <?= $addReplyFn ?>(text, type = 'user') {
@@ -220,7 +228,7 @@ class Meow_MWAI_Modules_Chatbot {
           // Let's build the prompt depending on the "system"
           <?= $onGoingPrompt ?> += '<?= $aiName ?>';
           let prompt = <?= $onGoingPrompt ?>;
-          if (<?= $casuallyFineTuned ? '1' : '0' ?>) {
+          if (<?= $casuallyFineTuned ? 1 : 0 ?>) {
             prompt = inputText + '<?= $promptEnding ?>';
           }
 
@@ -251,7 +259,11 @@ class Meow_MWAI_Modules_Chatbot {
             }
             button.disabled = false;
             input.disabled = false;
-            input.focus();
+            
+            // Only focus only on desktop (to avoid the mobile keyboard to kick-in)
+            if (!isMobile) {
+              input.focus();
+            }
           })
           .catch(error => {
             console.error(error);
@@ -292,12 +304,15 @@ class Meow_MWAI_Modules_Chatbot {
           });
 
           // If window, add event listener to mwai-open-button and mwai-close-button
-          if ( <?= $window ?> ) {
+          if ( <?= $window ? 1 : 0 ?> ) {
             var openButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-open-button');
             openButton.addEventListener('click', (event) => {
               var chat = document.querySelector('#mwai-chat-<?= $id ?>');
               chat.classList.add('mwai-open');
-              input.focus();
+              // Only focus only on desktop (to avoid the mobile keyboard to kick-in)
+              if (!isMobile) {
+                input.focus();
+              }
             });
             var closeButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-close-button');
             closeButton.addEventListener('click', (event) => {

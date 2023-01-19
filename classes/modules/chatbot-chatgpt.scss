@@ -170,6 +170,8 @@
 	position: fixed;
 	right: 30px;
 	bottom: 30px;
+	width: 460px;
+	z-index: 9999;
 
 	.mwai-close-button {
 		display: none;
@@ -178,8 +180,6 @@
 	.mwai-content {
 		display: flex;
 		opacity: 0;
-		max-height: 40vh;
-		width: 460px;
 		max-height: 40vh;
 	}
 }
@@ -207,9 +207,16 @@
 	}
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
 
 	#mwai-chat-id {
+
+		&.mwai-window {
+			left: 10px;
+			right: 10px;
+			bottom: 10px;
+			width: inherit;
+		}
 
 		.mwai-reply {
 			flex-direction: column;
@@ -217,6 +224,7 @@
 
 		.mwai-input {
 			flex-direction: column;
+
 			button {
 				margin: 15px 0 0 0;
 				height: 40px;
