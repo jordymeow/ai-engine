@@ -1,23 +1,5 @@
 <?php
 
-add_filter( 'mwai_chatbot_params', function ( $params ) {
-  if ( isset( $params['discuss_mode'] ) ) {
-    return $params;
-  }
-  $post = get_post();
-  if ( !empty( $post ) ) {
-    // Before adding the content in the context, we should absolutely remove the HTML tags,
-    // the shortcodes, and the empty lines. Then lines should be replaced by a textual "\n".
-    $content = strip_tags( $post->post_content );
-    $content = preg_replace( '/\[[^\]]+\]/', '', $content );
-    $content = preg_replace( '/^\h*\v+/m', '', $content );
-    $content = preg_replace( '/\v+/', "\\n", $content );
-    $params['context'] = "Article:\\n\\n{***}\\n{$content}\\n{***}.\\n\\nDebate:\\n\\n";
-    $params['start_sentence'] = "What did you think of this article?";
-  }
-  return $params;
-});
-
 class Meow_MWAI_Modules_Chatbot {
   private $core = null;
   private $namespace = 'ai-engine/v1';
