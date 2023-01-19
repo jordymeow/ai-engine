@@ -1,19 +1,47 @@
 <?php
 
+add_filter( 'mwai_chatbot_params', function ( $params ) {
+  if ( isset( $params['discuss_mode'] ) ) {
+    return $params;
+  }
+  $post = get_post();
+  if ( !empty( $post ) ) {
+    // Before adding the content in the context, we should absolutely remove the HTML tags,
+    // the shortcodes, and the empty lines. Then lines should be replaced by a textual "\n".
+    $content = strip_tags( $post->post_content );
+    $content = preg_replace( '/\[[^\]]+\]/', '', $content );
+    $content = preg_replace( '/^\h*\v+/m', '', $content );
+    $content = preg_replace( '/\v+/', "\\n", $content );
+    $params['context'] = "Article:\\n\\n{***}\\n{$content}\\n{***}.\\n\\nDebate:\\n\\n";
+    $params['start_sentence'] = "What did you think of this article?";
+  }
+  return $params;
+});
+
 class Meow_MWAI_Modules_Chatbot {
   private $core = null;
   private $namespace = 'ai-engine/v1';
 
   public function __construct() {
+    if ( is_admin() ) {
+      return;
+    }
+
     global $mwai_core;
     $this->core = $mwai_core;
     add_shortcode( 'mwai_chat', array( $this, 'chat' ) );
+    add_shortcode( 'mwai_chatbot', array( $this, 'chat' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 
-    // If we apply ChatGPT styles
-    if ( $this->core->get_option( 'shortcode_chat_style' ) ) {
-      add_filter( 'mwai_chat_html', array( $this, 'chatgpt_style' ), 10, 2 );
-      add_filter( 'mwai_chat_html', array( $this, 'spinner_style' ), 10, 2 );
+    if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
+      add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+    }
+    // Only for test now, but later we should probably import the JS/CSS
+    if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
+      wp_enqueue_script( 'mwai_chatbot',
+      '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js', [], null, false );
+      wp_enqueue_style( 'mwai_chatbot',
+        '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/stackoverflow-dark.min.css' );
     }
   }
 
@@ -30,179 +58,10 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 	}
 
-  function spinner_style( $html, $atts ) {
-    // If needed, we can use the $id to apply styles
-    $id = $atts['id']; // This could be replace by the ID of a specific chatbot
-    return "
-      <style>
-        #mwai-chat-$id button {
-          position: relative;
-        }
-
-        #mwai-chat-$id button[disabled] span {
-          display: none;
-        }
-
-        #mwai-chat-$id button[disabled]::after {
-          content: '';
-          position: absolute;
-          width: 18px;
-          height: 18px;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          margin: auto;
-          border: 3px solid transparent;
-          border-top-color: #ffffff;
-          border-radius: 50%;
-          animation: mwai-button-spinner 1s ease infinite;
-        }
-
-        @keyframes mwai-button-spinner {
-          from {
-             transform: rotate(0turn);
-          }
-      
-          to {
-            transform: rotate(1turn);
-          }
-        }
-      </style>
-    " . $html;
-  }
-
-  function chatgpt_style( $html, $atts ) {
-    // If needed, we can use the $id to apply styles
-    $id = $atts['id']; // This could be replace by the ID of a specific chatbot
-    return "
-      <style>
-        #mwai-chat-$id {
-          background: #343541;
-          color: white;
-          font-size: 15px;
-          border-radius: 10px;
-          overflow: hidden;
-        }
-
-        #mwai-chat-$id * {
-          box-sizing: border-box;
-        }
-
-        #mwai-chat-$id a {
-          color: #2196f3;
-        }
-
-        #mwai-chat-$id h2 {
-          font-size: 24px;
-        }
-
-        #mwai-chat-$id h3 {
-          font-size: 18px;
-        }
-
-        #mwai-chat-$id h4 {
-          font-size: 16px;
-        }
-
-        #mwai-chat-$id pre {
-          background: black;
-          color: white;
-          border-radius: 10px;
-          padding: 10px 15px;
-          break-after: auto;
-          font-size: 14px;
-        }
-
-        #mwai-chat-$id  ol {
-          padding: 0;
-          margin: 0 0 0 20px;
-        }
-
-        #mwai-chat-$id .mwai-reply {
-          display: flex;
-          padding: 20px;
-        }
-
-        #mwai-chat-$id .mwai-ai {
-          background: #454654;
-        }
-
-        #mwai-chat-$id .mwai-name {
-          color: #a0a0a0;
-          margin-right: 20px;
-        }
-
-        #mwai-chat-$id .mwai-text {
-          flex: auto;
-        }
-
-        #mwai-chat-$id .mwai-text > *:first-child {
-          margin-top: 0;
-        }
-
-        #mwai-chat-$id .mwai-text > *:last-child {
-          margin-bottom: 0;
-        }
-
-        #mwai-chat-$id .mwai-input {
-          display: flex;
-          padding: 15px;
-          border-top: 1px solid #454654;
-        }
-
-        #mwai-chat-$id .mwai-input textarea {
-          background: #40414f;
-          color: white;
-          flex: auto;
-          padding: 10px 15px;
-          border: none;
-          border-radius: 5px;
-          font-size: 15px;
-          resize: none;
-          font-family: inherit;
-          line-height: 30px;
-        }
-
-        #mwai-chat-$id .mwai-input textarea:focus {
-          outline: none;
-        }
-
-        #mwai-chat-$id .mwai-input button {
-          background: none;
-          color: white;
-          border: 1px solid #40414f;
-          margin-left: 15px;
-          width: 80px;
-          border-radius: 5px;
-          cursor: pointer;
-        }
-
-        #mwai-chat-$id .mwai-input button:hover {
-          background: #353640;
-        }
-
-        @media (max-width: 600px) {
-          #mwai-chat-$id .mwai-reply {
-            flex-direction: column;
-          }
-
-          #mwai-chat-$id .mwai-input {
-            flex-direction: column;
-          }
-
-          #mwai-chat-$id .mwai-input button {
-            margin: 15px 0 0 0;
-            height: 40px;
-            width: inherit;
-          }
-
-          #mwai-chat-$id .mwai-name {
-            margin-right: 0;
-          }
-        }
-      </style>
-    " . $html;
+  function chatgpt_style( $id ) {
+    $css = file_get_contents( MWAI_PATH . '/classes/modules/chatbot-chatgpt.css' );
+    $css = str_replace( '#mwai-chat-id', "#mwai-chat-{$id}", $css );
+    return "<style>" . $css . "</style>";
   }
 
   function rest_chat( $request ) {
@@ -210,8 +69,6 @@ class Meow_MWAI_Modules_Chatbot {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
       $model = $params['model'];
-      //$userName = $params['userName'];
-      //$aiName = $params['aiName'];
       $temperature = $params['temperature'];
       $maxTokens = intval( $params['maxTokens'] );
       $apiKey = $params['apiKey'];
@@ -234,8 +91,8 @@ class Meow_MWAI_Modules_Chatbot {
       }
 			$answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
-
-      $html = $this->core->markdown_to_html( $answer->result );
+      $html = apply_filters( 'mwai_chatbot_answer', $rawText  );
+      $html = $this->core->markdown_to_html( $rawText );
 			return new WP_REST_Response([ 'success' => true, 'answer' => $rawText, 'html' => $html, 'usage' => $answer->usage ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -243,47 +100,40 @@ class Meow_MWAI_Modules_Chatbot {
 		}
   }
 
+  function inject_chat() {
+    $params = $this->core->get_option( 'shortcode_chat_params' );
+    echo $this->chat( $params );
+  }
+
   function chat( $atts ) {
-    $defaults = apply_filters( 'mwai_chat_atts', [
-      // UI Parameters
-      'id' => uniqid(),
-      'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
-      'ai_name' => "AI: ",
-      'user_name' => "User: ",
-      'sys_name' => "System: ",
-      'start_sentence' => "Hi! How can I help you?",
-      'text_send' => 'Send',
-      'text_input_placeholder' => 'Type your message...',
-      // Chatbot System Parameters
-      'casually_fined_tuned' => 'false',
-      'prompt_ending' => '',
-      'completion_ending' => '',
-      // AI Parameters
-      'model' => 'text-davinci-003',
-      'temperature' => 0.8,
-      'max_tokens' => 1024,
-      'api_key' => ''
-    ] );
-    $atts = shortcode_atts( $defaults, $atts, 'mwai_chat_atts' );
-    $id = $atts['id'];
+    $override = $this->core->get_option( 'shortcode_chat_params_override' );
+    $defaults_params = $override ? $this->core->get_option( 'shortcode_chat_params' ) :
+      $this->core->get_option( 'shortcode_chat_default_params' );
+    $defaults_params['id'] = uniqid();
+    $defaults = apply_filters( 'mwai_chatbot_params_defaults', $defaults_params );
+    $atts = shortcode_atts( $defaults, $atts );
+    $atts = apply_filters( 'mwai_chatbot_params', $atts );
     $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
+    $id = $atts['id'];
 
     // Functions
     $onSentClickFn = "mwai_{$id}_onSendClick";
     $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
-    $convertToHtmlFn = "mwai_{$id}_convertToHtml";
 
     // UI Parameters
     $aiName = addslashes( trim($atts['ai_name']) );
     $userName = addslashes( trim($atts['user_name']) );
     $sysName = addslashes( trim($atts['sys_name']) );
-    $context = addslashes( trim( $atts['context'] ) );
+    $context = addslashes( $atts['context'] );
     $textSend = addslashes( trim( $atts['text_send'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
+    $startSentence = addslashes( trim( $atts['start_sentence'] ) );
+    $window = ( !!$atts['window'] || $atts['window'] === 'true' ) ? 'true' : 'false';
+    $style = $atts['style'];
 
     // Chatbot System Parameters
-    $casuallyFineTuned = $atts['casually_fined_tuned'];
+    $casuallyFineTuned = $atts['casually_fined_tuned'] === "true";
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
     if ( $casuallyFineTuned ) {
@@ -297,30 +147,41 @@ class Meow_MWAI_Modules_Chatbot {
     $maxTokens = $atts['max_tokens'];
     $apiKey = $atts['api_key'];
 
+    // Variables
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
-    ob_start();
-    ?>
+    $baseClasses = "mwai-chat" . ( $window === 'true' ? " mwai-window" : "" );
 
-      <div id="mwai-chat-<?= $id ?>" class="mwai-chat">
-        <div class="mwai-conversation">
-        </div>
-        <div class="mwai-input">
-          <textarea rows="1" placeholder="<?= $textInputPlaceholder ?>"></textarea>
-          <button><span><?= $textSend ?></span></button>
+    // Output CSS, HTML and JS
+    ob_start();
+    $style_content = "";
+    if ( $style === 'chatgpt' ) {
+      $style_content = $this->chatgpt_style( $id, $style );
+    }
+    echo apply_filters( 'mwai_chatbot_style', $style_content, $id );
+    ?>
+      <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
+        <?php if ( $window === 'true' ) { ?>
+          <div class="mwai-close-button">⨯</div>
+          <div class="mwai-open-button">
+            <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
+          </div>
+        <?php } ?>
+        <div class="mwai-content">
+          <div class="mwai-conversation">
+          </div>
+          <div class="mwai-input">
+            <textarea rows="1" placeholder="<?= $textInputPlaceholder ?>"></textarea>
+            <button><span><?= $textSend ?></span></button>
+          </div>
         </div>
       </div>
 
       <script>
         var <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
 
-        function <?= $convertToHtmlFn ?>(text) {
-          return text;
-        }
-
-        // Function to add a reply in the conversation
+        // Push the reply in the conversation
         function <?= $addReplyFn ?>(text, type = 'user') {
           var conversation = document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation');
-          text = <?= $convertToHtmlFn ?>(text);
           var mwaiClasses = 'mwai-reply';
           if (type === 'ai') {
             mwaiClasses += ' mwai-ai';
@@ -343,8 +204,15 @@ class Meow_MWAI_Modules_Chatbot {
           }
           html += '<span class="mwai-text">' + text + '</span>';
           html += '</div>';
-
           conversation.innerHTML += html;
+          conversation.scrollTop = conversation.scrollHeight;
+
+          // Syntax coloring
+          if (typeof hljs !== 'undefined') {
+            document.querySelectorAll('pre code').forEach((el) => {
+              hljs.highlightElement(el);
+            });
+          }
         }
 
         // Function to request the completion
@@ -367,17 +235,14 @@ class Meow_MWAI_Modules_Chatbot {
           input.setAttribute('rows', 1);
           input.disabled = true;
 
-          // Request the completion
+          // Let's build the prompt depending on the "system"
           <?= $onGoingPrompt ?> += '<?= $aiName ?>';
-
-          // Let's build the prompt depending on the system
-          // If it's fine tuned casually, we simply use the inputText with the promptEnding
-          // If it's not, we simply use the $onGoingPrompt
           let prompt = <?= $onGoingPrompt ?>;
-          if (<?= $casuallyFineTuned ?>) {
+          if (<?= $casuallyFineTuned ? '1' : '0' ?>) {
             prompt = inputText + '<?= $promptEnding ?>';
           }
 
+          // Request the completion
           const data = { 
             prompt: prompt,
             userName: '<?= $userName ?>',
@@ -444,7 +309,22 @@ class Meow_MWAI_Modules_Chatbot {
             <?= $onSentClickFn ?>(); 
           });
 
-          <?= $addReplyFn ?>('<?= $atts['start_sentence'] ?>', 'ai');
+          // If window, add event listener to mwai-open-button and mwai-close-button
+          if ( <?= $window ?> ) {
+            var openButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-open-button');
+            openButton.addEventListener('click', (event) => {
+              var chat = document.querySelector('#mwai-chat-<?= $id ?>');
+              chat.classList.add('mwai-open');
+              input.focus();
+            });
+            var closeButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-close-button');
+            closeButton.addEventListener('click', (event) => {
+              var chat = document.querySelector('#mwai-chat-<?= $id ?>');
+              chat.classList.remove('mwai-open');
+            });
+          }
+
+          <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
         }
 
         <?= $initChatBotFn ?>();
@@ -454,7 +334,7 @@ class Meow_MWAI_Modules_Chatbot {
     <?php
     $output = ob_get_contents();
     ob_end_clean();
-    $output = apply_filters( 'mwai_chat_html', $output, $atts );
+    $output = apply_filters( 'mwai_chatbot', $output, $atts );
     return $output;
   }
 }

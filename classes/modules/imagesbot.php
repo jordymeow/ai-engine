@@ -9,12 +9,8 @@ class Meow_MWAI_Modules_ImagesBot {
     $this->core = $mwai_core;
     add_shortcode( 'mwai_imagesbot', array( $this, 'imagesbot' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
-
-    // If we apply ChatGPT styles
-    if ( $this->core->get_option( 'shortcode_chat_style' ) ) {
-      add_filter( 'mwai_chat_html', array( $this, 'chatgpt_style' ), 10, 2 );
-      add_filter( 'mwai_chat_html', array( $this, 'spinner_style' ), 10, 2 );
-    }
+    add_filter( 'mwai_imagesbot_html', array( $this, 'chatgpt_style' ), 10, 2 );
+    add_filter( 'mwai_imagesbot_html', array( $this, 'spinner_style' ), 10, 2 );
   }
 
   function rest_api_init() {
@@ -372,7 +368,7 @@ class Meow_MWAI_Modules_ImagesBot {
     <?php
     $output = ob_get_contents();
     ob_end_clean();
-    $output = apply_filters( 'mwai_chat_html', $output, $atts );
+    $output = apply_filters( 'mwai_imagesbot_html', $output, $atts );
     return $output;
   }
 }

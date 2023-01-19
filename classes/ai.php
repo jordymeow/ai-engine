@@ -10,9 +10,15 @@ class Meow_MWAI_AI {
   }
 
   // Record usage of the API on a monthly basis
-  public function record_usage( $model, $prompt_tokens, $completion_tokens ) {
-    if ( !$model || !$prompt_tokens || !$completion_tokens ) {
-      throw new Exception( 'Missing parameters for record_usage.' );
+  public function record_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
+    if ( !is_numeric( $prompt_tokens ) ) {
+      throw new Exception( 'Record usage: prompt_tokens is not a number.' );
+    }
+    if ( !is_numeric( $completion_tokens ) ) {
+      $completion_tokens = 0;
+    }
+    if ( !$model ) {
+      throw new Exception( 'Record usage: model is missing.' );
     }
     $usage = $this->core->get_option( 'openai_usage' );
     $month = date( 'Y-m' );

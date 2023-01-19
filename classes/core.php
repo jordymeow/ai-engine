@@ -2,14 +2,40 @@
 
 require_once( MWAI_PATH . '/vendor/autoload.php' );
 
+$defaultChatbotParams = [
+	// UI Parameters
+	'id' => null,
+	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
+	'ai_name' => "AI: ",
+	'user_name' => "User: ",
+	'sys_name' => "System: ",
+	'start_sentence' => "Hi! How can I help you?",
+	'text_send' => 'Send',
+	'text_input_placeholder' => 'Type your message...',
+	'style' => 'chatgpt', // can be none, chatgpt
+	'window' => false,
+	// Chatbot System Parameters
+	'casually_fined_tuned' => false,
+	'prompt_ending' => null,
+	'completion_ending' => null,
+	// AI Parameters
+	'model' => 'text-davinci-003',
+	'temperature' => 0.8,
+	'max_tokens' => 1024,
+	'api_key' => null
+];
+
 define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
 	'module_blocks' => false,
 	'shortcode_chat' => true,
-	'shortcode_chat_style' => true,
+	'shortcode_chat_params' => $defaultChatbotParams,
+	'shortcode_chat_default_params' => $defaultChatbotParams,
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
+	'shortcode_chat_syntax_highlighting' => false,
+	'shortcode_chat_inject' => false,
 	'shortcode_imagesbot' => false,
 	'openai_apikey' => false,
 	'openai_usage' => [],
