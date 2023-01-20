@@ -176,16 +176,40 @@
 	z-index: 9999;
 
 	.mwai-header {
-		display: flex;
+		display: none;
     justify-content: flex-end;
     align-items: center;
 
-		.mwai-close-button {
-			display: none;
+		.mwai-resize-button {
 			justify-content: center;
 			height: 40px;
-			width: 40px;
-			padding: 5px 0;
+			width: 36px;
+			cursor: pointer;
+			display: flex;
+    	justify-content: center;
+    	align-items: center;
+
+			&:before {
+				transition: all 0.2s ease-out;
+				content: ' ';
+				cursor: pointer;
+				position: absolute;
+				height: 15px;
+				width: 15px;
+				opacity: 0.75;
+				border: 2px solid var(--mwai-font-color);
+			}
+
+			&:hover:before {
+				width: 20px;
+				height: 20px;
+			}
+		}
+
+		.mwai-close-button {
+			justify-content: center;
+			height: 40px;
+			width: 35px;
 			cursor: pointer;
 		}
 
@@ -199,24 +223,25 @@
 			opacity: 0.75;
 		}
 
-		.mwai-close-button:before {
-			transition: all 0.2s ease-out;
-			transform: rotate(45deg);
-		}
-		
-		.mwai-close-button:after {
-			transition: all 0.2s ease-out;
-			transform: rotate(-45deg);
+		.mwai-close-button {
+			&:before {
+				transition: all 0.2s ease-out;
+				transform: translate(16px, 5px) rotate(45deg);
+			}
+			&:after {
+				transition: all 0.2s ease-out;
+				transform: translate(16px, 5px) rotate(-45deg);
+			}
 		}
 
 		.mwai-close-button:hover {
 			&:before {
 				opacity: 1;
-				transform: rotate(135deg);
+				transform: translate(16px, 5px) rotate(135deg);
 			}
 			&:after {
 				opacity: 1;
-				transform: rotate(45deg);
+				transform: translate(16px, 5px) rotate(45deg);
 			}
 		}
 	}
@@ -225,6 +250,21 @@
 		display: flex;
 		opacity: 0;
 		max-height: 40vh;
+	}
+}
+
+#mwai-chat-id.mwai-window.mwai-fullscreen {
+	.mwai-resize-button {
+
+		&:before {
+			width: 20px;
+			height: 20px;
+		}
+
+		&:hover:before {
+			width: 15px;
+			height: 15px;
+		}
 	}
 }
 
@@ -240,6 +280,7 @@
   max-width: inherit;
 	display: flex;
 	flex-direction: column;
+	margin: 0;
 
   .mwai-content {
 		height: 100%;
@@ -254,7 +295,7 @@
 
 #mwai-chat-id.mwai-window.mwai-open {
 
-	.mwai-close-button {
+	.mwai-header {
 		display: flex;
 	}
 

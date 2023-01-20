@@ -175,17 +175,41 @@
 }
 
 #mwai-chat-id.mwai-window .mwai-header {
-  display: flex;
+  display: none;
   justify-content: flex-end;
   align-items: center;
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button {
-  display: none;
+#mwai-chat-id.mwai-window .mwai-header .mwai-resize-button {
   justify-content: center;
   height: 40px;
-  width: 40px;
-  padding: 5px 0;
+  width: 36px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#mwai-chat-id.mwai-window .mwai-header .mwai-resize-button:before {
+  transition: all 0.2s ease-out;
+  content: ' ';
+  cursor: pointer;
+  position: absolute;
+  height: 15px;
+  width: 15px;
+  opacity: 0.75;
+  border: 2px solid var(--mwai-font-color);
+}
+
+#mwai-chat-id.mwai-window .mwai-header .mwai-resize-button:hover:before {
+  width: 20px;
+  height: 20px;
+}
+
+#mwai-chat-id.mwai-window .mwai-header .mwai-close-button {
+  justify-content: center;
+  height: 40px;
+  width: 35px;
   cursor: pointer;
 }
 
@@ -201,28 +225,38 @@
 
 #mwai-chat-id.mwai-window .mwai-header .mwai-close-button:before {
   transition: all 0.2s ease-out;
-  transform: rotate(45deg);
+  transform: translate(16px, 5px) rotate(45deg);
 }
 
 #mwai-chat-id.mwai-window .mwai-header .mwai-close-button:after {
   transition: all 0.2s ease-out;
-  transform: rotate(-45deg);
+  transform: translate(16px, 5px) rotate(-45deg);
 }
 
 #mwai-chat-id.mwai-window .mwai-header .mwai-close-button:hover:before {
   opacity: 1;
-  transform: rotate(135deg);
+  transform: translate(16px, 5px) rotate(135deg);
 }
 
 #mwai-chat-id.mwai-window .mwai-header .mwai-close-button:hover:after {
   opacity: 1;
-  transform: rotate(45deg);
+  transform: translate(16px, 5px) rotate(45deg);
 }
 
 #mwai-chat-id.mwai-window .mwai-content {
   display: flex;
   opacity: 0;
   max-height: 40vh;
+}
+
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-resize-button:before {
+  width: 20px;
+  height: 20px;
+}
+
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-resize-button:hover:before {
+  width: 15px;
+  height: 15px;
 }
 
 #mwai-chat-id.mwai-fullscreen:not(.mwai-window), #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
@@ -237,6 +271,7 @@
   max-width: inherit;
   display: flex;
   flex-direction: column;
+  margin: 0;
 }
 
 #mwai-chat-id.mwai-fullscreen:not(.mwai-window) .mwai-content, #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open .mwai-content {
@@ -249,7 +284,7 @@
   flex: auto;
 }
 
-#mwai-chat-id.mwai-window.mwai-open .mwai-close-button {
+#mwai-chat-id.mwai-window.mwai-open .mwai-header {
   display: flex;
 }
 

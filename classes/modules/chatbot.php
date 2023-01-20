@@ -144,7 +144,7 @@ class Meow_MWAI_Modules_Chatbot {
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
     $baseClasses = "mwai-chat";
     $baseClasses .= ( $window ? " mwai-window" : "" );
-    $baseClasses .= ( $fullscreen ? " mwai-fullscreen" : "" );
+    $baseClasses .= ( !$window && $fullscreen ? " mwai-fullscreen" : "" );
 
     // Output CSS
     ob_start();
@@ -158,11 +158,14 @@ class Meow_MWAI_Modules_Chatbot {
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
         <?php if ( $window ) { ?>
+          <div class="mwai-open-button">
+            <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
+          </div>
           <div class="mwai-header">
+            <?php if ( $window ) { ?>
+              <div class="mwai-resize-button"></div>
+            <?php } ?>
             <div class="mwai-close-button"></div>
-            <div class="mwai-open-button">
-              <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
-            </div>
           </div>
         <?php } ?>
         <div class="mwai-content">
@@ -331,6 +334,11 @@ class Meow_MWAI_Modules_Chatbot {
             closeButton.addEventListener('click', (event) => {
               var chat = document.querySelector('#mwai-chat-<?= $id ?>');
               chat.classList.remove('mwai-open');
+            });
+            var resizeButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-resize-button');
+            resizeButton.addEventListener('click', (event) => {
+              var chat = document.querySelector('#mwai-chat-<?= $id ?>');
+              chat.classList.toggle('mwai-fullscreen');
             });
           }
 
