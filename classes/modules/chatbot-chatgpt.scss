@@ -350,3 +350,9 @@
 		transform: rotate(1turn);
 	}
 }
+
+// WordPress Admin Bar
+.admin-bar #mwai-chat-id.mwai-fullscreen:not(.mwai-window),
+.admin-bar #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
+	top: 32px;
+}

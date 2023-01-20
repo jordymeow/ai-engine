@@ -329,3 +329,8 @@
     transform: rotate(1turn);
   }
 }
+
+.admin-bar #mwai-chat-id.mwai-fullscreen:not(.mwai-window),
+.admin-bar #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
+  top: 32px;
+}

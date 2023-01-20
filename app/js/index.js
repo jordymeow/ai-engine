@@ -1,5 +1,5 @@
-// Previous: 0.2.0
-// Current: 0.2.3
+// Previous: 0.2.3
+// Current: 0.3.2
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
@@ -16,7 +16,11 @@ import ContentGenerator from './components/ContentGenerator';
 import ImageGenerator from './components/ImageGenerator';
 import SlotFills from './components/SlotFills';
 
-document.addEventListener('DOMContentLoaded', function(event) {
+// Gutenberg Blocks
+import initBlocks from './blocks/index';
+initBlocks();
+
+document.addEventListener('DOMContentLoaded', function() {
 
 	SlotFills();
 
@@ -55,5 +59,4 @@ document.addEventListener('DOMContentLoaded', function(event) {
 	if (meowDashboard) {
 		render(<Dashboard />, meowDashboard);
 	}
-
 });

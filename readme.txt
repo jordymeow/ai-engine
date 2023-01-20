@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,7 +72,7 @@ Languages: English.
 
 == Changelog ==
 
-= 0.3.1 (2023/01/20) =
+= 0.3.2 (2023/01/20) =
 * Add: The chatbot can be displayed in fullscreen (use fullscreen="true" in the shortcode). It works logically with the window/popup mode: no popup? Fullscreen right away! Popup? Fullscreen on click :)
 * Fix: A few potential issues that coult break a few things.
 * Update: Cleaned the JS, CSS and HTML. I like when it's very tidy before going forward!
