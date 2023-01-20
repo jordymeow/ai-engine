@@ -26,6 +26,18 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'api_key' => null
 ] );
 
+define( 'MWAI_LANGUAGES', [
+  'en' => 'English',
+  'es' => 'Spanish',
+  'fr' => 'French',
+  'de' => 'German',
+  'it' => 'Italian',
+  'pt' => 'Portuguese',
+  'ru' => 'Russian',
+  'ja' => 'Japanese',
+  'zh' => 'Chinese',
+] );
+
 define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
@@ -42,7 +54,8 @@ define( 'MWAI_OPTIONS', [
 	'openai_usage' => [],
 	'openai_finetunes' => [],
 	'openai_finetunes_deleted' => [],
-	'extra_models' => ""
+	'extra_models' => "",
+	'languages' => MWAI_LANGUAGES
 ]);
 
 class Meow_MWAI_Core
@@ -84,6 +97,11 @@ class Meow_MWAI_Core
 		//if ( $this->get_option( 'module_titles' ) ) {
 			new Meow_MWAI_Modules_ContentAware();
 		//}
+
+		// Advanced core
+		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
+			new MeowPro_MWAI_Core( $this );
+		}
 	}
 
 	#region Helpers
@@ -114,6 +132,9 @@ class Meow_MWAI_Core
 		foreach ( MWAI_OPTIONS as $key => $value ) {
 			if ( !isset( $options[$key] ) ) {
 				$options[$key] = $value;
+			}
+			if ( $key === 'languages' ) {
+				$options[$key] = apply_filters( 'mwai_languages', $options[$key] );
 			}
 		}
 		return $options;

@@ -1,5 +1,5 @@
-// Previous: 0.2.3
-// Current: 0.2.4
+// Previous: 0.2.4
+// Current: 0.3.3
 
 const OpenAI_models = [
   {
@@ -43,26 +43,6 @@ const OpenAI_models = [
   // }
 ];
 
-const Languages = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'ru', label: 'Russian' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'zh', label: 'Chinese' },
-];
-
-const OpenAI_PricingPerModel = [
-  { model: 'davinci', price: 0.02 },
-  { model: 'curie', price: 0.002 },
-  { model: 'babbage', price: 0.0005 },
-  { model: 'ada', price: 0.0004 },
-  { model: 'dall-e', price: 0.02 }
-];
-
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
   { value: 'descriptive', label: 'Descriptive' },
@@ -97,4 +77,12 @@ const WritingTones = [
   { value: 'journalistic', label: 'Journalistic' },
 ];
 
-export { OpenAI_models, OpenAI_PricingPerModel, WritingStyles, WritingTones, Languages }
+const OpenAI_PricingPerModel = [
+  { model: 'davinci', price: 0.02 },
+  { model: 'curie', price: 0.002 },
+  { model: 'babbage', price: 0.0005 },
+  { model: 'ada', price: 0.0004 },
+  { model: 'dall-e', price: 0.02 }
+];
+
+export { OpenAI_models, OpenAI_PricingPerModel, WritingStyles, WritingTones }
