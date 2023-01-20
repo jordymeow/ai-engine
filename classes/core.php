@@ -2,7 +2,7 @@
 
 require_once( MWAI_PATH . '/vendor/autoload.php' );
 
-$defaultChatbotParams = [
+define( 'MWAI_CHATBOT_PARAMS', [
 	// UI Parameters
 	'id' => null,
 	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
@@ -12,8 +12,9 @@ $defaultChatbotParams = [
 	'start_sentence' => "Hi! How can I help you?",
 	'text_send' => 'Send',
 	'text_input_placeholder' => 'Type your message...',
-	'style' => 'chatgpt', // can be none, chatgpt
+	'style' => 'chatgpt',
 	'window' => false,
+	'fullscreen' => false,
 	// Chatbot System Parameters
 	'casually_fined_tuned' => false,
 	'prompt_ending' => null,
@@ -23,15 +24,15 @@ $defaultChatbotParams = [
 	'temperature' => 0.8,
 	'max_tokens' => 1024,
 	'api_key' => null
-];
+] );
 
 define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
 	'module_blocks' => false,
 	'shortcode_chat' => true,
-	'shortcode_chat_params' => $defaultChatbotParams,
-	'shortcode_chat_default_params' => $defaultChatbotParams,
+	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
+	'shortcode_chat_default_params' => MWAI_CHATBOT_PARAMS,
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
 	'shortcode_chat_syntax_highlighting' => false,
@@ -52,6 +53,7 @@ class Meow_MWAI_Core
 	public $site_url = null;
 	public $ai = null;
 	private $option_name = 'mwai_options';
+	public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
 
 	public function __construct() {
 		$this->site_url = get_site_url();
@@ -71,12 +73,17 @@ class Meow_MWAI_Core
 		else {
 			new Meow_MWAI_UI( $this );
 		}
+
+		// Modules
 		if ( $this->get_option( 'shortcode_chat' ) ) {
 			new Meow_MWAI_Modules_Chatbot();
 		}
 		if ( $this->get_option( 'shortcode_imagesbot' ) ) {
 			new Meow_MWAI_Modules_ImagesBot();
 		}
+		//if ( $this->get_option( 'module_titles' ) ) {
+			new Meow_MWAI_Modules_ContentAware();
+		//}
 	}
 
 	#region Helpers

@@ -5,20 +5,16 @@ class Meow_MWAI_Modules_Chatbot {
   private $namespace = 'ai-engine/v1';
 
   public function __construct() {
-    if ( is_admin() ) {
-      return;
-    }
-
     global $mwai_core;
     $this->core = $mwai_core;
+    if ( is_admin() ) { return; }
     add_shortcode( 'mwai_chat', array( $this, 'chat' ) );
     add_shortcode( 'mwai_chatbot', array( $this, 'chat' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
-
-    add_action( 'wp_print_footer_scripts', function () { die; } );
     if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
       add_action( 'wp_body_open', array( $this, 'inject_chat' ) );
     }
+
     // Only for test now, but later we should probably import the JS/CSS
     if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
       wp_enqueue_script( 'mwai_chatbot',
@@ -89,17 +85,30 @@ class Meow_MWAI_Modules_Chatbot {
   }
 
   function chat( $atts ) {
+    // Use the core default parameters, or the user default parameters
     $override = $this->core->get_option( 'shortcode_chat_params_override' );
     $defaults_params = $override ? $this->core->get_option( 'shortcode_chat_params' ) :
       $this->core->get_option( 'shortcode_chat_default_params' );
     $defaults_params['id'] = uniqid();
+
+    // Give a chance to modify the default parameters one last time
     $defaults = apply_filters( 'mwai_chatbot_params_defaults', $defaults_params );
+
+    // Make sure all the mandatory params are set
+    foreach ( $this->core->defaultChatbotParams as $key => $value ) {
+      if ( !isset( $defaults[$key] ) ) {
+        $defaults[$key] = $value;
+      }
+    }
+
+    // Override with the shortcode, and before/after filters
+    $atts = apply_filters( 'mwai_chatbot_params_before', $atts );
     $atts = shortcode_atts( $defaults, $atts );
     $atts = apply_filters( 'mwai_chatbot_params', $atts );
     $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
     $id = $atts['id'];
 
-    // Functions
+    // Named functions
     $onSentClickFn = "mwai_{$id}_onSendClick";
     $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
@@ -112,17 +121,12 @@ class Meow_MWAI_Modules_Chatbot {
     $textSend = addslashes( trim( $atts['text_send'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );
-    $window = boolval( $atts['window'] );
+    $window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
+    $fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
     $style = $atts['style'];
 
     // Chatbot System Parameters
     $casuallyFineTuned = boolval( $atts['casually_fined_tuned'] );
-    //print_r( $atts );
-    // echo $casuallyFineTuned;
-    // echo '-';
-    // echo $window;
-    //exit;
-
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
     if ( $casuallyFineTuned ) {
@@ -138,21 +142,27 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Variables
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
-    $baseClasses = "mwai-chat" . ( $window ? " mwai-window" : "" );
+    $baseClasses = "mwai-chat";
+    $baseClasses .= ( $window ? " mwai-window" : "" );
+    $baseClasses .= ( $fullscreen ? " mwai-fullscreen" : "" );
 
-    // Output CSS, HTML and JS
+    // Output CSS
     ob_start();
     $style_content = "";
     if ( $style === 'chatgpt' ) {
       $style_content = $this->chatgpt_style( $id, $style );
     }
     echo apply_filters( 'mwai_chatbot_style', $style_content, $id );
+
+    // Output HTML & CSS
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
         <?php if ( $window ) { ?>
-          <div class="mwai-close-button">⨯</div>
-          <div class="mwai-open-button">
-            <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
+          <div class="mwai-header">
+            <div class="mwai-close-button"></div>
+            <div class="mwai-open-button">
+              <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
+            </div>
           </div>
         <?php } ?>
         <div class="mwai-content">
@@ -168,6 +178,7 @@ class Meow_MWAI_Modules_Chatbot {
       <script>
         var <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
         var isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
+        var isWindow = <?= $window ? 'true' : 'false' ?>;
 
         // Push the reply in the conversation
         function <?= $addReplyFn ?>(text, type = 'user') {
@@ -272,6 +283,7 @@ class Meow_MWAI_Modules_Chatbot {
           });
         }
 
+        // Keep the textarea height in sync with the content
         function mwaiSetTextAreaHeight(textarea, lines) {
           var rows = textarea.getAttribute('rows');
           if (lines !== rows) {
@@ -279,6 +291,7 @@ class Meow_MWAI_Modules_Chatbot {
           }
         }
 
+        // Init the chatbot
         function <?= $initChatBotFn ?>() {
           var input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
           input.addEventListener('keypress', (event) => {
@@ -304,7 +317,7 @@ class Meow_MWAI_Modules_Chatbot {
           });
 
           // If window, add event listener to mwai-open-button and mwai-close-button
-          if ( <?= $window ? 1 : 0 ?> ) {
+          if ( isWindow ) {
             var openButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-open-button');
             openButton.addEventListener('click', (event) => {
               var chat = document.querySelector('#mwai-chat-<?= $id ?>');
@@ -324,8 +337,8 @@ class Meow_MWAI_Modules_Chatbot {
           <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
         }
 
+        // Let's go totally meoooow on this! 
         <?= $initChatBotFn ?>();
-        
       </script>
 
     <?php

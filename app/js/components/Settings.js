@@ -1,9 +1,10 @@
-// Previous: 0.2.5
-// Current: 0.2.7
+// Previous: 0.2.7
+// Current: 0.3.0
 
 const { useMemo, useState } = wp.element;
 import Styled from "styled-components";
 
+// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings,
   NekoSelect, NekoOption, NekoSpacer,
   NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoColumn } from '@neko-ui';
@@ -212,7 +213,7 @@ const Settings = () => {
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={updateOption} />
+        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Account</a>.</>} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxOpenAiUsage =
@@ -226,7 +227,7 @@ const Settings = () => {
               <li key={index}>
                 <strong>🗓️ {month}</strong>
                 <ul>
-                  {Object.keys(monthUsage).map((model, index2) => { // changed variable name to index2
+                  {Object.keys(monthUsage).map((model, index2) => {
                     const modelUsage = monthUsage[model];
                     let price = null;
                     let modelPrice = OpenAI_PricingPerModel.find(x => model.includes(x.model));
@@ -266,7 +267,7 @@ const Settings = () => {
         </ul>
       </>}
       <p style={{ fontSize: 12, color: '#A0A0A0' }}>
-        This is only given as an indication. For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">Usage at OpenAI</a>.
+        This is only given as an indication. For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank" rel="noopener noreferrer">Usage at OpenAI</a>.
       </p>
     </NekoSettings>;
 
@@ -283,7 +284,7 @@ const Settings = () => {
 
           <NekoContainer>
             <NekoTypo p>
-              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵
+              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank" rel="noopener noreferrer">AI Engine website</a> for more information. Have fun! 🎵
             </NekoTypo>
           </NekoContainer>
 
@@ -348,7 +349,6 @@ const Settings = () => {
                       <NekoInput id="context" name="context"
                         value={shortcodeParams.context} onBlur={updateShortcodeParams} />
 
-                      
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>AI Name:</label>
@@ -397,21 +397,24 @@ const Settings = () => {
                           <label>Style:</label>
                         </div>
                         <div className="mwai-builder-col">
-                        <NekoSelect scrolldown id="style" name="style"
-                          value={shortcodeParams.style} description="" onChange={updateShortcodeParams}>
-                          <NekoOption key='none' id='none' value='none' label="None" />
-                          <NekoOption key='chatgpt' id='chatgpt' value='chatgpt' label="ChatGPT" />
-                        </NekoSelect>
+                          <NekoSelect scrolldown id="style" name="style"
+                            value={shortcodeParams.style} description="" onChange={updateShortcodeParams}>
+                            <NekoOption key='none' id='none' value='none' label="None" />
+                            <NekoOption key='chatgpt' id='chatgpt' value='chatgpt' label="ChatGPT" />
+                          </NekoSelect>
                         </div>
                         <div className="mwai-builder-col">
-                        <NekoCheckbox id="window" label="Window (Popup Mode)"
-                          checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
+                          <NekoCheckbox id="window" label="Window/Popup"
+                            checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
+                        </div>
+                        <div className="mwai-builder-col">
+                          <NekoCheckbox id="fullscreen" label="Fullscreen"
+                            checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
                         </div>
                       </div>
 
                       <NekoSpacer height={20} line={true} />
 
-                      
                       <div className="mwai-builder-row">
 
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
@@ -419,7 +422,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption value={x.id} label={x.name}></NekoOption>
+                              <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>
@@ -453,7 +456,7 @@ const Settings = () => {
 
                     <NekoCheckbox id="shortcode_chat_params_override" label="Set as Default Parameters"
                       value="1" checked={shortcodeParamsOverride}
-                      description="The parameters set above will be used by default. If you are using 'Window (Popup Mode)' and many chatbots on the same page, be careful, as they will probably appear on top of each other."
+                      description="The parameters set above will be used by default. If you are using 'Window/Popup' and many chatbots on the same page, be careful, as they will probably appear on top of each other."
                       onChange={updateOption} />
 
                     <NekoCheckbox id="shortcode_chat_inject" label="Inject this chatbot on this website"
