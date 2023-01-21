@@ -175,14 +175,29 @@ class Meow_MWAI_AI {
   }
 
   public function run( $query ) {
+
+    // Is this query allowed
+    $ok = apply_filters( 'mwai_ai_allowed', true, $query );
+    if ( $ok !== true ) {
+      // Is ok is string, then it's an error message, or create a generic one.
+      $message = is_string( $ok ) ? $ok : 'Unauthorized query.';
+      throw new Exception( $message );
+    }
+
+    // Let's run it!
+    $answer = null;
     if ( $query instanceof Meow_MWAI_QueryText ) {
-      return $this->runTextQuery( $query );
+      $answer = $this->runTextQuery( $query );
     }
     else if ( $query instanceof Meow_MWAI_QueryImage ) {
-      return $this->runImageQuery( $query );
+      $answer = $this->runImageQuery( $query );
     }
     else {
       throw new Exception( 'Invalid query.' );
     }
+
+    // Let's allow some modififications of the answer
+    $answer = apply_filters( 'mwai_ai_reply', $answer, $query );
+    return $answer;
   }
 }

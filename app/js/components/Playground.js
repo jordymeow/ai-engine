@@ -1,15 +1,15 @@
-// Previous: 0.2.4
-// Current: 0.2.6
+// Previous: 0.2.6
+// Current: 0.3.4
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
 import { postFetch } from '@neko-ui';
-import { NekoButton, NekoPage, NekoHeader, NekoSelect, NekoOption, NekoModal, NekoInput,
+import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
 
-import { apiUrl, restNonce, options } from '@app/settings';
-import { OpenAI_models, OpenAI_PricingPerModel } from "../constants";
+import { apiUrl, restNonce, session, options } from '@app/settings';
+import { OpenAI_PricingPerModel } from "../constants";
 import { OptionsCheck, useModels } from "../helpers";
 import { AiNekoHeader } from "./CommonStyles";
 
@@ -156,7 +156,6 @@ const StyledNekoInput = Styled(NekoInput)`
   }
 `;
 
-
 const Dashboard = () => {
   const [error, setError] = useState();
   const [prompt, setPrompt] = useState();
@@ -197,7 +196,9 @@ const Dashboard = () => {
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
     const stop = stopSequence.replace(/\\n/g, '\n');
-    const res = await postFetch(`${apiUrl}/make_completions`, { json: { 
+    const res = await postFetch(`${apiUrl}/make_completions`, { json: {
+      env: 'playground',
+      session: session,
       prompt: promptToUse,
       temperature,
       model,

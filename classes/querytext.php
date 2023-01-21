@@ -1,9 +1,6 @@
 <?php
 
 class Meow_MWAI_QueryText extends Meow_MWAI_Query {
-
-  public $model = 'text-davinci-003';
-  public $type = 'completion';
   public $maxTokens = 16;
   public $temperature = 0.8;
   public $stop = null;
@@ -12,14 +9,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->prompt = $prompt;
     $this->maxTokens = $maxTokens;
     $this->model = $model;
-  }
-
-  /**
-   * ID of the model to use.
-   * @param string $model ID of the model to use.
-   */
-  public function setModel( $model ) {
-    $this->model = $model;
+    $this->type = "completion";
   }
 
   /**

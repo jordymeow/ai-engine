@@ -19,6 +19,10 @@ class Meow_MWAI_Answer {
     $this->usage = $usage;
   }
 
+  public function getTotalTokens() {
+    return $this->usage['total_tokens'];
+  }
+
   /**
    * Set the choices from OpenAI as the results.
    * The last (or only) result is set as the result.

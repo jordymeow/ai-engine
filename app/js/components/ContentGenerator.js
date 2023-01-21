@@ -1,5 +1,5 @@
-// Previous: 0.2.6
-// Current: 0.3.3
+// Previous: 0.3.3
+// Current: 0.3.4
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -8,7 +8,7 @@ import { postFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoContainer,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
 
-import { apiUrl, restNonce, options } from '@app/settings';
+import { apiUrl, restNonce, session, options } from '@app/settings';
 import { WritingStyles, WritingTones } from "../constants";
 import { cleanNumbering, OptionsCheck, useModels } from "../helpers";
 import { AiNekoHeader, StyledTitleWithButton } from "./CommonStyles";
@@ -127,16 +127,14 @@ const ContentGenerator = () => {
 
   useEffect(() => {
     if (title) {
-      const langObj = languages.find(l => l.value === language);
-      const humanLanguage = langObj ? langObj.label : '';
+      const humanLanguage = languages.find(l => l.value === language).label;
       setPromptForHeadings(`Generate ${headingsCount} consecutive headings for an article about "${title}", in ${humanLanguage}. Style: ${writingStyle}. Tone: ${writingTone}.\n\nEach heading is between 40 and 60 characters.\n\nUse Markdown for the headings (## ).`);
     }
   }, [title, headingsCount, writingStyle, writingTone, language]);
 
   useEffect(() => {
     if (title && headings) {
-      const langObj = languages.find(l => l.value === language);
-      const humanLanguage = langObj ? langObj.label : '';
+      const humanLanguage = languages.find(l => l.value === language).label;
       setPromptForContent(`Write an article about "${title}" in ${humanLanguage}. The article is organized by the following headings:\n\n${headings}\n\nWrite ${paragraphsCount} paragraphs per heading.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: ${writingStyle}. Tone: ${writingTone}.`);
     }
   }, [title, headings, writingTone, writingStyle, language, paragraphsCount]);
@@ -149,6 +147,8 @@ const ContentGenerator = () => {
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
     const res = await postFetch(`${apiUrl}/make_completions`, { json: { 
+      env: 'contentgenerator',
+      session: session,
       prompt: promptToUse,
       temperature,
       maxTokens: 2048,
@@ -168,10 +168,10 @@ const ContentGenerator = () => {
     setBusy(false);
     if (text) {
       setTitle(text);
-      const headingsResult = await onSubmitPromptForHeadings();
-      if (headingsResult) {
-        const contentResult = await onSubmitPromptForContent();
-        if (contentResult) {
+      const headingsText = await onSubmitPromptForHeadings();
+      if (headingsText) {
+        const contentText = await onSubmitPromptForContent();
+        if (contentText) {
           await onSubmitPromptForExcerpt();
         }
       }
@@ -192,7 +192,7 @@ const ContentGenerator = () => {
   const onSubmitPromptForContent = async () => {
     setBusy(true);
     setContent("");
-    let text = await onSubmitPrompt(promptForContent);
+    let text = await onsubmitPrompt(promptForContent);
     if (text) {
       text = text.replace(/^===INTRO: /, '').replace(/^===OUTRO: /, '');
       setContent(text);
@@ -325,7 +325,7 @@ const ContentGenerator = () => {
 
             <NekoSpacer height={5} />
 
-            <NekoTextArea rows={4} value={headings} onBlur={(e) => setHeadings(e.target.value)} />
+            <NekoTextArea rows={4} value={headings} onBlur={setHeadings} />
             <div className="information">
               Add, rewrite, remove, or reorganize those sections as you wish before clicking "Generate Content". I recommend using Markdown.
             </div>
@@ -355,7 +355,7 @@ const ContentGenerator = () => {
 
             <NekoSpacer height={5} />
 
-            <NekoTextArea rows={18} value={content} onBlur={(e) => setContent(e.target.value)} />
+            <NekoTextArea rows={18} value={content} onBlur={setContent} />
             <div className="information">
               You can modify the content before using "Create Post". Markdown is supported, and will be converted to HTML when the post is created.
             </div>
@@ -367,7 +367,7 @@ const ContentGenerator = () => {
               </NekoButton>
             </StyledTitleWithButton>
 
-            <NekoTextArea value={excerpt} onBlur={(e) => setExcerpt(e.target.value)} rows={3} />
+            <NekoTextArea value={excerpt} onBlur={setExcerpt} rows={3} />
 
             <NekoSpacer height={10} />
 
@@ -390,25 +390,23 @@ const ContentGenerator = () => {
             </StyledTitleWithButton>
             {showModelParams && <>
               <label>Model:</label>
-              <NekoSelect id="models" value={model} scrolldown={true} onChange={(val) => setModel(val)}>
+              <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                  <NekoOption value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={(val) => setTemperature(parseFloat(val))} onBlur={(e) => setTemperature(parseFloat(e.target.value))}
-                description={<>
+                onChange={setTemperature} onBlur={() => setTemperature(temperature)} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={(val) => setMaxTokens(parseInt(val))} onBlur={(e) => setMaxTokens(parseInt(e.target.value))}
-                description={<>
+                onChange={setMaxTokens} onBlur={() => setMaxTokens(maxTokens)} description={<>
                   <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
-                    Between 1 and 4096.
+                    Between 1 and 2048.
                   </span> Higher values means the model will generate more content.
                 </>} />
             </>}
@@ -424,13 +422,13 @@ const ContentGenerator = () => {
             {showPrompts && <>
               <p>The prompts are automatically generated for you, but you can enhance them once the values are set.</p>
               <label>Prompt for <b>One-Click Generate</b></label>
-              <NekoTextArea disabled={!content || busy} value={promptForTopic} onChange={(e) => setPromptForTopic(e.target.value)} />
+              <NekoTextArea disabled={!content || busy} value={promptForTopic} onChange={setPromptForTopic}  />
               <label>Prompt for <b>Generate Sections</b></label>
-              <NekoTextArea disabled={busy} value={promptForHeadings} onChange={(e) => setPromptForHeadings(e.target.value)} />
+              <NekoTextArea disabled={busy} value={promptForHeadings} onChange={setPromptForHeadings}  />
               <label>Prompt for <b>Generate Content</b></label>
-              <NekoTextArea disabled={busy} value={promptForContent} onChange={(e) => setPromptForContent(e.target.value)} />
+              <NekoTextArea disabled={busy} value={promptForContent} onChange={setPromptForContent}  />
               <label>Prompt for <b>Generate Excerpt</b></label>
-              <NekoTextArea disabled={!content || busy} value={promptForExcerpt} onChange={(e) => setPromptForExcerpt(e.target.value)} />
+              <NekoTextArea disabled={!content || busy} value={promptForExcerpt} onChange={setPromptForExcerpt}  />
             </>}
           </StyledSidebar>
 

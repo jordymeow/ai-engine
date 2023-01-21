@@ -5,6 +5,7 @@ require_once( MWAI_PATH . '/vendor/autoload.php' );
 define( 'MWAI_CHATBOT_PARAMS', [
 	// UI Parameters
 	'id' => null,
+	'env' => 'chatbot',
 	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
 	'ai_name' => "AI: ",
 	'user_name' => "User: ",

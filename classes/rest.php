@@ -161,6 +161,12 @@ class Meow_MWAI_Rest
 		if ( isset( $params['maxResults'] ) ) {
 			$query->setMaxResults( $params['maxResults'] );
 		}
+		if ( isset( $params['env'] ) ) {
+			$query->setEnv( $params['env'] );
+		}
+		if ( isset( $params['session'] ) ) {
+			$query->setSession( $params['session'] );
+		}
 		return $query;
 	}
 

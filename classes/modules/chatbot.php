@@ -46,6 +46,7 @@ class Meow_MWAI_Modules_Chatbot {
   function rest_chat( $request ) {
     try {
 			$params = $request->get_json_params();
+      $session = $params['session'];
 			$prompt = $params['prompt'];
       $model = $params['model'];
       $temperature = $params['temperature'];
@@ -53,6 +54,9 @@ class Meow_MWAI_Modules_Chatbot {
       $apiKey = $params['apiKey'];
       $stop = $params['stop'];
 			$query = new Meow_MWAI_QueryText( $prompt, 1024 );
+      if ( $session ) {
+        $query->setSession( $session );
+      }
       if ( $model ) {
         $query->setModel( $model );
       }
@@ -106,12 +110,6 @@ class Meow_MWAI_Modules_Chatbot {
     $atts = shortcode_atts( $defaults, $atts );
     $atts = apply_filters( 'mwai_chatbot_params', $atts );
     $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
-    $id = $atts['id'];
-
-    // Named functions
-    $onSentClickFn = "mwai_{$id}_onSendClick";
-    $addReplyFn = "mwai_{$id}_addReply";
-    $initChatBotFn = "mwai_{$id}_initChatBot";
 
     // UI Parameters
     $aiName = addslashes( trim($atts['ai_name']) );
@@ -126,6 +124,9 @@ class Meow_MWAI_Modules_Chatbot {
     $style = $atts['style'];
 
     // Chatbot System Parameters
+    $id = $atts['id'];
+    $env = $atts['env'];
+    $rest_nonce = wp_create_nonce( 'wp_rest' );
     $casuallyFineTuned = boolval( $atts['casually_fined_tuned'] );
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
@@ -139,6 +140,11 @@ class Meow_MWAI_Modules_Chatbot {
     $temperature = $atts['temperature'];
     $maxTokens = $atts['max_tokens'];
     $apiKey = $atts['api_key'];
+
+    // Named functions
+    $onSentClickFn = "mwai_{$id}_onSendClick";
+    $addReplyFn = "mwai_{$id}_addReply";
+    $initChatBotFn = "mwai_{$id}_initChatBot";
 
     // Variables
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
@@ -247,7 +253,9 @@ class Meow_MWAI_Modules_Chatbot {
           }
 
           // Request the completion
-          const data = { 
+          const data = {
+            env: '<?= $env ?>',
+            session: '<?= $id ?>',
             prompt: prompt,
             userName: '<?= $userName ?>',
             aiName: '<?= $aiName ?>',
@@ -258,7 +266,10 @@ class Meow_MWAI_Modules_Chatbot {
             apiKey: '<?= $apiKey ?>',
           };
           console.log('[BOT] Sent: ', data);
-          fetch('<?= $apiUrl ?>', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          fetch('<?= $apiUrl ?>', { method: 'POST', headers: { 
+              'Content-Type': 'application/json', 
+              'X-WP-Nonce': '<?= $rest_nonce ?>'
+            },
             body: JSON.stringify(data)
           })
           .then(response => response.json())

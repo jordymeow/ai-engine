@@ -5,19 +5,17 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.3.3
+Stable tag: 0.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Elevate your WordPress site with AI! Generate content and images, add a ChatGPT-style bot that can be trained with your data, fine-tune AI models, have fun in the AI Playground, and more! It also tracks the OpenAI usage and offers an internal API for other plugins. You are welcome on the [https://meowapps.com/ai-engine/](AI Engine) official page! :)
+AI for WordPress! ChatGPT-style chatbot, Image & Content Generator, Train AI Models, etc. Lot of features + Extensible + Customizable + Sleek UI = 💕
 
 == Description ==
 
-Ready to supercharge your WordPress site with the latest and greatest AI technology? The AI Engine plugin is here to help! With the AI Engine, you can generate content for your articles, suggest titles and excerpts for your posts, and track your OpenAI usage stats. Plus, there's a shortcode that lets you create a ChatGPT-style discussion on your website, and an AI Playground where you can try out a variety of tasks like translation, correction, SEO, and more.
+With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
 
-But we're just getting started! We'll be adding even more AI tools and features to the AI Engine based on your feedback, and we're even offering an API so other plugins can tap into its capabilities. Our goal is to create a comprehensive toolbox of AI tools and a framework that other plugins can build on. And don't forget, our other Meow Apps plugins will soon be able to access the AI Engine too.
-
-With the AI Engine, the possibilities are endless. Let's get started and make the most of this amazing technology!
+Official website: [https://meowapps.com/ai-engine/](AI Engine).
 
 == Features ==
 
@@ -28,30 +26,23 @@ With the AI Engine, the possibilities are endless. Let's get started and make th
 * Train your AI to make it better at specific tasks
 * Easily create new titles and excerpts for your posts
 * Keep track of your OpenAI usage with built-in statistics
+* Internal API for you to play with
 * Upcoming features include translation to any language and the ability to improve specific paragraphs
 * And so much more on the way!
 
 == Shortcode: ChatGPT & Image Generation Bot ==
 
-Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with this shortcode:
-
-[mwai_chat context="Converse as if you were Michael Jackson, talking from the afterlife." ai_name="Michael: " user_name="You: " start_sentence="Hi, my friend." ]
-
-There are a lot of parameters for the shortcode. And since there's no CSS included by default, you have complete control over the styling. However, there is an option to apply ChatGPT styling to the chatbot.
-
-Please visite the [official documentation](https://meowapps.com/ai-engine/) for more information. 
+Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with this shortcode: [mwai_chatbot]. Looks simple? Yes, but there are many parameters and countless ideas. Visite the [official documentation](https://meowapps.com/ai-engine/) for more information. 
 
 == Content Generator ==
 
-Looking to add some fresh content to your site? With this feature, you can generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to create exactly the content you need.
+Generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to craft exactly the content you need.
 
-== Image Generator ==
-
-You can generate custom images using DALL-E model and various customizable parameters. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations, but the plugin will adapt as the limitations change.
+You can also generate images using DALL-E model. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations (OpenAI is in beta).
 
 == Train your AI ==
 
-In the Fine Tuning section of AI Engine, you can prepare datasets, manage them, and train new models based on them, it's just a few click.
+In the Fine Tuning section of AI Engine, you can prepare datasets, manage them, and train new models based on them, in just a few click.
 
 == Meow Apps + AI ==
 
@@ -72,12 +63,16 @@ Languages: English.
 
 == Changelog ==
 
+= 0.3.4 (2023/01/22) =
+* Add: Code enhancements to support many new actions and filters.
+* Add: Added actions and filters to modify the answers, limit the users, etc. More to come soon.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.3.3 (2023/01/21) =
 * Add: Languages management (check https://meowapps.com/ai-engine/tutorial/#add-or-remove-languages).
 * Add: The chatbot can be displayed in fullscreen (use fullscreen="true" in the shortcode). It works logically with the window/popup mode: no popup? Fullscreen right away! Popup? Fullscreen on click :)
 * Fix: A few potential issues that coult break a few things.
 * Update: Cleaned the JS, CSS and HTML. I like when it's very tidy before going forward!
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.2.9 (2023/01/19) =
 * Fix: Responsive.

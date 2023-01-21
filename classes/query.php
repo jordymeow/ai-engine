@@ -1,12 +1,33 @@
 <?php
 
 class Meow_MWAI_Query {
+  public $env = '';
   public $prompt = '';
+  public $model = '';
+  public $type = '';
   public $apiKey = null;
+  public $session = null;
   public $maxResults = 1;
 
   public function __construct( $prompt = '' ) {
     $this->prompt = $prompt;
+  }
+
+  /**
+   * The environment, like "chatbot", "imagesbot", "chatbot-007", "textwriter", etc...
+   * Used for statistics, mainly.
+   * @param string $env The environment.
+   */
+  public function setEnv( $env ) {
+    $this->env = $env;
+  }
+
+  /**
+   * ID of the model to use.
+   * @param string $model ID of the model to use.
+   */
+  public function setModel( $model ) {
+    $this->model = $model;
   }
 
   /**
@@ -24,6 +45,14 @@ class Meow_MWAI_Query {
    */
   public function setApiKey( $apiKey ) {
     $this->apiKey = $apiKey;
+  }
+
+  /**
+   * The session ID to use.
+   * @param string $session The session ID.
+   */
+  public function setSession( $session ) {
+    $this->session = $session;
   }
 
   /**

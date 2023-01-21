@@ -1,13 +1,15 @@
-// Previous: 0.7.5
-// Current: 0.3.2
+// Previous: 0.3.2
+// Current: 0.3.4
 
-import createFormFieldBlock from './form-field';
+import createChatbotBlock from './ChatbotBlock';
+import createFormFieldBlock from './FormFieldBlock';
 
 // The Storybook for Gutenberg
-// https://wordpress.github.io/gutenberg/?path=/story/icons-icon--library
+// https://wordpress.github.io/gutenberg
 
 const initBlocks = () => {
   createFormFieldBlock();
+  createChatbotBlock();
 }
 
 export default initBlocks;
