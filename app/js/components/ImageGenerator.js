@@ -1,18 +1,42 @@
-// Previous: 0.2.2
-// Current: 0.3.4
+// Previous: 0.3.4
+// Current: 0.3.5
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
-import { postFetch } from '@neko-ui';
+import { nekoFetch } from '@neko-ui';
 import { NekoPage, NekoSelect, NekoOption, NekoModal, NekoButton, NekoCheckbox, NekoContainer,
   NekoWrapper, NekoColumn, NekoTypo, NekoInput, NekoMessageSuccess } from '@neko-ui';
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { OptionsCheck } from "../helpers";
 import { AiNekoHeader, StyledGallery, StyledTextField, StyledTitleWithButton } from "./CommonStyles";
+import { StyledSidebar } from "./styles/StyledSidebar";
 
-const ImagesCount = [3, 6, 9];
+const templates = [
+  {
+    id: 'none',
+    name: 'None',
+    prompt: '',
+  },
+  {
+    id: 'japan',
+    name: 'Ghibli Inspired',
+    prompt: 'japan, tokyo, trees, izakaya, anime oil painting, high resolution, ghibli inspired, 4k',
+  },
+  {
+    id: 'steampunk',
+    name: 'Steampunk Architecture',
+    prompt: 'steampunk architecture, exterior view, award-winning architectural photography from magazine, trees, theater',
+  },
+  {
+    id: 'modern-illustration',
+    name: 'Modern Illustration',
+    prompt: 'illustration of a cat, modern design, for the web, cute, happy, 4k, high resolution, trending in artstation',
+  },
+];
+
+const ImagesCount = [1, 2, 3, 6, 9];
 
 function generateFilename(prompt, maxLength = 42) {
   let cleaned = prompt.replace(/[\s|,]+/g, '-');
@@ -20,7 +44,7 @@ function generateFilename(prompt, maxLength = 42) {
   const words = cleaned.split("-");
   let filename = words[0];
   let i = 1;
-  while (filename.length + words[i].length < maxLength && i < words.length) {
+  while (i < words.length && (filename.length + words[i].length + 1) < maxLength) {
     filename += "-" + words[i];
     i++;
   }
@@ -45,8 +69,9 @@ const DefaultTitle = isTest ? 'japan, tokyo, trees, izakaya, anime oil painting,
 
 const ImageGenerator = () => {
   const [error, setError] = useState();
+  const [template, setTemplate] = useState(templates[0]);
   const [prompt, setPrompt] = useState(DefaultTitle);
-  const [continuousMode, setContinuousMode] = useState(false);
+  const [continuousMode, setContinuousMode] = useState(true);
   const [maxResults, setMaxResults] = useState(3);
   const [urls, setUrls] = useState([]);
 
@@ -61,6 +86,10 @@ const ImageGenerator = () => {
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
 
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
+
+  useEffect(() => {
+    setPrompt(template.prompt);
+  }, [template]);
 
   useEffect(() => {
     if (selectedUrl) {
@@ -87,10 +116,15 @@ const ImageGenerator = () => {
 
   const onSubmit = async () => {
     setBusy(true);
-    const res = await postFetch(`${apiUrl}/make_images`, { json: { 
-      prompt,
-      maxResults,
-    }, nonce: restNonce });
+    const res = await nekoFetch(`${apiUrl}/make_images`, {
+      method: 'POST',
+      nonce: restNonce,
+      json: { 
+        env: 'admin-tools',
+        session: session,
+        prompt,
+        maxResults,
+    }});
     setBusy(false);
     if (res.success) {
       if (continuousMode) {
@@ -106,16 +140,13 @@ const ImageGenerator = () => {
 
   const onAdd = async () => {
     setBusy(true);
-    const res = await postFetch(`${apiUrl}/create_image`, { json: { 
-      env: 'imagesgenerator',
-      session: session,
-      url: selectedUrl,
-      title,
-      description,
-      caption,
-      alt,
-      filename,
-    }, nonce: restNonce });
+    const res = await nekoFetch(`${apiUrl}/create_image`, {
+      method: 'POST',
+      nonce: restNonce,
+      json: { 
+        url: selectedUrl, title, description,
+        caption, alt, filename,
+    }});
     setBusy(false);
     if (res.success) {
       setCreatedMediaIds(prevIds => [...prevIds, {
@@ -159,6 +190,20 @@ const ImageGenerator = () => {
 
         <OptionsCheck options={options} />
 
+        <NekoColumn>
+          <StyledSidebar style={{ marginBottom: 25 }}>
+            <h3 style={{ marginTop: 0 }}>Templates</h3>
+            <ul>
+              {templates.map((x) => (
+                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                  {x.name}
+                </li>
+              ))}
+            </ul>
+            <div>Soon, you'll be able to create templates and re-use them easily.</div>
+          </StyledSidebar>
+        </NekoColumn>
+
         <NekoColumn style={{ flex: 3 }}>
 
           {selectedUrl && <>
@@ -167,10 +212,10 @@ const ImageGenerator = () => {
               <StyledTitleWithButton style={{ paddingBottom: 10 }}>
                 <h2>Images Generator</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <NekoButton disabled={urlIndex <= 0 || busy} onClick={() => onGoBack()}>
+                  <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
                     &lt;
                   </NekoButton>
-                  <NekoButton disabled={busy} onClick={() => setSelectedUrl()}> 
+                  <NekoButton disabled={busy} onClick={() => setSelectedUrl()}>
                     Back to results
                   </NekoButton>
                   <NekoButton disabled={urlIndex >= urls.length - 1 || busy} onClick={() => onGoNext()}>
@@ -241,14 +286,10 @@ const ImageGenerator = () => {
                 </div>
               </StyledTitleWithButton>
               <StyledTextField value={prompt} onBlur={(e) => setPrompt(e.target.value)} style={{ marginTop: 20 }} />
-              {urls.length > 0 && <StyledGallery>
-                {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} key={url} />)}
-              </StyledGallery>}
-              {!urls.length && <StyledGallery>
-                <div className="empty-image" />
-                <div className="empty-image" />
-                <div className="empty-image" />
-              </StyledGallery>}
+              <StyledGallery>
+                {urls.map(url => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} class="empty-image" />)}
+              </StyledGallery>
             </NekoContainer>
           </>}
             
@@ -259,7 +300,7 @@ const ImageGenerator = () => {
             <h2 style={{ marginTop: 0 }}>Settings</h2>
             <NekoCheckbox id="continuous_mode" label="Continuous" value="1" checked={continuousMode}
               description="New images will be added to the already generated images."
-              onChange={(checked) => setContinuousMode(checked)} />
+              onChange={() => setContinuousMode(prev => !prev)} />
           </NekoContainer>
         </NekoColumn>
 

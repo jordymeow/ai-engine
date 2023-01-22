@@ -1,12 +1,12 @@
-// Previous: none
-// Current: 0.1.9
+// Previous: 0.1.9
+// Current: 0.3.5
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
 // NekoUI
 import { NekoWrapper } from '@neko-ui';
-import { postFetch } from '@neko-ui';
+import { nekoFetch } from '@neko-ui';
 
 // AI Engine
 import { apiUrl, restNonce } from '@app/settings';
@@ -26,7 +26,13 @@ const PostsListTools = () => {
   }, [])
 
   const onTitleClick = async (title) => {
-    const res = await postFetch(`${apiUrl}/update_post_title`, { json: { postId: post.postId, title }, nonce: restNonce });
+    const res = await nekoFetch(`${apiUrl}/update_post_title`, { 
+      method: 'POST',
+      nonce: restNonce,
+      json: { 
+        postId: post.postId,
+        title
+      }});
     if (!res.success) {
       throw new Error(res.message);
     }

@@ -2,6 +2,29 @@
 
 require_once( MWAI_PATH . '/vendor/autoload.php' );
 
+#region Constants
+
+// Price as of January 2023: https://openai.com/api/pricing/
+define( 'MWAI_OPENAI_PRICING', [
+  // Base models:
+  [ "model" => "davinci", "price" => 0.02, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "curie", "price" => 0.002, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "babbage", "price" => 0.0005, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "ada", "price" => 0.0004, "type" => "token", "unit" => 1 / 1000 ],
+  // Image models:
+  [ "model" => "dall-e", "type" => "image", "unit" => 1, "options" => [
+      [ "option" => "1024x1024", "price" => 0.02 ],
+      [ "option" => "512x512", "price" => 0.018 ],
+      [ "option" => "256x256", "price" => 0.016 ]
+    ],
+  ],
+  // Fine-tuned models:
+  [ "model" => "fn-davinci", "price" => 0.12, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "fn-curie", "price" => 0.012, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "fn-babbage", "price" => 0.0024, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "fn-ada", "price" => 0.0016, "type" => "token", "unit" => 1 / 1000 ],
+]);
+
 define( 'MWAI_CHATBOT_PARAMS', [
 	// UI Parameters
 	'id' => null,
@@ -58,6 +81,7 @@ define( 'MWAI_OPTIONS', [
 	'extra_models' => "",
 	'languages' => MWAI_LANGUAGES
 ]);
+#endregion
 
 class Meow_MWAI_Core
 {
@@ -125,6 +149,12 @@ class Meow_MWAI_Core
 		$text = html_entity_decode( $text );
 		return $text;
 	}
+
+	function markdown_to_html( $content ) {
+		$Parsedown = new Parsedown();
+		$content = $Parsedown->text( $content );
+		return $content;
+	}
 	#endregion
 
 	#region Options
@@ -174,12 +204,6 @@ class Meow_MWAI_Core
 		return $options[$option] ?? $default;
 	}
 	#endregion
-
-	function markdown_to_html( $content ) {
-		$Parsedown = new Parsedown();
-		$content = $Parsedown->text( $content );
-		return $content;
-	}
 }
 
 ?>

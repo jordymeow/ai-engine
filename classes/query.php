@@ -4,7 +4,7 @@ class Meow_MWAI_Query {
   public $env = '';
   public $prompt = '';
   public $model = '';
-  public $type = '';
+  public $mode = '';
   public $apiKey = null;
   public $session = null;
   public $maxResults = 1;

@@ -1,5 +1,5 @@
-// Previous: 0.2.2
-// Current: 0.2.4
+// Previous: 0.2.4
+// Current: 0.3.5
 
 import Styled from "styled-components";
 import { NekoTextArea, NekoHeader, NekoButton } from '@neko-ui';
@@ -48,17 +48,17 @@ const StyledTitleWithButton = Styled.div`
 const StyledGallery = Styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
+  grid-template-rows: repeat(auto-fit, minmax(30%, 1fr));
   grid-gap: 10px;
   margin-top: 20px;
 
-  img {
+  img, div {
     width: 100%;
-    height: 305px;
+    cursor: pointer;
   }
-
   .empty-image {
     width: 100%;
-    height: 305px;
+    padding-bottom: 100%;
     background-color: #f5f5f5;
   }
 `;

@@ -1,5 +1,5 @@
-// Previous: 0.2.4
-// Current: 0.3.3
+// Previous: 0.3.3
+// Current: 0.3.5
 
 const OpenAI_models = [
   {
@@ -30,12 +30,12 @@ const OpenAI_models = [
     description: 'Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost.',
     strength: 'Parsing text, simple classification, address correction, keywords'
   },
-  {
-    id: 'code-davinci-002',
-    name: 'code-davinci-002',
-    short: 'davinci',
-    description: 'Most capable Codex model. Particularly good at translating natural language to code. In addition to completing code, also supports inserting completions within code.',
-  },
+  // {
+  //   id: 'code-davinci-002',
+  //   name: 'code-davinci-002',
+  //   short: 'davinci',
+  //   description: 'Most capable Codex model. Particularly good at translating natural language to code. In addition to completing code, also supports inserting completions within code.',
+  // },
   // {
   //   id: 'code-cushman-001',
   //   name: 'code-cushman-001',

@@ -1,10 +1,10 @@
-// Previous: 0.2.6
-// Current: 0.3.4
+// Previous: 0.3.4
+// Current: 0.3.5
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
-import { postFetch } from '@neko-ui';
+import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
 
@@ -12,6 +12,7 @@ import { apiUrl, restNonce, session, options } from '@app/settings';
 import { OpenAI_PricingPerModel } from "../constants";
 import { OptionsCheck, useModels } from "../helpers";
 import { AiNekoHeader } from "./CommonStyles";
+import { StyledNekoInput, StyledSidebar } from "./styles/StyledSidebar";
 
 const templates = [
   {
@@ -107,55 +108,6 @@ const StyledTextArea = Styled.textarea`
   padding: 20px;
 `;
 
-const StyledSidebar = Styled.div`
-  background: white;
-  padding: 15px;
-  border-radius: 5px;
-
-  h3:first-child {
-    margin-top: 0;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 5px;
-  }
-
-  label {
-    margin-top: 10px;
-  }
-
-  li {
-    margin-bottom: 10px;
-    border: 1px solid #e5e5e5;
-    padding: 10px;
-    background: #f5f5f5;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-  }
-
-  li.active {
-    background: #037cba;
-    color: white;
-    border-color: #037cba;
-  }
-`;
-
-const StyledNekoInput = Styled(NekoInput)`
-  flex: auto !important;
-
-  input {
-    height: 50px !important;
-    font-size: 14px !important;
-    font-family: monospace !important;
-    padding: 20px 20px 20px 45px !important;
-    border-color: #333d4e !important;
-    background: #333d4e !important;
-    color: white !important;
-  }
-`;
-
 const Dashboard = () => {
   const [error, setError] = useState();
   const [prompt, setPrompt] = useState();
@@ -196,15 +148,18 @@ const Dashboard = () => {
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
     const stop = stopSequence.replace(/\\n/g, '\n');
-    const res = await postFetch(`${apiUrl}/make_completions`, { json: {
-      env: 'playground',
-      session: session,
-      prompt: promptToUse,
-      temperature,
-      model,
-      maxTokens: maxTokens,
-      stop: stop
-    }, nonce: restNonce });
+    const res = await nekoFetch(`${apiUrl}/make_completions`, { 
+      method: 'POST',
+      nonce: restNonce,
+      json: {
+        env: 'playground',
+        session: session,
+        prompt: promptToUse,
+        temperature,
+        model,
+        maxTokens: maxTokens,
+        stop: stop
+    }});
     console.log("Completions", { prompt: promptToUse, result: res });
     if (res.success) {
       setPrompt(promptToUse + '\n' + res.data);
@@ -276,8 +231,8 @@ const Dashboard = () => {
         <NekoColumn style={{ flex: 3 }}>
           <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
           {mode === 'chat' && 
-            <div style={{ display: 'flex' }}>
-              <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
+            <div style={{ display: 'flex', position: 'relative' }}>
+              <span className="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
                 zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
               <StyledNekoInput id="entry" value={entry} onChange={setEntry} onEnter={onValidateEntry} disabled={busy} />
             </div>
@@ -301,7 +256,7 @@ const Dashboard = () => {
             <label>Model:</label>
             <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
-                <NekoOption value={x.id} label={x.name}></NekoOption>
+                <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>

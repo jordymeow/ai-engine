@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.3.4
+Stable tag: 0.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,7 +15,7 @@ AI for WordPress! ChatGPT-style chatbot, Image & Content Generator, Train AI Mod
 
 With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
 
-Official website: [https://meowapps.com/ai-engine/](AI Engine).
+Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
 == Features ==
 
@@ -63,10 +63,17 @@ Languages: English.
 
 == Changelog ==
 
+= 0.3.5 (2023/01/22) =
+* Update: Better calculation of the OpenAI "Usage".
+* Update: Lot of refactoring and code enhancements to allow other AI services to be integrated.
+* Add: Generate based on Topic (Content Generator).
+* Update: Various enhancements in the UI.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+
 = 0.3.4 (2023/01/22) =
 * Add: Code enhancements to support many new actions and filters.
 * Add: Added actions and filters to modify the answers, limit the users, etc. More to come soon.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.3.3 (2023/01/21) =
 * Add: Languages management (check https://meowapps.com/ai-engine/tutorial/#add-or-remove-languages).

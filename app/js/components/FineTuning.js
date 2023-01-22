@@ -1,12 +1,9 @@
-// Previous: 0.2.5
-// Current: 0.2.6
+// Previous: 0.2.6
+// Current: 0.3.5
 
-// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
-
-// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
   NekoSpacer, NekoInput, NekoSelect, NekoOption,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
@@ -54,8 +51,6 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
-      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
@@ -172,10 +167,11 @@ const FineTuning = ({ options, updateOption }) => {
     const rawModel = models.find(x => x.name === model);
     setBusyAction(true);
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
-      method: 'POST', nonce: restNonce,
+      method: 'POST',
+      nonce: restNonce,
       json: {
         fileId: currentFile,
-        model: rawModel.short,
+        model: rawModel?.short,
         suffix: currentSuffix
       }
     });
@@ -340,8 +336,10 @@ const FineTuning = ({ options, updateOption }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
+      console.log({ fileId, filename });
       const res = await nekoFetch(`${apiUrl}/openai_files_download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
+        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -363,7 +361,6 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const fileRows = useMemo(() => {
-    // Sort the dataFiles by created_at
     return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
@@ -425,17 +422,15 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = builderData.map(x => {
-        let json = JSON.stringify(x);
-        return json;
-      }).join("\n");
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
+      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
+      console.log(dataStr);
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
         alert("Uploaded successfully! You can now train a model based on this dataset.");
         setSection('files');
-        setIsModeTrain(false);
+        setIsModeTrain(true);
       }
       else {
         alert(res.message);
@@ -489,7 +484,6 @@ const FineTuning = ({ options, updateOption }) => {
               console.log(e, x);
               return null
             }
-            
           });
         }
         else if (isCsv) {
@@ -582,9 +576,7 @@ const FineTuning = ({ options, updateOption }) => {
             <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
               onChange={setFilename} style={{ width: 210, marginRight: 5 }} />
             <NekoButton disabled={!totalRows || busyAction} icon="upload"
-              onClick={onUploadDataSet} className="primary">
-              Upload to OpenAI
-            </NekoButton>
+              onClick={onUploadDataSet} className="primary" />
           </div>
           <div style={{ flex: 'auto' }} />
           <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>

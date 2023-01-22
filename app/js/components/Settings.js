@@ -1,16 +1,15 @@
-// Previous: 0.2.7
-// Current: 0.3.0
+// Previous: 0.3.0
+// Current: 0.3.5
 
 const { useMemo, useState } = wp.element;
 import Styled from "styled-components";
 
-// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings,
   NekoSelect, NekoOption, NekoSpacer,
   NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoColumn } from '@neko-ui';
-import { postFetch } from '@neko-ui';
+import { nekoFetch } from '@neko-ui';
 
-import { apiUrl, restNonce, options as defaultOptions } from '@app/settings';
+import { apiUrl, restNonce, pricing, options as defaultOptions } from '@app/settings';
 import { OpenAI_PricingPerModel } from '../constants';
 import { OptionsCheck, useModels } from '../helpers';
 import { AiNekoHeader } from './CommonStyles';
@@ -95,33 +94,51 @@ const Settings = () => {
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
 
   const busy = busyAction;
+
+  const shortcodeDefaultParamsRef = React.useRef(shortcodeDefaultParams);
+  const shortcodeParamsRef = React.useRef(shortcodeParams);
+
+  React.useEffect(() => {
+    shortcodeDefaultParamsRef.current = shortcodeDefaultParams;
+  }, [shortcodeDefaultParams]);
+
+  React.useEffect(() => {
+    shortcodeParamsRef.current = shortcodeParams;
+  }, [shortcodeParams]);
+
   const shortcodeParamsDiff = useMemo(() => {
     const diff = {};
-    for (const key in shortcodeDefaultParams) {
-      diff[key] = shortcodeDefaultParams[key] !== shortcodeParams[key];
+    const defaultParams = shortcodeDefaultParamsRef.current || {};
+    const currentParams = shortcodeParamsRef.current || {};
+    for (const key in defaultParams) {
+      diff[key] = defaultParams[key] !== currentParams[key];
     }
     return diff;
   }, [shortcodeDefaultParams, shortcodeParams]);
 
   const builtShortcode = useMemo(() => {
     const params = [];
-    for (const key in shortcodeParams) {
-      if (shortcodeParams[key] !== shortcodeDefaultParams[key]) {
-        params.push(`${key}="${shortcodeParams[key]}"`);
+    const currentParams = shortcodeParamsRef.current || {};
+    const defaultParams = shortcodeDefaultParamsRef.current || {};
+    for (const key in currentParams) {
+      if (currentParams[key] !== defaultParams[key]) {
+        params.push(`${key}="${currentParams[key]}"`);
       }
     }
     const joinedParams = params.join(' ');
     return '[mwai_chat' + (joinedParams ? ` ${joinedParams}` : '') + ']';
   }, [shortcodeDefaultParams, shortcodeParams]);
 
-  console.log({ shortcodeDefaultParams, shortcodeParams, shortcodeParamsDiff });
-
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
     setBusyAction(true);
     try {
-      const response = await postFetch(`${apiUrl}/update_option`, { 
-        json: { options: newOptions }, nonce: restNonce
+      const response = await nekoFetch(`${apiUrl}/update_option`, { 
+        method: 'POST',
+        nonce: restNonce,
+        json: { 
+          options: newOptions
+        }
       });
       if (response.success) {
         setOptions(response.options);
@@ -138,12 +155,13 @@ const Settings = () => {
   }
 
   const updateShortcodeParams = async (value, id) => {
-    const newParams = { ...shortcodeParams, [id]: value };
-    await updateOption(newParams, 'shortcode_chat_params');
+    const currentParams = { ...shortcodeParamsRef.current };
+    currentParams[id] = value;
+    await updateOption(currentParams, 'shortcode_chat_params');
   }
 
   const onResetShortcodeParams = async () => {
-    await updateOption(shortcodeDefaultParams, 'shortcode_chat_params');
+    await updateOption(shortcodeDefaultParamsRef.current, 'shortcode_chat_params');
   }
 
   const jsxAiFeatures =
@@ -204,72 +222,109 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  const jsxExtraModels =
-    <NekoSettings title="Extra Models">
-      <NekoInput id="extra_models" name="extra_models" value={extra_models}
-        description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
-    </NekoSettings>;
-
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Account</a>.</>} onBlur={updateOption} />
+        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={updateOption} />
     </NekoSettings>;
 
+  const jsxUsage = useMemo(() => {
+    let usageData = {};
+    try {
+      Object.keys(openai_usage).forEach((month) => {
+        const monthUsage = openai_usage[month];
+        if (!usageData[month]) usageData[month] = {
+          totalPrice:0,
+          data: []
+        }
+        Object.keys(monthUsage).forEach((model) => {
+          const modelUsage = monthUsage[model];
+          let price = 0;
+          const realModel = models.find(x => x.id === model);
+          if (model === 'dall-e' ) {
+            const defaultOption = '1024x1024';
+            const modelPrice = pricing.find(x => x.model === 'dall-e');
+            const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
+            if (modelUsage.images && modelOptionPrice) {
+              price = modelUsage.images * modelOptionPrice.price;
+            }
+            usageData[month].totalPrice += price;
+            usageData[month].data.push({ 
+              name: 'dall-e',
+              isImage: true,
+              usage: modelUsage.images,
+              price: price
+            });
+            return;
+          }
+          if (!realModel) {
+            console.log(`Cannot find model ${model}.`);
+            return;
+          }
+          let modelPrice = pricing.find(x => x.model === realModel.short);
+          if (modelPrice) {
+            if (modelUsage.total_tokens && modelPrice.price) {
+              price = modelUsage.total_tokens / 1000 * modelPrice.price;
+            }
+            usageData[month].totalPrice += price;
+            const name = realModel ? realModel.name : model;
+            usageData[month].data.push({
+              name: name,
+              isImage: false,
+              usage: modelUsage.total_tokens,
+              price: price
+            });
+          }
+          else {
+            console.log(`Cannot find price for model ${model}.`);
+          }
+        });
+      });
+      
+      Object.keys(usageData).forEach((month) => {
+        usageData[month].data.sort((a, b) => b.price - a.price);
+      });
+
+    } catch (e) {
+      console.log(e);
+    }
+
+    return (
+      <ul style={{ marginTop: 2 }}>
+        {Object.keys(usageData).map((month, index) => {
+          return (
+            <li key={index}>
+              <strong>🗓️ {month} ({usageData[month].totalPrice.toFixed(2)}$)</strong>
+              <ul>
+                {usageData[month].data.map((data, index) => {
+                  return (
+                    <li key={index} style={{ marginTop: 5, marginLeft: 18 }}>
+                      <strong>• {data.name}</strong>
+                      {data.isImage && `: ${data.usage} images`}
+                      {!data.isImage && `: ${data.usage} tokens`}
+                      {data.price > 0 && ` (${data.price.toFixed(2)}$)`}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }, [ openai_usage, models ]);
+
   const jsxOpenAiUsage =
-    <NekoSettings title="Usage">
+    <div>
+      <h3>Usage</h3>
+      <div style={{ marginTop: -10, marginBottom: 10, fontSize: 12 }}>
+        For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.
+      </div>
       {!Object.keys(openai_usage).length && <NekoTypo p>N/A</NekoTypo>}
       {openai_usage && <>
-        <ul style={{ marginTop: 2 }}>
-          {Object.keys(openai_usage).map((month, index) => {
-            const monthUsage = openai_usage[month];
-            return (
-              <li key={index}>
-                <strong>🗓️ {month}</strong>
-                <ul>
-                  {Object.keys(monthUsage).map((model, index2) => {
-                    const modelUsage = monthUsage[model];
-                    let price = null;
-                    let modelPrice = OpenAI_PricingPerModel.find(x => model.includes(x.model));
-                    if (modelPrice) {
-                      if (isImageModel(model)) {
-                        price = (modelUsage.images * modelPrice.price).toFixed(2);
-                      }
-                      else {
-                        price = (modelUsage.total_tokens / 1000 * modelPrice.price).toFixed(2);
-                      }
-                    }
-                    return (
-                      <li key={index2} style={{ marginTop: 10, marginLeft: 10 }}>
-                        {isImageModel(model) && <>
-                          <strong>• Model: {model}</strong>
-                          <ul style={{ marginTop: 5, marginLeft: 5 }}>
-                            <li>
-                              💰 Images:&nbsp;
-                              <b>{modelUsage.images}</b> {price && <> = <b>{price}$</b></>}</li>
-                          </ul>
-                        </>}
-                        {!isImageModel(model) && <>
-                          <strong>• Model: {model}</strong>
-                          <ul style={{ marginTop: 5, marginLeft: 5 }}>
-                            <li>
-                              💰 Tokens:&nbsp;
-                              <b>{modelUsage.total_tokens}</b> {price && <> = <b>{price}$</b></>}</li>
-                          </ul>
-                        </>}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </li>
-            )
-          })}
-        </ul>
+        {jsxUsage}
       </>}
-      <p style={{ fontSize: 12, color: '#A0A0A0' }}>
-        This is only given as an indication. For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank" rel="noopener noreferrer">Usage at OpenAI</a>.
-      </p>
-    </NekoSettings>;
+    </div>;
 
   return (
     <NekoPage>
@@ -284,7 +339,7 @@ const Settings = () => {
 
           <NekoContainer>
             <NekoTypo p>
-              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank" rel="noopener noreferrer">AI Engine website</a> for more information. Have fun! 🎵
+              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵
             </NekoTypo>
           </NekoContainer>
 
@@ -301,9 +356,6 @@ const Settings = () => {
                     {jsxAiBlocks}
                   </NekoBlock>
 
-                  <NekoBlock busy={busy} title="Advanced" className="primary">
-                    {jsxExtraModels}
-                  </NekoBlock>
                 </NekoColumn>
 
                 <NekoColumn minimal>
@@ -422,7 +474,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
+                              <NekoOption value={x.id} label={x.name}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>

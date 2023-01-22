@@ -9,7 +9,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->prompt = $prompt;
     $this->maxTokens = $maxTokens;
     $this->model = $model;
-    $this->type = "completion";
+    $this->mode = "completion";
   }
 
   /**

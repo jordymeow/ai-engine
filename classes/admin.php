@@ -114,6 +114,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'rest_nonce' => wp_create_nonce( 'wp_rest' ),
 			'session' => uniqid(),
 			'options' => $this->core->get_all_options(),
+			'pricing' => MWAI_OPENAI_PRICING,
 		] );
 	}
 

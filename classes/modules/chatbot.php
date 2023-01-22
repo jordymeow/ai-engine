@@ -47,6 +47,7 @@ class Meow_MWAI_Modules_Chatbot {
     try {
 			$params = $request->get_json_params();
       $session = $params['session'];
+      $env = $params['env'];
 			$prompt = $params['prompt'];
       $model = $params['model'];
       $temperature = $params['temperature'];
@@ -72,11 +73,15 @@ class Meow_MWAI_Modules_Chatbot {
       if ( $apiKey ) {
         $query->setApiKey( $apiKey );
       }
+      if ( $env ) {
+        $query->setEnv( $env );
+      }
 			$answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
       $html = apply_filters( 'mwai_chatbot_answer', $rawText  );
       $html = $this->core->markdown_to_html( $rawText );
-			return new WP_REST_Response([ 'success' => true, 'answer' => $rawText, 'html' => $html, 'usage' => $answer->usage ], 200 );
+			return new WP_REST_Response([ 'success' => true, 'answer' => $rawText,
+        'html' => $html, 'usage' => $answer->usage ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

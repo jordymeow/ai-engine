@@ -53,7 +53,7 @@ Ta-da! Ready for creating the pages. Let’s start coding!
 - Reference: http://neko-ui.com
 - The plugin options defined by list_options() in /classes/admin.php. And function call their options is get_all_options() in /classes/admin.php.
 - About the APIs, like call and update options, are in /classes/rest.php. If you add a new endpoint, please make sure set the "permission_callback", value is can_access_settings or can_access_features. They are defined in /classes/core.php.
-- Also, when call Apis using the SWR, don't forget to set the restNonce. Check the Settings.js. (There are two patterns, using useSWR and postFetch.)
+- Also, when call Apis using the SWR, don't forget to set the restNonce. Check the Settings.js. (There are two patterns, using useSWR and nekoFetch.)
 
 ----------
 
