@@ -1,5 +1,5 @@
-// Previous: 0.3.5
-// Current: 0.3.6
+// Previous: 0.3.6
+// Current: 0.4.0
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -44,7 +44,7 @@ function generateFilename(prompt, maxLength = 42) {
   const words = cleaned.split("-");
   let filename = words[0];
   let i = 1;
-  while (i < words.length && (filename.length + words[i].length + 1) < maxLength) {
+  while (filename.length + words[i]?.length < maxLength && i < words.length) {
     filename += "-" + words[i];
     i++;
   }
@@ -149,7 +149,7 @@ const ImageGenerator = () => {
     }});
     setBusy(false);
     if (res.success) {
-      setCreatedMediaIds(prev => [...prev, {
+      setCreatedMediaIds([...createdMediaIds, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
@@ -164,6 +164,7 @@ const ImageGenerator = () => {
     link.target = '_blank';
     link.download = filename;
     link.click();
+    // Potential bug: not removing the link element after clicking
   }
 
   const currentCreatedMediaId = useMemo(() => {
@@ -180,15 +181,13 @@ const ImageGenerator = () => {
 
       <NekoWrapper>
         
-        <NekoContainer style={{ borderRadius: 0, marginBottom: 0 }}>
+        <NekoColumn full>
+        <OptionsCheck options={options} />
 
-          <OptionsCheck options={options} />
-
-          <NekoTypo p style={{ marginBottom: 0 }}>
-            <b>This is extremely beta!</b> The idea is that I want this to be very convenient to use, and this UI will be found later in the Post Editor directly, via a modal, and you'll be able to add new generated images easily anywhere. If you have any remark, idea, or request, please come and chat with me on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>. Let's make this better together 💕
-          </NekoTypo>
-
-        </NekoContainer>
+        <NekoTypo p style={{ marginTop: 0, marginBottom: 0 }}>
+          This will also be available in the Post Editor soon. If you have any idea or request, please join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>! 🎵
+        </NekoTypo>
+        </NekoColumn>
 
         <NekoColumn>
           <StyledSidebar style={{ marginBottom: 25 }}>
@@ -231,19 +230,19 @@ const ImageGenerator = () => {
                 <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                   <StyledInputWrapper>
                     <label>Title:</label>
-                    <StyledTextField value={title} onBlur={(e) => setTitle(e.target.value)} />
+                    <StyledTextField value={title} onBlur={e => setTitle(e.target.value)} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Caption:</label>
-                    <StyledTextField value={caption} onBlur={(e) => setCaption(e.target.value)} />
+                    <StyledTextField value={caption} onBlur={e => setCaption(e.target.value)} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Description:</label>
-                    <StyledTextField value={description} onBlur={(e) => setDescription(e.target.value)} />
+                    <StyledTextField value={description} onBlur={e => setDescription(e.target.value)} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Alternative Text:</label>
-                    <StyledTextField value={alt} onBlur={(e) => setAlt(e.target.value)} />
+                    <StyledTextField value={alt} onBlur={e => setAlt(e.target.value)} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Filename:</label>
@@ -258,7 +257,7 @@ const ImageGenerator = () => {
                   </NekoButton>
                   {currentCreatedMediaId && <NekoMessageSuccess
                     style={{ fontSize: 13, padding: '10px 5px' }}>
-                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank" rel="noopener noreferrer">Edit Media #{currentCreatedMediaId}</a>.
+                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank">Edit Media #{currentCreatedMediaId}</a>.
                   </NekoMessageSuccess>}
                 </div>
               </div>
@@ -275,7 +274,7 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(val) => setMaxResults(val)}>
+                    value={maxResults} description="" onChange={(value) => setMaxResults(value)}>
                     {ImagesCount.map((count) => (
                       <NekoOption key={count} id={count} value={count} label={count} />
                     ))}
@@ -287,8 +286,8 @@ const ImageGenerator = () => {
               </StyledTitleWithButton>
               <StyledTextField value={prompt} onBlur={(e) => setPrompt(e.target.value)} style={{ marginTop: 20 }} />
               <StyledGallery>
-                {urls.map(url => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
+                {urls.map((url) => <img src={url} key={url} onClick={() => setSelectedUrl(url)} />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map((x) => <div key={x} className="empty-image" />)}
               </StyledGallery>
             </NekoContainer>
           </>}
@@ -306,7 +305,7 @@ const ImageGenerator = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
+      <NekoModal isOpen={Boolean(error)}
         onRequestClose={() => { setError(undefined) }}
         onOkClick={() => { setError(undefined) }}
         title="Error"
@@ -314,5 +313,6 @@ const ImageGenerator = () => {
       />
       
     </NekoPage>
+    
   );
 };

@@ -1,25 +1,28 @@
-const webpack = require('webpack');
 const path = require('path');
-
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-// const LodashModuleReplacementPlugin = require('lodash-webpack-plugin');
 const WordPressDefaults = require("@wordpress/scripts/config/webpack.config");
+const regexNodeModules = /[\\/]node_modules[\\/]/;
+const regexNekoUI = /[\\/]neko-ui[\\/]/;
+class RemoveLicenseFilePlugin {
+	apply(compiler) {
+		compiler.hooks.emit.tap("RemoveLicenseFilePlugin", (compilation) => {
+			for (let name in compilation.assets) {
+				if (name.endsWith("LICENSE.txt")) {
+					delete compilation.assets[name];
+				}
+			}
+		});
+	}
+}
 
 function createConfig(env, options) {
 	const isProduction = options.mode === 'production';
 	const isAnalysis = env && env.analysis === 'true';
-
-	const plugins = [];
+	const plugins = [new RemoveLicenseFilePlugin()];
 	if (isAnalysis) {
 		plugins.push(new BundleAnalyzerPlugin());
 	}
-	// new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /en-gb/),
-
-	const regexNodeModules = /[\\/]node_modules[\\/]/;
-	const regexNekoUI = /[\\/]neko-ui[\\/]/;
-
 	console.log("Production: " + isProduction);
-
 	return {
 		...WordPressDefaults,
 		context: __dirname,
@@ -34,7 +37,7 @@ function createConfig(env, options) {
 			path: __dirname + '/app/',
 			chunkLoadingGlobal: 'wpJsonMwai'
 		},
-		
+
 		optimization: {
 			splitChunks: {
 				chunks: 'all',
@@ -55,7 +58,7 @@ function createConfig(env, options) {
 			"react": "React",
 			"react-dom": "ReactDOM"
 		},
-	
+
 		resolve: {
 			alias: {
 				'@app': path.resolve(__dirname, './app/js/'),
@@ -66,22 +69,22 @@ function createConfig(env, options) {
 		},
 		module: {
 			rules: [{
-					test: /\.js$/,
-					include: [
-						path.resolve(__dirname, './app/js/'),
-						path.resolve(__dirname, './common/js/'),
-						path.resolve(__dirname, '../neko-ui/'),
-					],
-					exclude: [
-						path.resolve(__dirname, 'node_modules')
-					],
-					use: { 
-						loader: 'babel-loader',
-						options: {
-							presets: ["@babel/preset-env", "@babel/preset-react"]
-						}
-					},
-				}
+				test: /\.js$/,
+				include: [
+					path.resolve(__dirname, './app/js/'),
+					path.resolve(__dirname, './common/js/'),
+					path.resolve(__dirname, '../neko-ui/'),
+				],
+				exclude: [
+					path.resolve(__dirname, 'node_modules')
+				],
+				use: {
+					loader: 'babel-loader',
+					options: {
+						presets: ["@babel/preset-env", "@babel/preset-react"]
+					}
+				},
+			}
 			]
 		}
 	};

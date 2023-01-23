@@ -1,7 +1,9 @@
 #mwai-chat-id {
-  --mwai-background-color-dark: #343541;
-  --mwai-background-color-light: #454654;
+  --mwai-spacing: 15px;
+  --mwai-font-size: 15px;
   --mwai-font-color: white;
+  --mwai-background-color-primary: #454654;
+  --mwai-background-color-secondary: #343541;
   --mwai-border-radius: 10px;
 }
 
@@ -19,9 +21,9 @@
 }
 
 #mwai-chat-id .mwai-content {
-  background: var(--mwai-background-color-dark);
+  background: var(--mwai-background-color-secondary);
   color: var(--mwai-font-color);
-  font-size: 15px;
+  font-size: var(--mwai-font-size);
   border-radius: var(--mwai-border-radius);
   overflow: hidden;
   display: flex;
@@ -59,7 +61,7 @@
 #mwai-chat-id pre {
   color: var(--mwai-font-color);
   border-radius: var(--mwai-border-radius);
-  padding: 10px 15px;
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
   break-after: auto;
   font-size: 95%;
   font-family: system-ui;
@@ -79,11 +81,11 @@
 
 #mwai-chat-id .mwai-reply {
   display: flex;
-  padding: 15px;
+  padding: var(--mwai-spacing);
 }
 
 #mwai-chat-id .mwai-ai {
-  background: var(--mwai-background-color-light);
+  background: var(--mwai-background-color-primary);
 }
 
 #mwai-chat-id .mwai-name {
@@ -105,21 +107,21 @@
 
 #mwai-chat-id .mwai-input {
   display: flex;
-  padding: 15px;
-  border-top: 1px solid var(--mwai-background-color-light);
+  padding: var(--mwai-spacing);
+  border-top: 1px solid var(--mwai-background-color-primary);
 }
 
 #mwai-chat-id .mwai-input textarea {
-  background: #40414f;
+  background: var(--mwai-background-color-primary);
   color: var(--mwai-font-color);
   flex: auto;
-  padding: 8px 15px;
+  padding: calc(var(--mwai-spacing) / 2) var(--mwai-spacing);
   border: none;
   border-radius: 5px;
-  font-size: 15px;
+  font-size: var(--mwai-font-size);
   resize: none;
   font-family: inherit;
-  line-height: 30px;
+  line-height: calc(var(--mwai-spacing) * 2);
 }
 
 #mwai-chat-id .mwai-input textarea:focus {
@@ -129,8 +131,9 @@
 #mwai-chat-id .mwai-input button {
   background: none;
   color: var(--mwai-font-color);
-  border: 1px solid #40414f;
-  margin-left: 15px;
+  background-color: var(--mwai-background-color-secondary);
+  border: 1px solid var(--mwai-background-color-primary);
+  margin-left: var(--mwai-spacing);
   width: 80px;
   border-radius: 5px;
   cursor: pointer;
@@ -139,7 +142,7 @@
 }
 
 #mwai-chat-id .mwai-input button:hover {
-  background: var(--mwai-background-color-light);
+  background: var(--mwai-background-color-primary);
 }
 
 #mwai-chat-id button {
@@ -249,6 +252,16 @@
   max-height: 40vh;
 }
 
+#mwai-chat-id .mwai-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 5px;
+}
+
+#mwai-chat-id .mwai-gallery img {
+  width: 100%;
+}
+
 #mwai-chat-id.mwai-window.mwai-fullscreen .mwai-resize-button:before {
   width: 20px;
   height: 20px;
@@ -318,6 +331,7 @@
   }
   #mwai-chat-id .mwai-name {
     margin-right: 0;
+    max-width: inherit;
   }
 }
 

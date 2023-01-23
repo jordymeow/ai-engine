@@ -10,6 +10,7 @@ class Meow_MWAI_Modules_Chatbot {
     if ( is_admin() ) { return; }
     add_shortcode( 'mwai_chat', array( $this, 'chat' ) );
     add_shortcode( 'mwai_chatbot', array( $this, 'chat' ) );
+    add_shortcode( 'mwai_imagesbot', array( $this, 'imageschat' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
     if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
       add_action( 'wp_body_open', array( $this, 'inject_chat' ) );
@@ -29,6 +30,11 @@ class Meow_MWAI_Modules_Chatbot {
 			register_rest_route( $this->namespace, '/chat', array(
 				'methods' => 'POST',
 				'callback' => array( $this, 'rest_chat' ),
+        'permission_callback' => '__return_true'
+			) );
+      register_rest_route( $this->namespace, '/imagesbot', array(
+				'methods' => 'POST',
+				'callback' => array( $this, 'rest_imagesbot' ),
         'permission_callback' => '__return_true'
 			) );
 		}
@@ -55,9 +61,6 @@ class Meow_MWAI_Modules_Chatbot {
       $apiKey = $params['apiKey'];
       $stop = $params['stop'];
 			$query = new Meow_MWAI_QueryText( $prompt, 1024 );
-      if ( $session ) {
-        $query->setSession( $session );
-      }
       if ( $model ) {
         $query->setModel( $model );
       }
@@ -76,6 +79,9 @@ class Meow_MWAI_Modules_Chatbot {
       if ( $env ) {
         $query->setEnv( $env );
       }
+      if ( $session ) {
+        $query->setSession( $session );
+      }
 			$answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
       $html = apply_filters( 'mwai_chatbot_answer', $rawText  );
@@ -88,9 +94,43 @@ class Meow_MWAI_Modules_Chatbot {
 		}
   }
 
+  function rest_imagesbot( $request ) {
+    try {
+			$params = $request->get_json_params();
+      $session = $params['session'];
+      $env = $params['env'];
+			$prompt = $params['prompt'];
+      $maxResults = $params['maxResults'];
+      $apiKey = $params['apiKey'];
+			$query = new Meow_MWAI_QueryImage( $prompt );
+      if ( $maxResults ) {
+        $query->setMaxResults( $maxResults );
+      }
+      if ( $apiKey ) {
+        $query->setApiKey( $apiKey );
+      }
+      if ( $env ) {
+        $query->setEnv( $env );
+      }
+      if ( $session ) {
+        $query->setSession( $session );
+      }
+			$answer = $this->core->ai->run( $query );
+			return new WP_REST_Response([ 'success' => true, 'images' => $answer->results, 'usage' => $answer->usage ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+  }
+
   function inject_chat() {
     $params = $this->core->get_option( 'shortcode_chat_params' );
     echo $this->chat( $params );
+  }
+
+  function imageschat( $atts ) {
+    $atts['mode'] = 'images';
+    return $this->chat( $atts );
   }
 
   function chat( $atts ) {
@@ -114,7 +154,6 @@ class Meow_MWAI_Modules_Chatbot {
     $atts = apply_filters( 'mwai_chatbot_params_before', $atts );
     $atts = shortcode_atts( $defaults, $atts );
     $atts = apply_filters( 'mwai_chatbot_params', $atts );
-    $apiUrl = get_rest_url( null, 'ai-engine/v1/chat' );
 
     // UI Parameters
     $aiName = addslashes( trim($atts['ai_name']) );
@@ -131,6 +170,8 @@ class Meow_MWAI_Modules_Chatbot {
     // Chatbot System Parameters
     $id = $atts['id'];
     $env = $atts['env'];
+    $mode = $atts['mode'];
+    $maxResults = $atts['max_results'];
     $sessionId = $this->core->get_session_id();
     $rest_nonce = wp_create_nonce( 'wp_rest' );
     $casuallyFineTuned = boolval( $atts['casually_fined_tuned'] );
@@ -153,6 +194,7 @@ class Meow_MWAI_Modules_Chatbot {
     $initChatBotFn = "mwai_{$id}_initChatBot";
 
     // Variables
+    $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-engine/v1/imagesbot' : 'ai-engine/v1/chat' );
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
     $baseClasses = "mwai-chat";
     $baseClasses .= ( $window ? " mwai-window" : "" );
@@ -191,13 +233,25 @@ class Meow_MWAI_Modules_Chatbot {
       </div>
 
       <script>
-        var <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
-        var isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
-        var isWindow = <?= $window ? 'true' : 'false' ?>;
+      {
+        let <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
+        let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
+        let isWindow = <?= $window ? 'true' : 'false' ?>;
+        let mode = '<?= $mode ?>';
 
         // Push the reply in the conversation
         function <?= $addReplyFn ?>(text, type = 'user') {
           var conversation = document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation');
+
+          // If text is array, then it's image URLs. Let's create a simple gallery in HTML in $text.
+          if (Array.isArray(text)) {
+            var newText = '<div class="mwai-gallery">';
+            for (var i = 0; i < text.length; i++) {
+              newText += '<a href="' + text[i] + '" target="_blank"><img src="' + text[i] + '" />';
+            }
+            text = newText + '</div>';
+          }
+
           var mwaiClasses = 'mwai-reply';
           if (type === 'ai') {
             mwaiClasses += ' mwai-ai';
@@ -258,8 +312,16 @@ class Meow_MWAI_Modules_Chatbot {
             prompt = inputText + '<?= $promptEnding ?>';
           }
 
-          // Request the completion
-          const data = {
+          // Prompt for the images
+          const data = mode === 'images' ? {
+            env: '<?= $env ?>',
+            session: '<?= $sessionId ?>',
+            prompt: inputText,
+            maxResults: <?= $maxResults ?>,
+            model: '<?= $atts['model'] ?>',
+            apiKey: '<?= $atts['api_key'] ?>',
+          // Prompt for the chat
+          } : {
             env: '<?= $env ?>',
             session: '<?= $sessionId ?>',
             prompt: prompt,
@@ -269,6 +331,7 @@ class Meow_MWAI_Modules_Chatbot {
             temperature: '<?= $temperature ?>',
             maxTokens: '<?= $maxTokens ?>',
             stop: '<?= $completionEnding ?>',
+            maxResults: '<?= $maxResults ?>',
             apiKey: '<?= $apiKey ?>',
           };
           console.log('[BOT] Sent: ', data);
@@ -285,7 +348,7 @@ class Meow_MWAI_Modules_Chatbot {
               <?= $addReplyFn ?>(data.message, 'system');
             }
             else {
-              <?= $addReplyFn ?>(data.html, 'ai');
+              <?= $addReplyFn ?>(data.images ? data.images : data.html, 'ai');
               <?= $onGoingPrompt ?> += data.answer + '\n';
             }
             button.disabled = false;
@@ -364,6 +427,7 @@ class Meow_MWAI_Modules_Chatbot {
 
         // Let's go totally meoooow on this! 
         <?= $initChatBotFn ?>();
+      }
       </script>
 
     <?php

@@ -1,5 +1,5 @@
-// Previous: 0.3.5
-// Current: 0.3.6
+// Previous: 0.3.6
+// Current: 0.4.0
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -89,11 +89,10 @@ const ContentGenerator = () => {
   const [showModelParams, setShowModelParams] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
   const [createdPostId, setCreatedPostId] = useState();
-
+  
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
-    const langObj = languages.find(l => l.value === language);
-    return langObj ? langObj.label : '';
+    return languages.find(l => l.value === language).label;
   });
 
   useEffect(() => {
@@ -132,7 +131,7 @@ const ContentGenerator = () => {
       .replace('[**TITLE**]', title);
   }
 
-  const onSubmitPrompt = async (promptToUse = '') => {
+  const onSubmitPrompt = async (promptToUse = prompt) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -141,13 +140,13 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: maxTokens,
+        maxTokens: 2048,
         model 
     } });
     console.log("Data:", { prompt: promptToUse, result: res });
     if (res.success) {
       let data = res.data;
-      if (typeof data === 'string' && data.startsWith('"') && data.endsWith('"')) {
+      if (data.startsWith('"') && data.endsWith('"')) {
         data = data.substring(1, data.length - 1);
       }
       return data;
@@ -162,7 +161,7 @@ const ContentGenerator = () => {
     setHeadings(DefaultHeadings);
     setContent(DefaultContent);
     setExcerpt(DefaultExcerpt);
-    setCreatedPostId(undefined);
+    setCreatedPostId(null);
   };
 
   const onGenerateAllClick = async () => {
@@ -174,8 +173,8 @@ const ContentGenerator = () => {
       setTitle(freshTitle);
       const freshHeads = await submitHeadsPrompt(freshTitle);
       if (freshHeads) {
-        const content = await submitContentPrompt(freshTitle, freshHeads);
-        if (content) {
+        const contentResult = await submitContentPrompt(freshTitle, freshHeads);
+        if (contentResult) {
           await onSubmitPromptForExcerpt(freshTitle);
         }
       }
@@ -188,7 +187,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setHeadings("");
+    setHeadings('');
     const prompt = buildHeadsPrompt(inTitle);
     let freshHeads = await onSubmitPrompt(prompt);
     freshHeads = cleanNumbering(freshHeads);
@@ -200,16 +199,12 @@ const ContentGenerator = () => {
   };
 
   const submitContentPrompt = async (inTitle = title, inHeads = headings) => {
-    if (!inTitle) {
-      alert("Title is missing!");
-      return;
-    }
-    if (!inHeads) {
-      alert("Headings are missing!");
+    if (!inTitle || !inHeads) {
+      alert("Title or headings are missing!");
       return;
     }
     setBusy(true);
-    setContent("");
+    setContent('');
     const prompt = buildContentPrompt(inTitle, inHeads);
     let freshContent = await onSubmitPrompt(prompt);
     if (freshContent) {
@@ -231,7 +226,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setExcerpt("");
+    setExcerpt('');
     const prompt = buildExcerptPrompt(inTitle);
     const freshExcerpt = await onSubmitPrompt(prompt);
     if (freshExcerpt) {
@@ -267,7 +262,7 @@ const ContentGenerator = () => {
     setHeadings(DefaultHeadings);
     setContent('');
     setExcerpt('');
-    setCreatedPostId(undefined);
+    setCreatedPostId(null);
   };
 
   return (
@@ -277,18 +272,13 @@ const ContentGenerator = () => {
 
       <NekoWrapper>
 
-        <NekoContainer style={{ borderRadius: 0, marginBottom: 0 }}>
-        
+        <NekoColumn full>
           <OptionsCheck options={options} />
 
-          <NekoTypo p style={{ marginBottom: 0 }}>
-            <b>Using the Post Generator is simple; write a Title, click on Generate Sections, then Generate Content, then (optionally) on Generate Excerpt, and Create Post. Alternatively, you can just write a topic followed by a few keywords, and click Generate All.</b> That's it!
+          <NekoTypo p style={{ marginTop: 0, marginBottom: 0 }}>
+            <b>Write a Topic (followed by a few keywords), and click Generate All. That's it!</b> You can also write a Title, generate the Sections, Content, and Excerpt separately (while modifying what was generated previously) to perfect the results. Use the Create Post button when you're happy with the result. You can also modify the prompts that are used by the AI. Don't hesitate to join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forums</a>. Let's make this better together! 💕
           </NekoTypo>
-
-          <NekoTypo p style={{ marginBottom: 0 }}>As you go, you can also modify the prompts (they represent exactly what will be sent to the AI). If you find a prompt that gives you really good result, or have any other remark, idea, or request, please come and chat with me on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>. Let's make this better together 💕
-          </NekoTypo>
-
-        </NekoContainer>
+        </NekoColumn>
 
         <NekoColumn style={{ flex: 1 }}>
 
@@ -453,14 +443,14 @@ const ContentGenerator = () => {
               </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={setTemperature} onBlur={setTemperature} description={<>
+                onChange={setTemperature} onBlur={() => {}} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={setMaxTokens} onBlur={setMaxTokens} description={<>
+                onChange={setMaxTokens} onBlur={() => {}} description={<>
                   <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
                     Between 1 and 2048.
                   </span> Higher values means the model will generate more content.
@@ -515,6 +505,7 @@ const ContentGenerator = () => {
       />
       
     </NekoPage>
+    
   );
 };
 

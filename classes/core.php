@@ -29,6 +29,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	// UI Parameters
 	'id' => null,
 	'env' => 'chatbot',
+	'mode' => 'chat',
 	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
 	'ai_name' => "AI: ",
 	'user_name' => "User: ",
@@ -41,12 +42,14 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'fullscreen' => false,
 	// Chatbot System Parameters
 	'casually_fined_tuned' => false,
+	'content_aware' => false, 
 	'prompt_ending' => null,
 	'completion_ending' => null,
 	// AI Parameters
 	'model' => 'text-davinci-003',
 	'temperature' => 0.8,
 	'max_tokens' => 1024,
+	'max_results' => 3,
 	'api_key' => null
 ] );
 
@@ -66,14 +69,14 @@ define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
 	'module_blocks' => false,
+	'module_statistics' => false,
 	'shortcode_chat' => true,
 	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
-	'shortcode_chat_default_params' => MWAI_CHATBOT_PARAMS,
+	'shortcode_chat_params_override' => false,
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
 	'shortcode_chat_syntax_highlighting' => false,
 	'shortcode_chat_inject' => false,
-	'shortcode_imagesbot' => false,
 	'openai_apikey' => false,
 	'openai_usage' => [],
 	'openai_finetunes' => [],
@@ -116,12 +119,6 @@ class Meow_MWAI_Core
 		if ( $this->get_option( 'shortcode_chat' ) ) {
 			new Meow_MWAI_Modules_Chatbot();
 		}
-		if ( $this->get_option( 'shortcode_imagesbot' ) ) {
-			new Meow_MWAI_Modules_ImagesBot();
-		}
-		//if ( $this->get_option( 'module_titles' ) ) {
-			new Meow_MWAI_Modules_ContentAware();
-		//}
 
 		// Advanced core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
@@ -180,6 +177,7 @@ class Meow_MWAI_Core
 				$options[$key] = apply_filters( 'mwai_languages', $options[$key] );
 			}
 		}
+		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;
 		return $options;
 	}
 
