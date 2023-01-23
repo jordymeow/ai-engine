@@ -1,9 +1,10 @@
-// Previous: 0.3.4
-// Current: 0.3.5
+// Previous: 0.3.5
+// Current: 0.3.6
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
@@ -198,10 +199,10 @@ const Dashboard = () => {
       <AiNekoHeader title="Playground" />
 
       <NekoWrapper>
-
-        <OptionsCheck options={options} />
         
         <NekoColumn full>
+
+          <OptionsCheck options={options} />
 
           <NekoContainer style={{ marginBottom: 0 }}>
             <NekoTypo p>Welcome to the AI Playground! Here, you can play with different AI models and ask the UI to perform various tasks for you. You can ask it to write, rewrite, or translate an article, categorize words or elements into groups, write an email, etc. <b>Let me know if there are any new features you would like to see!</b> Have fun 🥳</NekoTypo>
@@ -233,7 +234,7 @@ const Dashboard = () => {
           {mode === 'chat' && 
             <div style={{ display: 'flex', position: 'relative' }}>
               <span className="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
-                zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
+                zIndex: 200, fontSize: 28, top: 12, left: 10 }}></span>
               <StyledNekoInput id="entry" value={entry} onChange={setEntry} onEnter={onValidateEntry} disabled={busy} />
             </div>
           }
@@ -256,26 +257,26 @@ const Dashboard = () => {
             <label>Model:</label>
             <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
-                <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
+                <NekoOption value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onBlur={value => setTemperature(parseFloat(value))} description={<>
+              onBlur={(e) => setTemperature(parseFloat(e.target.value))} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   Between 0 and 1. Higher values means the model will take more risks.
                 </span>
               </>} />
             <label>Max Tokens:</label>
             <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-              onBlur={value => setMaxTokens(parseInt(value))} description={<>
+              onBlur={(e) => setMaxTokens(parseInt(e.target.value))} description={<>
               <span>
                 The maximum number of tokens to generate. The model will stop generating once it hits this limit.
               </span>
             </>} />
             <label>Stop Sequence:</label>
             <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
-              onChange={setStopSequence} onBlur={setStopSequence} description={<>
+              onChange={setStopSequence} onBlur={() => setStopSequence(stopSequence)} description={<>
               <span>
                 The sequence of tokens that will cause the model to stop generating text. You absolutely need this with your own models.
               </span>
@@ -300,9 +301,9 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+      <NekoModal isOpen={Boolean(error)}
+        onRequestClose={() => { setError(undefined) }}
+        onOkClick={() => { setError(undefined) }}
         title="Error"
         content={<p>{error}</p>}
       />

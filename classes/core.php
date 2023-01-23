@@ -150,6 +150,18 @@ class Meow_MWAI_Core
 		return $text;
 	}
 
+	function get_session_id() {
+		session_start();
+		if ( isset( $_SESSION['mwai_session_id'] ) ) {
+			return $_SESSION['mwai_session_id'];
+		}
+		else {
+			$session_id = uniqid();
+			$_SESSION['mwai_session_id'] = $session_id;
+			return $session_id;
+		}
+	}
+
 	function markdown_to_html( $content ) {
 		$Parsedown = new Parsedown();
 		$content = $Parsedown->text( $content );

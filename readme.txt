@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.3.5
+Stable tag: 0.3.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,13 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 0.3.6 (2023/01/23)
+* Update: Make sure that all the AI requests have an "env" and a logical "session" associated (for logging purposes).
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.3.5 (2023/01/22) =
 * Update: Better calculation of the OpenAI "Usage".
 * Update: Lot of refactoring and code enhancements to allow other AI services to be integrated.
 * Add: Generate based on Topic (Content Generator).
 * Update: Various enhancements in the UI.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-
 
 = 0.3.4 (2023/01/22) =
 * Add: Code enhancements to support many new actions and filters.

@@ -206,6 +206,7 @@ class Meow_MWAI_Rest
 			$prompt = "Create short SEO-friendly title for this text: " . $text;
 			$query = new Meow_MWAI_QueryText( $prompt, 64 );
 			$query->setMaxResults( 5 );
+			$query->setEnv( 'admin-tools' );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
 		}
@@ -222,6 +223,7 @@ class Meow_MWAI_Rest
 			$prompt = "Create SEO-friendly introduction to this text, 120 to 170 characters max, no URLs: " . $text;
 			$query = new Meow_MWAI_QueryText( $prompt, 160 );
 			$query->setMaxResults( 5 );
+			$query->setEnv( 'admin-tools' );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
 		}

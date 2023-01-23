@@ -1,8 +1,7 @@
-// Previous: 0.3.0
-// Current: 0.3.5
+// Previous: 0.3.5
+// Current: 0.3.6
 
 const { useMemo, useState } = wp.element;
-import Styled from "styled-components";
 
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings,
   NekoSelect, NekoOption, NekoSpacer,
@@ -10,69 +9,10 @@ import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, Ne
 import { nekoFetch } from '@neko-ui';
 
 import { apiUrl, restNonce, pricing, options as defaultOptions } from '@app/settings';
-import { OpenAI_PricingPerModel } from '../constants';
 import { OptionsCheck, useModels } from '../helpers';
 import { AiNekoHeader } from './CommonStyles';
 import FineTuning from './FineTuning';
-
-const isImageModel = (model) => {
-  return model === "dall-e";
-}
-
-const StyledBuilderForm = Styled.div`
-  display: flex;
-  flex-direction: column;
-
-  label {
-    margin-bottom: 3px;
-  }
-
-  .mwai-builder-row {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .mwai-builder-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    margin-right: 5px;
-  }
-
-  .mwai-builder-col:last-child {
-    margin-right: 0;
-  }
-
-  pre {
-    white-space: pre-wrap;
-    background: #d4f0ff;
-    color: #037cba;
-    padding: 10px;
-    font-size: 13px;
-    font-weight: bold;
-    margin: 20px 0;
-  }
-
-  .neko-spacer {
-    margin-bottom: 0 !important;
-  }
-
-  .neko-input {
-    border: 1.5px solid #eaeaea !important;
-    background: #fbfbfb !important;
-  }
-
-  .nui-select-option {
-    border: 1.5px solid #eaeaea !important;
-    background: #fbfbfb !important;
-  }
-
-  .nui-checkbox {
-    margin: -6px 0px -2px 0px;
-  }
-`;
+import { StyledBuilderForm } from "./styles/StyledSidebar";
 
 const Settings = () => {
   const [ options, setOptions ] = useState(defaultOptions);
@@ -94,35 +34,19 @@ const Settings = () => {
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
 
   const busy = busyAction;
-
-  const shortcodeDefaultParamsRef = React.useRef(shortcodeDefaultParams);
-  const shortcodeParamsRef = React.useRef(shortcodeParams);
-
-  React.useEffect(() => {
-    shortcodeDefaultParamsRef.current = shortcodeDefaultParams;
-  }, [shortcodeDefaultParams]);
-
-  React.useEffect(() => {
-    shortcodeParamsRef.current = shortcodeParams;
-  }, [shortcodeParams]);
-
   const shortcodeParamsDiff = useMemo(() => {
     const diff = {};
-    const defaultParams = shortcodeDefaultParamsRef.current || {};
-    const currentParams = shortcodeParamsRef.current || {};
-    for (const key in defaultParams) {
-      diff[key] = defaultParams[key] !== currentParams[key];
+    for (const key in shortcodeDefaultParams) {
+      diff[key] = shortcodeDefaultParams[key] !== shortcodeParams[key];
     }
     return diff;
   }, [shortcodeDefaultParams, shortcodeParams]);
 
   const builtShortcode = useMemo(() => {
     const params = [];
-    const currentParams = shortcodeParamsRef.current || {};
-    const defaultParams = shortcodeDefaultParamsRef.current || {};
-    for (const key in currentParams) {
-      if (currentParams[key] !== defaultParams[key]) {
-        params.push(`${key}="${currentParams[key]}"`);
+    for (const key in shortcodeParams) {
+      if (shortcodeParams[key] !== shortcodeDefaultParams[key]) {
+        params.push(`${key}="${shortcodeParams[key]}"`);
       }
     }
     const joinedParams = params.join(' ');
@@ -155,13 +79,12 @@ const Settings = () => {
   }
 
   const updateShortcodeParams = async (value, id) => {
-    const currentParams = { ...shortcodeParamsRef.current };
-    currentParams[id] = value;
-    await updateOption(currentParams, 'shortcode_chat_params');
+    const newParams = { ...shortcodeParams, [id]: value };
+    await updateOption(newParams, 'shortcode_chat_params');
   }
 
   const onResetShortcodeParams = async () => {
-    await updateOption(shortcodeDefaultParamsRef.current, 'shortcode_chat_params');
+    await updateOption(shortcodeDefaultParams, 'shortcode_chat_params');
   }
 
   const jsxAiFeatures =
@@ -245,9 +168,7 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            if (modelUsage.images && modelOptionPrice) {
-              price = modelUsage.images * modelOptionPrice.price;
-            }
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -263,9 +184,7 @@ const Settings = () => {
           }
           let modelPrice = pricing.find(x => x.model === realModel.short);
           if (modelPrice) {
-            if (modelUsage.total_tokens && modelPrice.price) {
-              price = modelUsage.total_tokens / 1000 * modelPrice.price;
-            }
+            price = modelUsage.total_tokens / 1000 * modelPrice.price;
             usageData[month].totalPrice += price;
             const name = realModel ? realModel.name : model;
             usageData[month].data.push({
@@ -333,9 +252,9 @@ const Settings = () => {
 
       <NekoWrapper>
 
-        <OptionsCheck options={options} />
-
         <NekoColumn full>
+
+          <OptionsCheck options={options} />
 
           <NekoContainer>
             <NekoTypo p>

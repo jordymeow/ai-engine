@@ -112,7 +112,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'is_pro' => class_exists( 'MeowPro_MWAI_Core' ),
 			'is_registered' => !!$this->is_registered(),
 			'rest_nonce' => wp_create_nonce( 'wp_rest' ),
-			'session' => uniqid(),
+			'session' => $this->core->get_session_id(),
 			'options' => $this->core->get_all_options(),
 			'pricing' => MWAI_OPENAI_PRICING,
 		] );

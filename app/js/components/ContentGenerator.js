@@ -1,5 +1,5 @@
-// Previous: 0.3.4
-// Current: 0.3.5
+// Previous: 0.3.5
+// Current: 0.3.6
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -92,7 +92,8 @@ const ContentGenerator = () => {
 
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
-    return languages.find(l => l.value === language).label;
+    const langObj = languages.find(l => l.value === language);
+    return langObj ? langObj.label : '';
   });
 
   useEffect(() => {
@@ -131,7 +132,7 @@ const ContentGenerator = () => {
       .replace('[**TITLE**]', title);
   }
 
-  const onSubmitPrompt = async (promptToUse = prompt) => {
+  const onSubmitPrompt = async (promptToUse = '') => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -140,13 +141,13 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: 2048,
+        maxTokens: maxTokens,
         model 
     } });
     console.log("Data:", { prompt: promptToUse, result: res });
     if (res.success) {
       let data = res.data;
-      if (data.startsWith('"') && data.endsWith('"')) {
+      if (typeof data === 'string' && data.startsWith('"') && data.endsWith('"')) {
         data = data.substring(1, data.length - 1);
       }
       return data;
@@ -161,7 +162,7 @@ const ContentGenerator = () => {
     setHeadings(DefaultHeadings);
     setContent(DefaultContent);
     setExcerpt(DefaultExcerpt);
-    setCreatedPostId();
+    setCreatedPostId(undefined);
   };
 
   const onGenerateAllClick = async () => {
@@ -266,52 +267,71 @@ const ContentGenerator = () => {
     setHeadings(DefaultHeadings);
     setContent('');
     setExcerpt('');
-    setCreatedPostId();
+    setCreatedPostId(undefined);
   };
 
   return (
     <NekoPage nekoErrors={[]}>
+
       <AiNekoHeader title="Content Generator" />
+
       <NekoWrapper>
+
         <NekoContainer style={{ borderRadius: 0, marginBottom: 0 }}>
+        
+          <OptionsCheck options={options} />
+
           <NekoTypo p style={{ marginBottom: 0 }}>
             <b>Using the Post Generator is simple; write a Title, click on Generate Sections, then Generate Content, then (optionally) on Generate Excerpt, and Create Post. Alternatively, you can just write a topic followed by a few keywords, and click Generate All.</b> That's it!
           </NekoTypo>
+
           <NekoTypo p style={{ marginBottom: 0 }}>As you go, you can also modify the prompts (they represent exactly what will be sent to the AI). If you find a prompt that gives you really good result, or have any other remark, idea, or request, please come and chat with me on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>. Let's make this better together 💕
           </NekoTypo>
+
         </NekoContainer>
-        <OptionsCheck options={options} />
+
         <NekoColumn style={{ flex: 1 }}>
+
           <StyledSidebar style={{ marginBottom: 25 }}>
             <h2 style={{ marginTop: 0 }}>Topic</h2>
             <NekoTextArea disabled={busy} value={topic} onChange={setTopic} rows={5} />
             <NekoSpacer />
-            <NekoButton fullWidth disabled={!topic || busy} onClick={onGenerateAllClick}>Generate All</NekoButton>
+            <NekoButton fullWidth disabled={!topic || busy} 
+              onClick={onGenerateAllClick}>
+              Generate All
+            </NekoButton>
           </StyledSidebar>
+
           <StyledSidebar style={{ marginBottom: 25 }}>
             <h3 style={{ marginTop: 0 }}>Templates</h3>
             <ul>
               {templates.map((x) => (
-                <li key={x.id} className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
                   {x.name}
                 </li>
               ))}
             </ul>
             <div>Soon, you'll be able to create templates and re-use them easily.</div>
           </StyledSidebar>
+
         </NekoColumn>
+
         <NekoColumn style={{ flex: 3 }}>
+
           <StyledSidebar style={{ marginBottom: 25 }}>
+
             <h2 style={{ marginTop: 0 }}>Title</h2>
             <NekoInput disabled={busy} value={title} onChange={setTitle} />
             {titleMessage && <div className="information">Advice: {titleMessage}</div>}
+
             <NekoSpacer height={20} />
+            
             <StyledTitleWithButton>
               <h2>Sections</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <label style={{ margin: '0 5px 0 0' }}># of Sections: </label>
-                <NekoSelect scrolldown id="headingsCount" disabled={!title || busy}
-                  style={{ marginRight: 10 }} value={headingsCount} description="" onChange={setHeadingsCount}>
+                <NekoSelect scrolldown id="headingsCount" disabled={!title || busy} style={{ marginRight: 10 }}
+                  value={headingsCount} description="" onChange={setHeadingsCount}>
                     <NekoOption key={2} id={2} value={2} label={2} />
                     <NekoOption key={3} id={3} value={3} label={3} />
                     <NekoOption key={4} id={4} value={4} label={4} />
@@ -325,18 +345,23 @@ const ContentGenerator = () => {
                 </NekoButton>
               </div>
             </StyledTitleWithButton>
+
             <NekoSpacer height={20} />
+
             <NekoTextArea disabled={busy} rows={4} value={headings} onBlur={setHeadings} />
             <div className="information">
               Add, rewrite, remove, or reorganize those sections as you wish before clicking "Generate Content". I recommend using Markdown.
             </div>
+
             <NekoSpacer height={20} />
+
             <StyledTitleWithButton>
               <h2>Content</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Section: </label>
                 <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy}
-                  style={{ marginRight: 10 }} value={paragraphsCount} description="" onChange={setParagraphsCount}>
+                  style={{ marginRight: 10 }}
+                  value={paragraphsCount} description="" onChange={setParagraphsCount}>
                     <NekoOption key={1} id={1} value={1} label={1} />
                     <NekoOption key={2} id={2} value={2} label={2} />
                     <NekoOption key={3} id={3} value={3} label={3} />
@@ -350,49 +375,68 @@ const ContentGenerator = () => {
                 </NekoButton>
               </div>
             </StyledTitleWithButton>
+
             <NekoSpacer height={20} />
+
             <NekoTextArea disabled={busy} rows={18} value={content} onBlur={setContent} />
+
             <div className="information">
               You can modify the content before using "Create Post". Markdown is supported, and will be converted to HTML when the post is created.
             </div>
+
             <NekoSpacer height={20} />
+
             <StyledTitleWithButton>
               <h2>Excerpt</h2>
               <NekoButton disabled={!title} isBusy={busy} onClick={() => onSubmitPromptForExcerpt()}>
                 Generate Excerpt
               </NekoButton>
             </StyledTitleWithButton>
+
             <NekoSpacer height={20} />
+
             <NekoTextArea disabled={busy} value={excerpt} onBlur={setExcerpt} rows={3} />
+
             <NekoSpacer height={20} />
-            <NekoButton fullWidth style={{ height: 60 }} onClick={onSubmitNewPost} isBusy={busy} disabled={!title || !content}>
+
+            <NekoButton fullWidth style={{ height: 60 }}
+              onClick={onSubmitNewPost} isBusy={busy} disabled={!title || !content}>
               Create Post
             </NekoButton>
+
           </StyledSidebar>
+
         </NekoColumn>
+
         <NekoColumn>
+
           <StyledSidebar style={{ marginBottom: 25 }}>
             <h2 style={{ marginTop: 0 }}>Content Params</h2>
             <label>Language:</label>
-            <NekoSelect scrolldown id="language" name="language" disabled={busy} value={language} description="" onChange={setLanguage}>
-              {languages.map((lang) => (
-                <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
-              ))}
+            <NekoSelect scrolldown id="language" name="language" disabled={busy} 
+              value={language} description="" onChange={setLanguage}>
+                {languages.map((lang) => {
+                  return <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
+                })}
             </NekoSelect>
             <label>Writing style:</label>
-            <NekoSelect scrolldown id="writingStyle" name="writingStyle" disabled={busy} value={writingStyle} description="" onChange={setWritingStyle}>
-              {WritingStyles.map((style) => (
-                <NekoOption key={style.value} id={style.value} value={style.value} label={style.label} />
-              ))}
+            <NekoSelect scrolldown id="writingStyle" name="writingStyle" disabled={busy}
+              value={writingStyle} description="" onChange={setWritingStyle}>
+                {WritingStyles.map((style) => {
+                  return <NekoOption key={style.value} id={style.value} value={style.value} label={style.label} />
+                })}
             </NekoSelect>
             <label>Writing tone:</label>
-            <NekoSelect scrolldown id="writingTone" name="writingTone" disabled={busy} value={writingTone} description="" onChange={setWritingTone}>
-              {WritingTones.map((tone) => (
-                <NekoOption key={tone.value} id={tone.value} value={tone.value} label={tone.label} />
-              ))}
+            <NekoSelect scrolldown id="writingTone" name="writingTone" disabled={busy}
+              value={writingTone} description="" onChange={setWritingTone}>
+                {WritingTones.map((tone) => {
+                  return <NekoOption key={tone.value} id={tone.value} value={tone.value} label={tone.label} />
+                })}
             </NekoSelect>
           </StyledSidebar>
+
           <NekoButton fullWidth onClick={onReset}>Reset</NekoButton>
+
           <StyledSidebar style={{ marginTop: 25, marginBottom: 25 }}>
             <StyledTitleWithButton>
               <h2>Model Params</h2>
@@ -404,7 +448,7 @@ const ContentGenerator = () => {
               <label>Model:</label>
               <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption key={x.id} value={x.id} label={x.name} />
+                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
@@ -423,6 +467,7 @@ const ContentGenerator = () => {
                 </>} />
             </>}
           </StyledSidebar>
+
           <StyledSidebar>
             <StyledTitleWithButton>
               <h2>Prompts</h2>
@@ -433,17 +478,20 @@ const ContentGenerator = () => {
             {showPrompts && <>
               <p>The prompts are automatically generated for you, but you can enhance them once the values are set.</p>
               <label>Prompt for <b>Title</b></label>
-              <NekoTextArea disabled={busy} value={titlePromptFormat} onChange={setTitlePromptFormat} />
+              <NekoTextArea disabled={busy} value={titlePromptFormat} onChange={setTitlePromptFormat}  />
               <label>Prompt for <b>Sections</b></label>
-              <NekoTextArea disabled={busy} value={headsPromptFormat} onChange={setHeadsPromptFormat} />
+              <NekoTextArea disabled={busy} value={headsPromptFormat} onChange={setHeadsPromptFormat}  />
               <label>Prompt for <b>Content</b></label>
-              <NekoTextArea disabled={busy} value={contentPromptFormat} onChange={setContentPromptFormat} />
+              <NekoTextArea disabled={busy} value={contentPromptFormat} onChange={setContentPromptFormat}  />
               <label>Prompt for <b>Excerpt</b></label>
-              <NekoTextArea disabled={busy} value={excerptPromptFormat} onChange={setExcerptPromptFormat} />
+              <NekoTextArea disabled={busy} value={excerptPromptFormat} onChange={setExcerptPromptFormat}  />
             </>}
           </StyledSidebar>
+
         </NekoColumn>
+
       </NekoWrapper>
+
       <NekoModal isOpen={createdPostId}
         onRequestClose={() => setCreatedPostId()}
         onOkClick={() => {
@@ -458,12 +506,14 @@ const ContentGenerator = () => {
           The post was created as draft.
         </p>}
       />
+
       <NekoModal isOpen={error}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"
         content={<p>{error}</p>}
       />
+      
     </NekoPage>
   );
 };

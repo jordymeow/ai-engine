@@ -131,6 +131,7 @@ class Meow_MWAI_Modules_Chatbot {
     // Chatbot System Parameters
     $id = $atts['id'];
     $env = $atts['env'];
+    $sessionId = $this->core->get_session_id();
     $rest_nonce = wp_create_nonce( 'wp_rest' );
     $casuallyFineTuned = boolval( $atts['casually_fined_tuned'] );
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
@@ -260,7 +261,7 @@ class Meow_MWAI_Modules_Chatbot {
           // Request the completion
           const data = {
             env: '<?= $env ?>',
-            session: '<?= $id ?>',
+            session: '<?= $sessionId ?>',
             prompt: prompt,
             userName: '<?= $userName ?>',
             aiName: '<?= $aiName ?>',

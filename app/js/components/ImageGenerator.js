@@ -1,5 +1,5 @@
-// Previous: 0.3.4
-// Current: 0.3.5
+// Previous: 0.3.5
+// Current: 0.3.6
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -149,7 +149,7 @@ const ImageGenerator = () => {
     }});
     setBusy(false);
     if (res.success) {
-      setCreatedMediaIds(prevIds => [...prevIds, {
+      setCreatedMediaIds(prev => [...prev, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
@@ -182,20 +182,20 @@ const ImageGenerator = () => {
         
         <NekoContainer style={{ borderRadius: 0, marginBottom: 0 }}>
 
+          <OptionsCheck options={options} />
+
           <NekoTypo p style={{ marginBottom: 0 }}>
             <b>This is extremely beta!</b> The idea is that I want this to be very convenient to use, and this UI will be found later in the Post Editor directly, via a modal, and you'll be able to add new generated images easily anywhere. If you have any remark, idea, or request, please come and chat with me on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>. Let's make this better together 💕
           </NekoTypo>
 
         </NekoContainer>
 
-        <OptionsCheck options={options} />
-
         <NekoColumn>
           <StyledSidebar style={{ marginBottom: 25 }}>
             <h3 style={{ marginTop: 0 }}>Templates</h3>
             <ul>
               {templates.map((x) => (
-                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                <li key={x.id} className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
                   {x.name}
                 </li>
               ))}
@@ -215,7 +215,7 @@ const ImageGenerator = () => {
                   <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
                     &lt;
                   </NekoButton>
-                  <NekoButton disabled={busy} onClick={() => setSelectedUrl()}>
+                  <NekoButton disabled={busy} onClick={() => setSelectedUrl(undefined)}>
                     Back to results
                   </NekoButton>
                   <NekoButton disabled={urlIndex >= urls.length - 1 || busy} onClick={() => onGoNext()}>
@@ -258,7 +258,7 @@ const ImageGenerator = () => {
                   </NekoButton>
                   {currentCreatedMediaId && <NekoMessageSuccess
                     style={{ fontSize: 13, padding: '10px 5px' }}>
-                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank">Edit Media #{currentCreatedMediaId}</a>.
+                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank" rel="noopener noreferrer">Edit Media #{currentCreatedMediaId}</a>.
                   </NekoMessageSuccess>}
                 </div>
               </div>
@@ -275,10 +275,10 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(e) => setMaxResults(parseInt(e.target.value))}>
-                    {ImagesCount.map((count) => {
-                      return <NekoOption key={count} id={count} value={count} label={count} />
-                    })}
+                    value={maxResults} description="" onChange={(val) => setMaxResults(val)}>
+                    {ImagesCount.map((count) => (
+                      <NekoOption key={count} id={count} value={count} label={count} />
+                    ))}
                   </NekoSelect>
                   <NekoButton disabled={!prompt} isBusy={busy} onClick={onSubmit}>
                     Generate Images
@@ -288,7 +288,7 @@ const ImageGenerator = () => {
               <StyledTextField value={prompt} onBlur={(e) => setPrompt(e.target.value)} style={{ marginTop: 20 }} />
               <StyledGallery>
                 {urls.map(url => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} class="empty-image" />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
               </StyledGallery>
             </NekoContainer>
           </>}
@@ -300,15 +300,15 @@ const ImageGenerator = () => {
             <h2 style={{ marginTop: 0 }}>Settings</h2>
             <NekoCheckbox id="continuous_mode" label="Continuous" value="1" checked={continuousMode}
               description="New images will be added to the already generated images."
-              onChange={() => setContinuousMode(prev => !prev)} />
+              onChange={setContinuousMode} />
           </NekoContainer>
         </NekoColumn>
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+      <NekoModal isOpen={!!error}
+        onRequestClose={() => { setError(undefined) }}
+        onOkClick={() => { setError(undefined) }}
         title="Error"
         content={<p>{error}</p>}
       />
