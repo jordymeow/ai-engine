@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,7 @@ Languages: English.
 
 == Changelog ==
 
-= 0.4.0 (2023/01/23)
+= 0.4.1 (2023/01/23)
 * Update: Better and simpler UI, make it a bit easier overall.
 * Add: Statistics and Content-Aware features for Pro.
 * Update: Make sure that all the AI requests have an "env" and a logical "session" associated (for logging purposes).

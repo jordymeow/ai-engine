@@ -1,5 +1,5 @@
-// Previous: 0.3.5
-// Current: 0.3.6
+// Previous: 0.3.6
+// Current: 0.4.1
 
 const { useMemo, useEffect, useState } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
@@ -44,7 +44,7 @@ const useModels = (options) => {
     let allModels = OpenAI_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
-      options?.openai_finetunes.filter(x => x.enabled) : [];
+      options?.openai_finetunes.filter(x => x.enabled && x.model) : [];
     if (fineTunes.length) {
       allModels = [ ...allModels, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
