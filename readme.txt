@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,11 +63,14 @@ Languages: English.
 
 == Changelog ==
 
-= 0.4.1 (2023/01/23)
+= 0.4.2 (2023/01/24) =
+* Fix: The session was started too late, potentially causing a warning.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 0.4.1 (2023/01/23) =
 * Update: Better and simpler UI, make it a bit easier overall.
 * Add: Statistics and Content-Aware features for Pro.
 * Update: Make sure that all the AI requests have an "env" and a logical "session" associated (for logging purposes).
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.3.5 (2023/01/22) =
 * Update: Better calculation of the OpenAI "Usage".

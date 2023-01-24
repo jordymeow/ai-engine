@@ -7,7 +7,7 @@
     "dev": "webpack --watch --mode development",
     "build": "webpack --mode production",
     "analysis": "webpack --mode production --env analysis='true'",
-    "zip": "zip -r ~/Desktop/ai-engine.zip . -x node_modules/\\* .git/\\* logs/\\*"
+    "zip": "zip -r ~/Desktop/ai-engine-pro.zip . -x node_modules/\\* .git/\\* logs/\\*"
   },
   "author": "Jordy Meow",
   "license": "GPL-3.0-or-later",

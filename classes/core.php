@@ -124,6 +124,10 @@ class Meow_MWAI_Core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
 			new MeowPro_MWAI_Core( $this );
 		}
+
+		if ( session_status() == PHP_SESSION_NONE ) {
+			session_start();
+		}
 	}
 
 	#region Helpers
@@ -148,7 +152,10 @@ class Meow_MWAI_Core
 	}
 
 	function get_session_id() {
-		session_start();
+		if ( !isset( $_SESSION ) ) {
+			error_log("AI Engine: There is no session.");
+			return uniqid();
+		}
 		if ( isset( $_SESSION['mwai_session_id'] ) ) {
 			return $_SESSION['mwai_session_id'];
 		}
