@@ -1,5 +1,5 @@
-// Previous: 0.3.6
-// Current: 0.4.0
+// Previous: 0.4.0
+// Current: 0.4.4
 
 const { useMemo, useState } = wp.element;
 
@@ -34,6 +34,7 @@ const Settings = () => {
   const openai_apikey = options?.openai_apikey ? options?.openai_apikey : '';
   const openai_usage = options?.openai_usage;
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
+  const extra_models = options?.extra_models;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
 
@@ -83,7 +84,7 @@ const Settings = () => {
           options: newOptions
         }
       });
-      if (response.success && response.options) {
+      if (response.success) {
         setOptions(response.options);
       }
     }
@@ -163,10 +164,16 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
+  const jsxExtraModels =
+    <NekoSettings title="Extra Models">
+      <NekoInput id="extra_models" name="extra_models" value={extra_models}
+        description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
+    </NekoSettings>;
+
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={updateOption} />
+        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Account</a>.</>} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxUsage = useMemo(() => {
@@ -200,7 +207,7 @@ const Settings = () => {
             console.log(`Cannot find model ${model}.`);
             return;
           }
-          const modelPrice = pricing.find(x => x.model === realModel.short);
+          let modelPrice = pricing.find(x => x.model === realModel.short);
           if (modelPrice) {
             price = modelUsage.total_tokens / 1000 * modelPrice.price;
             usageData[month].totalPrice += price;
@@ -249,13 +256,13 @@ const Settings = () => {
         })}
       </ul>
     );
-  }, [ openai_usage, models });
+  }, [ openai_usage, models ]);
 
   const jsxOpenAiUsage =
     <div>
       <h3>Usage</h3>
       <div style={{ marginTop: -10, marginBottom: 10, fontSize: 12 }}>
-        For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.
+        For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank" rel="noopener noreferrer">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank" rel="noopener noreferrer">AI Engine Pro</a>.
       </div>
       {!Object.keys(openai_usage).length && <NekoTypo p>N/A</NekoTypo>}
       {openai_usage && <>
@@ -265,14 +272,18 @@ const Settings = () => {
 
   return (
     <NekoPage>
+
       <AiNekoHeader />
+
       <NekoWrapper>
+
         <NekoColumn full>
+
           <OptionsCheck options={options} />
 
           <NekoContainer>
             <NekoTypo p>
-              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵
+              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank" rel="noopener noreferrer">AI Engine website</a> for more information. Have fun! 🎵
             </NekoTypo>
           </NekoContainer>
 
@@ -280,12 +291,17 @@ const Settings = () => {
 
             <NekoTab title='Settings'>
               <NekoWrapper>
+
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title="Modules" className="primary">
                     {jsxChatbot}
                     {jsxAiFeatures}
                     {jsxStatistics}
                     {jsxAiBlocks}
+                  </NekoBlock>
+
+                  <NekoBlock busy={busy} title="Advanced" className="primary">
+                    {jsxExtraModels}
                   </NekoBlock>
                 </NekoColumn>
 
@@ -295,6 +311,7 @@ const Settings = () => {
                     {jsxOpenAiUsage}
                   </NekoBlock>
                 </NekoColumn>
+
               </NekoWrapper>
             </NekoTab>
 
@@ -425,7 +442,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                              <NekoOption value={x.id} label={x.name}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>
@@ -486,7 +503,9 @@ const Settings = () => {
           </NekoTabs>
 
         </NekoColumn>
+
       </NekoWrapper>
+
     </NekoPage>
   );
 };
