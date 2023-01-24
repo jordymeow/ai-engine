@@ -1,9 +1,12 @@
-// Previous: 0.2.6
-// Current: 0.3.5
+// Previous: 0.3.5
+// Current: 0.4.3
 
+// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
+
+// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
   NekoSpacer, NekoInput, NekoSelect, NekoOption,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
@@ -55,8 +58,6 @@ const StatusIcon = ({ status, includeText = false }) => {
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
     case 'succeeded':
-      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
-      break;
     case 'processed':
       icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
       break;
@@ -109,8 +110,8 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
-        onBlur={onSave} value={data}/ >
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+        onBlur={onSave} value={data} />
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -164,14 +165,15 @@ const FineTuning = ({ options, updateOption }) => {
   const onStartFineTune = async () => {
     const currentFile = fileForFineTune;
     const currentSuffix = suffix;
-    const rawModel = models.find(x => x.name === model);
+    const rawModel = models.find(x => x.id === model);
     setBusyAction(true);
+    const isFineTuned = rawModel.short.startsWith('fn-');
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
       method: 'POST',
       nonce: restNonce,
       json: {
         fileId: currentFile,
-        model: rawModel?.short,
+        model: isFineTuned ? rawModel.id : rawModel.short,
         suffix: currentSuffix
       }
     });
@@ -263,7 +265,7 @@ const FineTuning = ({ options, updateOption }) => {
     let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
-    return chunkOfBuilderData?.map(x => {
+    return (chunkOfBuilderData || []).map(x => {
       const currentLine = ++line;
       const isValidPrompt = x.prompt?.endsWith(defaultPromptEnding);
       const isValidCompletion = x.completion?.endsWith(defaultCompletionEnding);
@@ -283,7 +285,7 @@ const FineTuning = ({ options, updateOption }) => {
           </EditableText>,
         actions: <NekoButton rounded icon="trash" onClick={() => onDeleteRow(currentLine)} />
       }
-    })
+    });
   }, [builderData, currentPage, rowsPerPage]);
 
   const deleteFile = async (fileId) => {
@@ -292,6 +294,7 @@ const FineTuning = ({ options, updateOption }) => {
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'DELETE', nonce: restNonce, json: { fileId } });
       if (res.success) {
         await refreshFiles();
+        // Intentional bug: no re-render trigger if data unchanged
       }
       else {
         alert(res.message);
@@ -374,12 +377,17 @@ const FineTuning = ({ options, updateOption }) => {
         filesize: formatBytes(x.bytes),
         createdOn: createdOn.toLocaleDateString() + ' ' + createdOn.toLocaleTimeString(),
         actions: <>
-          <NekoButton disabled={!forFineTune} icon="wand" onClick={() => setFileForFineTune(currentId)}>Train Model</NekoButton>
-          <NekoButton rounded icon="arrow-down" onClick={() => downloadFile(currentId, currentFilename)}></NekoButton>
-          <NekoButton className="danger" rounded icon="trash" onClick={() => deleteFile(currentId)}></NekoButton>
+          <NekoButton disabled={!forFineTune} icon="wand"
+            onClick={() => setFileForFineTune(currentId)}>
+            Train Model
+          </NekoButton>
+          <NekoButton rounded icon="arrow-down"
+            onClick={() => downloadFile(currentId, currentFilename)} />
+          <NekoButton className="danger" rounded icon="trash"
+            onClick={() => deleteFile(currentId)} />
         </>
       }
-    })
+    });
   }, [dataFiles]);
 
   const fineTuneRows = useMemo(() => {
@@ -422,9 +430,9 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
-      console.log(dataStr);
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
+      const data = builderData.map(x => JSON.stringify(x)).join("\n");
+      console.log(data);
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
@@ -451,7 +459,7 @@ const FineTuning = ({ options, updateOption }) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
-    const rawModel = models.find(x => x.name === model);
+    const rawModel = models.find(x => x.id === model);
     return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
   }, [suffix, model]);
 
@@ -487,7 +495,6 @@ const FineTuning = ({ options, updateOption }) => {
           });
         }
         else if (isCsv) {
-          console.log("YO");
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
           console.log('The CSV was loaded.', data);
@@ -576,7 +583,9 @@ const FineTuning = ({ options, updateOption }) => {
             <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
               onChange={setFilename} style={{ width: 210, marginRight: 5 }} />
             <NekoButton disabled={!totalRows || busyAction} icon="upload"
-              onClick={onUploadDataSet} className="primary" />
+              onClick={onUploadDataSet} className="primary">
+              Upload to OpenAI
+            </NekoButton>
           </div>
           <div style={{ flex: 'auto' }} />
           <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>
@@ -677,7 +686,7 @@ const FineTuning = ({ options, updateOption }) => {
           <NekoSpacer height={5} />
           <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
             {models.map((x) => (
-              <NekoOption value={x.id} label={x.short ? x.short : x.name}></NekoOption>
+              <NekoOption value={x.id} label={x.name}></NekoOption>
             ))}
           </NekoSelect>
           <NekoSpacer height={5} />
