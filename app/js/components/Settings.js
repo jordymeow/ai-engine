@@ -1,7 +1,8 @@
-// Previous: 0.4.0
-// Current: 0.4.4
+// Previous: 0.4.4
+// Current: 0.4.5
 
 const { useMemo, useState } = wp.element;
+import { HexColorPicker } from "react-colorful";
 
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
@@ -16,6 +17,7 @@ import { OptionsCheck, useModels } from '../helpers';
 import { AiNekoHeader } from './CommonStyles';
 import FineTuning from './FineTuning';
 import { StyledBuilderForm } from "./styles/StyledSidebar";
+import { NekoColorPicker } from "./NekoColorPicker";
 
 const Settings = () => {
   const [ options, setOptions ] = useState(defaultOptions);
@@ -23,6 +25,7 @@ const Settings = () => {
   const { models } = useModels(options);
   const shortcodeDefaultParams = options?.shortcode_chat_default_params;
   const shortcodeParams = options?.shortcode_chat_params;
+  const shortcodeStyles = options?.shortcode_chat_styles;
   const shortcodeParamsOverride = options?.shortcode_chat_params_override;
   const shortcodeChatInject = options?.shortcode_chat_inject;
   const module_titles = options?.module_titles;
@@ -71,7 +74,7 @@ const Settings = () => {
     }
     const joinedParams = params.join(' ');
     return '[mwai_chat' + (joinedParams ? ` ${joinedParams}` : '') + ']';
-  }, [shortcodeParamsDiff]);
+  }, [shortcodeParamsDiff, shortcodeParams]);
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
@@ -105,6 +108,17 @@ const Settings = () => {
 
   const onResetShortcodeParams = async () => {
     await updateOption(shortcodeDefaultParams, 'shortcode_chat_params');
+  }
+
+  const updateShortcodeColors = async (value, id) => {
+    if (value) {
+      const newColors = { ...shortcodeStyles, [id]: value };
+      await updateOption(newColors, 'shortcode_chat_styles');
+    }
+  }
+
+  const onResetShortcodeStyles = async () => {
+    await updateOption({}, 'shortcode_chat_styles');
   }
 
   const jsxAiFeatures =
@@ -173,7 +187,7 @@ const Settings = () => {
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Account</a>.</>} onBlur={updateOption} />
+        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxUsage = useMemo(() => {
@@ -262,7 +276,7 @@ const Settings = () => {
     <div>
       <h3>Usage</h3>
       <div style={{ marginTop: -10, marginBottom: 10, fontSize: 12 }}>
-        For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank" rel="noopener noreferrer">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank" rel="noopener noreferrer">AI Engine Pro</a>.
+        For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.
       </div>
       {!Object.keys(openai_usage).length && <NekoTypo p>N/A</NekoTypo>}
       {openai_usage && <>
@@ -283,7 +297,7 @@ const Settings = () => {
 
           <NekoContainer>
             <NekoTypo p>
-              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank" rel="noopener noreferrer">AI Engine website</a> for more information. Have fun! 🎵
+              Boost your WordPress with AI! Don't forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵
             </NekoTypo>
           </NekoContainer>
 
@@ -333,6 +347,67 @@ const Settings = () => {
                   <NekoBlock busy={busy} title="Features" className="primary">
                     {jsxShortcodeFormatting}
                     {jsxShortcodeSyntaxHighlighting}
+                  </NekoBlock>
+
+                  <NekoBlock busy={busy} title="Styles" className="primary" action={
+                    <NekoButton className="danger" onClick={onResetShortcodeStyles}>
+                      Reset Styles
+                    </NekoButton>}>
+                    <StyledBuilderForm>
+                      <p>Keep in mind that you can also style the chatbot (or aspecific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>.</p>
+                      <div className="mwai-builder-row">
+                        <div className="mwai-builder-col">
+                          <label>Spacing:</label>
+                          <NekoInput id="spacing" name="spacing"
+                            value={shortcodeStyles?.spacing ?? '15px'} onBlur={updateShortcodeColors} />
+                        </div>
+                        <div className="mwai-builder-col">
+                          <label>Font Size:</label>
+                          <NekoInput id="fontSize" name="fontSize"
+                            value={shortcodeStyles?.fontSize ?? '15px'} onBlur={updateShortcodeColors} />
+                        </div>
+                        <div className="mwai-builder-col">
+                          <label>Border Radius:</label>
+                          <NekoInput id="borderRadius" name="borderRadius"
+                            value={shortcodeStyles?.borderRadius ?? '10px'} onBlur={updateShortcodeColors} />
+                        </div>
+                      </div>
+                      <div className="mwai-builder-row">
+                        <div className="mwai-builder-col">
+                          <label>Font Color:</label>
+                          <div style={{ display: 'flex' }}>
+                            <NekoInput id="fontColor" name="fontColor"
+                              value={shortcodeStyles?.fontColor ?? '#FFFFFF'} 
+                              onBlur={updateShortcodeColors} />
+                            <NekoColorPicker id="fontColor" name="fontColor"
+                              value={shortcodeStyles?.fontColor ?? '#FFFFFF'}
+                              onChange={updateShortcodeColors} />
+                          </div>
+                        </div>
+                        <div className="mwai-builder-col">
+                          <label>Back Primary Color:</label>
+                          <div style={{ display: 'flex' }}>
+                            <NekoInput id="backgroundPrimaryColor" name="backgroundPrimaryColor"
+                              value={shortcodeStyles?.backgroundPrimaryColor ?? '#454654'} 
+                              onBlur={updateShortcodeColors} />
+                            <NekoColorPicker id="backgroundPrimaryColor" name="backgroundPrimaryColor"
+                              value={shortcodeStyles?.backgroundPrimaryColor ?? '#454654'}
+                              onChange={updateShortcodeColors} />
+                          </div>
+                        </div>
+                        <div className="mwai-builder-col">
+                          <label>Back Secondary Color:</label>
+                          <div style={{ display: 'flex' }}>
+                            <NekoInput id="backgroundSecondaryColor" name="backgroundSecondaryColor"
+                              value={shortcodeStyles?.backgroundSecondaryColor ?? '#343541'} 
+                              onBlur={updateShortcodeColors} />
+                            <NekoColorPicker id="backgroundSecondaryColor" name="backgroundSecondaryColor"
+                              value={shortcodeStyles?.backgroundSecondaryColor ?? '#343541'}
+                              onChange={updateShortcodeColors} />
+                          </div>
+                        </div>
+                      </div>
+                    </StyledBuilderForm>
                   </NekoBlock>
                 </NekoColumn>
 
@@ -442,7 +517,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption value={x.id} label={x.name}></NekoOption>
+                              <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>
@@ -478,6 +553,7 @@ const Settings = () => {
                     <NekoCheckbox id="shortcode_chat_params_override" label="Set as Default Parameters"
                       disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
+                      duration="shortcode_chat_params_override"
                       description="The parameters set above will be used by default. If you are using 'Popup Window' and many chatbots on the same page, be careful, as they will probably appear on top of each other."
                       onChange={updateOption} />
 

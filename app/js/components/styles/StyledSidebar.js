@@ -1,5 +1,5 @@
-// Previous: 0.3.6
-// Current: 0.4.0
+// Previous: 0.4.0
+// Current: 0.4.5
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -78,6 +78,10 @@ const StyledBuilderForm = Styled.div`
     display: flex;
     flex-direction: row;
     align-items: center;
+
+    .neko-color-picker {
+      margin-left: 5px;
+    }
   }
 
   .mwai-builder-col {

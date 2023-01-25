@@ -23,6 +23,11 @@ class Meow_MWAI_Modules_Chatbot {
       wp_enqueue_style( 'mwai_chatbot',
         '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/stackoverflow-dark.min.css' );
     }
+
+    if ( $this->core->get_option( 'shortcode_chat_styles' ) ) {
+      add_filter( 'mwai_chatbot_style', [ $this, 'apply_chat_styles' ], 10, 2 );
+    }
+
   }
 
   function rest_api_init() {
@@ -123,6 +128,16 @@ class Meow_MWAI_Modules_Chatbot {
 		}
   }
 
+  function apply_chat_styles( $css, $chatbotId ) {
+    $chatStyles = $this->core->get_option( 'shortcode_chat_styles' );
+    return preg_replace_callback( '/--mwai-(\w+):\s*([^;]+);/', function ( $matches ) use ($chatStyles ) {
+      if( isset( $chatStyles[$matches[1]] ) ) {
+        return "--mwai-" . $matches[1] . ": " . $chatStyles[$matches[1]] . ";";
+      }
+      return $matches[0];
+    }, $css );
+  }
+
   function inject_chat() {
     $params = $this->core->get_option( 'shortcode_chat_params' );
     echo $this->chat( $params );
@@ -160,6 +175,7 @@ class Meow_MWAI_Modules_Chatbot {
     $userName = addslashes( trim($atts['user_name']) );
     $sysName = addslashes( trim($atts['sys_name']) );
     $context = addslashes( $atts['context'] );
+    $context = preg_replace( '/\v+/', "\\n", $context );
     $textSend = addslashes( trim( $atts['text_send'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );

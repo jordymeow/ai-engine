@@ -113,11 +113,9 @@ class Meow_MWAI_Core
 		}
 		else {
 			new Meow_MWAI_UI( $this );
-		}
-
-		// Modules
-		if ( $this->get_option( 'shortcode_chat' ) ) {
-			new Meow_MWAI_Modules_Chatbot();
+			if ( $this->get_option( 'shortcode_chat' ) ) {
+				new Meow_MWAI_Modules_Chatbot();
+			}
 		}
 
 		// Advanced core
