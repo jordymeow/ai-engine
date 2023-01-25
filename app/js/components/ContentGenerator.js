@@ -1,5 +1,5 @@
-// Previous: 0.3.6
-// Current: 0.4.0
+// Previous: 0.4.0
+// Current: 0.4.6
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -161,7 +161,7 @@ const ContentGenerator = () => {
     setHeadings(DefaultHeadings);
     setContent(DefaultContent);
     setExcerpt(DefaultExcerpt);
-    setCreatedPostId(null);
+    setCreatedPostId();
   };
 
   const onGenerateAllClick = async () => {
@@ -187,7 +187,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setHeadings('');
+    setHeadings("");
     const prompt = buildHeadsPrompt(inTitle);
     let freshHeads = await onSubmitPrompt(prompt);
     freshHeads = cleanNumbering(freshHeads);
@@ -199,12 +199,16 @@ const ContentGenerator = () => {
   };
 
   const submitContentPrompt = async (inTitle = title, inHeads = headings) => {
-    if (!inTitle || !inHeads) {
-      alert("Title or headings are missing!");
+    if (!inTitle) {
+      alert("Title is missing!");
+      return;
+    }
+    if (!inHeads) {
+      alert("Headings are missing!");
       return;
     }
     setBusy(true);
-    setContent('');
+    setContent("");
     const prompt = buildContentPrompt(inTitle, inHeads);
     let freshContent = await onSubmitPrompt(prompt);
     if (freshContent) {
@@ -226,7 +230,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setExcerpt('');
+    setExcerpt("");
     const prompt = buildExcerptPrompt(inTitle);
     const freshExcerpt = await onSubmitPrompt(prompt);
     if (freshExcerpt) {
@@ -262,7 +266,7 @@ const ContentGenerator = () => {
     setHeadings(DefaultHeadings);
     setContent('');
     setExcerpt('');
-    setCreatedPostId(null);
+    setCreatedPostId();
   };
 
   return (
@@ -320,7 +324,7 @@ const ContentGenerator = () => {
               <h2>Sections</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <label style={{ margin: '0 5px 0 0' }}># of Sections: </label>
-                <NekoSelect scrolldown id="headingsCount" disabled={!title || busy} style={{ marginRight: 10 }}
+                <NekoSelect scrolldown id="headingsCount" disabled={busy} style={{ marginRight: 10 }}
                   value={headingsCount} description="" onChange={setHeadingsCount}>
                     <NekoOption key={2} id={2} value={2} label={2} />
                     <NekoOption key={3} id={3} value={3} label={3} />
@@ -349,7 +353,7 @@ const ContentGenerator = () => {
               <h2>Content</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Section: </label>
-                <NekoSelect scrolldown id="paragraphsCount" disabled={!title || busy}
+                <NekoSelect scrolldown id="paragraphsCount" disabled={busy}
                   style={{ marginRight: 10 }}
                   value={paragraphsCount} description="" onChange={setParagraphsCount}>
                     <NekoOption key={1} id={1} value={1} label={1} />
@@ -443,14 +447,14 @@ const ContentGenerator = () => {
               </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={setTemperature} onBlur={() => {}} description={<>
+                onChange={setTemperature} onBlur={setTemperature} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={setMaxTokens} onBlur={() => {}} description={<>
+                onChange={setMaxTokens} onBlur={setMaxTokens} description={<>
                   <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
                     Between 1 and 2048.
                   </span> Higher values means the model will generate more content.

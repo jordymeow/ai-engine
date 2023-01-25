@@ -249,7 +249,7 @@ class Meow_MWAI_Modules_Chatbot {
       </div>
 
       <script>
-      {
+      (function () {
         let <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
@@ -443,7 +443,7 @@ class Meow_MWAI_Modules_Chatbot {
 
         // Let's go totally meoooow on this! 
         <?= $initChatBotFn ?>();
-      }
+      })();
       </script>
 
     <?php

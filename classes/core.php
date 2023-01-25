@@ -124,7 +124,7 @@ class Meow_MWAI_Core
 		}
 
 		if ( session_status() == PHP_SESSION_NONE ) {
-			session_start();
+			session_start( ['read_and_close' => true] );
 		}
 	}
 
