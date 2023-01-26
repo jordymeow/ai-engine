@@ -1,5 +1,5 @@
-// Previous: 0.4.4
-// Current: 0.4.5
+// Previous: 0.4.5
+// Current: 0.4.8
 
 const { useMemo, useState } = wp.element;
 import { HexColorPicker } from "react-colorful";
@@ -8,6 +8,7 @@ import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, Ne
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
   NekoColumn } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
+import { useQuery } from '@tanstack/react-query';
 
 import { LicenseBlock } from '@common';
 import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, pricing,
@@ -16,8 +17,27 @@ import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, pricing,
 import { OptionsCheck, useModels } from '../helpers';
 import { AiNekoHeader } from './CommonStyles';
 import FineTuning from './FineTuning';
+import OpenAIStatus from './OpenAIStatus';
 import { StyledBuilderForm } from "./styles/StyledSidebar";
 import { NekoColorPicker } from "./NekoColorPicker";
+
+const retrieveIncidents = async () => {
+  const res = await nekoFetch(`${apiUrl}/openai_incidents`, { nonce: restNonce });
+  if (res?.incidents) {
+    let incidents = res.incidents.map(x => {
+      let timestamp = x.date;
+      timestamp = new Date(timestamp * 1000);
+      let date = timestamp.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      return { ...x, date }
+    });
+    return incidents;
+  }
+  return null;
+}
 
 const Settings = () => {
   const [ options, setOptions ] = useState(defaultOptions);
@@ -40,8 +60,17 @@ const Settings = () => {
   const extra_models = options?.extra_models;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
+  const { isLoadingIncidents, data: incidents } = useQuery({
+    queryKey: ['openAI_status'], queryFn: retrieveIncidents
+  });
+
+  const accidentsPastDay = incidents?.filter(x => {
+    const incidentDate = new Date(x.date);
+    return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
+  }).length;
 
   const busy = busyAction;
+
   const shortcodeParamsDiff = useMemo(() => {
     const diff = {};
     if (shortcodeParamsOverride) {
@@ -74,7 +103,7 @@ const Settings = () => {
     }
     const joinedParams = params.join(' ');
     return '[mwai_chat' + (joinedParams ? ` ${joinedParams}` : '') + ']';
-  }, [shortcodeParamsDiff, shortcodeParams]);
+  }, [shortcodeParamsDiff]);
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
@@ -553,7 +582,6 @@ const Settings = () => {
                     <NekoCheckbox id="shortcode_chat_params_override" label="Set as Default Parameters"
                       disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
-                      duration="shortcode_chat_params_override"
                       description="The parameters set above will be used by default. If you are using 'Popup Window' and many chatbots on the same page, be careful, as they will probably appear on top of each other."
                       onChange={updateOption} />
 
@@ -570,6 +598,10 @@ const Settings = () => {
 
             <NekoTab title='Fine Tuning: Train your AI'>
               <FineTuning options={options} updateOption={updateOption} />
+            </NekoTab>
+
+            <NekoTab key="openai-status" title={<>OpenAI Status{accidentsPastDay > 0 ? <>&nbsp;⚠️</> : ""}</>}>
+              <OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
             </NekoTab>
 
             <NekoTab title='License'>

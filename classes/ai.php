@@ -174,26 +174,35 @@ class Meow_MWAI_AI {
     }
   }
 
+  public function throwException( $message ) {
+    $message = apply_filters( 'mwai_ai_exception', $message );
+    throw new Exception( $message );
+  }
+
   public function run( $query ) {
 
-    // Is this query allowed
+    // Check if the query is allowed
     $ok = apply_filters( 'mwai_ai_allowed', true, $query );
     if ( $ok !== true ) {
-      // Is ok is string, then it's an error message, or create a generic one.
       $message = is_string( $ok ) ? $ok : 'Unauthorized query.';
-      throw new Exception( $message );
+      $this->throwException( $message );
     }
 
-    // Let's run it!
+    // Run the query
     $answer = null;
-    if ( $query instanceof Meow_MWAI_QueryText ) {
-      $answer = $this->runTextQuery( $query );
+    try {
+      if ( $query instanceof Meow_MWAI_QueryText ) {
+        $answer = $this->runTextQuery( $query );
+      }
+      else if ( $query instanceof Meow_MWAI_QueryImage ) {
+        $answer = $this->runImageQuery( $query );
+      }
+      else {
+        $this->throwException( 'Invalid query.' );
+      }
     }
-    else if ( $query instanceof Meow_MWAI_QueryImage ) {
-      $answer = $this->runImageQuery( $query );
-    }
-    else {
-      throw new Exception( 'Invalid query.' );
+    catch ( Exception $e ) {
+      $this->throwException( $e->getMessage() );
     }
 
     // Let's allow some modififications of the answer

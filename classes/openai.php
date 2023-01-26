@@ -225,4 +225,27 @@ class Meow_MWAI_OpenAI
     }
     return $this->calculatePrice( $modelBase, $units, $option );
   }
+
+  public function getIncidents() {
+    $url = 'https://status.openai.com/history.rss';
+    $response = wp_remote_get( $url );
+    if ( is_wp_error( $response ) ) {
+      throw new Exception( $response->get_error_message() );
+    }
+    $response = wp_remote_retrieve_body( $response );
+    $xml = simplexml_load_string( $response );
+    $incidents = array();
+    $oneWeekAgo = time() - 7 * 24 * 60 * 60;
+    foreach ( $xml->channel->item as $item ) {
+      $date = strtotime( $item->pubDate );
+      if ( $date > $oneWeekAgo ) {
+        $incidents[] = array(
+          'title' => (string) $item->title,
+          'description' => (string) $item->description,
+          'date' => $date
+        );
+      }
+    }
+    return $incidents;
+  }
 }

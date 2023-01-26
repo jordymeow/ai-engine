@@ -100,6 +100,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'openai_finetunes_delete' ),
 			) );
+			register_rest_route( $this->namespace, '/openai_incidents', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'openai_incidents' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -445,6 +450,22 @@ class Meow_MWAI_Rest
 			$openai = new Meow_MWAI_OpenAI( $this->core );
 			$finetune = $openai->fineTuneFile( $fileId, $model, $suffix );
 			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function openai_incidents() {
+		try {
+			$transient = get_transient( 'mwai_openai_incidents' );
+			if ( $transient ) {
+				return new WP_REST_Response([ 'success' => true, 'incidents' => $transient ], 200 );
+			}
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$incidents = $openai->getIncidents();
+			set_transient( 'mwai_openai_incidents', $incidents, 60 * 10 );
+			return new WP_REST_Response([ 'success' => true, 'incidents' => $incidents ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.4.7
+Stable tag: 0.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,10 @@ Languages: English.
 
 == Changelog ==
 
-= 0.4.7 (2023/01/28) =
+= 0.4.8 (2023/01/28) =
 * Add: If no user_name and ai_name are mentioned, avatars will be used.
+* Add: Status of OpenAI servers (a little warning sign will also be added on the tab if something is wrong).
+* Add: Possibility to modify or remove the error messages through a filter.
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.4.6 (2023/01/26) =
