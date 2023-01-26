@@ -5,6 +5,8 @@
   --mwai-fontColor: #FFFFFF;
   --mwai-backgroundPrimaryColor: #454654;
   --mwai-backgroundSecondaryColor: #343541;
+  --mwai-aiAvatarBackgroundColor: #10a37f;
+  --mwai-userAvatarBackgroundColor: #135ea4;
 }
 
 #mwai-chat-id .mwai-open-button {
@@ -91,6 +93,32 @@
 #mwai-chat-id .mwai-name {
   color: #a0a0a0;
   margin-right: 20px;
+}
+
+#mwai-chat-id .mwai-name .mwai-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--mwai-aiAvatarBackgroundColor);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+#mwai-chat-id .mwai-name .mwai-avatar img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+#mwai-chat-id .mwai-name .mwai-avatar.mwai-svg img {
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) invert(1);
+}
+
+#mwai-chat-id .mwai-user .mwai-name .mwai-avatar {
+  background: var(--mwai-userAvatarBackgroundColor);
 }
 
 #mwai-chat-id .mwai-text {

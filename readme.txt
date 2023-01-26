@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.4.6
+Stable tag: 0.4.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,11 +63,13 @@ Languages: English.
 
 == Changelog ==
 
+= 0.4.7 (2023/01/28) =
+* Add: If no user_name and ai_name are mentioned, avatars will be used.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.4.6 (2023/01/26) =
 * Fixed: Resolved a potential issue with session (used for logging purposes).
 * Fixed: The chatbot was not working properly on iPhones. 
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-
 = 0.4.5 (2023/01/25) =
 * Add: Style the chatbot easily in the Settings.
 * Add: Allow extra models to be added.

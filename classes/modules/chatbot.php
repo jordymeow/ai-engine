@@ -183,6 +183,24 @@ class Meow_MWAI_Modules_Chatbot {
     $fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
     $style = $atts['style'];
 
+    // Validade & Enhance UI Parameters
+    if ( empty( $aiName ) ) {
+      $aiName = '<div class="mwai-avatar mwai-svg"><img src="' .
+        MWAI_URL . '/images/avatar-ai.svg" /></div>';
+    }
+    if ( empty( $userName ) ) {
+      // if is connected, get gravatar from user
+      if ( is_user_logged_in() ) {
+        $user = wp_get_current_user();
+        $userName = '<div class="mwai-avatar"><img src="' .
+          get_avatar_url( $user->user_email ) . '" /></div>';
+      }
+      else {
+        $userName = '<div class="mwai-avatar mwai-svg"><img src="' .
+          MWAI_URL . '/images/avatar-user.svg" /></div>';
+      }
+    }
+
     // Chatbot System Parameters
     $id = $atts['id'];
     $env = $atts['env'];
