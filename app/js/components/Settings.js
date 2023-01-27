@@ -1,5 +1,5 @@
-// Previous: 0.4.8
-// Current: 0.4.9
+// Previous: 0.4.9
+// Current: 0.5.0
 
 const { useMemo, useState } = wp.element;
 
@@ -10,7 +10,7 @@ import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
 import { LicenseBlock } from '@common';
-import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, pricing,
+import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, pricing, pluginUrl,
   options as defaultOptions } from '@app/settings';
 
 import { OptionsCheck, useModels } from '../helpers';
@@ -19,6 +19,21 @@ import FineTuning from './FineTuning';
 import OpenAIStatus from './OpenAIStatus';
 import { StyledBuilderForm } from "./styles/StyledSidebar";
 import { NekoColorPicker } from "./NekoColorPicker";
+
+const chatAvatars = [
+  'chat-robot-1.svg',
+  'chat-robot-2.svg',
+  'chat-robot-3.svg',
+  'chat-robot-4.svg',
+  'chat-robot-5.svg',
+  'chat-robot-6.svg',
+  'chat-color-blue.svg',
+  'chat-color-green.svg',
+  'chat-color-red.svg',
+  'chat-traditional-1.svg',
+  'chat-traditional-2.svg',
+  'chat-traditional-3.svg'
+];
 
 const retrieveIncidents = async () => {
   const res = await nekoFetch(`${apiUrl}/openai_incidents`, { nonce: restNonce });
@@ -57,11 +72,15 @@ const Settings = () => {
   const openai_usage = options?.openai_usage;
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
   const extra_models = options?.extra_models;
-  const isChat = shortcodeParams.mode === 'chat';
-  const isImagesChat = shortcodeParams.mode === 'images';
+  const isChat = shortcodeParams?.mode === 'chat';
+  const isImagesChat = shortcodeParams?.mode === 'images';
   const { isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['openAI_status'], queryFn: retrieveIncidents
   });
+
+  const avatar = shortcodeStyles?.avatar ? shortcodeStyles.avatar : 'chat-color-green.svg';
+
+  console.log('styles', shortcodeStyles);
 
   const accidentsPastDay = incidents?.filter(x => {
     const incidentDate = new Date(x.date);
@@ -185,7 +204,8 @@ const Settings = () => {
           description="A chatbot that can be similar to ChatGPT. But it has many features! Check the Chatbot tab."
           onChange={updateOption} />
       </NekoCheckboxGroup>
-    </NekoSettings>;
+    </NekoSettings>
+   ;
 
   const jsxShortcodeFormatting =
     <NekoSettings title="Formatting">
@@ -234,7 +254,7 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            const price = modelUsage.images * modelOptionPrice.price;
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -451,6 +471,25 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                         </div>
                       </div>
+                      <div className="mwai-builder-row">
+                        <div className="mwai-builder-col" style={{ flex: 'auto' }}>
+                          <label>Avatar for Popup Window Chatbot:</label>
+                          <div style={{ display: 'flex' }}>
+                          {chatAvatars.map(x => 
+                            <>
+                              <img style={{ marginRight: 5, cursor: 'pointer' }} width={28} height={28}
+                                src={`${pluginUrl}/images/${x}`} onClick={() => {
+                                  updateShortcodeColors(x, 'avatar')
+                                }} />
+                            </>
+                          )}
+                          </div>
+                        </div>
+                        <div className="mwai-builder-col" style={{ width: 48, display: 'flex', alignItems: 'end' }}>
+                          <img style={{ marginRight: 0 }} width={64} height={64}
+                            src={`${pluginUrl}/images/${avatar}`} />
+                        </div>
+                      </div>
                     </StyledBuilderForm>
                   </NekoBlock>
                 </NekoColumn>
@@ -465,10 +504,10 @@ const Settings = () => {
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col"
-                          style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
+                          style={{ height: shortcodeParams?.mode === 'chat' ? 76 : 'inherit' }}>
                             <label>Mode:</label>
                             <NekoSelect scrolldown id="mode" name="mode"
-                              value={shortcodeParams.mode} onChange={updateShortcodeParams}>
+                              value={shortcodeParams?.mode} onChange={updateShortcodeParams}>
                               <NekoOption value="chat" label="Chat" />
                               <NekoOption value="images" label="Images" />
                             </NekoSelect>
@@ -477,13 +516,13 @@ const Settings = () => {
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>Context:</label>
                           <NekoTextArea id="context" name="context" rows={2}
-                            value={shortcodeParams.context} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.context} onBlur={updateShortcodeParams} />
                         </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>Max Results (= Number of Images):</label>
                           <NekoInput id="max_results" name="max_results" type="number"
-                            value={shortcodeParams.max_results} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.max_results} onBlur={updateShortcodeParams} />
                         </div>}
 
                       </div>
@@ -492,12 +531,12 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                           <label>AI Name:</label>
                           <NekoInput id="ai_name" name="ai_name"
-                            value={shortcodeParams.ai_name} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.ai_name} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col" style={{ flex: 4 }}>
                           <label>Start Sentence:</label>
                           <NekoInput id="start_sentence" name="start_sentence"
-                            value={shortcodeParams.start_sentence} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.start_sentence} onBlur={updateShortcodeParams} />
                         </div>
                       </div>
 
@@ -506,21 +545,21 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                           <label>User Name:</label>
                           <NekoInput id="user_name" name="user_name"
-                            value={shortcodeParams.user_name} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.user_name} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>Placeholder:</label>
                           <NekoInput id="text_input_placeholder" name="text_input_placeholder"
-                            value={shortcodeParams.text_input_placeholder} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.text_input_placeholder} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col">
                           <label>Send:</label>
-                          <NekoInput id="text_send" name="text_send" value={shortcodeParams.text_send}
+                          <NekoInput id="text_send" name="text_send" value={shortcodeParams?.text_send}
                             onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col">
                           <label>Clear:</label>
-                          <NekoInput id="text_clear" name="text_clear" value={shortcodeParams.text_clear}
+                          <NekoInput id="text_clear" name="text_clear" value={shortcodeParams?.text_clear}
                             onBlur={updateShortcodeParams} />
                         </div>
                       </div>
@@ -529,7 +568,7 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                           <label>Style:</label>
                           <NekoSelect scrolldown id="style" name="style"
-                            value={shortcodeParams.style} description="" onChange={updateShortcodeParams}>
+                            value={shortcodeParams?.style} description="" onChange={updateShortcodeParams}>
                             <NekoOption value='none' label="None" />
                             <NekoOption value='chatgpt' label="ChatGPT" />
                           </NekoSelect>
@@ -537,12 +576,12 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                           <label>Popup Window:</label>
                           <NekoCheckbox id="window" label="Yes"
-                            checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
+                            checked={shortcodeParams?.window} value="1" onChange={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col">
                           <label>Full Screen:</label>
                           <NekoCheckbox id="fullscreen" label="Yes"
-                            checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
+                            checked={shortcodeParams?.fullscreen} value="1" onChange={updateShortcodeParams} />
                         </div>
                         
                       </div>
@@ -552,19 +591,19 @@ const Settings = () => {
                           <div>
                             <label style={{ display: 'block' }}>ID:</label>
                             <NekoInput id="id" name="id" type="text"
-                              value={shortcodeParams.id} onBlur={updateShortcodeParams} />
+                              value={shortcodeParams?.id} onBlur={updateShortcodeParams} />
                           </div>
                         </div>
                         <div className="mwai-builder-col">
                           <label>System Name:</label>
                           <NekoInput id="sys_name" name="sys_name"
-                            value={shortcodeParams.sys_name} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.sys_name} onBlur={updateShortcodeParams} />
                         </div>
                         {isChat && <div className="mwai-builder-col">
                           <label>Content Aware:</label>
                           <NekoCheckbox id="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
-                            checked={shortcodeParams.content_aware} value="1" onChange={updateShortcodeParams} />
+                            checked={shortcodeParams?.content_aware} value="1" onChange={updateShortcodeParams} />
                         </div>}
                       </div>
 
@@ -573,7 +612,7 @@ const Settings = () => {
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>Model:</label>
                           <NekoSelect scrolldown id="model" name="model"
-                            value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
+                            value={shortcodeParams?.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
                               <NekoOption value={x.id} label={x.name}></NekoOption>
                             ))}
@@ -582,21 +621,21 @@ const Settings = () => {
                         
                         <div className="mwai-builder-col">
                           <label>Max Tokens:</label>
-                          <NekoInput id="max_tokens" name="max_tokens" type="number"
-                            value={shortcodeParams.max_tokens} onBlur={updateShortcodeParams} />
+                          <NekoInput id="max_tokens" name="max_tokens" type="number" min="10" max="2048"
+                            value={shortcodeParams?.max_tokens} onBlur={updateShortcodeParams} />
                         </div>
 
                         <div className="mwai-builder-col">
                           <label>Temperature:</label>
                           <NekoInput id="temperature" name="temperature" type="number"
                             step="0.1" min="0" max="1"
-                            value={shortcodeParams.temperature} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams?.temperature} onBlur={updateShortcodeParams} />
                         </div>
 
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>Casually Fine Tuned:</label>
                           <NekoCheckbox id="casually_fined_tuned" label="Yes"
-                            checked={shortcodeParams.casually_fined_tuned} value="1" onChange={updateShortcodeParams}
+                            checked={shortcodeParams?.casually_fined_tuned} value="1" onChange={updateShortcodeParams}
                           />
                         </div>
 
@@ -616,7 +655,7 @@ const Settings = () => {
 
                     <NekoCheckbox id="shortcode_chat_inject" label="Inject Default Chatbot in Website"
                       value="1" checked={shortcodeChatInject}
-                      description={<><span>Inject the default chatbot automatically on your website. It will be available on every page.</span>{shortcodeParams.window ? '' : <span> It's highly recommended to enable 'Window (Popup Mode)'</span>}</>}
+                      description={<><span>Inject the default chatbot automatically on your website. It will be available on every page.</span>{shortcodeParams?.window ? '' : <span> It's highly recommended to enable 'Window (Popup Mode)'</span>}</>}
                       onChange={updateOption} />
 
                   </NekoBlock>

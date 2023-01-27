@@ -20,7 +20,7 @@
 
 #mwai-chat-id .mwai-open-button:hover {
   cursor: pointer;
-  filter: hue-rotate(100deg);
+  filter: saturate(2.5) hue-rotate(5deg);
 }
 
 #mwai-chat-id .mwai-content {

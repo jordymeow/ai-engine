@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.4.9
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,16 +19,15 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
 == Features ==
 
+* Add a ChatGPT-style chatbot (or an images creation bot) to your website with a simple shortcode
 * Generate fresh and engaging content for your site
 * Explore the AI Playground for a variety of tools like translation, correction, and ChatGPT-style discussions
-* Add a ChatGPT-style chatbot (or an images creation bot) to your website with a simple shortcode
 * Fullscreen, popup, and window modes for the chatbot
 * Train your AI to make it better at specific tasks
-* Easily create new titles and excerpts for your posts
+* Quickly brainstorm new titles and excerpts for your posts
 * Keep track of your OpenAI usage with built-in statistics
 * Internal API for you to play with
-* Upcoming features include translation to any language and the ability to improve specific paragraphs
-* And so much more on the way!
+* Upcoming features are already in the works, and it will be surprising!
 
 == Shortcode: ChatGPT & Image Generation Bot ==
 
@@ -63,7 +62,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.4.9 (2023/01/28) =
+= 0.5.0 (2023/01/28) =
+* Add: Chatbot avatars.
 * Add: Color for the Header Buttons for the Chatbot Popup Window.
 * Update: Enhanced the UI of the Settings, Chatbot and Content Generator.
 * Update: The ID is now available in the Settings (reminder: ID allows you to set CSS more easily if you do it statically, it also keeps the conversations recorded in the browser between pages).

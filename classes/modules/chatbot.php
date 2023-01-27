@@ -247,11 +247,16 @@ class Meow_MWAI_Modules_Chatbot {
     echo apply_filters( 'mwai_chatbot_style', $style_content, $id );
 
     // Output HTML & CSS
+    $chatStyles = $this->core->get_option( 'shortcode_chat_styles' );
+    $avatar = MWAI_URL . '/images/chat-green.svg';
+    if ( !empty( $chatStyles ) && isset( $chatStyles['avatar'] ) ) {
+      $avatar = MWAI_URL . 'images/' . $chatStyles['avatar'];
+    }
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
         <?php if ( $window ) { ?>
           <div class="mwai-open-button">
-            <img width="64" height="64" src="<?= plugins_url( '../../images/chat-green.svg', __FILE__ ) ?>" />
+            <img width="64" height="64" src="<?= $avatar ?>" />
           </div>
           <div class="mwai-header">
             <?php if ( $window ) { ?>

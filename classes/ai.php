@@ -188,6 +188,9 @@ class Meow_MWAI_AI {
       $this->throwException( $message );
     }
 
+    // Allow to modify the query
+    $query = apply_filters( 'mwai_ai_query', $query );
+
     // Run the query
     $answer = null;
     try {
