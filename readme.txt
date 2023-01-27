@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.4.8
+Stable tag: 0.4.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,15 +63,22 @@ Languages: English.
 
 == Changelog ==
 
-= 0.4.8 (2023/01/28) =
+= 0.4.9 (2023/01/28) =
+* Add: Color for the Header Buttons for the Chatbot Popup Window.
+* Update: Enhanced the UI of the Settings, Chatbot and Content Generator.
+* Update: The ID is now available in the Settings (reminder: ID allows you to set CSS more easily if you do it statically, it also keeps the conversations recorded in the browser between pages).
+* Update: Enhancements relative to prompts, their placeholders, and UI visual adaption based on those.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 0.4.8 (2023/01/27) =
 * Add: If no user_name and ai_name are mentioned, avatars will be used.
 * Add: Status of OpenAI servers (a little warning sign will also be added on the tab if something is wrong).
 * Add: Possibility to modify or remove the error messages through a filter.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.4.6 (2023/01/26) =
 * Fixed: Resolved a potential issue with session (used for logging purposes).
 * Fixed: The chatbot was not working properly on iPhones. 
+
 = 0.4.5 (2023/01/25) =
 * Add: Style the chatbot easily in the Settings.
 * Add: Allow extra models to be added.

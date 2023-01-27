@@ -27,7 +27,7 @@ define( 'MWAI_OPENAI_PRICING', [
 
 define( 'MWAI_CHATBOT_PARAMS', [
 	// UI Parameters
-	'id' => null,
+	'id' => '',
 	'env' => 'chatbot',
 	'mode' => 'chat',
 	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
@@ -36,6 +36,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'sys_name' => "System: ",
 	'start_sentence' => "Hi! How can I help you?",
 	'text_send' => 'Send',
+	'text_clear' => 'Clear',
 	'text_input_placeholder' => 'Type your message...',
 	'style' => 'chatgpt',
 	'window' => false,

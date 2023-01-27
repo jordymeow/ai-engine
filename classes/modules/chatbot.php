@@ -153,7 +153,6 @@ class Meow_MWAI_Modules_Chatbot {
     $override = $this->core->get_option( 'shortcode_chat_params_override' );
     $defaults_params = $override ? $this->core->get_option( 'shortcode_chat_params' ) :
       $this->core->get_option( 'shortcode_chat_default_params' );
-    $defaults_params['id'] = uniqid();
 
     // Give a chance to modify the default parameters one last time
     $defaults = apply_filters( 'mwai_chatbot_params_defaults', $defaults_params );
@@ -177,6 +176,7 @@ class Meow_MWAI_Modules_Chatbot {
     $context = addslashes( $atts['context'] );
     $context = preg_replace( '/\v+/', "\\n", $context );
     $textSend = addslashes( trim( $atts['text_send'] ) );
+    $textClear = addslashes( trim( $atts['text_clear'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );
     $window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
@@ -202,7 +202,9 @@ class Meow_MWAI_Modules_Chatbot {
     }
 
     // Chatbot System Parameters
-    $id = $atts['id'];
+    $id = empty( $atts['id'] ) ? 'mwai2' . uniqid() : $atts['id'];
+    $memorizeChat = !empty( $atts['id'] );
+    $id = preg_replace( '/[^a-zA-Z0-9]/', '', $id );
     $env = $atts['env'];
     $mode = $atts['mode'];
     $maxResults = $atts['max_results'];
@@ -226,10 +228,12 @@ class Meow_MWAI_Modules_Chatbot {
     $onSentClickFn = "mwai_{$id}_onSendClick";
     $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
+    $setButtonTextFn = "mwai_{$id}_setButtonText";
 
     // Variables
     $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-engine/v1/imagesbot' : 'ai-engine/v1/chat' );
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
+    $memorizedChat = "mwai_{$id}_memorizedChat";
     $baseClasses = "mwai-chat";
     $baseClasses .= ( $window ? " mwai-window" : "" );
     $baseClasses .= ( !$window && $fullscreen ? " mwai-fullscreen" : "" );
@@ -272,10 +276,32 @@ class Meow_MWAI_Modules_Chatbot {
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
         let mode = '<?= $mode ?>';
+        let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
+        let <?= $memorizedChat ?> = [];
+
+        // Set button text
+        function <?= $setButtonTextFn ?>() {
+          let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
+          let button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
+          if (<?= $memorizedChat ?>.length < 2) {
+            button.innerHTML = '<span><?= $textSend ?></span>';
+          }
+          else if (!input.value.length) {
+            button.innerHTML = '<span><?= $textClear ?></span>';
+          }
+          else {
+            button.innerHTML = '<span><?= $textSend ?></span>';
+          }
+        }
 
         // Push the reply in the conversation
         function <?= $addReplyFn ?>(text, type = 'user') {
           var conversation = document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation');
+
+          if (memorizeChat) {
+            <?= $memorizedChat ?>.push({ text, type });
+            localStorage.setItem('mwai-chat-<?= $id ?>', JSON.stringify(<?= $memorizedChat ?>));
+          }
 
           // If text is array, then it's image URLs. Let's create a simple gallery in HTML in $text.
           if (Array.isArray(text)) {
@@ -310,6 +336,7 @@ class Meow_MWAI_Modules_Chatbot {
           html += '</div>';
           conversation.innerHTML += html;
           conversation.scrollTop = conversation.scrollHeight;
+          <?= $setButtonTextFn ?>();
 
           // Syntax coloring
           if (typeof hljs !== 'undefined') {
@@ -324,7 +351,13 @@ class Meow_MWAI_Modules_Chatbot {
           let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
           let inputText = input.value.trim();
 
+          // Reset the conversation if empty
           if (inputText === '') {
+            <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
+            document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation').innerHTML = '';
+            localStorage.removeItem('mwai-chat-<?= $id ?>');
+            <?= $memorizedChat ?> = [];
+            <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
             return;
           }
 
@@ -411,9 +444,16 @@ class Meow_MWAI_Modules_Chatbot {
         // Init the chatbot
         function <?= $initChatBotFn ?>() {
           var input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
+          var button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
+
           input.addEventListener('keypress', (event) => {
-            if (event.keyCode === 13 && !event.shiftKey) {
-              <?= $onSentClickFn ?>(); 
+            let text = event.target.value;
+            if (event.keyCode === 13 && !text.length && !event.shiftKey) {
+              event.preventDefault();
+              return;
+            }
+            if (event.keyCode === 13 && text.length && !event.shiftKey) {
+              <?= $onSentClickFn ?>();
             }
           });
           input.addEventListener('keydown', (event) => {
@@ -425,10 +465,11 @@ class Meow_MWAI_Modules_Chatbot {
           });
           input.addEventListener('keyup', (event) => {
             var rows = input.getAttribute('rows');
-              var lines = input.value.split('\n').length ;
-              mwaiSetTextAreaHeight(input, lines);
+            var lines = input.value.split('\n').length ;
+            mwaiSetTextAreaHeight(input, lines);
+            <?= $setButtonTextFn ?>();
           });
-          var button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
+          
           button.addEventListener('click', (event) => {
             <?= $onSentClickFn ?>(); 
           });
@@ -456,7 +497,22 @@ class Meow_MWAI_Modules_Chatbot {
             });
           }
 
-          <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
+          // Get back the previous chat if any for the same ID
+          var chatHistory = [];
+          if (memorizeChat) {
+            chatHistory = localStorage.getItem('mwai-chat-<?= $id ?>');
+            if (chatHistory) {
+              chatHistory = JSON.parse(chatHistory);
+              chatHistory = chatHistory.filter(x => x && x.text && x.type);
+              chatHistory.forEach(x => { <?= $addReplyFn ?>(x.text, x.type) });
+            }
+            else {
+              chatHistory = [];
+            }
+          }
+          if (chatHistory.length === 0) {
+            <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
+          }
         }
 
         // Let's go totally meoooow on this! 
