@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.5.1
+Stable tag: 0.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,13 +62,16 @@ Languages: English.
 
 == Changelog ==
 
+= 0.5.2 (2023/01/28) =
+* Add: Entries Generator for the Dataset Builder. Use with caution!
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.5.1 (2023/01/28) =
 * Add: Chatbot avatars.
 * Add: Color for the Header Buttons for the Chatbot Popup Window.
 * Update: Enhanced the UI of the Settings, Chatbot and Content Generator.
 * Update: The ID is now available in the Settings (reminder: ID allows you to set CSS more easily if you do it statically, it also keeps the conversations recorded in the browser between pages).
 * Update: Enhancements relative to prompts, their placeholders, and UI visual adaption based on those.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.4.8 (2023/01/27) =
 * Add: If no user_name and ai_name are mentioned, avatars will be used.

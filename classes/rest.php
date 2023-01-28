@@ -105,6 +105,16 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'openai_incidents' ),
 			) );
+			register_rest_route( $this->namespace, '/count_posts', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'count_posts' ),
+			) );
+			register_rest_route( $this->namespace, '/post_content', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'post_content' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -470,5 +480,39 @@ class Meow_MWAI_Rest
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
+	}
+
+	function count_posts( $request ) {
+		$params = $request->get_query_params();
+		$postType = $params['postType'];
+		$count = wp_count_posts( $postType );
+		return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
+	}
+
+	function post_content( $request ) {
+		$params = $request->get_query_params();
+		$offset = $params['offset'];
+		$postType = $params['postType'];
+		$postId = $params['postId'];
+		$post = null;
+		if ( !empty( $postId ) ) {
+			$post = get_post( $postId );
+		}
+		else {
+			$posts = get_posts( [
+				'posts_per_page' => 1,
+				'post_type' => $postType,
+				'offset' => $offset,
+				'post_status' => 'publish'
+			] );
+			$post = count( $posts ) === 0 ? null : $posts[0];
+		}
+		if ( !$post ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => 'Post not found' ], 404 );
+		}
+		$content = apply_filters( 'the_content', $post->post_content );
+		$content = wp_strip_all_tags( $content );
+		$content = preg_replace( '/[\r\n]+/', "\n", $content );
+		return new WP_REST_Response([ 'success' => true, 'content' => $content ], 200 );
 	}
 }

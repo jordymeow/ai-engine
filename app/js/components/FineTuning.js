@@ -1,18 +1,17 @@
-// Previous: 0.3.5
-// Current: 0.4.3
+// Previous: 0.4.3
+// Current: 0.5.2
 
-// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
-// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
-  NekoSpacer, NekoInput, NekoSelect, NekoOption,
+  NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessageDanger,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
 import { nekoFetch, formatBytes } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { useModels } from '../helpers';
+import DatasetGenerator from './DatasetGenerator';
 
 const builderColumns = [
   { accessor: 'row', title: "#", width: 15, verticalAlign: 'top' },
@@ -54,10 +53,14 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
+      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
+      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
     case 'succeeded':
+      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
+      break;
     case 'processed':
       icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
       break;
@@ -110,8 +113,8 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
-        onBlur={onSave} value={data} />
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+        onBlur={onSave} value={data}/ >
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -126,6 +129,7 @@ const FineTuning = ({ options, updateOption }) => {
   const [ fileForFineTune, setFileForFineTune ] = useState();
   const [ busyAction, setBusyAction ] = useState(false);
   const [ section, setSection ] = useState('finetunes');
+  const [ dataSection, setDataSection ] = useState('editor');
   const [ isModeTrain, setIsModeTrain ] = useState(true);
   const { models, model, setModel } = useModels(options);
   const [ suffix, setSuffix ] = useState('meow');
@@ -265,10 +269,10 @@ const FineTuning = ({ options, updateOption }) => {
     let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
-    return (chunkOfBuilderData || []).map(x => {
+    return chunkOfBuilderData?.map(x => {
       const currentLine = ++line;
-      const isValidPrompt = x.prompt?.endsWith(defaultPromptEnding);
-      const isValidCompletion = x.completion?.endsWith(defaultCompletionEnding);
+      const isValidPrompt = x?.prompt?.toString().endsWith(defaultPromptEnding);
+      const isValidCompletion = x?.completion?.toString().endsWith(defaultCompletionEnding);
       return {
         row: currentLine,
         validPrompt: isValidPrompt ? '✅' : '❌',
@@ -285,7 +289,7 @@ const FineTuning = ({ options, updateOption }) => {
           </EditableText>,
         actions: <NekoButton rounded icon="trash" onClick={() => onDeleteRow(currentLine)} />
       }
-    });
+    })
   }, [builderData, currentPage, rowsPerPage]);
 
   const deleteFile = async (fileId) => {
@@ -294,7 +298,6 @@ const FineTuning = ({ options, updateOption }) => {
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'DELETE', nonce: restNonce, json: { fileId } });
       if (res.success) {
         await refreshFiles();
-        // Intentional bug: no re-render trigger if data unchanged
       }
       else {
         alert(res.message);
@@ -387,7 +390,7 @@ const FineTuning = ({ options, updateOption }) => {
             onClick={() => deleteFile(currentId)} />
         </>
       }
-    });
+    })
   }, [dataFiles]);
 
   const fineTuneRows = useMemo(() => {
@@ -430,7 +433,10 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = builderData.map(x => JSON.stringify(x)).join("\n");
+      const data = builderData.map(x => {
+        let json = JSON.stringify(x);
+        return json;
+      }).join("\n");
       console.log(data);
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
@@ -454,7 +460,7 @@ const FineTuning = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; // getMonth returns a 0-based value
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -484,13 +490,12 @@ const FineTuning = ({ options, updateOption }) => {
         else if (isJsonl) {
           const lines = fileContent.split('\n');
           data = lines.map(x => {
-            x = x.trim();
             try {
               return JSON.parse(x);
             }
             catch (e) {
               console.log(e, x);
-              return null
+              return null;
             }
           });
         }
@@ -528,8 +533,8 @@ const FineTuning = ({ options, updateOption }) => {
     }
   }
 
-  const addRow = () => {
-    setBuilderData([...builderData, { prompt: 'Text...\n\n###\n\n', completion: 'Text...\n\n' }]);
+  const addRow = (prompt = 'Text...\n\n###\n\n', completion = 'Text...\n\n') => {
+    setBuilderData([...builderData, { prompt, completion }]);
   }
 
   const onFormatWithDefaults = () => {
@@ -549,8 +554,8 @@ const FineTuning = ({ options, updateOption }) => {
 
   const ref = useRef(null);
 
-  return (
-    <NekoContainer style={{ margin: 10 }}>
+  return (<>
+    <NekoContainer style={{ margin: 10 }} contentStyle={{ padding: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ marginRight: 15 }}>
           <NekoSwitch 
@@ -577,8 +582,12 @@ const FineTuning = ({ options, updateOption }) => {
           </NekoButton>
         </>}
         {!isModeTrain && <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', background: '#ecf3ff',
-            padding: '3px 3px 3px 8px', borderRadius: 5, border: '1px solid #cce1ee' }}>
+          <NekoQuickLinks value={dataSection} onChange={value => { setDataSection(value) }}>
+            <NekoLink title="Entries Editor" value='editor' count={builderData?.length ?? null} />
+            <NekoLink title="Entries Generator" value='generator' />
+          </NekoQuickLinks>
+          <div style={{ flex: 'auto' }} />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <label style={{ marginRight: 10 }}>Filename:</label>
             <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
               onChange={setFilename} style={{ width: 210, marginRight: 5 }} />
@@ -587,15 +596,11 @@ const FineTuning = ({ options, updateOption }) => {
               Upload to OpenAI
             </NekoButton>
           </div>
-          <div style={{ flex: 'auto' }} />
-          <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>
-            <NekoButton style={{ marginLeft: 5 }} onClick={() => ref.current.click() }>
-              Import File
-            </NekoButton>
-          </NekoUploadDropArea>
         </div>}
       </div>
+    </NekoContainer>
 
+    <NekoContainer style={{ margin: 10 }}>
       {isModeTrain && section === 'finetunes' && <>
         <p>
           The AI models you have fine-tuned. To create more, visit <b>Datasets</b>.
@@ -616,17 +621,22 @@ const FineTuning = ({ options, updateOption }) => {
         />
       </>}
 
-      {!isModeTrain && <>
-        <p>
-          You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
-        </p>
+      {!isModeTrain && dataSection === 'generator' && <>
+        <DatasetGenerator setBuilderData={setBuilderData} />
+      </>}
+
+      {!isModeTrain && dataSection === 'editor' && <>
         {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>Caution: The data is too large to be saved in your browser's local storage.</p>}
         <div style={{ display: 'flex' }}>
-          <NekoButton icon="plus" onClick={addRow} style={{ paddingLeft: 10, paddingRight: 10 }}>Add Entry</NekoButton>
-          <NekoButton icon="wand" disabled={true} onClick={() => alert("Coming soon! ✌️")}>Generate Entries</NekoButton>
+          <NekoButton icon="plus" onClick={addRow}>Add Entry</NekoButton>
           <NekoButton disabled={!totalRows} className="secondary" onClick={onFormatWithDefaults}>
             Format with Defaults
           </NekoButton>
+          <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''} style={{ paddingLeft: 5 }}>
+            <NekoButton className="secondary" onClick={() => ref.current.click() }>
+              Import File
+            </NekoButton>
+          </NekoUploadDropArea>
           <NekoButton disabled={!totalRows} className="secondary" style={{ marginLeft: 5 }}
             onClick={exportAsCSV}>
             Export as CSV
@@ -638,6 +648,9 @@ const FineTuning = ({ options, updateOption }) => {
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
               onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
+      </>}
+
+      {!isModeTrain && <>
         <NekoSpacer height={20} />
         <NekoTable alternateRowColor
           busy={busyAction}
@@ -650,21 +663,23 @@ const FineTuning = ({ options, updateOption }) => {
             onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
-        <p>
-          <b>Notes:</b>
-        </p>
-        <p>
-          • The prompt and the completion should both end with their own special endings. By default, it is <b>\n\n===\n\n</b> for the prompt, and <b>\n\n</b> for the completion. The icon ✅ will be shown next to the prompt and/or completion when this format has been validated, and the ending will be hidden for clarity. I refer to this format (and models trained on it) by the term of <b>Casually Fine Tuned</b>.
-        </p>
-        <p>
-          • <b>\n</b> is a line break. You can add line breaks by using <b>SHIFT+ENTER</b> while editing.
-        </p>
-        <p>
-          • The <b>Format with Defaults</b> button will add the <i>Casually Fine Tuned</i> endings format to the prompt and completion, if they are missing.
-        </p>
-        <p>
-          • If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casuallyFineTuned="true"</i>  in the parameter for the shortcode.
-        </p>
+
+        {dataSection === 'generator' && <NekoMessageDanger style={{ marginTop: 0, marginBottom: 25 }}>
+          Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
+        </NekoMessageDanger>}
+
+        {dataSection === 'editor' && <>
+          <p>
+            You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>. Please also check my <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b> 😎 Some extra notes for you:
+          </p>
+
+          <ul>
+            <li>• The prompt and the completion should both end with their own special endings. By default, it is <b>\n\n===\n\n</b> for the prompt, and <b>\n\n</b> for the completion. The icon ✅ will be shown next to the prompt and/or completion when this format has been validated, and the ending will be hidden for clarity. I refer to this format (and models trained on it) by the term of <b>Casually Fine Tuned</b>.</li>
+            <li>• <b>\n</b> is a line break. You can add line breaks by using <b>SHIFT+ENTER</b> while editing.</li>
+            <li> • The <b>Format with Defaults</b> button will add the <i>Casually Fine Tuned</i> endings format to the prompt and completion, if they are missing.</li>
+            <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fined_tuned="true"</i>  in the shortcode.</li>
+          </ul>
+        </>}
       </>}
 
       <NekoModal isOpen={fileForFineTune}
@@ -701,5 +716,7 @@ const FineTuning = ({ options, updateOption }) => {
         }
       />
     </NekoContainer>
-  );
+  </>);
 };
+
+export default FineTuning;
