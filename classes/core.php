@@ -40,6 +40,8 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'text_input_placeholder' => 'Type your message...',
 	'style' => 'chatgpt',
 	'window' => false,
+	'avatar' => null,
+	'avatar_position' => 'bottom-right',
 	'fullscreen' => false,
 	// Chatbot System Parameters
 	'casually_fined_tuned' => false,

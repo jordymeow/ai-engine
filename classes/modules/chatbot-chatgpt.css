@@ -281,6 +281,42 @@
   max-height: 40vh;
 }
 
+#mwai-chat-id.mwai-window.mwai-bottom-left {
+  bottom: 30px;
+  right: inherit;
+  left: 30px;
+}
+
+#mwai-chat-id.mwai-window.mwai-bottom-left .mwai-open-button {
+  right: inherit;
+  left: 0;
+}
+
+#mwai-chat-id.mwai-window.mwai-top-right {
+  top: 30px;
+  bottom: inherit;
+  right: 30px;
+}
+
+#mwai-chat-id.mwai-window.mwai-top-right .mwai-open-button {
+  top: 0;
+  bottom: inherit;
+}
+
+#mwai-chat-id.mwai-window.mwai-top-left {
+  top: 30px;
+  bottom: inherit;
+  right: inherit;
+  left: 30px;
+}
+
+#mwai-chat-id.mwai-window.mwai-top-left .mwai-open-button {
+  top: 0;
+  bottom: inherit;
+  right: inherit;
+  left: 0;
+}
+
 #mwai-chat-id .mwai-gallery {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

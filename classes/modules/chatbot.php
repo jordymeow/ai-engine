@@ -181,6 +181,8 @@ class Meow_MWAI_Modules_Chatbot {
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );
     $window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
     $fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
+    $avatar = addslashes( trim($atts['avatar']) );
+    $avatar_position = addslashes( trim($atts['avatar_position']) );
     $style = $atts['style'];
 
     // Validade & Enhance UI Parameters
@@ -202,7 +204,7 @@ class Meow_MWAI_Modules_Chatbot {
     }
 
     // Chatbot System Parameters
-    $id = empty( $atts['id'] ) ? 'mwai2' . uniqid() : $atts['id'];
+    $id = empty( $atts['id'] ) ? uniqid() : $atts['id'];
     $memorizeChat = !empty( $atts['id'] );
     $id = preg_replace( '/[^a-zA-Z0-9]/', '', $id );
     $env = $atts['env'];
@@ -237,6 +239,8 @@ class Meow_MWAI_Modules_Chatbot {
     $baseClasses = "mwai-chat";
     $baseClasses .= ( $window ? " mwai-window" : "" );
     $baseClasses .= ( !$window && $fullscreen ? " mwai-fullscreen" : "" );
+    $baseClasses .= ( $style === 'chatgpt' ? " mwai-chatgpt" : "" );
+    $baseClasses .= ( $window && !empty( $avatar_position ) ? (" mwai-" . $avatar_position) : "" );
 
     // Output CSS
     ob_start();
@@ -248,15 +252,20 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Output HTML & CSS
     $chatStyles = $this->core->get_option( 'shortcode_chat_styles' );
-    $avatar = MWAI_URL . '/images/chat-green.svg';
-    if ( !empty( $chatStyles ) && isset( $chatStyles['avatar'] ) ) {
-      $avatar = MWAI_URL . 'images/' . $chatStyles['avatar'];
+    $avatarUrl = MWAI_URL . '/images/chat-green.svg';
+    if ( !empty( $avatar ) ) {
+      $avatarUrl = $avatar;
+    }
+    else if ( !empty( $chatStyles ) && isset( $chatStyles['avatar'] ) ) {
+      $file = $chatStyles['avatar'];
+      $isUrl = strpos( $file, 'http' ) === 0 ? true : false;
+      $avatar = $isUrl ? $file : (MWAI_URL . 'images/' . $chatStyles['avatar']);
     }
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
         <?php if ( $window ) { ?>
           <div class="mwai-open-button">
-            <img width="64" height="64" src="<?= $avatar ?>" />
+            <img width="64" height="64" src="<?= $avatarUrl ?>" />
           </div>
           <div class="mwai-header">
             <?php if ( $fullscreen ) { ?>

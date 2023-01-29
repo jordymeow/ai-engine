@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.5.3
+Stable tag: 0.5.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,7 +62,9 @@ Languages: English.
 
 == Changelog ==
 
-= 0.5.3 (2023/01/29) =
+= 0.5.4 (2023/01/29) =
+* Add: Avatar position (avatar_position) can be set to "bottom-right", "top-left", etc.
+* Add: You can specify an avatar URL for each chatbot (avatar parameter, in the shortcode).
 * Fix: The expand icon was always displayed for the popup chatbot, even with fullsize set to false.
 * Add: Entries Generator for the Dataset Builder. Use with caution!
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
