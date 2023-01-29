@@ -259,7 +259,7 @@ class Meow_MWAI_Modules_Chatbot {
             <img width="64" height="64" src="<?= $avatar ?>" />
           </div>
           <div class="mwai-header">
-            <?php if ( $window ) { ?>
+            <?php if ( $fullscreen ) { ?>
               <div class="mwai-resize-button"></div>
             <?php } ?>
             <div class="mwai-close-button"></div>
@@ -280,6 +280,7 @@ class Meow_MWAI_Modules_Chatbot {
         let <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
+        let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
         let mode = '<?= $mode ?>';
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
         let <?= $memorizedChat ?> = [];
@@ -495,11 +496,13 @@ class Meow_MWAI_Modules_Chatbot {
               var chat = document.querySelector('#mwai-chat-<?= $id ?>');
               chat.classList.remove('mwai-open');
             });
-            var resizeButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-resize-button');
-            resizeButton.addEventListener('click', (event) => {
-              var chat = document.querySelector('#mwai-chat-<?= $id ?>');
-              chat.classList.toggle('mwai-fullscreen');
-            });
+            if (isFullscreen) {
+              var resizeButton = document.querySelector('#mwai-chat-<?= $id ?> .mwai-resize-button');
+              resizeButton.addEventListener('click', (event) => {
+                var chat = document.querySelector('#mwai-chat-<?= $id ?>');
+                chat.classList.toggle('mwai-fullscreen');
+              });
+            }
           }
 
           // Get back the previous chat if any for the same ID

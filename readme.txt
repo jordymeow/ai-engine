@@ -5,11 +5,11 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.5.2
+Stable tag: 0.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI for WordPress! ChatGPT-style chatbot, Image & Content Generator, Train AI Models, etc. Lot of features + Extensible + Customizable + Sleek UI = 💕
+AI for WordPress. ChatGPT-style chatbot, image & content generator, train AI models, etc. Lot of features, extensible, customizable, sleek UI. Enjoy it! :)
 
 == Description ==
 
@@ -21,7 +21,7 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
 * Add a ChatGPT-style chatbot (or an images creation bot) to your website with a simple shortcode
 * Generate fresh and engaging content for your site
-* Explore the AI Playground for a variety of tools like translation, correction, and ChatGPT-style discussions
+* Explore the AI Playground for a variety of tools like translation, correction, SEO, etc
 * Fullscreen, popup, and window modes for the chatbot
 * Train your AI to make it better at specific tasks
 * Quickly brainstorm new titles and excerpts for your posts
@@ -29,23 +29,23 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 * Internal API for you to play with
 * Upcoming features are already in the works, and it will be surprising!
 
-== Shortcode: ChatGPT & Image Generation Bot ==
+== Chatbot (ChatGPT-like) ==
 
-Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with this shortcode: [mwai_chatbot]. Looks simple? Yes, but there are many parameters and countless ideas. Visite the [official documentation](https://meowapps.com/ai-engine/) for more information. 
+Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with this shortcode: [mwai_chatbot]. Looks simple? Yes, but there are many parameters and countless ideas. Visit the [official documentation](https://meowapps.com/ai-engine/) for more info. 
 
-== Content Generator ==
+== Optimize/Generate Content ==
 
-Generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to craft exactly the content you need.
+Generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to craft exactly the content you need. You can also generate images using DALL-E model. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations (OpenAI is in beta).
 
-You can also generate images using DALL-E model. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations (OpenAI is in beta).
+== Train/Finetune your AI Model ==
 
-== Train your AI ==
-
-In the Fine Tuning section of AI Engine, you can prepare datasets, manage them, and train new models based on them, in just a few click.
+In the Fine Tuning section of AI Engine, you can prepare/generate datasets, and train new models based on them, in just a few click! Please check my article on [How to Train an AI Model](https://meowapps.com/wordpress-chatbot-finetuned-model-ai/).
 
 == My Dream for AI ==
 
-I am thrilled about the endless opportunities that AI brings. But, at the same time, I can't help but hope for a world where AI is used for good, and not just to dominate the web with generated content. My dream is to see AI being utilized to enhance our productivity, empower new voices to be heard (because let's be real, not everyone is a native speaker or may have challenges when it comes to writing), and help us save time on tedious tasks so we can spend more precious moments with our loved ones and the world around us. I will always advocate this, and I hope you do too! 💕
+I am thrilled about the endless opportunities that AI brings. But, at the same time, I can't help but hope for a world where AI is used for good, and not just to dominate the web with generated content. My dream is to see AI being utilized to enhance our productivity, empower new voices to be heard (because let's be real, not everyone is a native speaker or may have challenges when it comes to writing), and help us save time on tedious tasks so we can spend more precious moments with our loved ones and the world around us.
+
+I will always advocate this, and I hope you do too 💕
 
 == Open AI ==
 
@@ -62,7 +62,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.5.2 (2023/01/28) =
+= 0.5.3 (2023/01/29) =
+* Fix: The expand icon was always displayed for the popup chatbot, even with fullsize set to false.
 * Add: Entries Generator for the Dataset Builder. Use with caution!
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
@@ -159,20 +160,13 @@ Languages: English.
 * Update: Sorry, the name of the parameters in the chatbot were confusing. I've changed them to make it more clear.
 * Add: New filter, and the possibility to add some CSS to the chatbot, directly through coding. Have a look on https://meowapps.com/ai-engine/.
 
-= 0.1.2 (2023/01/05) =
-* Add: New filter for the chatbot. More info here: https://meowapps.com/ai-engine/.
-
-= 0.1.0 (2023/01/03) =
-* Add: Content Generator (available under Tools and Posts).
-
-= 0.0.8 (2023/01/01) =
+= 0.1.0 (2023/01/01) =
 * Fix: A few fixes in the playground.
+* Add: Content Generator (available under Tools and Posts).
 
 = 0.0.7 (2022/12/30) =
 * Fix: Little issue in the playground.
 * Add: Model and temperature in the playground.
-
-= 0.0.6 (2022/12/30) =
 * Updated: Improved the chatbot, with more parameters (temperature, model), and a better layout (HTML only).
 
 = 0.0.3 (2022/12/29) =
