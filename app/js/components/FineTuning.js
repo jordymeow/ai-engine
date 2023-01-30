@@ -1,5 +1,5 @@
-// Previous: 0.4.3
-// Current: 0.5.2
+// Previous: 0.5.2
+// Current: 0.5.6
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -53,8 +53,6 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
-      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
@@ -114,7 +112,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data}/ >
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -143,7 +141,7 @@ const FineTuning = ({ options, updateOption }) => {
 
   const rowsPerPage = 10;
   const [ hasStorageBackup, setHasStorageBackup ] = useState(true);
-  const [ currentPage, setCurrentPage ] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [ builderData, setBuilderData ] = useState([]);
   const [ filename, setFilename ] = useState('');
   const totalRows = useMemo(() => builderData.length, [builderData]);
@@ -157,7 +155,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries('datasets');
+    await queryClient.invalidateQueries(['datasets']);
   }
 
   const onRefreshFiles = async () => {
@@ -171,7 +169,7 @@ const FineTuning = ({ options, updateOption }) => {
     const currentSuffix = suffix;
     const rawModel = models.find(x => x.id === model);
     setBusyAction(true);
-    const isFineTuned = rawModel.short.startsWith('fn-');
+    const isFineTuned = rawModel?.short?.startsWith('fn-');
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
       method: 'POST',
       nonce: restNonce,
@@ -194,7 +192,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const refreshFineTunes = async () => {
-    await queryClient.invalidateQueries('finetunes');
+    await queryClient.invalidateQueries(['finetunes']);
   }
 
   const onRefreshFineTunes = async () => {
@@ -433,10 +431,7 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = builderData.map(x => {
-        let json = JSON.stringify(x);
-        return json;
-      }).join("\n");
+      const data = builderData.map(x => JSON.stringify(x)).join("\n");
       console.log(data);
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
@@ -490,13 +485,15 @@ const FineTuning = ({ options, updateOption }) => {
         else if (isJsonl) {
           const lines = fileContent.split('\n');
           data = lines.map(x => {
+            x = x.trim();
             try {
               return JSON.parse(x);
             }
             catch (e) {
               console.log(e, x);
-              return null;
+              return null
             }
+            
           });
         }
         else if (isCsv) {
@@ -534,6 +531,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const addRow = (prompt = 'Text...\n\n###\n\n', completion = 'Text...\n\n') => {
+    console.log(prompt, completion);
     setBuilderData([...builderData, { prompt, completion }]);
   }
 
@@ -628,7 +626,7 @@ const FineTuning = ({ options, updateOption }) => {
       {!isModeTrain && dataSection === 'editor' && <>
         {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>Caution: The data is too large to be saved in your browser's local storage.</p>}
         <div style={{ display: 'flex' }}>
-          <NekoButton icon="plus" onClick={addRow}>Add Entry</NekoButton>
+          <NekoButton icon="plus" onClick={() => addRow()}>Add Entry</NekoButton>
           <NekoButton disabled={!totalRows} className="secondary" onClick={onFormatWithDefaults}>
             Format with Defaults
           </NekoButton>
@@ -660,7 +658,7 @@ const FineTuning = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 

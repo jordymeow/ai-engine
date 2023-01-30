@@ -1,24 +1,21 @@
 const path = require('path');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const WordPressDefaults = require("@wordpress/scripts/config/webpack.config");
 const regexNodeModules = /[\\/]node_modules[\\/]/;
 const regexNekoUI = /[\\/]neko-ui[\\/]/;
-class RemoveLicenseFilePlugin {
-	apply(compiler) {
-		compiler.hooks.emit.tap("RemoveLicenseFilePlugin", (compilation) => {
-			for (let name in compilation.assets) {
-				if (name.endsWith("LICENSE.txt")) {
-					delete compilation.assets[name];
-				}
-			}
-		});
-	}
-}
 
 function createConfig(env, options) {
 	const isProduction = options.mode === 'production';
 	const isAnalysis = env && env.analysis === 'true';
-	const plugins = [new RemoveLicenseFilePlugin()];
+	
+	const cleanPlugin = new CleanWebpackPlugin({
+		protectWebpackAssets: false,
+		cleanOnceBeforeBuildPatterns: ["!app/"],
+		cleanAfterEveryBuildPatterns: isProduction ? ['!app', '*.LICENSE.txt', '*.map'] : ['!app', '*.LICENSE.txt'],
+	});
+
+	const plugins = [cleanPlugin];
 	if (isAnalysis) {
 		plugins.push(new BundleAnalyzerPlugin());
 	}
@@ -31,7 +28,7 @@ function createConfig(env, options) {
 		entry: {
 			index: './app/js/index.js'
 		},
-		//devtool: isProduction ? 'source-map' : false,
+		devtool: isProduction ? false : 'source-map',
 		output: {
 			filename: '[name].js',
 			path: __dirname + '/app/',
@@ -39,6 +36,7 @@ function createConfig(env, options) {
 		},
 
 		optimization: {
+			minimize: isProduction ? true : false,
 			splitChunks: {
 				chunks: 'all',
 				name: 'vendor',
