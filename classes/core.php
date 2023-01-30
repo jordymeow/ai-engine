@@ -140,6 +140,10 @@ class Meow_MWAI_Core
 		return apply_filters( 'mwai_allow_usage', current_user_can( 'administrator' ) );
 	}
 
+	function isUrl( $url ) {
+		return strpos( $url, 'http' ) === 0 ? true : false;
+	}
+
 	function get_text_from_postId( $postId ) {
 		$post = get_post( $postId );
 		if ( !$post ) {

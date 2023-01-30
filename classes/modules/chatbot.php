@@ -148,6 +148,73 @@ class Meow_MWAI_Modules_Chatbot {
     return $this->chat( $atts );
   }
 
+  function getCurrentUser() {
+    if ( is_user_logged_in() ) {
+      return wp_get_current_user();
+    }
+    return null;
+  }
+
+  function handlePlaceholders( $data ) {
+    if ( strpos( $data, '{' ) === false ) {
+      return $data;
+    }
+    $placeholders_meta = [ '{FIRST_NAME}', '{LAST_NAME}' ];
+    $placeholders_data = [ '{USER_LOGIN}', '{DISPLAY_NAME}' ];
+    $user = $this->getCurrentUser();
+    if ( $user ) {
+      foreach ( $placeholders_meta as $placeholder ) {
+        if ( strpos( $data, $placeholder ) === false ) { continue; }
+        $lcPlaceholder = substr( strtolower( $placeholder ), 1, -1 );
+        $value = get_user_meta( $user->ID, $lcPlaceholder, true );
+        $data = str_replace( $placeholder, $value, $data );
+      }
+      foreach ( $placeholders_data as $placeholder ) {
+        if ( strpos( $data, $placeholder ) === false ) { continue; }
+        $lcPlaceholder = substr( strtolower( $placeholder ), 1, -1 );
+        $value = $user->data->$lcPlaceholder;
+        $data = str_replace( $placeholder, $value, $data );
+      }
+    }
+    return $data;
+  }
+
+  function formatUserName( $userName ) {
+    // Default avatar
+    if ( empty( $userName ) ) {
+      $user = $this->getCurrentUser();
+      if ( $user ) {
+        // Gravatar
+        $userName = '<div class="mwai-avatar"><img src="' . get_avatar_url( $user->user_email ) . '" /></div>';
+      }
+      else {
+        // Default avatar
+        $userName = '<div class="mwai-avatar mwai-svg"><img src="' . MWAI_URL . '/images/avatar-user.svg" /></div>';
+      }
+    }
+    // Custom avatar
+    else if ( $this->core->isUrl( $userName ) ) {
+      $userName = '<div class="mwai-avatar"><img src="' . $userName . '" /></div>';
+    }
+    // Placeholders
+    else {
+      $userName = $this->handlePlaceholders( $userName );
+    }
+    return $userName;
+  }
+
+  function formatAiName( $aiName ) {
+    // Default avatar
+    if ( empty( $aiName ) ) {
+      $aiName = '<div class="mwai-avatar mwai-svg"><img src="' . MWAI_URL . '/images/avatar-ai.svg" /></div>';
+    }
+    // Custom avatar
+    else if ( $this->core->isUrl( $aiName ) ) {
+      $aiName = '<div class="mwai-avatar"><img src="' . $aiName . '" /></div>';
+    }
+    return $aiName;
+  }
+
   function chat( $atts ) {
     // Use the core default parameters, or the user default parameters
     $override = $this->core->get_option( 'shortcode_chat_params_override' );
@@ -186,22 +253,8 @@ class Meow_MWAI_Modules_Chatbot {
     $style = $atts['style'];
 
     // Validade & Enhance UI Parameters
-    if ( empty( $aiName ) ) {
-      $aiName = '<div class="mwai-avatar mwai-svg"><img src="' .
-        MWAI_URL . '/images/avatar-ai.svg" /></div>';
-    }
-    if ( empty( $userName ) ) {
-      // if is connected, get gravatar from user
-      if ( is_user_logged_in() ) {
-        $user = wp_get_current_user();
-        $userName = '<div class="mwai-avatar"><img src="' .
-          get_avatar_url( $user->user_email ) . '" /></div>';
-      }
-      else {
-        $userName = '<div class="mwai-avatar mwai-svg"><img src="' .
-          MWAI_URL . '/images/avatar-user.svg" /></div>';
-      }
-    }
+    $aiName = $this->formatAiName( $aiName );
+    $userName = $this->formatUserName( $userName );
 
     // Chatbot System Parameters
     $id = empty( $atts['id'] ) ? uniqid() : $atts['id'];
@@ -257,9 +310,8 @@ class Meow_MWAI_Modules_Chatbot {
       $avatarUrl = $avatar;
     }
     else if ( !empty( $chatStyles ) && isset( $chatStyles['avatar'] ) ) {
-      $file = $chatStyles['avatar'];
-      $isUrl = strpos( $file, 'http' ) === 0 ? true : false;
-      $avatar = $isUrl ? $file : (MWAI_URL . 'images/' . $chatStyles['avatar']);
+      $url = $chatStyles['avatar'];
+      $avatar = $this->core->isUrl( $url ) ? $url : (MWAI_URL . 'images/' . $chatStyles['avatar']);
     }
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
