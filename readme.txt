@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.5.6
+Stable tag: 0.5.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,7 +62,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.5.6 (2023/01/30) =
+= 0.5.7 (2023/01/30) =
+* Update: The chatbot icon is now refered as "icon" (instead of "avatar" previously, which was confusing). We have an icon and an icon_position parameters for the chatbot.
 * Fix: Crash while adding rows to the dataset.
 * Add: Placeholders for the user name in the chatbot.
 * Add: URL support for avatars for the user and/or the AI.
