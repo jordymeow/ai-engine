@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.5.7
+Stable tag: 0.5.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,7 +13,7 @@ AI for WordPress. ChatGPT-style chatbot, image & content generator, train AI mod
 
 == Description ==
 
-With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
+With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
 
 Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
@@ -25,6 +25,7 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 * Fullscreen, popup, and window modes for the chatbot
 * Train your AI to make it better at specific tasks
 * Quickly brainstorm new titles and excerpts for your posts
+* Quickly write the WooCommerce product fields (description, short description, etc)
 * Keep track of your OpenAI usage with built-in statistics
 * Internal API for you to play with
 * Upcoming features are already in the works, and it will be surprising!
@@ -62,13 +63,17 @@ Languages: English.
 
 == Changelog ==
 
+= 0.5.8 (2023/01/31) =
+* Add: WooCommerce fields generator for products.
+* Update: More modularity to increase UI tidyness and website's performance.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+
 = 0.5.7 (2023/01/30) =
 * Update: The chatbot icon is now refered as "icon" (instead of "avatar" previously, which was confusing). We have an icon and an icon_position parameters for the chatbot.
 * Fix: Crash while adding rows to the dataset.
 * Add: Placeholders for the user name in the chatbot.
 * Add: URL support for avatars for the user and/or the AI.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-
 
 = 0.5.4 (2023/01/29) =
 * Add: Avatar position (avatar_position) can be set to "bottom-right", "top-left", etc.

@@ -1,5 +1,5 @@
-// Previous: 0.2.4
-// Current: 0.3.5
+// Previous: 0.3.5
+// Current: 0.5.8
 
 import Styled from "styled-components";
 import { NekoTextArea, NekoHeader, NekoButton } from '@neko-ui';
@@ -34,9 +34,8 @@ const AiButton = Styled(NekoButton)`
 
 const StyledTitleWithButton = Styled.div`
   display: flex;
-  justify-content: unset;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 0 0 2px 0;
 
   h2 {
@@ -64,13 +63,48 @@ const StyledGallery = Styled.div`
 `;
 
 const StyledTextField = Styled(NekoTextArea)`
+  height: 76px;
+  border: 1px solid #eaeaea !important;
+  background: #fbfbfb !important;
+  font-size: 15px !important;
+`;
+
+const StyledForm = Styled.div`
+  label {
+    margin-bottom: 5px;
+    display: block;
+  }
+
+  .nui-button {
+    margin-bottom: 5px;
+  }
 
   .neko-textarea {
-    height: 76px;
     border: 1px solid #eaeaea !important;
     background: #fbfbfb !important;
-    font-size: 15px !important;
+    margin-bottom: 5px;
+  }
+
+  .neko-input {
+    border: 1px solid #eaeaea !important;
+    background: #fbfbfb !important;
+    margin-bottom: 5px;
+  }
+
+  .form-row {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    .nui-button, .neko-textarea, .neko-input {
+      margin: 0;
+    }
+  }
+
+  .form-row-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 `;
 
-export { AiButton, AiNekoHeader, StyledTitleWithButton, StyledGallery, StyledTextField }
+export { AiButton, AiNekoHeader, StyledTitleWithButton, StyledGallery, StyledTextField, StyledForm }

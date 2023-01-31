@@ -1,5 +1,5 @@
-// Previous: 0.2.3
-// Current: 0.3.2
+// Previous: 0.3.2
+// Current: 0.5.8
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import SlotFills from './components/SlotFills';
 
 // Gutenberg Blocks
 import initBlocks from './blocks/index';
+import WooCommerceAssistant from './components/assistants/WooCommerce';
 initBlocks();
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -52,6 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	const postsListTools = document.getElementById('mwai-admin-postsList');
 	if (postsListTools) {
 		render((<PostsListTools />), postsListTools);
+	}
+
+	// Admin Tools
+	const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
+	if (postsListTools) {
+		render((<WooCommerceAssistant />), wcAssistant);
 	}
 
 	// Common

@@ -71,6 +71,7 @@ define( 'MWAI_LANGUAGES', [
 define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
+	'module_woocommerce' => true,
 	'module_blocks' => false,
 	'module_statistics' => false,
 	'shortcode_chat' => true,
@@ -113,9 +114,10 @@ class Meow_MWAI_Core
 		}
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
+			new Meow_MWAI_Modules_Assistants( $this );
 		}
 		else {
-			new Meow_MWAI_UI( $this );
+			//new Meow_MWAI_UI( $this );
 			if ( $this->get_option( 'shortcode_chat' ) ) {
 				new Meow_MWAI_Modules_Chatbot();
 			}
