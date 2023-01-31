@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.5.9
+Stable tag: 0.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,7 @@ Languages: English.
 
 == Changelog ==
 
-= 0.5.9 (2023/01/31) =
+= 0.6.0 (2023/01/31) =
 * Fix: Issue with missing file.
 * Add: WooCommerce fields generator for products.
 * Update: More modularity to increase UI tidyness and website's performance.
