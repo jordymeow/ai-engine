@@ -1,11 +1,9 @@
-// Previous: 0.5.8
-// Current: 0.5.9
+// Previous: 0.5.9
+// Current: 0.6.1
 
-// React & Vendor Libs
-const { useState, useEffect, useMemo } = wp.element;
+const { useState, useEffect, useMemo, useRef } = wp.element;
 
-// NekoUI
-import { nekoFetch, useNekoTasks } from '@neko-ui';
+import { nekoFetch, useNekoTasks, useFocusOverlay } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
@@ -47,7 +45,6 @@ const languages = Object.keys(languagesObject).map((key) => {
   return { value: key, label: languagesObject[key] };
 });
 
-// Function that returns a message with SEO recommendations based on the title
 const getSeoMessage = (title) => {
   const words = title.split(' ');
   const wordCount = words.length;
@@ -72,7 +69,6 @@ const getSeoMessage = (title) => {
   return seoMessage.join(' ');
 };
 
-// For testing only
 const isTest = false;
 const DefaultTopic = isTest ? 'Gunkanjima, a paradise for urban explorers.' : '';
 const DefaultTitle = isTest ? 'Gunkanjima : Story of a Day in 1945' : '';
@@ -113,6 +109,9 @@ const ContentGenerator = () => {
   const [topics, setTopics] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
 
+  const refMain = useRef();
+  useFocusOverlay(refMain, bulkTasks.busy);
+
   const isBusy = bulkTasks.busy || busy;
 
   useEffect(() => {
@@ -122,8 +121,9 @@ const ContentGenerator = () => {
 
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
-    return languages.find(l => l.value === language).label;
-  });
+    const found = languages.find(l => l.value === language);
+    return found ? found.label : '';
+  }, [language]);
 
   const resetData = (template) => {
     setTitle('');
@@ -142,6 +142,10 @@ const ContentGenerator = () => {
 
   const onResetData = () => {
     resetData(template);
+    setCreatedPostId();
+    setCreatedPosts([]);
+    setRawTopics('');
+    setTopics([]);
   };
 
   useEffect(() => {
@@ -182,20 +186,11 @@ const ContentGenerator = () => {
       .replace('{TITLE}', title);
   }
 
-  const formInputs = useMemo(() => {
-    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
-    const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
-    return {
-      language: lookFor('{LANGUAGE}', arr),
-      writingStyle: lookFor('{WRITING_STYLE}', arr),
-      writingTone: lookFor('{WRITING_TONE}', arr),
-      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
-    }
-  }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
-    excerptPromptFormat, sectionsCount, paragraphsCount]);
+  const lookForPlaceholder = (str, placeholders) => {
+    return placeholders.some((ph) => str.includes(ph));
+  };
 
-  const onSubmitPrompt = async (promptToUse = prompt) => {
+  const onSubmitPrompt = async (promptToUse = '') => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -204,7 +199,7 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: 2048,
+        maxTokens: maxTokens,
         model 
     } });
     console.log("Data:", { prompt: promptToUse, result: res });
@@ -246,7 +241,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setContent("");
+    setContent('');
     const prompt = buildContentPrompt(inTitle, inHeads);
     let freshContent = await onSubmitPrompt(prompt);
     if (freshContent) {
@@ -268,7 +263,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setExcerpt("");
+    setExcerpt('');
     const prompt = buildExcerptPrompt(inTitle);
     const freshExcerpt = await onSubmitPrompt(prompt);
     if (freshExcerpt) {
@@ -318,17 +313,17 @@ const ContentGenerator = () => {
   };
 
   const onBulkStart = async () => {
-    console.log(topics);
+    setCreatedPosts([]);
     let tasks = topics.map((topic, offset) => async (signal) => {
       console.log("Topic " + offset);
-      const { title, content, excerpt } = await onGenerateAllClick(topic);
-        if (title && content && excerpt) {
-          let postId = onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
-        }
-        else {
-          console.warn("Could not generate the post for: " + topic);
-        }
+      const { title: gTitle, content: gContent, excerpt: gExcerpt } = await onGenerateAllClick(topic);
+      if (gTitle && gContent && gExcerpt) {
+        let postId = await onSubmitNewPost(gTitle, gContent, gExcerpt, true);
+        setCreatedPosts(x => [...x, { postId, topic, title: gTitle, content: gContent, excerpt: gExcerpt }]);
+      }
+      else {
+        console.warn("Could not generate the post for: " + topic);
+      }
       return { success: true };
     });
     await bulkTasks.start(tasks);
@@ -383,7 +378,9 @@ const ContentGenerator = () => {
 
         </NekoColumn>
 
-        <NekoColumn style={{ flex: 3 }}>
+        <NekoColumn  style={{ flex: 3 }}>
+
+          <div ref={refMain}>
 
           <NekoQuickLinks value={mode} disabled={isBusy} onChange={value => { setMode(value) }}>
             <NekoLink title="Single Generate" value='single' />
@@ -520,6 +517,8 @@ const ContentGenerator = () => {
 
           </StyledSidebar>}
 
+          </div>
+
         </NekoColumn>
 
         <NekoColumn>
@@ -576,19 +575,19 @@ const ContentGenerator = () => {
               <label>Model:</label>
               <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption value={x.id} label={x.name}></NekoOption>
+                  <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={setTemperature} onBlur={setTemperature} description={<>
+                onChange={setTemperature} onBlur={() => setTemperature(temperature)} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={setMaxTokens} onBlur={setMaxTokens} description={<>
+                onChange={setMaxTokens} onBlur={() => setMaxTokens(maxTokens)} description={<>
                   <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
                     Between 1 and 2048.
                   </span> Higher values means the model will generate more content.

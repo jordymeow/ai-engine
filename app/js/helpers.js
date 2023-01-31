@@ -1,7 +1,7 @@
-// Previous: 0.3.6
-// Current: 0.4.1
+// Previous: 0.4.1
+// Current: 0.6.1
 
-const { useMemo, useEffect, useState } = wp.element;
+const { useMemo, useEffect, useState, useRef } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
 import { OpenAI_models } from './constants';
 
