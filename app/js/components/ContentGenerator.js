@@ -1,5 +1,5 @@
-// Previous: 0.5.9
-// Current: 0.6.1
+// Previous: 0.6.1
+// Current: 0.6.2
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 
@@ -19,6 +19,7 @@ const templates = [
     id: 'default',
     name: 'Default',
     model: 'text-davinci-003',
+    topic: "",
     temperature: 0.6,
     maxTokens: 2048,
     titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
@@ -121,8 +122,8 @@ const ContentGenerator = () => {
 
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
-    const found = languages.find(l => l.value === language);
-    return found ? found.label : '';
+    const lang = languages.find(l => l.value === language);
+    return lang ? lang.label : '';
   }, [language]);
 
   const resetData = (template) => {
@@ -154,43 +155,32 @@ const ContentGenerator = () => {
     }
   }, [template]);
 
-  const buildTitlePrompt = (topic) => {
-    return titlePromptFormat
-      .replace('{TOPIC}', topic)
+  const finalizePrompt = (prompt) => {
+    return prompt
       .replace('{LANGUAGE}', humanLanguage)
       .replace('{WRITING_STYLE}', writingStyle)
-      .replace('{WRITING_TONE}', writingTone);
-  }
-
-  const buildSectionsPrompt = (title) => {
-    return sectionsPromptFormat
-      .replace('{SECTIONS_COUNT}', sectionsCount)
-      .replace('{TITLE}', title)
-      .replace('{LANGUAGE}', humanLanguage)
-      .replace('{WRITING_STYLE}', writingStyle)
-      .replace('{WRITING_TONE}', writingTone);
-  }
-
-  const buildContentPrompt = (title, sections) => {
-    return contentPromptFormat
-      .replace('{TITLE}', title)
-      .replace('{LANGUAGE}', humanLanguage)
-      .replace('{SECTIONS}', sections)
+      .replace('{WRITING_TONE}', writingTone)
       .replace('{PARAGRAPHS_PER_SECTION}', paragraphsCount)
-      .replace('{WRITING_STYLE}', writingStyle)
-      .replace('{WRITING_TONE}', writingTone);
+      .replace('{SECTIONS_COUNT}', sectionsCount);
   }
 
-  const buildExcerptPrompt = (title) => {
-    return excerptPromptFormat
-      .replace('{TITLE}', title);
-  }
-
-  const lookForPlaceholder = (str, placeholders) => {
-    return placeholders.some((ph) => str.includes(ph));
+  const lookForPlaceholder = (str, arr) => {
+    return !!arr.find(item => item.includes(str));
   };
 
-  const onSubmitPrompt = async (promptToUse = '') => {
+  const formInputs = useMemo(() => {
+    const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
+    return {
+      language: lookForPlaceholder('{LANGUAGE}', arr),
+      writingStyle: lookForPlaceholder('{WRITING_STYLE}', arr),
+      writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
+      sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
+    }
+  }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
+    excerptPromptFormat, sectionsCount, paragraphsCount]);
+
+  const onSubmitPrompt = async (promptToUse = prompt) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -199,13 +189,12 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: maxTokens,
+        maxTokens: 2048,
         model 
     } });
-    console.log("Data:", { prompt: promptToUse, result: res });
     if (res.success) {
       let data = res.data;
-      if (data.startsWith('"') && data.endsWith('"')) {
+      if (typeof data === 'string' && data.startsWith('"') && data.endsWith('"')) {
         data = data.substring(1, data.length - 1);
       }
       return data;
@@ -214,45 +203,43 @@ const ContentGenerator = () => {
     return null;
   };
 
-  const submitHeadsPrompt = async (inTitle = title) => {
+  const submitSectionsPrompt = async (inTitle = title) => {
     if (!inTitle) {
       alert("Title is missing!");
       return;
     }
     setBusy(true);
     setSections("");
-    const prompt = buildSectionsPrompt(inTitle);
-    let freshHeads = await onSubmitPrompt(prompt);
-    freshHeads = cleanNumbering(freshHeads);
-    if (freshHeads) {
-      setSections(freshHeads);
+    const prompt = finalizePrompt(sectionsPromptFormat.replace('{TITLE}', inTitle));
+    let freshSections = await onSubmitPrompt(prompt);
+    freshSections = cleanNumbering(freshSections || '');
+    console.log("Sections:", { prompt, sections: freshSections });
+    if (freshSections !== undefined) {
+      setSections(freshSections);
     }
     setBusy(false);
-    return freshHeads;
+    return freshSections;
   };
 
-  const submitContentPrompt = async (inTitle = title, inHeads = sections) => {
+  const submitContentPrompt = async (inTitle = title, inSections = sections) => {
     if (!inTitle) {
       alert("Title is missing!");
       return;
     }
-    if (!inHeads) {
+    if (!inSections) {
       alert("Sections are missing!");
       return;
     }
     setBusy(true);
     setContent('');
-    const prompt = buildContentPrompt(inTitle, inHeads);
+    const prompt = finalizePrompt(contentPromptFormat.replace('{TITLE}', inTitle).replace('{SECTIONS}', inSections));
     let freshContent = await onSubmitPrompt(prompt);
     if (freshContent) {
-      freshContent = freshContent.replace(/^===INTRO:\n/, '');
-      freshContent = freshContent.replace(/^===INTRO: \n/, '');
-      freshContent = freshContent.replace(/===INTRO: /, '');
-      freshContent = freshContent.replace(/===OUTRO:\n/, '');
-      freshContent = freshContent.replace(/===OUTRO: \n/, '');
-      freshContent = freshContent.replace(/===OUTRO: /, '');
+      freshContent = freshContent.replace(/^===INTRO:\n?/, '');
+      freshContent = freshContent.replace(/^===OUTRO:\n?/, '');
       setContent(freshContent);
     }
+    console.log("Content:", { prompt, content: freshContent });
     setBusy(false);
     return freshContent;
   };
@@ -264,34 +251,36 @@ const ContentGenerator = () => {
     }
     setBusy(true);
     setExcerpt('');
-    const prompt = buildExcerptPrompt(inTitle);
+    const prompt = excerptPromptFormat.replace('{TITLE}', inTitle);
     const freshExcerpt = await onSubmitPrompt(prompt);
     if (freshExcerpt) {
       setExcerpt(freshExcerpt);
     }
+    console.log("Excerpt:", { prompt, excerpt: freshExcerpt });
     setBusy(false);
     return freshExcerpt;
   };
 
   const onGenerateAllClick = async (inTopic = topic) => {
     setBusy(true);
-    const prompt = buildTitlePrompt(inTopic);
+    const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
     let freshTitle = await onSubmitPrompt(prompt);
-    let freshHeads = null;
+    console.log("Title:", { prompt, title: freshTitle });
+    let freshSectionsLocal = null;
     let freshContent = null;
     let freshExcerpt = null;
-    setBusy(false);
     if (freshTitle) {
       setTitle(freshTitle);
-      freshHeads = await submitHeadsPrompt(freshTitle);
-      if (freshHeads) {
-        freshContent = await submitContentPrompt(freshTitle, freshHeads);
+      freshSectionsLocal = await submitSectionsPrompt(freshTitle);
+      if (freshSectionsLocal) {
+        freshContent = await submitContentPrompt(freshTitle, freshSectionsLocal);
         if (freshContent) {
           freshExcerpt = await onSubmitPromptForExcerpt(freshTitle);
         }
       }
     }
-    return { title: freshTitle, heads: freshHeads, content: freshContent, excerpt: freshExcerpt };
+    setBusy(false);
+    return { title: freshTitle, sections: freshSectionsLocal, content: freshContent, excerpt: freshExcerpt };
   };
 
   const onSubmitNewPost = async (inTitle = title, inContent = content, inExcerpt = excerpt, isBulk = false) => {
@@ -308,21 +297,23 @@ const ContentGenerator = () => {
     }
     if (!isBulk) {
       setCreatedPostId(res.postId);
+      // intentionally setting outdated value; supposed to be fine
     }
     return res.postId;
   };
 
   const onBulkStart = async () => {
     setCreatedPosts([]);
-    let tasks = topics.map((topic, offset) => async (signal) => {
+    let tasks = topics.map((topicItem, offset) => async (signal) => {
       console.log("Topic " + offset);
-      const { title: gTitle, content: gContent, excerpt: gExcerpt } = await onGenerateAllClick(topic);
+      const { title: gTitle, content: gContent, excerpt: gExcerpt } = await onGenerateAllClick(topicItem);
       if (gTitle && gContent && gExcerpt) {
         let postId = await onSubmitNewPost(gTitle, gContent, gExcerpt, true);
-        setCreatedPosts(x => [...x, { postId, topic, title: gTitle, content: gContent, excerpt: gExcerpt }]);
-      }
-      else {
-        console.warn("Could not generate the post for: " + topic);
+        if (postId) {
+          setCreatedPosts(x => [...x, { postId, topic: topicItem, title: gTitle, content: gContent, excerpt: gExcerpt }]);
+        }
+      } else {
+        console.warn("Could not generate the post for: " + topicItem);
       }
       return { success: true };
     });
@@ -353,7 +344,7 @@ const ContentGenerator = () => {
             <NekoTextArea disabled={isBusy} value={topic} onChange={setTopic} rows={5} />
             <NekoSpacer />
             <NekoButton fullWidth disabled={!topic || isBusy} 
-              onClick={onGenerateAllClick}>
+              onClick={() => onGenerateAllClick()}>
               Generate All
             </NekoButton>
           </StyledSidebar>}
@@ -366,7 +357,7 @@ const ContentGenerator = () => {
             <h3 style={{ marginTop: 0 }}>Templates</h3>
             <ul>
               {templates.map((x) => (
-                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                <li key={x.id} className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
                   {x.name}
                 </li>
               ))}
@@ -411,11 +402,11 @@ const ContentGenerator = () => {
             <NekoTextArea rows={10} onChange={setRawTopics} value={rawTopics}>
             </NekoTextArea>
             <h3>Generated Posts</h3>
-            {!createdPosts.length && <i>Nothing yet.</i>}
+            {createdPosts.length === 0 && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
-                <li>
-                  {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
+                <li key={x.postId}>
+                  {x.title} <a target="_blank" rel="noopener noreferrer" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
             </ul>}
@@ -447,7 +438,7 @@ const ContentGenerator = () => {
                   </NekoSelect>
                 </>}
 
-                <NekoButton disabled={!title} isBusy={isBusy} onClick={() => submitHeadsPrompt()}>
+                <NekoButton disabled={!title} isBusy={isBusy} onClick={() => submitSectionsPrompt()}>
                   Generate Sections
                 </NekoButton>
               </div>
@@ -536,9 +527,9 @@ const ContentGenerator = () => {
               <label>Language:</label>
               <NekoSelect scrolldown id="language" name="language" disabled={isBusy} 
                 value={language} description="" onChange={setLanguage}>
-                  {languages.map((lang) => {
-                    return <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
-                  })}
+                  {languages.map((lang) => (
+                    <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
+                  ))}
               </NekoSelect>
             </>}
 
@@ -556,9 +547,9 @@ const ContentGenerator = () => {
               <label>Writing tone:</label>
               <NekoSelect scrolldown id="writingTone" name="writingTone" disabled={isBusy}
                 value={writingTone} description="" onChange={setWritingTone}>
-                  {WritingTones.map((tone) => {
-                    return <NekoOption key={tone.value} id={tone.value} value={tone.value} label={tone.label} />
-                  })}
+                  {WritingTones.map((tone) => (
+                    <NekoOption key={tone.value} id={tone.value} value={tone.value} label={tone.label} />
+                  ))}
               </NekoSelect>
             </>}
 
@@ -575,21 +566,21 @@ const ContentGenerator = () => {
               <label>Model:</label>
               <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption value={x.id} label={x.name} key={x.id}></NekoOption>
+                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={setTemperature} onBlur={() => setTemperature(temperature)} description={<>
-                  <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
+                onChange={setTemperature} onBlur={setTemperature} description={<>
+                  <span style={{ color: (temperature >= 0 && temperature <= 1) ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={setMaxTokens} onBlur={() => setMaxTokens(maxTokens)} description={<>
-                  <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
-                    Between 1 and 2048.
+                onChange={setMaxTokens} onBlur={setMaxTokens} description={<>
+                  <span style={{ color: (maxTokens >= 1 && maxTokens <= 4096) ? 'inherit' : 'red' }}>
+                    Between 1 and 4096.
                   </span> Higher values means the model will generate more content.
                 </>} />
             </>}
@@ -644,7 +635,6 @@ const ContentGenerator = () => {
       />
       
     </NekoPage>
-    
   );
 };
 
