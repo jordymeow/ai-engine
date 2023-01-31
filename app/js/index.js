@@ -1,5 +1,5 @@
-// Previous: 0.3.2
-// Current: 0.5.8
+// Previous: 0.5.8
+// Current: 0.5.9
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Admin Tools
 	const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
-	if (postsListTools) {
+	if (wcAssistant) {
 		render((<WooCommerceAssistant />), wcAssistant);
 	}
 
