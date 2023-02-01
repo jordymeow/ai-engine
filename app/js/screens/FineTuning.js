@@ -1,5 +1,5 @@
-// Previous: 0.5.2
-// Current: 0.5.6
+// Previous: 0.1.0
+// Current: 0.6.6
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon
 import { nekoFetch, formatBytes } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { useModels } from '../helpers';
-import DatasetGenerator from './DatasetGenerator';
+import DatasetBuilder from './FineTuning/DatasetBuilder';
 
 const builderColumns = [
   { accessor: 'row', title: "#", width: 15, verticalAlign: 'top' },
@@ -53,6 +53,8 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
+      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
+      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
@@ -141,7 +143,7 @@ const FineTuning = ({ options, updateOption }) => {
 
   const rowsPerPage = 10;
   const [ hasStorageBackup, setHasStorageBackup ] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [ currentPage, setCurrentPage ] = useState(1);
   const [ builderData, setBuilderData ] = useState([]);
   const [ filename, setFilename ] = useState('');
   const totalRows = useMemo(() => builderData.length, [builderData]);
@@ -155,7 +157,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries(['datasets']);
+    await queryClient.invalidateQueries('datasets');
   }
 
   const onRefreshFiles = async () => {
@@ -169,7 +171,7 @@ const FineTuning = ({ options, updateOption }) => {
     const currentSuffix = suffix;
     const rawModel = models.find(x => x.id === model);
     setBusyAction(true);
-    const isFineTuned = rawModel?.short?.startsWith('fn-');
+    const isFineTuned = rawModel.short.startsWith('fn-');
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
       method: 'POST',
       nonce: restNonce,
@@ -192,7 +194,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const refreshFineTunes = async () => {
-    await queryClient.invalidateQueries(['finetunes']);
+    await queryClient.invalidateQueries('finetunes');
   }
 
   const onRefreshFineTunes = async () => {
@@ -264,7 +266,7 @@ const FineTuning = ({ options, updateOption }) => {
 
   const builderRows = useMemo(() => {
     let line = (currentPage - 1) * rowsPerPage;
-    let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
+    let chunkOfBuilderData = builderData.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
     return chunkOfBuilderData?.map(x => {
@@ -365,7 +367,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const fileRows = useMemo(() => {
-    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFiles?.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
@@ -395,7 +397,7 @@ const FineTuning = ({ options, updateOption }) => {
     if (!dataFineTunes) {
       return [];
     }
-    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFineTunes.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
@@ -431,9 +433,9 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = builderData.map(x => JSON.stringify(x)).join("\n");
-      console.log(data);
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
+      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
+      console.log(dataStr);
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
@@ -460,8 +462,8 @@ const FineTuning = ({ options, updateOption }) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
-    const rawModel = models.find(x => x.id === model);
-    return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
+    const rawModel = models.find(x => x.id === model) || { short: '' };
+    return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes <10 ? '0'+minutes : minutes}-${seconds<10?'0'+seconds:seconds}`;
   }, [suffix, model]);
 
   const onSelectFiles = async (files) => {
@@ -480,7 +482,12 @@ const FineTuning = ({ options, updateOption }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try {
+            data = JSON.parse(fileContent);
+          } catch (e) {
+            console.log(e);
+            data = [];
+          }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -491,10 +498,9 @@ const FineTuning = ({ options, updateOption }) => {
             }
             catch (e) {
               console.log(e, x);
-              return null
+              return null;
             }
-            
-          });
+          }).filter(x => x !== null);
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
@@ -620,7 +626,7 @@ const FineTuning = ({ options, updateOption }) => {
       </>}
 
       {!isModeTrain && dataSection === 'generator' && <>
-        <DatasetGenerator setBuilderData={setBuilderData} />
+        <DatasetBuilder setBuilderData={setBuilderData} />
       </>}
 
       {!isModeTrain && dataSection === 'editor' && <>
@@ -658,7 +664,7 @@ const FineTuning = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 

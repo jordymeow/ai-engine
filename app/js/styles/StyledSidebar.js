@@ -1,5 +1,5 @@
-// Previous: 0.4.0
-// Current: 0.4.5
+// Previous: 0.1.0
+// Current: 0.6.6
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -27,20 +27,37 @@ const StyledSidebar = Styled.div`
     margin-top: 10px;
   }
 
+  ul {
+    margin: 20px 0 0 0;
+  }
+
   li {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     border: 1px solid #e5e5e5;
-    padding: 10px;
+    padding: 8px;
     background: #f5f5f5;
     border-radius: 5px;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
-  }
+    position: relative;
 
-  li.active {
-    background: #037cba;
-    color: white;
-    border-color: #037cba;
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:hover {
+      background: #e5e5e5;
+    }
+
+    &.active {
+      background: #007cba;
+      color: white;
+      border-color: #007cba;
+
+      &.modified {
+        background: #ff8c00;
+        border-color: #ff8c00;
+      }
+    }
   }
 
   .information {

@@ -1,132 +1,88 @@
-// Previous: 0.6.4
-// Current: 0.6.5
+// Previous: 0.1.0
+// Current: 0.6.6
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
 import { nekoFetch } from '@neko-ui';
-import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
+import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput, NekoTextArea,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { OpenAI_PricingPerModel } from "../constants";
 import { OptionsCheck, useModels } from "../helpers";
-import { AiNekoHeader } from "./CommonStyles";
-import { StyledNekoInput, StyledSidebar } from "./styles/StyledSidebar";
-
-const templates = [
-  {
-    id: 'none',
-    name: 'None',
-    mode: 'query',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 2048,
-    description: ''
-  }, {
-    id: 'article_translator',
-    name: 'Text Translator',
-    mode: 'query',
-    temperature: 0.3,
-    stopSequence: '',
-    maxTokens: 2048,
-    description: `Translate this article into French:\n\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.\n\n`,
-  }, {
-    id: 'restaurant_review',
-    name: 'Restaurant Review Writer',
-    mode: 'query',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 2048,
-    description: 'Write a review for a French restaurant located in Kagurazaka, Tokyo. Looks like an old restaurant, food is traditional, chef is talkative, it is always full. Not expensive, but not fancy.\n\n',
-  }, {
-    id: 'article_corrector',
-    name: 'Text Corrector',
-    mode: 'query',
-    temperature: 0.2,
-    stopSequence: '',
-    maxTokens: 2048,
-    description: 'Fix the grammar and spelling mistakes in this text:\n\nI wake up at eleben yesderday, I will go bed eary tonigt.\n',
-  }, {
-    id: 'seo_assistant',
-    name: 'SEO Optimizer',
-    mode: 'query',
-    temperature: 0.6,
-    stopSequence: '',
-    maxTokens: 1024,
-    description: `For the following article, write a SEO-friendly and short title, keywords for Google, and a short excerpt to introduce it. Use this format:
-
-      Title: 
-      Keywords: 
-      Excerpt: 
-      
-      Uchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.
-    `,
-  }, {
-    id: 'wp_assistant',
-    name: 'WordPress Assistant',
-    mode: 'chat',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 150,
-    description: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n
-      AI: Hi! How can I help you with WP today?`
-  }, {
-    id: 'casually_fined_tuned',
-    name: 'Casually Fined Tuned Tester',
-    mode: 'query',
-    temperature: 0.4,
-    stopSequence: '\\n\\n',
-    maxTokens: 1024,
-    description: `Hello! What's your name?\n\n###\n\n`
-  }
-];
+import { AiNekoHeader } from "../styles/CommonStyles";
+import { StyledNekoInput, StyledSidebar } from "../styles/StyledSidebar";
+import useTemplates from "../components/Templates";
 
 const StyledTextArea = Styled.textarea`
   display: block;
-  height: 460px;
+  height: 360px;
   width: 100%;
   margin-bottom: 10px;
   background: #333d4e;
   border-radius: 5px;
   border: none;
-  color: #d1d5dc;
-  font-size: 14px;
+  color: white;
+  font-size: 13px;
   font-family: monospace;
-  padding: 20px;
+  padding: 10px;
 `;
 
 const Dashboard = () => {
-  const [error, setError] = useState();
-  const [prompt, setPrompt] = useState();
-  const [mode, setMode] = useState('chat');
-  const [entry, setEntry] = useState('');
-  const { models, model, setModel } = useModels(options);
-  const [temperature, setTemperature] = useState(1);
+  const { template, setTemplate, resetTemplate, jsxTemplates } = useTemplates('playground');
+  const [completion, setCompletion] = useState("");
+  const { models } = useModels(options);
+
   const [busy, setBusy] = useState(false);
+  const [continuousEntry, setContinuousEntry] = useState('');
   const [sessionUsage, setSessionUsage] = useState({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
   const [lastUsage, setLastUsage] = useState({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
-  const [template, setTemplate] = useState(templates[2]);
-  const [stopSequence, setStopSequence] = useState('');
-  const [maxTokens, setMaxTokens] = useState(2048);
   const [startTime, setStartTime] = useState();
+  const [error, setError] = useState();
 
-  const onValidateEntry = () => {
-    const newPrompt = prompt + "\nHuman: " + entry;
+  const prompt = template?.prompt ?? "";
+  const model = template?.model ?? "text-davinci-003";
+  const mode = template?.mode ?? "query";
+  const temperature = template?.temperature ?? 1;
+  const stopSequence = template?.stopSequence ?? "";
+  const maxTokens = template?.maxTokens ?? 2048;
+
+  const setPrompt = (prompt) => {
+    setTemplate({ ...template, prompt: prompt });
+  }
+
+  const setModel = (model) => {
+    setTemplate({ ...template, model: model });
+  }
+
+  const setMode = (mode) => {
+    setTemplate({ ...template, mode: mode });
+  }
+
+  const setTemperature = (temperature) => {
+    setTemplate({ ...template, temperature: parseFloat(temperature) });
+  }
+
+  const setStopSequence = (stopSequence) => {
+    setTemplate({ ...template, stopSequence: stopSequence });
+  }
+
+  const setMaxTokens = (maxTokens) => {
+    setTemplate({ ...template, maxTokens: parseInt(maxTokens) });
+  }
+
+  const onPushContinuousEntry = () => {
+    const newPrompt = prompt + "\nHuman: " + continuousEntry;
     setPrompt(newPrompt);
-    setEntry("");
+    setContinuousEntry("");
     onSubmitPrompt(newPrompt);
   }
 
   useEffect(() => {
-    const desc = template.description;
-    let lines = desc.split('\n').map(line => line.trim());
-    lines = lines.join('\n');
-    setPrompt(lines);
-    setStopSequence(template.stopSequence);
-    setTemperature(template.temperature);
-    setMaxTokens(template.maxTokens);
-    setMode(template.mode);
+    if (template) {
+      setCompletion("");
+    }
   }, [template]);
 
   const onResetUsage = () => {
@@ -152,7 +108,12 @@ const Dashboard = () => {
     }});
     console.log("Completions", { prompt: promptToUse, result: res });
     if (res.success) {
-      setPrompt(promptToUse + '\n' + res.data);
+      if (mode === 'continuous') {
+        setPrompt(promptToUse + '\n' + res.data);
+      }
+      else {
+        setCompletion(res.data);
+      }
       setLastUsage(res.usage);
       const newSessionUsage = {
         prompt_tokens: sessionUsage.prompt_tokens + res.usage.prompt_tokens,
@@ -164,12 +125,13 @@ const Dashboard = () => {
     else {
       setError(res.message);
     }
-    setStartTime();
+    setStartTime(null);
     setBusy(false);
   };
 
-  const onResetPrompt = () => {
-    setPrompt(template.description);
+  const onReset = () => {
+    resetTemplate();
+    setCompletion("");
   }
 
   const { sessionPrice, lastRequestPrice } = useMemo(() => {
@@ -202,42 +164,52 @@ const Dashboard = () => {
 
         <NekoColumn>
           <StyledSidebar>
-            <h3 style={{ marginTop: 0 }}>Templates</h3>
-            <ul>
-              {templates.map((x) => (
-                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
-                  {x.name}
-                </li>
-              ))}
-            </ul>
+            {jsxTemplates}
+          </StyledSidebar>
+
+          <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
             <NekoSelect scrolldown id="mode" name="mode" disabled={true || busy} 
               value={mode} description="" onChange={setMode}>
-              <NekoOption key='chat' id='chat' value='chat' label="Chat" />
               <NekoOption key='query' id='query' value='query' label="Query" />
+              <NekoOption key='continuous' id='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
           </StyledSidebar>
         </NekoColumn>
 
         <NekoColumn style={{ flex: 3 }}>
-          <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
-          {mode === 'chat' && 
-            <div style={{ display: 'flex', position: 'relative' }}>
-              <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
-                zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-              <StyledNekoInput id="entry" value={entry} onChange={setEntry} onEnter={onValidateEntry} disabled={busy} />
-            </div>
-          }
-          {mode !== 'chat' && <div style={{ display: 'flex' }}>
-            <NekoButton onClick={() => { onResetPrompt() }} disabled={busy}
-              style={{ height: 50, fontSize: 14, flex: 1 }}>
-                Reset
-            </NekoButton>
-            <NekoButton onClick={() => { onSubmitPrompt() }} isBusy={busy} startTime={startTime}
-              style={{ height: 50, fontSize: 14, flex: 4 }}>
-                Submit
-            </NekoButton>
-          </div>}
+
+          <StyledSidebar>
+
+            {mode !== 'continuous' && <>
+              <label style={{ marginTop: 0, marginBottom: 10 }}>Query / Prompt:</label>
+              <StyledTextArea style={{ marginBottom: 10, height: 160 }} rows={8}
+                onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
+              <label style={{ marginTop: 0, marginBottom: 10 }}>Answer:</label>
+              <StyledTextArea style={{ marginBottom: 10, height: 300 }} value={completion} />
+              <div style={{ display: 'flex' }}>
+              <NekoButton onClick={() => { onReset() }} disabled={busy}
+                style={{ height: 50, fontSize: 14, flex: 1 }}>
+                  Reset
+              </NekoButton>
+              <NekoButton onClick={() => { onSubmitPrompt() }} isBusy={busy} startTime={startTime}
+                style={{ height: 50, fontSize: 14, flex: 4 }}>
+                  Submit
+              </NekoButton>
+              </div>
+            </>}
+
+            {mode === 'continuous' && <>
+              <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
+              <div style={{ display: 'flex' }}>
+                <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
+                  zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
+                <StyledNekoInput id="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
+                  onEnter={onPushContinuousEntry} disabled={busy} />
+              </div>
+            </>}
+
+          </StyledSidebar>
         </NekoColumn>
 
         <NekoColumn>
@@ -268,7 +240,7 @@ const Dashboard = () => {
             <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
               onChange={setStopSequence} onBlur={setStopSequence} description={<>
               <span>
-                The sequence of tokens that will cause the model to stop generating text. You absolutely need this with your own models.
+                The sequence of tokens that will cause the model to stop generating text. You absolutely need this with fine-tuned models.
               </span>
             </>} />
           </StyledSidebar>
@@ -301,5 +273,3 @@ const Dashboard = () => {
     </NekoPage>
   );
 };
-
-export default Dashboard;

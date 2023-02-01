@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.5.2
+// Previous: 0.1.0
+// Current: 0.6.6
 
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -20,7 +20,7 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
-const DatasetGenerator = ({ setBuilderData }) => {
+const DatasetBuilder = ({ setBuilderData }) => {
   const bulkTasks = useNekoTasks();
   const [postType, setPostType] = useState('post');
   const [totalTokens, setTotalTokens] = useState(0);
@@ -60,9 +60,8 @@ const DatasetGenerator = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        const lastEntry = entries[entries.length - 1];
-        if (lastEntry) {
-          lastEntry.completion = arr[i].slice(2).trim();
+        if (entries.length > 0) {
+          entries[entries.length - 1].completion = arr[i].slice(2).trim();
         }
       }
     }
@@ -71,7 +70,7 @@ const DatasetGenerator = ({ setBuilderData }) => {
 
   const runProcess = async (suffix = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, suffix, postId !== undefined ? postId : 0);
+    const resContent = await retrievePostContent(postType, suffix, postId ? postId : undefined);
     let error = null;
     let rawData = null;
     let content = resContent?.content;
@@ -80,7 +79,7 @@ const DatasetGenerator = ({ setBuilderData }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content && content.length < 64) {
+    else if (content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
@@ -123,7 +122,7 @@ const DatasetGenerator = ({ setBuilderData }) => {
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
       let result = await runProcess(offset, null, signal);
-      if (result.entries && result.entries.length > 0) {
+      if (result.entries) {
         setBuilderData(builderData => [...builderData, ...result.entries]);
       }
       return { success: true };
@@ -136,8 +135,7 @@ const DatasetGenerator = ({ setBuilderData }) => {
 
   const onQuickTestClick = async () => {
     setTotalTokens(0);
-    const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    const postId = postIdInput !== "" ? postIdInput : undefined;
+    const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
     if (postId === null) {
       return;
     }
@@ -168,7 +166,7 @@ const DatasetGenerator = ({ setBuilderData }) => {
           Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
           <NekoOption key={'post'} id={'post'} value={'post'} label="Posts" />
           <NekoOption key={'page'} id={'page'} value={'page'} label="Pages" />
         </NekoSelect>
@@ -180,10 +178,10 @@ const DatasetGenerator = ({ setBuilderData }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
+        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
 
     </>
   );
 }
 
-export default DatasetGenerator;
+export default DatasetBuilder;

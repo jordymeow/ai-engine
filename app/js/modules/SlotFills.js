@@ -1,5 +1,5 @@
-// Previous: 0.1.9
-// Current: 0.2.0
+// Previous: 0.1.0
+// Current: 0.6.6
 
 const { useState, useEffect, useMemo } = wp.element;
 const { __ } = wp.i18n;
@@ -7,19 +7,11 @@ const { registerPlugin } = wp.plugins;
 const { Button } = wp.components;
 const { PluginDocumentSettingPanel, PluginBlockSettingsMenuItem } = wp.editPost;
 
-// NekoUI
 import { NekoWrapper } from '@neko-ui';
 
-// UI Engine
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
-import AiIcon from './AiIcon';
-
-// SlotFills Reference
-// https://developer.wordpress.org/block-editor/reference-guides/slotfills/
-
-// Plugin Block Settings Menu Item Reference
-// https://developer.wordpress.org/block-editor/reference-guides/slotfills/plugin-block-settings-menu-item/
+import AiIcon from '../styles/AiIcon';
 
 const doOnClick = () => {
 	alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
@@ -49,17 +41,37 @@ registerPlugin('ai-engine-menu-paragraph-generate', {
 const MWAI_DocumentSettings = () => {
   const [postForTitle, setPostForTitle] = useState();
   const [postForExcerpt, setPostForExcerpt] = useState();
+
+  const { getCurrentPost } = wp.data.select("core/editor");
   
+  useEffect(() => {
+    const post = getCurrentPost();
+    if (post) {
+      setPostForTitle({ postId: post.id, postTitle: post.title });
+    }
+  }, []);
+
+  const { getCurrentPost: getPost } = wp.data.select("core/editor");
+  
+  useEffect(() => {
+    const post = getPost();
+    if (post) {
+      setPostForExcerpt({ postId: post.id, postTitle: post.title });
+    }
+  }, []);
+
   const onTitlesModalOpen = () => {
-    const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title, excerpt } = getCurrentPost();
-    setPostForTitle({ postId: id, postTitle: title });
+    const post = getCurrentPost();
+    if (post) {
+      setPostForTitle({ postId: post.id, postTitle: post.title });
+    }
   }
 
   const onExcerptsModalOpen = () => {
-    const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title, excerpt } = getCurrentPost();
-    setPostForExcerpt({ postId: id, postTitle: title });
+    const post = getCurrentPost();
+    if (post) {
+      setPostForExcerpt({ postId: post.id, postTitle: post.title });
+    }
   }
 
   const onTitleClick = async (title) => {
@@ -89,6 +101,7 @@ const MWAI_DocumentSettings = () => {
     </PluginDocumentSettingPanel>
   );
 };
+
 
 const setUISlotFill = () => {
   registerPlugin('ai-engine-document-settings', {

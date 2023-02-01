@@ -1,5 +1,5 @@
-// Previous: 0.5.8
-// Current: 0.5.9
+// Previous: 0.5.9
+// Current: 0.6.6
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
@@ -9,16 +9,16 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWind
 import { Dashboard } from '@common';
 
 // Components
-import Settings from '@app/components/Settings';
-import Playground from '@app/components/Playground';
-import PostsListTools from './components/PostsListTools';
-import ContentGenerator from './components/ContentGenerator';
-import ImageGenerator from './components/ImageGenerator';
-import SlotFills from './components/SlotFills';
+import Settings from '@app/screens/Settings';
+import Playground from '@app/screens/Playground';
+import PostsListTools from './modules/PostsListTools';
+import ContentGenerator from './screens/ContentGenerator';
+import ImageGenerator from './screens/ImageGenerator';
+import SlotFills from './modules/SlotFills';
 
 // Gutenberg Blocks
 import initBlocks from './blocks/index';
-import WooCommerceAssistant from './components/assistants/WooCommerce';
+import WooCommerceAssistant from './modules/WooCommerce';
 initBlocks();
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Dashboard
 	const dashboard = document.getElementById('mwai-playground');
 	if (dashboard) {
-		render((<Playground />), dashboard);
+		render((<QueryClientProvider client={queryClient}><Playground /></QueryClientProvider>), dashboard);
 	}
 
 	// Admin Tools

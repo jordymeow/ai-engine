@@ -115,6 +115,16 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'post_content' ),
 			) );
+			register_rest_route( $this->namespace, '/templates', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'templates_get' ),
+			) );
+			register_rest_route( $this->namespace, '/templates', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'templates_save' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -514,5 +524,41 @@ class Meow_MWAI_Rest
 		$content = wp_strip_all_tags( $content );
 		$content = preg_replace( '/[\r\n]+/', "\n", $content );
 		return new WP_REST_Response([ 'success' => true, 'content' => $content ], 200 );
+	}
+
+	function templates_get( $request ) {
+		$params = $request->get_query_params();
+		$category = $params['category'];
+		$templates = [];
+		$templates_option = get_option( 'mwai_templates', [] );
+		if ( !is_array( $templates_option ) ) {
+			update_option( 'mwai_templates', [] );
+		}
+		$categories = array_column( $templates_option, 'category' );
+		$index = array_search( $category, $categories );
+		$templates = [];
+		if ( $index !== false ) {
+			$templates = $templates_option[$index]['templates'];
+		}
+		return new WP_REST_Response([ 'success' => true, 'templates' => $templates ], 200 );
+	}
+
+	function templates_save( $request ) {
+		$params = $request->get_json_params();
+		$category = $params['category'];
+		$templates = $params['templates'];
+		$templates_option = get_option( 'mwai_templates', [] );
+		$categories = array_column( $templates_option, 'category' );
+		$index = array_search( $category, $categories );
+		if ( $index !== false && $index >= 0 ) {
+			$templates_option[$index]['templates'] = $templates;
+		}
+		else {
+			$group = [ 'category' => $category, 'templates' => $templates ];
+			$templates_option[] = $group;
+		}
+
+		update_option( 'mwai_templates', $templates_option );
+		return new WP_REST_Response([ 'success' => true ], 200 );
 	}
 }

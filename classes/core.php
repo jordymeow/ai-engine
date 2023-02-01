@@ -127,10 +127,6 @@ class Meow_MWAI_Core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
 			new MeowPro_MWAI_Core( $this );
 		}
-
-		if ( session_status() == PHP_SESSION_NONE ) {
-			session_start( ['read_and_close' => true] );
-		}
 	}
 
 	#region Helpers
