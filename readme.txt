@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.6.2
+Stable tag: 0.6.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,12 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 0.6.3 (2023/02/01) =
+* Update: Handles timeouts better.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.6.2 (2023/01/31) =
 * Add: The Post Bulk Generate feature is now working nicely.
 * Fix: Issue with missing file.
 * Add: WooCommerce fields generator for products.
 * Update: More modularity to increase UI tidyness and website's performance.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.5.7 (2023/01/30) =
 * Update: The chatbot icon is now refered as "icon" (instead of "avatar" previously, which was confusing). We have an icon and an icon_position parameters for the chatbot.

@@ -141,7 +141,7 @@ class Meow_MWAI_OpenAI
     $options = [
       "headers" => $headers,
       "method" => $method,
-      "timeout" => 60,
+      "timeout" => 120,
       "body" => $body,
       "sslverify" => false
     ];
@@ -165,7 +165,8 @@ class Meow_MWAI_OpenAI
       }
 
       return $data;
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       error_log($e->getMessage());
       throw new Exception('Error while calling OpenAI: ' . $e->getMessage());
     }

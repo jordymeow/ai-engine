@@ -1,5 +1,5 @@
-// Previous: 0.4.1
-// Current: 0.6.1
+// Previous: 0.6.1
+// Current: 0.6.3
 
 const { useMemo, useEffect, useState, useRef } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
@@ -23,6 +23,9 @@ const OptionsCheck = ({ options }) => {
 }
 
 function cleanNumbering(text) {
+  if (!text) {
+    return text;
+  }
   const lines = text.split('\n');
   const cleanedLines = lines.map(line => {
     line = line.replace(/^\d+\.\s/, '');

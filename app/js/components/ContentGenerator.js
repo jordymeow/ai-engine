@@ -1,5 +1,5 @@
-// Previous: 0.6.1
-// Current: 0.6.2
+// Previous: 0.6.2
+// Current: 0.6.3
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 
@@ -23,8 +23,8 @@ const templates = [
     temperature: 0.6,
     maxTokens: 2048,
     titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
-    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive sections for an article about "{TITLE}", in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}.\n\nEach section is between 40 and 60 characters.\n\nUse Markdown for the sections (## ).`,
-    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following sections:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per section.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: {WRITING_STYLE}. Tone: {WRITING_TONE}.`,
+    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}.\n\nEach heading is between 40 and 60 characters.\n\nUse Markdown for the headings (## ).`,
+    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following headings:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per heading.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: {WRITING_STYLE}. Tone: {WRITING_TONE}.`,
     excerptPromptFormat: `Write an excerpt for an article about "{TITLE}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
   },
   {
@@ -35,8 +35,8 @@ const templates = [
     temperature: 0.6,
     maxTokens: 2048,
     titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: fun, adventurous. Must be between 40 and 60 characters.`,
-    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive sections for an article about "{TITLE}", in {LANGUAGE}. Style: fun, adventurous.\n\nEach section is between 40 and 60 characters.\n\nUse Markdown for the sections (## ).`,
-    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following sections:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per section.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: fun, adventurous.`,
+    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Style: fun, adventurous.\n\nEach heading is between 40 and 60 characters.\n\nUse Markdown for the headings (## ).`,
+    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following headings:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per heading.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: fun, adventurous.`,
     excerptPromptFormat: `Write an excerpt for an article about "{TITLE}" in {LANGUAGE}. Style: fun, adventurous. Must be between 40 and 60 characters.`,
   }
 ];
@@ -70,6 +70,7 @@ const getSeoMessage = (title) => {
   return seoMessage.join(' ');
 };
 
+// For testing only
 const isTest = false;
 const DefaultTopic = isTest ? 'Gunkanjima, a paradise for urban explorers.' : '';
 const DefaultTitle = isTest ? 'Gunkanjima : Story of a Day in 1945' : '';
@@ -122,8 +123,8 @@ const ContentGenerator = () => {
 
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
-    const lang = languages.find(l => l.value === language);
-    return lang ? lang.label : '';
+    const langObj = languages.find(l => l.value === language);
+    return langObj ? langObj.label : '';
   }, [language]);
 
   const resetData = (template) => {
@@ -164,9 +165,7 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   }
 
-  const lookForPlaceholder = (str, arr) => {
-    return !!arr.find(item => item.includes(str));
-  };
+  const lookForPlaceholder = (str, arr) => arr.some(item => item.includes(str));
 
   const formInputs = useMemo(() => {
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
@@ -180,7 +179,7 @@ const ContentGenerator = () => {
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = prompt) => {
+  const onSubmitPrompt = async (promptToUse = '', maxTokensVal = 2048, isBulk = false) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -189,21 +188,24 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: 2048,
+        maxTokens: maxTokensVal,
         model 
     } });
-    if (res.success) {
-      let data = res.data;
-      if (typeof data === 'string' && data.startsWith('"') && data.endsWith('"')) {
-        data = data.substring(1, data.length - 1);
+    if (!res.success) {
+      if (isBulk) {
+        throw new Error(res.message);
       }
-      return data;
+      setError(res.message);
+      return null;
     }
-    setError(res.message);
-    return null;
+    let data = res.data.trim();
+    if (data.startsWith('"') && data.endsWith('"')) {
+      data = data.substring(1, data.length - 1);
+    }
+    return data;
   };
 
-  const submitSectionsPrompt = async (inTitle = title) => {
+  const submitSectionsPrompt = async (inTitle = title, isBulk = false) => {
     if (!inTitle) {
       alert("Title is missing!");
       return;
@@ -211,17 +213,17 @@ const ContentGenerator = () => {
     setBusy(true);
     setSections("");
     const prompt = finalizePrompt(sectionsPromptFormat.replace('{TITLE}', inTitle));
-    let freshSections = await onSubmitPrompt(prompt);
-    freshSections = cleanNumbering(freshSections || '');
+    let freshSections = await onSubmitPrompt(prompt, 512, isBulk);
+    freshSections = cleanNumbering(freshSections);
     console.log("Sections:", { prompt, sections: freshSections });
-    if (freshSections !== undefined) {
+    if (freshSections) {
       setSections(freshSections);
     }
     setBusy(false);
     return freshSections;
   };
 
-  const submitContentPrompt = async (inTitle = title, inSections = sections) => {
+  const submitContentPrompt = async (inTitle = title, inSections = sections, isBulk = false) => {
     if (!inTitle) {
       alert("Title is missing!");
       return;
@@ -233,10 +235,14 @@ const ContentGenerator = () => {
     setBusy(true);
     setContent('');
     const prompt = finalizePrompt(contentPromptFormat.replace('{TITLE}', inTitle).replace('{SECTIONS}', inSections));
-    let freshContent = await onSubmitPrompt(prompt);
+    let freshContent = await onSubmitPrompt(prompt, 2048, isBulk);
     if (freshContent) {
-      freshContent = freshContent.replace(/^===INTRO:\n?/, '');
-      freshContent = freshContent.replace(/^===OUTRO:\n?/, '');
+      freshContent = freshContent.replace(/^===INTRO:\n/, '');
+      freshContent = freshContent.replace(/^===INTRO: \n/, '');
+      freshContent = freshContent.replace(/===INTRO: /, '');
+      freshContent = freshContent.replace(/===OUTRO:\n/, '');
+      freshContent = freshContent.replace(/===OUTRO: \n/, '');
+      freshContent = freshContent.replace(/===OUTRO: /, '');
       setContent(freshContent);
     }
     console.log("Content:", { prompt, content: freshContent });
@@ -244,7 +250,7 @@ const ContentGenerator = () => {
     return freshContent;
   };
 
-  const onSubmitPromptForExcerpt = async (inTitle = title) => {
+  const onSubmitPromptForExcerpt = async (inTitle = title, isBulk = false) => {
     if (!inTitle) {
       alert("Title is missing!");
       return;
@@ -252,7 +258,7 @@ const ContentGenerator = () => {
     setBusy(true);
     setExcerpt('');
     const prompt = excerptPromptFormat.replace('{TITLE}', inTitle);
-    const freshExcerpt = await onSubmitPrompt(prompt);
+    const freshExcerpt = await onSubmitPrompt(prompt, 256, isBulk);
     if (freshExcerpt) {
       setExcerpt(freshExcerpt);
     }
@@ -261,26 +267,32 @@ const ContentGenerator = () => {
     return freshExcerpt;
   };
 
-  const onGenerateAllClick = async (inTopic = topic) => {
+  const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
-    let freshTitle = await onSubmitPrompt(prompt);
-    console.log("Title:", { prompt, title: freshTitle });
-    let freshSectionsLocal = null;
-    let freshContent = null;
-    let freshExcerpt = null;
-    if (freshTitle) {
-      setTitle(freshTitle);
-      freshSectionsLocal = await submitSectionsPrompt(freshTitle);
-      if (freshSectionsLocal) {
-        freshContent = await submitContentPrompt(freshTitle, freshSectionsLocal);
-        if (freshContent) {
-          freshExcerpt = await onSubmitPromptForExcerpt(freshTitle);
+    try {
+      const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
+      let freshTitle = await onSubmitPrompt(prompt, 64, isBulk);
+      console.log("Title:", { prompt, title: freshTitle });
+      let freshSections = null;
+      let freshContent = null;
+      let freshExcerpt = null;
+      setBusy(false);
+      if (freshTitle) {
+        setTitle(freshTitle);
+        freshSections = await submitSectionsPrompt(freshTitle, isBulk);
+        if (freshSections) {
+          freshContent = await submitContentPrompt(freshTitle, freshSections, isBulk);
+          if (freshContent) {
+            freshExcerpt = await onSubmitPromptForExcerpt(freshTitle, isBulk);
+          }
         }
       }
+      return { title: freshTitle, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
     }
-    setBusy(false);
-    return { title: freshTitle, sections: freshSectionsLocal, content: freshContent, excerpt: freshExcerpt };
+    catch (e) {
+      setBusy(false);
+      throw e;
+    }
   };
 
   const onSubmitNewPost = async (inTitle = title, inContent = content, inExcerpt = excerpt, isBulk = false) => {
@@ -297,28 +309,34 @@ const ContentGenerator = () => {
     }
     if (!isBulk) {
       setCreatedPostId(res.postId);
-      // intentionally setting outdated value; supposed to be fine
     }
     return res.postId;
   };
 
   const onBulkStart = async () => {
     setCreatedPosts([]);
-    let tasks = topics.map((topicItem, offset) => async (signal) => {
+    const tasks = topics.map((topic, offset) => async (signal) => {
       console.log("Topic " + offset);
-      const { title: gTitle, content: gContent, excerpt: gExcerpt } = await onGenerateAllClick(topicItem);
-      if (gTitle && gContent && gExcerpt) {
-        let postId = await onSubmitNewPost(gTitle, gContent, gExcerpt, true);
-        if (postId) {
-          setCreatedPosts(x => [...x, { postId, topic: topicItem, title: gTitle, content: gContent, excerpt: gExcerpt }]);
+      try {
+        const { title, content, excerpt } = await onGenerateAllClick(topic, true);
+        if (title && content && excerpt) {
+          let postId = await onSubmitNewPost(title, content, excerpt, true);
+          setCreatedPosts(prev => [...prev, { postId, topic, title, content, excerpt }]);
         }
-      } else {
-        console.warn("Could not generate the post for: " + topicItem);
+        else {
+          console.warn("Could not generate the post for: " + topic);
+        }
+      }
+      catch (e) {
+        if ( !confirm("An error was caught (" + e.message + "). Should we continue?") ) {
+          bulkTasks.stop();
+          bulkTasks.reset();
+          setBusy(false);
+        }
       }
       return { success: true };
     });
     await bulkTasks.start(tasks);
-    alert("Done!");
     bulkTasks.reset();
   }
 
@@ -357,7 +375,7 @@ const ContentGenerator = () => {
             <h3 style={{ marginTop: 0 }}>Templates</h3>
             <ul>
               {templates.map((x) => (
-                <li key={x.id} className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
+                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
                   {x.name}
                 </li>
               ))}
@@ -402,11 +420,11 @@ const ContentGenerator = () => {
             <NekoTextArea rows={10} onChange={setRawTopics} value={rawTopics}>
             </NekoTextArea>
             <h3>Generated Posts</h3>
-            {createdPosts.length === 0 && <i>Nothing yet.</i>}
+            {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
                 <li key={x.postId}>
-                  {x.title} <a target="_blank" rel="noopener noreferrer" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
+                  {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
             </ul>}
@@ -527,9 +545,9 @@ const ContentGenerator = () => {
               <label>Language:</label>
               <NekoSelect scrolldown id="language" name="language" disabled={isBusy} 
                 value={language} description="" onChange={setLanguage}>
-                  {languages.map((lang) => (
-                    <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
-                  ))}
+                  {languages.map((lang) => {
+                    return <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
+                  })}
               </NekoSelect>
             </>}
 
@@ -547,9 +565,9 @@ const ContentGenerator = () => {
               <label>Writing tone:</label>
               <NekoSelect scrolldown id="writingTone" name="writingTone" disabled={isBusy}
                 value={writingTone} description="" onChange={setWritingTone}>
-                  {WritingTones.map((tone) => (
-                    <NekoOption key={tone.value} id={tone.value} value={tone.value} label={tone.label} />
-                  ))}
+                  {WritingTones.map((tone) => {
+                    return <NekoOption key={tone.value} id={tone.value} value={tone.value} label={tone.label} />
+                  })}
               </NekoSelect>
             </>}
 
@@ -572,15 +590,15 @@ const ContentGenerator = () => {
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
                 onChange={setTemperature} onBlur={setTemperature} description={<>
-                  <span style={{ color: (temperature >= 0 && temperature <= 1) ? 'inherit' : 'red' }}>
+                  <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
                 onChange={setMaxTokens} onBlur={setMaxTokens} description={<>
-                  <span style={{ color: (maxTokens >= 1 && maxTokens <= 4096) ? 'inherit' : 'red' }}>
-                    Between 1 and 4096.
+                  <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
+                    Between 1 and 2048.
                   </span> Higher values means the model will generate more content.
                 </>} />
             </>}
@@ -635,6 +653,7 @@ const ContentGenerator = () => {
       />
       
     </NekoPage>
+    
   );
 };
 

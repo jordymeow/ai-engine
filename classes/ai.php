@@ -79,7 +79,7 @@ class Meow_MWAI_AI {
     $options = array(
       "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n",
       "method" => "POST",
-      "timeout" => 60,
+      "timeout" => 120,
       "body" => json_encode( array(
         "model" => $query->model,
         "prompt" => $query->prompt,
@@ -135,7 +135,7 @@ class Meow_MWAI_AI {
     $options = array(
       "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n",
       "method" => "POST",
-      "timeout" => 60,
+      "timeout" => 120,
       "body" => json_encode( array(
         "prompt" => $query->prompt,
         "n" => $query->maxResults,
