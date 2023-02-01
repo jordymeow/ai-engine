@@ -1,10 +1,9 @@
-// Previous: 0.3.5
-// Current: 0.3.6
+// Previous: 0.3.6
+// Current: 0.6.4
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
@@ -122,6 +121,7 @@ const Dashboard = () => {
   const [template, setTemplate] = useState(templates[2]);
   const [stopSequence, setStopSequence] = useState('');
   const [maxTokens, setMaxTokens] = useState(2048);
+  const [startTime, setStartTime] = useState();
 
   const onValidateEntry = () => {
     const newPrompt = prompt + "\nHuman: " + entry;
@@ -148,6 +148,7 @@ const Dashboard = () => {
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
+    setStartTime(new Date());
     const stop = stopSequence.replace(/\\n/g, '\n');
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
@@ -175,6 +176,7 @@ const Dashboard = () => {
     else {
       setError(res.message);
     }
+    setStartTime();
     setBusy(false);
   };
 
@@ -233,9 +235,9 @@ const Dashboard = () => {
           <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
           {mode === 'chat' && 
             <div style={{ display: 'flex', position: 'relative' }}>
-              <span className="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
-                zIndex: 200, fontSize: 28, top: 12, left: 10 }}></span>
-              <StyledNekoInput id="entry" value={entry} onChange={setEntry} onEnter={onValidateEntry} disabled={busy} />
+              <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
+                zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
+              <StyledNekoInput id="entry" value={entry} onChange={(val) => setEntry(val)} onEnter={onValidateEntry} disabled={busy} />
             </div>
           }
           {mode !== 'chat' && <div style={{ display: 'flex' }}>
@@ -243,7 +245,7 @@ const Dashboard = () => {
               style={{ height: 50, fontSize: 14, flex: 1 }}>
                 Reset
             </NekoButton>
-            <NekoButton onClick={() => { onSubmitPrompt() }} disabled={busy}
+            <NekoButton onClick={() => { onSubmitPrompt() }} isBusy={busy} startTime={startTime}
               style={{ height: 50, fontSize: 14, flex: 4 }}>
                 Submit
             </NekoButton>
@@ -257,26 +259,26 @@ const Dashboard = () => {
             <label>Model:</label>
             <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
-                <NekoOption value={x.id} label={x.name}></NekoOption>
+                <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onBlur={(e) => setTemperature(parseFloat(e.target.value))} description={<>
-                <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
+              onBlur={(e) => { setTemperature(parseFloat(e.target.value)) }} description={<>
+                <span style={{ color: (temperature >= 0 && temperature <= 1) ? 'inherit' : 'red' }}>
                   Between 0 and 1. Higher values means the model will take more risks.
                 </span>
               </>} />
             <label>Max Tokens:</label>
             <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-              onBlur={(e) => setMaxTokens(parseInt(e.target.value))} description={<>
+              onBlur={(e) => { setMaxTokens(parseInt(e.target.value)) }} description={<>
               <span>
                 The maximum number of tokens to generate. The model will stop generating once it hits this limit.
               </span>
             </>} />
             <label>Stop Sequence:</label>
             <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
-              onChange={setStopSequence} onBlur={() => setStopSequence(stopSequence)} description={<>
+              onChange={(val) => { setStopSequence(val) }} onBlur={(val) => { setStopSequence(val) }} description={<>
               <span>
                 The sequence of tokens that will cause the model to stop generating text. You absolutely need this with your own models.
               </span>
@@ -302,8 +304,8 @@ const Dashboard = () => {
       </NekoWrapper>
 
       <NekoModal isOpen={Boolean(error)}
-        onRequestClose={() => { setError(undefined) }}
-        onOkClick={() => { setError(undefined) }}
+        onRequestClose={() => { setError() }}
+        onOkClick={() => { setError() }}
         title="Error"
         content={<p>{error}</p>}
       />
