@@ -53,6 +53,7 @@ const LicenseBlock = () => {
   const forceLicense = async () => {
     setBusy(true);
     const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
+      method: 'POST',
       nonce: restNonce,
       json: { 
         serialKey,

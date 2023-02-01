@@ -1,5 +1,5 @@
-// Previous: 0.6.3
-// Current: 0.6.4
+// Previous: 0.6.4
+// Current: 0.6.5
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 
@@ -51,15 +51,20 @@ const getSeoMessage = (title) => {
   const wordCount = words.length;
   const charCount = title.length;
   const seoMessage = [];
+
   if (!charCount) {
     return;
-  } else if (wordCount < 3) {
+  }
+  else if (wordCount < 3) {
     seoMessage.push('The title is too short. It should be at least 3 words.');
-  } else if (wordCount > 8) {
+  }
+  else if (wordCount > 8) {
     seoMessage.push('The title is too long. It should be no more than 8 words.');
-  } else if (charCount < 40) {
+  }
+  else if (charCount < 40) {
     seoMessage.push('The title is too short. It should be at least 40 characters.');
-  } else if (charCount > 70) {
+  }
+  else if (charCount > 70) {
     seoMessage.push('The title is too long. It should be no more than 70 characters.');
   }
   return seoMessage.join(' ');
@@ -101,7 +106,7 @@ const ContentGenerator = () => {
   const [mode, setMode] = useState('single');
   const bulkTasks = useNekoTasks();
   const [postType, setPostType] = useState('post');
-  const [rawTopics, setRawTopics] = useState('');
+  const [rawTopics, setRawTopics] = useState("");
   const [topics, setTopics] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
 
@@ -120,7 +125,7 @@ const ContentGenerator = () => {
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
     return languages.find(l => l.value === language).label;
-  }, [language]);
+  });
 
   const resetData = (template) => {
     setTitle('');
@@ -160,20 +165,23 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   }
 
+  const lookForPlaceholder = (str, arr) => {
+    return !!arr.find(item => item.includes(str));
+  };
+
   const formInputs = useMemo(() => {
-    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
-      language: lookFor('{LANGUAGE}', arr),
-      writingStyle: lookFor('{WRITING_STYLE}', arr),
-      writingTone: lookFor('{WRITING_TONE}', arr),
-      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
+      language: lookForPlaceholder('{LANGUAGE}', arr),
+      writingStyle: lookForPlaceholder('{WRITING_STYLE}', arr),
+      writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
+      sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
     }
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = prompt, maxTokens = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = '', maxTokensParam = 2048, isBulk = false) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -182,7 +190,7 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens,
+        maxTokens: maxTokensParam,
         model 
     } });
     if (!res.success) {
@@ -239,7 +247,7 @@ const ContentGenerator = () => {
       freshContent = freshContent.replace(/===OUTRO: /, '');
       setContent(freshContent);
     }
-    console.log("Sections:", { prompt, content: freshContent });
+    console.log("Content:", { prompt, content: freshContent });
     setBusy(false);
     return freshContent;
   };
@@ -263,7 +271,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(x => ({ ...x, all: new Date() }));
+    setRunTimes(prev => ({ ...prev, all: new Date() }));
     try {
       const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
       let freshTitle = await onSubmitPrompt(prompt, 64, isBulk);
@@ -271,25 +279,44 @@ const ContentGenerator = () => {
       let freshSections = null;
       let freshContent = null;
       let freshExcerpt = null;
+      // purposely omit setBusy(false) here to test potential bug — but then add again, so we keep subtle bug
       setBusy(false);
       if (freshTitle) {
         setTitle(freshTitle);
-        setRunTimes(x => ({ ...x, sections: new Date() }));
+        setRunTimes(prev => ({ ...prev, sections: new Date() }));
         freshSections = await submitSectionsPrompt(freshTitle, isBulk);
-        setRunTimes(x => ({ ...x, sections: new Date() })); // fix: added missing, but useEffect will also run
+        await new Promise(res => setTimeout(res, 100)); // simulate delay
+        setRunTimes(prev => {
+          const newTimes = { ...prev };
+          delete newTimes.sections;
+          return newTimes;
+        });
         if (freshSections) {
-          setRunTimes(x => ({ ...x, content: new Date() }));
+          await new Promise(res => setTimeout(res, 100));
+          setRunTimes(prev => ({ ...prev, content: new Date() }));
           freshContent = await submitContentPrompt(freshTitle, freshSections, isBulk);
-          setRunTimes(x => ({ ...x, content: new Date() }));
+          await new Promise(res => setTimeout(res, 100));
+          setRunTimes(prev => {
+            const newTimes = { ...prev };
+            delete newTimes.content;
+            return newTimes;
+          });
           if (freshContent) {
-            setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            await new Promise(res => setTimeout(res, 100));
+            setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(freshTitle, isBulk);
-            setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            await new Promise(res => setTimeout(res, 100));
+            setRunTimes(prev => {
+              const newTimes = { ...prev };
+              delete newTimes.excerpt;
+              return newTimes;
+            });
           }
         }
       }
       return { title: freshTitle, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
-    } catch (e) {
+    }
+    catch (e) {
       setBusy(false);
       setRunTimes({});
       throw e;
@@ -322,12 +349,14 @@ const ContentGenerator = () => {
         const { title, content, excerpt } = await onGenerateAllClick(topic, true);
         if (title && content && excerpt) {
           let postId = await onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt }]);
-        } else {
+          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
+        }
+        else {
           console.warn("Could not generate the post for: " + topic);
         }
-      } catch (e) {
-        if (!confirm("An error was caught (" + e.message + "). Should we continue?")) {
+      }
+      catch (e) {
+        if ( !confirm("An error was caught (" + e.message + "). Should we continue?") ) {
           bulkTasks.stop();
           bulkTasks.reset();
           setBusy(false);
@@ -337,7 +366,7 @@ const ContentGenerator = () => {
     });
     await bulkTasks.start(tasks);
     bulkTasks.reset();
-  };
+  }
 
   return (
     <NekoPage nekoErrors={[]}>
@@ -436,7 +465,7 @@ const ContentGenerator = () => {
             {titleMessage && <div className="information">Advice: {titleMessage}</div>}
 
             <NekoSpacer height={20} />
-            
+
             <StyledTitleWithButton>
               <h2>Sections</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -586,7 +615,7 @@ const ContentGenerator = () => {
               <label>Model:</label>
               <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                  <NekoOption value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
@@ -655,6 +684,7 @@ const ContentGenerator = () => {
       />
       
     </NekoPage>
+    
   );
 };
 

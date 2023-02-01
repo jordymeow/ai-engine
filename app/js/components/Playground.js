@@ -1,5 +1,5 @@
-// Previous: 0.3.6
-// Current: 0.6.4
+// Previous: 0.6.4
+// Current: 0.6.5
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -24,53 +24,24 @@ const templates = [
     maxTokens: 2048,
     description: ''
   }, {
-    id: 'casually_fined_tuned',
-    name: 'Casually Fined Tuned',
-    mode: 'query',
-    temperature: 0.4,
-    stopSequence: '\\n\\n',
-    maxTokens: 1024,
-    description: `Hello! What's your name?\n\n###\n\n`
-  }, {
-    id: 'wp_assistant',
-    name: 'WordPress Assistant',
-    mode: 'chat',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 150,
-    description: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n
-      AI: Hi! How can I help you with WP today?`
-  }, {
     id: 'article_translator',
-    name: 'Article Translator',
+    name: 'Text Translator',
     mode: 'query',
     temperature: 0.3,
     stopSequence: '',
     maxTokens: 2048,
     description: `Translate this article into French:\n\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.\n\n`,
   }, {
-    id: 'article_writer',
-    name: 'Article Writer',
+    id: 'restaurant_review',
+    name: 'Restaurant Review Writer',
     mode: 'query',
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
-    description: 'Write an article about what to do in Paris, in summer, with a few recommendations of restaurants and cafes.\n\n',
-  }, {
-    id: 'bulk_articles_writer',
-    name: 'Bulk Articles Writer',
-    mode: 'query',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 2048,
-    description: `Write titles (TITLE: ) and very short paragraphs (CONTENT: ) for each following topic. Keywords for each topic will be added between parenthesis.\n
-      - When to travel to France (seasons, food, ambiance, celebrations)
-      - Why one should visit the French countryside (beach, forest, mountain, food, people)
-      - Story of a night at Mont Saint-Michel (hotel, ambiance, sea, light)
-      - Differences between South West and South East of France (people, food, beach, ambiance)\n`,
+    description: 'Write a review for a French restaurant located in Kagurazaka, Tokyo. Looks like an old restaurant, food is traditional, chef is talkative, it is always full. Not expensive, but not fancy.\n\n',
   }, {
     id: 'article_corrector',
-    name: 'Article Corrector',
+    name: 'Text Corrector',
     mode: 'query',
     temperature: 0.2,
     stopSequence: '',
@@ -78,7 +49,7 @@ const templates = [
     description: 'Fix the grammar and spelling mistakes in this text:\n\nI wake up at eleben yesderday, I will go bed eary tonigt.\n',
   }, {
     id: 'seo_assistant',
-    name: 'SEO Assistant',
+    name: 'SEO Optimizer',
     mode: 'query',
     temperature: 0.6,
     stopSequence: '',
@@ -91,6 +62,23 @@ const templates = [
       
       Uchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.
     `,
+  }, {
+    id: 'wp_assistant',
+    name: 'WordPress Assistant',
+    mode: 'chat',
+    temperature: 0.8,
+    stopSequence: '',
+    maxTokens: 150,
+    description: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n
+      AI: Hi! How can I help you with WP today?`
+  }, {
+    id: 'casually_fined_tuned',
+    name: 'Casually Fined Tuned Tester',
+    mode: 'query',
+    temperature: 0.4,
+    stopSequence: '\\n\\n',
+    maxTokens: 1024,
+    description: `Hello! What's your name?\n\n###\n\n`
   }
 ];
 
@@ -237,7 +225,7 @@ const Dashboard = () => {
             <div style={{ display: 'flex', position: 'relative' }}>
               <span class="dashicons dashicons-format-chat" style={{ position: 'absolute', color: 'white',
                 zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-              <StyledNekoInput id="entry" value={entry} onChange={(val) => setEntry(val)} onEnter={onValidateEntry} disabled={busy} />
+              <StyledNekoInput id="entry" value={entry} onChange={setEntry} onEnter={onValidateEntry} disabled={busy} />
             </div>
           }
           {mode !== 'chat' && <div style={{ display: 'flex' }}>
@@ -259,26 +247,26 @@ const Dashboard = () => {
             <label>Model:</label>
             <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
-                <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                <NekoOption value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onBlur={(e) => { setTemperature(parseFloat(e.target.value)) }} description={<>
-                <span style={{ color: (temperature >= 0 && temperature <= 1) ? 'inherit' : 'red' }}>
+              onBlur={value => setTemperature(parseFloat(value))} description={<>
+                <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   Between 0 and 1. Higher values means the model will take more risks.
                 </span>
               </>} />
             <label>Max Tokens:</label>
             <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-              onBlur={(e) => { setMaxTokens(parseInt(e.target.value)) }} description={<>
+              onBlur={value => setMaxTokens(parseInt(value))} description={<>
               <span>
                 The maximum number of tokens to generate. The model will stop generating once it hits this limit.
               </span>
             </>} />
             <label>Stop Sequence:</label>
             <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
-              onChange={(val) => { setStopSequence(val) }} onBlur={(val) => { setStopSequence(val) }} description={<>
+              onChange={setStopSequence} onBlur={setStopSequence} description={<>
               <span>
                 The sequence of tokens that will cause the model to stop generating text. You absolutely need this with your own models.
               </span>
@@ -303,7 +291,7 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
+      <NekoModal isOpen={error}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"

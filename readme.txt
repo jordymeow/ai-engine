@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.6.4
+Stable tag: 0.6.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,9 @@ Languages: English.
 
 == Changelog ==
 
-= 0.6.4 (2023/02/01) =
+= 0.6.5 (2023/02/01) =
+* Fix: Avoid the content-aware to take too many tokens.
+* Update: Many little enhancements in the UI elements.
 * Update: Handles timeouts better. More and more buttons will display the time elapsed.
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
