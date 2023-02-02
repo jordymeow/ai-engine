@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.6.8
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -13,29 +13,7 @@ import { OptionsCheck } from "../helpers";
 import { AiNekoHeader, StyledGallery, StyledTextField,
   StyledTitleWithButton } from "../styles/CommonStyles";
 import { StyledSidebar } from "../styles/StyledSidebar";
-
-const templates = [
-  {
-    id: 'none',
-    name: 'None',
-    prompt: '',
-  },
-  {
-    id: 'japan',
-    name: 'Ghibli Inspired',
-    prompt: 'japan, tokyo, trees, izakaya, anime oil painting, high resolution, ghibli inspired, 4k',
-  },
-  {
-    id: 'steampunk',
-    name: 'Steampunk Architecture',
-    prompt: 'steampunk architecture, exterior view, award-winning architectural photography from magazine, trees, theater',
-  },
-  {
-    id: 'modern-illustration',
-    name: 'Modern Illustration',
-    prompt: 'illustration of a cat, modern design, for the web, cute, happy, 4k, high resolution, trending in artstation',
-  },
-];
+import useTemplates from "../components/Templates";
 
 const ImagesCount = [1, 2, 3, 6, 9];
 
@@ -45,7 +23,7 @@ function generateFilename(prompt, maxLength = 42) {
   const words = cleaned.split("-");
   let filename = words[0];
   let i = 1;
-  while (i < words.length && (filename.length + words[i].length + 1) < maxLength) {
+  while (filename.length + words[i].length < maxLength && i < words.length) {
     filename += "-" + words[i];
     i++;
   }
@@ -57,6 +35,7 @@ function generateFilename(prompt, maxLength = 42) {
 
 const StyledInputWrapper = Styled.div`
   margin-bottom: 5px;
+
   label {
     margin-bottom: 5px;
     display: block;
@@ -68,28 +47,31 @@ const isTest = true;
 const DefaultTitle = isTest ? 'japan, tokyo, trees, izakaya, anime oil painting, high resolution, ghibli inspired, 4k' : '';
 
 const ImageGenerator = () => {
+  const { template, setTemplate, jsxTemplates } = useTemplates('imagesGenerator');
   const [error, setError] = useState();
-  const [template, setTemplate] = useState(templates[0]);
-  const [prompt, setPrompt] = useState(DefaultTitle);
   const [continuousMode, setContinuousMode] = useState(true);
-  const [maxResults, setMaxResults] = useState(3);
-  const [urls, setUrls] = useState([]);
+  const [busy, setBusy] = useState(false);
 
+  const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [caption, setCaption] = useState('');
   const [alt, setAlt] = useState('');
   const [filename, setFilename] = useState('');
-  
-  const [busy, setBusy] = useState(false);
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
-
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
 
-  useEffect(() => {
-    setPrompt(template.prompt);
-  }, [template]);
+  const prompt = template?.prompt;
+  const maxResults = template?.maxResults;
+
+  const setPrompt = (value) => {
+    setTemplate({ ...template, prompt: value });
+  }
+
+  const setMaxResults = (value) => {
+    setTemplate({ ...template, maxResults: value });
+  }
 
   useEffect(() => {
     if (selectedUrl) {
@@ -128,7 +110,7 @@ const ImageGenerator = () => {
     setBusy(false);
     if (res.success) {
       if (continuousMode) {
-        setUrls([...res.data, ...urls]);
+        setUrls(prevUrls => [...prevUrls, ...res.data]);
       }
       else {
         setUrls(res.data);
@@ -149,7 +131,7 @@ const ImageGenerator = () => {
     }});
     setBusy(false);
     if (res.success) {
-      setCreatedMediaIds([...createdMediaIds, {
+      setCreatedMediaIds(prevIds => [...prevIds, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
@@ -158,13 +140,14 @@ const ImageGenerator = () => {
     return null;
   }
 
-  // Download the file (selected URL) with the given filename
   const onDownload = () => {
     const link = document.createElement('a');
     link.href = selectedUrl;
     link.target = '_blank';
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   }
 
   const currentCreatedMediaId = useMemo(() => {
@@ -191,15 +174,7 @@ const ImageGenerator = () => {
 
         <NekoColumn>
           <StyledSidebar style={{ marginBottom: 25 }}>
-            <h3 style={{ marginTop: 0 }}>Templates</h3>
-            <ul>
-              {templates.map((x) => (
-                <li className={template.id === x.id ? 'active' : ''} onClick={() => { setTemplate(x) }}>
-                  {x.name}
-                </li>
-              ))}
-            </ul>
-            <div>Soon, you'll be able to create templates and re-use them easily.</div>
+            {jsxTemplates}
           </StyledSidebar>
         </NekoColumn>
 
@@ -211,10 +186,10 @@ const ImageGenerator = () => {
               <StyledTitleWithButton style={{ paddingBottom: 10 }}>
                 <h2>Images Generator</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <NekoButton disabled={urlIndex <= 0 || busy} onClick={() => onGoBack()}>
+                  <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
                     &lt;
                   </NekoButton>
-                  <NekoButton disabled={busy} onClick={() => setSelectedUrl(null)}>
+                  <NekoButton disabled={busy} onClick={() => setSelectedUrl()}>
                     Back to results
                   </NekoButton>
                   <NekoButton disabled={urlIndex >= urls.length - 1 || busy} onClick={() => onGoNext()}>
@@ -257,7 +232,7 @@ const ImageGenerator = () => {
                   </NekoButton>
                   {currentCreatedMediaId && <NekoMessageSuccess
                     style={{ fontSize: 13, padding: '10px 5px' }}>
-                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank" rel="noopener noreferrer">Edit Media #{currentCreatedMediaId}</a>.
+                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank">Edit Media #{currentCreatedMediaId}</a>.
                   </NekoMessageSuccess>}
                 </div>
               </div>
@@ -274,7 +249,7 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(value) => setMaxResults(value)}>
+                    value={maxResults} description="" onChange={(val) => setMaxResults(val)}>
                     {ImagesCount.map((count) => {
                       return <NekoOption key={count} id={count} value={count} label={count} />
                     })}
@@ -284,10 +259,11 @@ const ImageGenerator = () => {
                   </NekoButton>
                 </div>
               </StyledTitleWithButton>
-              <StyledTextField value={prompt} onBlur={(e) => setPrompt(e.target.value)} style={{ marginTop: 20 }} />
+              <StyledTextField value={prompt} onChange={(e) => setPrompt(e.target.value)}
+                style={{ marginTop: 20 }} />
               <StyledGallery>
                 {urls.map(url => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} class="empty-image" />)}
               </StyledGallery>
             </NekoContainer>
           </>}
@@ -305,14 +281,15 @@ const ImageGenerator = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
-        onRequestClose={() => { setError(null) }}
-        onOkClick={() => { setError(null) }}
+      <NekoModal isOpen={Boolean(error)}
+        onRequestClose={() => { setError() }}
+        onOkClick={() => { setError() }}
         title="Error"
         content={<p>{error}</p>}
       />
       
     </NekoPage>
-    
   );
 };
+
+export default ImageGenerator;

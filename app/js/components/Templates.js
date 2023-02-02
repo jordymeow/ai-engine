@@ -1,90 +1,20 @@
-// Previous: none
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.6.8
 
 const { useState, useEffect, useMemo } = wp.element;
 
 // Neko UI
-import { NekoWrapper, NekoSwitch, NekoButton, NekoSpinner } from '@neko-ui';
+import { NekoSwitch, NekoButton, NekoSpinner } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
 // AI Engine
-import { apiUrl, restNonce, session, options } from '@app/settings';
+import { apiUrl, restNonce } from '@app/settings';
+import { Templates_ImagesGenerator, Templates_Playground } from '../constants';
 
-const playgroundTemplates = [
-  {
-    id: 'default',
-    name: 'Default',
-    mode: 'query',
-    model: 'text-davinci-003',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 2048,
-    prompt: ''
-  }, {
-    id: 'article_translator',
-    name: 'Text Translator',
-    mode: 'query',
-    model: 'text-davinci-003',
-    temperature: 0.3,
-    stopSequence: '',
-    maxTokens: 2048,
-    prompt: `Translate this article into French:\n\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.\n\n`,
-  }, {
-    id: 'restaurant_review',
-    name: 'Restaurant Review Writer',
-    mode: 'query',
-    model: 'text-davinci-003',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 2048,
-    prompt: 'Write a review for a French restaurant located in Kagurazaka, Tokyo. Looks like an old restaurant, food is traditional, chef is talkative, it is always full. Not expensive, but not fancy.\n\n',
-  }, {
-    id: 'article_corrector',
-    name: 'Text Corrector',
-    mode: 'query',
-    model: 'text-davinci-003',
-    temperature: 0.2,
-    stopSequence: '',
-    maxTokens: 2048,
-    prompt: 'Fix the grammar and spelling mistakes in this text:\n\nI wake up at eleben yesderday, I will go bed eary tonigt.\n',
-  }, {
-    id: 'seo_assistant',
-    name: 'SEO Optimizer',
-    mode: 'query',
-    model: 'text-davinci-003',
-    temperature: 0.6,
-    stopSequence: '',
-    maxTokens: 1024,
-    prompt: `For the following article, write a SEO-friendly and short title, keywords for Google, and a short excerpt to introduce it. Use this format:
-
-      Title: 
-      Keywords: 
-      Excerpt: 
-      
-      Uchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.
-    `,
-  }, {
-    id: 'wp_assistant',
-    name: 'WordPress Assistant',
-    mode: 'continuous',
-    model: 'text-davinci-003',
-    temperature: 0.8,
-    stopSequence: '',
-    maxTokens: 150,
-    prompt: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n
-      AI: Hi! How can I help you with WP today?`
-  }, {
-    id: 'casually_fined_tuned',
-    name: 'Casually Fined Tuned Tester',
-    mode: 'continuous',
-    model: 'text-davinci-003',
-    temperature: 0.4,
-    stopSequence: '\\n\\n',
-    maxTokens: 1024,
-    prompt: `Hello! What's your name?\n\n###\n\n`
-  }
-];
+function generateUniqueId() {
+  return new Date().getTime().toString(36) + Math.random().toString(36).substr(2, 9);
+}
 
 const sortTemplates = (templates) => {
   const freshTemplates = [...templates];
@@ -96,12 +26,19 @@ const sortTemplates = (templates) => {
   return freshTemplates;
 };
 
-const retrieveTemplates = async () => {
-  const res = await nekoFetch(`${apiUrl}/templates?category=playground`, { nonce: restNonce });
+const retrieveTemplates = async (category) => {
+  const res = await nekoFetch(`${apiUrl}/templates?category=${category}`, { nonce: restNonce });
   if (res?.templates && res.templates.length > 0) {
     return sortTemplates(res.templates);
   }
-  return playgroundTemplates;
+  if (category === 'imagesGenerator') {
+    return Templates_ImagesGenerator;
+  }
+  else if (category === 'playground') {
+    return Templates_Playground;
+  }
+  alert("This category of templates is not supported yet.");
+  return [];
 }
 
 const useTemplates = (category = 'playground') => {
@@ -109,7 +46,7 @@ const useTemplates = (category = 'playground') => {
   const [isEdit, setIsEdit] = useState(false);
   const [templates, setTemplates] = useState([]);
   const { isLoading: isLoadingTemplates, data: newTemplates } = useQuery({
-    queryKey: ['templates'], queryFn: retrieveTemplates
+    queryKey: [`templates-${category}`], queryFn: () => retrieveTemplates(category)
   });
 
   useEffect(() => {
@@ -125,7 +62,7 @@ const useTemplates = (category = 'playground') => {
     const res = await nekoFetch(`${apiUrl}/templates`, {
       method: 'POST',
       nonce: restNonce,
-      json: { category: 'playground', templates: freshTemplates }
+      json: { category, templates: freshTemplates }
     });
     return res;
   };
@@ -156,7 +93,7 @@ const useTemplates = (category = 'playground') => {
     }
     const newTpl = {
       ...template,
-      id: 'new_' + Date.now(),
+      id: generateUniqueId(),
       name: newName
     };
     saveTemplates([...templates, newTpl]);
@@ -221,6 +158,11 @@ const useTemplates = (category = 'playground') => {
           </li>
         ))}
       </ul>
+      {isDifferent && <div style={{ display: 'flex', marginTop: 15 }}>
+        <NekoButton fullWidth className="secondary" icon="undo" onClick={resetTemplate}>
+          Reset
+        </NekoButton>
+      </div>}
       {isEdit && <div style={{ display: 'flex', flexDirection: 'column', marginTop: 15 }}>
         <div style={{ display: 'flex', marginBottom: 5 }}>
           <NekoButton disabled={template.id === 'default'} className="danger" icon="trash"
@@ -239,7 +181,7 @@ const useTemplates = (category = 'playground') => {
         </div>
       </div>}
     </div>);
-  }, [templates, template, isLoadingTemplates, isEdit, canSave]);
+  });
 
   return { template, resetTemplate, setTemplate: updateTemplate, jsxTemplates, isEdit };
 };

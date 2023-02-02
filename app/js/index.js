@@ -1,5 +1,5 @@
-// Previous: 0.5.9
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.6.8
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
@@ -34,13 +34,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Content Generator
 	const generator = document.getElementById('mwai-content-generator');
 	if (generator) {
-		render((<ContentGenerator />), generator);
+		render((<QueryClientProvider client={queryClient}><ContentGenerator /></QueryClientProvider>), generator);
 	}
 
 	// Image Generator
 	const imgGen = document.getElementById('mwai-image-generator');
 	if (imgGen) {
-		render((<ImageGenerator />), imgGen);
+		render((<QueryClientProvider client={queryClient}><ImageGenerator /></QueryClientProvider>), imgGen);
 	}
 
 	// Dashboard

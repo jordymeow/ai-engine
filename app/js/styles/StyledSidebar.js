@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.6.8
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -73,9 +73,9 @@ const StyledNekoInput = Styled(NekoInput)`
 
   input {
     height: 50px !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-family: monospace !important;
-    padding: 20px 20px 20px 45px !important;
+    padding: 20px !important;
     border-color: #333d4e !important;
     background: #333d4e !important;
     color: white !important;
@@ -137,4 +137,4 @@ const StyledBuilderForm = Styled.div`
   }
 `;
 
-export { StyledSidebar, StyledNekoInput, StyledBuilderForm }
+export { StyledSidebar, StyledNekoInput, StyledBuilderForm };

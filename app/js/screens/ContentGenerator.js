@@ -1,11 +1,11 @@
-// Previous: 0.6.6
-// Current: 0.6.7
+// Previous: 0.6.7
+// Current: 0.6.8
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 
-import { nekoFetch, useNekoTasks, useFocusOverlay } from '@neko-ui';
+import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
-  NekoQuickLinks, NekoLink,
+  NekoQuickLinks, NekoLink, NekoCheckbox,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
@@ -109,12 +109,9 @@ const ContentGenerator = () => {
   const [rawTopics, setRawTopics] = useState("");
   const [topics, setTopics] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
+  const [topicsAreTitles, setTopicsAreTitles] = useState(false);
 
   const [runTimes, setRunTimes] = useState({});
-
-  const refMain = useRef();
-  useFocusOverlay(refMain, bulkTasks.busy);
-
   const isBusy = bulkTasks.busy || busy;
 
   useEffect(() => {
@@ -165,20 +162,23 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   }
 
+  const lookForPlaceholder = (str, placeholders) => {
+    return !!placeholders.find(item => item.includes(str));
+  };
+
   const formInputs = useMemo(() => {
-    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
-      language: lookFor('{LANGUAGE}', arr),
-      writingStyle: lookFor('{WRITING_STYLE}', arr),
-      writingTone: lookFor('{WRITING_TONE}', arr),
-      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
-    }
+      language: lookForPlaceholder('{LANGUAGE}', arr),
+      writingStyle: lookForPlaceholder('{WRITING_STYLE}', arr),
+      writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
+      sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
+    };
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = finalizePrompt(prompt), maxTokensParam = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = prompt, maxTokens = 2048, isBulk = false) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -187,7 +187,7 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: maxTokensParam,
+        maxTokens,
         model 
     } });
     if (!res.success) {
@@ -268,11 +268,17 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(x => ({ ...runTimes, all: new Date() }));
+    setRunTimes(x => ({ ...x, all: new Date() }));
     try {
-      const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
-      let freshTitle = await onSubmitPrompt(prompt, 64, isBulk);
-      console.log("Title:", { prompt, title: freshTitle });
+      let freshTitle = inTopic;
+      if (!topicsAreTitles) {
+        const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
+        // purposely using let instead of const here
+        let freshTitleTemp = await onSubmitPrompt(prompt, 64, isBulk);
+        // assigning to variable that shadows outer one
+        freshTitle = freshTitleTemp;
+        console.log("Title:", { prompt, title: freshTitle });
+      }
       let freshSections = null;
       let freshContent = null;
       let freshExcerpt = null;
@@ -281,7 +287,7 @@ const ContentGenerator = () => {
         setTitle(freshTitle);
         setRunTimes(x => ({ ...x, sections: new Date() }));
         freshSections = await submitSectionsPrompt(freshTitle, isBulk);
-        await setRunTimes(x => ({ ...x, sections: null }));
+        await setRunTimes(x => ({ ...x, sections: null })); 
         if (freshSections) {
           await setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(freshTitle, freshSections, isBulk);
@@ -387,16 +393,14 @@ const ContentGenerator = () => {
                 </li>
               ))}
             </ul>
-            <div style={{ fontSize: 11, lineHeight: '14px' }}>
-              You will be able to create templates and re-use them easily soon (with your own prompts, params, etc). Depending on the prompts, more or less input fields will be also displayed for a smoother UI. 
+            <div style={{ fontSize: 11, lineHeight: '14px', marginTop: 10 }}>
+              Check the AI Playground; do you like the way you can create your own templates? This feature will come soon to the Content Generator. Let me know how I can make it better for you.
             </div>
           </StyledSidebar>
 
         </NekoColumn>
 
         <NekoColumn  style={{ flex: 3 }}>
-
-          <div ref={refMain}>
 
           <NekoQuickLinks value={mode} disabled={isBusy} onChange={value => { setMode(value) }}>
             <NekoLink title="Single Generate" value='single' />
@@ -424,8 +428,9 @@ const ContentGenerator = () => {
             </div>
             <NekoSpacer height={40} />
             <h3>Topics</h3>
-            <NekoTextArea rows={10} onChange={setRawTopics} value={rawTopics}>
-            </NekoTextArea>
+            <NekoTextArea rows={10} onChange={setRawTopics} value={rawTopics} />
+            <NekoCheckbox label="Use Topics as Titles" value="1" checked={topicsAreTitles}
+              onChange={setTopicsAreTitles} />
             <h3>Generated Posts</h3>
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
@@ -457,9 +462,9 @@ const ContentGenerator = () => {
                       <NekoOption key={3} id={3} value={3} label={3} />
                       <NekoOption key={4} id={4} value={4} label={4} />
                       <NekoOption key={6} id={6} value={6} label={6} />
-                      <NekoOption key={8} id={8} value={8} label={8} />
-                      <NekoOption key={10} id={10} value={10} label={10} />
-                      <NekoOption key={12} id={12} value={12} label={12} />
+                      <NekoOption key={8} id={8} value={8} />
+                      <NekoOption key={10} id={10} value={10} />
+                      <NekoOption key={12} id={12} value={12} />
                   </NekoSelect>
                 </>}
 
@@ -494,7 +499,7 @@ const ContentGenerator = () => {
                       <NekoOption key={4} id={4} value={4} label={4} />
                       <NekoOption key={6} id={6} value={6} label={6} />
                       <NekoOption key={8} id={8} value={8} label={8} />
-                      <NekoOption key={10} id={10} value={10} label={10} />
+                      <NekoOption key={10} id={10} value={10} />
                   </NekoSelect>
                 </>}
 
@@ -535,8 +540,6 @@ const ContentGenerator = () => {
             </NekoButton>
 
           </StyledSidebar>}
-
-          </div>
 
         </NekoColumn>
 

@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.6.8
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -50,34 +50,34 @@ const Dashboard = () => {
 
   const setPrompt = (prompt) => {
     setTemplate({ ...template, prompt: prompt });
-  }
+  };
 
   const setModel = (model) => {
     setTemplate({ ...template, model: model });
-  }
+  };
 
   const setMode = (mode) => {
     setTemplate({ ...template, mode: mode });
-  }
+  };
 
   const setTemperature = (temperature) => {
     setTemplate({ ...template, temperature: parseFloat(temperature) });
-  }
+  };
 
   const setStopSequence = (stopSequence) => {
     setTemplate({ ...template, stopSequence: stopSequence });
-  }
+  };
 
   const setMaxTokens = (maxTokens) => {
     setTemplate({ ...template, maxTokens: parseInt(maxTokens) });
-  }
+  };
 
   const onPushContinuousEntry = () => {
-    const newPrompt = prompt + "\nHuman: " + continuousEntry;
+    const newPrompt = prompt + "Human: " + continuousEntry;
     setPrompt(newPrompt);
     setContinuousEntry("");
     onSubmitPrompt(newPrompt);
-  }
+  };
 
   useEffect(() => {
     if (template) {
@@ -88,7 +88,7 @@ const Dashboard = () => {
   const onResetUsage = () => {
     setSessionUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
     setLastUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
-  }
+  };
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
@@ -109,9 +109,8 @@ const Dashboard = () => {
     console.log("Completions", { prompt: promptToUse, result: res });
     if (res.success) {
       if (mode === 'continuous') {
-        setPrompt(promptToUse + '\n' + res.data);
-      }
-      else {
+        setPrompt(promptToUse + '\n' + res.data + '\n');
+      } else {
         setCompletion(res.data);
       }
       setLastUsage(res.usage);
@@ -121,18 +120,12 @@ const Dashboard = () => {
         total_tokens: sessionUsage.total_tokens + res.usage.total_tokens,
       };
       setSessionUsage(newSessionUsage);
-    }
-    else {
+    } else {
       setError(res.message);
     }
     setStartTime(null);
     setBusy(false);
   };
-
-  const onReset = () => {
-    resetTemplate();
-    setCompletion("");
-  }
 
   const { sessionPrice, lastRequestPrice } = useMemo(() => {
     let sessionPrice = 0;
@@ -169,7 +162,7 @@ const Dashboard = () => {
 
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
-            <NekoSelect scrolldown id="mode" name="mode" disabled={true || busy} 
+            <NekoSelect scrolldown id="mode" name="mode" disabled={busy} 
               value={mode} description="" onChange={setMode}>
               <NekoOption key='query' id='query' value='query' label="Query" />
               <NekoOption key='continuous' id='continuous' value='continuous' label="Continuous" />
@@ -187,22 +180,12 @@ const Dashboard = () => {
                 onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
               <label style={{ marginTop: 0, marginBottom: 10 }}>Answer:</label>
               <StyledTextArea style={{ marginBottom: 10, height: 300 }} value={completion} />
-              <div style={{ display: 'flex' }}>
-              <NekoButton onClick={() => { onReset() }} disabled={busy}
-                style={{ height: 50, fontSize: 14, flex: 1 }}>
-                  Reset
-              </NekoButton>
-              <NekoButton onClick={() => { onSubmitPrompt() }} isBusy={busy} startTime={startTime}
-                style={{ height: 50, fontSize: 14, flex: 4 }}>
-                  Submit
-              </NekoButton>
-              </div>
             </>}
 
             {mode === 'continuous' && <>
               <StyledTextArea onChange={(e) => { setPrompt(e.target.value) }} value={prompt} />
-              <div style={{ display: 'flex' }}>
-                <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
+              <div style={{ display: 'flex', position: 'relative' }}>
+                <span className="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
                 <StyledNekoInput id="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
                   onEnter={onPushContinuousEntry} disabled={busy} />
@@ -214,24 +197,31 @@ const Dashboard = () => {
 
         <NekoColumn>
 
+          {mode === 'query' && <StyledSidebar style={{ marginBottom: 20 }}>
+            <NekoButton fullWidth onClick={() => { onSubmitPrompt() }} isBusy={busy} startTime={startTime}
+                style={{ height: 50, fontSize: 14, flex: 4 }}>
+                  Submit
+            </NekoButton>
+          </StyledSidebar>}
+
           <StyledSidebar>
             <h3>Settings</h3>
             <label>Model:</label>
             <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
               {models.map((x) => (
-                <NekoOption value={x.id} label={x.name}></NekoOption>
+                <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onBlur={value => setTemperature(parseFloat(value))} description={<>
+              onBlur={(e) => { setTemperature(parseFloat(e.target.value)) }} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   Between 0 and 1. Higher values means the model will take more risks.
                 </span>
               </>} />
             <label>Max Tokens:</label>
             <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-              onBlur={value => setMaxTokens(parseInt(value))} description={<>
+              onBlur={(e) => { setMaxTokens(parseInt(e.target.value)) }} description={<>
               <span>
                 The maximum number of tokens to generate. The model will stop generating once it hits this limit.
               </span>
@@ -273,3 +263,5 @@ const Dashboard = () => {
     </NekoPage>
   );
 };
+
+export default Dashboard;
