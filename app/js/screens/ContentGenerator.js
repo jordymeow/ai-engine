@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.6.7
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 
@@ -124,9 +124,8 @@ const ContentGenerator = () => {
 
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
   const humanLanguage = useMemo(() => {
-    const found = languages.find(l => l.value === language);
-    return found ? found.label : '';
-  }, [language, languages]);
+    return languages.find(l => l.value === language).label;
+  });
 
   const resetData = (template) => {
     setTitle('');
@@ -166,23 +165,20 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   }
 
-  const lookForPlaceholder = (str, arr) => {
-    return !!arr.find(item => item.includes(str));
-  }
-
   const formInputs = useMemo(() => {
+    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
-      language: lookForPlaceholder('{LANGUAGE}', arr),
-      writingStyle: lookForPlaceholder('{WRITING_STYLE}', arr),
-      writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
-      sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
+      language: lookFor('{LANGUAGE}', arr),
+      writingStyle: lookFor('{WRITING_STYLE}', arr),
+      writingTone: lookFor('{WRITING_TONE}', arr),
+      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
     }
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = '', maxTokens = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = finalizePrompt(prompt), maxTokensParam = 2048, isBulk = false) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -191,7 +187,7 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens,
+        maxTokens: maxTokensParam,
         model 
     } });
     if (!res.success) {
@@ -335,7 +331,7 @@ const ContentGenerator = () => {
           setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
         }
         else {
-           console.warn("Could not generate the post for: " + topic);
+          console.warn("Could not generate the post for: " + topic);
         }
       }
       catch (e) {
@@ -434,7 +430,7 @@ const ContentGenerator = () => {
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
-                <li key={x.postId}>
+                <li>
                   {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
@@ -534,7 +530,7 @@ const ContentGenerator = () => {
             <NekoSpacer height={20} />
 
             <NekoButton fullWidth style={{ height: 60 }}
-              onClick={onSubmitNewPost} isBusy={isBusy} disabled={!title || !content}>
+              onClick={() => onSubmitNewPost()} isBusy={isBusy} disabled={!title || !content}>
               Create Post
             </NekoButton>
 
@@ -598,7 +594,7 @@ const ContentGenerator = () => {
               <label>Model:</label>
               <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
                 {models.map((x) => (
-                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                  <NekoOption value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
@@ -665,8 +661,9 @@ const ContentGenerator = () => {
         title="Error"
         content={<p>{error}</p>}
       />
-
+      
     </NekoPage>
+    
   );
 };
 

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.6.6
+Stable tag: 0.6.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,12 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 0.6.7 (2023/02/02) =
+* Fix: Create Post has an issue in Single Generate mode.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.6.6 (2023/02/01) =
 * Add: Templates in the Playground are now editable.
 * Fix: Avoid the content-aware to take too many tokens.
 * Update: Many little enhancements in the UI elements.
 * Update: Handles timeouts better. More and more buttons will display the time elapsed.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.6.2 (2023/01/31) =
 * Add: The Post Bulk Generate feature is now working nicely.
