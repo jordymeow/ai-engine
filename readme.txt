@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.1
+Stable tag: 0.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,7 @@ Languages: English.
 
 == Changelog ==
 
-= 0.7.1 (2023/02/03) =
+= 0.7.2 (2023/02/03) =
 * Update: "casually_fined_tuned" is now "casually_fine_tuned".
 * Fix: Editor also have access to the AI features (but not the Settings). This behavior can be filtered.
 * Add: AI Forms for Pro (extremely beta but it works).

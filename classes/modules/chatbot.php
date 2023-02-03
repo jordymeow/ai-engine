@@ -265,8 +265,7 @@ class Meow_MWAI_Modules_Chatbot {
     $maxResults = $atts['max_results'];
     $sessionId = $this->core->get_session_id();
     $rest_nonce = wp_create_nonce( 'wp_rest' );
-    $casuallyFineTunedPrevious = boolval( $atts['casually_fined_tuned'] );
-    $casuallyFineTuned = $casuallyFineTunedPrevious ? true : boolval( $atts['casually_fine_tuned'] );
+    $casuallyFineTuned = boolval( $atts['casually_fine_tuned'] );
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
     if ( $casuallyFineTuned ) {
