@@ -1,5 +1,5 @@
-// Previous: 0.6.6
-// Current: 0.6.9
+// Previous: 0.6.9
+// Current: 0.7.1
 
 const { useMemo, useState } = wp.element;
 
@@ -106,7 +106,7 @@ const Settings = () => {
     if (isImagesChat) {
       delete diff.context;
       delete diff.content_aware;
-      delete diff.casually_fined_tuned;
+      delete diff.casually_fine_tuned;
       delete diff.model;
       delete diff.max_tokens;
       delete diff.temperature;
@@ -268,7 +268,9 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            if (modelUsage.images && modelOptionPrice) {
+              price = modelUsage.images * modelOptionPrice.price;
+            }
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -284,7 +286,9 @@ const Settings = () => {
           }
           let modelPrice = pricing.find(x => x.model === realModel.short);
           if (modelPrice) {
-            price = modelUsage.total_tokens / 1000 * modelPrice.price;
+            if (modelUsage.total_tokens && modelPrice.price) {
+              price = modelUsage.total_tokens / 1000 * modelPrice.price;
+            }
             usageData[month].totalPrice += price;
             const name = realModel ? realModel.name : model;
             usageData[month].data.push({
@@ -651,8 +655,8 @@ const Settings = () => {
 
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>Casually Fine Tuned:</label>
-                          <NekoCheckbox id="casually_fined_tuned" label="Yes"
-                            checked={shortcodeParams.casually_fined_tuned} value="1" onChange={updateShortcodeParams}
+                          <NekoCheckbox id="casually_fine_tuned" label="Yes"
+                            checked={shortcodeParams.casually_fine_tuned} value="1" onChange={updateShortcodeParams}
                           />
                         </div>
 

@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.7.1
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,18 +49,13 @@ const StatusIcon = ({ status, includeText = false }) => {
   const orange = NekoTheme.orange;
   const green = NekoTheme.green;
   const red = NekoTheme.red;
-
   let icon = null;
   switch (status) {
     case 'pending':
-      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
     case 'succeeded':
-      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
-      break;
     case 'processed':
       icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
       break;
@@ -171,7 +166,7 @@ const FineTuning = ({ options, updateOption }) => {
     const currentSuffix = suffix;
     const rawModel = models.find(x => x.id === model);
     setBusyAction(true);
-    const isFineTuned = rawModel.short.startsWith('fn-');
+    const isFineTuned = rawModel.short.startsWith('fn-'); // still okay, but could be problematic if undefined
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
       method: 'POST',
       nonce: restNonce,
@@ -244,7 +239,7 @@ const FineTuning = ({ options, updateOption }) => {
   const updateLocalStorage = (data) => {
     resetFilename();
     try {
-      if (!data) {
+      if (!data || data.length === 0) {
         localStorage.removeItem('mwai_builder_data');
       }
       else {
@@ -266,11 +261,11 @@ const FineTuning = ({ options, updateOption }) => {
 
   const builderRows = useMemo(() => {
     let line = (currentPage - 1) * rowsPerPage;
-    let chunkOfBuilderData = builderData.slice((currentPage - 1) * rowsPerPage,
+    let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
     return chunkOfBuilderData?.map(x => {
-      const currentLine = ++line;
+      const currentLine = ++line; // mutates line here, making subsequent use questionable
       const isValidPrompt = x?.prompt?.toString().endsWith(defaultPromptEnding);
       const isValidCompletion = x?.completion?.toString().endsWith(defaultCompletionEnding);
       return {
@@ -326,8 +321,7 @@ const FineTuning = ({ options, updateOption }) => {
           alert("This fine-tune was already deleted. It will be removed from the list.");
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
           await refreshFineTunes();
-        }
-        else {
+        } else {
           alert(res.message);
         }
       }
@@ -367,7 +361,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const fileRows = useMemo(() => {
-    return dataFiles?.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
@@ -397,7 +391,7 @@ const FineTuning = ({ options, updateOption }) => {
     if (!dataFineTunes) {
       return [];
     }
-    return dataFineTunes.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
@@ -433,17 +427,19 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
-      console.log(dataStr);
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
+      const data = builderData.map(x => {
+        let json = JSON.stringify(x);
+        return json;
+      }).join("\n");
+      console.log(data);
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
         alert("Uploaded successfully! You can now train a model based on this dataset.");
         setSection('files');
         setIsModeTrain(true);
-      }
-      else {
+      } else {
         alert(res.message);
       }
     }
@@ -462,8 +458,8 @@ const FineTuning = ({ options, updateOption }) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
-    const rawModel = models.find(x => x.id === model) || { short: '' };
-    return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes <10 ? '0'+minutes : minutes}-${seconds<10?'0'+seconds:seconds}`;
+    const rawModel = models.find(x => x.id === model);
+    return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
   }, [suffix, model]);
 
   const onSelectFiles = async (files) => {
@@ -482,12 +478,7 @@ const FineTuning = ({ options, updateOption }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          try {
-            data = JSON.parse(fileContent);
-          } catch (e) {
-            console.log(e);
-            data = [];
-          }
+          data = JSON.parse(fileContent);
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -498,9 +489,10 @@ const FineTuning = ({ options, updateOption }) => {
             }
             catch (e) {
               console.log(e, x);
-              return null;
+              return null
             }
-          }).filter(x => x !== null);
+            
+          });
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
@@ -664,7 +656,7 @@ const FineTuning = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 
@@ -681,7 +673,7 @@ const FineTuning = ({ options, updateOption }) => {
             <li>• The prompt and the completion should both end with their own special endings. By default, it is <b>\n\n===\n\n</b> for the prompt, and <b>\n\n</b> for the completion. The icon ✅ will be shown next to the prompt and/or completion when this format has been validated, and the ending will be hidden for clarity. I refer to this format (and models trained on it) by the term of <b>Casually Fine Tuned</b>.</li>
             <li>• <b>\n</b> is a line break. You can add line breaks by using <b>SHIFT+ENTER</b> while editing.</li>
             <li> • The <b>Format with Defaults</b> button will add the <i>Casually Fine Tuned</i> endings format to the prompt and completion, if they are missing.</li>
-            <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fined_tuned="true"</i>  in the shortcode.</li>
+            <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fine_tuned="true"</i>  in the shortcode.</li>
           </ul>
         </>}
       </>}
@@ -722,5 +714,3 @@ const FineTuning = ({ options, updateOption }) => {
     </NekoContainer>
   </>);
 };
-
-export default FineTuning;

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.0
+Stable tag: 0.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.7.0 (2023/02/03) =
+= 0.7.1 (2023/02/03) =
+* Update: "casually_fined_tuned" is now "casually_fine_tuned".
 * Fix: Editor also have access to the AI features (but not the Settings). This behavior can be filtered.
 * Add: AI Forms for Pro (extremely beta but it works).
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
@@ -154,7 +155,7 @@ Languages: English.
 = 0.2.6 (2023/01/18) =
 * Update: Little UI enhancements and fixes.
 * Add: "max_tokens" parameter for the chatbot shortcode.
-* Add: "casually_fined_tuned" parameter for the chatbot shorcode (for fine-tuned models).
+* Add: "casually_fine_tuned" parameter for the chatbot shorcode (for fine-tuned models).
 
 = 0.2.4 (2023/01/17) =
 * Update: Perfected the fine-tuning module (UI and features). 

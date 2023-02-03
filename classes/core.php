@@ -44,7 +44,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'icon_position' => 'bottom-right',
 	'fullscreen' => false,
 	// Chatbot System Parameters
-	'casually_fined_tuned' => false,
+	'casually_fine_tuned' => false,
 	'content_aware' => false, 
 	'prompt_ending' => null,
 	'completion_ending' => null,

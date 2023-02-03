@@ -1,5 +1,5 @@
-// Previous: 0.3.5
-// Current: 0.6.8
+// Previous: 0.6.8
+// Current: 0.7.1
 
 const OpenAI_models = [
   {
@@ -30,6 +30,17 @@ const OpenAI_models = [
     description: 'Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost.',
     strength: 'Parsing text, simple classification, address correction, keywords'
   },
+  // {
+  //   id: 'code-davinci-002',
+  //   name: 'code-davinci-002',
+  //   short: 'davinci',
+  //   description: 'Most capable Codex model. Particularly good at translating natural language to code. In addition to completing code, also supports inserting completions within code.',
+  // },
+  // {
+  //   id: 'code-cushman-001',
+  //   name: 'code-cushman-001',
+  //   description: 'Almost as capable as Davinci Codex, but slightly faster. This speed advantage may make it preferable for real-time applications.',
+  // }
 ];
 
 const WritingStyles = [
@@ -130,7 +141,7 @@ const Templates_Playground = [
     maxTokens: 150,
     prompt: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n\nAI: Hi! How can I help you with WP today?\n`
   }, {
-    id: 'casually_fined_tuned',
+    id: 'casually_fine_tuned',
     name: 'Casually Fined Tuned Tester',
     mode: 'query',
     model: 'text-davinci-003',
