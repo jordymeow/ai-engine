@@ -7,24 +7,25 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		$this->core = $core;
 		parent::__construct( MWAI_PREFIX, MWAI_ENTRY, MWAI_DOMAIN, class_exists( 'MeowPro_MWAI_Core' ) );
 		if ( is_admin() ) {
-			add_action( 'admin_menu', array( $this, 'app_menu' ) );
+			if ( $this->core->can_access_settings() ) {
+				add_action( 'admin_menu', array( $this, 'app_menu' ) );
+			}
 
-			// Load the scripts only if they are needed by the current screen
-			$page = isset( $_GET["page"] ) ? sanitize_text_field( $_GET["page"] ) : null;
-
-			// We can check if the screen is used by AI Engine
-			$is_mwai_screen = in_array( $page, [ 'mwai_settings', 'mwai_dashboard' ] );
-			$is_meowapps_dashboard = $page === 'meowapps-main-menu';
-			add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-
-			$this->core = $core;
-			add_action( 'admin_menu', array( $this, 'admin_menu' ) );
-			add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
-			add_action( 'admin_footer', [ $this, 'admin_footer' ] );
+			if ( $this->core->can_access_features() ) {
+				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+				add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+				add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
+				add_action( 'admin_footer', [ $this, 'admin_footer' ] );
+			}
 		}
 	}
 
 	function admin_menu() {
+
+		if ( !$this->core->can_access_features() ) {
+			return;
+		}
+
 		// Under Posts:
 		add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'manage_options', 'mwai_content_generator', 
 			array( $this, 'ai_content_generator' ), 2 );

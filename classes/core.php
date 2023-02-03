@@ -136,7 +136,8 @@ class Meow_MWAI_Core
 	}
 
 	function can_access_features() {
-		return apply_filters( 'mwai_allow_usage', current_user_can( 'administrator' ) );
+		$editor_or_admin = current_user_can( 'editor' ) || current_user_can( 'administrator' );
+		return apply_filters( 'mwai_allow_usage', $editor_or_admin );
 	}
 
 	function isUrl( $url ) {
