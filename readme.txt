@@ -1,11 +1,11 @@
-=== AI Engine (ChatGPT-like Chatbot, Content/Image Generator, AI Playground, AI Fine-tuning) ===
+=== AI Engine: ChatGPT, GPT-3 Content & Image Generator, Playground ===
 Contributors: TigrouMeow
 Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, image generator
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.6.8
+Stable tag: 0.6.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,9 +63,11 @@ Languages: English.
 
 == Changelog ==
 
-= 0.6.8 (2023/02/02) =
+= 0.6.9 (2023/02/02) =
+* Fix: The chatbot could potentially be over other clickable elements.
 * Fix: Create Post has an issue in Single Generate mode.
 * Add: The Templates Editor is now available in the Images Generator.
+* Add: AI Forms for Pro (extremely beta but it works).
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.6.6 (2023/02/01) =

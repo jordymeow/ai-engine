@@ -1,48 +1,102 @@
-// Previous: 0.1.0
-// Current: 0.3.4
+// Previous: 0.3.4
+// Current: 0.6.9
 
-import { meowIcon } from "./common";
+import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
-const { registerBlockType, createBlock } = wp.blocks;
-const { useMemo, useEffect, useState } = wp.element;
-const { Button, DropZone, PanelBody, RangeControl, CheckboxControl, TextControl,
-	SelectControl, Toolbar, withNotices } = wp.components;
-const { BlockControls, InspectorControls } = wp.blockEditor;
+const { registerBlockType } = wp.blocks;
+const { useMemo, useEffect } = wp.element;
+const { Button, PanelBody, TextControl,
+	SelectControl } = wp.components;
+const { InspectorControls } = wp.blockEditor;
 
 const saveFormField = (props) => {
-	const { attributes: { id, fieldName, labelText } } = props;
-	console.log(props);
-	return (
-		<div className="mwai-field-container">
-			<label className="mwai-label" htmlFor={id}>{labelText}</label>
-			<input className="mwai-field mwai-input" type="text" id={id} name={fieldName} />
-		</div>
-	);
+	const { attributes: { id, label, type, name, options = [] } } = props;
+	const encodedOptions = encodeURIComponent(JSON.stringify(options));
+	return `[mwai-form-field id="${id}" label="${label}" type="${type}" name="${name}" options="${encodedOptions}"]`;
 }
 
 const FormFieldBlock = props => {
-	const { attributes: { id, fieldName, labelText }, setAttributes } = props;
+	const { attributes: { id, type, name, options = [], label }, setAttributes } = props;
 	
-	const html = useMemo(() => {
-		return saveFormField(props);
-	}, [props]);
+	useEffect(() => {
+		if (!id) {
+			const newId = Math.random().toString(36).substr(2, 9);
+			setAttributes({ id: 'mwai-' + newId });
+		}
+	}, [id]);
+
+	useEffect(() => {
+		if (label) {
+			const newName = label.trim().replace(/ /g, '_').replace(/[^\w-]+/g, '').toUpperCase();
+			setAttributes({ name: newName });
+		}
+	}, [label]);
 
 	return (
 		<>
-		{html}
+		<AiBlockContainer info={<>{name}</>}>
+			<small>{type.toUpperCase()} BLOCK</small><br />
+			{label}
+		</AiBlockContainer>
 		<InspectorControls>
 			<PanelBody title={ __( 'Field' ) }>
-			<TextControl label="Label Text" value={labelText} onChange={value => setAttributes({ labelText: value })} />
-				<TextControl label="Field Name" value={fieldName} onChange={value => setAttributes({ fieldName: value })} />
-				<SelectControl label="Field Type" value="text" options={[
-					{ label: 'TextField', value: 'text' },
-					{ label: 'Select', value: 'select' },
-					{ label: 'Checkbox', value: 'checkbox' },
-					{ label: 'Radio', value: 'radio' },
-					{ label: 'TextArea', value: 'textarea' },
-				]} />
+			<TextControl label="Label Text" value={label} onChange={value => setAttributes({ label: value })} />
+				<TextControl label="Field Name" value={name} onChange={value => setAttributes({ name: value })} />
+				<SelectControl label="Field Type" value={type} onChange={value => setAttributes({ type: value })}
+					options={[
+						{ label: 'Input', value: 'input' },
+						{ label: 'Select', value: 'select' },
+						// { label: 'Checkbox', value: 'checkbox' },
+						//{ label: 'Radio', value: 'radio' },
+						{ label: 'Text Area', value: 'textarea' },
+					]}
+				/>
 			</PanelBody>
+			{type === 'select' && <PanelBody title={
+				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+					<div>{ __( 'Options' ) }</div>
+					<Button isPrimary isSmall onClick={(ev) => {
+							ev.preventDefault();
+							const newOptions = [...options];
+							newOptions.push({ label: '', value: '' });
+							setAttributes({ options: newOptions });
+						}}>Add Option</Button>
+				</div>}>
+				
+				{options.map((option, index) => {
+					return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
+						<TextControl style={{ flex: 2, marginBottom: 0, marginRight: 5 }}
+							label="Label"
+							isInline={true}
+							value={option.label}
+							onChange={value => {
+								const newOptions = [...options];
+								newOptions[index].label = value;
+								setAttributes({ options: newOptions });
+							}
+						} />
+						<TextControl style={{ flex: 1, marginBottom: 0 }}
+							label="Value"
+							isSubtle={true}
+							value={option.value}
+							onChange={value => {
+								const newOptions = [...options];
+								newOptions[index].value = value;
+								setAttributes({ options: newOptions });
+							}
+						} />
+						<div style={{ paddingTop: 29 }}>
+							<Button style={{ flex: 1, marginLeft: 5 }} isDestructive isSmall onClick={() => {
+								const newOptions = [...options];
+								newOptions.splice(index, 1);
+								setAttributes({ options: newOptions });
+							}}>Remove</Button>
+						</div>
+						</div>
+						
+				})}
+			</PanelBody>}
 			<PanelBody title={ __( 'Settings' ) }>
 				<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
 			</PanelBody>
@@ -54,7 +108,7 @@ const FormFieldBlock = props => {
 const createFormFieldBlock = () => {
 	registerBlockType('ai-engine/form-field', {
 		title: 'AI Form Field',
-		description: <>This feature is <b>being built</b>. I will allow to create AI forms. Coming soon!</>,
+		description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
 		icon: meowIcon,
 		category: 'layout',
 		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
@@ -63,11 +117,19 @@ const createFormFieldBlock = () => {
 				type: 'string',
 				default: ''
 			},
-			fieldName: {
+			name: {
 				type: 'string',
-				default: ''
+				default: 'LABEL'
 			},
-			labelText: {
+			type: {
+				type: 'string',
+				default: 'input'
+			},
+			options: {
+				type: 'array',
+				default: []
+			},
+			label: {
 				type: 'string',
 				default: 'Label: '
 			},

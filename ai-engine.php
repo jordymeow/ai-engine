@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: AI Engine: ChatGPT, GPT3 Content & Image Generator, Playground
+Plugin Name: AI Engine: ChatGPT, GPT-3 Content & Image Generator, Playground
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI for WordPress. ChatGPT-style chatbot, image & content generator, train AI models, etc. Lot of features, extensible, customizable, sleek UI. Enjoy it! :)
-Version: 0.6.8
+Version: 0.6.9
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '0.6.8' );
+define( 'MWAI_VERSION', '0.6.9' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );

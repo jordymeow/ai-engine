@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.3.4
+// Previous: 0.3.4
+// Current: 0.6.9
 
 const meowIcon = (<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<rect width="20" height="20" fill="white"/>
@@ -8,4 +8,50 @@ const meowIcon = (<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xm
 		<path d="M1.66667 5V16.6667L3.33333 18.3333H15V16.6667H3.33333V5H1.66667Z" fill="#2D4B6D"/>
 </svg>);
 
-export { meowIcon };
+
+import { NekoTheme } from '@neko-ui';
+import Styled from "styled-components";
+import AiIcon from '../styles/AiIcon';
+
+const BlockContainer = Styled.div`
+	background: hsl(0deg 0% 10%);
+	color: hsl(0deg 0% 60%);
+	padding: 10px 20px;
+	display: flex;
+	align-items: center;
+
+	.mwai-icon-container {
+		flex: inherit;
+		width: 40px;
+		margin-right: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	> div {
+		flex: auto;
+	}
+
+	> div:last-child {
+		text-align: right;
+	}
+`;
+
+const AiBlockContainer = ({ children, info = "", ...rest }) => {
+	return (
+		<BlockContainer className="mwai-block-container" {...rest}>
+			<div className="mwai-icon-container">
+				<AiIcon icon="ai" style={{ width: 40, height: 40 }} />
+			</div>
+			<div>
+				{children}
+			</div>
+			<div>
+				{info}
+			</div>
+		</BlockContainer>
+	);
+}
+
+export { meowIcon, AiBlockContainer };

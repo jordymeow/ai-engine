@@ -2,7 +2,7 @@
 
 class Meow_MWAI_Modules_Chatbot {
   private $core = null;
-  private $namespace = 'ai-engine/v1';
+  private $namespace = 'ai-chatbot/v1';
 
   public function __construct() {
     global $mwai_core;
@@ -286,7 +286,7 @@ class Meow_MWAI_Modules_Chatbot {
     $setButtonTextFn = "mwai_{$id}_setButtonText";
 
     // Variables
-    $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-engine/v1/imagesbot' : 'ai-engine/v1/chat' );
+    $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-chatbot/v1/imagesbot' : 'ai-chatbot/v1/chat' );
     $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
     $memorizedChat = "mwai_{$id}_memorizedChat";
     $baseClasses = "mwai-chat";
