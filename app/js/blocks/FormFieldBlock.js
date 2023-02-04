@@ -1,5 +1,5 @@
-// Previous: 0.3.4
-// Current: 0.6.9
+// Previous: 0.6.9
+// Current: 0.7.6
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -10,21 +10,18 @@ const { Button, PanelBody, TextControl,
 	SelectControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 const saveFormField = (props) => {
-	const { attributes: { id, label, type, name, options = [] } } = props;
+	const { attributes: { label, type, name, options = [] } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
-	return `[mwai-form-field id="${id}" label="${label}" type="${type}" name="${name}" options="${encodedOptions}"]`;
+	return `[mwai-form-field label="${label}" type="${type}" name="${name}" options="${encodedOptions}"]`;
 }
 
 const FormFieldBlock = props => {
-	const { attributes: { id, type, name, options = [], label }, setAttributes } = props;
-	
-	useEffect(() => {
-		if (!id) {
-			const newId = Math.random().toString(36).substr(2, 9);
-			setAttributes({ id: 'mwai-' + newId });
-		}
-	}, [id]);
+	const { attributes: { type, name, options = [], label }, setAttributes } = props;
 
 	useEffect(() => {
 		if (label) {
@@ -35,9 +32,14 @@ const FormFieldBlock = props => {
 
 	return (
 		<>
-		<AiBlockContainer info={<>{name}</>}>
-			<small>{type.toUpperCase()} BLOCK</small><br />
-			{label}
+		<AiBlockContainer title={`${capitalizeFirstLetter(type)} Field`} type="field">
+			<div>
+				{label}
+			</div>
+			<div style={{ flex: 'auto' }}></div>
+			<div>
+				{name}
+			</div>
 		</AiBlockContainer>
 		<InspectorControls>
 			<PanelBody title={ __( 'Field' ) }>
@@ -97,9 +99,6 @@ const FormFieldBlock = props => {
 						
 				})}
 			</PanelBody>}
-			<PanelBody title={ __( 'Settings' ) }>
-				<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
-			</PanelBody>
 		</InspectorControls>
 		</>
 	);
@@ -113,10 +112,6 @@ const createFormFieldBlock = () => {
 		category: 'layout',
 		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
 		attributes: {
-			id: {
-				type: 'string',
-				default: ''
-			},
 			name: {
 				type: 'string',
 				default: 'LABEL'

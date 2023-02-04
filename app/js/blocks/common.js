@@ -1,5 +1,5 @@
-// Previous: 0.6.9
-// Current: 0.7.5
+// Previous: 0.7.5
+// Current: 0.7.6
 
 const meowIcon = (<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<rect width="20" height="20" fill="white"/>
@@ -9,45 +9,64 @@ const meowIcon = (<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xm
 </svg>);
 
 
-import { NekoTheme } from '@neko-ui';
+import { NekoTheme, useClasses } from '@neko-ui';
 import Styled from "styled-components";
 import AiIcon from '../styles/AiIcon';
 
 const BlockContainer = Styled.div`
 	background: hsl(0deg 0% 10%);
-	color: hsl(0deg 0% 60%);
-	padding: 5px 5px;
+	color: white;
 	display: flex;
 	flex-direction: column;
+	border: 2px solid #39326e;
+	font-size: 15px;
+	box-sizing: content-box;
 
-	.mwai-icon-container {
+	.mwai-title-container {
 		flex: inherit;
-		width: 40px;
-		margin-right: 10px;
+		padding: 5px 0px 5px 10px;
 		display: flex;
-		align-items: center;
-		justify-content: center;
 		background: #39326d;
-		width: 100%;
 		align-items: center;
+		color: white;
 	}
 
-	> div {
+	.mwai-block-container-content {
 		flex: auto;
+		padding: 0px 10px;
+		background: #272247;
+
+		.mwai-block-container {
+			border: 2px solid #326d5c;
+			margin: 10px 0;
+
+			.mwai-title-container {
+				background: #326d5c;
+			}
+
+			.mwai-block-container-content {
+				background: #24483e;
+			}
+		}
 	}
 
-	> div:last-child {
-		text-align: right;
+	&:not(.mwai-container) {
+
+		.mwai-block-container-content {
+			padding: 10px;
+			display: flex;
+		}
 	}
 `;
 
-const AiBlockContainer = ({ children, info = "", ...rest }) => {
+const AiBlockContainer = ({ children, type = "", title = "", ...rest }) => {
+	const classes = useClasses('mwai-block-container', 'mwai-' + type);
 	return (
-		<BlockContainer className="mwai-block-container" {...rest}>
-			<div className="mwai-icon-container">
-				<AiIcon icon="ai" style={{ width: 40, height: 40 }} /> {info}
+		<BlockContainer className={classes} {...rest}>
+			<div className="mwai-title-container">
+				<AiIcon icon="ai" style={{ width: 20, height: 20 }} /> {title}
 			</div>
-			<div>
+			<div className="mwai-block-container-content">
 				{children}
 			</div>
 		</BlockContainer>

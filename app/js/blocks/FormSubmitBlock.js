@@ -1,5 +1,5 @@
-// Previous: 0.6.9
-// Current: 0.7.5
+// Previous: 0.7.5
+// Current: 0.7.6
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -35,9 +35,10 @@ const FormSubmitBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer info={<>{placeholders.join(', ')}<br /> -&gt; {outputElement}</>}>
-				<small>SUBMITTER BLOCK</small><br />
-				{label}
+			<AiBlockContainer title="Submit" type="submit">
+				Input Fields: {placeholders.join(', ')}<br />
+				Prompt: {prompt}<br />
+				Output Element: {outputElement}
 			</AiBlockContainer>
 			<InspectorControls>
 				<PanelBody title={ __( 'Output' ) }>

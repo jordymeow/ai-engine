@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.7.5
+// Previous: 0.7.5
+// Current: 0.7.6
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -32,16 +32,12 @@ const FormContainerBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer>
-				<small>CONTAINER BLOCK</small>
+			<AiBlockContainer title="AI Form Container" type="container">
 				<div {...blockProps}>
 					<InnerBlocks />
 				</div>
 			</AiBlockContainer>
 			<InspectorControls>
-				<PanelBody title={ __( 'Output' ) }>
-					<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
-				</PanelBody>
 			</InspectorControls>
 		</>
 	);

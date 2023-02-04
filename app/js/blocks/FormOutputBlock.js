@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.9
+// Previous: 0.6.9
+// Current: 0.7.6
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -26,8 +26,13 @@ const FormOutputBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer info={<>{id}</>}>
-			<small>OUTPUT BLOCK</small>
+			<AiBlockContainer title="Output" type="output">
+				<div>
+				</div>
+				<div style={{ flex: 'auto' }}></div>
+				<div>
+					#{id}
+				</div>
 			</AiBlockContainer>
 			<InspectorControls>
 				<PanelBody title={ __( 'Output' ) }>

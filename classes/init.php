@@ -8,10 +8,6 @@ if ( class_exists( 'MeowPro_MWAI_Core' ) && class_exists( 'Meow_MWAI_Core' ) ) {
 	return;
 }
 
-if ( session_status() == PHP_SESSION_NONE ) {
-  @session_start( ['read_and_close' => true] );
-}
-
 spl_autoload_register(function ( $class ) {
   $necessary = true;
   $file = null;
