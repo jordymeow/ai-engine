@@ -1,5 +1,5 @@
-// Previous: 0.6.6
-// Current: 0.6.8
+// Previous: 0.6.8
+// Current: 0.7.3
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -48,28 +48,12 @@ const Dashboard = () => {
   const stopSequence = template?.stopSequence ?? "";
   const maxTokens = template?.maxTokens ?? 2048;
 
+  const setTemplateProperty = (value, property) => {
+    setTemplate({ ...template, [property]: value });
+  };
+
   const setPrompt = (prompt) => {
     setTemplate({ ...template, prompt: prompt });
-  };
-
-  const setModel = (model) => {
-    setTemplate({ ...template, model: model });
-  };
-
-  const setMode = (mode) => {
-    setTemplate({ ...template, mode: mode });
-  };
-
-  const setTemperature = (temperature) => {
-    setTemplate({ ...template, temperature: parseFloat(temperature) });
-  };
-
-  const setStopSequence = (stopSequence) => {
-    setTemplate({ ...template, stopSequence: stopSequence });
-  };
-
-  const setMaxTokens = (maxTokens) => {
-    setTemplate({ ...template, maxTokens: parseInt(maxTokens) });
   };
 
   const onPushContinuousEntry = () => {
@@ -110,7 +94,8 @@ const Dashboard = () => {
     if (res.success) {
       if (mode === 'continuous') {
         setPrompt(promptToUse + '\n' + res.data + '\n');
-      } else {
+      }
+      else {
         setCompletion(res.data);
       }
       setLastUsage(res.usage);
@@ -120,7 +105,8 @@ const Dashboard = () => {
         total_tokens: sessionUsage.total_tokens + res.usage.total_tokens,
       };
       setSessionUsage(newSessionUsage);
-    } else {
+    }
+    else {
       setError(res.message);
     }
     setStartTime(null);
@@ -162,8 +148,8 @@ const Dashboard = () => {
 
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
-            <NekoSelect scrolldown id="mode" name="mode" disabled={busy} 
-              value={mode} description="" onChange={setMode}>
+            <NekoSelect scrolldown id="mode" name="mode" disabled={true || busy}
+              value={mode} description="" onChange={(value) => setTemplateProperty(value, 'mode')}>
               <NekoOption key='query' id='query' value='query' label="Query" />
               <NekoOption key='continuous' id='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
@@ -207,28 +193,28 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>Settings</h3>
             <label>Model:</label>
-            <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
+            <NekoSelect id="model" value={model} scrolldown={true} onChange={(value) => setTemplateProperty(value, 'model')}>
               {models.map((x) => (
                 <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>Temperature:</label>
             <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-              onBlur={(e) => { setTemperature(parseFloat(e.target.value)) }} description={<>
-                <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
+              onChange={(value) => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
+                <span style={{ color: (temperature >= 0 && temperature <= 1) ? 'inherit' : 'red' }}>
                   Between 0 and 1. Higher values means the model will take more risks.
                 </span>
               </>} />
             <label>Max Tokens:</label>
             <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-              onBlur={(e) => { setMaxTokens(parseInt(e.target.value)) }} description={<>
+              onChange={(value) => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
               <span>
                 The maximum number of tokens to generate. The model will stop generating once it hits this limit.
               </span>
             </>} />
             <label>Stop Sequence:</label>
             <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
-              onChange={setStopSequence} onBlur={setStopSequence} description={<>
+              onChange={(value) => setTemplateProperty(value, 'stopSequence')} description={<>
               <span>
                 The sequence of tokens that will cause the model to stop generating text. You absolutely need this with fine-tuned models.
               </span>
@@ -253,7 +239,7 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
+      <NekoModal isOpen={Boolean(error)}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"

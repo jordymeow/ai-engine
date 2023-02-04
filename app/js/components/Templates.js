@@ -1,16 +1,16 @@
-// Previous: 0.6.6
-// Current: 0.6.8
+// Previous: 0.6.8
+// Current: 0.7.3
 
 const { useState, useEffect, useMemo } = wp.element;
 
 // Neko UI
-import { NekoSwitch, NekoButton, NekoSpinner } from '@neko-ui';
+import { NekoSwitch, NekoButton, NekoSpinner, NekoSpacer } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
 // AI Engine
 import { apiUrl, restNonce } from '@app/settings';
-import { Templates_ImagesGenerator, Templates_Playground } from '../constants';
+import { Templates_ContentGenerator, Templates_ImagesGenerator, Templates_Playground } from '../constants';
 
 function generateUniqueId() {
   return new Date().getTime().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -36,6 +36,9 @@ const retrieveTemplates = async (category) => {
   }
   else if (category === 'playground') {
     return Templates_Playground;
+  }
+  else if (category === 'contentGenerator') {
+    return Templates_ContentGenerator;
   }
   alert("This category of templates is not supported yet.");
   return [];
@@ -72,6 +75,7 @@ const useTemplates = (category = 'playground') => {
       return false;
     }
     const originalTpl = templates.find((x) => x.id === template.id);
+    if (!originalTpl) return false;
     return Object.keys(originalTpl).some((key) => originalTpl[key] !== template[key]);
   }, [template, templates]);
 
@@ -152,7 +156,7 @@ const useTemplates = (category = 'playground') => {
       </div>}
       <ul>
         {templates.map((x) => (
-          <li className={template.id === x.id ? ('active' + (isDifferent ? ' modified' : '')) : ''}
+          <li className={template.id === x.id ? ('active' + (isDifferent && isEdit ? ' modified' : '')) : ''}
             onClick={() => { setTemplate({...x}) }}>
             {x.name}
           </li>
@@ -163,13 +167,14 @@ const useTemplates = (category = 'playground') => {
           Reset
         </NekoButton>
       </div>}
-      {isEdit && <div style={{ display: 'flex', flexDirection: 'column', marginTop: 15 }}>
+      {isEdit && <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <NekoSpacer line={true} height={30} />
         <div style={{ display: 'flex', marginBottom: 5 }}>
           <NekoButton disabled={template.id === 'default'} className="danger" icon="trash"
             onClick={onDeleteClick}/>
-          <NekoButton disabled={template.id === 'default'} className="primary" icon="pencil"
+          <NekoButton disabled={template.id === 'default'} className="secondary" icon="pencil"
             onClick={onRenameClick}/>
-          <NekoButton disabled={!canSave} className="primary" style={{ flex: 6 }}
+          <NekoButton disabled={!canSave} className="secondary" style={{ flex: 6 }}
             onClick={onSaveClick}>
             Save
           </NekoButton>
@@ -180,8 +185,13 @@ const useTemplates = (category = 'playground') => {
           </NekoButton>
         </div>
       </div>}
+      {!isEdit && <div style={{ display: 'flex', marginTop: 15, lineHeight: '14px' }}>
+        <small>Interested in sharing and/or looking for more templates? Join us on the <a target="_blank" href="https://wordpress.org/support/topic/common-use-cases-for-templates">Templates Threads</a> in the forums.</small>
+      </div>}
     </div>);
   });
 
   return { template, resetTemplate, setTemplate: updateTemplate, jsxTemplates, isEdit };
 };
+
+export default useTemplates;

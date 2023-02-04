@@ -1,5 +1,5 @@
-// Previous: 0.6.8
-// Current: 0.7.1
+// Previous: 0.7.1
+// Current: 0.7.3
 
 const OpenAI_models = [
   {
@@ -183,5 +183,28 @@ const Templates_ImagesGenerator = [
   },
 ];
 
+const Templates_ContentGenerator = [
+  {
+    id: 'default',
+    name: 'Default',
+    mode: 'single',
+    topic: "",
+    topics: "",
+    topicsAreTitles: false,
+    model: 'text-davinci-003',
+    temperature: 0.8,
+    maxTokens: 2048,
+    sectionsCount: 2,
+    paragraphsPerSection: 3,
+    language: 'en',
+    writingStyle: 'creative',
+    writingTone: 'cheerful',
+    titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
+    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}.\n\nEach heading is between 40 and 60 characters.\n\nUse Markdown for the headings (## ).`,
+    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following headings:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per heading.\n\nUse Markdown for formatting.\n\nAdd an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ".\n\nStyle: {WRITING_STYLE}. Tone: {WRITING_TONE}.`,
+    excerptPromptFormat: `Write an excerpt for an article about "{TITLE}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
+  }
+];
+
 export { OpenAI_models, OpenAI_PricingPerModel, WritingStyles, WritingTones, 
-  Templates_Playground, Templates_ImagesGenerator }
+  Templates_Playground, Templates_ImagesGenerator, Templates_ContentGenerator }
