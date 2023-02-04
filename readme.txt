@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.3
+Stable tag: 0.7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.7.3 (2023/02/04) =
+= 0.7.4 (2023/02/04) =
+* Fix: The icon of the chatbot was not applied.
 * Add: Templates for Content Generator. Templates are now available everywhere I wanted. I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 

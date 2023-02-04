@@ -309,9 +309,9 @@ class Meow_MWAI_Modules_Chatbot {
     if ( !empty( $icon ) ) {
       $iconUrl = $icon;
     }
-    else if ( !empty( $chatStyles ) && isset( $chatStyles['avatar'] ) ) {
-      $url = $chatStyles['avatar'];
-      $iconUrl = $this->core->isUrl( $url ) ? $url : (MWAI_URL . 'images/' . $chatStyles['avatar']);
+    else if ( !empty( $chatStyles ) && isset( $chatStyles['icon'] ) ) {
+      $url = $chatStyles['icon'];
+      $iconUrl = $this->core->isUrl( $url ) ? $url : (MWAI_URL . 'images/' . $chatStyles['icon']);
     }
     ?>
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
