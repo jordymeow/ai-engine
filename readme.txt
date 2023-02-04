@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.4
+Stable tag: 0.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,7 +13,7 @@ AI for WordPress. ChatGPT-style chatbot, image & content generator, train AI mod
 
 == Description ==
 
-With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
+With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, let you organize everything in templates, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
 
 Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
@@ -22,6 +22,7 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 * Add a ChatGPT-style chatbot (or an images creation bot) to your website with a simple shortcode
 * Generate fresh and engaging content for your site
 * Explore the AI Playground for a variety of tools like translation, correction, SEO, etc
+* Create templates for everything you do, to save time and be more productive
 * Fullscreen, popup, and window modes for the chatbot
 * Train your AI to make it better at specific tasks
 * Quickly brainstorm new titles and excerpts for your posts
@@ -63,7 +64,7 @@ Languages: English.
 
 == Changelog ==
 
-= 0.7.4 (2023/02/04) =
+= 0.7.5 (2023/02/04) =
 * Fix: The icon of the chatbot was not applied.
 * Add: Templates for Content Generator. Templates are now available everywhere I wanted. I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

@@ -1,5 +1,5 @@
-// Previous: 0.3.4
-// Current: 0.6.9
+// Previous: 0.6.9
+// Current: 0.7.5
 
 const meowIcon = (<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<rect width="20" height="20" fill="white"/>
@@ -16,9 +16,9 @@ import AiIcon from '../styles/AiIcon';
 const BlockContainer = Styled.div`
 	background: hsl(0deg 0% 10%);
 	color: hsl(0deg 0% 60%);
-	padding: 10px 20px;
+	padding: 5px 5px;
 	display: flex;
-	align-items: center;
+	flex-direction: column;
 
 	.mwai-icon-container {
 		flex: inherit;
@@ -27,6 +27,9 @@ const BlockContainer = Styled.div`
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		background: #39326d;
+		width: 100%;
+		align-items: center;
 	}
 
 	> div {
@@ -42,13 +45,10 @@ const AiBlockContainer = ({ children, info = "", ...rest }) => {
 	return (
 		<BlockContainer className="mwai-block-container" {...rest}>
 			<div className="mwai-icon-container">
-				<AiIcon icon="ai" style={{ width: 40, height: 40 }} />
+				<AiIcon icon="ai" style={{ width: 40, height: 40 }} /> {info}
 			</div>
 			<div>
 				{children}
-			</div>
-			<div>
-				{info}
 			</div>
 		</BlockContainer>
 	);

@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 0.6.9
+// Previous: 0.6.9
+// Current: 0.7.5
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -54,7 +54,7 @@ const FormSubmitBlock = props => {
 
 const createSubmitBlock = () => {
 	registerBlockType('ai-engine/form-submit', {
-		title: 'AI Form Submitter',
+		title: 'AI Form Submit',
 		description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
 		icon: meowIcon,
 		category: 'layout',
