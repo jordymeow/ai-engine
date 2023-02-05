@@ -91,7 +91,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		);
 		wp_register_script( 'mwai_meow_plugin', MWAI_URL . 'app/index.js',
 			['mwai_meow_plugin-vendor', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post',
-				'wp-editor', 'wp-uploader', 'wp-element', 'wp-i18n', 'wp-plugins'], $cache_buster
+				'wp-editor', 'wp-element', 'wp-i18n', 'wp-plugins'], $cache_buster
 		);
 		register_block_type( 'ai-engine/input-field', array( 'editor_script' => 'mwai_meow_plugin' ));
 		wp_set_script_translations( 'mwai_meow_plugin', 'ai-engine' );
