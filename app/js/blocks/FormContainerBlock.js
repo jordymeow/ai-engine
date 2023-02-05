@@ -1,32 +1,34 @@
-// Previous: 0.7.5
-// Current: 0.7.6
+// Previous: 0.7.6
+// Current: 0.8.2
 
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { PanelBody, TextControl } = wp.components;
+const { Button, PanelBody, TextControl, SelectControl } = wp.components;
 const { InspectorControls, InnerBlocks, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
 	const blockProps = useBlockProps.save();
-	const { attributes: { id } } = props;
+	const { attributes: { id, theme } } = props;
+	const shortcode = `[mwai-form-container id="${id}" theme="${theme}"]`;
 	return (
-		<div { ...blockProps }>
+		<div { ...blockProps } id={`mwai-form-container-${id}`} className="mwai-form-container">
+			{shortcode}
 			<InnerBlocks.Content />
 		</div>
 	);
 }
 
 const FormContainerBlock = props => {
-	const { attributes: { id }, setAttributes } = props;
+	const { attributes: { id, theme }, setAttributes } = props;
 	const blockProps = useBlockProps();
 
 	useEffect(() => {
 		if (!id) {
 			const newId = Math.random().toString(36).substr(2, 9);
-			setAttributes({ id: 'mwai-' + newId });
+			setAttributes({ id: newId });
 		}
 	}, [id]);
 
@@ -38,6 +40,15 @@ const FormContainerBlock = props => {
 				</div>
 			</AiBlockContainer>
 			<InspectorControls>
+				<PanelBody title={ __( 'Style' ) }>
+				<p>The theme will be applied to all the AI elements in this container.</p>
+					<SelectControl label="Theme" value={theme} onChange={value => setAttributes({ theme: value })}
+						options={[
+							{ label: 'None', value: 'none' },
+							{ label: 'ChatGPT', value: 'ChatGPT' }
+						]}
+					/>
+				</PanelBody>
 			</InspectorControls>
 		</>
 	);
@@ -55,6 +66,10 @@ const createContainerBlock = () => {
 				type: 'string',
 				default: ''
 			},
+			theme: {
+				type: 'string',
+				default: 'ChatGPT'
+			}
 		},
 		edit: FormContainerBlock,
 		save: saveFormField

@@ -13,7 +13,8 @@ class Meow_MWAI_Modules_Chatbot {
     add_shortcode( 'mwai_imagesbot', array( $this, 'imageschat' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
     if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
-      add_action( 'wp_body_open', array( $this, 'inject_chat' ) );
+      //add_action( 'wp_body_open', array( $this, 'inject_chat' ) );
+      add_action( 'wp_footer', array( $this, 'inject_chat' ) );
     }
 
     // Only for test now, but later we should probably import the JS/CSS
@@ -318,7 +319,9 @@ class Meow_MWAI_Modules_Chatbot {
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
         <?php if ( $window ) { ?>
           <div class="mwai-open-button">
-            <div class="mwai-icon-text"><?= $iconText ?></div>
+            <?php if ( !empty( $iconText ) ) { ?>
+              <div class="mwai-icon-text"><?= $iconText ?></div>
+            <?php } ?>
             <img width="64" height="64" src="<?= $iconUrl ?>" />
           </div>
           <div class="mwai-header">

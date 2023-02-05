@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.8.1
+Stable tag: 0.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.8.1 (2023/02/05) =
+= 0.8.2 (2023/02/05) =
+* Update: Enhancements and fixes to the AI Forms + a ChatGPT theme for them.
 * Update: A bit of tidying on the UI, and added warning messages to avoid common mistakes.
 * Add: Words count in Playground and Content Generator.
 * Add: The icon_text parameter to add a text next to the icon of the chatbot.

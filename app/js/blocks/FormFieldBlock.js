@@ -1,13 +1,12 @@
-// Previous: 0.6.9
-// Current: 0.7.6
+// Previous: 0.7.6
+// Current: 0.8.2
 
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { Button, PanelBody, TextControl,
-	SelectControl } = wp.components;
+const { Button, PanelBody, TextControl, SelectControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 function capitalizeFirstLetter(string) {
