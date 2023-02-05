@@ -20,7 +20,7 @@ class Meow_MWAI_OpenAI
   {
     preg_match("/:([a-zA-Z\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
     if (count($matches) > 0) {
-      return $matches[1] . ' (' . $matches[2] . '/' . $matches[3] . '/' . $matches[4] . ')';
+      return $matches[1];
     }
     return 'N/A';
   }

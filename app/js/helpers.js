@@ -1,5 +1,5 @@
-// Previous: 0.6.1
-// Current: 0.6.3
+// Previous: 0.6.3
+// Current: 0.8.1
 
 const { useMemo, useEffect, useState, useRef } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
@@ -64,6 +64,10 @@ const useModels = (options) => {
     return allModels;
   }, [options]);
 
+  const isFineTunedModel = (id) => {
+    return !!models.find(x => x.id === id && x.finetuned);
+  }
+
   useEffect(() => {
     const defaultModel = models.find(x => x.name.includes('davinci'));
     if (defaultModel) {
@@ -71,7 +75,7 @@ const useModels = (options) => {
     }
   }, [models]);
 
-  return { model, models, setModel };
+  return { model, models, setModel, isFineTunedModel };
 }
 
 export { OptionsCheck, cleanNumbering, useModels };
