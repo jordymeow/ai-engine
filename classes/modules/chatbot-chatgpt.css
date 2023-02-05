@@ -151,6 +151,7 @@
   resize: none;
   font-family: inherit;
   line-height: calc(var(--mwai-spacing) * 2);
+  margin: 0;
 }
 
 #mwai-chat-id .mwai-input textarea:focus {
@@ -381,7 +382,8 @@
     left: 10px;
     right: 10px;
     bottom: 10px;
-    width: inherit;
+    width: calc(100% - 20px);
+    z-index: 9999999999;
   }
   #mwai-chat-id .mwai-reply {
     flex-direction: column;

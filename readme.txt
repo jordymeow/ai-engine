@@ -1,18 +1,17 @@
-=== AI Engine: ChatGPT, GPT-3 Content & Image Generator, Playground ===
+=== AI Engine: ChatGPT Chatbot, GPT Content Generator, Custom Playground & Features ===
 Contributors: TigrouMeow
 Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, image generator
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.6
+Stable tag: 0.7.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI for WordPress. ChatGPT-style chatbot, image & content generator, train AI models, etc. Lot of features, extensible, customizable, sleek UI. Enjoy it! :)
+GPT AI for WordPress. ChatGPT-style chatbot, image/content generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
 
 == Description ==
-
 With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, let you organize everything in templates, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
 
 Official website: [AI Engine](https://meowapps.com/ai-engine/).
@@ -64,11 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 0.7.7 (2023/02/05) =
+= Update: Made the CSS of the chatbot slighlty more specific to avoid being overriden by pagebuilders.
+* Info 1: Templates are super cool! I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
+* Info 2: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.7.6 (2023/02/04) =
 * Fix: The icon of the chatbot was not applied.
 * Update: Better AI Forms.
 * Add: Templates for Content Generator. Templates are now available everywhere I wanted. I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.7.2 (2023/02/03) =
 * Update: "casually_fined_tuned" is now "casually_fine_tuned".
