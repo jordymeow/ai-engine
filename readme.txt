@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.9
+Stable tag: 0.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.7.9 (2023/02/05) =
+= 0.8.0 (2023/02/05) =
+* Add: The icon_text parameter to add a text next to the icon of the chatbot.
 * Fix: Avoid issues with RankMath by adding the 'wp-uploader' module as a dependency.
 * Update: Made the CSS of the chatbot slighlty more specific to avoid being overriden by pagebuilders.
 * Info 1: Templates are super cool! I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.

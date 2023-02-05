@@ -16,6 +16,19 @@
   bottom: 0;
   transition: all 0.2s ease-out;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+}
+
+#mwai-chat-id .mwai-open-button .mwai-icon-text {
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-headerButtonsColor);
+  max-width: 200px;
+  font-size: 13px;
+  margin-bottom: 15px;
+  padding: 5px 10px;
+  border-radius: 8px;
 }
 
 #mwai-chat-id .mwai-open-button:hover {

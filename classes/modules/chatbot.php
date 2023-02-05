@@ -249,7 +249,8 @@ class Meow_MWAI_Modules_Chatbot {
     $window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
     $fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
     $icon = addslashes( trim($atts['icon']) );
-    $icon_position = addslashes( trim($atts['icon_position']) );
+    $iconText = trim($atts['icon_text']);
+    $iconPosition = addslashes( trim($atts['icon_position']) );
     $style = $atts['style'];
 
     // Validade & Enhance UI Parameters
@@ -293,7 +294,7 @@ class Meow_MWAI_Modules_Chatbot {
     $baseClasses .= ( $window ? " mwai-window" : "" );
     $baseClasses .= ( !$window && $fullscreen ? " mwai-fullscreen" : "" );
     $baseClasses .= ( $style === 'chatgpt' ? " mwai-chatgpt" : "" );
-    $baseClasses .= ( $window && !empty( $icon_position ) ? (" mwai-" . $icon_position) : "" );
+    $baseClasses .= ( $window && !empty( $iconPosition ) ? (" mwai-" . $iconPosition) : "" );
 
     // Output CSS
     ob_start();
@@ -317,6 +318,7 @@ class Meow_MWAI_Modules_Chatbot {
       <div id="mwai-chat-<?= $id ?>" class="<?= $baseClasses ?>">
         <?php if ( $window ) { ?>
           <div class="mwai-open-button">
+            <div class="mwai-icon-text"><?= $iconText ?></div>
             <img width="64" height="64" src="<?= $iconUrl ?>" />
           </div>
           <div class="mwai-header">
