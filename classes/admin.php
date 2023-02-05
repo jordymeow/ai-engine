@@ -91,17 +91,11 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		);
 		wp_register_script( 'mwai_meow_plugin', MWAI_URL . 'app/index.js',
 			['mwai_meow_plugin-vendor', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post',
-				'wp-editor',
-				'wp-element', 'wp-i18n', 'wp-plugins'], $cache_buster
+				'wp-editor', 'wp-uploader', 'wp-element', 'wp-i18n', 'wp-plugins'], $cache_buster
 		);
 		register_block_type( 'ai-engine/input-field', array( 'editor_script' => 'mwai_meow_plugin' ));
 		wp_set_script_translations( 'mwai_meow_plugin', 'ai-engine' );
 		wp_enqueue_script('mwai_meow_plugin' );
-
-		// Load the fonts
-		// wp_register_style( 'meow-neko-ui-lato-font',
-		// 	'//fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700;900&display=swap');
-		// wp_enqueue_style( 'meow-neko-ui-lato-font' );
 
 		// Localize and options
 		wp_localize_script( 'mwai_meow_plugin', 'mwai_meow_plugin', [

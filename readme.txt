@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.7.7
+Stable tag: 0.7.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,9 @@ Languages: English.
 
 == Changelog ==
 
-= 0.7.7 (2023/02/05) =
-= Update: Made the CSS of the chatbot slighlty more specific to avoid being overriden by pagebuilders.
+= 0.7.8 (2023/02/05) =
+= Fix: Avoid issues with RankMath by adding the 'wp-uploader' module as a dependency.
+* Update: Made the CSS of the chatbot slighlty more specific to avoid being overriden by pagebuilders.
 * Info 1: Templates are super cool! I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
 * Info 2: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
