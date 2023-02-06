@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.8.2
+Stable tag: 0.8.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,14 +63,17 @@ Languages: English.
 
 == Changelog ==
 
+= 0.8.3 (2023/02/06) =
+* Update: You can now enable/disable every feature to make the UI yours and for a better UX (that will also allow role-based access to different features).
+* Info 1: Templates are super cool! I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
+* Info 2: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.8.2 (2023/02/05) =
 * Update: Enhancements and fixes to the AI Forms + a ChatGPT theme for them.
 * Update: A bit of tidying on the UI, and added warning messages to avoid common mistakes.
 * Add: Words count in Playground and Content Generator.
 * Add: The icon_text parameter to add a text next to the icon of the chatbot.
 * Update: Made the CSS of the chatbot slighlty more specific to avoid being overriden by pagebuilders.
-* Info 1: Templates are super cool! I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
-* Info 2: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.7.6 (2023/02/04) =
 * Fix: The icon of the chatbot was not applied.

@@ -2,11 +2,18 @@
 class Meow_MWAI_Admin extends MeowCommon_Admin {
 
 	public $core;
+	public $generator_content;
+	public $generator_images;
+	public $playground;
 
 	public function __construct( $core ) {
 		$this->core = $core;
 		parent::__construct( MWAI_PREFIX, MWAI_ENTRY, MWAI_DOMAIN, class_exists( 'MeowPro_MWAI_Core' ) );
 		if ( is_admin() ) {
+			$this->generator_content = $this->core->get_option( 'module_generator_content' );
+			$this->generator_images = $this->core->get_option( 'module_generator_images' );
+
+			$this->playground = $this->core->get_option( 'module_playground' );
 			if ( $this->core->can_access_settings() ) {
 				add_action( 'admin_menu', array( $this, 'app_menu' ) );
 			}
@@ -22,21 +29,25 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
 	function admin_menu() {
 
-		if ( !$this->core->can_access_features() ) {
-			return;
+		// Generate New (under Posts)
+		if ( $this->generator_content) {
+			add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'manage_options', 'mwai_content_generator', 
+				array( $this, 'ai_content_generator' ), 2 );
 		}
 
-		// Under Posts:
-		add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'manage_options', 'mwai_content_generator', 
-			array( $this, 'ai_content_generator' ), 2 );
-		add_management_page( 'AI Playground', __( 'AI Playground', 'ai-engine' ), 'manage_options', 
-			'mwai_dashboard', array( $this, 'ai_playground' ) );
-
-		// Under tools:
-		add_management_page( 'Content Generator', 'Content Generator', 'manage_options', 'mwai_content_generator', 
-			array( $this, 'ai_content_generator' ) );
-		add_management_page( 'Image Generator', 'Image Generator', 'manage_options', 'mwai_image_generator', 
-			array( $this, 'ai_image_generator' ) );
+		// In Tools
+		if ( $this->playground ) {
+			add_management_page( 'AI Playground', __( 'AI Playground', 'ai-engine' ), 'manage_options', 
+				'mwai_dashboard', array( $this, 'ai_playground' ) );
+		}
+		if ( $this->generator_content ) {
+			add_management_page( 'Content Generator', 'AI Content Generator', 'manage_options', 'mwai_content_generator', 
+				array( $this, 'ai_content_generator' ) );
+		}
+		if ( $this->generator_images ) {
+			add_management_page( 'Image Generator', 'AI Image Generator', 'manage_options', 'mwai_image_generator', 
+				array( $this, 'ai_image_generator' ) );
+		}
 
 		// In the Admin Bar:
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_menu' ), 100 );
@@ -45,14 +56,36 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 	function admin_bar_menu( $wp_admin_bar ) {
 		$url = MWAI_URL . "/images/wand.png";
 		$image_html = "<img style='height: 22px; margin-bottom: -5px; margin-right: 10px;' src='${url}' alt='UI Engine' />";
+		$args = null;
 		
-		$args = array(
-			'id' => 'mwai-playground',
-			'title' => $image_html . __( 'AI Playground', 'ai-engine' ),
-			'href' => admin_url( 'tools.php?page=mwai_dashboard' ),
-			'meta' => array( 'class' => 'mwai-playground' ),
-		);
-		$wp_admin_bar->add_node( $args );
+		if ( $this->playground ) {
+			$args = array(
+				'id' => 'mwai-playground',
+				'title' => $image_html . __( 'AI Playground', 'ai-engine' ),
+				'href' => admin_url( 'tools.php?page=mwai_dashboard' ),
+				'meta' => array( 'class' => 'mwai-playground' ),
+			);
+		}
+		else if ( $this->generator_content ) {
+			$args = array(
+				'id' => 'mwai-content-generator',
+				'title' => $image_html . __( 'AI Content Generator', 'ai-engine' ),
+				'href' => admin_url( 'tools.php?page=mwai_content_generator' ),
+				'meta' => array( 'class' => 'mwai-content-generator' ),
+			);
+		}
+		else if ( $this->generator_images ) {
+			$args = array(
+				'id' => 'mwai-image-generator',
+				'title' => $image_html . __( 'AI Image Generator', 'ai-engine' ),
+				'href' => admin_url( 'tools.php?page=mwai_image_generator' ),
+				'meta' => array( 'class' => 'mwai-image-generator' ),
+			);
+		}
+
+		if ( $args ) {
+			$wp_admin_bar->add_node( $args );
+		}
 	}
 
 	public function ai_playground() {
