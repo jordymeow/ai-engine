@@ -182,7 +182,8 @@ class Meow_MWAI_AI {
   public function run( $query ) {
 
     // Check if the query is allowed
-    $ok = apply_filters( 'mwai_ai_allowed', true, $query );
+    $limits = $this->core->get_option( 'limits' );
+    $ok = apply_filters( 'mwai_ai_allowed', true, $query, $limits );
     if ( $ok !== true ) {
       $message = is_string( $ok ) ? $ok : 'Unauthorized query.';
       $this->throwException( $message );

@@ -69,6 +69,25 @@ define( 'MWAI_LANGUAGES', [
   'zh' => 'Chinese',
 ] );
 
+define ( 'MWAI_LIMITS', [
+	'enabled' => true,
+	'guests' => [
+		'credits' => 3,
+		'creditType' => 'queries',
+		'timeFrame' => 'day',
+		'isAbsolute' => false,
+		'overLimitMessage' => "You have reached the limit.",
+	],
+	'users' => [
+		'credits' => 10,
+		'creditType' => 'price',
+		'timeFrame' => 'month',
+		'isAbsolute' => false,
+		'overLimitMessage' => "You have reached the limit.",
+		'ignoredUsers' => "administrator,editor",
+	],
+] );
+
 define( 'MWAI_OPTIONS', [
 	'module_titles' => true,
 	'module_excerpts' => true,
@@ -85,6 +104,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_formatting' => true,
 	'shortcode_chat_syntax_highlighting' => false,
 	'shortcode_chat_inject' => false,
+	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
 	'openai_usage' => [],
 	'openai_finetunes' => [],
@@ -193,6 +213,7 @@ class Meow_MWAI_Core
 			}
 		}
 		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;
+		$options['default_limits'] = MWAI_LIMITS;
 		return $options;
 	}
 

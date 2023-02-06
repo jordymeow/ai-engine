@@ -1,10 +1,10 @@
 # LIMITS
 
-User:
+Target:
 - IP
 - User
 
-Target:
+Credit Type:
 - Questions
 - Tokens
 - Money

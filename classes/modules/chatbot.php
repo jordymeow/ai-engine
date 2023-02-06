@@ -177,7 +177,8 @@ class Meow_MWAI_Modules_Chatbot {
         $data = str_replace( $placeholder, $value, $data );
       }
     }
-    return $data;
+    return "Visitor: ";
+    //return $data;
   }
 
   function formatUserName( $userName ) {
