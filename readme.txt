@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.8.5
+Stable tag: 0.8.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,13 @@ Languages: English.
 
 == Changelog ==
 
+= 0.8.6 (2023/02/07) =
+* Fix: There was a little inconsistency with "Use Topics as Titles".
+* Update: Reviewed the styles - but this still need a lot of improvements.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.8.5 (2023/02/06) =
-* Add: Pro Users! Visit the Statistics Tab and check the [FAQ](https://meowapps.com/ai-engine/faq/). Lots of fun ahead!
+* Add: Pro Users: Visit the Statistics Tab and check the [FAQ](https://meowapps.com/ai-engine/faq/). Lots of fun ahead!
 * Update: You can now enable/disable every feature to make the UI yours and for a better UX (that will also allow role-based access to different features).
 * Info 1: Templates are super cool! I'd be happy if you could join this [discussion](https://wordpress.org/support/topic/common-use-cases-for-templates/) in the WordPress forums.
 * Info 2: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

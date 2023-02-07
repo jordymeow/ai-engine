@@ -1,5 +1,5 @@
-// Previous: 0.6.6
-// Current: 0.6.8
+// Previous: 0.6.8
+// Current: 0.8.6
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -127,13 +127,9 @@ const StyledBuilderForm = Styled.div`
   }
 
   .neko-input {
-    border: 1.5px solid #eaeaea !important;
-    background: #fbfbfb !important;
   }
 
   .nui-select-option {
-    border: 1.5px solid #eaeaea !important;
-    background: #fbfbfb !important;
   }
 `;
 

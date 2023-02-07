@@ -1,5 +1,5 @@
-// Previous: 0.7.3
-// Current: 0.8.1
+// Previous: 0.8.1
+// Current: 0.8.6
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -49,6 +49,7 @@ const ContentGenerator = () => {
   const [sections, setSections] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
+
   const { template, setTemplate, resetTemplate, jsxTemplates } = useTemplates('contentGenerator');
   const { models } = useModels(options);
   const bulkTasks = useNekoTasks();
@@ -81,8 +82,8 @@ const ContentGenerator = () => {
   const maxTokens = template?.maxTokens ?? 2048;
   const topicsAreTitles = template?.topicsAreTitles ?? false;
   const humanLanguage = useMemo(() => {
-    const langObj = languages.find(l => l.value === language);
-    return langObj ? langObj.label : language;
+    const l = languages.find(l => l.value === language);
+    return l ? l.label : "";
   }, [language]);
 
   const setTemplateProperty = (value, property) => {
@@ -109,9 +110,11 @@ const ContentGenerator = () => {
       .replace('{WRITING_TONE}', writingTone)
       .replace('{PARAGRAPHS_PER_SECTION}', paragraphsCount)
       .replace('{SECTIONS_COUNT}', sectionsCount);
-  }
+  };
 
-  const lookForPlaceholder = (str, arr) => { return !!arr.find(item => item.includes(str)); }
+  const lookForPlaceholder = (str, arr) => {
+    return !!arr.find(item => item.includes(str));
+  };
 
   const formInputs = useMemo(() => {
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
@@ -121,7 +124,7 @@ const ContentGenerator = () => {
       writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
       sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
       paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
-    }
+    };
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
@@ -157,13 +160,13 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setSections('');
+    setSections(x => "");
     const prompt = finalizePrompt(sectionsPromptFormat.replace('{TITLE}', inTitle));
     let freshSections = await onSubmitPrompt(prompt, 512, isBulk);
     freshSections = cleanNumbering(freshSections);
     console.log("Sections:", { prompt, sections: freshSections });
     if (freshSections) {
-      setSections(freshSections);
+      setSections(x => freshSections);
     }
     setBusy(false);
     return freshSections;
@@ -179,7 +182,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setContent('');
+    setContent(x => "");
     const prompt = finalizePrompt(contentPromptFormat.replace('{TITLE}', inTitle).replace('{SECTIONS}', inSections));
     let freshContent = await onSubmitPrompt(prompt, 2048, isBulk);
     if (freshContent) {
@@ -189,7 +192,7 @@ const ContentGenerator = () => {
       freshContent = freshContent.replace(/===OUTRO:\n/, '');
       freshContent = freshContent.replace(/===OUTRO: \n/, '');
       freshContent = freshContent.replace(/===OUTRO: /, '');
-      setContent(freshContent);
+      setContent(x => freshContent);
     }
     console.log("Content:", { prompt, content: freshContent });
     setBusy(false);
@@ -202,11 +205,11 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setExcerpt('');
+    setExcerpt(x => "");
     const prompt = finalizePrompt(excerptPromptFormat.replace('{TITLE}', inTitle));
     const freshExcerpt = await onSubmitPrompt(prompt, 256, isBulk);
     if (freshExcerpt) {
-      setExcerpt(freshExcerpt);
+      setExcerpt(x => freshExcerpt);
     }
     console.log("Excerpt:", { prompt, excerpt: freshExcerpt });
     setBusy(false);
@@ -215,40 +218,35 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(prev => ({ ...prev, all: new Date() }));
+    setRunTimes(x => ({ ...x, all: new Date() }));
     try {
-      let freshTitleVal = inTopic;
-      if (!topicsAreTitles) {
+      let freshTitle = inTopic;
+      if (!topicsAreTitles || !isBulk) {
         const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
-        let freshTitleVal = await onSubmitPrompt(prompt, 64, isBulk);
-        console.log("Title:", { prompt, title: freshTitleVal });
+        freshTitle = await onSubmitPrompt(prompt, 64, isBulk);
+        console.log("Title:", { prompt, title: freshTitle });
       }
       let freshSections = null;
       let freshContent = null;
       let freshExcerpt = null;
       setBusy(false);
-      if (freshTitleVal) {
-        setTitle(freshTitleVal);
-        setRunTimes(prev => ({ ...prev, sections: new Date() }));
-        freshSections = await submitSectionsPrompt(freshTitleVal, isBulk);
-        await new Promise(res => setTimeout(res, 50)); // intentionally delay
-        await setRunTimes(prev => ({ ...prev, sections: null }));
+      if (freshTitle) {
+        setTitle(x => freshTitle);
+        setRunTimes(x => ({ ...x, sections: new Date() }));
+        freshSections = await submitSectionsPrompt(freshTitle, isBulk);
+        setRunTimes(x => ({ ...x, sections: new Date() })); // bug: always resets date, preventing tracking
         if (freshSections) {
-          await new Promise(res => setTimeout(res, 50)); 
-          await setRunTimes(prev => ({ ...prev, content: new Date() }));
-          freshContent = await submitContentPrompt(freshTitleVal, freshSections, isBulk);
-          await new Promise(res => setTimeout(res, 50));
-          await setRunTimes(prev => ({ ...prev, content: null }));
+          await setRunTimes(x => ({ ...x, content: new Date() }));
+          freshContent = await submitContentPrompt(freshTitle, freshSections, isBulk);
+          await setRunTimes(x => ({ ...x, content: new Date() }));
           if (freshContent) {
-            await new Promise(res => setTimeout(res, 50));
-            await setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
-            freshExcerpt = await onSubmitPromptForExcerpt(freshTitleVal, isBulk);
-            await new Promise(res => setTimeout(res, 50));
-            await setRunTimes(prev => ({ ...prev, excerpt: null }));
+            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            freshExcerpt = await onSubmitPromptForExcerpt(freshTitle, isBulk);
+            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
           }
         }
       }
-      return { title: freshTitleVal, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
+      return { title: freshTitle, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
     }
     catch (e) {
       setBusy(false);
@@ -283,7 +281,7 @@ const ContentGenerator = () => {
         const { title, content, excerpt } = await onGenerateAllClick(topic, true);
         if (title && content && excerpt) {
           let postId = await onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(prev => [...prev, { postId, topic, title, content, excerpt  }]);
+          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt }]);
         }
         else {
           console.warn("Could not generate the post for: " + topic);
@@ -300,7 +298,7 @@ const ContentGenerator = () => {
     });
     await bulkTasks.start(tasks);
     bulkTasks.reset();
-  }
+  };
 
   return (
     <NekoPage nekoErrors={[]}>
@@ -534,23 +532,23 @@ const ContentGenerator = () => {
             </StyledTitleWithButton>
             {showModelParams && <>
               <label>Model:</label>
-              <NekoSelect id="model" name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
+              <NekoSelect id="model" name="model "value={model} scrolldown={true} onChange={setTemplateProperty}>
                 {models.map((x) => (
-                  <NekoOption key={x.id} value={x.id} label={x.name} />
+                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
                 ))}
               </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={(val) => setTemplateProperty(val)} onBlur={(val) => setTemplateProperty(val)} description={<>
+                onChange={setTemplateProperty} onBlur={setTemplateProperty} description={<>
                   <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                     Between 0 and 1.
                   </span> Higher values means the model will take more risks.
                 </>} />
               <label>Max Tokens:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={(val) => setTemplateProperty(val)} onBlur={(val) => setTemplateProperty(val)} description={<>
+                onChange={setTemplateProperty} onBlur={setTemplateProperty} description={<>
                   <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
-                    Between 1 and 2048.
+                    Between 1 and 4096.
                   </span> Higher values means the model will generate more content.
                 </>} />
             </>}
@@ -581,9 +579,7 @@ const ContentGenerator = () => {
                 value={excerptPromptFormat} onChange={setTemplateProperty}  />
             </>}
           </StyledSidebar>
-
         </NekoColumn>
-
       </NekoWrapper>
 
       <NekoModal isOpen={createdPostId}
