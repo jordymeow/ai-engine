@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.8.7
+Stable tag: 0.8.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.8.7 (2023/02/07) =
+= 0.8.8 (2023/02/07) =
+* Add: New param for the chatbot: guest_name.
 * Update: Better consistency in the UI.
 * Fix: Minor fixes.
 * Fix: There was a little inconsistency with "Use Topics as Titles".

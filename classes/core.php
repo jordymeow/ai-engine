@@ -33,6 +33,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
 	'ai_name' => "AI: ",
 	'user_name' => "User: ",
+	'guest_name' => "Guest: ",
 	'sys_name' => "System: ",
 	'start_sentence' => "Hi! How can I help you?",
 	'text_send' => 'Send',

@@ -156,7 +156,7 @@ class Meow_MWAI_Modules_Chatbot {
     return null;
   }
 
-  function handlePlaceholders( $data ) {
+  function handlePlaceholders( $data, $guestName = "Guest: " ) {
     if ( strpos( $data, '{' ) === false ) {
       return $data;
     }
@@ -176,12 +176,14 @@ class Meow_MWAI_Modules_Chatbot {
         $value = $user->data->$lcPlaceholder;
         $data = str_replace( $placeholder, $value, $data );
       }
+      if ( !empty( $data ) ) {
+        return $data;
+      }
     }
-    return "Visitor: ";
-    //return $data;
+    return $guestName;
   }
 
-  function formatUserName( $userName ) {
+  function formatUserName( $userName, $guestName = "Guest: " ) {
     // Default avatar
     if ( empty( $userName ) ) {
       $user = $this->getCurrentUser();
@@ -200,7 +202,7 @@ class Meow_MWAI_Modules_Chatbot {
     }
     // Placeholders
     else {
-      $userName = $this->handlePlaceholders( $userName );
+      $userName = $this->handlePlaceholders( $userName, $guestName );
     }
     return $userName;
   }
@@ -241,6 +243,7 @@ class Meow_MWAI_Modules_Chatbot {
     // UI Parameters
     $aiName = addslashes( trim($atts['ai_name']) );
     $userName = addslashes( trim($atts['user_name']) );
+    $guestName = addslashes( trim($atts['guest_name']) );
     $sysName = addslashes( trim($atts['sys_name']) );
     $context = addslashes( $atts['context'] );
     $context = preg_replace( '/\v+/', "\\n", $context );
@@ -257,7 +260,7 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Validade & Enhance UI Parameters
     $aiName = $this->formatAiName( $aiName );
-    $userName = $this->formatUserName( $userName );
+    $userName = $this->formatUserName( $userName, $guestName );
 
     // Chatbot System Parameters
     $id = empty( $atts['id'] ) ? uniqid() : $atts['id'];
