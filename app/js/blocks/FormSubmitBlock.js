@@ -1,5 +1,5 @@
-// Previous: 0.7.5
-// Current: 0.7.6
+// Previous: 0.7.6
+// Current: 0.8.7
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -33,9 +33,18 @@ const FormSubmitBlock = props => {
 		}
 	}, [id]);
 
+	const fieldsCount = useMemo(() => {
+		return placeholders ? placeholders.length : 0;
+	}, [placeholders]);
+
+
 	return (
 		<>
-			<AiBlockContainer title="Submit" type="submit">
+			<AiBlockContainer title="Submit" type="submit"
+				hint={<>
+					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '} 
+					<span className="mwai-pill mwai-pill-purple">{outputElement}</span></>
+				}>
 				Input Fields: {placeholders.join(', ')}<br />
 				Prompt: {prompt}<br />
 				Output Element: {outputElement}

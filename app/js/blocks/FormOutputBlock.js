@@ -1,5 +1,5 @@
-// Previous: 0.6.9
-// Current: 0.7.6
+// Previous: 0.7.6
+// Current: 0.8.7
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -26,7 +26,8 @@ const FormOutputBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer title="Output" type="output">
+			<AiBlockContainer title="Output" type="output"
+				hint={<span className="mwai-pill mwai-pill-purple">#{id}</span>}>
 				<div>
 				</div>
 				<div style={{ flex: 'auto' }}></div>

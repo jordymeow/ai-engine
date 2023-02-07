@@ -1,5 +1,5 @@
-// Previous: 0.7.6
-// Current: 0.8.2
+// Previous: 0.8.2
+// Current: 0.8.7
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -31,7 +31,8 @@ const FormFieldBlock = props => {
 
 	return (
 		<>
-		<AiBlockContainer title={`${capitalizeFirstLetter(type)} Field`} type="field">
+		<AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
+			hint={<span className="mwai-pill">{name}</span>}>
 			<div>
 				{label}
 			</div>

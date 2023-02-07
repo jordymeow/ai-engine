@@ -1,5 +1,5 @@
-// Previous: 0.7.5
-// Current: 0.7.6
+// Previous: 0.7.6
+// Current: 0.8.7
 
 const meowIcon = (<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<rect width="20" height="20" fill="white"/>
@@ -14,57 +14,114 @@ import Styled from "styled-components";
 import AiIcon from '../styles/AiIcon';
 
 const BlockContainer = Styled.div`
-	background: hsl(0deg 0% 10%);
-	color: white;
+	color: black;
 	display: flex;
 	flex-direction: column;
-	border: 2px solid #39326e;
+	border: 1px solid black;
 	font-size: 15px;
 	box-sizing: content-box;
+	font-weight: 400;
+  font-size: 13px;
+	padding: 10px;
+	background: white;
 
 	.mwai-title-container {
 		flex: inherit;
 		padding: 5px 0px 5px 10px;
 		display: flex;
-		background: #39326d;
 		align-items: center;
-		color: white;
+		color: black;
+		font-weight: 600;
+		cursor: pointer;
+
+		.mwai-hint {
+			font-size: 10px;
+			font-weight: 400;
+			text-align: right;
+			flex: auto;
+
+			.mwai-pill {
+				background: ${NekoTheme.blue};
+				padding: 5px 10px;
+				border-radius: 8px;
+				color: white;
+			}
+
+			.mwai-pill-purple {
+				background: ${NekoTheme.purple};
+			}
+		}
 	}
 
 	.mwai-block-container-content {
+		display: none;
 		flex: auto;
 		padding: 0px 10px;
-		background: #272247;
 
 		.mwai-block-container {
-			border: 2px solid #326d5c;
+			border: 1px solid black;
 			margin: 10px 0;
 
 			.mwai-title-container {
-				background: #326d5c;
+				background: white;
 			}
 
 			.mwai-block-container-content {
-				background: #24483e;
+				background: white;
 			}
 		}
 	}
 
-	&:not(.mwai-container) {
+	&.mwai-container > .mwai-block-container-content {
+		display: block;
+	}
 
-		.mwai-block-container-content {
-			padding: 10px;
-			display: flex;
+	.is-selected {
+
+		&:after {
+			border: 1px solid ${NekoTheme.blue};
+		}
+
+		& > .mwai-block-container:not(.mwai-container) {
+
+			.mwai-block-container-content {
+			 padding: 10px;
+			 display: flex;
+			}
 		}
 	}
+	
 `;
 
-const AiBlockContainer = ({ children, type = "", title = "", ...rest }) => {
+const AiBlockContainer = ({ children, type = "", title = "", hint = "", ...rest }) => {
 	const classes = useClasses('mwai-block-container', 'mwai-' + type);
+	const isSelectedRef = React.useRef(false);
+	const [isSelected, setIsSelected] = React.useState(false);
+
+	const toggleSelect = () => {
+		setIsSelected(prev => !prev);
+		if (isSelectedRef.current) {
+			isSelectedRef.current = false;
+		} else {
+			isSelectedRef.current = true;
+		}
+	};
+
+	React.useEffect(() => {
+		const timer = setTimeout(() => {
+			if (isSelected) {
+				document.querySelector('.mwai-container')?.classList.toggle('mwai-container');
+			}
+		}, 1000);
+		return () => clearTimeout(timer);
+	}, [isSelected]);
+
 	return (
-		<BlockContainer className={classes} {...rest}>
+		<BlockContainer className={classes} {...rest} onClick={toggleSelect}>
 			<div className="mwai-title-container">
-				<AiIcon icon="ai" style={{ width: 20, height: 20 }} /> {title}
+				<AiIcon icon="ai" style={{ width: 20, height: 20 }} />
+				<div>{title}</div>
+				<div className="mwai-hint">{hint}</div>
 			</div>
 			<div className="mwai-block-container-content">
 				{children}

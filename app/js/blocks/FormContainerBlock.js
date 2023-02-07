@@ -1,5 +1,5 @@
-// Previous: 0.7.6
-// Current: 0.8.2
+// Previous: 0.8.2
+// Current: 0.8.7
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -34,7 +34,7 @@ const FormContainerBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer title="AI Form Container" type="container">
+			<AiBlockContainer title="Container" type="container">
 				<div {...blockProps}>
 					<InnerBlocks />
 				</div>
