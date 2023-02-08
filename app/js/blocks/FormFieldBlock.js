@@ -1,5 +1,5 @@
-// Previous: 0.8.2
-// Current: 0.8.7
+// Previous: 0.8.7
+// Current: 0.8.9
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -14,13 +14,20 @@ function capitalizeFirstLetter(string) {
 }
 
 const saveFormField = (props) => {
-	const { attributes: { label, type, name, options = [] } } = props;
+	const { attributes: { id, label, type, name, options = [], placeholder } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
-	return `[mwai-form-field label="${label}" type="${type}" name="${name}" options="${encodedOptions}"]`;
+	return `[mwai-form-field id='${id}' label="${label}" type="${type}" name="${name}" options="${encodedOptions}" placeholder="${placeholder}"]`;
 }
 
 const FormFieldBlock = props => {
-	const { attributes: { type, name, options = [], label }, setAttributes } = props;
+	const { attributes: { id, type, name, options = [], label, placeholder }, setAttributes } = props;
+
+	useEffect(() => {
+		if (!id) {
+			const newId = Math.random().toString(36).substr(2, 9);
+			setAttributes({ id: 'mwai-' + newId });
+		}
+	}, [id]);
 
 	useEffect(() => {
 		if (label) {
@@ -50,10 +57,14 @@ const FormFieldBlock = props => {
 						{ label: 'Input', value: 'input' },
 						{ label: 'Select', value: 'select' },
 						// { label: 'Checkbox', value: 'checkbox' },
-						//{ label: 'Radio', value: 'radio' },
+						{ label: 'Radio', value: 'radio' },
 						{ label: 'Text Area', value: 'textarea' },
 					]}
 				/>
+				{(type === 'input' || type === 'textarea') &&
+					<TextControl label="Placeholder" value={placeholder}
+						onChange={value => setAttributes({ placeholder: value })} />
+				}
 			</PanelBody>
 			{type === 'select' && <PanelBody title={
 				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -99,6 +110,9 @@ const FormFieldBlock = props => {
 						
 				})}
 			</PanelBody>}
+			<PanelBody title={ __( 'Optional' ) }>
+				<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
+			</PanelBody>
 		</InspectorControls>
 		</>
 	);
@@ -112,6 +126,10 @@ const createFormFieldBlock = () => {
 		category: 'layout',
 		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
 		attributes: {
+			id: {
+				type: 'string',
+				default: ''
+			},
 			name: {
 				type: 'string',
 				default: 'LABEL'
@@ -127,6 +145,10 @@ const createFormFieldBlock = () => {
 			label: {
 				type: 'string',
 				default: 'Label: '
+			},
+			placeholder: {
+				type: 'string',
+				default: ''
 			},
 		},
 		edit: FormFieldBlock,

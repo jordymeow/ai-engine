@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.8.8
+Stable tag: 0.8.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,13 +63,17 @@ Languages: English.
 
 == Changelog ==
 
+= 0.8.9 (2023/02/08) =
+* Update: Enhancements of the AI Forms.
+* Fix: Some validations work, to avoid issues and hacks.
+* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 0.8.8 (2023/02/07) =
 * Add: New param for the chatbot: guest_name.
 * Update: Better consistency in the UI.
 * Fix: Minor fixes.
 * Fix: There was a little inconsistency with "Use Topics as Titles".
 * Update: Reviewed the styles - but this still need a lot of improvements.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 0.8.5 (2023/02/06) =
 * Add: Pro Users: Visit the Statistics Tab and check the [FAQ](https://meowapps.com/ai-engine/faq/). Lots of fun ahead!

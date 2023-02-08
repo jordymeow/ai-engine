@@ -66,42 +66,45 @@ if ( !class_exists( 'MeowCommon_Ratings' ) ) {
 				date( 'Y-m-d', $rating_date ) . '">' );
 			$esc_nice_name = esc_attr( $this->nice_name_from_file( $this->mainfile ) );
 			if ( $esc_nice_name === 'Wp Retina 2x Pro' ) {
-				$esc_nice_name = "Perfect Images Pro";
+				$esc_nice_name = "Perfect Images";
 			}
 			else if ( $esc_nice_name === 'Wp Retina 2x' ) {
 				$esc_nice_name = "Perfect Images";
+			}
+			else if ( $esc_nice_name === 'Ai Engine Pro' ) {
+				$esc_nice_name = "AI Engine";
 			}
 			$esc_short_url = esc_attr( $this->nice_short_url_from_file( $this->mainfile ) );
 			$escaped_prefix = $this->prefix;
 			$html .= '<p style="font-size: 100%;">';
 			// Translators: %1$s is a plugin nicename, %2$s is a short url (slug)
+			$url = 'https://wordpress.org/support/plugin/' . $esc_short_url . '/reviews/?rate=5#new-post';
 			$html .= sprintf(
-				__( '<h2 class="title">You have been using <b>%1$s</b> for some time now. Thank you 💕</h2>Could you take one minute and write a <b>little review</b> for me? That would <b>really</b> bring me joy and motivation 🥰<br />In the review, don\'t hesitate to share your feature requests and remarks. I will try my best!
+				__( '<h2 style="margin: 0" class="title">You have been using <b>%1$s</b> for some time now. Thank you! 💕</h2><p>If you have a minute, can you write a <b><a target="_blank" href="' . $url . '">little review</a></b> for me? That would <b>really</b> bring me joy and motivation! 💫 <br />Don\'t hesitate to <b>share your feature requests</b> with the review, I always check them and try my best.</p>
 					', $this->domain ), $esc_nice_name
 			);
-			$html .= '<div style="padding: 20px 0 12px 0; display: flex; align-items: center;">';
-			$html .= '<a target="_blank" class="button button-primary" style="margin-right: 10px;" 
-					href="https://wordpress.org/support/plugin/' . $esc_short_url . '/reviews/?rate=5#new-post">
-					✍🏼 Yes, let\'s write it now!
+			$html .= '<div style="padding: 5px 0 12px 0; display: flex; align-items: center;">';
+			$html .= '<a target="_blank" class="button button-primary" style="margin-right: 10px;" href="' . $url . '">
+					✏️ Write Review
 				</a>
 				<form method="post" action="" style="margin-right: 10px;">
 					<input type="hidden" name="' . $escaped_prefix . '_did_it" value="true">
-					<input type="submit" name="submit" id="submit" class="button button-primary" value="'
-					. __( '🥰 I did it', $this->domain ) . '">
+					<input type="submit" name="submit" id="submit" class="button button-secondary" value="'
+					. __( '✌️ Done!', $this->domain ) . '">
 				</form>
 
 				<div style="flex: auto;"></div>
 
 				<form method="post" action="" style="margin-right: 10px;">
 					<input type="hidden" name="' . $escaped_prefix . '_remind_me" value="true">
-					<input type="submit" name="submit" id="submit" class="button button-primary" value="'
+					<input type="submit" name="submit" id="submit" class="button button-secondary" value="'
 					. __( '⏰ Remind me later', $this->domain ) . '">
 				</form>
 
 				<form method="post" action="">
 					<input type="hidden" name="' . $escaped_prefix . '_never_remind_me" value="true">
 					<input type="submit" name="submit" id="submit" class="button-link" style="font-size: small;" value="'
-					. __( 'Hide this', $this->domain ) . '">
+					. __( 'Hide', $this->domain ) . '">
 				</form>
 			</div>';
 			$html .= '</div>';
@@ -116,8 +119,10 @@ if ( !class_exists( 'MeowCommon_Ratings' ) ) {
 				),
 				'h2' => array(
 					'class' => array(),
+					'style' => array()
 				),
 				'b' => array(),
+				'br' => array(),
 				'a' => array(
 					'href' => array(),
 					'target' => array(),
