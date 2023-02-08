@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.8.9
+Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,10 @@ Languages: English.
 
 == Changelog ==
 
-= 0.8.9 (2023/02/08) =
+= 0.9.0 (2023/02/08) =
+* Update: Can handle multiple apiKeys for statistics and limits.
 * Update: Enhancements of the AI Forms.
+* Update: Enhancements of Content-Aware, avoid repeated sentences, shorten content, etc.
 * Fix: Some validations work, to avoid issues and hacks.
 * Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
