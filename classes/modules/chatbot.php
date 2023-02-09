@@ -278,6 +278,7 @@ class Meow_MWAI_Modules_Chatbot {
       $promptEnding = "\\n\\n===\\n\\n";
       $completionEnding = "\\n\\n";
     }
+    $debugMode = $chatStyles = $this->core->get_option( 'debug_mode' );
 
     // OpenAI Parameters
     $model = $atts['model'];
@@ -350,10 +351,25 @@ class Meow_MWAI_Modules_Chatbot {
         let <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
+        let isDebugMode = <?= $debugMode ? 'true' : 'false' ?>;
         let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
         let mode = '<?= $mode ?>';
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
         let <?= $memorizedChat ?> = [];
+
+        if (isDebugMode) {
+          window.mwai_<?= $id ?> = {
+            onGoingPrompt: <?= $onGoingPrompt ?>,
+            memorizedChat: <?= $memorizedChat ?>,
+            parameters: {
+              mode: mode,
+              context: '<?= $context ?>',
+              isMobile: isMobile,
+              isWindow: isWindow,
+              isFullscreen: isFullscreen,
+            }
+          };
+        }
 
         // Set button text
         function <?= $setButtonTextFn ?>() {
@@ -477,7 +493,9 @@ class Meow_MWAI_Modules_Chatbot {
             maxResults: '<?= $maxResults ?>',
             apiKey: '<?= $apiKey ?>',
           };
-          console.log('[BOT] Sent: ', data);
+          if (isDebugMode) {
+            console.log('[BOT] Sent: ', data);
+          }
           fetch('<?= $apiUrl ?>', { method: 'POST', headers: { 
               'Content-Type': 'application/json', 
               'X-WP-Nonce': '<?= $rest_nonce ?>'
@@ -486,7 +504,9 @@ class Meow_MWAI_Modules_Chatbot {
           })
           .then(response => response.json())
           .then(data => {
-            console.log('[BOT] Recv: ', data);
+            if (isDebugMode) {
+              console.log('[BOT] Recv: ', data);
+            }
             if (!data.success) {
               <?= $addReplyFn ?>(data.message, 'system');
             }

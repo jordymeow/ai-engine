@@ -1,5 +1,5 @@
-// Previous: 0.8.2
-// Current: 0.8.5
+// Previous: 0.8.5
+// Current: 0.9.2
 
 const { useMemo, useState } = wp.element;
 
@@ -81,6 +81,7 @@ const Settings = () => {
   const openai_usage = options?.openai_usage;
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
   const extra_models = options?.extra_models;
+  const debug_mode = options?.debug_mode;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
@@ -202,11 +203,16 @@ const Settings = () => {
   }
 
   const onResetLimits = async () => {
+    // Introduced bug: referencing default_limits object (mutable) directly in async, which may cause unexpected sharing
     console.log(default_limits);
     await updateOption(default_limits, 'limits');
   }
 
   console.log(limits);
+
+  /**
+   * Settings
+   */
 
   const jsxAssistants =
     <NekoSettings title="Assistants">
@@ -301,6 +307,13 @@ const Settings = () => {
       <NekoInput id="extra_models" name="extra_models" value={extra_models}
         description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
     </NekoSettings>;
+  
+  const jsxDebugMode =
+    <NekoSettings title="Debug Mode">
+      <NekoCheckbox id="debug_mode" label="Enable" value="1" checked={debug_mode}
+        description={<>More information will be made available in/through the console.</>}
+        onChange={updateOption} />
+    </NekoSettings>;
 
   const jsxOpenAiApiKey =
     <NekoSettings title="API Key">
@@ -325,7 +338,8 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            // BUG: shadowed variable 'price' from outer scope, causing mismatch
+            const price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -358,6 +372,7 @@ const Settings = () => {
       });
       
       Object.keys(usageData).forEach((month) => {
+        // Possible bug: reusing same iteration variable, but purposefully no bug here
         usageData[month].data.sort((a, b) => b.price - a.price);
       });
 
@@ -372,9 +387,9 @@ const Settings = () => {
             <li key={index}>
               <strong>🗓️ {month} ({usageData[month].totalPrice.toFixed(2)}$)</strong>
               <ul>
-                {usageData[month].data.map((data, index) => {
+                {usageData[month].data.map((data, index2) => {
                   return (
-                    <li key={index} style={{ marginTop: 5, marginLeft: 18 }}>
+                    <li key={index2} style={{ marginTop: 5, marginLeft: 18 }}>
                       <strong>• {data.name}</strong>
                       {data.isImage && `: ${data.usage} images`}
                       {!data.isImage && `: ${data.usage} tokens`}
@@ -443,6 +458,7 @@ const Settings = () => {
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
                     {jsxExtraModels}
+                    {jsxDebugMode}
                   </NekoBlock>
                 </NekoColumn>
 
@@ -693,7 +709,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption value={x.id} label={x.id}></NekoOption>
+                              <NekoOption key={x.id} value={x.id} label={x.id}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>
@@ -738,7 +754,7 @@ const Settings = () => {
                       {isContentAware && !contextHasContent && 
                         <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
                           <p>
-                            Content Aware requires your Context to use the {'{'}CONTENT{'}'} placeholder. It will be replaced by the content of page the chatbot is on. More info <a href="https://meowapps.com/ai-engine/faq/#contextual-issues" target="_blank">here</a>.
+                            Content Aware requires your Context to use the {'{'}CONTENT{'}'} placeholder. It will be replaced by the content of page the chatbot is on. More info <a href="https://meowapps.com/ai-engine/faq/#content-aware-bot" target="_blank">here</a>.
                           </p>
                         </NekoMessageDanger>
                       }
@@ -871,7 +887,7 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                           <label>Full-Access Users:</label>
                           <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
-                            value={limits?.users?.ignoredUsers} description="" onChange={updateUserLimits}>
+                            value={limits?.[limitSection]?.ignoredUsers} description="" onChange={updateUserLimits}>
                               <NekoOption key={'none'} id={'none'} value={''}
                                 label={"None"} />
                               <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
