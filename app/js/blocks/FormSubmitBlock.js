@@ -1,5 +1,5 @@
-// Previous: 0.7.6
-// Current: 0.8.7
+// Previous: 0.8.7
+// Current: 0.9.6
 
 import { AiBlockContainer, meowIcon } from "./common";
 
@@ -53,7 +53,7 @@ const FormSubmitBlock = props => {
 				<PanelBody title={ __( 'Output' ) }>
 					<TextControl label="Label" value={label} onChange={value => setAttributes({ label: value })} />
 					<TextareaControl label="Prompt" value={prompt} onChange={value => setAttributes({ prompt: value })}
-						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: 'Recommend me {MUSIC_TYPE} artists.'" />
+						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: 'Recommend me {MUSIC_TYPE} artists.' You can also add 'Use Markdown format.' if you wish the output to be formatted." />
 					<TextControl label="Output Element" value={outputElement} onChange={value => setAttributes({ outputElement: value })}
 						help="The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use '#mwai-666'." />
 				</PanelBody>

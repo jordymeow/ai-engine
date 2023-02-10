@@ -2,11 +2,11 @@
 
 class Meow_MWAI_AI {
   private $core = null;
-  private $apiKey = null;
+  private $localApiKey = null;
 
   public function __construct( $core ) {
     $this->core = $core;
-    $this->apiKey = $this->core->get_option( 'openai_apikey' );
+    $this->localApiKey = $this->core->get_option( 'openai_apikey' );
   }
 
   // Record usage of the API on a monthly basis
@@ -71,13 +71,12 @@ class Meow_MWAI_AI {
   }
 
   public function runTextQuery( $query ) {
-    $apiKey = $this->apiKey;
-    if ( !empty( $query->apiKey ) ) {
-      $apiKey = $query->apiKey;
+    if ( empty( $query->apiKey ) ) {
+      $query->apiKey = $this->localApiKey;
     }
     $url = 'https://api.openai.com/v1/completions';
     $options = array(
-      "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n",
+      "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
       "method" => "POST",
       "timeout" => 120,
       "body" => json_encode( array(
@@ -127,13 +126,12 @@ class Meow_MWAI_AI {
 
   // Request to DALL-E API
   public function runImageQuery( $query ) {
-    $apiKey = $this->apiKey;
-    if ( !empty( $query->apiKey ) ) {
-      $apiKey = $query->apiKey;
+    if ( empty( $query->apiKey ) ) {
+      $query->apiKey = $this->localApiKey;
     }
     $url = 'https://api.openai.com/v1/images/generations';
     $options = array(
-      "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n",
+      "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
       "method" => "POST",
       "timeout" => 120,
       "body" => json_encode( array(

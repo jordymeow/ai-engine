@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.5
+Stable tag: 0.9.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.9.5 (2023/02/10) =
+= 0.9.6 (2023/02/10) =
+* Fix: There was an issue with statistics/logging related to the current API Key.
 * Update: Enhanced the shortcode builder to avoid user mistakes. 
 * Update: Better sizes for chatbot icons.
 * Update: Markdown support in AI Forms.
