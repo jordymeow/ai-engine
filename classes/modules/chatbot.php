@@ -291,6 +291,7 @@ class Meow_MWAI_Modules_Chatbot {
     $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
     $setButtonTextFn = "mwai_{$id}_setButtonText";
+    $injectTimerFn = "mwai_{$id}_injectTimer";
 
     // Variables
     $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-chatbot/v1/imagesbot' : 'ai-chatbot/v1/chat' );
@@ -375,15 +376,51 @@ class Meow_MWAI_Modules_Chatbot {
         function <?= $setButtonTextFn ?>() {
           let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
           let button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
+          let buttonSpan = button.querySelector('span');
           if (<?= $memorizedChat ?>.length < 2) {
-            button.innerHTML = '<span><?= $textSend ?></span>';
+            buttonSpan.innerHTML = '<?= $textSend ?>';
           }
           else if (!input.value.length) {
-            button.innerHTML = '<span><?= $textClear ?></span>';
+            buttonSpan.innerHTML = '<?= $textClear ?>';
           }
           else {
-            button.innerHTML = '<span><?= $textSend ?></span>';
+            buttonSpan.innerHTML = '<?= $textSend ?>';
           }
+        }
+
+        // Inject timer 
+        function <?= $injectTimerFn ?>(element) {
+          let intervalId;
+          let startTime = new Date();
+          let timerElement = null;
+
+          function updateTimer() {
+            let now = new Date();
+            let timer = Math.floor((now - startTime) / 1000);
+            if (!timerElement) {
+              if (timer > 0.5) {
+                timerElement = document.createElement('div');
+                timerElement.classList.add('mwai-timer');
+                element.appendChild(timerElement);
+              }
+            }
+            if (timerElement) {
+              let minutes = Math.floor(timer / 60);
+              let seconds = timer - (minutes * 60);
+              seconds = seconds < 10 ? "0" + seconds : seconds;
+              let display = minutes + ":" + seconds;
+              timerElement.innerHTML = display;
+            }
+          }
+
+          intervalId = setInterval(updateTimer, 500);
+
+          return function stopTimer() {
+            clearInterval(intervalId);
+            if (timerElement) {
+              timerElement.remove();
+            }
+          };
         }
 
         // Push the reply in the conversation
@@ -493,6 +530,11 @@ class Meow_MWAI_Modules_Chatbot {
             maxResults: '<?= $maxResults ?>',
             apiKey: '<?= $apiKey ?>',
           };
+
+          // Start the timer
+          const stopTimer = <?= $injectTimerFn ?>(button);
+
+          // Send the request
           if (isDebugMode) {
             console.log('[BOT] Sent: ', data);
           }
@@ -516,6 +558,7 @@ class Meow_MWAI_Modules_Chatbot {
             }
             button.disabled = false;
             input.disabled = false;
+            stopTimer();
             
             // Only focus only on desktop (to avoid the mobile keyboard to kick-in)
             if (!isMobile) {
@@ -526,6 +569,7 @@ class Meow_MWAI_Modules_Chatbot {
             console.error(error);
             button.disabled = false;
             input.disabled = false;
+            stopTimer();
           });
         }
 
