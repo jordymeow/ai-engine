@@ -239,7 +239,7 @@
 		.mwai-resize-button {
 			justify-content: center;
 			height: 40px;
-			width: 36px;
+			width: 25px;
 			cursor: pointer;
 			display: flex;
     	justify-content: center;
@@ -264,7 +264,7 @@
 
 		.mwai-close-button {
 			justify-content: center;
-			height: 40px;
+			height: 35px;
 			width: 35px;
 			cursor: pointer;
 		}
@@ -273,7 +273,7 @@
 			content: ' ';
 			cursor: pointer;
 			position: absolute;
-			height: 30px;
+			height: 25px;
 			width: 2px;
 			background-color: var(--mwai-headerButtonsColor);
 			opacity: 0.75;
@@ -360,6 +360,15 @@
 // FULLSCREEN & WINDOW
 
 #mwai-chat-id.mwai-window.mwai-fullscreen {
+
+	.mwai-close-button {
+		height: 40px;
+
+		&:before, &:after {
+			height: 30px;
+		}
+	}
+
 	.mwai-resize-button {
 
 		&:before {

@@ -169,15 +169,52 @@ class Meow_MWAI_Core
 		return strpos( $url, 'http' ) === 0 ? true : false;
 	}
 
+	// Clean the text perfectly, resolve shortcodes, etc, etc.
+  function clean_text( $rawText = "" ) {
+    $text = strip_tags( $rawText );
+    $text = strip_shortcodes( $text );
+    $text = html_entity_decode( $text );
+    $text = str_replace( array( "\r", "\n" ), "", $text );
+    $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
+    foreach ( $sentences as $key => $sentence ) {
+      $sentences[$key] = trim( $sentence );
+    }
+    $text = implode( " ", $sentences );
+    $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
+    return $text . " ";
+  }
+
+  // Make sure there are no duplicate sentences, and keep the length under a maximum length.
+  function clean_sentences( $text, $maxLength = 1024 ) {
+    $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
+    $hashes = array();
+    $uniqueSentences = array();
+    $length = 0;
+    foreach ( $sentences as $sentence ) {
+      $sentence = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $sentence );
+      $hash = md5( $sentence );
+      if ( !in_array( $hash, $hashes ) ) {
+        if ( $length + strlen( $sentence ) > $maxLength ) {
+          continue;
+        }
+        $hashes[] = $hash;
+        $uniqueSentences[] = $sentence;
+        $length += strlen( $sentence );
+      }
+    }
+    $text = implode( " ", $uniqueSentences );
+    $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
+    return $text;
+  }
+
 	function get_text_from_postId( $postId ) {
 		$post = get_post( $postId );
 		if ( !$post ) {
 			return false;
 		}
 		$post->post_content = apply_filters( 'the_content', $post->post_content );
-		$text = strip_tags( $post->post_content );
-		$text = preg_replace( '/^\h*\v+/m', '', $text );
-		$text = html_entity_decode( $text );
+		$text = $this->clean_text( $post->post_content );
+		$text = $this->clean_sentences( $text );
 		return $text;
 	}
 

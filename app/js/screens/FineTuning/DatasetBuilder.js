@@ -1,7 +1,7 @@
-// Previous: 0.1.0
-// Current: 0.6.6
+// Previous: 0.6.6
+// Current: 0.9.5
 
-const { useState } = wp.element;
+const { useState, useRef } = wp.element;
 import { useQuery } from '@tanstack/react-query';
 
 import { NekoButton, 
@@ -60,9 +60,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length > 0) {
-          entries[entries.length - 1].completion = arr[i].slice(2).trim();
-        }
+        if (entries.length === 0) continue; // Defensive check
+        entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
     return entries;
@@ -79,11 +78,11 @@ const DatasetBuilder = ({ setBuilderData }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content.length < 64) {
+    else if (content && content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
-      finalPrompt = finalPrompt.replace('{CONTENT}', content);
+      finalPrompt = finalPrompt.replace('{CONTENT}', content || '');
       const resGenerate = await nekoFetch(`${apiUrl}/make_completions`, {
         method: 'POST',
         json: {
@@ -100,13 +99,18 @@ const DatasetBuilder = ({ setBuilderData }) => {
       });
       rawData = resGenerate?.data;
       if (!resGenerate.success) {
+        if (resGenerate.error?.code === 'USER-ABORTED') {
+          console.log('User aborted.');
+          bulkTasks.reset();
+          return { success: true };
+        }
         alert(resGenerate.message);
         error = resGenerate.message;
       }
       else {
         if (resGenerate?.usage?.total_tokens) {
           tokens = resGenerate.usage.total_tokens;
-          setTotalTokens(totalTokens => totalTokens + resGenerate.usage.total_tokens);
+          setTotalTokens(prev => prev + resGenerate.usage.total_tokens);
         }
       }
     }
@@ -119,8 +123,13 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
+    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffset = parseInt(startOffsetStr) || 0;
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
+      if (startOffset && offset < startOffset) {
+        return { success: true };
+      }
       let result = await runProcess(offset, null, signal);
       if (result.entries) {
         setBuilderData(builderData => [...builderData, ...result.entries]);
@@ -135,10 +144,11 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const onQuickTestClick = async () => {
     setTotalTokens(0);
-    const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    if (postId === null) {
+    const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
+    if (postIdInput === null || postIdInput.trim() === '') {
       return;
     }
+    const postId = parseInt(postIdInput);
     setQuickBusy(true);
     const result = await runProcess(0, postId);
     setQuickBusy(false);
@@ -166,7 +176,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
           Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
+          style={{ width: 100, marginLeft: 10 }} onChange={(val) => setPostType(val)} value={postType}>
           <NekoOption key={'post'} id={'post'} value={'post'} label="Posts" />
           <NekoOption key={'page'} id={'page'} value={'page'} label="Pages" />
         </NekoSelect>

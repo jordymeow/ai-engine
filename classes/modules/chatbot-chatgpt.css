@@ -233,7 +233,7 @@
 #mwai-chat-id.mwai-window .mwai-header .mwai-resize-button {
   justify-content: center;
   height: 40px;
-  width: 36px;
+  width: 25px;
   cursor: pointer;
   display: flex;
   justify-content: center;
@@ -258,7 +258,7 @@
 
 #mwai-chat-id.mwai-window .mwai-header .mwai-close-button {
   justify-content: center;
-  height: 40px;
+  height: 35px;
   width: 35px;
   cursor: pointer;
 }
@@ -267,7 +267,7 @@
   content: ' ';
   cursor: pointer;
   position: absolute;
-  height: 30px;
+  height: 25px;
   width: 2px;
   background-color: var(--mwai-headerButtonsColor);
   opacity: 0.75;
@@ -343,6 +343,14 @@
 
 #mwai-chat-id .mwai-gallery img {
   width: 100%;
+}
+
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-close-button {
+  height: 40px;
+}
+
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-close-button:before, #mwai-chat-id.mwai-window.mwai-fullscreen .mwai-close-button:after {
+  height: 30px;
 }
 
 #mwai-chat-id.mwai-window.mwai-fullscreen .mwai-resize-button:before {

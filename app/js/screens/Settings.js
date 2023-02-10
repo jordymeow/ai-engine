@@ -1,5 +1,5 @@
-// Previous: 0.9.2
-// Current: 0.9.3
+// Previous: 0.9.3
+// Current: 0.9.5
 
 const { useMemo, useState } = wp.element;
 
@@ -84,6 +84,7 @@ const Settings = () => {
   const debug_mode = options?.debug_mode;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
+
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['openAI_status'], queryFn: retrieveIncidents
   });
@@ -207,7 +208,9 @@ const Settings = () => {
     await updateOption(default_limits, 'limits');
   }
 
-  console.log(limits);
+  /**
+   * Settings
+   */
 
   const jsxAssistants =
     <NekoSettings title="Assistants">
@@ -744,6 +747,12 @@ const Settings = () => {
                         </NekoMessageDanger>
                       }
 
+                      {!isFineTuned && shortcodeParams.casually_fine_tuned && 
+                        <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
+                          <p>Normally, you should not check the Casually Fine Tuned option with a non-finetuned model. Make sure that's what you want.</p>
+                        </NekoMessageDanger>
+                      }
+
                       {isContentAware && !contextHasContent && 
                         <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
                           <p>
@@ -907,9 +916,7 @@ const Settings = () => {
 
             <NekoTab title='License'>
               <LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
-            </NekoTab>
-
-          </NekoTabs>
+            </NekoTabs>
 
         </NekoColumn>
 

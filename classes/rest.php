@@ -229,7 +229,7 @@ class Meow_MWAI_Rest
 			$postId = intval( $params['postId'] );
 			$text = $this->core->get_text_from_postId( $postId );
 			$prompt = "Create short SEO-friendly title for this text: " . $text;
-			$query = new Meow_MWAI_QueryText( $prompt, 64 );
+			$query = new Meow_MWAI_QueryText( $prompt, 128 );
 			$query->setMaxResults( 5 );
 			$query->setEnv( 'admin-tools' );
 			$answer = $this->core->ai->run( $query );
@@ -246,7 +246,7 @@ class Meow_MWAI_Rest
 			$postId = intval( $params['postId'] );
 			$text = $this->core->get_text_from_postId( $postId );
 			$prompt = "Create SEO-friendly introduction to this text, 120 to 170 characters max, no URLs: " . $text;
-			$query = new Meow_MWAI_QueryText( $prompt, 160 );
+			$query = new Meow_MWAI_QueryText( $prompt, 512 );
 			$query->setMaxResults( 5 );
 			$query->setEnv( 'admin-tools' );
 			$answer = $this->core->ai->run( $query );

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.4
+Stable tag: 0.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,9 +63,15 @@ Languages: English.
 
 == Changelog ==
 
-= 0.9.4 (2023/02/10) =
+= 0.9.5 (2023/02/10) =
+* Update: Enhanced the shortcode builder to avoid user mistakes. 
+* Update: Better sizes for chatbot icons.
+* Update: Markdown support in AI Forms.
+* Update: Dataset Generator allows replaying the bulk generation from a certain offset.
+* Update: Better text validation before quickly generating titles and excerpts.
 * Add: Timer in the chatbot button if the query takes more than 1 second.
-* Info: Share with me your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/), I'll make it better for you! And of course, if you like the plugin, please leave a review on [WordPress.org](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* Info: I would like to focus on making everything amazingly perfect for the version 1.x. I keep the new features for a bit later, and make sure everything we have now is stable and nice, as well as the code quality. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: If you enjoy this, don't hesitate to [write a review](https://wordpress.org/support/plugin/ai-engine/reviews/) :)
 
 = 0.9.3 (2023/02/09) =
 * Add: Debug Mode.
