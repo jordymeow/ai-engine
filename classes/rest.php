@@ -167,40 +167,12 @@ class Meow_MWAI_Rest
 		return $this->createValidationResult();
 	}
 
-	function setup_query_based_on_params( $query, $params ) {
-		if ( isset( $params['model'] ) ) {
-			$query->setModel( $params['model'] );
-		}
-		if ( isset( $params['maxTokens'] ) ) {
-			$query->setMaxTokens( $params['maxTokens'] );
-		}
-		if ( isset( $params['temperature'] ) ) {
-			$query->setTemperature( $params['temperature'] );
-		}
-		if ( isset( $params['stop'] ) ) {
-			$query->setStop( $params['stop'] );
-		}
-		if ( isset( $params['apiKey'] ) ) {
-			$query->setApiKey( $params['apiKey'] );
-		}
-		if ( isset( $params['maxResults'] ) ) {
-			$query->setMaxResults( $params['maxResults'] );
-		}
-		if ( isset( $params['env'] ) ) {
-			$query->setEnv( $params['env'] );
-		}
-		if ( isset( $params['session'] ) ) {
-			$query->setSession( $params['session'] );
-		}
-		return $query;
-	}
-
 	function make_completions( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
 			$query = new Meow_MWAI_QueryText( $prompt );
-			$query = $this->setup_query_based_on_params( $query, $params );
+			$query->injectParams( $params );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result, 'usage' => $answer->usage ], 200 );
 		}
@@ -214,7 +186,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
 			$query = new Meow_MWAI_QueryImage( $prompt );
-			$query = $this->setup_query_based_on_params( $query, $params );
+			$query->injectParams( $params );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results, 'usage' => $answer->usage ], 200 );
 		}

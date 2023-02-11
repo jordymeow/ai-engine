@@ -19,7 +19,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * @param float $prompt The maximum number of tokens.
    */
   public function setMaxTokens( $maxTokens ) {
-    $this->maxTokens = $maxTokens;
+    $this->maxTokens = intval( $maxTokens );
   }
 
   /**
@@ -47,5 +47,33 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( !empty( $stop ) ) {
       $this->stop = $stop;
     }
+  }
+
+  // Based on the params of the query, update the attributes
+  public function injectParams( $params ) {
+    if ( isset( $params['model'] ) ) {
+			$this->setModel( $params['model'] );
+		}
+		if ( isset( $params['maxTokens'] ) ) {
+			$this->setMaxTokens( $params['maxTokens'] );
+		}
+		if ( isset( $params['temperature'] ) ) {
+			$this->setTemperature( $params['temperature'] );
+		}
+		if ( isset( $params['stop'] ) ) {
+			$this->setStop( $params['stop'] );
+		}
+		if ( isset( $params['apiKey'] ) ) {
+			$this->setApiKey( $params['apiKey'] );
+		}
+		if ( isset( $params['maxResults'] ) ) {
+			$this->setMaxResults( $params['maxResults'] );
+		}
+		if ( isset( $params['env'] ) ) {
+			$this->setEnv( $params['env'] );
+		}
+		if ( isset( $params['session'] ) ) {
+			$this->setSession( $params['session'] );
+		}
   }
 }

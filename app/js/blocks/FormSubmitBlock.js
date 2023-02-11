@@ -1,48 +1,52 @@
-// Previous: 0.8.7
-// Current: 0.9.6
+// Previous: 0.9.6
+// Current: 0.9.8
 
+import { useModels } from "../helpers";
+import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { PanelBody, TextControl, TextareaControl } = wp.components;
+const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 const saveFormField = (props) => {
-	const { attributes: { id, label, prompt, outputElement } } = props;
+	const { attributes: { label, prompt, outputElement, model } } = props;
 	const encodedPrompt = encodeURIComponent(prompt);
-	return `[mwai-form-submit id="${id}" label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}"]`;
+	return `[mwai-form-submit label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}"]`;
 }
 
-const FormSubmitBlock = props => {
-	const { attributes: { id, label, prompt, outputElement, placeholders = [] }, setAttributes } = props;
+const FormSubmitBlock = (props) => {
+	const { models } = useModels(options);
+	const { attributes: { label, prompt, model, outputElement, placeholders = [] }, setAttributes } = props;
 
 	useEffect(() => {
-		// Catch all the variables between the curly braces
-		const placeholders = prompt.match(/{([^}]+)}/g);
-		if (placeholders) {
-			setAttributes({ placeholders: placeholders.map(placeholder => placeholder.replace('{', '').replace('}', '')) });
+		if (prompt) {
+			const placeholdersMatch = prompt.match(/{([^}]+)}/g);
+			if (placeholdersMatch) {
+				setAttributes({ placeholders: placeholdersMatch.map(ph => ph.replace('{', '').replace('}', '')) });
+			}
 		}
 	}, [prompt]);
 
-	useEffect(() => {
-		if (!id) {
-			const newId = Math.random().toString(36).substr(2, 9);
-			setAttributes({ id: 'mwai-' + newId });
-		}
-	}, [id]);
+	const placeholders = props.attributes.placeholders;
 
 	const fieldsCount = useMemo(() => {
 		return placeholders ? placeholders.length : 0;
 	}, [placeholders]);
 
+	const modelOptions = useMemo(() => {
+		let freshModels = models.map(model => ({ label: model.name, value: model.id }));
+		freshModels.push({ label: 'dall-e', value: 'dall-e' });
+		return freshModels;
+	}, [models]);
 
 	return (
 		<>
 			<AiBlockContainer title="Submit" type="submit"
 				hint={<>
-					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '} 
+					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '}
 					<span className="mwai-pill mwai-pill-purple">{outputElement}</span></>
 				}>
 				Input Fields: {placeholders.join(', ')}<br />
@@ -50,12 +54,18 @@ const FormSubmitBlock = props => {
 				Output Element: {outputElement}
 			</AiBlockContainer>
 			<InspectorControls>
-				<PanelBody title={ __( 'Output' ) }>
-					<TextControl label="Label" value={label} onChange={value => setAttributes({ label: value })} />
-					<TextareaControl label="Prompt" value={prompt} onChange={value => setAttributes({ prompt: value })}
+				<PanelBody title={__( 'Output' )}>
+					<TextControl label="Label" value={label} onChange={(value) => setAttributes({ label: value })} />
+					<TextareaControl label="Prompt" value={prompt} onChange={(value) => setAttributes({ prompt: value })}
 						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: 'Recommend me {MUSIC_TYPE} artists.' You can also add 'Use Markdown format.' if you wish the output to be formatted." />
-					<TextControl label="Output Element" value={outputElement} onChange={value => setAttributes({ outputElement: value })}
+					<TextControl label="Output Element" value={outputElement} onChange={(value) => setAttributes({ outputElement: value })}
 						help="The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use '#mwai-666'." />
+				</PanelBody>
+				<PanelBody title={__( 'Params' )}>
+					{models && models.length > 0 &&
+						<SelectControl label="Model" value={model} options={modelOptions}
+							onChange={(value) => setAttributes({ model: value })}
+						/>}
 				</PanelBody>
 			</InspectorControls>
 		</>
@@ -68,12 +78,8 @@ const createSubmitBlock = () => {
 		description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
 		icon: meowIcon,
 		category: 'layout',
-		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
+		keywords: [__( 'ai' ), __( 'openai' ), __( 'form' )],
 		attributes: {
-			id: {
-				type: 'string',
-				default: ''
-			},
 			label: {
 				type: 'string',
 				default: 'Submit'
@@ -83,6 +89,10 @@ const createSubmitBlock = () => {
 				default: ''
 			},
 			outputElement: {
+				type: 'string',
+				default: ''
+			},
+			model: {
 				type: 'string',
 				default: ''
 			}

@@ -62,6 +62,6 @@ class Meow_MWAI_Query {
    * @param float $maxResults Number of completions.
    */
   public function setMaxResults( $maxResults ) {
-    $this->maxResults = $maxResults;
+    $this->maxResults = intval( $maxResults );
   }
 }
