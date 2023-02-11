@@ -1,5 +1,5 @@
-// Previous: 0.9.3
-// Current: 0.9.5
+// Previous: 0.9.5
+// Current: 0.9.7
 
 const { useMemo, useState } = wp.element;
 
@@ -84,7 +84,6 @@ const Settings = () => {
   const debug_mode = options?.debug_mode;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
-
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['openAI_status'], queryFn: retrieveIncidents
   });
@@ -336,7 +335,7 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            price = modelUsage.images * modelOptionPrice.price; // <-- potential bug: shadowed 'price'
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -556,7 +555,7 @@ const Settings = () => {
                             <NekoColorPicker id="headerButtonsColor" name="headerButtonsColor"
                               value={shortcodeStyles?.headerButtonsColor ?? '#FFFFFF'}
                               onChange={updateShortcodeColors} />
-                          </div>
+                          </div>                          
                         </div>
                         <div className="mwai-builder-col">
                         </div>
@@ -666,9 +665,19 @@ const Settings = () => {
                           </NekoSelect>
                         </div>
                         <div className="mwai-builder-col">
-                          <label>Popup Window:</label>
+                          <label>Popup:</label>
                           <NekoCheckbox id="window" label="Yes"
                             checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
+                        </div>
+                        <div className="mwai-builder-col" style={{ flex: 2 }}>
+                          <label>Position:</label>
+                          <NekoSelect scrolldown id="icon_position" name="icon_position" disabled={!shortcodeParams.window}
+                            value={shortcodeParams.icon_position} onChange={updateShortcodeParams}>
+                            <NekoOption value="bottom-right" label="Bottom Right" />
+                            <NekoOption value="bottom-left" label="Bottom Left" />
+                            <NekoOption value="top-right" label="Top Right" />
+                            <NekoOption value="top-left" label="Top Left" />
+                          </NekoSelect>
                         </div>
                         <div className="mwai-builder-col">
                           <label>Full Screen:</label>
@@ -705,7 +714,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption value={x.id} label={x.id}></NekoOption>
+                              <NekoOption key={x.id} value={x.id} label={x.id}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>
@@ -916,7 +925,9 @@ const Settings = () => {
 
             <NekoTab title='License'>
               <LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
-            </NekoTabs>
+            </NekoTab>
+
+          </NekoTabs>
 
         </NekoColumn>
 
