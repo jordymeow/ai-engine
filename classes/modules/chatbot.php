@@ -25,6 +25,11 @@ class Meow_MWAI_Modules_Chatbot {
         '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/stackoverflow-dark.min.css' );
     }
 
+    $logs = $this->core->get_option( 'shortcode_chat_logs' );
+    if ( $logs && strpos( $logs, 'file' ) !== false ) {
+      new Meow_MWAI_Modules_Chatbot_Logs();
+    }
+
     if ( $this->core->get_option( 'shortcode_chat_styles' ) ) {
       add_filter( 'mwai_chatbot_style', [ $this, 'apply_chat_styles' ], 10, 2 );
     }
@@ -58,40 +63,12 @@ class Meow_MWAI_Modules_Chatbot {
   function rest_chat( $request ) {
     try {
 			$params = $request->get_json_params();
-      $session = $params['session'];
-      $env = $params['env'];
-			$prompt = $params['prompt'];
-      $model = $params['model'];
-      $temperature = $params['temperature'];
-      $maxTokens = intval( $params['maxTokens'] );
-      $apiKey = $params['apiKey'];
-      $stop = $params['stop'];
-			$query = new Meow_MWAI_QueryText( $prompt, 1024 );
-      if ( $model ) {
-        $query->setModel( $model );
-      }
-      if ( $temperature ) {
-        $query->setTemperature( $temperature );
-      }
-      if ( $maxTokens ) {
-        $query->setMaxTokens( $maxTokens );
-      }
-      if ( $stop ) {
-        $query->setStop( $stop );
-      }
-      if ( $apiKey ) {
-        $query->setApiKey( $apiKey );
-      }
-      if ( $env ) {
-        $query->setEnv( $env );
-      }
-      if ( $session ) {
-        $query->setSession( $session );
-      }
+			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
+      $query->injectParams( $params );
 			$answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
-      $html = apply_filters( 'mwai_chatbot_answer', $rawText  );
-      $html = $this->core->markdown_to_html( $rawText );
+      $html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params  );
+      $html = $this->core->markdown_to_html( $html );
 			return new WP_REST_Response([ 'success' => true, 'answer' => $rawText,
         'html' => $html, 'usage' => $answer->usage ], 200 );
 		}
@@ -103,24 +80,8 @@ class Meow_MWAI_Modules_Chatbot {
   function rest_imagesbot( $request ) {
     try {
 			$params = $request->get_json_params();
-      $session = $params['session'];
-      $env = $params['env'];
-			$prompt = $params['prompt'];
-      $maxResults = $params['maxResults'];
-      $apiKey = $params['apiKey'];
-			$query = new Meow_MWAI_QueryImage( $prompt );
-      if ( $maxResults ) {
-        $query->setMaxResults( $maxResults );
-      }
-      if ( $apiKey ) {
-        $query->setApiKey( $apiKey );
-      }
-      if ( $env ) {
-        $query->setEnv( $env );
-      }
-      if ( $session ) {
-        $query->setSession( $session );
-      }
+			$query = new Meow_MWAI_QueryImage( $params['prompt'] );
+      $query->injectParams( $params );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'images' => $answer->results, 'usage' => $answer->usage ], 200 );
 		}
@@ -513,6 +474,7 @@ class Meow_MWAI_Modules_Chatbot {
             env: '<?= $env ?>',
             session: '<?= $sessionId ?>',
             prompt: inputText,
+            rawInput: inputText,
             maxResults: <?= $maxResults ?>,
             model: '<?= $atts['model'] ?>',
             apiKey: '<?= $atts['api_key'] ?>',
@@ -521,6 +483,7 @@ class Meow_MWAI_Modules_Chatbot {
             env: '<?= $env ?>',
             session: '<?= $sessionId ?>',
             prompt: prompt,
+            rawInput: inputText,
             userName: '<?= $userName ?>',
             aiName: '<?= $aiName ?>',
             model: '<?= $model ?>',

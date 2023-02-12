@@ -104,6 +104,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
 	'shortcode_chat_syntax_highlighting' => false,
+	'shortcode_chat_logs' => '', // 'file', 'db', 'file,db'
 	'shortcode_chat_inject' => false,
 	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
@@ -232,6 +233,38 @@ class Meow_MWAI_Core
 			return $session_id;
 		}
 	}
+
+	// Get the UserID from the data, or from the current user
+  function get_user_id( $data = null ) {
+    if ( isset( $data ) && isset( $data['userId'] ) ) {
+      return (int)$data['userId'];
+    }
+    if ( is_user_logged_in() ) {
+      $current_user = wp_get_current_user();
+      if ( $current_user->ID > 0 ) {
+        return $current_user->ID;
+      }
+    }
+    return null;
+  }
+
+	function get_ip_address( $data = null ) {
+    if ( isset( $data ) && isset( $data['ip'] ) ) {
+      $data['ip'] = (string)$data['ip'];
+    }
+    else {
+      if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+        $data['ip'] = $_SERVER['REMOTE_ADDR'];
+      }
+      else if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+        $data['ip'] = $_SERVER['HTTP_CLIENT_IP'];
+      }
+      else if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        $data['ip'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+      }
+    }
+    return $data['ip'];
+  }
 
 	function markdown_to_html( $content ) {
 		$Parsedown = new Parsedown();

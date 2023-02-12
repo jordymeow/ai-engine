@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.81
+Stable tag: 0.9.82
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,10 @@ Languages: English.
 
 == Changelog ==
 
-= 0.9.81 (2023/02/12) =
+= 0.9.82 (2023/02/12) =
+* Add: Chat logs.
 * Update: Cleaning the UI.
+* Update: Refactoring.
 * Info: I would like to focus on making everything amazingly perfect for the version 1.x. I keep the new features for a bit later, and make sure everything we have now is stable and nice, as well as the code quality. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: If you enjoy this, don't hesitate to [write a review](https://wordpress.org/support/plugin/ai-engine/reviews/) :)
 
