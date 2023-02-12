@@ -1,5 +1,5 @@
-// Previous: 0.9.5
-// Current: 0.9.7
+// Previous: 0.9.7
+// Current: 0.9.81
 
 const { useMemo, useState } = wp.element;
 
@@ -207,10 +207,6 @@ const Settings = () => {
     await updateOption(default_limits, 'limits');
   }
 
-  /**
-   * Settings
-   */
-
   const jsxAssistants =
     <NekoSettings title="Assistants">
       <NekoCheckboxGroup max="1">
@@ -335,7 +331,7 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price; // <-- potential bug: shadowed 'price'
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -470,7 +466,7 @@ const Settings = () => {
             {(shortcode_chat) && <NekoTab title='Chatbot'>
               <NekoWrapper>
 
-                <NekoColumn minimal>
+                <NekoColumn minimal full>
                   <NekoBlock className="primary">
                     <NekoTypo p>
                     <p>
@@ -481,6 +477,9 @@ const Settings = () => {
                     </p>
                     </NekoTypo>
                   </NekoBlock>
+                </NekoColumn>
+
+                <NekoColumn minimal>
 
                   <NekoBlock busy={busy} title="Features" className="primary">
                     {jsxShortcodeFormatting}
@@ -560,6 +559,9 @@ const Settings = () => {
                         <div className="mwai-builder-col">
                         </div>
                         <div className="mwai-builder-col">
+                          {/* <label>Text (Next to Icon):</label>
+                          <NekoInput id="icon_text" name="icon_text"
+                            value={shortcodeParams.icon_text ?? 'Chat'} onBlur={updateShortcodeParams} /> */}
                         </div>
                       </div>
                       <div className="mwai-builder-row">
@@ -714,7 +716,7 @@ const Settings = () => {
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
-                              <NekoOption key={x.id} value={x.id} label={x.id}></NekoOption>
+                              <NekoOption value={x.id} label={x.id}></NekoOption>
                             ))}
                           </NekoSelect>
                         </div>
@@ -765,7 +767,7 @@ const Settings = () => {
                       {isContentAware && !contextHasContent && 
                         <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
                           <p>
-                            Content Aware requires your Context to use the {'{'}CONTENT{'}'} placeholder. It will be replaced by the content of page the chatbot is on. More info <a href="https://meowapps.com/ai-engine/tutorial/#contextualization" target="_blank">here</a>.
+                            Content Aware requires your Context to use the {'{'}CONTENT{'}'} placeholder. It will be replaced by the content of page the chatbot is on. More info <a href="https://meowapps.com/ai-engine/tutorial/#content-aware-bot" target="_blank">here</a>.
                           </p>
                         </NekoMessageDanger>
                       }
