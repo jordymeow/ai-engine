@@ -1,5 +1,5 @@
-// Previous: 0.6.8
-// Current: 0.7.3
+// Previous: 0.7.3
+// Current: 0.9.83
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -28,20 +28,35 @@ const sortTemplates = (templates) => {
 
 const retrieveTemplates = async (category) => {
   const res = await nekoFetch(`${apiUrl}/templates?category=${category}`, { nonce: restNonce });
-  if (res?.templates && res.templates.length > 0) {
-    return sortTemplates(res.templates);
-  }
+  let templates = [];
   if (category === 'imagesGenerator') {
-    return Templates_ImagesGenerator;
+    templates = Templates_ImagesGenerator;
   }
   else if (category === 'playground') {
-    return Templates_Playground;
+    templates = Templates_Playground;
   }
   else if (category === 'contentGenerator') {
-    return Templates_ContentGenerator;
+    templates = Templates_ContentGenerator;
   }
-  alert("This category of templates is not supported yet.");
-  return [];
+  let defTemplate = templates.find((x) => x.id === 'default');
+
+  if (res?.templates && res.templates.length > 0) {
+    templates = sortTemplates(res.templates);
+  }
+
+  if (defTemplate) {
+    templates.forEach((tpl) => {
+      Object.keys(defTemplate).forEach((key) => {
+        if (typeof tpl[key] === 'undefined') {
+          tpl[key] = defTemplate[key];
+        }
+      });
+    });
+  } else {
+    console.warn("Default template not found for category: " + category);
+  }
+  
+  return templates;
 }
 
 const useTemplates = (category = 'playground') => {
@@ -75,7 +90,6 @@ const useTemplates = (category = 'playground') => {
       return false;
     }
     const originalTpl = templates.find((x) => x.id === template.id);
-    if (!originalTpl) return false;
     return Object.keys(originalTpl).some((key) => originalTpl[key] !== template[key]);
   }, [template, templates]);
 
@@ -189,7 +203,7 @@ const useTemplates = (category = 'playground') => {
         <small>Interested in sharing and/or looking for more templates? Join us on the <a target="_blank" href="https://wordpress.org/support/topic/common-use-cases-for-templates">Templates Threads</a> in the forums.</small>
       </div>}
     </div>);
-  });
+  }, [templates, template, isEdit, isLoadingTemplates, isDifferent, canSave]);
 
   return { template, resetTemplate, setTemplate: updateTemplate, jsxTemplates, isEdit };
 };

@@ -60,14 +60,14 @@ define( 'MWAI_CHATBOT_PARAMS', [
 
 define( 'MWAI_LANGUAGES', [
   'en' => 'English',
+	'de' => 'German',
+	'fr' => 'French',
   'es' => 'Spanish',
-  'fr' => 'French',
-  'de' => 'German',
   'it' => 'Italian',
+	'zh' => 'Chinese',
+	'ja' => 'Japanese',
   'pt' => 'Portuguese',
-  'ru' => 'Russian',
-  'ja' => 'Japanese',
-  'zh' => 'Chinese',
+  //'ru' => 'Russian',
 ] );
 
 define ( 'MWAI_LIMITS', [
@@ -281,6 +281,8 @@ class Meow_MWAI_Core
 				$options[$key] = $value;
 			}
 			if ( $key === 'languages' ) {
+				// TODO: If we decide to make a set of options for languages, we can keep it in the settings
+				$options[$key] = MWAI_LANGUAGES;
 				$options[$key] = apply_filters( 'mwai_languages', $options[$key] );
 			}
 		}

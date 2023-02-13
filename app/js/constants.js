@@ -1,5 +1,5 @@
-// Previous: 0.7.1
-// Current: 0.7.3
+// Previous: 0.7.3
+// Current: 0.9.83
 
 const OpenAI_models = [
   {
@@ -191,12 +191,15 @@ const Templates_ContentGenerator = [
     topic: "",
     topics: "",
     topicsAreTitles: false,
+    title: "",
+    sections: "",
     model: 'text-davinci-003',
     temperature: 0.8,
     maxTokens: 2048,
     sectionsCount: 2,
-    paragraphsPerSection: 3,
+    paragraphsCount: 3,
     language: 'en',
+    customLanguage: '',
     writingStyle: 'creative',
     writingTone: 'cheerful',
     titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,

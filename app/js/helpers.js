@@ -1,5 +1,5 @@
-// Previous: 0.6.3
-// Current: 0.8.1
+// Previous: 0.8.1
+// Current: 0.9.83
 
 const { useMemo, useEffect, useState, useRef } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
@@ -22,7 +22,7 @@ const OptionsCheck = ({ options }) => {
   );
 }
 
-function cleanNumbering(text) {
+function cleanSections(text) {
   if (!text) {
     return text;
   }
@@ -78,4 +78,4 @@ const useModels = (options) => {
   return { model, models, setModel, isFineTunedModel };
 }
 
-export { OptionsCheck, cleanNumbering, useModels };
+export { OptionsCheck, cleanSections, useModels };

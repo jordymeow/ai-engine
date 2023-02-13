@@ -1,5 +1,5 @@
-// Previous: 0.8.1
-// Current: 0.8.6
+// Previous: 0.8.6
+// Current: 0.9.83
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -10,7 +10,7 @@ import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, Nek
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { WritingStyles, WritingTones } from "../constants";
-import { cleanNumbering, OptionsCheck, useModels } from "../helpers";
+import { cleanSections, OptionsCheck, useModels } from "../helpers";
 import { AiNekoHeader, StyledTitleWithButton } from "../styles/CommonStyles";
 import { StyledSidebar } from "../styles/StyledSidebar";
 import useTemplates from '../components/Templates';
@@ -21,6 +21,10 @@ const languages = Object.keys(languagesObject).map((key) => {
 });
 
 const getSeoMessage = (title) => {
+  if (!title){
+    return null;
+  }
+
   const words = title.split(' ');
   const wordCount = words.length;
   const charCount = title.length;
@@ -45,8 +49,6 @@ const getSeoMessage = (title) => {
 };
 
 const ContentGenerator = () => {
-  const [title, setTitle] = useState("");
-  const [sections, setSections] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
 
@@ -63,8 +65,9 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
-  const titleMessage = useMemo(() => getSeoMessage(title), [title]);
-
+  
+  const title = template?.title ?? "";
+  const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
   const topic = template?.topic ?? "";
   const topics = template?.topics ?? "";
@@ -72,6 +75,7 @@ const ContentGenerator = () => {
   const sectionsCount = template?.sectionsCount ?? 2;
   const paragraphsCount = template?.paragraphsCount ?? 3;
   const language = template?.language ?? "en";
+  const customLanguage = template?.customLanguage ?? "";
   const writingStyle = template?.writingStyle ?? "creative";
   const writingTone = template?.writingTone ?? "cheerful";
   const titlePromptFormat = template?.titlePromptFormat ?? "";
@@ -81,13 +85,21 @@ const ContentGenerator = () => {
   const temperature = template?.temperature ?? 0.6;
   const maxTokens = template?.maxTokens ?? 2048;
   const topicsAreTitles = template?.topicsAreTitles ?? false;
+
   const humanLanguage = useMemo(() => {
-    const l = languages.find(l => l.value === language);
-    return l ? l.label : "";
-  }, [language]);
+    let systemLanguage = languages.find(l => l.value === language);
+    if (systemLanguage) {
+      return systemLanguage.label;
+    }
+    if (customLanguage) {
+      return customLanguage;
+    }
+    console.warn("A system language or a custom language should be set.");
+    return "english";
+  }, [language, customLanguage]);
 
   const setTemplateProperty = (value, property) => {
-    setTemplate({ ...template, [property]: value });
+    setTemplate(x => ({ ...x, [property]: value }));
   };
 
   useEffect(() => {
@@ -96,12 +108,16 @@ const ContentGenerator = () => {
   }, [topics]);
 
   useEffect(() => {
-    setTitle('');
-    setSections('');
+    if (template) {
+      setTemplateProperty('', 'sections');
+    }
+  }, [title, sectionsCount]);
+
+  useEffect(() => {
     setContent('');
     setExcerpt('');
     setCreatedPostId();
-  }, [template]);
+  }, [sections, paragraphsCount]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -110,21 +126,18 @@ const ContentGenerator = () => {
       .replace('{WRITING_TONE}', writingTone)
       .replace('{PARAGRAPHS_PER_SECTION}', paragraphsCount)
       .replace('{SECTIONS_COUNT}', sectionsCount);
-  };
-
-  const lookForPlaceholder = (str, arr) => {
-    return !!arr.find(item => item.includes(str));
-  };
+  }
 
   const formInputs = useMemo(() => {
+    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
-      language: lookForPlaceholder('{LANGUAGE}', arr),
-      writingStyle: lookForPlaceholder('{WRITING_STYLE}', arr),
-      writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
-      sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
-    };
+      language: lookFor('{LANGUAGE}', arr),
+      writingStyle: lookFor('{WRITING_STYLE}', arr),
+      writingTone: lookFor('{WRITING_TONE}', arr),
+      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
+    }
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
@@ -160,13 +173,13 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setSections(x => "");
+    setTemplateProperty('', 'sections');
     const prompt = finalizePrompt(sectionsPromptFormat.replace('{TITLE}', inTitle));
     let freshSections = await onSubmitPrompt(prompt, 512, isBulk);
-    freshSections = cleanNumbering(freshSections);
+    freshSections = cleanSections(freshSections);
     console.log("Sections:", { prompt, sections: freshSections });
     if (freshSections) {
-      setSections(x => freshSections);
+      setTemplateProperty(freshSections, 'sections');
     }
     setBusy(false);
     return freshSections;
@@ -184,7 +197,7 @@ const ContentGenerator = () => {
     setBusy(true);
     setContent(x => "");
     const prompt = finalizePrompt(contentPromptFormat.replace('{TITLE}', inTitle).replace('{SECTIONS}', inSections));
-    let freshContent = await onSubmitPrompt(prompt, 2048, isBulk);
+    let freshContent = await onSubmitPrompt(prompt, maxTokens, isBulk);
     if (freshContent) {
       freshContent = freshContent.replace(/^===INTRO:\n/, '');
       freshContent = freshContent.replace(/^===INTRO: \n/, '');
@@ -218,7 +231,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(x => ({ ...x, all: new Date() }));
+    setRunTimes(prev => ({ ...prev, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -231,18 +244,21 @@ const ContentGenerator = () => {
       let freshExcerpt = null;
       setBusy(false);
       if (freshTitle) {
-        setTitle(x => freshTitle);
-        setRunTimes(x => ({ ...x, sections: new Date() }));
+        setTemplateProperty(freshTitle, 'title');
+        setRunTimes(prev => ({ ...prev, sections: new Date() }));
         freshSections = await submitSectionsPrompt(freshTitle, isBulk);
-        setRunTimes(x => ({ ...x, sections: new Date() })); // bug: always resets date, preventing tracking
+        await new Promise(r => setTimeout(r, 50));
+        await setRunTimes(prev => ({ ...prev, sections: null }));
         if (freshSections) {
-          await setRunTimes(x => ({ ...x, content: new Date() }));
+          await setRunTimes(prev => ({ ...prev, content: new Date() }));
           freshContent = await submitContentPrompt(freshTitle, freshSections, isBulk);
-          await setRunTimes(x => ({ ...x, content: new Date() }));
+          await new Promise(r => setTimeout(r, 50));
+          await setRunTimes(prev => ({ ...prev, content: null }));
           if (freshContent) {
-            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            await setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(freshTitle, isBulk);
-            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            await new Promise(r => setTimeout(r, 50));
+            await setRunTimes(prev => ({ ...prev, excerpt: null }));
           }
         }
       }
@@ -278,10 +294,11 @@ const ContentGenerator = () => {
     let tasks = topicsArray.map((topic, offset) => async () => {
       console.log("Topic " + offset);
       try {
-        const { title, content, excerpt } = await onGenerateAllClick(topic, true);
-        if (title && content && excerpt) {
-          let postId = await onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt }]);
+        const result = await onGenerateAllClick(topic, true);
+        const { title: genTitle, content: genContent, excerpt: genExcerpt } = result;
+        if (genTitle && genContent && genExcerpt) {
+          let postId = await onSubmitNewPost(genTitle, genContent, genExcerpt, true);
+          setCreatedPosts(prev => [...prev, { postId, topic, title: genTitle, content: genContent, excerpt: genExcerpt }]);
         }
         else {
           console.warn("Could not generate the post for: " + topic);
@@ -298,7 +315,7 @@ const ContentGenerator = () => {
     });
     await bulkTasks.start(tasks);
     bulkTasks.reset();
-  };
+  }
 
   return (
     <NekoPage nekoErrors={[]}>
@@ -370,18 +387,18 @@ const ContentGenerator = () => {
             <h3>Generated Posts</h3>
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
-              {createdPosts.map((x) => (
-                <li key={x.postId}>
+              {createdPosts.map((x, index) => (
+                <li key={index}>
                   {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
             </ul>}
           </StyledSidebar>}
 
-          {mode === 'single' && <StyledSidebar>
+        {mode === 'single' && <StyledSidebar>
 
             <h2 style={{ marginTop: 0 }}>Title</h2>
-            <NekoInput disabled={isBusy} value={title} onChange={setTitle} />
+            <NekoInput id="title" disabled={isBusy} value={title} onChange={setTemplateProperty} />
             {titleMessage && <div className="information">Advice: {titleMessage}</div>}
 
             <NekoSpacer height={20} />
@@ -405,19 +422,20 @@ const ContentGenerator = () => {
                   </NekoSelect>
                 </>}
 
-                <NekoButton disabled={!title} isBusy={isBusy} startTime={runTimes?.sections}
+                {sectionsCount > 0 && <NekoButton disabled={!title} isBusy={isBusy} startTime={runTimes?.sections}
                   onClick={() => submitSectionsPrompt()}>
                   Generate Sections
-                </NekoButton>
+                </NekoButton>}
               </div>
             </StyledTitleWithButton>
 
-            <NekoSpacer height={20} />
-
-            <NekoTextArea disabled={isBusy} rows={4} value={sections} onBlur={setSections} />
-            <div className="information">
-              Add, rewrite, remove, or reorganize those sections as you wish before (re)clicking on "Generate Content". Markdown format is recommended.
-            </div>
+            {sectionsCount > 0 && <>
+              <NekoSpacer height={20} />
+              <NekoTextArea id="sections" disabled={isBusy} rows={4} value={sections} onChange={setTemplateProperty} />
+              <div className="information">
+                Add, rewrite, remove, or reorganize those sections as you wish before (re)clicking on "Generate Content". Markdown format is recommended.
+              </div>
+            </>}
 
             <NekoSpacer height={20} />
 
@@ -449,7 +467,7 @@ const ContentGenerator = () => {
 
             <NekoSpacer height={20} />
 
-            <NekoTextArea countable="words" disabled={isBusy} rows={12} value={content} onBlur={setContent} />
+            <NekoTextArea countable="words" disabled={isBusy} rows={12} value={content} onChange={setContent} />
 
             <div className="information">
               You can modify the content before using "Create Post". Markdown is supported, and will be converted to HTML when the post is created.
@@ -498,7 +516,15 @@ const ContentGenerator = () => {
                   {languages.map((lang) => {
                     return <NekoOption key={lang.value} id={lang.value} value={lang.value} label={lang.label} />
                   })}
+                  <NekoOption key="custom" id="custom" value="custom" label="Other" />
               </NekoSelect>
+              {language === 'custom' && <>
+                <label>Custom Language:</label>
+                <NekoInput id="customLanguage" name="customLanguage" disabled={isBusy}
+                  description={<>All the languages are <i>somehow</i> supported by AI. <a href="https://meowapps.com/ai-engine/faq/#languages" target="_blank">Learn more</a>.
+                  </>}
+                  value={customLanguage} onChange={setTemplateProperty} />
+              </>}
             </>}
 
             {formInputs.writingStyle && <>
@@ -520,7 +546,6 @@ const ContentGenerator = () => {
                   })}
               </NekoSelect>
             </>}
-
           </StyledSidebar>
 
           <StyledSidebar style={{ marginTop: 25, marginBottom: 25 }}>
@@ -531,12 +556,6 @@ const ContentGenerator = () => {
               </NekoButton>
             </StyledTitleWithButton>
             {showModelParams && <>
-              <label>Model:</label>
-              <NekoSelect id="model" name="model "value={model} scrolldown={true} onChange={setTemplateProperty}>
-                {models.map((x) => (
-                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
-                ))}
-              </NekoSelect>
               <label>Temperature:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
                 onChange={setTemplateProperty} onBlur={setTemplateProperty} description={<>
@@ -548,9 +567,16 @@ const ContentGenerator = () => {
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
                 onChange={setTemplateProperty} onBlur={setTemplateProperty} description={<>
                   <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
-                    Between 1 and 4096.
+                    Between 1 and 2048.
                   </span> Higher values means the model will generate more content.
                 </>} />
+              <label>Model:</label>
+              <NekoSelect id="model" name="model" value={model} disabled={true} description="The davinci model is currently the only acceptable one for writing texts. As soon as better models are available, you will be able to choose between them."
+                scrolldown={true} onChange={setTemplateProperty}>
+                {models.map((x) => (
+                  <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+                ))}
+              </NekoSelect>
             </>}
           </StyledSidebar>
 
@@ -579,7 +605,9 @@ const ContentGenerator = () => {
                 value={excerptPromptFormat} onChange={setTemplateProperty}  />
             </>}
           </StyledSidebar>
+
         </NekoColumn>
+
       </NekoWrapper>
 
       <NekoModal isOpen={createdPostId}
@@ -603,7 +631,6 @@ const ContentGenerator = () => {
         title="Error"
         content={<p>{error}</p>}
       />
-      
     </NekoPage> 
   );
 };
