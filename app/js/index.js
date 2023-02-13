@@ -1,5 +1,5 @@
-// Previous: 0.6.6
-// Current: 0.6.8
+// Previous: 0.6.8
+// Current: 0.9.84
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Admin Tools
 	const postsListTools = document.getElementById('mwai-admin-postsList');
 	if (postsListTools) {
-		render((<PostsListTools />), postsListTools);
+		//render((<PostsListTools />), postsListTools);
 	}
 
 	// Admin Tools

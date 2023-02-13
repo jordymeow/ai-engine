@@ -23,6 +23,7 @@ class Meow_MWAI_Modules_Assistants {
   }
 
   function render_metadata_metabox( $post ) {
+    $this->core->uiNeeded = true;
     echo '<div id="mwai-admin-wcAssistant"></div>';
   }
 }

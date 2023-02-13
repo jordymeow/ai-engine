@@ -1,5 +1,5 @@
-// Previous: 0.9.6
-// Current: 0.9.8
+// Previous: 0.9.8
+// Current: 0.9.84
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
@@ -8,29 +8,33 @@ import { AiBlockContainer, meowIcon } from "./common";
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components;
+const { PanelBody, TextControl, TextareaControl, SelectControl, UnitControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 const saveFormField = (props) => {
-	const { attributes: { label, prompt, outputElement, model } } = props;
+	const { attributes: { label, prompt, outputElement, model, temperature } } = props;
 	const encodedPrompt = encodeURIComponent(prompt);
-	return `[mwai-form-submit label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}"]`;
+	return `[mwai-form-submit label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}" temperature="${temperature}"]`;
 }
 
-const FormSubmitBlock = (props) => {
+const FormSubmitBlock = props => {
 	const { models } = useModels(options);
-	const { attributes: { label, prompt, model, outputElement, placeholders = [] }, setAttributes } = props;
+	const { attributes, setAttributes } = props;
+	const { label, prompt, model, temperature, outputElement, placeholders = [] } = attributes;
 
 	useEffect(() => {
-		if (prompt) {
-			const placeholdersMatch = prompt.match(/{([^}]+)}/g);
-			if (placeholdersMatch) {
-				setAttributes({ placeholders: placeholdersMatch.map(ph => ph.replace('{', '').replace('}', '')) });
-			}
+		const placeholders = prompt.match(/{([^}]+)}/g);
+		if (placeholders) {
+			setAttributes({ placeholders: placeholders.map(placeholder => placeholder.replace('{', '').replace('}', '')) });
 		}
 	}, [prompt]);
 
-	const placeholders = props.attributes.placeholders;
+	const placeholdersRef = React.useRef([]);
+	useEffect(() => {
+		if (placeholdersRef.current !== placeholders) {
+			placeholdersRef.current = placeholders;
+		}
+	}, [placeholders]);
 
 	const fieldsCount = useMemo(() => {
 		return placeholders ? placeholders.length : 0;
@@ -46,7 +50,7 @@ const FormSubmitBlock = (props) => {
 		<>
 			<AiBlockContainer title="Submit" type="submit"
 				hint={<>
-					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '}
+					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '} 
 					<span className="mwai-pill mwai-pill-purple">{outputElement}</span></>
 				}>
 				Input Fields: {placeholders.join(', ')}<br />
@@ -54,18 +58,21 @@ const FormSubmitBlock = (props) => {
 				Output Element: {outputElement}
 			</AiBlockContainer>
 			<InspectorControls>
-				<PanelBody title={__( 'Output' )}>
-					<TextControl label="Label" value={label} onChange={(value) => setAttributes({ label: value })} />
-					<TextareaControl label="Prompt" value={prompt} onChange={(value) => setAttributes({ prompt: value })}
+				<PanelBody title={ __( 'Output' ) }>
+					<TextControl label="Label" value={label} onChange={value => setAttributes({ label: value })} />
+					<TextareaControl label="Prompt" value={prompt} onChange={value => setAttributes({ prompt: value })}
 						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: 'Recommend me {MUSIC_TYPE} artists.' You can also add 'Use Markdown format.' if you wish the output to be formatted." />
-					<TextControl label="Output Element" value={outputElement} onChange={(value) => setAttributes({ outputElement: value })}
+					<TextControl label="Output Element" value={outputElement} onChange={value => setAttributes({ outputElement: value })}
 						help="The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use '#mwai-666'." />
 				</PanelBody>
-				<PanelBody title={__( 'Params' )}>
-					{models && models.length > 0 &&
-						<SelectControl label="Model" value={model} options={modelOptions}
-							onChange={(value) => setAttributes({ model: value })}
-						/>}
+				<PanelBody title={ __( 'Params' ) }>
+					{models && models.length > 0 && 
+						<SelectControl label={ __( 'Model' ) } value={model} options={modelOptions}
+							onChange={value => setAttributes({ model: value })}
+					/>}
+					<TextControl label="Temperature" value={temperature} onChange={value => setAttributes({ temperature: value })}
+						type="number" step="0.1" min="0" max="1"
+						help="The temperature of the model. 0.8 is the default. Lower values will make the model more conservative, higher values will make it more creative." />
 				</PanelBody>
 			</InspectorControls>
 		</>
@@ -78,7 +85,7 @@ const createSubmitBlock = () => {
 		description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
 		icon: meowIcon,
 		category: 'layout',
-		keywords: [__( 'ai' ), __( 'openai' ), __( 'form' )],
+		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
 		attributes: {
 			label: {
 				type: 'string',
@@ -95,6 +102,10 @@ const createSubmitBlock = () => {
 			model: {
 				type: 'string',
 				default: ''
+			},
+			temperature: {
+				type: 'number',
+				default: 0.8
 			}
 		},
 		edit: FormSubmitBlock,

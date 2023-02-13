@@ -180,6 +180,14 @@ class Meow_MWAI_Modules_Chatbot {
     return $aiName;
   }
 
+  function formatRawName( $aiName ) {
+    return "AI: ";
+  }
+
+  function formatRawUserName( $userName, $guestName ) {
+    return "User: ";
+  }
+
   function chat( $atts ) {
     // Use the core default parameters, or the user default parameters
     $override = $this->core->get_option( 'shortcode_chat_params_override' );
@@ -222,6 +230,8 @@ class Meow_MWAI_Modules_Chatbot {
     // Validade & Enhance UI Parameters
     $aiName = $this->formatAiName( $aiName );
     $userName = $this->formatUserName( $userName, $guestName );
+    $rawAiName = $this->formatRawName( $aiName );
+    $rawUserName = $this->formatRawUserName( $userName, $guestName );
 
     // Chatbot System Parameters
     $id = empty( $atts['id'] ) ? uniqid() : $atts['id'];
@@ -252,6 +262,7 @@ class Meow_MWAI_Modules_Chatbot {
     $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
     $setButtonTextFn = "mwai_{$id}_setButtonText";
+    $onTidyOnGoingPromptFn = "mwai_{$id}_onUpdateOnGoingPrompt";
     $injectTimerFn = "mwai_{$id}_injectTimer";
 
     // Variables
@@ -310,7 +321,7 @@ class Meow_MWAI_Modules_Chatbot {
 
       <script>
       (function () {
-        let <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
+        let <?= $onGoingPrompt ?> = [];
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
         let isDebugMode = <?= $debugMode ? 'true' : 'false' ?>;
@@ -436,6 +447,28 @@ class Meow_MWAI_Modules_Chatbot {
           }
         }
 
+        function <?= $onTidyOnGoingPromptFn ?>(onGoingPrompt, last = 15, casuallyFineTuned = false) {
+          let onGoingPromptLength = onGoingPrompt.length;
+          let start = (onGoingPromptLength - last) < 0 ? 0 : (onGoingPromptLength - last);
+          if (casuallyFineTuned) { onGoingPromptLength--; }
+          let conversationToUse = onGoingPrompt.slice(start, onGoingPromptLength);
+
+          // Casually fine tuned, let's use the last question
+          if (casuallyFineTuned) {
+            let lastLine = conversationToUse[conversationToUse.length - 1];
+            let prompt = lastLine.says + '<?= $promptEnding ?>'
+            return prompt;
+          }
+
+          // Otherwise let's compile the latest conversation
+          conversationToUse = conversationToUse.map(x => x.who + x.says);
+          let prompt = conversationToUse.join('\n');
+          if (casuallyFineTuned) {
+            prompt = '<?= $promptEnding ?>';
+          }
+          return prompt;
+        }
+
         // Function to request the completion
         function <?= $onSentClickFn ?>() {
           let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
@@ -443,7 +476,7 @@ class Meow_MWAI_Modules_Chatbot {
 
           // Reset the conversation if empty
           if (inputText === '') {
-            <?= $onGoingPrompt ?> = '<?= $context ?>' + '\n\n';
+            <?= $onGoingPrompt ?> = [];
             document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation').innerHTML = '';
             localStorage.removeItem('mwai-chat-<?= $id ?>');
             <?= $memorizedChat ?> = [];
@@ -457,17 +490,18 @@ class Meow_MWAI_Modules_Chatbot {
 
           // Add the user reply
           <?= $addReplyFn ?>(inputText, 'user');
-          <?= $onGoingPrompt ?> += '<?= $userName ?>' + inputText + '\n';
+          <?= $onGoingPrompt ?>.push({ who: '<?= $rawUserName ?>', says: inputText });
           input.value = '';
           input.setAttribute('rows', 1);
           input.disabled = true;
 
           // Let's build the prompt depending on the "system"
-          <?= $onGoingPrompt ?> += '<?= $aiName ?>';
-          let prompt = <?= $onGoingPrompt ?>;
-          if (<?= $casuallyFineTuned ? 1 : 0 ?>) {
-            prompt = inputText + '<?= $promptEnding ?>';
-          }
+          <?= $onGoingPrompt ?>.push({ who: '<?= $rawAiName ?>', says: '' });
+          let prompt = '<?= $context ?>' + '\n\n';
+          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, 15, <?= $casuallyFineTuned ? 1 : 0 ?>);
+
+          console.log('onGoingPrompt', <?= $onGoingPrompt ?>);
+          console.log('prompt', prompt);
 
           // Prompt for the images
           const data = mode === 'images' ? {
@@ -490,7 +524,7 @@ class Meow_MWAI_Modules_Chatbot {
             temperature: '<?= $temperature ?>',
             maxTokens: '<?= $maxTokens ?>',
             stop: '<?= $completionEnding ?>',
-            maxResults: '<?= $maxResults ?>',
+            maxResults: 1,
             apiKey: '<?= $apiKey ?>',
           };
 
@@ -517,7 +551,7 @@ class Meow_MWAI_Modules_Chatbot {
             }
             else {
               <?= $addReplyFn ?>(data.images ? data.images : data.html, 'ai');
-              <?= $onGoingPrompt ?> += data.answer + '\n';
+              <?= $onGoingPrompt ?>[<?= $onGoingPrompt ?>.length - 1].says = data.answer;
             }
             button.disabled = false;
             input.disabled = false;

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.83
+Stable tag: 0.9.84
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,10 @@ Languages: English.
 
 == Changelog ==
 
-= 0.9.83 (2023/02/13) =
+= 0.9.84 (2023/02/13) =
+* Fix: Compile conversations in order to avoid overwhelming the AI.
+* Fix: When over the limits, forms display an alert nicely.
+* Fix: Quick fix for Rank Math.
 * Update: Optimized the way the fields and handled and reset in the Content Generator and the Templates.
 * Add: Support of custom language (or type of language) in the Content Generator.
 * Info: I would like to focus on making everything amazingly perfect for the version 1.x. I keep the new features for a bit later, and make sure everything we have now is stable and nice, as well as the code quality. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
