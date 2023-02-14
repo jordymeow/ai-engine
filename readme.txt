@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.84
+Stable tag: 0.9.85
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,12 @@ The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plug
 Languages: English.
 
 == Changelog ==
+
+= 0.9.85 (2023/02/14) =
+* Fix: Minor issues related to max tokens.
+* Fix: Some issues with forms, now also better layouts, more types, etc.
+* Info: Happy Valentine's Day! 💕 I'll take a few hours off 😊
+* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
 
 = 0.9.84 (2023/02/13) =
 * Fix: Compile conversations in order to avoid overwhelming the AI.

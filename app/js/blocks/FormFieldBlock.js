@@ -1,12 +1,12 @@
-// Previous: 0.8.7
-// Current: 0.8.9
+// Previous: 0.8.9
+// Current: 0.9.85
 
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { Button, PanelBody, TextControl, SelectControl } = wp.components;
+const { Button, PanelBody, TextControl, SelectControl, Icon } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 function capitalizeFirstLetter(string) {
@@ -30,7 +30,7 @@ const FormFieldBlock = props => {
 	}, [id]);
 
 	useEffect(() => {
-		if (label) {
+		if (label !== undefined && label !== null) {
 			const newName = label.trim().replace(/ /g, '_').replace(/[^\w-]+/g, '').toUpperCase();
 			setAttributes({ name: newName });
 		}
@@ -56,7 +56,7 @@ const FormFieldBlock = props => {
 					options={[
 						{ label: 'Input', value: 'input' },
 						{ label: 'Select', value: 'select' },
-						// { label: 'Checkbox', value: 'checkbox' },
+						{ label: 'Checkbox', value: 'checkbox' },
 						{ label: 'Radio', value: 'radio' },
 						{ label: 'Text Area', value: 'textarea' },
 					]}
@@ -66,20 +66,15 @@ const FormFieldBlock = props => {
 						onChange={value => setAttributes({ placeholder: value })} />
 				}
 			</PanelBody>
-			{type === 'select' && <PanelBody title={
+			{(type === 'select' || type === 'radio' || type === 'checkbox') && <PanelBody title={
 				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
 					<div>{ __( 'Options' ) }</div>
-					<Button isPrimary isSmall onClick={(ev) => {
-							ev.preventDefault();
-							const newOptions = [...options];
-							newOptions.push({ label: '', value: '' });
-							setAttributes({ options: newOptions });
-						}}>Add Option</Button>
 				</div>}>
 				
 				{options.map((option, index) => {
 					return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
-						<TextControl style={{ flex: 2, marginBottom: 0, marginRight: 5 }}
+						<div style={{ marginRight: 5 }}>
+						<TextControl style={{ marginRight: 10 }}
 							label="Label"
 							isInline={true}
 							value={option.label}
@@ -89,7 +84,8 @@ const FormFieldBlock = props => {
 								setAttributes({ options: newOptions });
 							}
 						} />
-						<TextControl style={{ flex: 1, marginBottom: 0 }}
+						</div>
+						<TextControl style={{  }}
 							label="Value"
 							isSubtle={true}
 							value={option.value}
@@ -99,16 +95,25 @@ const FormFieldBlock = props => {
 								setAttributes({ options: newOptions });
 							}
 						} />
-						<div style={{ paddingTop: 29 }}>
-							<Button style={{ flex: 1, marginLeft: 5 }} isDestructive isSmall onClick={() => {
+						<div style={{ marginLeft: 5, position: 'relative', top: 23 }}>
+							<Button style={{ height: 30 }} isDestructive
+								icon="trash" isSmall onClick={() => {
 								const newOptions = [...options];
 								newOptions.splice(index, 1);
 								setAttributes({ options: newOptions });
-							}}>Remove</Button>
+							}} />
 						</div>
 						</div>
 						
 				})}
+
+				<Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={(ev) => {
+					//ev.preventDefault();
+					//ev.stopPropagation();
+					const newOptions = [...options];
+					newOptions.push({ label: '', value: '' });
+					setAttributes({ options: newOptions });
+				}}>Add Option</Button>
 			</PanelBody>}
 			<PanelBody title={ __( 'Optional' ) }>
 				<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
