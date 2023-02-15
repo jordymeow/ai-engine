@@ -34,18 +34,36 @@ class Meow_MWAI_OpenAI
     return 'N/A';
   }
 
-  public function listFineTunes()
+  public function listFineTunes( $clean = false )
   {
     $finetunes = $this->run('GET', '/fine-tunes');
-    $finetunes['data'] = array_map(function ($finetune) {
-      $finetune['suffix'] = $this->getSuffixForModel($finetune['fine_tuned_model']);
+
+    if ( $clean ) {
+      $deleted = [];
+      $finetunes['data'] = array_filter( $finetunes['data'], function ( $finetune ) use ( &$deleted ) {
+        $name = $finetune['fine_tuned_model'];
+        $exist = true;
+        try {
+          $finetune = $this->getModel( $name );
+        }
+        catch ( Exception $e ) {
+          $exist = false;
+          $deleted[] = $name;
+        }
+        return $exist;
+      });
+      $this->core->update_option( 'openai_finetunes_deleted', $deleted );
+    }
+
+    $finetunes['data'] = array_map( function ( $finetune ) {
+      $finetune['suffix'] = $this->getSuffixForModel( $finetune['fine_tuned_model'] );
       return $finetune;
     }, $finetunes['data']);
 
     // Get option openai_finetunes_deleted
     $deleted_finetunes = $this->core->get_option('openai_finetunes_deleted');
-    // Remove all deleted finetunes from the list, make a new array, without using array_filter
 
+    // Remove all deleted finetunes from the list, make a new array, without using array_filter
     $finetunes['data'] = array_values(array_filter($finetunes['data'], function ($finetune) use ($deleted_finetunes) {
       return !in_array($finetune['fine_tuned_model'], $deleted_finetunes);
     }));
@@ -69,23 +87,28 @@ class Meow_MWAI_OpenAI
     return $finetunes;
   }
 
-  public function uploadFile($filename, $data)
+  public function uploadFile( $filename, $data )
   {
     $result = $this->run('POST', '/files', null, ['data' => $data, 'filename' => $filename]);
     return $result;
   }
 
-  public function deleteFile($fileId)
+  public function deleteFile( $fileId )
   {
     return $this->run('DELETE', '/files/' . $fileId);
   }
 
-  public function deleteFineTune($modelId)
+  public function getModel( $modelId )
+  {
+    return $this->run('GET', '/models/' . $modelId);
+  }
+
+  public function deleteFineTune( $modelId )
   {
     return $this->run('DELETE', '/models/' . $modelId);
   }
 
-  public function downloadFile($fileId)
+  public function downloadFile( $fileId )
   {
     return $this->run('GET', '/files/' . $fileId . '/content', null, null, false);
   }

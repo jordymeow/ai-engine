@@ -12,6 +12,66 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->mode = "completion";
   }
 
+  // Quick and dirty token estimation
+  function estimate_tokens( $text, $method = "max" )
+  {
+    // method can be "average", "words", "chars", "max", "min", defaults to "max"
+    // "average" is the average of words and chars
+    // "words" is the word count divided by 0.75
+    // "chars" is the char count divided by 4
+    // "max" is the max of word and char
+    // "min" is the min of word and char
+    $word_count = count(explode(" ", $text));
+    $char_count = strlen($text);
+    $tokens_count_word_est = $word_count / 0.75;
+    $tokens_count_char_est = $char_count / 4.0;
+    $output = 0;
+    if ( $method == 'average' ) {
+      $output = ($tokens_count_word_est + $tokens_count_char_est) / 2;
+    }
+    else if ( $method == 'words' ) {
+      $output = $tokens_count_word_est;
+    }
+    else if ( $method == 'chars' ) {
+      $output = $tokens_count_char_est;
+    }
+    else if ( $method == 'max') {
+      $output = max($tokens_count_word_est, $tokens_count_char_est);
+    }
+    else if ( $method == 'min') {
+      $output = min($tokens_count_word_est, $tokens_count_char_est);
+    }
+    else {
+      // return invalid method message
+      return "Invalid method. Use 'average', 'words', 'chars', 'max', or 'min'.";
+    }
+    return  (int)$output;
+  }
+
+
+  /**
+   * Make sure the maxTokens is not greater than the model's context length.
+   */
+  private function validateMaxTokens() {
+    $contains = strpos( $this->model, 'davinci' ) !== false;
+    $realMax = $contains ? 4096 : 2048;
+    $estimatedTokens = $this->estimate_tokens( $this->prompt );
+    $realMax = $realMax - $estimatedTokens - 32;
+    if ( $this->maxTokens > $realMax ) {
+      $this->maxTokens = $realMax;
+    }
+  }
+
+  /**
+   * Given a prompt, the model will return one or more predicted completions.
+   * It can also return the probabilities of alternative tokens at each position.
+   * @param string $prompt The prompt to generate completions.
+   */
+  public function setPrompt( $prompt ) {
+    parent::setPrompt( $prompt );
+    $this->validateMaxTokens();
+  }
+
   /**
    * The maximum number of tokens to generate in the completion.
    * The token count of your prompt plus max_tokens cannot exceed the model's context length.
@@ -20,6 +80,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setMaxTokens( $maxTokens ) {
     $this->maxTokens = intval( $maxTokens );
+    $this->validateMaxTokens();
   }
 
   /**

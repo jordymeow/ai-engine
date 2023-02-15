@@ -370,9 +370,10 @@ class Meow_MWAI_Rest
 
 	function openai_finetunes_get( $request ) {
 		try {
-			//$params = $request->get_json_params();
+			$params = $request->get_query_params();
+			$clean = isset( $params['clean'] ) ? true : false;
 			$openai = new Meow_MWAI_OpenAI( $this->core );
-			$finetunes = $openai->listFineTunes();
+			$finetunes = $openai->listFineTunes( $clean );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {

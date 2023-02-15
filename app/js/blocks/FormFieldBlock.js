@@ -1,11 +1,11 @@
-// Previous: 0.8.9
-// Current: 0.9.85
+// Previous: 0.9.85
+// Current: 0.9.86
 
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
-const { useMemo, useEffect } = wp.element;
+const { useEffect } = wp.element;
 const { Button, PanelBody, TextControl, SelectControl, Icon } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
@@ -29,12 +29,13 @@ const FormFieldBlock = props => {
 		}
 	}, [id]);
 
-	useEffect(() => {
-		if (label !== undefined && label !== null) {
-			const newName = label.trim().replace(/ /g, '_').replace(/[^\w-]+/g, '').toUpperCase();
+	const onUpdateLabel = (value) => {
+		setAttributes({ label: value });
+		const newName = value.trim().replace(/ /g, '_').replace(/[^\w-]+/g, '').toUpperCase();
+		if (newName) {
 			setAttributes({ name: newName });
 		}
-	}, [label]);
+	}
 
 	return (
 		<>
@@ -50,7 +51,7 @@ const FormFieldBlock = props => {
 		</AiBlockContainer>
 		<InspectorControls>
 			<PanelBody title={ __( 'Field' ) }>
-			<TextControl label="Label Text" value={label} onChange={value => setAttributes({ label: value })} />
+			<TextControl label="Label Text" value={label} onChange={onUpdateLabel} />
 				<TextControl label="Field Name" value={name} onChange={value => setAttributes({ name: value })} />
 				<SelectControl label="Field Type" value={type} onChange={value => setAttributes({ type: value })}
 					options={[
@@ -104,12 +105,9 @@ const FormFieldBlock = props => {
 							}} />
 						</div>
 						</div>
-						
 				})}
 
 				<Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={(ev) => {
-					//ev.preventDefault();
-					//ev.stopPropagation();
 					const newOptions = [...options];
 					newOptions.push({ label: '', value: '' });
 					setAttributes({ options: newOptions });

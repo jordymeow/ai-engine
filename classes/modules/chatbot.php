@@ -164,6 +164,7 @@ class Meow_MWAI_Modules_Chatbot {
     // Placeholders
     else {
       $userName = $this->handlePlaceholders( $userName, $guestName );
+      $userName = '<div class="mwai-name-text">' . $userName . '</div>';
     }
     return $userName;
   }
@@ -176,6 +177,9 @@ class Meow_MWAI_Modules_Chatbot {
     // Custom avatar
     else if ( $this->core->isUrl( $aiName ) ) {
       $aiName = '<div class="mwai-avatar"><img src="' . $aiName . '" /></div>';
+    }
+    else {
+      $aiName = '<div class="mwai-name-text">' . $aiName . '</div>';
     }
     return $aiName;
   }
@@ -326,6 +330,7 @@ class Meow_MWAI_Modules_Chatbot {
         let isWindow = <?= $window ? 'true' : 'false' ?>;
         let isDebugMode = <?= $debugMode ? 'true' : 'false' ?>;
         let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
+        let isCasuallyFineTuned = <?= $casuallyFineTuned ? 'true' : 'false' ?>;
         let mode = '<?= $mode ?>';
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
         let <?= $memorizedChat ?> = [];
@@ -336,10 +341,15 @@ class Meow_MWAI_Modules_Chatbot {
             memorizedChat: <?= $memorizedChat ?>,
             parameters: {
               mode: mode,
+              model: '<?= $model ?>',
+              temperature: '<?= $temperature ?>',
+              maxTokens: '<?= $maxTokens ?>',
               context: '<?= $context ?>',
+              start_sentence: '<?= $startSentence ?>',
               isMobile: isMobile,
               isWindow: isWindow,
               isFullscreen: isFullscreen,
+              isCasuallyFineTuned: isCasuallyFineTuned,
             }
           };
         }
@@ -447,14 +457,14 @@ class Meow_MWAI_Modules_Chatbot {
           }
         }
 
-        function <?= $onTidyOnGoingPromptFn ?>(onGoingPrompt, last = 15, casuallyFineTuned = false) {
+        function <?= $onTidyOnGoingPromptFn ?>(onGoingPrompt, last = 15) {
           let onGoingPromptLength = onGoingPrompt.length;
           let start = (onGoingPromptLength - last) < 0 ? 0 : (onGoingPromptLength - last);
-          if (casuallyFineTuned) { onGoingPromptLength--; }
+          if (isCasuallyFineTuned) { onGoingPromptLength--; }
           let conversationToUse = onGoingPrompt.slice(start, onGoingPromptLength);
 
           // Casually fine tuned, let's use the last question
-          if (casuallyFineTuned) {
+          if (isCasuallyFineTuned) {
             let lastLine = conversationToUse[conversationToUse.length - 1];
             let prompt = lastLine.says + '<?= $promptEnding ?>'
             return prompt;
@@ -463,7 +473,7 @@ class Meow_MWAI_Modules_Chatbot {
           // Otherwise let's compile the latest conversation
           conversationToUse = conversationToUse.map(x => x.who + x.says);
           let prompt = conversationToUse.join('\n');
-          if (casuallyFineTuned) {
+          if (isCasuallyFineTuned) {
             prompt = '<?= $promptEnding ?>';
           }
           return prompt;
@@ -498,7 +508,7 @@ class Meow_MWAI_Modules_Chatbot {
           // Let's build the prompt depending on the "system"
           <?= $onGoingPrompt ?>.push({ who: '<?= $rawAiName ?>', says: '' });
           let prompt = '<?= $context ?>' + '\n\n';
-          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, 15, <?= $casuallyFineTuned ? 1 : 0 ?>);
+          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, 15);
 
           console.log('onGoingPrompt', <?= $onGoingPrompt ?>);
           console.log('prompt', prompt);

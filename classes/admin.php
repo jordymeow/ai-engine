@@ -104,7 +104,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		//if ( $post->post_type === 'post' ) {
 			$actions['ai_titles'] = '<a class="mwai-link-title" href="#" data-id="' .
 				$post->ID . '" data-title="' . $post->post_title . '">
-				<span class="dashicons dashicons-update"></span> Generate Titles</a>';
+				<span class="dashicons dashicons-update"></span> Suggest Titles</a>';
 		//}
 		return $actions;
 	}

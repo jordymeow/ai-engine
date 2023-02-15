@@ -1,5 +1,5 @@
-// Previous: 0.7.1
-// Current: 0.8.1
+// Previous: 0.8.1
+// Current: 0.9.86
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -84,8 +84,9 @@ const retrieveFiles = async () => {
   return res?.files?.data;
 }
 
-const retrieveFineTunes = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { nonce: restNonce });
+const retrieveFineTunes = async (clean = false) => {
+  const queryClean = clean ? "?clean=true" : "";
+  const res = await nekoFetch(`${apiUrl}/openai_finetunes${queryClean}`, { nonce: restNonce });
   return res?.finetunes?.data;
 }
 
@@ -110,7 +111,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data}/ >
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -129,11 +130,13 @@ const FineTuning = ({ options, updateOption }) => {
   const [ isModeTrain, setIsModeTrain ] = useState(true);
   const { models, model, setModel } = useModels(options);
   const [ suffix, setSuffix ] = useState('meow');
+  const [ cleanMode, setCleanMode ] = useState(false);
   const { isLoading: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
     queryKey: ['datasets'], queryFn: retrieveFiles
   });
   const { isLoading: isBusyFineTunes, error: errFineTunes, data: dataFineTunes } = useQuery({
-    queryKey: ['finetunes'], queryFn: retrieveFineTunes
+    queryKey: ['finetunes', { cleanMode }],
+    queryFn: () => retrieveFineTunes(cleanMode),
   });
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
@@ -153,7 +156,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries('datasets');
+    await queryClient.invalidateQueries({ queryKey: ['datasets'] });
   }
 
   const onRefreshFiles = async () => {
@@ -190,7 +193,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const refreshFineTunes = async () => {
-    await queryClient.invalidateQueries('finetunes');
+    await queryClient.invalidateQueries({ queryKey: ['finetunes'] });
   }
 
   const onRefreshFineTunes = async () => {
@@ -229,10 +232,12 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   useEffect(() => {
-    if (!builderData || builderData.length === 0) {
+    if ((builderData.length === 0 || !builderData) && localStorage.getItem('mwai_builder_data')) {
       const data = localStorage.getItem('mwai_builder_data');
-      if (data) {
+      try {
         setBuilderData(JSON.parse(data));
+      } catch (e) {
+        console.error(e);
       }
     }
   }, []);
@@ -391,7 +396,7 @@ const FineTuning = ({ options, updateOption }) => {
     if (!dataFineTunes) {
       return [];
     }
-    return dataFineTunes.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
@@ -408,7 +413,7 @@ const FineTuning = ({ options, updateOption }) => {
     })
   }, [dataFineTunes]);
 
-  const busy = isBusyFiles || busyAction;
+  const busy = isBusyFiles || busyAction || isBusyFineTunes;
 
   const exportAsCSV = () => {
     const csv = Papa.unparse(builderData);
@@ -427,8 +432,8 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
+      const data = builderData.map(x => JSON.stringify(x)).join("\n");
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
@@ -450,13 +455,12 @@ const FineTuning = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; 
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
     const rawModel = models.find(x => x.id === model);
-    if (!rawModel) return '';
     return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
   }, [suffix, model]);
 
@@ -469,13 +473,19 @@ const FineTuning = ({ options, updateOption }) => {
       const isCsv = file.name.endsWith('.csv');
       if (!isJson && !isJsonl && !isCsv) {
         alert("This only supports JSON, JSONL, and CSV files.");
+        console.log(file);
         continue;
       }
       reader.onload = async (e) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try {
+            data = JSON.parse(fileContent);
+          } catch(e) {
+            console.error(e);
+            data = [];
+          }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -483,17 +493,16 @@ const FineTuning = ({ options, updateOption }) => {
             x = x.trim();
             try {
               return JSON.parse(x);
-            }
-            catch (e) {
+            } catch (e) {
               console.log(e, x);
-              return null
+              return null;
             }
-            
-          });
+          }).filter(x => x !== null);
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
+          console.log('The CSV was loaded.', data);
         }
         const formattedData = data.map(x => {
           const values = Object.keys(x).reduce((acc, key) => {
@@ -503,8 +512,8 @@ const FineTuning = ({ options, updateOption }) => {
 
           const promptColumns = ['prompt', 'question', 'q'];
           const completionColumns = ['completion', 'answer', 'a'];
-          const promptKey = promptColumns.find(x => values[x]);
-          const completionKey = completionColumns.find(x => values[x]);
+          const promptKey = promptColumns.find(k => values[k]);
+          const completionKey = completionColumns.find(k => values[k]);
 
           return {
             prompt: values[promptKey],
@@ -602,6 +611,10 @@ const FineTuning = ({ options, updateOption }) => {
           data={fineTuneRows} columns={fineTuneColumns} 
           emptyMessage={<>You do not have any fine-tuned jobs yet.</>}
         />
+        <NekoSpacer height={30} />
+        <NekoCheckbox id="cleanMode" label="Enable Clean Mode" value="1" checked={cleanMode}
+          description="For some mystical reasons, OpenAI still returns the old models even after you delete them. AI Engine keeps everything clean here. However, the first time you use it, it will not know which models are deleted. Check this and the Refresh Model will (slowly) clean the list."
+          onChange={setCleanMode} />
       </>}
 
       {isModeTrain && section === 'files' && <>
@@ -674,40 +687,6 @@ const FineTuning = ({ options, updateOption }) => {
           </ul>
         </>}
       </>}
-
-      <NekoModal isOpen={fileForFineTune}
-        title="Train a new model"
-        onOkClick={onStartFineTune}
-        onRequestClose={() => setFileForFineTune()}
-        onCancelClick={() => setFileForFineTune()}
-        ok="Start"
-        disabled={busyAction}
-        content={<>
-          <p>
-            Exciting! 🎵 You are about to create your own new model, based on your dataset. You simply need to select a base model, and optionally, to modify the <a href="https://beta.openai.com/docs/guides/fine-tuning/hyperparameters" target="_blank">hyperparameters</a>. Before starting the process, make sure that:
-          </p>
-          <ul>
-            <li>✅ The dataset is well-defined.</li>
-            <li>✅ You understand <a href="https://openai.com/api/pricing/#faq-fine-tuning-pricing-calculation" target="_blank">OpenAI pricing</a> about fine-tuning.</li>
-          </ul>
-          <label>Base model:</label>
-          <NekoSpacer height={5} />
-          <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
-            {models.map((x) => (
-              <NekoOption value={x.id} label={x.name}></NekoOption>
-            ))}
-          </NekoSelect>
-          <NekoSpacer height={5} />
-          <small>For now, the hyperparameters can't be modified - they are set automatically by OpenAI.</small>
-          <NekoSpacer height={10} />
-          <label>Suffix (for new model name):</label>
-          <NekoSpacer height={5} />
-          <NekoInput value={suffix} onChange={setSuffix} />
-          <NekoSpacer height={5} />
-          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
-        </>
-        }
-      />
     </NekoContainer>
   </>);
 };

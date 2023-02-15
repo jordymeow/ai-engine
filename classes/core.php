@@ -7,10 +7,10 @@ require_once( MWAI_PATH . '/vendor/autoload.php' );
 // Price as of January 2023: https://openai.com/api/pricing/
 define( 'MWAI_OPENAI_PRICING', [
   // Base models:
-  [ "model" => "davinci", "price" => 0.02, "type" => "token", "unit" => 1 / 1000 ],
-  [ "model" => "curie", "price" => 0.002, "type" => "token", "unit" => 1 / 1000 ],
-  [ "model" => "babbage", "price" => 0.0005, "type" => "token", "unit" => 1 / 1000 ],
-  [ "model" => "ada", "price" => 0.0004, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "davinci", "price" => 0.02, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 4000 ],
+  [ "model" => "curie", "price" => 0.002, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
+  [ "model" => "babbage", "price" => 0.0005, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
+  [ "model" => "ada", "price" => 0.0004, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
   // Image models:
   [ "model" => "dall-e", "type" => "image", "unit" => 1, "options" => [
       [ "option" => "1024x1024", "price" => 0.02 ],
@@ -19,10 +19,10 @@ define( 'MWAI_OPENAI_PRICING', [
     ],
   ],
   // Fine-tuned models:
-  [ "model" => "fn-davinci", "price" => 0.12, "type" => "token", "unit" => 1 / 1000 ],
-  [ "model" => "fn-curie", "price" => 0.012, "type" => "token", "unit" => 1 / 1000 ],
-  [ "model" => "fn-babbage", "price" => 0.0024, "type" => "token", "unit" => 1 / 1000 ],
-  [ "model" => "fn-ada", "price" => 0.0016, "type" => "token", "unit" => 1 / 1000 ],
+  [ "model" => "fn-davinci", "price" => 0.12, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 4000 ],
+  [ "model" => "fn-curie", "price" => 0.012, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
+  [ "model" => "fn-babbage", "price" => 0.0024, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
+  [ "model" => "fn-ada", "price" => 0.0016, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
 ]);
 
 define( 'MWAI_CHATBOT_PARAMS', [

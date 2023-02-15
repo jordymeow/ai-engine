@@ -105,11 +105,16 @@
 }
 
 #mwai-chat-id .mwai-name {
-  color: #a0a0a0;
-  margin-right: 20px;
+  color: var(--mwai-fontColor);
+  margin-right: 5px;
+}
+
+#mwai-chat-id .mwai-name .mwai-name-text {
+  opacity: 0.50;
 }
 
 #mwai-chat-id .mwai-name .mwai-avatar {
+  margin-right: 10px;
   width: 40px;
   height: 40px;
   background: var(--mwai-aiAvatarBackgroundColor);
