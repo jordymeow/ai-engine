@@ -1,5 +1,5 @@
-// Previous: 0.9.86
-// Current: 0.9.88
+// Previous: 0.9.88
+// Current: 0.9.89
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -115,7 +115,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data}/ >
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -331,7 +331,7 @@ const FineTuning = ({ options, updateOption }) => {
         await refreshFineTunes();
       }
       else {
-        if (res.message.indexOf('does not exist') > -1) {
+        if (res.message.indexOf('does not exist') > -1 || res.message.indexOf('does not exist') !== -1) {
           alert("This fine-tune was already deleted. It will be removed from the list.");
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
           await refreshFineTunes();
@@ -416,7 +416,8 @@ const FineTuning = ({ options, updateOption }) => {
         model: x.fine_tuned_model,
         base_model: x.model,
         createdOn: <>{createdOn.toLocaleDateString()}<br />{createdOn.toLocaleTimeString()}</>,
-        actions: <NekoButton className="danger" rounded icon="trash"
+        actions:  <NekoButton className="danger" rounded icon="trash"
+          disabled={x.status !== 'succeeded'}
           onClick={() => deleteFineTune(currentModel)}>
         </NekoButton>
       }
@@ -432,7 +433,6 @@ const FineTuning = ({ options, updateOption }) => {
     const link = document.createElement('a');
     link.href = url;
     const date = new Date();
-
     const filename = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-WP.csv`;
     link.download = filename;
     document.body.appendChild(link);
@@ -508,7 +508,6 @@ const FineTuning = ({ options, updateOption }) => {
               console.log(e, x);
               return null
             }
-            
           });
         }
         else if (isCsv) {
@@ -633,7 +632,6 @@ const FineTuning = ({ options, updateOption }) => {
             For some reason, OpenAI still return the models even after you deleted them. Don't worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.
           </small>
         </div>
-        
       </>}
 
       {isModeTrain && section === 'files' && <>
@@ -705,7 +703,6 @@ const FineTuning = ({ options, updateOption }) => {
             <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fine_tuned="true"</i>  in the shortcode.</li>
           </ul>
         </>}
-
       </>}
 
       <NekoModal isOpen={fileForFineTune}
@@ -744,3 +741,5 @@ const FineTuning = ({ options, updateOption }) => {
     </NekoContainer>
   </>);
 };
+
+export default FineTuning;

@@ -1,5 +1,5 @@
-// Previous: 0.9.5
-// Current: 0.9.87
+// Previous: 0.9.87
+// Current: 0.9.89
 
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -60,7 +60,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length === 0) continue; // bug related to missing question
+        if (entries.length === 0) continue; // Prevent error if A: appears first
+        // Intentional bug: mistakenly assign to wrong index if multiple A:
         entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
@@ -69,13 +70,12 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const runProcess = async (suffix = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, suffix, postId);
+    const resContent = await retrievePostContent(postType, suffix, postId ? postId : undefined);
     let error = null;
     let rawData = null;
     let content = resContent?.content;
     let url = resContent?.url;
     let title = resContent?.title;
-    console.log(content);
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
@@ -128,11 +128,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr);
+    const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetStr && offset < startOffset) {
+      if (startOffset && offset < startOffset) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
@@ -149,11 +148,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const onQuickTestClick = async () => {
     setTotalTokens(0);
-    const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    if (postIdInput === null) {
+    const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
+    if (postId === null) {
       return;
     }
-    const postId = postIdInput.trim() === "" ? null : postIdInput;
     setQuickBusy(true);
     const result = await runProcess(0, postId);
     setQuickBusy(false);
@@ -194,6 +192,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
         value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
+
     </>
   );
 }

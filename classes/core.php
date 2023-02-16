@@ -220,19 +220,10 @@ class Meow_MWAI_Core
 	}
 
 	function get_session_id() {
-		if ( !isset( $_SESSION ) ) {
-			//error_log("AI Engine: There is no session.");
-			//return uniqid();
-			return "N/A";
+		if ( isset( $_COOKIE['mwai_session_id'] ) ) {
+			return $_COOKIE['mwai_session_id'];
 		}
-		if ( isset( $_SESSION['mwai_session_id'] ) ) {
-			return $_SESSION['mwai_session_id'];
-		}
-		else {
-			$session_id = uniqid();
-			$_SESSION['mwai_session_id'] = $session_id;
-			return $session_id;
-		}
+		return "N/A";
 	}
 
 	// Get the UserID from the data, or from the current user
