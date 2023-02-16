@@ -58,6 +58,18 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		$image_html = "<img style='height: 22px; margin-bottom: -5px; margin-right: 10px;' src='${url}' alt='UI Engine' />";
 		$args = null;
 		
+		// If it's WP_DEBUG then let's add a menu
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			exit;
+			$args = array(
+				'id' => 'mwai-debug',
+				'title' => $image_html . __( 'AI Debug', 'ai-engine' ),
+				'href' => admin_url( 'tools.php?page=mwai_debug' ),
+				'meta' => array( 'class' => 'mwai-debug' ),
+			);
+		}		
+
+
 		if ( $this->playground ) {
 			$args = array(
 				'id' => 'mwai-playground',

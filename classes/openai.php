@@ -42,13 +42,16 @@ class Meow_MWAI_OpenAI
       $deleted = [];
       $finetunes['data'] = array_filter( $finetunes['data'], function ( $finetune ) use ( &$deleted ) {
         $name = $finetune['fine_tuned_model'];
+        $isSucceeded = $finetune['status'] === 'succeeded';
         $exist = true;
-        try {
-          $finetune = $this->getModel( $name );
-        }
-        catch ( Exception $e ) {
-          $exist = false;
-          $deleted[] = $name;
+        if ($isSucceeded) {
+          try {
+            $finetune = $this->getModel( $name );
+          }
+          catch ( Exception $e ) {
+            $exist = false;
+            $deleted[] = $name;
+          }
         }
         return $exist;
       });
