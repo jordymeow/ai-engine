@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.86
+Stable tag: 0.9.87
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,13 +63,17 @@ Languages: English.
 
 == Changelog ==
 
+= 0.9.87 (2023/02/16) =
+* Add: New placeholders {TITLE} and {URL} for the Q&A Generator module.
+* Update: Avoid an useless warning or two.
+* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
+
 = 0.9.86 (2023/02/15) =
 * Update: Handle the colors more naturally depending on the CSS variables.
 * Update: Make sure the max tokens are respected and not over-setted.
 * Update: Better handling of max tokens with forms.
 * Add: Enhanced the way the models and managed.
 * Fix: Issues with forms using non-latin characters.
-* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
 
 = 0.9.85 (2023/02/14) =
 * Fix: Minor issues related to max tokens.

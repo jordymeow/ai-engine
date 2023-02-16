@@ -496,7 +496,11 @@ class Meow_MWAI_Rest
 		$content = apply_filters( 'the_content', $post->post_content );
 		$content = wp_strip_all_tags( $content );
 		$content = preg_replace( '/[\r\n]+/', "\n", $content );
-		return new WP_REST_Response([ 'success' => true, 'content' => $content ], 200 );
+		$title = $post->post_title;
+		$excerpt = $post->post_excerpt;
+		$url = get_permalink( $post->ID );
+		return new WP_REST_Response([ 'success' => true, 'content' => $content,
+			'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
 	}
 
 	function templates_get( $request ) {

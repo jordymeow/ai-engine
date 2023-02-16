@@ -221,8 +221,9 @@ class Meow_MWAI_Core
 
 	function get_session_id() {
 		if ( !isset( $_SESSION ) ) {
-			error_log("AI Engine: There is no session.");
-			return uniqid();
+			//error_log("AI Engine: There is no session.");
+			//return uniqid();
+			return "N/A";
 		}
 		if ( isset( $_SESSION['mwai_session_id'] ) ) {
 			return $_SESSION['mwai_session_id'];
