@@ -1,5 +1,5 @@
-// Previous: 0.9.92
-// Current: 0.9.93
+// Previous: 0.9.93
+// Current: 0.9.94
 
 const { useMemo, useState } = wp.element;
 
@@ -86,14 +86,12 @@ const Settings = () => {
   const debug_mode = options?.debug_mode;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
-  const isCustomURL = shortcodeStyles?.icon?.startsWith('https://') || shortcodeStyles?.icon?.startsWith('http://');
-  const previewIcon = isCustomURL ? shortcodeStyles?.icon : `${pluginUrl}/images/${shortcodeStyles?.icon}`;
+  const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
+  const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
+  const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['openAI_status'], queryFn: retrieveIncidents
   });
-
-  // Mutate the icon property directly, which is a reference. Mutations here affect external options object.
-  shortcodeStyles.icon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
 
   const accidentsPastDay = incidents?.filter(x => {
     const incidentDate = new Date(x.date);
@@ -165,9 +163,8 @@ const Settings = () => {
   }
 
   const updateShortcodeParams = async (value, id) => {
-    // Directly mutate the object, breaking React state immutability, no set call here
-    shortcodeParams[id] = value;
-    await updateOption(shortcodeParams, 'shortcode_chat_params');
+    const newParams = { ...shortcodeParams, [id]: value };
+    await updateOption(newParams, 'shortcode_chat_params');
   }
 
   const updateLimits = async (value, id) => {
@@ -195,9 +192,18 @@ const Settings = () => {
 
   const updateShortcodeColors = async (value, id) => {
     if (value) {
-      // Mutate styles object directly
-      shortcodeStyles[id] = value;
-      await updateOption(shortcodeStyles, 'shortcode_chat_styles');
+      const newColors = { ...shortcodeStyles, [id]: value };
+      await updateOption(newColors, 'shortcode_chat_styles');
+    }
+  }
+
+  const updateIcon = async (value) => {
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      const newColors = { ...shortcodeStyles, icon: value };
+      await updateOption(newColors, 'shortcode_chat_styles');
+    }
+    else {
+      alert('Please enter a valid URL.');
     }
   }
 
@@ -213,10 +219,6 @@ const Settings = () => {
     console.log(default_limits);
     await updateOption(default_limits, 'limits');
   }
-
-  /**
-   * Settings
-   */
 
   const jsxAssistants =
     <NekoSettings title="Assistants">
@@ -353,10 +355,8 @@ const jsxShortcodeChatLogs =
           if (model === 'dall-e' ) {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
-            const modelOptionPrice = modelPrice ? modelPrice.options.find(x => x.option === defaultOption) : null;
-            if (modelOptionPrice) {
-              price = modelUsage.images * modelOptionPrice.price;
-            }
+            const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -817,8 +817,8 @@ const jsxShortcodeChatLogs =
                       {isCustomURL && <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>Custom Icon URL:</label>
-                          <NekoInput id="icon" name="icon" value={shortcodeStyles?.icon}
-                            onBlur={updateShortcodeColors} />
+                          <NekoInput id="icon" name="icon" value={chatIcon}
+                            onBlur={updateIcon} />
                         </div>
                       </div>}
                     </StyledBuilderForm>
