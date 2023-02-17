@@ -1,5 +1,5 @@
-// Previous: 0.8.1
-// Current: 0.9.83
+// Previous: 0.9.83
+// Current: 0.9.92
 
 const { useMemo, useEffect, useState, useRef } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
@@ -78,4 +78,8 @@ const useModels = (options) => {
   return { model, models, setModel, isFineTunedModel };
 }
 
-export { OptionsCheck, cleanSections, useModels };
+const toHTML = (html) => {
+  return <span dangerouslySetInnerHTML={{ __html: html }}></span>
+}
+
+export { OptionsCheck, cleanSections, useModels, toHTML };

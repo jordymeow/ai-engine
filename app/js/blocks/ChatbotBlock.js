@@ -1,7 +1,7 @@
-// Previous: 0.3.4
-// Current: 0.9.89
+// Previous: 0.9.89
+// Current: 0.9.92
 
-import i18n from "../i18n";
+import i18n from "../../i18n";
 import { meowIcon } from "./common";
 
 const { __ } = wp.i18n;
