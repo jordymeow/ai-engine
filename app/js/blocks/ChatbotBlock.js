@@ -1,6 +1,7 @@
-// Previous: 0.1.0
-// Current: 0.3.4
+// Previous: 0.3.4
+// Current: 0.9.89
 
+import i18n from "../i18n";
 import { meowIcon } from "./common";
 
 const { __ } = wp.i18n;
@@ -29,9 +30,9 @@ const FormFieldBlock = props => {
 		<>
 		{html}
 		<InspectorControls>
-			<PanelBody title={ __( 'Chatbot' ) }>
+			<PanelBody title={i18n.COMMON.CHATBOT}>
 			</PanelBody>
-			<PanelBody title={ __( 'Settings' ) }>
+			<PanelBody title={i18n.COMMON.SETTINGS}>
 			</PanelBody>
 		</InspectorControls>
 		</>
@@ -44,7 +45,7 @@ const createChatbotBlock = () => {
 		description: <>This feature is <b>being built</b>. I will allow to create a chatbot. Coming soon!</>,
 		icon: meowIcon,
 		category: 'layout',
-		keywords: [ __( 'ai' ), __( 'openai' ), __( 'chatbot' ) ],
+		keywords: [ 'ai', 'openai', 'chatbot' ],
 		attributes: {
 			id: {
 				type: 'string',

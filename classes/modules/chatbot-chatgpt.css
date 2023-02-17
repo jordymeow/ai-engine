@@ -111,6 +111,7 @@
 
 #mwai-chat-id .mwai-name .mwai-name-text {
   opacity: 0.50;
+  white-space: nowrap;
 }
 
 #mwai-chat-id .mwai-name .mwai-avatar {

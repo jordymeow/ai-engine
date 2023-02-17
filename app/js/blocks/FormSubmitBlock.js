@@ -1,5 +1,5 @@
-// Previous: 0.9.8
-// Current: 0.9.84
+// Previous: 0.9.84
+// Current: 0.9.89
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
@@ -19,22 +19,17 @@ const saveFormField = (props) => {
 
 const FormSubmitBlock = props => {
 	const { models } = useModels(options);
-	const { attributes, setAttributes } = props;
-	const { label, prompt, model, temperature, outputElement, placeholders = [] } = attributes;
+	const { attributes: { label, prompt, model, temperature, outputElement, placeholders = [] }, setAttributes } = props;
 
 	useEffect(() => {
-		const placeholders = prompt.match(/{([^}]+)}/g);
-		if (placeholders) {
-			setAttributes({ placeholders: placeholders.map(placeholder => placeholder.replace('{', '').replace('}', '')) });
+		const matches = prompt.match(/{([^}]+)}/g);
+		if (matches) {
+			const freshPlaceholders = matches.map(match => match.replace('{', '').replace('}', ''));
+			if (freshPlaceholders.join(',') !== placeholders.join(',')) {
+				setAttributes({ placeholders: freshPlaceholders });
+			}
 		}
 	}, [prompt]);
-
-	const placeholdersRef = React.useRef([]);
-	useEffect(() => {
-		if (placeholdersRef.current !== placeholders) {
-			placeholdersRef.current = placeholders;
-		}
-	}, [placeholders]);
 
 	const fieldsCount = useMemo(() => {
 		return placeholders ? placeholders.length : 0;
@@ -106,6 +101,10 @@ const createSubmitBlock = () => {
 			temperature: {
 				type: 'number',
 				default: 0.8
+			},
+			placeholders: {
+				type: 'array',
+				default: []
 			}
 		},
 		edit: FormSubmitBlock,

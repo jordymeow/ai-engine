@@ -1,6 +1,7 @@
-// Previous: 0.8.2
-// Current: 0.8.7
+// Previous: 0.8.7
+// Current: 0.9.89
 
+import i18n from "../i18n";
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
@@ -40,7 +41,7 @@ const FormContainerBlock = props => {
 				</div>
 			</AiBlockContainer>
 			<InspectorControls>
-				<PanelBody title={ __( 'Style' ) }>
+				<PanelBody title={i18n.COMMON.STYLE}>
 				<p>The theme will be applied to all the AI elements in this container.</p>
 					<SelectControl label="Theme" value={theme} onChange={value => setAttributes({ theme: value })}
 						options={[
