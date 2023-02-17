@@ -226,7 +226,7 @@ class Meow_MWAI_Modules_Chatbot {
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );
     $window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
     $fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
-    $icon = addslashes( trim($atts['icon']) );
+    $icon = isset( $atts['icon'] ) ? addslashes( trim( $atts['icon'] ) ) : "";
     $iconText = trim($atts['icon_text']);
     $iconPosition = addslashes( trim($atts['icon_position']) );
     $style = $atts['style'];

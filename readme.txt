@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.94
+Stable tag: 0.9.95
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,8 @@ Languages: English.
 
 == Changelog ==
 
-= 0.9.94 (2023/02/17) =
+= 0.9.95 (2023/02/17) =
+* Fix: Minor fixes related to notices and translations.
 * Update: Enhanced Shortcode Builder.
 * Add: UI for Custom Icon, Icon Message.
 * Fix: Better control of the dirty state of the Post Editor.
