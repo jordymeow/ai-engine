@@ -41,7 +41,6 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'text_input_placeholder' => 'Type your message...',
 	'style' => 'chatgpt',
 	'window' => false,
-	'icon' => null,
 	'icon_text' => '',
 	'icon_position' => 'bottom-right',
 	'fullscreen' => false,
@@ -106,6 +105,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_syntax_highlighting' => false,
 	'shortcode_chat_logs' => '', // 'file', 'db', 'file,db'
 	'shortcode_chat_inject' => false,
+	'shortcode_chat_styles' => [],
 	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
 	'openai_usage' => [],
