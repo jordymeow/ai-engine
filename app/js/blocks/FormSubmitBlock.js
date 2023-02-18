@@ -1,5 +1,5 @@
-// Previous: 0.9.84
-// Current: 0.9.89
+// Previous: 0.9.89
+// Current: 0.9.97
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
@@ -17,7 +17,7 @@ const saveFormField = (props) => {
 	return `[mwai-form-submit label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}" temperature="${temperature}"]`;
 }
 
-const FormSubmitBlock = props => {
+const FormSubmitBlock = (props) => {
 	const { models } = useModels(options);
 	const { attributes: { label, prompt, model, temperature, outputElement, placeholders = [] }, setAttributes } = props;
 
@@ -29,7 +29,7 @@ const FormSubmitBlock = props => {
 				setAttributes({ placeholders: freshPlaceholders });
 			}
 		}
-	}, [prompt]);
+	}, [prompt, placeholders]);
 
 	const fieldsCount = useMemo(() => {
 		return placeholders ? placeholders.length : 0;
@@ -54,18 +54,18 @@ const FormSubmitBlock = props => {
 			</AiBlockContainer>
 			<InspectorControls>
 				<PanelBody title={ __( 'Output' ) }>
-					<TextControl label="Label" value={label} onChange={value => setAttributes({ label: value })} />
-					<TextareaControl label="Prompt" value={prompt} onChange={value => setAttributes({ prompt: value })}
-						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: 'Recommend me {MUSIC_TYPE} artists.' You can also add 'Use Markdown format.' if you wish the output to be formatted." />
-					<TextControl label="Output Element" value={outputElement} onChange={value => setAttributes({ outputElement: value })}
+					<TextControl label="Label" value={label} onChange={(value) => setAttributes({ label: value })} />
+					<TextareaControl label="Prompt" value={prompt} onChange={(value) => setAttributes({ prompt: value })}
+						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: Recommend me {MUSIC_TYPE} artists. You can also use an ID as an input, like this: ${#myfield}. Finally, if you wish the output to be formatted, add: Use Markdown format." />
+					<TextControl label="Output Element" value={outputElement} onChange={(value) => setAttributes({ outputElement: value })}
 						help="The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use '#mwai-666'." />
 				</PanelBody>
 				<PanelBody title={ __( 'Params' ) }>
-					{models && models.length > 0 && 
+					{models && models.length > 0 &&
 						<SelectControl label={ __( 'Model' ) } value={model} options={modelOptions}
-							onChange={value => setAttributes({ model: value })}
+							onChange={(value) => setAttributes({ model: value })}
 					/>}
-					<TextControl label="Temperature" value={temperature} onChange={value => setAttributes({ temperature: value })}
+					<TextControl label="Temperature" value={temperature} onChange={(value) => setAttributes({ temperature: value })}
 						type="number" step="0.1" min="0" max="1"
 						help="The temperature of the model. 0.8 is the default. Lower values will make the model more conservative, higher values will make it more creative." />
 				</PanelBody>

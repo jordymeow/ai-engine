@@ -243,7 +243,8 @@ class Meow_MWAI_Modules_Chatbot {
     $id = preg_replace( '/[^a-zA-Z0-9]/', '', $id );
     $env = $atts['env'];
     $mode = $atts['mode'];
-    $maxResults = $atts['max_results'];
+    $maxResults = $mode === 'chat' ? 1 : $atts['max_results'];
+    $maxSentences = $atts['max_sentences'];
     $sessionId = $this->core->get_session_id();
     $rest_nonce = wp_create_nonce( 'wp_rest' );
     $casuallyFineTuned = boolval( $atts['casually_fine_tuned'] );
@@ -332,6 +333,7 @@ class Meow_MWAI_Modules_Chatbot {
         let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
         let isCasuallyFineTuned = <?= $casuallyFineTuned ? 'true' : 'false' ?>;
         let mode = '<?= $mode ?>';
+        let maxSentences = <?= $maxSentences ?>;
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
         let <?= $memorizedChat ?> = [];
 
@@ -508,7 +510,7 @@ class Meow_MWAI_Modules_Chatbot {
           // Let's build the prompt depending on the "system"
           <?= $onGoingPrompt ?>.push({ who: '<?= $rawAiName ?>', says: '' });
           let prompt = '<?= $context ?>' + '\n\n';
-          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, 15);
+          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, maxSentences);
 
           console.log('onGoingPrompt', <?= $onGoingPrompt ?>);
           console.log('prompt', prompt);
