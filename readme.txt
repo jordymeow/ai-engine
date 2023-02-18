@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.98
+Stable tag: 0.9.99
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,13 +63,16 @@ Languages: English.
 
 == Changelog ==
 
+= 0.9.99 (2023/02/19) =
+* Update: Translation framework.
+* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
+
 = 0.9.98 (2023/02/18) =
 * Fix: There was an exit applied if WP_DEBUG was used.
 * Update: Default max_tokens for forms is now 2048.
 * Add: New 'max_sentences' parameter to limit the number of sentences in the prompt for the chatbot.
 * Add: AI Submit now handles using element based on their ID. Use it like this: {#myid}.
 * Update: Enhance the internal API with better helpers.
-* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
 
 = 0.9.95 (2023/02/17) =
 * Fix: Minor fixes related to notices and translations.

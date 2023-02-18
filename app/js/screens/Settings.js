@@ -1,5 +1,5 @@
-// Previous: 0.9.93
-// Current: 0.9.94
+// Previous: 0.9.94
+// Current: 0.9.99
 
 const { useMemo, useState } = wp.element;
 
@@ -221,70 +221,61 @@ const Settings = () => {
   }
 
   const jsxAssistants =
-    <NekoSettings title="Assistants">
+    <NekoSettings title={i18n.COMMON.ASSISTANTS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="module_titles" label="Titles Suggestions" value="1" checked={module_titles}
-          description="Suggest a few titles based on your content."
+        <NekoCheckbox id="module_titles" label={i18n.COMMON.TITLES_SUGGESTIONS} value="1" checked={module_titles}
+          description={i18n.COMMON.TITLES_SUGGESTIONS_HELP}
           onChange={updateOption} />
-        <NekoCheckbox id="module_excerpts" label="Excerpt Suggestions" value="1" checked={module_excerpts}
-          description="Suggest a few excerpts based on your content."
+        <NekoCheckbox id="module_excerpts" label={i18n.COMMON.EXCERPTS_SUGGESTIONS} value="1" checked={module_excerpts}
+          description={i18n.COMMON.EXCERPTS_SUGGESTIONS_HELP}
           onChange={updateOption} />
-        <NekoCheckbox id="module_woocommerce" label="WooCommerce Product Generator" value="1" checked={module_woocommerce}
-          description="Write all the WooCommerce fields for a given product."
+        <NekoCheckbox id="module_woocommerce" label={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR} value="1" checked={module_woocommerce}
+          description={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
   const jsxGenerators =
-    <NekoSettings title="Generators">
+    <NekoSettings title={i18n.COMMON.GENERATORS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="module_generator_content" label="Content Generator" value="1" checked={module_generator_content}
-          description="Write articles for you. Create templates, and re-use them."
+        <NekoCheckbox id="module_generator_content" label={i18n.COMMON.CONTENT_GENERATOR} value="1" checked={module_generator_content}
+          description={i18n.COMMON.CONTENT_GENERATOR_HELP}
           onChange={updateOption} />
-        <NekoCheckbox id="module_generator_images" label="Images Generator" value="1" checked={module_generator_images}
-          description="Generate images for you. Create templates, and re-use them."
+        <NekoCheckbox id="module_generator_images" label={i18n.COMMON.IMAGES_GENERATOR} value="1" checked={module_generator_images}
+          description={i18n.COMMON.IMAGES_GENERATOR_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
   const jsxPlayground = 
-    <NekoSettings title="Playground">
+    <NekoSettings title={i18n.COMMON.PLAYGROUND}>
       <NekoCheckbox id="module_playground" label={i18n.COMMON.ENABLE} value="1"
         checked={module_playground}
-        description="You can do everything with the Playground! Use Templates to boost your productivity."
+        description={i18n.COMMON.PLAYGROUND_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxForms = 
-    <NekoSettings title={<>Forms<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
+    <NekoSettings title={<>{i18n.COMMON.FORMS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
       <NekoCheckbox id="module_forms" label={i18n.COMMON.ENABLE} value="1"
         checked={module_forms} requirePro={true} isPro={isRegistered}
-        description="Create AI Forms. Based on fields, users will be given answers or suggestions. Works with shortcodes and Gutenberg blocks."
+        description={i18n.COMMON.FORMS_HELP}
         onChange={updateOption} />
   </NekoSettings>;
 
   const jsxStatistics = 
-    <NekoSettings title={<>Statistics<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox id="module_statistics" label="Enable Statistics & Limits" value="1"
+    <NekoSettings title={<>{i18n.COMMON.STATISTICS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
+      <NekoCheckbox id="module_statistics" label={i18n.COMMON.ENABLE} value="1"
         checked={module_statistics} requirePro={true} isPro={isRegistered}
-        description="Track interactions with the AI based on the user, session, type, price, etc. This allows to set limits, and more!"
+        description={i18n.COMMON.STATISTICS_HELP}
         onChange={updateOption} />
     </NekoSettings>;
-
-  const jsxAiBlocks = 
-  <NekoSettings title="Gutenberg Blocks">
-    <NekoCheckboxGroup max="1">
-      <NekoCheckbox label={i18n.COMMON.ENABLE} disabled={true} value="1" checked={module_blocks}
-        description="Additional blocks. Let me know your ideas!"
-        onChange={updateOption} />
-    </NekoCheckboxGroup>
-  </NekoSettings>;
 
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
       <NekoCheckboxGroup max="1">
         <NekoCheckbox id="shortcode_chat" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat}
-          description="A chatbot that can be similar to ChatGPT. But it has many features! Check the Chatbot tab."
+          description={i18n.COMMON.CHATBOT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>
@@ -320,23 +311,17 @@ const jsxShortcodeChatLogs =
     </NekoCheckboxGroup>
   </NekoSettings>;
 
-  const jsxExtraModels =
-    <NekoSettings title="Extra Models">
-      <NekoInput id="extra_models" name="extra_models" value={extra_models}
-        description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
-    </NekoSettings>;
-  
   const jsxDebugMode =
-    <NekoSettings title="Debug Mode">
+    <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
       <NekoCheckbox id="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
-        description={<>More information will be made available in/through the console.</>}
+        description={i18n.COMMON.DEBUG_MODE_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxOpenAiApiKey =
-    <NekoSettings title="API Key">
+    <NekoSettings title={i18n.COMMON.API_KEY}>
       <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
-        description={<>You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.</>} onBlur={updateOption} />
+        description={toHTML(i18n.COMMON.API_KEY_HELP)} onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxUsage = useMemo(() => {
@@ -423,9 +408,9 @@ const jsxShortcodeChatLogs =
 
   const jsxOpenAiUsage =
     <div>
-      <h3>Usage</h3>
+      <h3>{i18n.COMMON.USAGE}</h3>
       <div style={{ marginTop: -10, marginBottom: 10, fontSize: 12 }}>
-        For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.
+        {toHTML(i18n.COMMON.USAGE_HELP)}
       </div>
       {!Object.keys(openai_usage).length && <NekoTypo p>N/A</NekoTypo>}
       {openai_usage && <>
@@ -469,11 +454,9 @@ const jsxShortcodeChatLogs =
                     {jsxAssistants}
                     {jsxForms}
                     {jsxStatistics}
-                    {jsxAiBlocks}
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
-                    {jsxExtraModels}
                     {jsxDebugMode}
                   </NekoBlock>
                 </NekoColumn>
@@ -494,20 +477,16 @@ const jsxShortcodeChatLogs =
                 <NekoColumn minimal full>
                   <NekoBlock className="primary">
                     <NekoTypo p>
-                    <p>
-                      If you only need one chatbot, set your parameters in the Chatbot Builder, and click on <b>Set as Default Parameters</b>. You can then use the shortcode <b>[mwai_chat]</b> anywhere on your website. You can also add the chatbot everywhere automatically by using <b>Inject Default Chatbot</b>.
-                    </p>
-                    <p>
-                      You can have multiple chatbots on your website (or same page), each with different parameters. Setting an ID will memorize the conversation in the browser, Content Aware will make the content of your page available to the context (<a href="https://meowapps.com/ai-engine/tutorial/#content-aware-bot" target="_blank">read this</a>), and removing the AI Name and User Name will switch to avatars (similar to ChatGPT). Enjoy! 😎
-                    </p>
+                    <p>{toHTML(i18n.CHATBOT.INTRO)}</p>
+                    <p>{toHTML(i18n.CHATBOT.INTRO_2)}</p>
                     </NekoTypo>
                   </NekoBlock>
                 </NekoColumn>
 
                 <NekoColumn minimal>
-                  <NekoBlock busy={busy} title="Chatbot Builder" className="primary" action={
+                  <NekoBlock busy={busy} title={i18n.CHATBOT.CHATBOT_BUILDER} className="primary" action={
                     <NekoButton className="danger" onClick={onResetShortcodeParams}>
-                      Reset Parameters
+                      {i18n.CHATBOT.RESET_PARAMS}
                     </NekoButton>}>
 
                     <StyledBuilderForm>
@@ -515,7 +494,7 @@ const jsxShortcodeChatLogs =
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col"
                           style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
-                            <label>Mode:</label>
+                            <label>{i18n.COMMON.MODE}:</label>
                             <NekoSelect scrolldown id="mode" name="mode"
                               value={shortcodeParams.mode} onChange={updateShortcodeParams}>
                               <NekoOption value="chat" label="Chat" />
@@ -524,13 +503,13 @@ const jsxShortcodeChatLogs =
                         </div>
 
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
-                          <label>Context:</label>
+                          <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={2}
                             value={shortcodeParams.context} onBlur={updateShortcodeParams} />
                         </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
-                          <label>Max Results (= Number of Images):</label>
+                          <label>{i18n.COMMON.IMAGES_NUMBER}:</label>
                           <NekoInput id="max_results" name="max_results" type="number"
                             value={shortcodeParams.max_results} onBlur={updateShortcodeParams} />
                         </div>}
@@ -539,36 +518,35 @@ const jsxShortcodeChatLogs =
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>AI Name:</label>
+                          <label>{i18n.COMMON.AI_NAME}:</label>
                           <NekoInput id="ai_name" name="ai_name"
                             value={shortcodeParams.ai_name} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col" style={{ flex: 4 }}>
-                          <label>Start Sentence:</label>
+                          <label>{i18n.COMMON.START_SENTENCE}:</label>
                           <NekoInput id="start_sentence" name="start_sentence"
                             value={shortcodeParams.start_sentence} onBlur={updateShortcodeParams} />
                         </div>
                       </div>
 
                       <div className="mwai-builder-row">
-                        
                         <div className="mwai-builder-col">
-                          <label>User Name:</label>
+                          <label>{i18n.COMMON.USER_NAME}:</label>
                           <NekoInput id="user_name" name="user_name"
                             value={shortcodeParams.user_name} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
-                          <label>Placeholder:</label>
+                          <label>{i18n.COMMON.PLACEHOLDER}:</label>
                           <NekoInput id="text_input_placeholder" name="text_input_placeholder"
                             value={shortcodeParams.text_input_placeholder} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col">
-                          <label>Send:</label>
+                          <label>{i18n.COMMON.SEND}:</label>
                           <NekoInput id="text_send" name="text_send" value={shortcodeParams.text_send}
                             onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col">
-                          <label>Clear:</label>
+                          <label>{i18n.COMMON.CLEAR}:</label>
                           <NekoInput id="text_clear" name="text_clear" value={shortcodeParams.text_clear}
                             disabled={!shortcodeParams.id}
                             onBlur={updateShortcodeParams} />
@@ -577,19 +555,19 @@ const jsxShortcodeChatLogs =
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>System Name:</label>
+                          <label>{i18n.COMMON.SYSTEM_NAME}:</label>
                           <NekoInput id="sys_name" name="sys_name"
                             value={shortcodeParams.sys_name} onBlur={updateShortcodeParams} />
                         </div>
                         <div className="mwai-builder-col">
                           <div>
-                            <label style={{ display: 'block' }}>ID:</label>
+                            <label style={{ display: 'block' }}>{i18n.COMMON.ID}:</label>
                             <NekoInput id="id" name="id" type="text" placeholder="Optional"
                               value={shortcodeParams.id} onBlur={updateShortcodeParams} />
                           </div>
                         </div>
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
-                          <label>Style:</label>
+                          <label>{i18n.COMMON.STYLE}:</label>
                           <NekoSelect scrolldown id="style" name="style"
                             value={shortcodeParams.style} description="" onChange={updateShortcodeParams}>
                             <NekoOption value='none' label="None" />
@@ -597,7 +575,7 @@ const jsxShortcodeChatLogs =
                           </NekoSelect>
                         </div>
                         <div className="mwai-builder-col">
-                          <label>Popup:</label>
+                          <label>{i18n.COMMON.POPUP}:</label>
                           <NekoCheckbox id="window" label="Yes"
                             checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
                         </div>
@@ -605,9 +583,8 @@ const jsxShortcodeChatLogs =
                       </div>
 
                       <div className="mwai-builder-row">
-                        
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
-                          <label>Position:</label>
+                          <label>{i18n.COMMON.POSITION}:</label>
                           <NekoSelect scrolldown id="icon_position" name="icon_position" disabled={!shortcodeParams.window}
                             value={shortcodeParams.icon_position} onChange={updateShortcodeParams}>
                             <NekoOption value="bottom-right" label="Bottom Right" />
@@ -618,23 +595,22 @@ const jsxShortcodeChatLogs =
                         </div>
 
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
-                          <label>Icon Text:</label>
+                          <label>{i18n.COMMON.ICON_TEXT}:</label>
                           <NekoInput id="icon_text" name="icon_text" disabled={!shortcodeParams.window}
                             placeholder="If set, appears next to icon"
                             value={shortcodeParams.icon_text ?? 'Chat'} onBlur={updateShortcodeParams} />
                         </div>
 
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
-                          <label>Full Screen:</label>
+                          <label>{i18n.COMMON.FULL_SCREEN}:</label>
                           <NekoCheckbox id="fullscreen" label="Yes"
                             checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
                         </div>
-                        
                       </div>
 
                       {isChat && <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>Model:</label>
+                          <label>{i18n.COMMON.MODEL}:</label>
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {models.map((x) => (
@@ -645,28 +621,27 @@ const jsxShortcodeChatLogs =
                       </div>}
 
                       {isChat && <div className="mwai-builder-row">
-                        
                         <div className="mwai-builder-col" style={{ flex: 0.5 }}>
-                          <label>Max Tokens:</label>
+                          <label>{i18n.COMMON.MAX_TOKENS}:</label>
                           <NekoInput id="max_tokens" name="max_tokens" type="number" min="10" max="2048"
                             value={shortcodeParams.max_tokens} onBlur={updateShortcodeParams} />
                         </div>
 
                         <div className="mwai-builder-col" style={{ flex: 0.5 }}>
-                          <label>Temperature:</label>
+                          <label>{i18n.COMMON.TEMPERATURE}:</label>
                           <NekoInput id="temperature" name="temperature" type="number"
                             step="0.1" min="0" max="1"
                             value={shortcodeParams.temperature} onBlur={updateShortcodeParams} />
                         </div>
 
                         <div className="mwai-builder-col">
-                          <label>Casually Fine Tuned:</label>
+                          <label>{i18n.COMMON.CASUALLY_FINE_TUNED}:</label>
                           <NekoCheckbox id="casually_fine_tuned" label="Yes"
                             checked={shortcodeParams.casually_fine_tuned} value="1" onChange={updateShortcodeParams}
                           />
                         </div>
                         {isChat && <div className="mwai-builder-col">
-                          <label>Content Aware:</label>
+                          <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox id="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
                             checked={shortcodeParams.content_aware} value="1" onChange={updateShortcodeParams} />
@@ -709,6 +684,7 @@ const jsxShortcodeChatLogs =
                     <NekoCheckbox id="shortcode_chat_params_override" label="Set as Default Parameters"
                       disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
+                      delay={300}
                       description="The parameters set above will be used by default when you use [mwai_chat] or inject the chatbot."
                       onChange={updateOption} />
 
@@ -757,7 +733,6 @@ const jsxShortcodeChatLogs =
                         </div>
                       </div>
                       <div className="mwai-builder-row">
-                        
                         <div className="mwai-builder-col">
                           <label>Back Primary Color:</label>
                           <div style={{ display: 'flex' }}>

@@ -8,6 +8,7 @@ i18n.COMMON = {
   MODULES: __( 'Modules', 'ai-engine' ),
   SETTINGS: __( 'Settings', 'ai-engine' ),
   CHATBOT: __( 'Chatbot', 'ai-engine' ),
+  CHATBOT_HELP: __( 'Highly customizable chatbot.', 'ai-engine' ),
   STATISTICS: __( 'Statistics', 'ai-engine' ),
   STYLE: __( 'Style', 'ai-engine' ),
   ENABLE: __( 'Enable', 'ai-engine' ),
@@ -18,6 +19,48 @@ i18n.COMMON = {
   MAX_TOKENS: __( 'Max Tokens', 'ai-engine' ),
   STOP_SEQUENCE: __( 'Stop Sequence', 'ai-engine' ),
   USAGE: __( 'Usage', 'ai-engine' ),
+  MODE: __( 'Mode', 'ai-engine' ),
+  CONTEXT: __( 'Context', 'ai-engine' ),
+  IMAGES_NUMBER: __( 'Number of Images', 'ai-engine' ),
+  AI_NAME: __( 'AI Name', 'ai-engine' ),
+  USER_NAME: __( 'User Name', 'ai-engine' ),
+  PLACEHOLDER: __( 'Placeholder', 'ai-engine' ),
+  START_SENTENCE: __( 'Start Sentence', 'ai-engine' ),
+  SEND: __( 'Send', 'ai-engine' ),
+  CLEAR: __( 'Clear', 'ai-engine' ),
+  SYSTEM_NAME: __( 'System Name', 'ai-engine' ),
+  ID: __( 'ID', 'ai-engine' ),
+  POPUP: __( 'Popup', 'ai-engine' ),
+  POSITION: __( 'Position', 'ai-engine' ),
+  ICON_TEXT: __( 'Icon Text', 'ai-engine' ),
+  FULL_SCREEN: __( 'Full Screen', 'ai-engine' ),
+  CASUALLY_FINE_TUNED: __( 'Casually Fine-Tuned', 'ai-engine' ),
+  CONTENT_AWARE: __( 'Content Aware', 'ai-engine' ),
+
+  ASSISTANTS: __( 'Assistants', 'ai-engine' ),
+  TITLES_SUGGESTIONS: __( 'Titles Suggestions', 'ai-engine' ),
+  TITLES_SUGGESTIONS_HELP: __( 'Suggest titles based on the content.', 'ai-engine' ),
+  EXCERPTS_SUGGESTIONS: __( 'Excerpts Suggestions', 'ai-engine' ),
+  EXCERPTS_SUGGESTIONS_HELP: __( 'Suggest excerpts based on the content.', 'ai-engine' ),
+  GENERATORS: __( 'Generators', 'ai-engine' ),
+  WOOCOMMERCE_PRODUCT_GENERATOR: __( 'WooCommerce Product Generator', 'ai-engine' ),
+  WOOCOMMERCE_PRODUCT_GENERATOR_HELP: __( 'Write all the WooCommerce fields for a given product.', 'ai-engine' ),
+  CONTENT_GENERATOR: __( 'Content Generator', 'ai-engine' ),
+  CONTENT_GENERATOR_HELP: __( 'Generate articles. Support templates.', 'ai-engine' ),
+  IMAGES_GENERATOR: __( 'Images Generator', 'ai-engine' ),
+  IMAGES_GENERATOR_HELP: __( 'Generate images. Support templates.', 'ai-engine' ),
+  PLAYGROUND: __( 'Playground', 'ai-engine' ),
+  PLAYGROUND_HELP: __( 'Play with AI or let it perform various tasks for you. Support templates.', 'ai-engine' ),
+  FORMS: __( 'Forms', 'ai-engine' ),
+  FORMS_HELP: __( 'Build AI forms. Based on fields, users will be given answers or suggestions.', 'ai-engine' ),
+  STATISTICS: __( 'Statistics', 'ai-engine' ),
+  STATISTICS_HELP: __( 'Track AI interactions, check statistics, set limits, and more!', 'ai-engine' ),
+  DEBUG_MODE: __( 'Debug Mode', 'ai-engine' ),
+  DEBUG_MODE_HELP: __( 'Debugging information will be displayed in the console.', 'ai-engine' ),
+  API_KEY: __( 'API Key', 'ai-engine' ),
+  API_KEY_HELP: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
+  USAGE: __( 'Usage', 'ai-engine' ),
+  USAGE_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
 }
 
 i18n.HELP = {
@@ -29,7 +72,14 @@ i18n.HELP = {
 
 i18n.SETTINGS = {
   INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵', 'ai-engine' ),
-  MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' )
+  MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
+}
+
+i18n.CHATBOT = {
+  INTRO: __( 'If you only need one chatbot, set your parameters in the Chatbot Builder, and click on <b>Set as Default Parameters</b>. You can then use the shortcode <b>[mwai_chat]</b> anywhere on your website. You can also add the chatbot everywhere automatically by using <b>Inject Default Chatbot</b>.', 'ai-engine' ),
+  INTRO_2: __( 'You can have multiple chatbots on your website (or same page), each with different parameters. Setting an ID will memorize the conversation in the browser, Content Aware will make the content of your page available to the context (<a href="https://meowapps.com/ai-engine/tutorial/#content-aware-bot" target="_blank">read this</a>), and removing the AI Name and User Name will switch to avatars (similar to ChatGPT). Enjoy! 😎', 'ai-engine' ), 
+  CHATBOT_BUILDER: __( 'Chatbot Builder', 'ai-engine' ),
+  RESET_PARAMS: __( 'Reset Parameters', 'ai-engine' ),
 }
 
 i18n.CONTENT_GENERATOR = {
