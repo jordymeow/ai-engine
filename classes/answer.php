@@ -23,6 +23,13 @@ class Meow_MWAI_Answer {
     return $this->usage['total_tokens'];
   }
 
+  public function replace( $search, $replace ) {
+    $this->result = str_replace( $search, $replace, $this->result );
+    $this->results = array_map( function( $result ) use ( $search, $replace ) {
+      return str_replace( $search, $replace, $result );
+    }, $this->results );
+  }
+
   /**
    * Set the choices from OpenAI as the results.
    * The last (or only) result is set as the result.

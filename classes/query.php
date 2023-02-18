@@ -13,6 +13,10 @@ class Meow_MWAI_Query {
     $this->prompt = $prompt;
   }
 
+  public function replace( $search, $replace ) {
+    $this->prompt = str_replace( $search, $replace, $this->prompt );
+  }
+
   /**
    * The environment, like "chatbot", "imagesbot", "chatbot-007", "textwriter", etc...
    * Used for statistics, mainly.

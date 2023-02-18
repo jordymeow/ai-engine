@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.95
+Stable tag: 0.9.96
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,13 +63,16 @@ Languages: English.
 
 == Changelog ==
 
+= 0.9.96 (2023/02/18) =
+* Update: Enhance the internal API with better helpers.
+* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
+
 = 0.9.95 (2023/02/17) =
 * Fix: Minor fixes related to notices and translations.
 * Update: Enhanced Shortcode Builder.
 * Add: UI for Custom Icon, Icon Message.
 * Fix: Better control of the dirty state of the Post Editor.
 * Add: Warn when the AI Forms are not properly set up to avoid issues.
-* Info: I would like to focus on making everything amazingly perfect for the version 1.0. I keep the new features for a bit later, and make sure everything done until now is perfectly crafted and optimized. Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks, everyone!
 
 = 0.9.89 (2023/02/16) =
 * Fix: Enhancement in the models screen.
