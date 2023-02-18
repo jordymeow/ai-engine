@@ -56,48 +56,41 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 	function admin_bar_menu( $wp_admin_bar ) {
 		$url = MWAI_URL . "/images/wand.png";
 		$image_html = "<img style='height: 22px; margin-bottom: -5px; margin-right: 10px;' src='${url}' alt='UI Engine' />";
-		$args = null;
-		
-		// If it's WP_DEBUG then let's add a menu
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			exit;
-			$args = array(
-				'id' => 'mwai-debug',
-				'title' => $image_html . __( 'AI Debug', 'ai-engine' ),
-				'href' => admin_url( 'tools.php?page=mwai_debug' ),
-				'meta' => array( 'class' => 'mwai-debug' ),
-			);
-		}		
-
 
 		if ( $this->playground ) {
-			$args = array(
+			$wp_admin_bar->add_node(  array(
 				'id' => 'mwai-playground',
 				'title' => $image_html . __( 'AI Playground', 'ai-engine' ),
 				'href' => admin_url( 'tools.php?page=mwai_dashboard' ),
 				'meta' => array( 'class' => 'mwai-playground' ),
-			);
+			) );
 		}
 		else if ( $this->generator_content ) {
-			$args = array(
+			$wp_admin_bar->add_node( array(
 				'id' => 'mwai-content-generator',
 				'title' => $image_html . __( 'AI Content Generator', 'ai-engine' ),
 				'href' => admin_url( 'tools.php?page=mwai_content_generator' ),
 				'meta' => array( 'class' => 'mwai-content-generator' ),
-			);
+			) );
 		}
 		else if ( $this->generator_images ) {
-			$args = array(
+			$wp_admin_bar->add_node( array(
 				'id' => 'mwai-image-generator',
 				'title' => $image_html . __( 'AI Image Generator', 'ai-engine' ),
 				'href' => admin_url( 'tools.php?page=mwai_image_generator' ),
 				'meta' => array( 'class' => 'mwai-image-generator' ),
-			);
+			) );
 		}
 
-		if ( $args ) {
-			$wp_admin_bar->add_node( $args );
-		}
+		// If it's WP_DEBUG then let's add a menu
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			$wp_admin_bar->add_node( array(
+				'id' => 'mwai-debug',
+				'title' => $image_html . __( 'The Magic Wand', 'ai-engine' ),
+				//'href' => admin_url( 'tools.php?page=mwai_debug' ),
+				'meta' => array( 'class' => 'mwai-debug' ),
+			) );
+		}		
 	}
 
 	public function ai_playground() {

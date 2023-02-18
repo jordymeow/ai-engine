@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 0.9.97
+Stable tag: 0.9.98
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,9 @@ Languages: English.
 
 == Changelog ==
 
-= 0.9.97 (2023/02/18) =
+= 0.9.98 (2023/02/18) =
+* Fix: There was an exit applied if WP_DEBUG was used.
+* Update: Default max_tokens for forms is now 2048.
 * Add: New 'max_sentences' parameter to limit the number of sentences in the prompt for the chatbot.
 * Add: AI Submit now handles using element based on their ID. Use it like this: {#myid}.
 * Update: Enhance the internal API with better helpers.
