@@ -1,21 +1,29 @@
 <?php
 
 class Meow_MWAI_Query {
-
-  public $model = 'text-davinci-003';
-  public $type = 'completion';
-  
+  public $env = '';
   public $prompt = '';
-
-  public $maxTokens = 16;
-  public $temperature = 1;
+  public $model = '';
+  public $mode = '';
+  public $apiKey = null;
+  public $session = null;
   public $maxResults = 1;
-  public $stop = null;
 
-  public function __construct( $prompt = '', $maxTokens = 16, $model = 'text-davinci-003' ) {
+  public function __construct( $prompt = '' ) {
     $this->prompt = $prompt;
-    $this->maxTokens = $maxTokens;
-    $this->model = $model;
+  }
+
+  public function replace( $search, $replace ) {
+    $this->prompt = str_replace( $search, $replace, $this->prompt );
+  }
+
+  /**
+   * The environment, like "chatbot", "imagesbot", "chatbot-007", "textwriter", etc...
+   * Used for statistics, mainly.
+   * @param string $env The environment.
+   */
+  public function setEnv( $env ) {
+    $this->env = $env;
   }
 
   /**
@@ -36,22 +44,19 @@ class Meow_MWAI_Query {
   }
 
   /**
-   * The maximum number of tokens to generate in the completion.
-   * The token count of your prompt plus max_tokens cannot exceed the model's context length.
-   * Most models have a context length of 2048 tokens (except for the newest models, which support 4096).
-   * @param float $prompt The maximum number of tokens.
+   * The API key to use.
+   * @param string $apiKey The API key.
    */
-  public function setMaxTokens( $maxTokens ) {
-    $this->maxTokens = $maxTokens;
+  public function setApiKey( $apiKey ) {
+    $this->apiKey = $apiKey;
   }
 
   /**
-   * Set the sampling temperature to use. Higher values means the model will take more risks.
-   * Try 0.9 for more creative applications, and 0 for ones with a well-defined answer.
-   * @param float $temperature The temperature.
+   * The session ID to use.
+   * @param string $session The session ID.
    */
-  public function setTemperature( $temperature ) {
-    $this->temperature = $temperature;
+  public function setSession( $session ) {
+    $this->session = $session;
   }
 
   /**
@@ -61,16 +66,6 @@ class Meow_MWAI_Query {
    * @param float $maxResults Number of completions.
    */
   public function setMaxResults( $maxResults ) {
-    $this->maxResults = $maxResults;
+    $this->maxResults = intval( $maxResults );
   }
-
-  /**
-   * Up to 4 sequences where the API will stop generating further tokens.
-   * The returned text will not contain the stop sequence.
-   * @param float $stop The stop.
-   */
-  public function setStop( $stop ) {
-    $this->stop = $stop;
-  }
-
 }

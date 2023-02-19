@@ -16,9 +16,18 @@ class Meow_MWAI_Answer {
   }
 
   public function setUsage( $usage ) {
-    $this->usage['prompt_tokens'] = $usage['prompt_tokens'];
-    $this->usage['completion_tokens'] = $usage['completion_tokens'];
-    $this->usage['total_tokens'] = $usage['total_tokens'];
+    $this->usage = $usage;
+  }
+
+  public function getTotalTokens() {
+    return $this->usage['total_tokens'];
+  }
+
+  public function replace( $search, $replace ) {
+    $this->result = str_replace( $search, $replace, $this->result );
+    $this->results = array_map( function( $result ) use ( $search, $replace ) {
+      return str_replace( $search, $replace, $result );
+    }, $this->results );
   }
 
   /**
@@ -29,9 +38,16 @@ class Meow_MWAI_Answer {
   public function setChoices( $choices ) {
     $this->results = [];
     foreach ( $choices as $choice ) {
-      $text = trim( $choice['text'] );
-      $this->results[] = $text;
-      $this->result = $text;
+      if ( isset( $choice['text'] ) ) {
+        $text = trim( $choice['text'] );
+        $this->results[] = $text;
+        $this->result = $text;
+      }
+      if ( isset( $choice['url'] ) ) {
+        $url = trim( $choice['url'] );
+        $this->results[] = $url;
+        $this->result = $url;
+      }
     }
   }
 }

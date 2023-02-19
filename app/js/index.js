@@ -1,34 +1,69 @@
-// Previous: 0.6.8
-// Current: 0.0.3
+// Previous: 0.0.3
+// Current: 0.1.0
 
-// React & Vendor Libs
-import React from 'react';
-import ReactDOM from 'react-dom';
+const { render } = wp.element;
+import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
+const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
+
+// Neko UI
+import { Dashboard } from '@common';
 
 // Components
-import Settings from '@app/components/Settings';
-import Playground from '@app/components/Playground';
-import PostsListTools from './components/PostsListTools';
-import SlotFills from './components/SlotFills';
+import Settings from '@app/screens/Settings';
+import Playground from '@app/screens/Playground';
+import PostsListTools from './modules/PostsListTools';
+import ContentGenerator from './screens/ContentGenerator';
+import ImageGenerator from './screens/ImageGenerator';
+import SlotFills from './modules/SlotFills';
 
-document.addEventListener('DOMContentLoaded', function(event) {
+// Gutenberg Blocks
+import initBlocks from './blocks/index';
+import WooCommerceAssistant from './modules/WooCommerce';
+initBlocks();
+
+document.addEventListener('DOMContentLoaded', function() {
+
+	SlotFills();
 
 	// Settings
 	const settings = document.getElementById('mwai-admin-settings');
 	if (settings) {
-		ReactDOM.render((<Settings />), settings);
+		render((<QueryClientProvider client={queryClient}><Settings /></QueryClientProvider>), settings);
+	}
+
+	// Content Generator
+	const generator = document.getElementById('mwai-content-generator');
+	if (generator) {
+		render((<QueryClientProvider client={queryClient}><ContentGenerator /></QueryClientProvider>), generator);
+	}
+
+	// Image Generator
+	const imgGen = document.getElementById('mwai-image-generator');
+	if (imgGen) {
+		render((<QueryClientProvider client={queryClient}><ImageGenerator /></QueryClientProvider>), imgGen);
 	}
 
 	// Dashboard
 	const dashboard = document.getElementById('mwai-playground');
 	if (dashboard) {
-		ReactDOM.render((<Playground />), dashboard);
+		render((<QueryClientProvider client={queryClient}><Playground /></QueryClientProvider>), dashboard);
 	}
 
 	// Admin Tools
 	const postsListTools = document.getElementById('mwai-admin-postsList');
 	if (postsListTools) {
-		ReactDOM.render((<PostsListTools />), postsListTools);
+		render((<PostsListTools />), postsListTools);
 	}
 
+	// Admin Tools
+	const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
+	if (wcAssistant) {
+		render((<WooCommerceAssistant />), wcAssistant);
+	}
+
+	// Common
+	const meowDashboard = document.getElementById('meow-common-dashboard');
+	if (meowDashboard) {
+		render(<Dashboard />, meowDashboard);
+	}
 });

@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 0.0.3
+// Previous: 0.6.6
+// Current: 0.1.0
 
 const { useState, useEffect, useMemo } = wp.element;
 const { __ } = wp.i18n;
@@ -13,7 +13,7 @@ import { NekoWrapper } from '@neko-ui';
 // UI Engine
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
-import AiIcon from './AiIcon';
+import AiIcon from '../styles/AiIcon';
 
 // SlotFills Reference
 // https://developer.wordpress.org/block-editor/reference-guides/slotfills/
@@ -53,30 +53,34 @@ registerPlugin('ai-engine-menu-paragraph-generate', {
 const MWAI_DocumentSettings = () => {
   const [postForTitle, setPostForTitle] = useState();
   const [postForExcerpt, setPostForExcerpt] = useState();
-  
+
+  const getCurrentPost = wp.data.select("core/editor").getCurrentPost;
+
   const onTitlesModalOpen = () => {
-    const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title, excerpt } = getCurrentPost();
-    setPostForTitle({ postId: id, postTitle: title });
-  }
+    const { id, title } = getCurrentPost() || {};
+    if (id && title) {
+      setPostForTitle({ postId: id, postTitle: title });
+    }
+  };
 
   const onExcerptsModalOpen = () => {
-    const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title, excerpt } = getCurrentPost();
-    setPostForExcerpt({ postId: id, postTitle: title });
-  }
+    const { id, title } = getCurrentPost() || {};
+    if (id && title) {
+      setPostForExcerpt({ postId: id, postTitle: title });
+    }
+  };
 
   const onTitleClick = async (title) => {
-    wp.data.dispatch( 'core/editor' ).editPost({ title });
-  }
+    wp.data.dispatch('core/editor').editPost({ title });
+  };
 
   const onExcerptClick = async (excerpt) => {
-    wp.data.dispatch( 'core/editor' ).editPost({ excerpt });
-  }
+    wp.data.dispatch('core/editor').editPost({ excerpt });
+  };
 
   return (
     <PluginDocumentSettingPanel name="mwai-document-settings" title={<><AiIcon /> AI Engine</>} className="mwai-document-settings">
-      <p>Generate:</p>
+      <p>Suggest:</p>
       <div style={{ display: 'flex' }}>
         <Button variant='primary' onClick={onTitlesModalOpen} style={{ flex: 1, marginRight: 10 }}>
           <AiIcon icon="wand" style={{ marginRight: 8 }} /> Titles
@@ -94,6 +98,11 @@ const MWAI_DocumentSettings = () => {
   );
 };
 
-registerPlugin('ai-engine-document-settings', {
-  render: MWAI_DocumentSettings
-});
+
+const setUISlotFill = () => {
+  registerPlugin('ai-engine-document-settings', {
+    render: MWAI_DocumentSettings
+  });
+};
+
+export default setUISlotFill;
