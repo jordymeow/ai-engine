@@ -269,6 +269,8 @@ class Meow_MWAI_Modules_Chatbot {
     $setButtonTextFn = "mwai_{$id}_setButtonText";
     $onTidyOnGoingPromptFn = "mwai_{$id}_onUpdateOnGoingPrompt";
     $injectTimerFn = "mwai_{$id}_injectTimer";
+    $textAreaResizeFn = "mwai_{$id}_textAreaResize";
+    $textAreaDelayedResizeFn = "mwai_{$id}_textAreaDelayedResize";
 
     // Variables
     $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-chatbot/v1/imagesbot' : 'ai-chatbot/v1/chat' );
@@ -583,11 +585,14 @@ class Meow_MWAI_Modules_Chatbot {
         }
 
         // Keep the textarea height in sync with the content
-        function mwaiSetTextAreaHeight(textarea, lines) {
-          var rows = textarea.getAttribute('rows');
-          if (lines !== rows) {
-            textarea.setAttribute('rows', lines > 5 ? 5 : lines);
-          }
+        function <?= $textAreaResizeFn ?>(ev) {
+          ev.target.style.height = 'auto';
+          ev.target.style.height = ev.target.scrollHeight + 'px';
+        }
+
+        // Keep the textarea height in sync with the content
+        function <?= $textAreaDelayedResizeFn ?>(ev) {
+          window.setTimeout(<?= $textAreaResizeFn ?>, 0, event);
         }
 
         // Init the chatbot
@@ -609,15 +614,21 @@ class Meow_MWAI_Modules_Chatbot {
             var rows = input.getAttribute('rows');
             if (event.keyCode === 13 && event.shiftKey) {
               var lines = input.value.split('\n').length + 1;
-              mwaiSetTextAreaHeight(input, lines);
+              //mwaiSetTextAreaHeight(input, lines);
             }
           });
           input.addEventListener('keyup', (event) => {
             var rows = input.getAttribute('rows');
             var lines = input.value.split('\n').length ;
-            mwaiSetTextAreaHeight(input, lines);
+            //mwaiSetTextAreaHeight(input, lines);
             <?= $setButtonTextFn ?>();
           });
+
+          input.addEventListener('change', <?= $textAreaResizeFn ?>, false);
+          input.addEventListener('cut', <?= $textAreaDelayedResizeFn ?>, false);
+          input.addEventListener('paste', <?= $textAreaDelayedResizeFn ?>, false);
+          input.addEventListener('drop', <?= $textAreaDelayedResizeFn ?>, false);
+          input.addEventListener('keydown', <?= $textAreaDelayedResizeFn ?>, false);
           
           button.addEventListener('click', (event) => {
             <?= $onSentClickFn ?>(); 

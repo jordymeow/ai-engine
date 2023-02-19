@@ -36,6 +36,16 @@ i18n.COMMON = {
   FULL_SCREEN: __( 'Full Screen', 'ai-engine' ),
   CASUALLY_FINE_TUNED: __( 'Casually Fine-Tuned', 'ai-engine' ),
   CONTENT_AWARE: __( 'Content Aware', 'ai-engine' ),
+  SPACING: __( 'Spacing', 'ai-engine' ),
+  BORDER_RADIUS: __( 'Border Radius', 'ai-engine' ),
+  FONT_SIZE: __( 'Font Size', 'ai-engine' ),
+  FONT_COLOR: __( 'Font Color', 'ai-engine' ),
+  BACK_PRIMARY_COLOR: __( 'Back Primary Color', 'ai-engine' ),
+  BACK_SECONDARY_COLOR: __( 'Back Secondary Color', 'ai-engine' ),
+  HEADER_BUTTONS_COLOR: __( 'Header Buttons Color', 'ai-engine' ),
+  POPUP_ICON: __( 'Popup Icon', 'ai-engine' ),
+  CUSTOM_ICON_URL: __( 'Custom Icon URL', 'ai-engine' ),
+  FEATURES: __( 'Features', 'ai-engine' ),
 
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
   TITLES_SUGGESTIONS: __( 'Titles Suggestions', 'ai-engine' ),
@@ -73,6 +83,15 @@ i18n.HELP = {
 i18n.SETTINGS = {
   INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
+  ALERT_INJECT_BUT_NO_POPUP: __( 'You choose to inject the chatbot in your website. You probably also want to use the chatbot in a Popup.', 'ai-engine' ),
+  ALERT_FINETUNE_BUT_NO_CASUALLY: __( 'You choose a fine-tuned model. However, you didn\'t check the Casually Fine Tuned option. Make sure that\'s what you want.', 'ai-engine' ),
+  ALERT_CASUALLY_BUT_NO_FINETUNE: __( 'Normally, you should not check the Casually Fine Tuned option with a non-finetuned model. Make sure that\'s what you want.', 'ai-engine' ),
+  ALERT_CONTENTAWARE_BUT_NO_CONTENT: __( 'Content Aware requires your Context to use the {CONTENT} placeholder. It will be replaced by the content of page the chatbot is on. More info <a href="https://meowapps.com/ai-engine/tutorial/#contextualization" target="_blank">here</a>.', 'ai-engine' ),
+  SET_AS_DEFAULT_PARAMETERS: __( 'Set as Default Parameters', 'ai-engine' ),
+  SET_AS_DEFAULT_PARAMETERS_HELP: __( 'Set the parameters above as the default parameters for the chatbot. You can then use the shortcode [mwai_chat] anywhere on your website.', 'ai-engine' ),
+  INJECT_DEFAULT_CHATBOT: __( 'Inject Default Chatbot in Entire Website', 'ai-engine' ),
+  INJECT_DEFAULT_CHATBOT_HELP: __( 'Inject the chatbot [mwai_chat] in the entire website.', 'ai-engine' ),
+  CHATGPT_STYLE_INTRO: __( 'Keep in mind that you can also style the chatbot (or aspecific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>. Header Buttons are the ones used to close or resize the Popup Window. For more, check the <a target="_blank" href="https://meowapps.com/ai-engine/faq">FAQ</a>.', 'ai-engine' ),
 }
 
 i18n.CHATBOT = {
