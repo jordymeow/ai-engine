@@ -1,5 +1,5 @@
-// Previous: 0.9.88
-// Current: 0.9.89
+// Previous: 0.9.89
+// Current: 1.0.01
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,8 +10,9 @@ import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
 import { nekoFetch, formatBytes } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
-import { useModels } from '../helpers';
+import { toHTML, useModels } from '../helpers';
 import DatasetBuilder from './FineTuning/DatasetBuilder';
+import i18n from '../../i18n';
 
 const builderColumns = [
   { accessor: 'row', title: "#", width: 15, verticalAlign: 'top' },
@@ -53,8 +54,6 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
-      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
@@ -159,7 +158,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries('datasets');
+    await queryClient.invalidateQueries({ queryKey: ['datasets'] });
   }
 
   const onRefreshFiles = async () => {
@@ -185,7 +184,7 @@ const FineTuning = ({ options, updateOption }) => {
     });
     if (res.success) {
       await refreshFineTunes();
-      alert("Fine-tuning started! Check its progress in the 'Models' section. Depending on your dataset size, it may take a while (from a few minutes to days).");
+      alert(i18n.ALERTS.FINETUNING_STARTED);
       setSection('finetunes');
       setFileForFineTune();
     }
@@ -196,7 +195,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const refreshFineTunes = async () => {
-    await queryClient.invalidateQueries('finetunes');
+    await queryClient.invalidateQueries({ queryKey: ['finetunes'] });
   }
 
   const onRefreshFineTunes = async () => {
@@ -208,7 +207,7 @@ const FineTuning = ({ options, updateOption }) => {
   const onCleanFineTunes = async () => {
     setBusyAction(true);
     await retrieveFineTunes(true);
-    await queryClient.invalidateQueries('finetunes');
+    await queryClient.invalidateQueries({ queryKey: ['finetunes'] });
     setBusyAction(false);
   }
 
@@ -221,7 +220,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const onResetBuilder = (askForConfirmation = true) => {
-    if (askForConfirmation && !confirm('This will delete all the rows in the builder. Are you sure?')) {
+    if (askForConfirmation && !confirm(i18n.ALERTS.RESET_BUILDER)) {
       return;
     }
     setBuilderData([]);
@@ -245,7 +244,11 @@ const FineTuning = ({ options, updateOption }) => {
     if (!builderData || builderData.length === 0) {
       const data = localStorage.getItem('mwai_builder_data');
       if (data) {
-        setBuilderData(JSON.parse(data));
+        try {
+          setBuilderData(JSON.parse(data));
+        } catch(e) {
+          // ignore
+        }
       }
     }
   }, []);
@@ -314,13 +317,13 @@ const FineTuning = ({ options, updateOption }) => {
     }
     catch (err) {
       console.log(err);
-      alert("Error! Check your console.");
+      alert(i18n.ALERTS.CHECK_CONSOLE);
     }
     setBusyAction(false);
   };
 
   const deleteFineTune = async (modelId) => {
-    if (!confirm('You are going to delete this fine-tune. Are you sure?\n\nPlease note that it will take a while before it is actually deleted. This might be a temporary issue of OpenAI.')) {
+    if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
       return;
     }
     setBusyAction(true);
@@ -331,8 +334,8 @@ const FineTuning = ({ options, updateOption }) => {
         await refreshFineTunes();
       }
       else {
-        if (res.message.indexOf('does not exist') > -1 || res.message.indexOf('does not exist') !== -1) {
-          alert("This fine-tune was already deleted. It will be removed from the list.");
+        if (res.message.indexOf('does not exist') > -1) {
+          alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
           await refreshFineTunes();
         }
@@ -343,7 +346,7 @@ const FineTuning = ({ options, updateOption }) => {
     }
     catch (err) {
       console.log(err);
-      alert("Error! Check your console.");
+      alert(i18n.ALERTS.CHECK_CONSOLE);
     }
     setBusyAction(false);
   };
@@ -351,10 +354,8 @@ const FineTuning = ({ options, updateOption }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
-      console.log({ fileId, filename });
       const res = await nekoFetch(`${apiUrl}/openai_files_download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
-        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -370,13 +371,15 @@ const FineTuning = ({ options, updateOption }) => {
     }
     catch (err) {
       console.log(err);
-      alert("Error! Check your console.");
+      alert(i18n.ALERTS.CHECK_CONSOLE);
     }
     setBusyAction(false);
   }
 
   const fileRows = useMemo(() => {
-    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
+    // Sort the dataFiles by created_at
+    if (!dataFiles) return [];
+    return dataFiles.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
@@ -406,7 +409,7 @@ const FineTuning = ({ options, updateOption }) => {
     if (!dataFineTunes) {
       return [];
     }
-    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFineTunes.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
@@ -443,16 +446,12 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = builderData.map(x => {
-        let json = JSON.stringify(x);
-        return json;
-      }).join("\n");
-      console.log(data);
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
+      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
-        alert("Uploaded successfully! You can now train a model based on this dataset.");
+        alert(i18n.ALERTS.DATASET_UPLOADED);
         setSection('files');
         setIsModeTrain(true);
       }
@@ -462,7 +461,7 @@ const FineTuning = ({ options, updateOption }) => {
     }
     catch (err) {
       console.log(err);
-      alert("Error! Check your console.");
+      alert(i18n.ALERTS.CHECK_CONSOLE);
     }
     setBusyAction(false);
   };
@@ -470,7 +469,7 @@ const FineTuning = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; // getMonth returns a 0-based value
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -487,7 +486,7 @@ const FineTuning = ({ options, updateOption }) => {
       const isJsonl = file.name.endsWith('.jsonl');
       const isCsv = file.name.endsWith('.csv');
       if (!isJson && !isJsonl && !isCsv) {
-        alert("This only supports JSON, JSONL, and CSV files.");
+        alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
         console.log(file);
         continue;
       }
@@ -495,7 +494,7 @@ const FineTuning = ({ options, updateOption }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try { data = JSON.parse(fileContent); } catch(e) { data = []; }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -506,14 +505,13 @@ const FineTuning = ({ options, updateOption }) => {
             }
             catch (e) {
               console.log(e, x);
-              return null
+              return null;
             }
-          });
+          }).filter(x => x != null);
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
-          data = resParse.data;
-          console.log('The CSV was loaded.', data);
+          data = resParse.data || [];
         }
         const formattedData = data.map(x => {
           const values = Object.keys(x).reduce((acc, key) => {
@@ -534,7 +532,7 @@ const FineTuning = ({ options, updateOption }) => {
         const cleanData = formattedData.filter(x => x.prompt && x.completion);
         const hadEmptyLines = formattedData.length !== cleanData.length;
         if (hadEmptyLines) {
-          alert("Some are were empty. Make sure the CSV has a header row and that the columns are named 'prompt' and 'completion'. For debugging, an empty line was logged to the console.");
+          alert(i18n.ALERTS.EMPTY_LINES);
           const findEmpty = formattedData.find(x => !x.prompt || !x.completion);
           console.log('Empty line: ', findEmpty);
         }
@@ -545,7 +543,6 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const addRow = (prompt = 'Text...\n\n###\n\n', completion = 'Text...\n\n') => {
-    console.log(prompt, completion);
     setBuilderData([...builderData, { prompt, completion }]);
   }
 
@@ -573,15 +570,15 @@ const FineTuning = ({ options, updateOption }) => {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ marginRight: 15 }}>
           <NekoSwitch 
-            onLabel="Model Finetune" offLabel="Dataset Builder" width={145}
+            onLabel={i18n.FINETUNING.MODEL_FINETUNE} offLabel={i18n.FINETUNING.DATASET_BUILDER} width={145}
             onBackgroundColor={NekoTheme.purple} offBackgroundColor={NekoTheme.green}
             onChange={setIsModeTrain} checked={isModeTrain}
             />
         </div>
         {isModeTrain && <NekoQuickLinks value={section} busy={busy}
           onChange={value => { setSection(value) }}>
-          <NekoLink title="Models" value='finetunes' count={fineTuneRows?.length ?? null} />
-          <NekoLink title="Datasets" value='files' count={fileRows?.length ?? null} />
+          <NekoLink title={i18n.COMMON.MODELS} value='finetunes' count={fineTuneRows?.length ?? null} />
+          <NekoLink title={i18n.COMMON.DATASETS} value='files' count={fileRows?.length ?? null} />
         </NekoQuickLinks>}
         {isModeTrain && section === 'finetunes' && <>
           <div style={{ flex: 'auto' }} />
@@ -597,8 +594,8 @@ const FineTuning = ({ options, updateOption }) => {
         </>}
         {!isModeTrain && <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
           <NekoQuickLinks value={dataSection} onChange={value => { setDataSection(value) }}>
-            <NekoLink title="Entries Editor" value='editor' count={builderData?.length ?? null} />
-            <NekoLink title="Entries Generator" value='generator' />
+            <NekoLink title={i18n.FINETUNING.ENTRIES_EDITOR} value='editor' count={builderData?.length ?? null} />
+            <NekoLink title={i18n.FINETUNING.ENTRIES_GENERATOR} value='generator' />
           </NekoQuickLinks>
           <div style={{ flex: 'auto' }} />
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -616,28 +613,23 @@ const FineTuning = ({ options, updateOption }) => {
 
     <NekoContainer style={{ margin: 10 }}>
       {isModeTrain && section === 'finetunes' && <>
-        <p>
-          The AI models you have fine-tuned. To create more, visit <b>Datasets</b>.
-        </p>
+        <p>{toHTML(i18n.FINETUNING.MODELS_INTRO)}</p>
         <NekoTable alternateRowColor busy={busy}
           data={fineTuneRows} columns={fineTuneColumns} 
-          emptyMessage={<>You do not have any fine-tuned jobs yet.</>}
+          emptyMessage={i18n.FINETUNING.NO_FINETUNES_YET}
         />
         <div style={{ marginTop: 5, display: 'flex', justifyContent: 'end', lineHeight: '12px',
           alignItems: 'center' }}>
           <NekoButton small disabled={busyAction} onClick={onCleanFineTunes} className="primary">
-            Clean Models List
+            {i18n.FINETUNING.CLEAN_MODELS_LIST}
           </NekoButton>
-          <small style={{ marginLeft: 5 }}>
-            For some reason, OpenAI still return the models even after you deleted them. Don't worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.
-          </small>
+          <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
         </div>
+        
       </>}
 
       {isModeTrain && section === 'files' && <>
-        <p>
-          The datasets you have uploaded to OpenAI. To create a new dataset, switch from <b>Model Finetuner</b> to <b>Dataset Builder</b>. To train a new model, click on the <i>magic wand</i>.
-        </p>
+        <p>{i18n.FINETUNING.DATASETS_INTRO}</p>
         <NekoTable alternateRowColor busy={busy}
           data={fileRows} columns={fileColumns} 
           emptyMessage={<>You do not have any dataset files yet.</>}
@@ -649,7 +641,7 @@ const FineTuning = ({ options, updateOption }) => {
       </>}
 
       {!isModeTrain && dataSection === 'editor' && <>
-        {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>Caution: The data is too large to be saved in your browser's local storage.</p>}
+        {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>{i18n.FINETUNING.HUGE_DATASET_WARNING}</p>}
         <div style={{ display: 'flex' }}>
           <NekoButton icon="plus" onClick={() => addRow()}>Add Entry</NekoButton>
           <NekoButton disabled={!totalRows} className="secondary" onClick={onFormatWithDefaults}>
@@ -669,7 +661,7 @@ const FineTuning = ({ options, updateOption }) => {
           </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-              onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+              onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
         </div>
       </>}
 
@@ -703,6 +695,7 @@ const FineTuning = ({ options, updateOption }) => {
             <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fine_tuned="true"</i>  in the shortcode.</li>
           </ul>
         </>}
+
       </>}
 
       <NekoModal isOpen={fileForFineTune}

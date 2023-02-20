@@ -1,5 +1,5 @@
-// Previous: 0.9.99
-// Current: 1.0.0
+// Previous: 1.0.0
+// Current: 1.0.01
 
 const { useMemo, useState } = wp.element;
 
@@ -341,7 +341,7 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price; // <-- shadowed variable
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -357,7 +357,7 @@ const jsxShortcodeChatLogs =
           }
           let modelPrice = pricing.find(x => x.model === realModel.short);
           if (modelPrice) {
-            price = modelUsage.total_tokens / 1000 * modelPrice.price; // <-- shadowed variable
+            price = modelUsage.total_tokens / 1000 * modelPrice.price;
             usageData[month].totalPrice += price;
             const name = realModel ? realModel.name : model;
             usageData[month].data.push({
@@ -429,7 +429,7 @@ const jsxShortcodeChatLogs =
 
       <NekoWrapper>
 
-        <NekoColumn full>
+        <NekoColumn fullWidth>
 
           <OptionsCheck options={options} />
 
@@ -457,6 +457,7 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
+                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                   </NekoBlock>
                 </NekoColumn>
@@ -474,7 +475,7 @@ const jsxShortcodeChatLogs =
             {(shortcode_chat) && <NekoTab title={i18n.COMMON.CHATBOT}>
               <NekoWrapper>
 
-                <NekoColumn minimal full>
+                <NekoColumn minimal fullWidth>
                   <NekoBlock className="primary">
                     <NekoTypo p>
                     <p>{toHTML(i18n.CHATBOT.INTRO)}</p>
@@ -827,7 +828,7 @@ const jsxShortcodeChatLogs =
                       Reset Limits
                     </NekoButton>}>
 
-                      <NekoCheckbox id="enabled" label="Enable Limits"
+                      <NekoCheckbox id="enabled" label={i18n.STATISTICS.ENABLE_LIMITS}
                         checked={limits?.enabled} value="1" onChange={updateLimits}
                       />
 
@@ -835,8 +836,8 @@ const jsxShortcodeChatLogs =
 
                       <NekoQuickLinks value={limitSection} busy={busy} 
                         onChange={value => { setLimitSection(value) }}>
-                        <NekoLink title="Users" value='users' disabled={!limits?.enabled} />
-                        <NekoLink title="Guests" value='guests' />
+                        <NekoLink title={i18n.COMMON.USERS} value='users' disabled={!limits?.enabled} />
+                        <NekoLink title={i18n.COMMON.GUESTS} value='guests' />
                       </NekoQuickLinks>
 
                       {limits?.target === 'userId' && <>
@@ -851,13 +852,13 @@ const jsxShortcodeChatLogs =
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>Credits:</label>
+                          <label>{i18n.COMMON.CREDITS}:</label>
                           <NekoInput id="credits" name="credits" type="number" min="0" max="1000000"
                             disabled={!limits?.enabled} value={limits?.[limitSection]?.credits}
                             onBlur={limitSection === 'users' ? updateUserLimits : updateGuestLimits} />
                         </div>
                         <div className="mwai-builder-col">
-                          <label>Type:</label>
+                          <label>{i18n.COMMON.TYPE}:</label>
                           <NekoSelect scrolldown id="creditType" name="creditType" disabled={!limits?.enabled}
                             value={limits?.[limitSection]?.creditType}
                             onChange={limitSection === 'users' ? updateUserLimits : updateGuestLimits}>
@@ -883,7 +884,7 @@ const jsxShortcodeChatLogs =
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>Time Frame:</label>
+                          <label>{i18n.COMMON.TIMEFRAME}:</label>
                           <NekoSelect scrolldown id="timeFrame" name="timeFrame" disabled={!limits?.enabled}
                             value={limits?.[limitSection]?.timeFrame} 
                             onChange={limitSection === 'users' ? updateUserLimits : updateGuestLimits}>
@@ -894,7 +895,7 @@ const jsxShortcodeChatLogs =
                           </NekoSelect>
                         </div>
                         <div className="mwai-builder-col">
-                          <label>Is Absolute:</label>
+                          <label>{i18n.COMMON.ABSOLUTE}:</label>
                           <NekoCheckbox id="isAbsolute" label="Yes" disabled={!limits?.enabled}
                             checked={limits?.[limitSection]?.isAbsolute} value="1"
                             onChange={limitSection === 'users' ? updateUserLimits : updateGuestLimits}
@@ -902,12 +903,12 @@ const jsxShortcodeChatLogs =
                         </div>
                       </div>
                       {limits?.[limitSection]?.isAbsolute && <p>
-                        With absolute, a day represents <i>today</i>. Otherwise, it represent the <i>past 24 hours</i>. The same logic applies to the other time frames.
+                        {toHTML(i18n.STATISTICS.ABSOLUTE_HELP)}
                       </p>}
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>Message for No Credits:</label>
+                          <label>{i18n.STATISTICS.NO_CREDITS_MESSAGE}:</label>
                           <NekoInput id="overLimitMessage" name="overLimitMessage" disabled={!limits?.enabled}
                             value={limits?.[limitSection]?.overLimitMessage}
                             onBlur={limitSection === 'users' ? updateUserLimits : updateGuestLimits} />
@@ -916,15 +917,15 @@ const jsxShortcodeChatLogs =
 
                       {limitSection === 'users' && <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>Full-Access Users:</label>
+                          <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
                           <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
                             value={limits?.users?.ignoredUsers} description="" onChange={updateUserLimits}>
                               <NekoOption key={'none'} id={'none'} value={''}
-                                label={"None"} />
+                                label={i18n.COMMON.NONE} />
                               <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
-                                label={"Editors & Admins"} />
+                                label={i18n.COMMON.EDITORS_ADMINS} />
                               <NekoOption key={'admin'} id={'admin'} value={'administrator'}
-                                label={"Admins Only"} />
+                                label={i18n.COMMON.ADMINS_ONLY} />
                           </NekoSelect>
                         </div>
                       </div>}
@@ -935,17 +936,20 @@ const jsxShortcodeChatLogs =
               </NekoWrapper>
             </NekoTab>}
 
-            <NekoTab title='Fine Tuning: Train your AI'>
+            <NekoTab title={i18n.COMMON.FINETUNING_TAB}>
               <FineTuning options={options} updateOption={updateOption} />
             </NekoTab>
 
-            <NekoTab key="openai-status" title={<>OpenAI Status{accidentsPastDay > 0 ? <>&nbsp;⚠️</> : ""}</>}>
+            <NekoTab key="openai-status"
+              title={<>{i18n.COMMON.OPENAI_TAB}{accidentsPastDay > 0 ? <>&nbsp;⚠️</> : ""}</>}>
               <OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
             </NekoTab>
 
-            <NekoTab title='License'>
+            <NekoTab title={i18n.COMMON.LICENSE_TAB}>
               <LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
-            </NekoTabs>
+            </NekoTab>
+
+          </NekoTabs>
 
         </NekoColumn>
 

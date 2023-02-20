@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.0.0
+Stable tag: 1.0.01
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,10 +63,13 @@ Languages: English.
 
 == Changelog ==
 
+= 1.0.01 (2023/02/21) =
+* Update: Notices and translations.
+* Info: Finally, the version 1.0 is here! Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
+
 = 1.0.0 (2023/02/20) =
 * Update: Enhance the chabot's input field visually.
 * Update: Translation framework.
-* Info: Finally, the version 1.0 is here! Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
 
 = 0.9.99 (2023/02/19) =
 * Update: Translation framework.

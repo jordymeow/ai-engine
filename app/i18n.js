@@ -46,6 +46,20 @@ i18n.COMMON = {
   POPUP_ICON: __( 'Popup Icon', 'ai-engine' ),
   CUSTOM_ICON_URL: __( 'Custom Icon URL', 'ai-engine' ),
   FEATURES: __( 'Features', 'ai-engine' ),
+  TIMEFRAME: __( 'Timeframe', 'ai-engine' ),
+  ABSOLUTE: __( 'Absolute', 'ai-engine' ),
+  NONE: __( 'None', 'ai-engine' ),
+  EDITORS_ADMINS: __( 'Editors & Admins', 'ai-engine' ),
+  ADMINS_ONLY: __( 'Admins Only', 'ai-engine' ),
+  CREDITS: __( 'Credits', 'ai-engine' ),
+  TYPE: __( 'Type', 'ai-engine' ),
+  USERS: __( 'Users', 'ai-engine' ),
+  GUESTS: __( 'Guests', 'ai-engine' ),
+  OPENAI_TAB: __( 'OpenAI Status', 'ai-engine' ),
+  LICENSE_TAB: __( 'License', 'ai-engine' ),
+  FINETUNING_TAB: __( 'Fine Tuning: Train your AI', 'ai-engine' ),
+  MODELS: __( 'Models', 'ai-engine' ),
+  DATASETS: __( 'Datasets', 'ai-engine' ),
 
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
   TITLES_SUGGESTIONS: __( 'Titles Suggestions', 'ai-engine' ),
@@ -101,6 +115,13 @@ i18n.CHATBOT = {
   RESET_PARAMS: __( 'Reset Parameters', 'ai-engine' ),
 }
 
+i18n.STATISTICS = {
+  ABSOLUTE_HELP: __( 'Using Absolute, Day represents <i>today</i>. Otherwise, the <i>past 24 hours</i>. Same logic applies to the other timeframes.', 'ai-engine' ),
+  NO_CREDITS_MESSAGE: __( 'Message for No Credits', 'ai-engine' ),
+  FULL_ACCESS_USERS: __( 'Full-Access Users', 'ai-engine' ),
+  ENABLE_LIMITS: __( 'Enable Limits', 'ai-engine' ),
+}
+
 i18n.CONTENT_GENERATOR = {
   INTRO: __( 'The Content Generator is a powerful tool that can generate content for you. It can be used to generate articles, emails, or even code. It can also be used to generate content for your chatbot. <b>Let me know if there are any new features you would like to see!</b> Have fun 🥳', 'ai-engine' ),
 }
@@ -117,6 +138,30 @@ i18n.PLAYGROUND = {
   INTRO: __( 'Welcome to the AI Playground! Here, you can play with different AI models and ask the UI to perform various tasks for you. You can ask it to write, rewrite, or translate an article, categorize words or elements into groups, write an email, etc. <b>Let me know if there are any new features you would like to see!</b> Have fun 🥳', 'ai-engine' ),
   PROMPT: __( 'Query / Prompt', 'ai-engine' ),
   ANSWER: __( 'Answer', 'ai-engine' ),
+}
+
+i18n.ALERTS = {
+  FINETUNING_STARTED: __( 'Fine-tuning started! Check its progress in the <b>Models</b> section. Depending on your dataset size, it may take a while (from a few minutes to days).', 'ai-engine' ),
+  RESET_BUILDER: __( 'This will delete all the rows in the builder. Are you sure?', 'ai-engine' ),
+  DELETE_FINETUNE: __( 'You are going to delete this fine-tune. Are you sure?\n\nPlease note that it will take a while before it is actually deleted. This might be a temporary issue of OpenAI.', 'ai-engine' ),
+  FINETUNE_ALREADY_DELETED: __( 'This fine-tune was already deleted. It will be removed from the list.', 'ai-engine' ),
+  CHECK_CONSOLE: __( 'Error! Check your console for more details.', 'ai-engine' ),
+  DATASET_UPLOADED: __( 'Uploaded successfully! You can now train a model based on this dataset.', 'ai-engine' ),
+  ONLY_SUPPORTS_FILES: __( 'This only supports JSON, JSONL, and CSV files.', 'ai-engine' ),
+  EMPTY_LINES: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'prompt\' and \'completion\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
+}
+
+i18n.FINETUNING = {
+  MODELS_INTRO: __( 'The AI models you have fine-tuned. To create more, visit <b>Datasets</b>.', 'ai-engine' ),
+  DATASETS_INTRO: __( 'The datasets you have uploaded to OpenAI. To create a new dataset, switch from <b>Model Finetuner</b> to <b>Dataset Builder</b>. To train a new model, click on the <i>magic wand</i>.', 'ai-engine' ),
+  MODEL_FINETUNE: __( 'Model Finetune', 'ai-engine' ),
+  DATASET_BUILDER: __( 'Dataset Builder', 'ai-engine' ),
+  ENTRIES_EDITOR: __( 'Entries Editor', 'ai-engine' ),
+  ENTRIES_GENERATOR: __( 'Entries Generator', 'ai-engine' ),
+  HUGE_DATASET_WARNING: __( 'Caution: The data is too large to be saved in your browser\'s local storage.', 'ai-engine' ),
+  NO_FINETUNES_YET: __( 'No fine-tunes yet. Create one by uploading a dataset.', 'ai-engine' ),
+  CLEAN_MODELS_LIST: __( 'Clean Models List', 'ai-engine' ),
+  DELETED_FINETUNE_ISSUE: __( 'For some reason, OpenAI still return the models even after you deleted them. Don\'t worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.', 'ai-engine' ),
 }
 
 export default i18n;
