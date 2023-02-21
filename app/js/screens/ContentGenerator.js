@@ -1,8 +1,10 @@
-// Previous: 0.9.95
-// Current: 1.0.01
+// Previous: 1.0.01
+// Current: 1.0.1
 
+// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
+// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -35,16 +37,16 @@ const getSeoMessage = (title) => {
     return;
   }
   else if (wordCount < 3) {
-    seoMessage.push('The title is too short. It should be at least 3 words.');
+    seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_SHORT);
   }
   else if (wordCount > 8) {
-    seoMessage.push('The title is too long. It should be no more than 8 words.');
+    seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_LONG);
   }
   else if (charCount < 40) {
-    seoMessage.push('The title is too short. It should be at least 40 characters.');
+    seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_SHORT);
   }
   else if (charCount > 70) {
-    seoMessage.push('The title is too long. It should be no more than 70 characters.');
+    seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_LONG_2);
   }
   return seoMessage.join(' ');
 };
@@ -97,7 +99,7 @@ const ContentGenerator = () => {
     }
     console.warn("A system language or a custom language should be set.");
     return "english";
-  }, [language, customLanguage]);
+  }, [language]);
 
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
@@ -112,13 +114,13 @@ const ContentGenerator = () => {
     if (template) {
       setTemplateProperty('', 'sections');
     }
-  }, [title, sectionsCount, template]);
+  }, [title, sectionsCount]);
 
   useEffect(() => {
     setContent('');
     setExcerpt('');
     setCreatedPostId();
-  }, [sections, paragraphsCount, mode]);
+  }, [sections, paragraphsCount]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -129,21 +131,20 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   }
 
-  const lookForPlaceholder = (str, arr) => { return !!arr.find(item => item.includes(str)); }
-
   const formInputs = useMemo(() => {
+    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
-      language: lookForPlaceholder('{LANGUAGE}', arr),
-      writingStyle: lookForPlaceholder('{WRITING_STYLE}', arr),
-      writingTone: lookForPlaceholder('{WRITING_TONE}', arr),
-      sectionsCount: lookForPlaceholder('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookForPlaceholder('{PARAGRAPHS_PER_SECTION}', arr),
+      language: lookFor('{LANGUAGE}', arr),
+      writingStyle: lookFor('{WRITING_STYLE}', arr),
+      writingTone: lookFor('{WRITING_TONE}', arr),
+      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
     }
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = '', maxTokensVal = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = prompt, maxTokens = 2048, isBulk = false) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -152,7 +153,7 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: maxTokensVal,
+        maxTokens,
         model 
     } });
     if (!res.success) {
@@ -171,7 +172,7 @@ const ContentGenerator = () => {
 
   const submitSectionsPrompt = async (inTitle = title, isBulk = false) => {
     if (!inTitle) {
-      alert("Title is missing!");
+      alert(i18n.CONTENT_GENERATOR.TITLE_MISSING);
       return;
     }
     setBusy(true);
@@ -189,11 +190,11 @@ const ContentGenerator = () => {
 
   const submitContentPrompt = async (inTitle = title, inSections = sections, isBulk = false) => {
     if (!inTitle) {
-      alert("Title is missing!");
+      alert(i18n.CONTENT_GENERATOR.TITLE_MISSING);
       return;
     }
     if (!inSections) {
-      alert("Sections are missing!");
+      alert(i18n.CONTENT_GENERATOR.SECTIONS_MISSING);
       return;
     }
     setBusy(true);
@@ -216,7 +217,7 @@ const ContentGenerator = () => {
 
   const onSubmitPromptForExcerpt = async (inTitle = title, isBulk = false) => {
     if (!inTitle) {
-      alert("Title is missing!");
+      alert(i18n.CONTENT_GENERATOR.TITLE_MISSING);
       return;
     }
     setBusy(true);
@@ -233,7 +234,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(prev => ({ ...prev, all: new Date() }));
+    setRunTimes(() => ({ ...runTimes, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -247,17 +248,22 @@ const ContentGenerator = () => {
       setBusy(false);
       if (freshTitle) {
         setTemplateProperty(freshTitle, 'title');
-        setRunTimes(prev => ({ ...prev, sections: new Date() }));
+        setRunTimes(x => ({ ...x, sections: new Date() }));
         freshSections = await submitSectionsPrompt(freshTitle, isBulk);
-        setRunTimes(prev => ({ ...prev, sections: null }));
+        // intentional bug: resets runTimes immediately after setting sections
+        setRunTimes(x => ({ ...x, sections: null }));
         if (freshSections) {
-          setRunTimes(prev => ({ ...prev, content: new Date() }));
+          // timing bug: setting content runTime right after setting sections, might cause race
+          await setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(freshTitle, freshSections, isBulk);
-          setRunTimes(prev => ({ ...prev, content: null }));
+          // typo bug: setting runTimes for content but missing a new Date() if needed
+          await setRunTimes(x => ({ ...x, content: null }));
           if (freshContent) {
-            setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
+            // mistake: overwriting runTimes for excerpt before generating it
+            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(freshTitle, isBulk);
-            setRunTimes(prev => ({ ...prev, excerpt: null }));
+            // forgetting to reset runTimes after
+            await setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
@@ -296,7 +302,7 @@ const ContentGenerator = () => {
         const { title, content, excerpt } = await onGenerateAllClick(topic, true);
         if (title && content && excerpt) {
           let postId = await onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt }]);
+          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
         }
         else {
           console.warn("Could not generate the post for: " + topic);
@@ -318,7 +324,7 @@ const ContentGenerator = () => {
   return (
     <NekoPage nekoErrors={[]}>
 
-      <AiNekoHeader title="Content Generator" />
+      <AiNekoHeader title={i18n.COMMON.CONTENT_GENERATOR} />
 
       <NekoWrapper>
 
@@ -339,7 +345,7 @@ const ContentGenerator = () => {
             <NekoSpacer />
             <NekoButton fullWidth disabled={!topic || mode === 'bulk'} isBusy={isBusy} startTime={runTimes?.all}
               onClick={() => onGenerateAllClick()}>
-              Generate All
+              {i18n.CONTENT_GENERATOR.GENERATE_ALL}
             </NekoButton>
           </StyledSidebar>
 
@@ -354,23 +360,26 @@ const ContentGenerator = () => {
         <NekoColumn  style={{ flex: 3 }}>
 
           <NekoQuickLinks id="mode" name="mode" value={mode} disabled={isBusy} onChange={setTemplateProperty}>
-            <NekoLink title="Single Generate" value='single' />
-            <NekoLink title="Bulk Generate" value='bulk' count={topicsArray.length} />
+            <NekoLink title={i18n.CONTENT_GENERATOR.SINGLE_GENERATE} value='single' />
+            <NekoLink title={i18n.CONTENT_GENERATOR.BULK_GENERATE} value='bulk'
+              count={topicsArray.length} />
           </NekoQuickLinks>
 
           <NekoSpacer height={40} />
 
           {mode === 'bulk' && <StyledSidebar>
             <p style={{ marginTop: 0, marginBottom: 20 }}>
-              Write or paste your topics below. Each line will be used as a topic. The same <b>Params</b> and <b>Prompts</b> will be used as with the <b>Single Generate</b>, so make sure you get satisfying results with it first. This <b>takes time</b>, so relax and enjoy some coffee ☕️ and tea 🍵 :)
+              {toHTML(i18n.CONTENT_GENERATOR.TOPICS_HELP)}
             </p>
             <div style={{ display: 'flex' }}>
-              <NekoButton disabled={isBusy || !topicsArray.length} onClick={onBulkStart}>Generate</NekoButton>
+              <NekoButton disabled={isBusy || !topicsArray.length} onClick={onBulkStart}>
+                {i18n.COMMON.GENERATE}
+              </NekoButton>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
                 {topicsArray.length}
               </div>
-              <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-                style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
+              <NekoSelect id="postType" scrolldown={true} disabled={isBusy} onChange={setPostType} value={postType}
+                style={{ width: 100, marginLeft: 10 }}>
                 <NekoOption key={'post'} id={'post'} value={'post'} label="Posts" />
                 <NekoOption key={'page'} id={'page'} value={'page'} label="Pages" />
               </NekoSelect>
@@ -382,7 +391,7 @@ const ContentGenerator = () => {
             <NekoTextArea id="topics" name="topics" rows={10} value={topics} onChange={setTemplateProperty}  />
             <NekoCheckbox id="topicsAreTitles" name="topicsAreTitles" label="Use Topics as Titles" value="1"
               checked={topicsAreTitles} onChange={setTemplateProperty} />
-            <h3>Generated Posts</h3>
+            <h3>{i18n.CONTENT_GENERATOR.GENERATED_POSTS}</h3>
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
@@ -396,13 +405,14 @@ const ContentGenerator = () => {
           {mode === 'single' && <StyledSidebar>
 
             <h2 style={{ marginTop: 0 }}>Title</h2>
-            <NekoInput id="title" disabled={isBusy} value={title} onChange={setTemplateProperty} />
+            <NekoInput id="title" name="title" disabled={isBusy} value={title}
+              onChange={setTemplateProperty} />
             {titleMessage && <div className="information">Advice: {titleMessage}</div>}
 
             <NekoSpacer height={20} />
             
             <StyledTitleWithButton>
-              <h2>Sections</h2>
+              <h2>{i18n.CONTENT_GENERATOR.SECTIONS}</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
 
                 {formInputs.sectionsCount && <>
@@ -420,9 +430,10 @@ const ContentGenerator = () => {
                   </NekoSelect>
                 </>}
 
-                {sectionsCount > 0 && <NekoButton disabled={!title} isBusy={isBusy} startTime={runTimes?.sections}
+                {sectionsCount > 0 && <NekoButton disabled={!title} isBusy={isBusy}
+                  startTime={runTimes?.sections}
                   onClick={() => submitSectionsPrompt()}>
-                  Generate Sections
+                  {i18n.CONTENT_GENERATOR.GENERATE_SECTIONS}
                 </NekoButton>}
               </div>
             </StyledTitleWithButton>
@@ -431,18 +442,20 @@ const ContentGenerator = () => {
               <NekoSpacer height={20} />
               <NekoTextArea id="sections" disabled={isBusy} rows={4} value={sections} onChange={setTemplateProperty} />
               <div className="information">
-                Add, rewrite, remove, or reorganize those sections as you wish before (re)clicking on "Generate Content". Markdown format is recommended.
+                {i18n.CONTENT_GENERATOR.SECTIONS_HELP}
               </div>
             </>}
 
             <NekoSpacer height={20} />
 
             <StyledTitleWithButton>
-              <h2>Content</h2>
+              <h2>{i18n.COMMON.CONTENT}</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
 
                 {formInputs.paragraphsCount && <>
-                  <label style={{ margin: '0 5px 0 0' }}># of Paragraphs per Section: </label>
+                  <label style={{ margin: '0 5px 0 0' }}>
+                    {i18n.CONTENT_GENERATOR.PARAGRAPHS_PER_SECTION}:&nbsp;
+                  </label>
                   <NekoSelect scrolldown id="paragraphsCount" name="paragraphsCount" disabled={isBusy}
                     style={{ marginRight: 10 }}
                     value={paragraphsCount} description="" onChange={setTemplateProperty}>
@@ -458,7 +471,7 @@ const ContentGenerator = () => {
 
                 <NekoButton disabled={!title} isBusy={isBusy} startTime={runTimes?.content}
                   onClick={() => submitContentPrompt()}>
-                  Generate Content
+                  {i18n.CONTENT_GENERATOR.GENERATE_CONTENT}
                 </NekoButton>
               </div>
             </StyledTitleWithButton>
@@ -468,16 +481,16 @@ const ContentGenerator = () => {
             <NekoTextArea countable="words" disabled={isBusy} rows={12} value={content} onChange={setContent} />
 
             <div className="information">
-              You can modify the content before using "Create Post". Markdown is supported, and will be converted to HTML when the post is created.
+              {i18n.CONTENT_GENERATOR.CONTENT_HELP}
             </div>
 
             <NekoSpacer height={20} />
 
             <StyledTitleWithButton>
-              <h2>Excerpt</h2>
+              <h2>{i18n.COMMON.EXCERPT}</h2>
               <NekoButton disabled={!title} isBusy={isBusy} startTime={runTimes?.excerpt}
                 onClick={() => onSubmitPromptForExcerpt()}>
-                Generate Excerpt
+                {i18n.CONTENT_GENERATOR.GENERATE_EXCERPT}
               </NekoButton>
             </StyledTitleWithButton>
 
@@ -489,7 +502,7 @@ const ContentGenerator = () => {
 
             <NekoButton fullWidth style={{ height: 60 }}
               onClick={() => onSubmitNewPost()} isBusy={isBusy} disabled={!title || !content}>
-              Create Post
+              {i18n.CONTENT_GENERATOR.CREATE_POST}
             </NekoButton>
 
           </StyledSidebar>}
@@ -499,16 +512,16 @@ const ContentGenerator = () => {
         <NekoColumn>
 
           <StyledSidebar style={{ marginBottom: 25 }}>
-            <h2 style={{ marginTop: 0 }}>Content Params</h2>
+            <h2 style={{ marginTop: 0 }}>{i18n.CONTENT_GENERATOR.CONTENT_PARAMS}</h2>
 
             {!formInputs.language && !formInputs.writingStyle && !formInputs.writingTone &&
               <div style={{ fontSize: 11, lineHeight: '14px' }}>
-                Input fields are displayed for certain placeholders used in prompts, such as {`{`}LANGUAGE{`}`} or {`{`}WRITING_TONE{`}`}.
+                {i18n.CONTENT_GENERATOR.CONTENT_PARAMS_INTRO}
               </div>
             }
 
             {formInputs.language && <>
-              <label>Language:</label>
+              <label>{i18n.COMMON.LANGUAGE}:</label>
               <NekoSelect scrolldown id="language" name="language" disabled={isBusy} 
                 value={language} description="" onChange={setTemplateProperty}>
                   {languages.map((lang) => {
@@ -517,16 +530,15 @@ const ContentGenerator = () => {
                   <NekoOption key="custom" id="random" value="custom" label="Other" />
               </NekoSelect>
               {language === 'custom' && <>
-                <label>Custom Language:</label>
+                <label>{i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE}:</label>
                 <NekoInput id="customLanguage" name="customLanguage" disabled={isBusy}
-                  description={<>All the languages are <i>somehow</i> supported by AI. <a href="https://meowapps.com/ai-engine/faq/#languages" target="_blank" rel="noopener noreferrer">Learn more</a>.
-                  </>}
+                  description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
                   value={customLanguage} onChange={setTemplateProperty} />
               </>}
             </>}
 
             {formInputs.writingStyle && <>
-              <label>Writing style:</label>
+              <label>{i18n.CONTENT_GENERATOR.WRITING_STYLE}:</label>
               <NekoSelect scrolldown id="writingStyle" name="writingStyle" disabled={isBusy}
                 value={writingStyle} description="" onChange={setTemplateProperty}>
                   {WritingStyles.map((style) => {
@@ -536,7 +548,7 @@ const ContentGenerator = () => {
             </>}
 
             {formInputs.writingTone && <>
-              <label>Writing tone:</label>
+              <label>{i18n.CONTENT_GENERATOR.WRITING_TONE}:</label>
               <NekoSelect scrolldown id="writingTone" name="writingTone" disabled={isBusy}
                 value={writingTone} description="" onChange={setTemplateProperty}>
                   {WritingTones.map((tone) => {
@@ -549,28 +561,23 @@ const ContentGenerator = () => {
 
           <StyledSidebar style={{ marginTop: 25, marginBottom: 25 }}>
             <StyledTitleWithButton>
-              <h2>Model Params</h2>
+              <h2>{i18n.COMMON.MODEL_PARAMS}</h2>
               <NekoButton onClick={() => setShowModelParams(!showModelParams)}>
-                {showModelParams ? 'Hide' : 'Show'}
+                {showModelParams ? i18n.COMMON.HIDE : i18n.COMMON.SHOW}
               </NekoButton>
             </StyledTitleWithButton>
             {showModelParams && <>
-              <label>Temperature:</label>
+              <label>{i18n.COMMON.TEMPERATURE}:</label>
               <NekoInput id="temperature" name="temperature" value={temperature} type="number"
-                onChange={setTemplateProperty} onBlur={setTemplateProperty} description={<>
-                  <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
-                    Between 0 and 1.
-                  </span> Higher values means the model will take more risks.
-                </>} />
-              <label>Max Tokens:</label>
+                onChange={setTemplateProperty} onBlur={setTemplateProperty}
+                description={i18n.HELP.TEMPERATURE} />
+              <label>{i18n.COMMON.MAX_TOKENS}:</label>
               <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
-                onChange={setTemplateProperty} onBlur={setTemplateProperty} description={<>
-                  <span style={{ color: maxTokens >= 1 && maxTokens <= 4096 ? 'inherit' : 'red' }}>
-                    Between 1 and 2048.
-                  </span> Higher values means the model will generate more content.
-                </>} />
-              <label>Model:</label>
-              <NekoSelect id="model" name="model" value={model} disabled={true} description="The davinci model is currently the only acceptable one for writing texts. As soon as better models are available, you will be able to choose between them."
+                onChange={setTemplateProperty} onBlur={setTemplateProperty}
+                description={i18n.HELP.MAX_TOKENS} />
+              <label>{i18n.COMMON.MODEL}:</label>
+              <NekoSelect id="model" name="model" value={model} disabled={true}
+                description={i18n.CONTENT_GENERATOR.MODEL_HELP}
                 scrolldown={true} onChange={setTemplateProperty}>
                 {models.map((x) => (
                   <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
@@ -581,25 +588,25 @@ const ContentGenerator = () => {
 
           <StyledSidebar>
             <StyledTitleWithButton>
-              <h2>Prompts</h2>
+              <h2>{i18n.COMMON.PROMPTS}</h2>
               <NekoButton onClick={() => setShowPrompts(!showPrompts)}>
                 {showPrompts ? 'Hide' : 'Show'}
               </NekoButton>
             </StyledTitleWithButton>
             {showPrompts && <>
               <p style={{ fontSize: 11, lineHeight: '14px' }}>
-                Prompts represent the exact request sent to the AI. The variables between curly braces will be replaced by the content of the corresponding field. Prompts are saved in your templates.
+                {i18n.CONTENT_GENERATOR.PROMPTS_INTRO}
               </p>
-              <label>Prompt for <b>Title</b></label>
+              <label>{i18n.CONTENT_GENERATOR.PROMPT_TITLE}</label>
               <NekoTextArea disabled={isBusy} id="titlePromptFormat" name="titlePromptFormat"
                 value={titlePromptFormat} onChange={setTemplateProperty}  />
-              <label>Prompt for <b>Sections</b></label>
+              <label>{i18n.CONTENT_GENERATOR.PROMPT_SECTIONS}</label>
               <NekoTextArea disabled={isBusy} id ="sectionsPromptFormat" name="sectionsPromptFormat"
                 value={sectionsPromptFormat} onChange={setTemplateProperty}  />
-              <label>Prompt for <b>Content</b></label>
+              <label>{i18n.CONTENT_GENERATOR.PROMPT_CONTENT}</label>
               <NekoTextArea disabled={isBusy} id="contentPromptFormat" name="contentPromptFormat"
                 value={contentPromptFormat} onChange={setTemplateProperty}  />
-              <label>Prompt for <b>Excerpt</b></label>
+              <label>{i18n.CONTENT_GENERATOR.PROMPT_EXCERPT}</label>
               <NekoTextArea disabled={isBusy} id="excerptPromptFormat" name="excerptPromptFormat"
                 value={excerptPromptFormat} onChange={setTemplateProperty}  />
             </>}
@@ -615,13 +622,11 @@ const ContentGenerator = () => {
           window.open(`/wp-admin/post.php?post=${createdPostId}&action=edit`, '_blank');
           resetTemplate();
         }}
-        ok="Edit the Post"
+        ok={i18n.CONTENT_GENERATOR.EDIT_POST}
         cancel="Close"
         onCancelClick={() => resetTemplate()}
-        title="Post Created!"
-        content={<p>
-          The post was created as draft.
-        </p>}
+        title={i18n.CONTENT_GENERATOR.POST_CREATED}
+        content={<p>{i18n.CONTENT_GENERATOR.POST_CREATED_AS_DRAFT}</p>}
       />
 
       <NekoModal isOpen={error}
