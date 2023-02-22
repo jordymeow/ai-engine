@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.0.2 (2023/02/22) =
+= 1.0.3 (2023/02/22) =
 * Fix: There was an alert popping in the AI Forms.
 * Update: Better handling of user errors in the AI Forms.
 * Update: The ChatGPT theme, if choosen, is applied to AI Forms too.
