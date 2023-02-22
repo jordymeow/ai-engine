@@ -367,9 +367,11 @@ class Meow_MWAI_Modules_Chatbot {
             buttonSpan.innerHTML = '<?= $textSend ?>';
           }
           else if (!input.value.length) {
+            button.classList.add('mwai-clear');
             buttonSpan.innerHTML = '<?= $textClear ?>';
           }
           else {
+            button.classList.remove('mwai-clear');
             buttonSpan.innerHTML = '<?= $textSend ?>';
           }
         }
