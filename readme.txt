@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,10 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 1.0.2 (2023/02/22) =
+* Fix: There was an alert popping in the AI Forms.
+* Update: Better handling of user errors in the AI Forms.
+* Update: The ChatGPT theme, if choosen, is applied to AI Forms too.
+* Info: Finally, the version 1.0 is here! Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
+
 = 1.0.1 (2023/02/21) =
 * Fix: The Form Select wasn't working properly.
 * Update: Translation framework.
-* Info: Finally, the version 1.0 is here! Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and share some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
 
 = 1.0.0 (2023/02/20) =
 * Update: Enhance the chabot's input field visually.
