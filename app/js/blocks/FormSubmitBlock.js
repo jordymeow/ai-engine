@@ -1,9 +1,10 @@
-// Previous: 0.9.89
-// Current: 0.9.97
+// Previous: 0.9.97
+// Current: 1.0.5
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
+import i18n from "../../i18n";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
@@ -12,14 +13,21 @@ const { PanelBody, TextControl, TextareaControl, SelectControl, UnitControl } = 
 const { InspectorControls } = wp.blockEditor;
 
 const saveFormField = (props) => {
-	const { attributes: { label, prompt, outputElement, model, temperature } } = props;
+	const { attributes: { id, label, prompt, outputElement, model, temperature } } = props;
 	const encodedPrompt = encodeURIComponent(prompt);
-	return `[mwai-form-submit label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}" temperature="${temperature}"]`;
+	return `[mwai-form-submit id="${id}" label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}" temperature="${temperature}"]`;
 }
 
-const FormSubmitBlock = (props) => {
+const FormSubmitBlock = props => {
 	const { models } = useModels(options);
-	const { attributes: { label, prompt, model, temperature, outputElement, placeholders = [] }, setAttributes } = props;
+	const { attributes: { id, label, prompt, model, temperature, outputElement, placeholders = [] }, setAttributes } = props;
+
+	useEffect(() => {
+		if (!id) {
+			const newId = Math.random().toString(36).substr(2, 9);
+			setAttributes({ id: 'mwai-' + newId });
+		}
+	}, [id]);
 
 	useEffect(() => {
 		const matches = prompt.match(/{([^}]+)}/g);
@@ -29,7 +37,7 @@ const FormSubmitBlock = (props) => {
 				setAttributes({ placeholders: freshPlaceholders });
 			}
 		}
-	}, [prompt, placeholders]);
+	}, [prompt]);
 
 	const fieldsCount = useMemo(() => {
 		return placeholders ? placeholders.length : 0;
@@ -53,21 +61,27 @@ const FormSubmitBlock = (props) => {
 				Output Element: {outputElement}
 			</AiBlockContainer>
 			<InspectorControls>
-				<PanelBody title={ __( 'Output' ) }>
-					<TextControl label="Label" value={label} onChange={(value) => setAttributes({ label: value })} />
-					<TextareaControl label="Prompt" value={prompt} onChange={(value) => setAttributes({ prompt: value })}
-						help="The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: Recommend me {MUSIC_TYPE} artists. You can also use an ID as an input, like this: ${#myfield}. Finally, if you wish the output to be formatted, add: Use Markdown format." />
-					<TextControl label="Output Element" value={outputElement} onChange={(value) => setAttributes({ outputElement: value })}
-						help="The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use '#mwai-666'." />
+				<PanelBody title={i18n.COMMON.OUTPUT}>
+					<TextControl label={i18n.COMMON.LABEL} value={label} onChange={value => setAttributes({ label: value })} />
+					<TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
+						onChange={value => setAttributes({ prompt: value })}
+						help={i18n.FORMS.PROMPT_INFO} />
+					<TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
+						onChange={value => setAttributes({ outputElement: value })}
+						help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
 				</PanelBody>
-				<PanelBody title={ __( 'Params' ) }>
-					{models && models.length > 0 &&
-						<SelectControl label={ __( 'Model' ) } value={model} options={modelOptions}
-							onChange={(value) => setAttributes({ model: value })}
+				<PanelBody title={i18n.COMMON.MODEL_PARAMS}>
+					{models && models.length > 0 && 
+						<SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
+							onChange={value => setAttributes({ model: value })}
 					/>}
-					<TextControl label="Temperature" value={temperature} onChange={(value) => setAttributes({ temperature: value })}
+					<TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
+						onChange={value => setAttributes({ temperature: value })}
 						type="number" step="0.1" min="0" max="1"
-						help="The temperature of the model. 0.8 is the default. Lower values will make the model more conservative, higher values will make it more creative." />
+						help={i18n.HELP.TEMPERATURE} />
+				</PanelBody>
+				<PanelBody title={i18n.COMMON.SYSTEM}>
+					<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
 				</PanelBody>
 			</InspectorControls>
 		</>
@@ -82,6 +96,10 @@ const createSubmitBlock = () => {
 		category: 'layout',
 		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
 		attributes: {
+			id: {
+				type: 'string',
+				default: ''
+			},
 			label: {
 				type: 'string',
 				default: 'Submit'

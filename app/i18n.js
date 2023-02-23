@@ -93,13 +93,22 @@ i18n.COMMON = {
   MODEL_PARAMS: __( 'Model Params', 'ai-engine' ),
   PROMPT: __( 'Prompt', 'ai-engine' ),
   PROMPTS: __( 'Prompts', 'ai-engine' ),
+  LABEL: __( 'Label', 'ai-engine' ),
+  SYSTEM: __( 'System', 'ai-engine' ),
+}
+
+i18n.FORMS = {
+  PROMPT_INFO: __( 'The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: Recommend me {MUSIC_TYPE} artists. You can also use an ID as an input, like this: ${#myfield}. Finally, if you wish the output to be formatted, add: Use Markdown format."', 'ai-engine' ),
+  OUTPUT: __( 'Output', 'ai-engine' ),
+  OUTPUT_ELEMENT: __( 'Output Element', 'ai-engine' ),
+  OUTPUT_ELEMENT_INFO: __( 'The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use \'#mwai-666\'.', 'ai-engine' ),
 }
 
 i18n.HELP = {
   TEMPERATURE: __( 'Between 0 and 1. Higher values means the model will take more risks.', 'ai-engine' ),
   MAX_TOKENS: __( 'The maximum number of tokens to generate. The model will stop generating once it hits this limit.', 'ai-engine' ),
   STOP_SEQUENCE: __( 'The sequence of tokens that will cause the model to stop generating text. You absolutely need this with fine-tuned models.', 'ai-engine' ),
-  USAGE: __( 'Keeps track of the current usage of the AI.', 'ai-engine' ),
+  USAGE: __( 'Keeps track of the current usage of the AI.', 'ai-engine' )
 }
 
 i18n.SETTINGS = {

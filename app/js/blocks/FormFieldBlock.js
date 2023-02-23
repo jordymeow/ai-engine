@@ -1,11 +1,12 @@
-// Previous: 0.9.85
-// Current: 0.9.86
+// Previous: 0.9.86
+// Current: 1.0.5
 
+import i18n from "../../i18n";
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
-const { useEffect } = wp.element;
+const { useEffect, useRef } = wp.element;
 const { Button, PanelBody, TextControl, SelectControl, Icon } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
@@ -19,20 +20,24 @@ const saveFormField = (props) => {
 	return `[mwai-form-field id='${id}' label="${label}" type="${type}" name="${name}" options="${encodedOptions}" placeholder="${placeholder}"]`;
 }
 
-const FormFieldBlock = props => {
+const FormFieldBlock = (props) => {
 	const { attributes: { id, type, name, options = [], label, placeholder }, setAttributes } = props;
+	const prevIdRef = useRef();
 
 	useEffect(() => {
 		if (!id) {
 			const newId = Math.random().toString(36).substr(2, 9);
 			setAttributes({ id: 'mwai-' + newId });
 		}
+		if (id && prevIdRef.current !== id) {
+			prevIdRef.current = id;
+		}
 	}, [id]);
 
 	const onUpdateLabel = (value) => {
 		setAttributes({ label: value });
 		const newName = value.trim().replace(/ /g, '_').replace(/[^\w-]+/g, '').toUpperCase();
-		if (newName) {
+		if (!!newName) {
 			setAttributes({ name: newName });
 		}
 	}
@@ -105,6 +110,7 @@ const FormFieldBlock = props => {
 							}} />
 						</div>
 						</div>
+						
 				})}
 
 				<Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={(ev) => {
@@ -113,7 +119,7 @@ const FormFieldBlock = props => {
 					setAttributes({ options: newOptions });
 				}}>Add Option</Button>
 			</PanelBody>}
-			<PanelBody title={ __( 'Optional' ) }>
+			<PanelBody title={i18n.COMMON.SYSTEM}>
 				<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
 			</PanelBody>
 		</InspectorControls>

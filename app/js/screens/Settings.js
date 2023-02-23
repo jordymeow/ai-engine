@@ -1,8 +1,9 @@
-// Previous: 1.0.0
-// Current: 1.0.01
+// Previous: 1.0.01
+// Current: 1.0.5
 
 const { useMemo, useState } = wp.element;
 
+// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessageDanger,
   NekoQuickLinks, NekoLink,
@@ -220,6 +221,10 @@ const Settings = () => {
     await updateOption(default_limits, 'limits');
   }
 
+  /**
+   * Settings
+   */
+
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
       <NekoCheckboxGroup max="1">
@@ -271,6 +276,15 @@ const Settings = () => {
         onChange={updateOption} />
     </NekoSettings>;
 
+  // const jsxAiBlocks = 
+  // <NekoSettings title="Gutenberg Blocks">
+  //   <NekoCheckboxGroup max="1">
+  //     <NekoCheckbox label={i18n.COMMON.ENABLE} disabled={true} value="1" checked={module_blocks}
+  //       description="Additional blocks. Let me know your ideas!"
+  //       onChange={updateOption} />
+  //   </NekoCheckboxGroup>
+  // </NekoSettings>;
+
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
       <NekoCheckboxGroup max="1">
@@ -311,6 +325,12 @@ const jsxShortcodeChatLogs =
     </NekoCheckboxGroup>
   </NekoSettings>;
 
+  // const jsxExtraModels =
+  //   <NekoSettings title="Extra Models">
+  //     <NekoInput id="extra_models" name="extra_models" value={extra_models}
+  //       description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
+  //   </NekoSettings>;
+  
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
       <NekoCheckbox id="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
@@ -888,6 +908,7 @@ const jsxShortcodeChatLogs =
                           <NekoSelect scrolldown id="timeFrame" name="timeFrame" disabled={!limits?.enabled}
                             value={limits?.[limitSection]?.timeFrame} 
                             onChange={limitSection === 'users' ? updateUserLimits : updateGuestLimits}>
+                              <NekoOption key={'hour'} id={'hour'} value={'hour'} label={"Hour"} />
                               <NekoOption key={'day'} id={'day'} value={'day'} label={"Day"} />
                               <NekoOption key={'week'} id={'week'} value={'week'} label={"Week"} />
                               <NekoOption key={'month'} id={'month'} value={'month'} label={"Month"} />

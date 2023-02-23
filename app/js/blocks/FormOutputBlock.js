@@ -1,6 +1,7 @@
-// Previous: 0.7.6
-// Current: 0.8.7
+// Previous: 0.8.7
+// Current: 1.0.5
 
+import i18n from "../../i18n";
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
@@ -36,7 +37,7 @@ const FormOutputBlock = props => {
 				</div>
 			</AiBlockContainer>
 			<InspectorControls>
-				<PanelBody title={ __( 'Output' ) }>
+				<PanelBody title={i18n.FORMS.OUTPUT}>
 					<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
 				</PanelBody>
 			</InspectorControls>
