@@ -1,9 +1,8 @@
-// Previous: 1.0.01
-// Current: 1.0.5
+// Previous: 1.0.5
+// Current: 1.0.6
 
 const { useMemo, useState } = wp.element;
 
-// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessageDanger,
   NekoQuickLinks, NekoLink,
@@ -85,6 +84,7 @@ const Settings = () => {
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
   const extra_models = options?.extra_models;
   const debug_mode = options?.debug_mode;
+  const resolve_shortcodes = options?.resolve_shortcodes;
   const isChat = shortcodeParams.mode === 'chat';
   const isImagesChat = shortcodeParams.mode === 'images';
   const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
@@ -149,13 +149,13 @@ const Settings = () => {
           options: newOptions
         }
       });
-      if (response.success) {
-        setOptions(response.options);
+      if (response?.success) {
+        setOptions(response?.options);
       }
     }
     catch (err) {
-      if (err.message) {
-        alert(err.message);
+      if (err?.message) {
+        alert(err?.message);
       }
     }
     finally {
@@ -177,7 +177,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.users, [id]: value };
+    const newParams = { ...limits?.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -186,7 +186,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.guests, [id]: value };
+    const newParams = { ...limits?.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -220,10 +220,6 @@ const Settings = () => {
     console.log(default_limits);
     await updateOption(default_limits, 'limits');
   }
-
-  /**
-   * Settings
-   */
 
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
@@ -276,15 +272,6 @@ const Settings = () => {
         onChange={updateOption} />
     </NekoSettings>;
 
-  // const jsxAiBlocks = 
-  // <NekoSettings title="Gutenberg Blocks">
-  //   <NekoCheckboxGroup max="1">
-  //     <NekoCheckbox label={i18n.COMMON.ENABLE} disabled={true} value="1" checked={module_blocks}
-  //       description="Additional blocks. Let me know your ideas!"
-  //       onChange={updateOption} />
-  //   </NekoCheckboxGroup>
-  // </NekoSettings>;
-
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
       <NekoCheckboxGroup max="1">
@@ -325,16 +312,17 @@ const jsxShortcodeChatLogs =
     </NekoCheckboxGroup>
   </NekoSettings>;
 
-  // const jsxExtraModels =
-  //   <NekoSettings title="Extra Models">
-  //     <NekoInput id="extra_models" name="extra_models" value={extra_models}
-  //       description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
-  //   </NekoSettings>;
-  
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
       <NekoCheckbox id="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
         description={i18n.COMMON.DEBUG_MODE_HELP}
+        onChange={updateOption} />
+    </NekoSettings>;
+
+  const jsxResolveShortcodes = 
+    <NekoSettings title={i18n.COMMON.SHORTCODES}>
+      <NekoCheckbox id="resolve_shortcodes" label={i18n.COMMON.RESOLVE} value="1" checked={resolve_shortcodes}
+        description={i18n.HELP.RESOLVE_SHORTCODE}
         onChange={updateOption} />
     </NekoSettings>;
 
@@ -479,6 +467,7 @@ const jsxShortcodeChatLogs =
                   <NekoBlock busy={busy} title="Advanced" className="primary">
                     {/* {jsxExtraModels} */}
                     {jsxDebugMode}
+                    {jsxResolveShortcodes}
                   </NekoBlock>
                 </NekoColumn>
 
@@ -962,7 +951,7 @@ const jsxShortcodeChatLogs =
             </NekoTab>
 
             <NekoTab key="openai-status"
-              title={<>{i18n.COMMON.OPENAI_TAB}{accidentsPastDay > 0 ? <>&nbsp;⚠️</> : ""}</>}>
+              title={<>{i18n.COMMON.OPENAI_TAB}{accidentsPastDay > 0 ? <>&nbsp;⚠️</> : <>&nbsp;✅</>}</>}>
               <OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
             </NekoTab>
 

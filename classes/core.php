@@ -114,6 +114,7 @@ define( 'MWAI_OPTIONS', [
 	'openai_finetunes_deleted' => [],
 	'extra_models' => "",
 	'debug_mode' => true,
+	'resolve_shortcodes' => false,
 	'languages' => MWAI_LANGUAGES
 ]);
 #endregion

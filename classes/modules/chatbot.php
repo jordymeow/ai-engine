@@ -251,7 +251,7 @@ class Meow_MWAI_Modules_Chatbot {
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
     if ( $casuallyFineTuned ) {
-      $promptEnding = "\\n\\n===\\n\\n";
+      $promptEnding = "\\n\\n###\\n\\n";
       $completionEnding = "\\n\\n";
     }
     $debugMode = $chatStyles = $this->core->get_option( 'debug_mode' );
@@ -335,6 +335,7 @@ class Meow_MWAI_Modules_Chatbot {
         let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
         let isCasuallyFineTuned = <?= $casuallyFineTuned ? 'true' : 'false' ?>;
         let mode = '<?= $mode ?>';
+        let context = isCasuallyFineTuned ? null : '<?= $context ?>';
         let maxSentences = <?= $maxSentences ?>;
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
         let <?= $memorizedChat ?> = [];
@@ -348,7 +349,7 @@ class Meow_MWAI_Modules_Chatbot {
               model: '<?= $model ?>',
               temperature: '<?= $temperature ?>',
               maxTokens: '<?= $maxTokens ?>',
-              context: '<?= $context ?>',
+              context: context,
               start_sentence: '<?= $startSentence ?>',
               isMobile: isMobile,
               isWindow: isWindow,
@@ -513,11 +514,9 @@ class Meow_MWAI_Modules_Chatbot {
 
           // Let's build the prompt depending on the "system"
           <?= $onGoingPrompt ?>.push({ who: '<?= $rawAiName ?>', says: '' });
-          let prompt = '<?= $context ?>' + '\n\n';
-          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, maxSentences);
 
-          console.log('onGoingPrompt', <?= $onGoingPrompt ?>);
-          console.log('prompt', prompt);
+          let prompt = context ? (context + '\n\n') : '';
+          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, maxSentences);
 
           // Prompt for the images
           const data = mode === 'images' ? {

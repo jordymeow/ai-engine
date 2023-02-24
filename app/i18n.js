@@ -55,9 +55,9 @@ i18n.COMMON = {
   TYPE: __( 'Type', 'ai-engine' ),
   USERS: __( 'Users', 'ai-engine' ),
   GUESTS: __( 'Guests', 'ai-engine' ),
-  OPENAI_TAB: __( 'OpenAI Status', 'ai-engine' ),
+  OPENAI_TAB: __( 'OpenAI', 'ai-engine' ),
   LICENSE_TAB: __( 'License', 'ai-engine' ),
-  FINETUNING_TAB: __( 'Fine Tuning: Train your AI', 'ai-engine' ),
+  FINETUNING_TAB: __( 'Fine Tuning', 'ai-engine' ),
   MODELS: __( 'Models', 'ai-engine' ),
   DATASETS: __( 'Datasets', 'ai-engine' ),
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
@@ -95,6 +95,8 @@ i18n.COMMON = {
   PROMPTS: __( 'Prompts', 'ai-engine' ),
   LABEL: __( 'Label', 'ai-engine' ),
   SYSTEM: __( 'System', 'ai-engine' ),
+  SHORTCODES: __( 'Shortcodes', 'ai-engine' ),
+  RESOLVE: __( 'Resolve', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -108,7 +110,8 @@ i18n.HELP = {
   TEMPERATURE: __( 'Between 0 and 1. Higher values means the model will take more risks.', 'ai-engine' ),
   MAX_TOKENS: __( 'The maximum number of tokens to generate. The model will stop generating once it hits this limit.', 'ai-engine' ),
   STOP_SEQUENCE: __( 'The sequence of tokens that will cause the model to stop generating text. You absolutely need this with fine-tuned models.', 'ai-engine' ),
-  USAGE: __( 'Keeps track of the current usage of the AI.', 'ai-engine' )
+  USAGE: __( 'Keeps track of the current usage of the AI.', 'ai-engine' ),
+  RESOLVE_SHORTCODE: __( 'Will resolve the shortcode in your content when needed (Content-Aware will use this, for instance).', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {
