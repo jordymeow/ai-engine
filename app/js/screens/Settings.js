@@ -1,5 +1,5 @@
-// Previous: 1.0.6
-// Current: 1.0.7
+// Previous: 1.0.7
+// Current: 1.0.8
 
 const { useMemo, useState } = wp.element;
 
@@ -86,8 +86,8 @@ const Settings = () => {
   const extra_models = options?.extra_models;
   const debug_mode = options?.debug_mode;
   const resolve_shortcodes = options?.resolve_shortcodes;
-  const isChat = shortcodeParams?.mode === 'chat';
-  const isImagesChat = shortcodeParams?.mode === 'images';
+  const isChat = shortcodeParams.mode === 'chat';
+  const isImagesChat = shortcodeParams.mode === 'images';
   const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
@@ -178,7 +178,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.users, [id]: value };
+    const newParams = { ...limits?.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -187,7 +187,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.guests, [id]: value };
+    const newParams = { ...limits?.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -301,16 +301,17 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  const jsxShortcodeChatLogs =
-    <NekoSettings title="Logs">
-      <NekoCheckboxGroup max="1">
-        <NekoSelect scrolldown id="shortcode_chat_logs" name="shortcode_chat_logs"
-          value={shortcode_chat_logs} description="" onChange={updateOption}>
-          <NekoOption value='' label="None" />
-          <NekoOption value='file' label="Files (/uploads/chatbot folder)" />
-        </NekoSelect>
-      </NekoCheckboxGroup>
-    </NekoSettings>;
+
+const jsxShortcodeChatLogs =
+  <NekoSettings title="Logs">
+    <NekoCheckboxGroup max="1">
+      <NekoSelect scrolldown id="shortcode_chat_logs" name="shortcode_chat_logs"
+        value={shortcode_chat_logs} description="" onChange={updateOption}>
+        <NekoOption value='' label="None" />
+        <NekoOption value='file' label="Files (/uploads/chatbot folder)" />
+      </NekoSelect>
+    </NekoCheckboxGroup>
+  </NekoSettings>;
 
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
@@ -349,7 +350,7 @@ const Settings = () => {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price; // Removed 'const' here to match the subtle bug
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -367,7 +368,7 @@ const Settings = () => {
           if (modelPrice) {
             price = modelUsage.total_tokens / 1000 * modelPrice.price;
             usageData[month].totalPrice += price;
-            const name = realModel ? realModel.name : model; // 'const' missing here intentionally
+            const name = realModel ? realModel.name : model;
             usageData[month].data.push({
               name: name,
               isImage: false,
@@ -426,9 +427,9 @@ const Settings = () => {
       </>}
     </div>;
 
-  const isFineTuned = isFineTunedModel(shortcodeParams?.model);
-  const isContentAware = shortcodeParams?.content_aware;
-  const contextHasContent = shortcodeParams?.context && shortcodeParams?.context.includes('{CONTENT}');
+  const isFineTuned = isFineTunedModel(shortcodeParams.model);
+  const isContentAware = shortcodeParams.content_aware;
+  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
         
   return (
     <NekoPage>
@@ -621,7 +622,7 @@ const Settings = () => {
                       </div>
 
                       {isChat && <div className="mwai-builder-row">
-                        <div className="mwai-builder-col">
+                        <div className="mwai-builder-col" style={{ flex: 2.5 }}>
                           <label>{i18n.COMMON.MODEL}:</label>
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
@@ -632,15 +633,32 @@ const Settings = () => {
                         </div>
                       </div>}
 
+                      <div className="mwai-builder-row">
+
+                        <div className="mwai-builder-col" style={{ flex: 1 }}>
+                          <label>{i18n.COMMON.MAX_SENTENCES}:</label>
+                          <NekoInput id="max_sentences" name="max_sentences"
+                            step="1" min="1" max="512"
+                            value={shortcodeParams.max_sentences} onBlur={updateShortcodeParams} />
+                        </div>
+
+                        <div className="mwai-builder-col" style={{ flex: 3 }}>
+                          <label>{i18n.COMMON.COMPLIANCE_TEXT}:</label>
+                          <NekoInput id="text_compliance" name="text_compliance"
+                            value={shortcodeParams.text_compliance} onBlur={updateShortcodeParams} />
+                        </div>
+
+                      </div>
+
                       {isChat && <div className="mwai-builder-row">
                         
-                        <div className="mwai-builder-col" style={{ flex: 0.5 }}>
+                        <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.MAX_TOKENS}:</label>
                           <NekoInput id="max_tokens" name="max_tokens" type="number" min="10" max="2048"
                             value={shortcodeParams.max_tokens} onBlur={updateShortcodeParams} />
                         </div>
 
-                        <div className="mwai-builder-col" style={{ flex: 0.5 }}>
+                        <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.TEMPERATURE}:</label>
                           <NekoInput id="temperature" name="temperature" type="number"
                             step="0.1" min="0" max="1"
@@ -653,6 +671,7 @@ const Settings = () => {
                             checked={shortcodeParams.casually_fine_tuned} value="1" onChange={updateShortcodeParams}
                           />
                         </div>
+
                         {isContentAware && <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox id="content_aware" label="Yes"
@@ -935,7 +954,7 @@ const Settings = () => {
                                 label={i18n.COMMON.EDITORS_ADMINS} />
                               <NekoOption key={'admin'} id={'admin'} value={'administrator'}
                                 label={i18n.COMMON.ADMINS_ONLY} />
-                          </NekoSelect>
+                          </NekoOption>
                         </div>
                       </div>}
 

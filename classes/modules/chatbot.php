@@ -13,7 +13,6 @@ class Meow_MWAI_Modules_Chatbot {
     add_shortcode( 'mwai_imagesbot', array( $this, 'imageschat' ) );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
     if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
-      //add_action( 'wp_body_open', array( $this, 'inject_chat' ) );
       add_action( 'wp_footer', array( $this, 'inject_chat' ) );
     }
 
@@ -65,7 +64,13 @@ class Meow_MWAI_Modules_Chatbot {
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
       $query->injectParams( $params );
-			$answer = $this->core->ai->run( $query );
+      $takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params  );
+      if ( !empty( $takeoverAnswer ) ) {
+        return new WP_REST_Response([ 'success' => true, 'answer' => $takeoverAnswer,
+          'html' => $takeoverAnswer, 'usage' => null ], 200 );
+      }
+			
+      $answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
       $html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params  );
       $html = $this->core->markdown_to_html( $html );
@@ -223,6 +228,7 @@ class Meow_MWAI_Modules_Chatbot {
     $textSend = addslashes( trim( $atts['text_send'] ) );
     $textClear = addslashes( trim( $atts['text_clear'] ) );
     $textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
+    $textCompliance = addslashes( trim( $atts['text_compliance'] ) );
     $startSentence = addslashes( trim( $atts['start_sentence'] ) );
     $window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
     $fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
@@ -263,19 +269,10 @@ class Meow_MWAI_Modules_Chatbot {
     $apiKey = $atts['api_key'];
 
     // Named functions
-    $onSentClickFn = "mwai_{$id}_onSendClick";
-    $addReplyFn = "mwai_{$id}_addReply";
     $initChatBotFn = "mwai_{$id}_initChatBot";
-    $setButtonTextFn = "mwai_{$id}_setButtonText";
-    $onTidyOnGoingPromptFn = "mwai_{$id}_onUpdateOnGoingPrompt";
-    $injectTimerFn = "mwai_{$id}_injectTimer";
-    $textAreaResizeFn = "mwai_{$id}_textAreaResize";
-    $textAreaDelayedResizeFn = "mwai_{$id}_textAreaDelayedResize";
 
     // Variables
     $apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-chatbot/v1/imagesbot' : 'ai-chatbot/v1/chat' );
-    $onGoingPrompt = "mwai_{$id}_onGoingPrompt";
-    $memorizedChat = "mwai_{$id}_memorizedChat";
     $baseClasses = "mwai-chat";
     $baseClasses .= ( $window ? " mwai-window" : "" );
     $baseClasses .= ( !$window && $fullscreen ? " mwai-fullscreen" : "" );
@@ -323,48 +320,49 @@ class Meow_MWAI_Modules_Chatbot {
             <textarea rows="1" placeholder="<?= $textInputPlaceholder ?>"></textarea>
             <button><span><?= $textSend ?></span></button>
           </div>
+          <?php if ( !empty( $textCompliance ) ) { ?>
+            <div class="mwai-compliance">
+              ⚠️ <?= $textCompliance ?>
+            </div>
+          <?php } ?>
         </div>
       </div>
 
       <script>
       (function () {
-        let <?= $onGoingPrompt ?> = [];
+        let onGoingPrompt = [];
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
         let isDebugMode = <?= $debugMode ? 'true' : 'false' ?>;
         let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
         let isCasuallyFineTuned = <?= $casuallyFineTuned ? 'true' : 'false' ?>;
+        let textCompliance = '<?= $textCompliance ?>';
         let mode = '<?= $mode ?>';
+        let model = '<?= $model ?>';
         let context = isCasuallyFineTuned ? null : '<?= $context ?>';
+        let startSentence = '<?= $startSentence ?>';
         let maxSentences = <?= $maxSentences ?>;
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
-        let <?= $memorizedChat ?> = [];
+        let maxTokens = <?= $maxTokens ?>;
+        let temperature = <?= $temperature ?>;
+        let memorizedChat = [];
 
         if (isDebugMode) {
           window.mwai_<?= $id ?> = {
-            onGoingPrompt: <?= $onGoingPrompt ?>,
-            memorizedChat: <?= $memorizedChat ?>,
-            parameters: {
-              mode: mode,
-              model: '<?= $model ?>',
-              temperature: '<?= $temperature ?>',
-              maxTokens: '<?= $maxTokens ?>',
-              context: context,
-              start_sentence: '<?= $startSentence ?>',
-              isMobile: isMobile,
-              isWindow: isWindow,
-              isFullscreen: isFullscreen,
-              isCasuallyFineTuned: isCasuallyFineTuned,
+            onGoingPrompt: onGoingPrompt,
+            memorizedChat: memorizedChat,
+            parameters: { mode: mode, model, temperature, maxTokens, context: context, startSentence,
+              textCompliance, isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences
             }
           };
         }
 
         // Set button text
-        function <?= $setButtonTextFn ?>() {
+        function setButtonText() {
           let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
           let button = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input button');
           let buttonSpan = button.querySelector('span');
-          if (<?= $memorizedChat ?>.length < 2) {
+          if (memorizedChat.length < 2) {
             buttonSpan.innerHTML = '<?= $textSend ?>';
           }
           else if (!input.value.length) {
@@ -378,7 +376,7 @@ class Meow_MWAI_Modules_Chatbot {
         }
 
         // Inject timer 
-        function <?= $injectTimerFn ?>(element) {
+        function injectTimer(element) {
           let intervalId;
           let startTime = new Date();
           let timerElement = null;
@@ -413,12 +411,12 @@ class Meow_MWAI_Modules_Chatbot {
         }
 
         // Push the reply in the conversation
-        function <?= $addReplyFn ?>(text, type = 'user') {
+        function addReply(text, type = 'user') {
           var conversation = document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation');
 
           if (memorizeChat) {
-            <?= $memorizedChat ?>.push({ text, type });
-            localStorage.setItem('mwai-chat-<?= $id ?>', JSON.stringify(<?= $memorizedChat ?>));
+            memorizedChat.push({ text, type });
+            localStorage.setItem('mwai-chat-<?= $id ?>', JSON.stringify(memorizedChat));
           }
 
           // If text is array, then it's image URLs. Let's create a simple gallery in HTML in $text.
@@ -454,7 +452,7 @@ class Meow_MWAI_Modules_Chatbot {
           html += '</div>';
           conversation.innerHTML += html;
           conversation.scrollTop = conversation.scrollHeight;
-          <?= $setButtonTextFn ?>();
+          setButtonText();
 
           // Syntax coloring
           if (typeof hljs !== 'undefined') {
@@ -464,7 +462,7 @@ class Meow_MWAI_Modules_Chatbot {
           }
         }
 
-        function <?= $onTidyOnGoingPromptFn ?>(onGoingPrompt, last = 15) {
+        function tidyOnGoingPrompt(onGoingPrompt, last = 15) {
           let onGoingPromptLength = onGoingPrompt.length;
           let start = (onGoingPromptLength - last) < 0 ? 0 : (onGoingPromptLength - last);
           if (isCasuallyFineTuned) { onGoingPromptLength--; }
@@ -480,24 +478,21 @@ class Meow_MWAI_Modules_Chatbot {
           // Otherwise let's compile the latest conversation
           conversationToUse = conversationToUse.map(x => x.who + x.says);
           let prompt = conversationToUse.join('\n');
-          if (isCasuallyFineTuned) {
-            prompt = '<?= $promptEnding ?>';
-          }
           return prompt;
         }
 
         // Function to request the completion
-        function <?= $onSentClickFn ?>() {
+        function onSendClick() {
           let input = document.querySelector('#mwai-chat-<?= $id ?> .mwai-input textarea');
           let inputText = input.value.trim();
 
           // Reset the conversation if empty
           if (inputText === '') {
-            <?= $onGoingPrompt ?> = [];
+            onGoingPrompt = [];
             document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation').innerHTML = '';
             localStorage.removeItem('mwai-chat-<?= $id ?>');
-            <?= $memorizedChat ?> = [];
-            <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
+            memorizedChat = [];
+            addReply(startSentence, 'ai');
             return;
           }
 
@@ -506,17 +501,17 @@ class Meow_MWAI_Modules_Chatbot {
           button.disabled = true;
 
           // Add the user reply
-          <?= $addReplyFn ?>(inputText, 'user');
-          <?= $onGoingPrompt ?>.push({ who: '<?= $rawUserName ?>', says: inputText });
+          addReply(inputText, 'user');
+          onGoingPrompt.push({ who: '<?= $rawUserName ?>', says: inputText });
           input.value = '';
           input.setAttribute('rows', 1);
           input.disabled = true;
 
           // Let's build the prompt depending on the "system"
-          <?= $onGoingPrompt ?>.push({ who: '<?= $rawAiName ?>', says: '' });
+          onGoingPrompt.push({ who: '<?= $rawAiName ?>', says: '' });
 
           let prompt = context ? (context + '\n\n') : '';
-          prompt += <?= $onTidyOnGoingPromptFn ?>(<?= $onGoingPrompt ?>, maxSentences);
+          prompt += tidyOnGoingPrompt(onGoingPrompt, maxSentences);
 
           // Prompt for the images
           const data = mode === 'images' ? {
@@ -525,7 +520,7 @@ class Meow_MWAI_Modules_Chatbot {
             prompt: inputText,
             rawInput: inputText,
             maxResults: <?= $maxResults ?>,
-            model: '<?= $atts['model'] ?>',
+            model: model,
             apiKey: '<?= $atts['api_key'] ?>',
           // Prompt for the chat
           } : {
@@ -535,16 +530,16 @@ class Meow_MWAI_Modules_Chatbot {
             rawInput: inputText,
             userName: '<?= $userName ?>',
             aiName: '<?= $aiName ?>',
-            model: '<?= $model ?>',
-            temperature: '<?= $temperature ?>',
-            maxTokens: '<?= $maxTokens ?>',
+            model: model,
+            temperature: temperature,
+            maxTokens: maxTokens,
             stop: '<?= $completionEnding ?>',
             maxResults: 1,
             apiKey: '<?= $apiKey ?>',
           };
 
           // Start the timer
-          const stopTimer = <?= $injectTimerFn ?>(button);
+          const stopTimer = injectTimer(button);
 
           // Send the request
           if (isDebugMode) {
@@ -562,11 +557,11 @@ class Meow_MWAI_Modules_Chatbot {
               console.log('[BOT] Recv: ', data);
             }
             if (!data.success) {
-              <?= $addReplyFn ?>(data.message, 'system');
+              addReply(data.message, 'system');
             }
             else {
-              <?= $addReplyFn ?>(data.images ? data.images : data.html, 'ai');
-              <?= $onGoingPrompt ?>[<?= $onGoingPrompt ?>.length - 1].says = data.answer;
+              addReply(data.images ? data.images : data.html, 'ai');
+              onGoingPrompt[onGoingPrompt.length - 1].says = data.answer;
             }
             button.disabled = false;
             input.disabled = false;
@@ -586,14 +581,14 @@ class Meow_MWAI_Modules_Chatbot {
         }
 
         // Keep the textarea height in sync with the content
-        function <?= $textAreaResizeFn ?>(ev) {
+        function resizeTextArea(ev) {
           ev.target.style.height = 'auto';
           ev.target.style.height = ev.target.scrollHeight + 'px';
         }
 
         // Keep the textarea height in sync with the content
-        function <?= $textAreaDelayedResizeFn ?>(ev) {
-          window.setTimeout(<?= $textAreaResizeFn ?>, 0, event);
+        function delayedResizeTextArea(ev) {
+          window.setTimeout(resizeTextArea, 0, event);
         }
 
         // Init the chatbot
@@ -608,7 +603,7 @@ class Meow_MWAI_Modules_Chatbot {
               return;
             }
             if (event.keyCode === 13 && text.length && !event.shiftKey) {
-              <?= $onSentClickFn ?>();
+              onSendClick();
             }
           });
           input.addEventListener('keydown', (event) => {
@@ -622,17 +617,17 @@ class Meow_MWAI_Modules_Chatbot {
             var rows = input.getAttribute('rows');
             var lines = input.value.split('\n').length ;
             //mwaiSetTextAreaHeight(input, lines);
-            <?= $setButtonTextFn ?>();
+            setButtonText();
           });
 
-          input.addEventListener('change', <?= $textAreaResizeFn ?>, false);
-          input.addEventListener('cut', <?= $textAreaDelayedResizeFn ?>, false);
-          input.addEventListener('paste', <?= $textAreaDelayedResizeFn ?>, false);
-          input.addEventListener('drop', <?= $textAreaDelayedResizeFn ?>, false);
-          input.addEventListener('keydown', <?= $textAreaDelayedResizeFn ?>, false);
+          input.addEventListener('change', resizeTextArea, false);
+          input.addEventListener('cut', delayedResizeTextArea, false);
+          input.addEventListener('paste', delayedResizeTextArea, false);
+          input.addEventListener('drop', delayedResizeTextArea, false);
+          input.addEventListener('keydown', delayedResizeTextArea, false);
           
           button.addEventListener('click', (event) => {
-            <?= $onSentClickFn ?>(); 
+            onSendClick(); 
           });
 
           // If window, add event listener to mwai-open-button and mwai-close-button
@@ -667,14 +662,14 @@ class Meow_MWAI_Modules_Chatbot {
             if (chatHistory) {
               chatHistory = JSON.parse(chatHistory);
               chatHistory = chatHistory.filter(x => x && x.text && x.type);
-              chatHistory.forEach(x => { <?= $addReplyFn ?>(x.text, x.type) });
+              chatHistory.forEach(x => { addReply(x.text, x.type) });
             }
             else {
               chatHistory = [];
             }
           }
           if (chatHistory.length === 0) {
-            <?= $addReplyFn ?>('<?= $startSentence ?>', 'ai');
+            addReply(startSentence, 'ai');
           }
         }
 

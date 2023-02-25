@@ -97,6 +97,8 @@ i18n.COMMON = {
   SYSTEM: __( 'System', 'ai-engine' ),
   SHORTCODES: __( 'Shortcodes', 'ai-engine' ),
   RESOLVE: __( 'Resolve', 'ai-engine' ),
+  MAX_SENTENCES: __( 'Max Sentences', 'ai-engine' ),
+  COMPLIANCE_TEXT: __( 'Compliance Text', 'ai-engine' ),
 }
 
 i18n.FORMS = {

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.0.7 (2023/02/25) =
+= 1.0.8 (2023/02/25) =
+* Add: Filter to takeover the conversation programmatically.
+* Add: Compliance Text and Max Sentences.
 * Add: Hyperparams for finetuning.
 * Add: Queries viewer.
 * Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).

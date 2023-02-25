@@ -178,7 +178,16 @@
   outline: none;
 }
 
-#mwai-chat-id .mwai-input button {
+#mwai-chat-id .mwai-compliance {
+  opacity: 0.50;
+  margin-top: calc( -1 * var(--mwai-spacing));
+  padding: calc(var(--mwai-spacing) / 1.5) var(--mwai-spacing);
+  font-size: smaller;
+  color: var(--mwai-fontColor);
+  text-align: left;
+}
+
+#mwai-chat-id button {
   background: none;
   color: var(--mwai-fontColor);
   background-color: var(--mwai-backgroundSecondaryColor);
@@ -188,19 +197,18 @@
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease-out;
-  max-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-#mwai-chat-id .mwai-input button .mwai-timer {
+#mwai-chat-id button .mwai-timer {
   margin-left: 5px;
   margin-right: 5px;
   font-size: 11px;
 }
 
-#mwai-chat-id .mwai-input button:hover {
+#mwai-chat-id button:hover {
   background: var(--mwai-backgroundPrimaryColor);
 }
 
