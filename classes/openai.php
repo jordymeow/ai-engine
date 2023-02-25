@@ -116,13 +116,20 @@ class Meow_MWAI_OpenAI
     return $this->run('GET', '/files/' . $fileId . '/content', null, null, false);
   }
 
-  public function fineTuneFile($fileId, $model, $suffix)
+  public function fineTuneFile( $fileId, $model, $suffix, $hyperparams = [] )
   {
-    $result = $this->run('POST', '/fine-tunes', [
+    $n_epochs = isset( $hyperparams['nEpochs'] ) ? (int)$hyperparams['nEpochs'] : 4;
+    $batch_size = isset( $hyperparams['batchSize'] ) ? (int)$hyperparams['batchSize'] : null;
+    $arguments = [
       'training_file' => $fileId,
       'model' => $model,
-      'suffix' => $suffix
-    ]);
+      'suffix' => $suffix,
+      'n_epochs' => $n_epochs
+    ];
+    if ( $batch_size ) {
+      $arguments['batch_size'] = $batch_size;
+    }
+    $result = $this->run('POST', '/fine-tunes', $arguments);
     return $result;
   }
 

@@ -67,42 +67,42 @@ class Meow_MWAI_Rest
 			) );
 			register_rest_route( $this->namespace, '/openai_files', array(
 				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_files_get' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_files', array(
 				'methods' => 'DELETE',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_files_delete' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_files', array(
 				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_files_upload' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_files_download', array(
 				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_files_download' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_files_finetune', array(
 				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_files_finetune' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_finetunes', array(
 				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_finetunes_get' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_finetunes', array(
 				'methods' => 'DELETE',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_finetunes_delete' ),
 			) );
 			register_rest_route( $this->namespace, '/openai_incidents', array(
 				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_incidents' ),
 			) );
 			register_rest_route( $this->namespace, '/count_posts', array(
@@ -124,6 +124,11 @@ class Meow_MWAI_Rest
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'templates_save' ),
+			) );
+			register_rest_route( $this->namespace, '/logs', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'get_logs' ),
 			) );
 		}
 		catch ( Exception $e ) {
@@ -440,8 +445,12 @@ class Meow_MWAI_Rest
 			$fileId = $params['fileId'];
 			$model = $params['model'];
 			$suffix = $params['suffix'];
+			$hyperparams = [
+				"nEpochs" => $params['nEpochs'],
+				"batchSize" => $params['batchSize']
+			];
 			$openai = new Meow_MWAI_OpenAI( $this->core );
-			$finetune = $openai->fineTuneFile( $fileId, $model, $suffix );
+			$finetune = $openai->fineTuneFile( $fileId, $model, $suffix, $hyperparams );
 			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -537,5 +546,15 @@ class Meow_MWAI_Rest
 
 		update_option( 'mwai_templates', $templates_option );
 		return new WP_REST_Response([ 'success' => true ], 200 );
+	}
+
+	function get_logs( $request ) {
+		$params = $request->get_json_params();
+		$offset = $params['offset'];
+		$limit = $params['limit'];
+		$filters = $params['filters'];
+		$sort = $params['sort'];
+		$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
+		return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
 	}
 }

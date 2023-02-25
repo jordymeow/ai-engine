@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,11 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 1.0.7 (2023/02/25) =
+* Add: Hyperparams for finetuning.
+* Add: Queries viewer.
+* Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
+* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
+
 = 1.0.6 (2023/02/24) =
 * Fixes: There were few issues with my Casually Fine-Tuned system.
 * Add: Option to resolve shortcodes.
-* Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
-* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
 
 = 1.0.5 (2023/02/23) =
 * Add: Limit can be applied on a daily-basis.

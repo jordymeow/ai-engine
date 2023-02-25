@@ -1,5 +1,5 @@
-// Previous: 1.0.5
-// Current: 1.0.6
+// Previous: 1.0.6
+// Current: 1.0.7
 
 const { useMemo, useState } = wp.element;
 
@@ -21,6 +21,7 @@ import OpenAIStatus from './Settings/OpenAIStatus';
 import { StyledBuilderForm } from "../styles/StyledSidebar";
 import { NekoColorPicker } from "../components/NekoColorPicker";
 import i18n from '../../i18n';
+import QueriesExplorer from './LogsExplorer';
 
 const chatIcons = [
   'chat-robot-1.svg',
@@ -85,8 +86,8 @@ const Settings = () => {
   const extra_models = options?.extra_models;
   const debug_mode = options?.debug_mode;
   const resolve_shortcodes = options?.resolve_shortcodes;
-  const isChat = shortcodeParams.mode === 'chat';
-  const isImagesChat = shortcodeParams.mode === 'images';
+  const isChat = shortcodeParams?.mode === 'chat';
+  const isImagesChat = shortcodeParams?.mode === 'images';
   const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
@@ -149,13 +150,13 @@ const Settings = () => {
           options: newOptions
         }
       });
-      if (response?.success) {
-        setOptions(response?.options);
+      if (response.success) {
+        setOptions(response.options);
       }
     }
     catch (err) {
-      if (err?.message) {
-        alert(err?.message);
+      if (err.message) {
+        alert(err.message);
       }
     }
     finally {
@@ -177,7 +178,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits?.users, [id]: value };
+    const newParams = { ...limits.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -186,7 +187,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits?.guests, [id]: value };
+    const newParams = { ...limits.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -300,17 +301,16 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-
-const jsxShortcodeChatLogs =
-  <NekoSettings title="Logs">
-    <NekoCheckboxGroup max="1">
-      <NekoSelect scrolldown id="shortcode_chat_logs" name="shortcode_chat_logs"
-        value={shortcode_chat_logs} description="" onChange={updateOption}>
-        <NekoOption value='' label="None" />
-        <NekoOption value='file' label="Files (/uploads/chatbot folder)" />
-      </NekoSelect>
-    </NekoCheckboxGroup>
-  </NekoSettings>;
+  const jsxShortcodeChatLogs =
+    <NekoSettings title="Logs">
+      <NekoCheckboxGroup max="1">
+        <NekoSelect scrolldown id="shortcode_chat_logs" name="shortcode_chat_logs"
+          value={shortcode_chat_logs} description="" onChange={updateOption}>
+          <NekoOption value='' label="None" />
+          <NekoOption value='file' label="Files (/uploads/chatbot folder)" />
+        </NekoSelect>
+      </NekoCheckboxGroup>
+    </NekoSettings>;
 
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
@@ -349,7 +349,7 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            price = modelUsage.images * modelOptionPrice.price; // Removed 'const' here to match the subtle bug
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -367,7 +367,7 @@ const jsxShortcodeChatLogs =
           if (modelPrice) {
             price = modelUsage.total_tokens / 1000 * modelPrice.price;
             usageData[month].totalPrice += price;
-            const name = realModel ? realModel.name : model;
+            const name = realModel ? realModel.name : model; // 'const' missing here intentionally
             usageData[month].data.push({
               name: name,
               isImage: false,
@@ -426,9 +426,9 @@ const jsxShortcodeChatLogs =
       </>}
     </div>;
 
-  const isFineTuned = isFineTunedModel(shortcodeParams.model);
-  const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
+  const isFineTuned = isFineTunedModel(shortcodeParams?.model);
+  const isContentAware = shortcodeParams?.content_aware;
+  const contextHasContent = shortcodeParams?.context && shortcodeParams?.context.includes('{CONTENT}');
         
   return (
     <NekoPage>
@@ -465,7 +465,6 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
-                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                     {jsxResolveShortcodes}
                   </NekoBlock>
@@ -654,7 +653,7 @@ const jsxShortcodeChatLogs =
                             checked={shortcodeParams.casually_fine_tuned} value="1" onChange={updateShortcodeParams}
                           />
                         </div>
-                        {isChat && <div className="mwai-builder-col">
+                        {isContentAware && <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox id="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
@@ -827,7 +826,7 @@ const jsxShortcodeChatLogs =
               <NekoWrapper>
                 <NekoColumn minimal style={{ flex: 2.5 }}>
                   <NekoBlock className="primary" title="Queries">
-                    <p>In the works! Coming soon :)</p>
+                    <QueriesExplorer />
                   </NekoBlock>
                 </NekoColumn>
                 <NekoColumn minimal>

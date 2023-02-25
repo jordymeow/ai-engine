@@ -1,5 +1,5 @@
-// Previous: 0.9.83
-// Current: 0.9.92
+// Previous: 0.9.92
+// Current: 1.0.7
 
 const { useMemo, useEffect, useState, useRef } = wp.element;
 import { NekoColumn, NekoMessageDanger } from '@neko-ui';
@@ -75,7 +75,12 @@ const useModels = (options) => {
     }
   }, [models]);
 
-  return { model, models, setModel, isFineTunedModel };
+  const getModelName = (id) => {
+    const model = models.find(x => x.id === id);
+    return model?.name || id;
+  }
+
+  return { model, models, setModel, isFineTunedModel, getModelName };
 }
 
 const toHTML = (html) => {

@@ -1,5 +1,5 @@
-// Previous: 0.9.89
-// Current: 1.0.01
+// Previous: 1.0.01
+// Current: 1.0.7
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -54,6 +54,8 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
+      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
+      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
@@ -114,7 +116,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data}/ >
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -133,6 +135,9 @@ const FineTuning = ({ options, updateOption }) => {
   const [ isModeTrain, setIsModeTrain ] = useState(true);
   const { models, model, setModel } = useModels(options);
   const [ suffix, setSuffix ] = useState('meow');
+  const [ hyperParams, setHyperParams ] = useState(false);
+  const [ nEpochs, setNEpochs ] = useState(4);
+  const [ batchSize, setBatchSize ] = useState(null);
   const { isLoading: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
     queryKey: ['datasets'], queryFn: retrieveFiles
   });
@@ -158,7 +163,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    await queryClient.invalidateQueries('datasets');
   }
 
   const onRefreshFiles = async () => {
@@ -179,7 +184,9 @@ const FineTuning = ({ options, updateOption }) => {
       json: {
         fileId: currentFile,
         model: isFineTuned ? rawModel.id : rawModel.short,
-        suffix: currentSuffix
+        suffix: currentSuffix,
+        nEpochs,
+        batchSize
       }
     });
     if (res.success) {
@@ -195,7 +202,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const refreshFineTunes = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['finetunes'] });
+    await queryClient.invalidateQueries('finetunes');
   }
 
   const onRefreshFineTunes = async () => {
@@ -207,7 +214,7 @@ const FineTuning = ({ options, updateOption }) => {
   const onCleanFineTunes = async () => {
     setBusyAction(true);
     await retrieveFineTunes(true);
-    await queryClient.invalidateQueries({ queryKey: ['finetunes'] });
+    await queryClient.invalidateQueries('finetunes');
     setBusyAction(false);
   }
 
@@ -244,11 +251,7 @@ const FineTuning = ({ options, updateOption }) => {
     if (!builderData || builderData.length === 0) {
       const data = localStorage.getItem('mwai_builder_data');
       if (data) {
-        try {
-          setBuilderData(JSON.parse(data));
-        } catch(e) {
-          // ignore
-        }
+        setBuilderData(JSON.parse(data));
       }
     }
   }, []);
@@ -354,8 +357,10 @@ const FineTuning = ({ options, updateOption }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
+      console.log({ fileId, filename });
       const res = await nekoFetch(`${apiUrl}/openai_files_download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
+        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -377,9 +382,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const fileRows = useMemo(() => {
-    // Sort the dataFiles by created_at
-    if (!dataFiles) return [];
-    return dataFiles.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
@@ -409,7 +412,7 @@ const FineTuning = ({ options, updateOption }) => {
     if (!dataFineTunes) {
       return [];
     }
-    return dataFineTunes.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentModel = x.fine_tuned_model;
       const createdOn = new Date(x.created_at * 1000);
       return {
@@ -446,8 +449,12 @@ const FineTuning = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
+      const data = builderData.map(x => {
+        let json = JSON.stringify(x);
+        return json;
+      }).join("\n");
+      console.log(data);
+      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
@@ -494,7 +501,7 @@ const FineTuning = ({ options, updateOption }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          try { data = JSON.parse(fileContent); } catch(e) { data = []; }
+          data = JSON.parse(fileContent);
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -505,13 +512,15 @@ const FineTuning = ({ options, updateOption }) => {
             }
             catch (e) {
               console.log(e, x);
-              return null;
+              return null
             }
-          }).filter(x => x != null);
+            
+          });
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
-          data = resParse.data || [];
+          data = resParse.data;
+          console.log('The CSV was loaded.', data);
         }
         const formattedData = data.map(x => {
           const values = Object.keys(x).reduce((acc, key) => {
@@ -543,6 +552,7 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const addRow = (prompt = 'Text...\n\n###\n\n', completion = 'Text...\n\n') => {
+    console.log(prompt, completion);
     setBuilderData([...builderData, { prompt, completion }]);
   }
 
@@ -661,7 +671,7 @@ const FineTuning = ({ options, updateOption }) => {
           </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-              onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
+              onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
       </>}
 
@@ -675,7 +685,7 @@ const FineTuning = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 
@@ -695,7 +705,6 @@ const FineTuning = ({ options, updateOption }) => {
             <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fine_tuned="true"</i>  in the shortcode.</li>
           </ul>
         </>}
-
       </>}
 
       <NekoModal isOpen={fileForFineTune}
@@ -728,6 +737,17 @@ const FineTuning = ({ options, updateOption }) => {
           <NekoInput value={suffix} onChange={setSuffix} />
           <NekoSpacer height={5} />
           <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
+          <NekoSpacer line height={20} />
+          <NekoCheckbox label="Enable HyperParams" checked={hyperParams}
+            onChange={setHyperParams} />
+          {hyperParams && <>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <label style={{ marginRight: 5 }}>Number of Epochs:</label>
+              <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
+              <label style={{ marginRight: 5 }}>Batch Size:</label>
+              <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
+            </div>
+          </>}
         </>
         }
       />
