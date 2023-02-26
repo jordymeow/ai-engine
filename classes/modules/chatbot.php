@@ -330,13 +330,14 @@ class Meow_MWAI_Modules_Chatbot {
 
       <script>
       (function () {
-        let onGoingPrompt = [];
         let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
         let isWindow = <?= $window ? 'true' : 'false' ?>;
         let isDebugMode = <?= $debugMode ? 'true' : 'false' ?>;
         let isFullscreen = <?= $fullscreen ? 'true' : 'false' ?>;
         let isCasuallyFineTuned = <?= $casuallyFineTuned ? 'true' : 'false' ?>;
         let textCompliance = '<?= $textCompliance ?>';
+        let rawUserName = '<?= $rawUserName ?>';
+        let rawAiName = '<?= $rawAiName ?>';
         let mode = '<?= $mode ?>';
         let model = '<?= $model ?>';
         let context = isCasuallyFineTuned ? null : '<?= $context ?>';
@@ -349,10 +350,10 @@ class Meow_MWAI_Modules_Chatbot {
 
         if (isDebugMode) {
           window.mwai_<?= $id ?> = {
-            onGoingPrompt: onGoingPrompt,
             memorizedChat: memorizedChat,
             parameters: { mode: mode, model, temperature, maxTokens, context: context, startSentence,
-              textCompliance, isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences
+              textCompliance, isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences,
+              
             }
           };
         }
@@ -415,7 +416,6 @@ class Meow_MWAI_Modules_Chatbot {
           var conversation = document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation');
 
           if (memorizeChat) {
-            memorizedChat.push({ text, type });
             localStorage.setItem('mwai-chat-<?= $id ?>', JSON.stringify(memorizedChat));
           }
 
@@ -462,22 +462,21 @@ class Meow_MWAI_Modules_Chatbot {
           }
         }
 
-        function tidyOnGoingPrompt(onGoingPrompt, last = 15) {
-          let onGoingPromptLength = onGoingPrompt.length;
-          let start = (onGoingPromptLength - last) < 0 ? 0 : (onGoingPromptLength - last);
-          if (isCasuallyFineTuned) { onGoingPromptLength--; }
-          let conversationToUse = onGoingPrompt.slice(start, onGoingPromptLength);
+        function buildPrompt(last = 15) {
+          let prompt = context ? (context + '\n\n') : '';
+          memorizedChat = memorizedChat.slice(-last);
 
           // Casually fine tuned, let's use the last question
           if (isCasuallyFineTuned) {
-            let lastLine = conversationToUse[conversationToUse.length - 1];
-            let prompt = lastLine.says + '<?= $promptEnding ?>'
+            let lastLine = memorizedChat[memorizedChat.length - 1];
+            prompt = lastLine.raw + '<?= $promptEnding ?>'
             return prompt;
           }
 
           // Otherwise let's compile the latest conversation
-          conversationToUse = conversationToUse.map(x => x.who + x.says);
-          let prompt = conversationToUse.join('\n');
+          let conversation = memorizedChat.map(x => x.who + x.raw);
+          prompt += conversation.join('\n');
+          prompt += '\n' + rawAiName;
           return prompt;
         }
 
@@ -488,10 +487,10 @@ class Meow_MWAI_Modules_Chatbot {
 
           // Reset the conversation if empty
           if (inputText === '') {
-            onGoingPrompt = [];
             document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation').innerHTML = '';
             localStorage.removeItem('mwai-chat-<?= $id ?>');
             memorizedChat = [];
+            memorizedChat.push({ who: rawAiName, type: 'ai', raw: startSentence, html: startSentence });
             addReply(startSentence, 'ai');
             return;
           }
@@ -501,17 +500,13 @@ class Meow_MWAI_Modules_Chatbot {
           button.disabled = true;
 
           // Add the user reply
+          memorizedChat.push({ who: rawUserName, type: 'user', raw: inputText, html: inputText });
           addReply(inputText, 'user');
-          onGoingPrompt.push({ who: '<?= $rawUserName ?>', says: inputText });
           input.value = '';
           input.setAttribute('rows', 1);
           input.disabled = true;
 
-          // Let's build the prompt depending on the "system"
-          onGoingPrompt.push({ who: '<?= $rawAiName ?>', says: '' });
-
-          let prompt = context ? (context + '\n\n') : '';
-          prompt += tidyOnGoingPrompt(onGoingPrompt, maxSentences);
+          let prompt = buildPrompt(maxSentences);
 
           // Prompt for the images
           const data = mode === 'images' ? {
@@ -560,8 +555,9 @@ class Meow_MWAI_Modules_Chatbot {
               addReply(data.message, 'system');
             }
             else {
-              addReply(data.images ? data.images : data.html, 'ai');
-              onGoingPrompt[onGoingPrompt.length - 1].says = data.answer;
+              let html = data.images ? data.images : data.html;
+              memorizedChat.push({ who: rawAiName, type: 'ai', raw: data.answer, html: html });
+              addReply(html, 'ai');
             }
             button.disabled = false;
             input.disabled = false;
@@ -660,15 +656,18 @@ class Meow_MWAI_Modules_Chatbot {
           if (memorizeChat) {
             chatHistory = localStorage.getItem('mwai-chat-<?= $id ?>');
             if (chatHistory) {
-              chatHistory = JSON.parse(chatHistory);
-              chatHistory = chatHistory.filter(x => x && x.text && x.type);
-              chatHistory.forEach(x => { addReply(x.text, x.type) });
+              memorizedChat = JSON.parse(chatHistory);
+              memorizedChat = memorizedChat.filter(x => x && x.html && x.type);
+              memorizedChat.forEach(x => { 
+                addReply(x.html, x.type);
+              });
             }
             else {
-              chatHistory = [];
+              memorizedChat = [];
             }
           }
-          if (chatHistory.length === 0) {
+          if (memorizedChat.length === 0) {
+            memorizedChat.push({ who: rawAiName, type: 'ai', raw: startSentence, html: startSentence });
             addReply(startSentence, 'ai');
           }
         }

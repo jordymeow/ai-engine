@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.0.7
+// Previous: 1.0.7
+// Current: 1.0.9
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -12,13 +12,13 @@ import { useModels } from '../helpers';
 
 const logsColumns = [
   { accessor: 'id', title: 'ID', width: '50px' },
-  { accessor: 'env',  title: 'Env', width: '75px' },
+  { accessor: 'env',  title: 'Env', width: '80px' },
   { accessor: 'ip', title: 'IP', width: '80px' },
   { accessor: 'userId', title: 'User', width: '45px' },
   { accessor: 'model', title: 'Model', width: '160px' },
-  { accessor: 'units', title: 'Units', width: '60px', align: 'right', sortable: true },
+  { accessor: 'units', title: 'Units', width: '65px', align: 'right', sortable: true },
   { accessor: 'type', title: 'Type', width: '50px' },
-  { accessor: 'price', title: 'Price', width: '70px', align: 'right', sortable: true },
+  { accessor: 'price', title: 'Price', width: '75px', align: 'right', sortable: true },
   { accessor: 'time', title: 'Time', width: '200px', sortable: true }
 ];
 
@@ -42,11 +42,11 @@ const LogsExplorer = () => {
 
   useEffect(() => {
     if (currentTab === 'all') {
-      setLogsQueryParams({ ...logsQueryParams, filters: null });
+      setLogsQueryParams(prev => ({ ...prev, filters: null }));
     } else {
-      setLogsQueryParams({ ...logsQueryParams, filters: { env: currentTab } });
+      setLogsQueryParams(prev => ({ ...prev, filters: { env: currentTab } }));
     }
-  }, [currentTab, logsQueryParams]);
+  }, [currentTab]);
 
   const logsTotal = useMemo(() => {
     return logsData?.total || 0;
@@ -54,8 +54,10 @@ const LogsExplorer = () => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
-      let time = new Date(x.time).toLocaleDateString('ja-JP', {
+    return logsData?.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+      let time = new Date(x.time);
+      time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
+      let formattedTime = time.toLocaleDateString('ja-JP', {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
@@ -68,16 +70,10 @@ const LogsExplorer = () => {
         units: x.units,
         type: x.type,
         price: <>${x.price}</>,
-        time: time,        
+        time: formattedTime,
       }
     })
   }, [logsData]);
-
-  const [ page, setPage ] = useState(logsQueryParams.page);
-  
-  useEffect(() => {
-    setPage(logsQueryParams.page);
-  }, [logsQueryParams.page]);
 
   return (<>
 
