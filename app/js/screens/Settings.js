@@ -1,6 +1,7 @@
-// Previous: 1.0.7
-// Current: 1.0.8
+// Previous: 1.0.8
+// Current: 1.1.0
 
+const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
@@ -178,7 +179,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits?.users, [id]: value };
+    const newParams = { ...limits.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -187,7 +188,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits?.guests, [id]: value };
+    const newParams = { ...limits.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -218,7 +219,6 @@ const Settings = () => {
   }
 
   const onResetLimits = async () => {
-    console.log(default_limits);
     await updateOption(default_limits, 'limits');
   }
 
@@ -350,7 +350,7 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            const price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -466,6 +466,7 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
+                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                     {jsxResolveShortcodes}
                   </NekoBlock>
@@ -954,7 +955,7 @@ const jsxShortcodeChatLogs =
                                 label={i18n.COMMON.EDITORS_ADMINS} />
                               <NekoOption key={'admin'} id={'admin'} value={'administrator'}
                                 label={i18n.COMMON.ADMINS_ONLY} />
-                          </NekoOption>
+                          </NekoSelect>
                         </div>
                       </div>}
 

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.0.9
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.0.9 (2023/02/26) =
+= 1.1.0 (2023/02/26) =
 * Update: Enhanced the whole flow of the chatbot (which also fixed minor issue).
 * Update: Better handling of time in the statistics.
 * Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).

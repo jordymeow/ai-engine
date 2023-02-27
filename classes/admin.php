@@ -119,24 +119,30 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 	}
 
 	function admin_enqueue_scripts() {
-
-		// Load the scripts
 		$physical_file = MWAI_PATH . '/app/index.js';
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-
-		wp_register_script( 'mwai_meow_plugin-vendor', MWAI_URL . 'app/vendor.js',
+		wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js',
 			['wp-element', 'wp-i18n'], $cache_buster
 		);
-		wp_register_script( 'mwai_meow_plugin', MWAI_URL . 'app/index.js',
-			['mwai_meow_plugin-vendor', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post',
+		wp_register_script( 'mwai', MWAI_URL . 'app/index.js',
+			['mwai-vendor', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post',
 				'wp-editor', 'wp-element', 'wp-i18n', 'wp-plugins'], $cache_buster
 		);
-		register_block_type( 'ai-engine/input-field', array( 'editor_script' => 'mwai_meow_plugin' ));
-		wp_set_script_translations( 'mwai_meow_plugin', 'ai-engine' );
-		wp_enqueue_script('mwai_meow_plugin' );
+		wp_enqueue_script( 'mwai' );
 
-		// Localize and options
-		wp_localize_script( 'mwai_meow_plugin', 'mwai_meow_plugin', [
+		// The MD5 of the translation file built by WP uses app/i18n.js instead of app/index.js
+		add_filter( 'load_script_translation_file', function( $file, $handle, $domain ) {
+			if ( $domain !== 'ai-engine' ) {
+				return $file;
+			}
+			$old = md5( 'app/index.js' );
+			$new = md5( 'app/i18n.js' );
+			$file = str_replace( $old, $new, $file );
+			return $file;
+		}, 10, 3 );
+
+		wp_set_script_translations( 'mwai', 'ai-engine' );
+		wp_localize_script( 'mwai', 'mwai', [
 			'api_url' => rest_url( 'ai-engine/v1' ),
 			'rest_url' => rest_url(),
 			'plugin_url' => MWAI_URL,
