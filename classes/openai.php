@@ -90,6 +90,13 @@ class Meow_MWAI_OpenAI
     return $finetunes;
   }
 
+  public function moderate( $input ) {
+    $result = $this->run('POST', '/moderations', [
+      'input' => $input
+    ]);
+    return $result;
+  }
+
   public function uploadFile( $filename, $data )
   {
     $result = $this->run('POST', '/files', null, ['data' => $data, 'filename' => $filename]);

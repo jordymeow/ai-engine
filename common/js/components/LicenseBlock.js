@@ -3,7 +3,7 @@ const { useState, useEffect } = wp.element;
 
 // NekoUI
 import { NekoButton, NekoTypo, NekoBlock, NekoSettings, NekoInput, 
-  NekoMessageDanger, NekoMessageSuccess, NekoModal } from '@neko-ui';
+  NekoMessage, NekoModal } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
 // From Main Plugin
@@ -140,8 +140,8 @@ const LicenseBlock = () => {
         name="mfrh_pro_serial" disabled={busy} value={serialKey} onChange={(txt) => setSerialKey(txt)} placeholder="" />
       </NekoSettings>
 
-      {license && !success && <NekoMessageDanger>{message}</NekoMessageDanger>}
-      {license && success && <NekoMessageSuccess>{message}</NekoMessageSuccess>}
+      {license && !success && <NekoMessage variant="danger">{message}</NekoMessage>}
+      {license && success && <NekoMessage variant="success">{message}</NekoMessage>}
 
       {!license && <NekoTypo p>
         Insert your serial key above. If you don&apos;t have one yet, you can get one <a href="https://meowapps.com">here</a>. If there was an error during the validation, try the <i>Retry</i> to <i>validate</i> button.

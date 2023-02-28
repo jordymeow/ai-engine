@@ -99,6 +99,7 @@ define( 'MWAI_OPTIONS', [
 	'module_playground' => true,
 	'module_generator_content' => true,
 	'module_generator_images' => true,
+	'module_moderation' => false,
 	'shortcode_chat' => true,
 	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
 	'shortcode_chat_params_override' => false,

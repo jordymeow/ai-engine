@@ -99,6 +99,8 @@ i18n.COMMON = {
   RESOLVE: __( 'Resolve', 'ai-engine' ),
   MAX_SENTENCES: __( 'Max Sentences', 'ai-engine' ),
   COMPLIANCE_TEXT: __( 'Compliance Text', 'ai-engine' ),
+  MODERATION: __( 'Moderation', 'ai-engine' ),
+  MODERATION_HELP: __( 'Moderation features with AI.', 'ai-engine' ),
 }
 
 i18n.FORMS = {

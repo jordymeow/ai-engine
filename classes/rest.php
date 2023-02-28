@@ -130,6 +130,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'get_logs' ),
 			) );
+			register_rest_route( $this->namespace, '/moderate', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'moderate' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -556,5 +561,16 @@ class Meow_MWAI_Rest
 		$sort = $params['sort'];
 		$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
 		return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
+	}
+
+	function moderate( $request ) {
+		$params = $request->get_json_params();
+		$text = $params['text'];
+		if ( !$text ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => 'Text not found.' ], 404 );
+		}
+		$openai = new Meow_MWAI_OpenAI( $this->core );
+		$results = $openai->moderate( $text );
+		return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
 	}
 }

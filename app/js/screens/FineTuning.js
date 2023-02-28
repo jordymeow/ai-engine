@@ -1,12 +1,12 @@
-// Previous: 1.0.01
-// Current: 1.0.7
+// Previous: 1.0.7
+// Current: 1.1.1
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
-  NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessageDanger,
+  NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
 import { nekoFetch, formatBytes } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
@@ -689,9 +689,9 @@ const FineTuning = ({ options, updateOption }) => {
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 
-        {dataSection === 'generator' && <NekoMessageDanger style={{ marginTop: 0, marginBottom: 25 }}>
+        {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
           Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
-        </NekoMessageDanger>}
+        </NekoMessage>}
 
         {dataSection === 'editor' && <>
           <p>
@@ -754,5 +754,3 @@ const FineTuning = ({ options, updateOption }) => {
     </NekoContainer>
   </>);
 };
-
-export default FineTuning;

@@ -1,8 +1,8 @@
-// Previous: 0.9.92
-// Current: 1.0.7
+// Previous: 1.0.7
+// Current: 1.1.1
 
 const { useMemo, useEffect, useState, useRef } = wp.element;
-import { NekoColumn, NekoMessageDanger } from '@neko-ui';
+import { NekoColumn, NekoMessage } from '@neko-ui';
 import { OpenAI_models } from './constants';
 
 const OptionsCheck = ({ options }) => {
@@ -15,9 +15,9 @@ const OptionsCheck = ({ options }) => {
 
   return (
     <>
-      <NekoMessageDanger style={{ marginTop: 0, marginBottom: 25 }}>
+      <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
         To use the features of AI Engine, you need to have an OpenAI account and create an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website.
-      </NekoMessageDanger>
+      </NekoMessage>
     </>
   );
 }

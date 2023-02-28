@@ -1,13 +1,12 @@
-// Previous: 1.0.8
-// Current: 1.1.0
+// Previous: 1.1.0
+// Current: 1.1.1
 
 const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
-  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessageDanger,
-  NekoQuickLinks, NekoLink,
-  NekoColumn, NekoTextArea } from '@neko-ui';
+  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
+  NekoQuickLinks, NekoLink, NekoColumn, NekoTextArea } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
@@ -23,6 +22,7 @@ import { StyledBuilderForm } from "../styles/StyledSidebar";
 import { NekoColorPicker } from "../components/NekoColorPicker";
 import i18n from '../../i18n';
 import QueriesExplorer from './LogsExplorer';
+import Moderation from './Settings/Moderation';
 
 const chatIcons = [
   'chat-robot-1.svg',
@@ -76,6 +76,7 @@ const Settings = () => {
   const module_playground = options?.module_playground;
   const module_generator_content = options?.module_generator_content;
   const module_generator_images = options?.module_generator_images;
+  const module_moderation = options?.module_moderation;
   const limits = options?.limits;
   const default_limits = options?.default_limits;
   const shortcode_chat = options?.shortcode_chat;
@@ -225,13 +226,13 @@ const Settings = () => {
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="module_titles" label={i18n.COMMON.TITLES_SUGGESTIONS} value="1" checked={module_titles}
+        <NekoCheckbox name="module_titles" label={i18n.COMMON.TITLES_SUGGESTIONS} value="1" checked={module_titles}
           description={i18n.COMMON.TITLES_SUGGESTIONS_HELP}
           onChange={updateOption} />
-        <NekoCheckbox id="module_excerpts" label={i18n.COMMON.EXCERPTS_SUGGESTIONS} value="1" checked={module_excerpts}
+        <NekoCheckbox name="module_excerpts" label={i18n.COMMON.EXCERPTS_SUGGESTIONS} value="1" checked={module_excerpts}
           description={i18n.COMMON.EXCERPTS_SUGGESTIONS_HELP}
           onChange={updateOption} />
-        <NekoCheckbox id="module_woocommerce" label={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR} value="1" checked={module_woocommerce}
+        <NekoCheckbox name="module_woocommerce" label={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR} value="1" checked={module_woocommerce}
           description={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -240,10 +241,10 @@ const Settings = () => {
   const jsxGenerators =
     <NekoSettings title={i18n.COMMON.GENERATORS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="module_generator_content" label={i18n.COMMON.CONTENT_GENERATOR} value="1" checked={module_generator_content}
+        <NekoCheckbox name="module_generator_content" label={i18n.COMMON.CONTENT_GENERATOR} value="1" checked={module_generator_content}
           description={i18n.COMMON.CONTENT_GENERATOR_HELP}
           onChange={updateOption} />
-        <NekoCheckbox id="module_generator_images" label={i18n.COMMON.IMAGES_GENERATOR} value="1" checked={module_generator_images}
+        <NekoCheckbox name="module_generator_images" label={i18n.COMMON.IMAGES_GENERATOR} value="1" checked={module_generator_images}
           description={i18n.COMMON.IMAGES_GENERATOR_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -251,7 +252,7 @@ const Settings = () => {
 
   const jsxPlayground = 
     <NekoSettings title={i18n.COMMON.PLAYGROUND}>
-      <NekoCheckbox id="module_playground" label={i18n.COMMON.ENABLE} value="1"
+      <NekoCheckbox name="module_playground" label={i18n.COMMON.ENABLE} value="1"
         checked={module_playground}
         description={i18n.COMMON.PLAYGROUND_HELP}
         onChange={updateOption} />
@@ -259,7 +260,7 @@ const Settings = () => {
 
   const jsxForms = 
     <NekoSettings title={<>{i18n.COMMON.FORMS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox id="module_forms" label={i18n.COMMON.ENABLE} value="1"
+      <NekoCheckbox name="module_forms" label={i18n.COMMON.ENABLE} value="1"
         checked={module_forms} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.FORMS_HELP}
         onChange={updateOption} />
@@ -267,16 +268,24 @@ const Settings = () => {
 
   const jsxStatistics = 
     <NekoSettings title={<>{i18n.COMMON.STATISTICS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox id="module_statistics" label={i18n.COMMON.ENABLE} value="1"
+      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1"
         checked={module_statistics} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.STATISTICS_HELP}
+        onChange={updateOption} />
+    </NekoSettings>;
+
+  const jsxModeration = 
+    <NekoSettings title={<>{i18n.COMMON.MODERATION}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
+      <NekoCheckbox name="module_moderation" label={i18n.COMMON.ENABLE} value="1"
+        checked={module_moderation}
+        description={i18n.COMMON.MODERATION_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="shortcode_chat" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat}
+        <NekoCheckbox name="shortcode_chat" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat}
           description={i18n.COMMON.CHATBOT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -286,7 +295,7 @@ const Settings = () => {
   const jsxShortcodeFormatting =
     <NekoSettings title="Formatting">
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="shortcode_chat_formatting" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_formatting}
+        <NekoCheckbox name="shortcode_chat_formatting" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_formatting}
           description={<>Convert the reply from the AI into HTML. <b>Markdown is supported, so it is highly recommended to add 'Use Markdown.' in your context.</b></>}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -295,7 +304,7 @@ const Settings = () => {
   const jsxShortcodeSyntaxHighlighting =
     <NekoSettings title="Code">
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox id="shortcode_chat_syntax_highlighting" label="Use Syntax Highlighting" value="1" checked={shortcode_chat_syntax_highlighting}
+        <NekoCheckbox name="shortcode_chat_syntax_highlighting" label="Use Syntax Highlighting" value="1" checked={shortcode_chat_syntax_highlighting}
           description={<>Add syntax coloring to the code written by the chatbot.</>}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -315,14 +324,14 @@ const jsxShortcodeChatLogs =
 
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
-      <NekoCheckbox id="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
+      <NekoCheckbox name="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
         description={i18n.COMMON.DEBUG_MODE_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxResolveShortcodes = 
     <NekoSettings title={i18n.COMMON.SHORTCODES}>
-      <NekoCheckbox id="resolve_shortcodes" label={i18n.COMMON.RESOLVE} value="1" checked={resolve_shortcodes}
+      <NekoCheckbox name="resolve_shortcodes" label={i18n.COMMON.RESOLVE} value="1" checked={resolve_shortcodes}
         description={i18n.HELP.RESOLVE_SHORTCODE}
         onChange={updateOption} />
     </NekoSettings>;
@@ -350,7 +359,7 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            const price = modelUsage.images * modelOptionPrice.price;
+            price = modelUsage.images * modelOptionPrice.price;
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -463,6 +472,7 @@ const jsxShortcodeChatLogs =
                     {jsxAssistants}
                     {jsxForms}
                     {jsxStatistics}
+                    {jsxModeration}
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
@@ -588,7 +598,7 @@ const jsxShortcodeChatLogs =
                         </div>
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.POPUP}:</label>
-                          <NekoCheckbox id="window" label="Yes"
+                          <NekoCheckbox name="window" label="Yes"
                             checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
                         </div>
 
@@ -616,7 +626,7 @@ const jsxShortcodeChatLogs =
 
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.FULL_SCREEN}:</label>
-                          <NekoCheckbox id="fullscreen" label="Yes"
+                          <NekoCheckbox name="fullscreen" label="Yes"
                             checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
                         </div>
                         
@@ -668,14 +678,14 @@ const jsxShortcodeChatLogs =
 
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CASUALLY_FINE_TUNED}:</label>
-                          <NekoCheckbox id="casually_fine_tuned" label="Yes"
+                          <NekoCheckbox name="casually_fine_tuned" label="Yes"
                             checked={shortcodeParams.casually_fine_tuned} value="1" onChange={updateShortcodeParams}
                           />
                         </div>
 
-                        {isContentAware && <div className="mwai-builder-col">
+                        {isChat && <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
-                          <NekoCheckbox id="content_aware" label="Yes"
+                          <NekoCheckbox name="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
                             checked={shortcodeParams.content_aware} value="1" onChange={updateShortcodeParams} />
                         </div>}
@@ -683,27 +693,27 @@ const jsxShortcodeChatLogs =
                       </div>}
 
                       {shortcodeChatInject && !shortcodeParams.window && 
-                        <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
+                        <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{i18n.SETTINGS.ALERT_INJECT_BUT_NO_POPUP}</p>
-                        </NekoMessageDanger>
+                        </NekoMessage>
                       }
 
                       {isFineTuned && !shortcodeParams.casually_fine_tuned && 
-                        <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
+                        <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{i18n.SETTINGS.ALERT_FINETUNE_BUT_NO_CASUALLY}</p>
-                        </NekoMessageDanger>
+                        </NekoMessage>
                       }
 
                       {!isFineTuned && shortcodeParams.casually_fine_tuned && 
-                        <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
+                        <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{i18n.SETTINGS.ALERT_CASUALLY_BUT_NO_FINETUNE}</p>
-                        </NekoMessageDanger>
+                        </NekoMessage>
                       }
 
                       {isContentAware && !contextHasContent && 
-                        <NekoMessageDanger style={{ marginBottom: 0, padding: '10px 15px' }}>
+                        <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
-                        </NekoMessageDanger>
+                        </NekoMessage>
                       }
 
                       <pre>
@@ -712,14 +722,14 @@ const jsxShortcodeChatLogs =
 
                     </StyledBuilderForm>
 
-                    <NekoCheckbox id="shortcode_chat_params_override"
+                    <NekoCheckbox name="shortcode_chat_params_override"
                       label={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS}
                       disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
                       description={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS_HELP}
                       onChange={updateOption} />
 
-                    <NekoCheckbox id="shortcode_chat_inject"
+                    <NekoCheckbox name="shortcode_chat_inject"
                       label={i18n.SETTINGS.INJECT_DEFAULT_CHATBOT}
                       value="1" checked={shortcodeChatInject}
                       description={i18n.SETTINGS.INJECT_DEFAULT_CHATBOT_HELP}
@@ -856,7 +866,7 @@ const jsxShortcodeChatLogs =
                       Reset Limits
                     </NekoButton>}>
 
-                      <NekoCheckbox id="enabled" label={i18n.STATISTICS.ENABLE_LIMITS}
+                      <NekoCheckbox name="enabled" label={i18n.STATISTICS.ENABLE_LIMITS}
                         checked={limits?.enabled} value="1" onChange={updateLimits}
                       />
 
@@ -925,7 +935,7 @@ const jsxShortcodeChatLogs =
                         </div>
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.ABSOLUTE}:</label>
-                          <NekoCheckbox id="isAbsolute" label="Yes" disabled={!limits?.enabled}
+                          <NekoCheckbox name="isAbsolute" label="Yes" disabled={!limits?.enabled}
                             checked={limits?.[limitSection]?.isAbsolute} value="1"
                             onChange={limitSection === 'users' ? updateUserLimits : updateGuestLimits}
                           />
@@ -968,6 +978,10 @@ const jsxShortcodeChatLogs =
             <NekoTab title={i18n.COMMON.FINETUNING_TAB}>
               <FineTuning options={options} updateOption={updateOption} />
             </NekoTab>
+
+            {module_moderation && <NekoTab title={i18n.COMMON.MODERATION}>
+              <Moderation options={options} updateOption={updateOption} />
+            </NekoTab>}
 
             <NekoTab key="openai-status"
               title={<>{i18n.COMMON.OPENAI_TAB}{accidentsPastDay > 0 ? <>&nbsp;⚠️</> : <>&nbsp;✅</>}</>}>
