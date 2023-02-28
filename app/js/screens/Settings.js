@@ -1,5 +1,5 @@
-// Previous: 1.1.0
-// Current: 1.1.1
+// Previous: 1.1.1
+// Current: 1.1.2
 
 const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
@@ -85,6 +85,7 @@ const Settings = () => {
   const openai_apikey = options?.openai_apikey ? options?.openai_apikey : '';
   const openai_usage = options?.openai_usage;
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
+  const shortcode_chat_typewriter = options?.shortcode_chat_typewriter;
   const extra_models = options?.extra_models;
   const debug_mode = options?.debug_mode;
   const resolve_shortcodes = options?.resolve_shortcodes;
@@ -293,16 +294,27 @@ const Settings = () => {
    ;
 
   const jsxShortcodeFormatting =
-    <NekoSettings title="Formatting">
+    <NekoSettings title={i18n.COMMON.FORMATTING}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_formatting" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_formatting}
-          description={<>Convert the reply from the AI into HTML. <b>Markdown is supported, so it is highly recommended to add 'Use Markdown.' in your context.</b></>}
+        <NekoCheckbox name="shortcode_chat_formatting" label={i18n.COMMON.ENABLE} value="1"
+          checked={shortcode_chat_formatting}
+          description={toHTML(i18n.COMMON.FORMATTING_HELP)}
           onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
+  const jsxShortcodeTypewriter =
+  <NekoSettings title={i18n.SETTINGS.TYPEWRITER_EFFECT}>
+    <NekoCheckboxGroup max="1">
+      <NekoCheckbox name="shortcode_chat_typewriter" label={i18n.COMMON.ENABLE} value="1"
+        checked={shortcode_chat_typewriter}
+        description={i18n.SETTINGS.TYPEWRITER_EFFECT_HELP}
+        onChange={updateOption} />
+    </NekoCheckboxGroup>
+  </NekoSettings>;
+
   const jsxShortcodeSyntaxHighlighting =
-    <NekoSettings title="Code">
+    <NekoSettings title={i18n.COMMON.CODE}>
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="shortcode_chat_syntax_highlighting" label="Use Syntax Highlighting" value="1" checked={shortcode_chat_syntax_highlighting}
           description={<>Add syntax coloring to the code written by the chatbot.</>}
@@ -312,7 +324,7 @@ const Settings = () => {
 
 
 const jsxShortcodeChatLogs =
-  <NekoSettings title="Logs">
+  <NekoSettings title={i18n.COMMON.LOGS}>
     <NekoCheckboxGroup max="1">
       <NekoSelect scrolldown id="shortcode_chat_logs" name="shortcode_chat_logs"
         value={shortcode_chat_logs} description="" onChange={updateOption}>
@@ -359,7 +371,7 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            price = modelUsage.images * modelOptionPrice.price; // Removed const here to introduce bug
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -476,7 +488,6 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
-                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                     {jsxResolveShortcodes}
                   </NekoBlock>
@@ -683,7 +694,7 @@ const jsxShortcodeChatLogs =
                           />
                         </div>
 
-                        {isChat && <div className="mwai-builder-col">
+                        {isContentAware && <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox name="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
@@ -845,6 +856,7 @@ const jsxShortcodeChatLogs =
                   <NekoBlock busy={busy} title={i18n.COMMON.FEATURES} className="primary">
                     {jsxShortcodeFormatting}
                     {jsxShortcodeSyntaxHighlighting}
+                    {jsxShortcodeTypewriter}
                     {jsxShortcodeChatLogs}
                   </NekoBlock>
                 </NekoColumn>

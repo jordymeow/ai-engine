@@ -101,6 +101,10 @@ i18n.COMMON = {
   COMPLIANCE_TEXT: __( 'Compliance Text', 'ai-engine' ),
   MODERATION: __( 'Moderation', 'ai-engine' ),
   MODERATION_HELP: __( 'Moderation features with AI.', 'ai-engine' ),
+  FORMATTING: __( 'Formatting', 'ai-engine' ),
+  FORMATTING_HELP: __( 'Convert the reply from the AI into HTML. <b>Markdown is supported, so it is highly recommended to add \'Use Markdown.\' in your context.</b>', 'ai-engine' ),
+  LOGS: __( 'Logs', 'ai-engine' ),
+  CODE: __( 'Code', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -130,6 +134,8 @@ i18n.SETTINGS = {
   INJECT_DEFAULT_CHATBOT: __( 'Inject Default Chatbot in Entire Website', 'ai-engine' ),
   INJECT_DEFAULT_CHATBOT_HELP: __( 'Inject the chatbot [mwai_chat] in the entire website.', 'ai-engine' ),
   CHATGPT_STYLE_INTRO: __( 'Keep in mind that you can also style the chatbot (or aspecific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>. Header Buttons are the ones used to close or resize the Popup Window. For more, check the <a target="_blank" href="https://meowapps.com/ai-engine/faq">FAQ</a>.', 'ai-engine' ),
+  TYPEWRITER_EFFECT: __( 'Typewriter Effect', 'ai-engine' ),
+  TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. I actually do not recommend this feature.', 'ai-engine' ),
 }
 
 i18n.CHATBOT = {

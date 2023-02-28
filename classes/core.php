@@ -105,6 +105,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_params_override' => false,
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
+	'shortcode_chat_typewriter' => false,
 	'shortcode_chat_syntax_highlighting' => false,
 	'shortcode_chat_logs' => '', // 'file', 'db', 'file,db'
 	'shortcode_chat_inject' => false,

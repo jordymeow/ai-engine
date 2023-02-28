@@ -24,6 +24,11 @@ class Meow_MWAI_Modules_Chatbot {
         '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/stackoverflow-dark.min.css' );
     }
 
+    if ( $this->core->get_option( 'shortcode_chat_typewriter' ) ) {
+      wp_enqueue_script( 'mwai_chatbot_typewriter',
+        '//cdnjs.cloudflare.com/ajax/libs/TypewriterJS/2.19.0/core.min.js', [], null, false );
+    }
+
     $logs = $this->core->get_option( 'shortcode_chat_logs' );
     if ( $logs && strpos( $logs, 'file' ) !== false ) {
       new Meow_MWAI_Modules_Chatbot_Logs();
@@ -73,7 +78,9 @@ class Meow_MWAI_Modules_Chatbot {
       $answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
       $html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params  );
-      $html = $this->core->markdown_to_html( $html );
+      if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
+        $html = $this->core->markdown_to_html( $html );
+      }
 			return new WP_REST_Response([ 'success' => true, 'answer' => $rawText,
         'html' => $html, 'usage' => $answer->usage ], 200 );
 		}
@@ -245,6 +252,7 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Chatbot System Parameters
     $id = empty( $atts['id'] ) ? uniqid() : $atts['id'];
+    $typewriter = $this->core->get_option( 'shortcode_chat_typewriter' );
     $memorizeChat = !empty( $atts['id'] );
     $id = preg_replace( '/[^a-zA-Z0-9]/', '', $id );
     $env = $atts['env'];
@@ -347,6 +355,7 @@ class Meow_MWAI_Modules_Chatbot {
         let maxTokens = <?= $maxTokens ?>;
         let temperature = <?= $temperature ?>;
         let memorizedChat = [];
+        let typewriter = <?= $typewriter ? 'true' : 'false' ?>;
 
         if (isDebugMode) {
           window.mwai_<?= $id ?> = {
@@ -412,7 +421,7 @@ class Meow_MWAI_Modules_Chatbot {
         }
 
         // Push the reply in the conversation
-        function addReply(text, type = 'user') {
+        function addReply(text, type = 'user', replay = false) {
           var conversation = document.querySelector('#mwai-chat-<?= $id ?> .mwai-conversation');
 
           if (memorizeChat) {
@@ -428,29 +437,54 @@ class Meow_MWAI_Modules_Chatbot {
             text = newText + '</div>';
           }
 
-          var mwaiClasses = 'mwai-reply';
+          var mwaiClasses = ['mwai-reply'];
           if (type === 'ai') {
-            mwaiClasses += ' mwai-ai';
+            mwaiClasses.push('mwai-ai');
           }
           else if (type === 'system') {
-            mwaiClasses += ' mwai-system';
+            mwaiClasses.push('mwai-system');
           }
           else {
-            mwaiClasses += ' mwai-user';
+            mwaiClasses.push('mwai-user');
           }
-          var html = '<div class="' + mwaiClasses + '">';
+          var div = document.createElement('div');
+          div.classList.add(...mwaiClasses);
+          var nameSpan = document.createElement('span');
+          nameSpan.classList.add('mwai-name');
           if (type === 'ai') {
-            html += '<span class="mwai-name"><?= $aiName ?></span>';
+            nameSpan.innerHTML = '<?= $aiName ?>';
           }
           else if (type === 'system') {
-            html += '<span class="mwai-name"><?= $sysName ?></span>';
+            nameSpan.innerHTML = '<?= $sysName ?>';
           }
           else {
-            html += '<span class="mwai-name"><?= $userName ?></span>';
+            nameSpan.innerHTML = '<?= $userName ?>';
           }
-          html += '<span class="mwai-text">' + text + '</span>';
-          html += '</div>';
-          conversation.innerHTML += html;
+          var textSpan = document.createElement('span');
+          textSpan.classList.add('mwai-text');
+          textSpan.innerHTML = text;
+          div.appendChild(nameSpan);
+          div.appendChild(textSpan);
+          conversation.appendChild(div);
+
+          if (typewriter) {
+            if (type === 'ai' && text !== startSentence && !replay) {
+              let typewriter = new Typewriter(textSpan, {
+                loop: true,
+                deleteSpeed: 50,
+                delay: 25,
+                loop: false,
+                cursor: '',
+                autoStart: true,
+                wrapperClassName: 'mwai-typewriter',
+              });
+              typewriter.typeString(text).start().callFunction((state) => {
+                state.elements.cursor.setAttribute('hidden', 'hidden');
+                typewriter.stop();
+              });
+            }
+          }
+
           conversation.scrollTop = conversation.scrollHeight;
           setButtonText();
 
@@ -659,7 +693,7 @@ class Meow_MWAI_Modules_Chatbot {
               memorizedChat = JSON.parse(chatHistory);
               memorizedChat = memorizedChat.filter(x => x && x.html && x.type);
               memorizedChat.forEach(x => { 
-                addReply(x.html, x.type);
+                addReply(x.html, x.type, true);
               });
             }
             else {

@@ -145,6 +145,14 @@
   flex: auto;
 }
 
+#mwai-chat-id .mwai-text .mwai-typewriter {
+  display: inline-block;
+}
+
+#mwai-chat-id .mwai-text .mwai-typewriter > :first-child {
+  margin-top: 0;
+}
+
 #mwai-chat-id .mwai-text > *:first-child {
   margin-top: 0;
 }

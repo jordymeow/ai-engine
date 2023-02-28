@@ -147,9 +147,19 @@
 
 	.mwai-text {
 		flex: auto;
+
+		.mwai-typewriter {
+			display: inline-block;
+
+			> :first-child {
+				margin-top: 0;
+			}
+		}
+
 		>* {
 			&:first-child {
 				margin-top: 0;
+
 			}
 			&:last-child {
 				margin-bottom: 0;

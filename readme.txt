@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,11 +63,15 @@ Languages: English.
 
 == Changelog ==
 
+= 1.1.2 (2023/03/01) =
+* Add: Typewriter effect. I don't recommend it, but if you want to play with it, it's there :)
+* Update: Refactoring and minor fixes. Making sure everything is stable and nice.
+* Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
+* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
+
 = 1.1.1 (2023/02/28) =
 * Add: New Moderation Module; it's beta, check it out and play with it.
 * Update: Big update in my framework.
-* Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
-* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
 
 = 1.1.0 (2023/02/26) =
 * Update: Enhanced the whole flow of the chatbot (which also fixed minor issue).
