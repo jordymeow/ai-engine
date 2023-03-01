@@ -21,6 +21,9 @@ if ( !class_exists( 'MeowCommon_News' ) ) {
 					return;
 				}
 
+				if ( isset( $_SESSION['meowapps_news_displayed'] ) ) { return; }
+				$_SESSION['meowapps_news_displayed'] = true;
+
 				// Other constraint for the news.
 				$mwai_options = get_option( 'mwai_options' );
 				if ( !empty( $mwai_options ) ) {

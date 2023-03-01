@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.1.2 (2023/03/01) =
+= 1.1.3 (2023/03/01) =
+* Fix: UI issues in the Content Generator linked to the framework update.
 * Add: Typewriter effect. I don't recommend it, but if you want to play with it, it's there :)
+* Add: New filter: mwai_forms_params.
 * Update: Refactoring and minor fixes. Making sure everything is stable and nice.
 * Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
 * Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
