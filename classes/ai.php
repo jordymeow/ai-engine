@@ -74,19 +74,33 @@ class Meow_MWAI_AI {
     if ( empty( $query->apiKey ) ) {
       $query->apiKey = $this->localApiKey;
     }
-    $url = 'https://api.openai.com/v1/completions';
+
+    $url = "";
+    $body = array(
+      "model" => $query->model,
+      "stop" => $query->stop,
+      "n" => $query->maxResults,
+      "max_tokens" => $query->maxTokens,
+      "temperature" => $query->temperature,
+    );
+
+    if ( $query->mode === 'chat' ) {
+      $url = 'https://api.openai.com/v1/chat/completions';
+      $body['messages'] = $query->messages;
+    }
+    else if ( $query->mode === 'completion' ) {
+      $url = 'https://api.openai.com/v1/completions';
+      $body['prompt'] = $query->prompt;
+    }
+    else {
+      throw new Exception( 'Unknown mode for query: ' . $query->mode );
+    }
+
     $options = array(
       "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
       "method" => "POST",
       "timeout" => 120,
-      "body" => json_encode( array(
-        "model" => $query->model,
-        "prompt" => $query->prompt,
-        "stop" => $query->stop,
-        "n" => $query->maxResults,
-        "max_tokens" => $query->maxTokens,
-        "temperature" => $query->temperature,
-      ) ),
+      "body" => json_encode( $body ),
       "sslverify" => false
     );
 

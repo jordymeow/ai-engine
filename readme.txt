@@ -5,14 +5,14 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-GPT AI for WordPress. ChatGPT-style chatbot, image/content generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
+GPT AI for WordPress. ChatGPT chatbots, image/content generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
 
 == Description ==
-With AI Engine, create a ChatGPT-like chatbot (or many of them, with different features and behaviors), generate content, images, let you organize everything in templates, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
+Create a chatbot like ChatGPT (or any other), generate content, images, let you organize everything in templates, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
 
 Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
@@ -63,13 +63,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.1.4 (2023/03/02) =
+* Add: The ChatGPT model is finally here! It's "gpt-3.5-turbo" and you can already use it with your chatbots, forms, in the playground, etc. It's very new so let me know if you find any issues, in the [forums](https://wordpress.org/support/plugin/ai-engine/).
+* Fix: Minor bug in the AI Playground.
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! We are having so much fun all together! 🥰
+
 = 1.1.3 (2023/03/01) =
 * Fix: UI issues in the Content Generator linked to the framework update.
 * Add: Typewriter effect. I don't recommend it, but if you want to play with it, it's there :)
 * Add: New filter: mwai_forms_params.
 * Update: Refactoring and minor fixes. Making sure everything is stable and nice.
 * Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
-* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/) and some love through [a review](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you so much! 😊
+* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 
 = 1.1.1 (2023/02/28) =
 * Add: New Moderation Module; it's beta, check it out and play with it.

@@ -1,9 +1,10 @@
-// Previous: 1.1.1
-// Current: 1.1.2
+// Previous: 1.1.2
+// Current: 1.1.4
 
 const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
+// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoQuickLinks, NekoLink, NekoColumn, NekoTextArea } from '@neko-ui';
@@ -62,6 +63,7 @@ const Settings = () => {
   const [ busyAction, setBusyAction ] = useState(false);
   const [ limitSection, setLimitSection ] = useState('users');
   const { models, isFineTunedModel } = useModels(options);
+  console.log(options);
   const shortcodeDefaultParams = options?.shortcode_chat_default_params;
   const shortcodeParams = options?.shortcode_chat_params;
   const shortcodeStyles = options?.shortcode_chat_styles;
@@ -115,17 +117,21 @@ const Settings = () => {
         diff[key] = shortcodeParams[key];
       }
     }
-    if (isChat) {
+    if (isImagesChat) {
       delete diff.mode;
       delete diff.max_results;
-    }
-    if (isImagesChat) {
       delete diff.context;
       delete diff.content_aware;
       delete diff.casually_fine_tuned;
       delete diff.model;
       delete diff.max_tokens;
       delete diff.temperature;
+    } else if (isChat) {
+      delete diff.max_results;
+      delete diff.context;
+    }
+    if (shortcodeParams.mode === 'images') {
+      delete diff.mode;
     }
     return diff;
   }, [shortcodeParamsOverride, shortcodeDefaultParams, shortcodeParams]);
@@ -206,8 +212,7 @@ const Settings = () => {
     if (value.startsWith('http://') || value.startsWith('https://')) {
       const newColors = { ...shortcodeStyles, icon: value };
       await updateOption(newColors, 'shortcode_chat_styles');
-    }
-    else {
+    } else {
       alert('Please enter a valid URL.');
     }
   }
@@ -371,13 +376,13 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price; // Removed const here to introduce bug
-            usageData[month].totalPrice += price;
+            const priceVal = modelUsage.images * modelOptionPrice.price;
+            usageData[month].totalPrice += priceVal;
             usageData[month].data.push({ 
               name: 'dall-e',
               isImage: true,
               usage: modelUsage.images,
-              price: price
+              price: priceVal
             });
             return;
           }
@@ -488,6 +493,7 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
+                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                     {jsxResolveShortcodes}
                   </NekoBlock>
@@ -694,7 +700,7 @@ const jsxShortcodeChatLogs =
                           />
                         </div>
 
-                        {isContentAware && <div className="mwai-builder-col">
+                        {isChat && <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox name="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}

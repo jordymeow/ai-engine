@@ -1,5 +1,5 @@
-// Previous: 0.9.95
-// Current: 1.0.01
+// Previous: 1.0.01
+// Current: 1.1.4
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -18,7 +18,6 @@ import i18n from "../../i18n";
 
 const StyledTextArea = Styled(NekoTextArea)`
   .neko-textarea-container {
-  
     textarea {
       color: white;
       font-size: 13px;
@@ -26,7 +25,6 @@ const StyledTextArea = Styled(NekoTextArea)`
       font-family: monospace;
       background: #333d4e;
       border: none;
-
       &:focus {
         background-color: #333d4e;
       }
@@ -59,14 +57,14 @@ const Dashboard = () => {
 
   const setPrompt = (prompt) => {
     setTemplate({ ...template, prompt: prompt });
-  };
+  }
 
   const onPushContinuousEntry = () => {
     const newPrompt = prompt + "Human: " + continuousEntry;
     setPrompt(newPrompt);
-    setContinuousEntry("");
+    setContinuousEntry('');
     onSubmitPrompt(newPrompt);
-  };
+  }
 
   useEffect(() => {
     if (template) {
@@ -77,7 +75,7 @@ const Dashboard = () => {
   const onResetUsage = () => {
     setSessionUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
     setLastUsage({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
-  };
+  }
 
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
@@ -114,19 +112,19 @@ const Dashboard = () => {
     else {
       setError(res.message);
     }
-    setStartTime(); // bug: calling setStartTime without argument clears previous startTime, leading to potential undefined
+    setStartTime(undefined);
     setBusy(false);
   };
 
   const { sessionPrice, lastRequestPrice } = useMemo(() => {
-    let sessionPrice = 0;
-    let lastRequestPrice = 0;
+    let sessionPriceLocal = 0;
+    let lastRequestPriceLocal = 0;
     const modelPrice = OpenAI_PricingPerModel.find(x => model && model.includes(x.model));
     if (modelPrice) {
-      sessionPrice = (sessionUsage.total_tokens / 1000 * modelPrice.price).toFixed(4);
-      lastRequestPrice = (lastUsage.total_tokens / 1000 * modelPrice.price).toFixed(4);
+      sessionPriceLocal = (sessionUsage.total_tokens / 1000 * modelPrice.price).toFixed(4);
+      lastRequestPriceLocal = (lastUsage.total_tokens / 1000 * modelPrice.price).toFixed(4);
     }
-    return { sessionPrice, lastRequestPrice };
+    return { sessionPrice: sessionPriceLocal, lastRequestPrice: lastRequestPriceLocal };
   }, [sessionUsage, lastUsage]);
 
   return (
@@ -153,10 +151,10 @@ const Dashboard = () => {
 
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
-            <NekoSelect scrolldown id="mode" name="mode" disabled={true || busy} 
+            <NekoSelect scrolldown name="mode" disabled={true || busy} 
               value={mode} description="" onChange={setTemplateProperty}>
-              <NekoOption key='query' id='query' value='query' label="Query" />
-              <NekoOption key='continuous' id='continuous' value='continuous' label="Continuous" />
+              <NekoOption key='query' value='query' label="Query" />
+              <NekoOption key='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
           </StyledSidebar>
         </NekoColumn>
@@ -175,9 +173,9 @@ const Dashboard = () => {
             {mode === 'continuous' && <>
               <StyledTextArea rows={18} onChange={setPrompt} value={prompt} />
               <div style={{ display: 'flex' }}>
-                <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
+                <span className="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-                <StyledNekoInput id="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
+                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
                   onEnter={onPushContinuousEntry} disabled={busy} />
               </div>
             </>}
@@ -197,27 +195,27 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>{i18n.COMMON.SETTINGS}</h3>
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect id="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
               {models.map((x) => (
                 <NekoOption value={x.id} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>{i18n.COMMON.TEMPERATURE}:</label>
-            <NekoInput id="temperature" name="temperature" value={temperature} type="number"
+            <NekoInput name="temperature" value={temperature} type="number"
               onChange={value => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   {i18n.HELP.TEMPERATURE}
                 </span>
               </>} />
             <label>{i18n.COMMON.MAX_TOKENS}:</label>
-            <NekoInput id="maxTokens" name="maxTokens" value={maxTokens} type="number"
+            <NekoInput name="maxTokens" value={maxTokens} type="number"
               onChange={value => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
               <span>
               {i18n.HELP.MAX_TOKENS}
               </span>
             </>} />
             <label>{i18n.COMMON.STOP_SEQUENCE}:</label>
-            <NekoInput id="stopSequence" name="stopSequence" value={stopSequence} type="text"
+            <NekoInput name="stopSequence" value={stopSequence} type="text"
               onChange={setTemplateProperty} description={<>
               <span>
               {i18n.HELP.STOP_SEQUENCE}
@@ -243,9 +241,9 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+      <NekoModal isOpen={Boolean(error)}
+        onRequestClose={() => { setError(undefined) }}
+        onOkClick={() => { setError(undefined) }}
         title="Error"
         content={<p>{error}</p>}
       />

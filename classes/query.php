@@ -35,6 +35,14 @@ class Meow_MWAI_Query {
   }
 
   /**
+   * The mode
+   * @param string $model ID of the model to use.
+   */
+  public function setMode( $mode ) {
+    $this->mode = $mode;
+  }
+
+  /**
    * Given a prompt, the model will return one or more predicted completions.
    * It can also return the probabilities of alternative tokens at each position.
    * @param string $prompt The prompt to generate completions.

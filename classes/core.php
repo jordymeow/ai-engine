@@ -4,25 +4,89 @@ require_once( MWAI_PATH . '/vendor/autoload.php' );
 
 #region Constants
 
-// Price as of January 2023: https://openai.com/api/pricing/
-define( 'MWAI_OPENAI_PRICING', [
+// Price as of March 2023: https://openai.com/api/pricing/
+define( 'MWAI_OPENAI_MODELS', [
   // Base models:
-  [ "model" => "davinci", "price" => 0.02, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 4000 ],
-  [ "model" => "curie", "price" => 0.002, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "babbage", "price" => 0.0005, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "ada", "price" => 0.0004, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
+	[ 
+		"model" => "gpt-3.5-turbo",
+		"family" => "turbo",
+		"price" => 0.002,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096,
+		"mode" => "chat",
+		"finetune" => false,
+	],
+  [
+		"model" => "text-davinci-003",
+		"family" => "davinci",
+		"price" => 0.02,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096,
+		"mode" => "completion",
+		"finetune" => [
+			"price" => 0.12
+		]
+	],
+  [
+		"model" => "text-curie-001",
+		"family" => "curie",
+		"price" => 0.002,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 2048,
+		"mode" => "completion",
+		"finetune" => [
+			"price" => 0.012
+		]
+	],
+  [
+		"model" => "text-babbage-001",
+		"family" => "babbage",
+		"price" => 0.0005,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 2048,
+		"mode" => "completion",
+		"finetune" => [
+			"price" => 0.0024
+		]
+	],
+  [
+		"model" => "text-ada-001",
+		"family" => "ada",
+		"price" => 0.0004,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 2048,
+		"mode" => "completion",
+		"finetune" => [
+			"price" => 0.0016
+		]
+	],
   // Image models:
-  [ "model" => "dall-e", "type" => "image", "unit" => 1, "options" => [
-      [ "option" => "1024x1024", "price" => 0.02 ],
-      [ "option" => "512x512", "price" => 0.018 ],
-      [ "option" => "256x256", "price" => 0.016 ]
+  [
+		"model" => "dall-e",
+		"family" => "dall-e",
+		"type" => "image",
+		"unit" => 1,
+		"options" => [
+      [
+				"option" => "1024x1024",
+				"price" => 0.02
+			],
+      [
+				"option" => "512x512",
+				"price" => 0.018
+			],
+      [
+				"option" => "256x256",
+				"price" => 0.016
+			]
     ],
-  ],
-  // Fine-tuned models:
-  [ "model" => "fn-davinci", "price" => 0.12, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 4000 ],
-  [ "model" => "fn-curie", "price" => 0.012, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "fn-babbage", "price" => 0.0024, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
-  [ "model" => "fn-ada", "price" => 0.0016, "type" => "token", "unit" => 1 / 1000, "maxTokens" => 2048 ],
+		"finetune" => false,
+  ]
 ]);
 
 define( 'MWAI_CHATBOT_PARAMS', [
@@ -113,6 +177,7 @@ define( 'MWAI_OPTIONS', [
 	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
 	'openai_usage' => [],
+	'openai_models' => MWAI_OPENAI_MODELS,
 	'openai_finetunes' => [],
 	'openai_finetunes_deleted' => [],
 	'extra_models' => "",

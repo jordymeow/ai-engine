@@ -8,18 +8,18 @@ class Meow_MWAI_OpenAI
   public function __construct($core)
   {
     $this->core = $core;
-    $this->apiKey = $this->core->get_option('openai_apikey');
+    $this->apiKey = $this->core->get_option( 'openai_apikey' );
   }
 
   public function listFiles()
   {
-    return $this->run('GET', '/files');
+    return $this->run( 'GET', '/files' );
   }
 
   function getSuffixForModel($model)
   {
     preg_match("/:([a-zA-Z\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
-    if (count($matches) > 0) {
+    if ( count( $matches ) > 0 ) {
       return $matches[1];
     }
     return 'N/A';
@@ -212,17 +212,17 @@ class Meow_MWAI_OpenAI
     }
   }
 
-  private function calculatePrice( $model, $units, $option = null )
+  private function calculatePrice( $modelFamily, $units, $option = null, $finetune = false )
   {
-    foreach ( MWAI_OPENAI_PRICING as $price ) {
-      if ( $price['model'] == $model ) {
-        if ( $price['type'] == 'image' ) {
+    foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+      if ( $currentModel['family'] === $modelFamily ) {
+        if ( $currentModel['type'] === 'image' ) {
           if ( !$option ) {
             error_log( "AI Engine: Image models require an option." );
             return null;
           }
           else {
-            foreach ( $price['options'] as $imageType ) {
+            foreach ( $currentModel['options'] as $imageType ) {
               if ( $imageType['option'] == $option ) {
                 return $imageType['price'] * $units;
               }
@@ -230,41 +230,53 @@ class Meow_MWAI_OpenAI
           }
         }
         else {
-          return $price['price'] * $price['unit'] * $units;
+          if ( $finetune ) {
+            // Why * 2? Need to check why I did this.
+            return $currentModel['finetune']['price'] * $currentModel['unit'] * $units * 2;
+          }
+          return $currentModel['price'] * $currentModel['unit'] * $units;
         }
       }
     }
-    error_log( "AI Engine: Invalid model ($model)." );
+    error_log( "AI Engine: Invalid family ($modelFamily)." );
     return null;
   }
 
   public function getPrice( Meow_MWAI_Query $query, Meow_MWAI_Answer $answer )
   {
     $model = $query->model;
-    $modelBase = null;
+    $family = null;
     $units = 0;
     $option = null;
+
+    $finetune = false;
     if ( is_a( $query, 'Meow_MWAI_QueryText' ) ) {
       // Finetuned models
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
-        $modelBase = "fn-" . $matches[1];
+        $family = $matches[1];
+        $finetune = true;
       }
       // Standard models
-      else if ( preg_match('/^text-(\w+)-\d+/', $model, $matches ) ) {
-        $modelBase = $matches[1];
+      else {
+        foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+          if ( $currentModel['model'] == $model ) {
+            $family = $currentModel['family'];
+            break;
+          }
+        }
       }
-      if ( empty( $modelBase ) ) {
+      if ( empty( $family ) ) {
         error_log("AI Engine: Cannot find the base model for $model.");
         return null;
       }
       $units = $answer->getTotalTokens();
     }
     else if ( is_a( $query, 'Meow_MWAI_QueryImage' ) ) {
-      $modelBase = 'dall-e';
+      $family = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
     }
-    return $this->calculatePrice( $modelBase, $units, $option );
+    return $this->calculatePrice( $family, $units, $option, $finetune );
   }
 
   public function getIncidents() {

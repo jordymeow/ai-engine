@@ -38,11 +38,22 @@ class Meow_MWAI_Answer {
   public function setChoices( $choices ) {
     $this->results = [];
     foreach ( $choices as $choice ) {
+
+      // It's chat completion
+      if ( isset( $choice['message'] ) ) {
+        $content = trim( $choice['message']['content'] );
+        $this->results[] = $content;
+        $this->result = $content;
+      }
+
+      // It's text completion
       if ( isset( $choice['text'] ) ) {
         $text = trim( $choice['text'] );
         $this->results[] = $text;
         $this->result = $text;
       }
+
+      // It's url/image
       if ( isset( $choice['url'] ) ) {
         $url = trim( $choice['url'] );
         $this->results[] = $url;

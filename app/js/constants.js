@@ -1,7 +1,14 @@
-// Previous: 0.7.3
-// Current: 0.9.83
+// Previous: 0.9.83
+// Current: 1.1.4
 
 const OpenAI_models = [
+  {
+    id: 'gpt-3.5-turbo',
+    name: 'gpt-3.5-turbo',
+    short: 'gpt-3.5-turbo',
+    description: 'urbo is the same model family that powers ChatGPT. It is optimized for conversational chat input and output but does equally well on completions when compared with the Davinci model family.',
+    strength: 'Conversation and text generation'
+  },
   {
     id: 'text-davinci-003',
     name: 'text-davinci-003',
@@ -90,7 +97,7 @@ const Templates_Playground = [
     id: 'default',
     name: 'Default',
     mode: 'query',
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
@@ -99,7 +106,7 @@ const Templates_Playground = [
     id: 'article_translator',
     name: 'Text Translator',
     mode: 'query',
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.3,
     stopSequence: '',
     maxTokens: 2048,
@@ -108,7 +115,7 @@ const Templates_Playground = [
     id: 'restaurant_review',
     name: 'Restaurant Review Writer',
     mode: 'query',
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
@@ -117,7 +124,7 @@ const Templates_Playground = [
     id: 'article_corrector',
     name: 'Text Corrector',
     mode: 'query',
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.2,
     stopSequence: '',
     maxTokens: 2048,
@@ -126,7 +133,7 @@ const Templates_Playground = [
     id: 'seo_assistant',
     name: 'SEO Optimizer',
     mode: 'query',
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.6,
     stopSequence: '',
     maxTokens: 1024,
@@ -135,7 +142,7 @@ const Templates_Playground = [
     id: 'wp_assistant',
     name: 'WordPress Assistant',
     mode: 'continuous',
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 150,

@@ -4,6 +4,8 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $maxTokens = 16;
   public $temperature = 0.8;
   public $stop = null;
+  public $messages = [];
+  public $context = null;
   
   public function __construct( $prompt = '', $maxTokens = 16, $model = 'text-davinci-003' ) {
     $this->prompt = $prompt;
@@ -48,11 +50,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     return  (int)$output;
   }
 
-
   /**
    * Make sure the maxTokens is not greater than the model's context length.
    */
-  private function validateMaxTokens() {
+  private function validatePrompt() {
+    //TODO: Get Max Token of the Model
     $contains = strpos( $this->model, 'davinci' ) !== false;
     $realMax = $contains ? 4096 : 2048;
     $estimatedTokens = $this->estimate_tokens( $this->prompt );
@@ -63,13 +65,68 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   }
 
   /**
+   * ID of the model to use.
+   * @param string $model ID of the model to use.
+   */
+  public function setModel( $model ) {
+    $this->model = $model;
+    if ( $model ===  'gpt-3.5-turbo') {
+      $this->mode = 'chat';
+    }
+    else {
+      $this->mode = 'completion';
+    }
+  }
+
+  /**
    * Given a prompt, the model will return one or more predicted completions.
    * It can also return the probabilities of alternative tokens at each position.
    * @param string $prompt The prompt to generate completions.
    */
   public function setPrompt( $prompt ) {
     parent::setPrompt( $prompt );
-    $this->validateMaxTokens();
+    $this->validatePrompt();
+    $this->validateMessages();
+  }
+
+  /**
+   * Similar to the prompt, but use an array of messages instead.
+   * @param string $prompt The messages to generate completions.
+   */
+  public function setMessages( $messages ) {
+    $messages = array_map( function( $message ) {
+      return [ 'role' => $message['role'], 'content' => $message['content'] ];
+    }, $messages );
+    $this->messages = $messages;
+    $this->validateMessages();
+  }
+
+  /**
+   * The context that is used for the chat completion (mode === 'chat').
+   * @param string $context The context to use.
+   */
+  public function setContext( $context ) {
+    $this->context = $context;
+    $this->validateMessages();
+  }
+
+  private function validateMessages() {
+    if ( empty( $this->messages ) ) {
+      $this->messages = [];
+      if ( !empty( $this->prompt ) ) {
+        array_push( $this->messages, [ 'role' => 'user', 'content' => $this->prompt ] );
+      }
+    }
+    if ( !empty( $this->context ) ) {
+      if ( is_array( $this->messages ) && count( $this->messages ) > 0 ) {
+        if ( $this->messages[0]['role'] !== 'system' ) {
+          array_unshift( $this->messages, [ 'role' => 'system', 'content' => $this->context ] );
+        }
+        else {
+          $this->messages[0]['content'] = $this->context;
+        }
+      }
+    }
   }
 
   /**
@@ -80,7 +137,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setMaxTokens( $maxTokens ) {
     $this->maxTokens = intval( $maxTokens );
-    $this->validateMaxTokens();
+    $this->validatePrompt();
   }
 
   /**
@@ -115,6 +172,15 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( isset( $params['model'] ) ) {
 			$this->setModel( $params['model'] );
 		}
+    if ( isset( $params['prompt'] ) ) {
+      $this->setPrompt( $params['prompt'] );
+    }
+    if ( isset( $params['messages'] ) ) {
+      $this->setMessages( $params['messages'] );
+    }
+    if ( isset( $params['context'] ) ) {
+      $this->setContext( $params['context'] );
+    }
 		if ( isset( $params['maxTokens'] ) ) {
 			$this->setMaxTokens( $params['maxTokens'] );
 		}
