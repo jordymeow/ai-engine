@@ -8,14 +8,13 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $context = null;
   
   public function __construct( $prompt = '', $maxTokens = 16, $model = 'gpt-3.5-turbo' ) {
-    $this->prompt = $prompt;
-    $this->maxTokens = $maxTokens;
-    $this->model = $model;
-    $this->mode = "completion";
+    $this->setPrompt( $prompt );
+    $this->setModel( $model );
+    $this->setMaxTokens( $maxTokens );
   }
 
   // Quick and dirty token estimation
-  function estimate_tokens( $text, $method = "max" )
+  function estimateTokens( $text, $method = "max" )
   {
     // method can be "average", "words", "chars", "max", "min", defaults to "max"
     // "average" is the average of words and chars
@@ -53,11 +52,19 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   /**
    * Make sure the maxTokens is not greater than the model's context length.
    */
-  private function validatePrompt() {
-    //TODO: Get Max Token of the Model
-    $contains = strpos( $this->model, 'davinci' ) !== false;
-    $realMax = $contains ? 4096 : 2048;
-    $estimatedTokens = $this->estimate_tokens( $this->prompt );
+  private function validateMaxTokens() {
+    $realMax = 256;
+    $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
+    $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
+    $foundModel = null;
+    foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+      if ( $currentModel['model'] === $this->model || $currentModel['family'] === $finetuneFamily ) {
+        $foundModel = $currentModel;
+        $realMax = $currentModel['maxTokens'];
+        break;
+      }
+    }
+    $estimatedTokens = $this->estimateTokens( $this->prompt );
     $realMax = $realMax - $estimatedTokens - 32;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
@@ -85,7 +92,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setPrompt( $prompt ) {
     parent::setPrompt( $prompt );
-    $this->validatePrompt();
+    $this->validateMaxTokens();
     $this->validateMessages();
   }
 
@@ -106,7 +113,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * @param string $context The context to use.
    */
   public function setContext( $context ) {
-    $this->context = $context;
+    $this->context = apply_filters( 'mwai_ai_context', $context, $this );
     $this->validateMessages();
   }
 
@@ -137,7 +144,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setMaxTokens( $maxTokens ) {
     $this->maxTokens = intval( $maxTokens );
-    $this->validatePrompt();
+    $this->validateMaxTokens();
   }
 
   /**

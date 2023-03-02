@@ -1,12 +1,12 @@
-// Previous: 0.9.86
-// Current: 1.0.5
+// Previous: 1.0.5
+// Current: 1.1.6
 
 import i18n from "../../i18n";
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
-const { useEffect, useRef } = wp.element;
+const { useEffect } = wp.element;
 const { Button, PanelBody, TextControl, SelectControl, Icon } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
@@ -15,22 +15,41 @@ function capitalizeFirstLetter(string) {
 }
 
 const saveFormField = (props) => {
-	const { attributes: { id, label, type, name, options = [], placeholder } } = props;
+	const { attributes: { id, label, type, name, options = [], placeholder, maxlength } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
-	return `[mwai-form-field id='${id}' label="${label}" type="${type}" name="${name}" options="${encodedOptions}" placeholder="${placeholder}"]`;
+	let shortcode = '[mwai-form-field';
+	if (id) {
+		shortcode += ` id="${id}"`;
+	}
+	if (label) {
+		shortcode += ` label="${label}"`;
+	}
+	if (type) {
+		shortcode += ` type="${type}"`;
+	}
+	if (name) {
+		shortcode += ` name="${name}"`;
+	}
+	if (encodedOptions) {
+		shortcode += ` options="${encodedOptions}"`;
+	}
+	if (placeholder) {
+		shortcode += ` placeholder="${placeholder}"`;
+	}
+	if (maxlength) {
+		shortcode += ` maxlength="${maxlength}"`;
+	}
+	shortcode += ']';
+	return shortcode;
 }
 
-const FormFieldBlock = (props) => {
-	const { attributes: { id, type, name, options = [], label, placeholder }, setAttributes } = props;
-	const prevIdRef = useRef();
+const FormFieldBlock = props => {
+	const { attributes: { id, type, name, options = [], label, placeholder, maxlength }, setAttributes } = props;
 
 	useEffect(() => {
 		if (!id) {
 			const newId = Math.random().toString(36).substr(2, 9);
 			setAttributes({ id: 'mwai-' + newId });
-		}
-		if (id && prevIdRef.current !== id) {
-			prevIdRef.current = id;
 		}
 	}, [id]);
 
@@ -70,6 +89,10 @@ const FormFieldBlock = (props) => {
 				{(type === 'input' || type === 'textarea') &&
 					<TextControl label="Placeholder" value={placeholder}
 						onChange={value => setAttributes({ placeholder: value })} />
+				}
+				{(type === 'input' || type === 'textarea') &&
+					<TextControl label="Max Length" value={maxlength}
+						onChange={value => setAttributes({ maxlength: value })} />
 				}
 			</PanelBody>
 			{(type === 'select' || type === 'radio' || type === 'checkbox') && <PanelBody title={
@@ -159,6 +182,10 @@ const createFormFieldBlock = () => {
 				type: 'string',
 				default: ''
 			},
+			maxlength: {
+				type: 'string',
+				default: ''
+			}
 		},
 		edit: FormFieldBlock,
 		save: saveFormField

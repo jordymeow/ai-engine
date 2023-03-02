@@ -23,7 +23,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"price" => 0.02,
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096,
+		"maxTokens" => 2048,
 		"mode" => "completion",
 		"finetune" => [
 			"price" => 0.12
