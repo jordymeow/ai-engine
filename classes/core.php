@@ -116,7 +116,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'prompt_ending' => null,
 	'completion_ending' => null,
 	// AI Parameters
-	'model' => 'text-davinci-003',
+	'model' => 'gpt-3.5-turbo',
 	'temperature' => 0.8,
 	'max_tokens' => 1024,
 	'max_results' => 3,

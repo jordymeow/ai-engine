@@ -1,5 +1,5 @@
-// Previous: 0.9.87
-// Current: 0.9.89
+// Previous: 0.9.89
+// Current: 1.1.5
 
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -60,8 +60,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length === 0) continue; // Prevent error if A: appears first
-        // Intentional bug: mistakenly assign to wrong index if multiple A:
+        if (entries.length === 0) continue;
         entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
@@ -85,9 +84,9 @@ const DatasetBuilder = ({ setBuilderData }) => {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
-      finalPrompt = finalPrompt.replace('{CONTENT}', content);
-      finalPrompt = finalPrompt.replace('{URL}', url);
-      finalPrompt = finalPrompt.replace('{TITLE}', title);
+      finalPrompt = finalPrompt.replace('{CONTENT}', content || '');
+      finalPrompt = finalPrompt.replace('{URL}', url || '');
+      finalPrompt = finalPrompt.replace('{TITLE}', title || '');
       const resGenerate = await nekoFetch(`${apiUrl}/make_completions`, {
         method: 'POST',
         json: {
@@ -95,7 +94,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
           session,
           prompt: finalPrompt,
           temperature: 0.8,
-          model: 'text-davinci-003',
+          model: 'gpt-3.5-turbo',
           maxTokens: 2048,
           stop: ''
         },
@@ -128,7 +127,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffset = parseInt(startOffsetStr);
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
       if (startOffset && offset < startOffset) {
@@ -148,12 +148,13 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const onQuickTestClick = async () => {
     setTotalTokens(0);
-    const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    if (postId === null) {
+    const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
+    if (postIdInput === null) {
       return;
     }
+    const postIdVal = postIdInput.trim();
     setQuickBusy(true);
-    const result = await runProcess(0, postId);
+    const result = await runProcess(0, postIdVal);
     setQuickBusy(false);
     if (!result.entries || result.entries.length === 0) {
       alert("No entries were generated. Check the console for more information.");
@@ -176,7 +177,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
           Run Bulk Generate
         </NekoButton>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
-          Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
+          {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
           style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>

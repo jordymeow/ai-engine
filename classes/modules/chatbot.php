@@ -257,7 +257,7 @@ class Meow_MWAI_Modules_Chatbot {
     $env = $atts['env'];
     $mode = $atts['mode'];
     $maxResults = $mode === 'chat' ? 1 : $atts['max_results'];
-    $maxSentences = $atts['max_sentences'];
+    $maxSentences = !empty( $atts['max_sentences'] ) ? intval( $atts['max_sentences'] ) : 1;
     $sessionId = $this->core->get_session_id();
     $rest_nonce = wp_create_nonce( 'wp_rest' );
     $casuallyFineTuned = boolval( $atts['casually_fine_tuned'] );
@@ -467,7 +467,7 @@ class Meow_MWAI_Modules_Chatbot {
           conversation.appendChild(div);
 
           if (typewriter) {
-            if (type === 'assistant' && text !== startSentence && !replay) {
+            if (role === 'assistant' && text !== startSentence && !replay) {
               let typewriter = new Typewriter(textSpan, {
                 loop: true,
                 deleteSpeed: 50,

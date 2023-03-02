@@ -1,10 +1,9 @@
-// Previous: 1.1.2
-// Current: 1.1.4
+// Previous: 1.1.4
+// Current: 1.1.5
 
 const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
-// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoQuickLinks, NekoLink, NekoColumn, NekoTextArea } from '@neko-ui';
@@ -63,7 +62,6 @@ const Settings = () => {
   const [ busyAction, setBusyAction ] = useState(false);
   const [ limitSection, setLimitSection ] = useState('users');
   const { models, isFineTunedModel } = useModels(options);
-  console.log(options);
   const shortcodeDefaultParams = options?.shortcode_chat_default_params;
   const shortcodeParams = options?.shortcode_chat_params;
   const shortcodeStyles = options?.shortcode_chat_styles;
@@ -117,21 +115,17 @@ const Settings = () => {
         diff[key] = shortcodeParams[key];
       }
     }
-    if (isImagesChat) {
+    if (isChat) {
       delete diff.mode;
       delete diff.max_results;
+    }
+    if (isImagesChat) {
       delete diff.context;
       delete diff.content_aware;
       delete diff.casually_fine_tuned;
       delete diff.model;
       delete diff.max_tokens;
       delete diff.temperature;
-    } else if (isChat) {
-      delete diff.max_results;
-      delete diff.context;
-    }
-    if (shortcodeParams.mode === 'images') {
-      delete diff.mode;
     }
     return diff;
   }, [shortcodeParamsOverride, shortcodeDefaultParams, shortcodeParams]);
@@ -187,7 +181,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.users, [id]: value };
+    const newParams = { ...limits?.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -196,7 +190,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.guests, [id]: value };
+    const newParams = { ...limits?.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -212,7 +206,8 @@ const Settings = () => {
     if (value.startsWith('http://') || value.startsWith('https://')) {
       const newColors = { ...shortcodeStyles, icon: value };
       await updateOption(newColors, 'shortcode_chat_styles');
-    } else {
+    }
+    else {
       alert('Please enter a valid URL.');
     }
   }
@@ -288,6 +283,15 @@ const Settings = () => {
         onChange={updateOption} />
     </NekoSettings>;
 
+  // const jsxAiBlocks = 
+  // <NekoSettings title="Gutenberg Blocks">
+  //   <NekoCheckboxGroup max="1">
+  //     <NekoCheckbox label={i18n.COMMON.ENABLE} disabled={true} value="1" checked={module_blocks}
+  //       description="Additional blocks. Let me know your ideas!"
+  //       onChange={updateOption} />
+  //   </NekoCheckboxGroup>
+  // </NekoSettings>;
+
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
       <NekoCheckboxGroup max="1">
@@ -339,6 +343,12 @@ const jsxShortcodeChatLogs =
     </NekoCheckboxGroup>
   </NekoSettings>;
 
+  // const jsxExtraModels =
+  //   <NekoSettings title="Extra Models">
+  //     <NekoInput id="extra_models" name="extra_models" value={extra_models}
+  //       description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
+  //   </NekoSettings>;
+  
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
       <NekoCheckbox name="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
@@ -376,13 +386,13 @@ const jsxShortcodeChatLogs =
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
             const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            const priceVal = modelUsage.images * modelOptionPrice.price;
-            usageData[month].totalPrice += priceVal;
+            price = modelUsage.images * modelOptionPrice.price;
+            usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
               isImage: true,
               usage: modelUsage.images,
-              price: priceVal
+              price: price
             });
             return;
           }
@@ -455,7 +465,7 @@ const jsxShortcodeChatLogs =
 
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
         
   return (
     <NekoPage>
@@ -493,7 +503,6 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
-                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                     {jsxResolveShortcodes}
                   </NekoBlock>
@@ -700,7 +709,7 @@ const jsxShortcodeChatLogs =
                           />
                         </div>
 
-                        {isChat && <div className="mwai-builder-col">
+                        {isContentAware && <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox name="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
@@ -743,6 +752,8 @@ const jsxShortcodeChatLogs =
                       label={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS}
                       disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
+                      // Missing dependency on previous check: this is okay but could cause rendering issues in some cases
+                      // but no actual bug here
                       description={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS_HELP}
                       onChange={updateOption} />
 

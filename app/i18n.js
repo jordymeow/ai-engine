@@ -164,7 +164,7 @@ i18n.CONTENT_GENERATOR = {
   WRITING_STYLE: __( 'Writing Style', 'ai-engine' ),
   WRITING_TONE: __( 'Writing Tone', 'ai-engine' ),
   CUSTOM_LANGUAGE_HELP: __( 'All the languages are <i>somehow</i> supported by AI. <a href="https://meowapps.com/ai-engine/faq/#languages" target="_blank">Learn more</a>.', 'ai-engine' ),
-  MODEL_HELP: __( 'The davinci model is currently the only acceptable one for writing texts. As soon as better models are available, you will be able to choose between them.', 'ai-engine' ),
+  MODEL_HELP: __( 'The gpt-3.5-turbo and davinci models are currently the only acceptable ones for writing texts.', 'ai-engine' ),
   PROMPTS_INTRO: __( 'Prompts represent the exact request sent to the AI. The variables between curly braces will be replaced by the content of the corresponding field. Prompts are saved in your templates.', 'ai-engine' ),
   PROMPT_TITLE: __( 'Prompt for <b>Title</b>', 'ai-engine' ),
   PROMPT_SECTIONS: __( 'Prompt for <b>Sections</b>', 'ai-engine' ),

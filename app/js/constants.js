@@ -1,5 +1,5 @@
-// Previous: 0.9.83
-// Current: 1.1.4
+// Previous: 1.1.4
+// Current: 1.1.5
 
 const OpenAI_models = [
   {
@@ -37,17 +37,6 @@ const OpenAI_models = [
     description: 'Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost.',
     strength: 'Parsing text, simple classification, address correction, keywords'
   },
-  // {
-  //   id: 'code-davinci-002',
-  //   name: 'code-davinci-002',
-  //   short: 'davinci',
-  //   description: 'Most capable Codex model. Particularly good at translating natural language to code. In addition to completing code, also supports inserting completions within code.',
-  // },
-  // {
-  //   id: 'code-cushman-001',
-  //   name: 'code-cushman-001',
-  //   description: 'Almost as capable as Davinci Codex, but slightly faster. This speed advantage may make it preferable for real-time applications.',
-  // }
 ];
 
 const WritingStyles = [
@@ -200,7 +189,7 @@ const Templates_ContentGenerator = [
     topicsAreTitles: false,
     title: "",
     sections: "",
-    model: 'text-davinci-003',
+    model: 'gpt-3.5-turbo',
     temperature: 0.8,
     maxTokens: 2048,
     sectionsCount: 2,
