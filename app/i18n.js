@@ -109,6 +109,7 @@ i18n.COMMON = {
   EMBEDDINGS: __( 'Embeddings', 'ai-engine' ),
   EMBEDDINGS_HELP: __( 'Make your data - such as website content - searchable. It can be used in many ways, especially to enhance the answers from the chatbot.', 'ai-engine' ),
   EMBEDDINGS_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
+  SERVER: __( 'Server', 'ai-engine' ),
 }
 
 i18n.FORMS = {

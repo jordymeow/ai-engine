@@ -183,7 +183,10 @@ define( 'MWAI_OPTIONS', [
 	'openai_finetunes' => [],
 	'openai_finetunes_deleted' => [],
 	'pinecone' => [
-		'apikey' => false
+		'apikey' => false,
+		'server' => 'us-east1-gcp',
+		'indexes' => [],
+		'index' => null
 	],
 	'extra_models' => "",
 	'debug_mode' => true,

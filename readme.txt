@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.1.7
+Stable tag: 1.1.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,8 +63,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.1.7 (2023/03/03) =
+= 1.1.8 (2023/03/03) =
 * Fix: TextFields in Forms were broken.
+* Fix: Some UI issues on the admin side.
 * Update: Make sur the forms are filled (we can add a better validation system at a later point).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! We are having so much fun all together! 🥰
 

@@ -130,16 +130,27 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'get_logs' ),
 			) );
-			register_rest_route( $this->namespace, '/vectors', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'get_vectors' ),
-			) );
 			register_rest_route( $this->namespace, '/moderate', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'moderate' ),
 			) );
+			register_rest_route( $this->namespace, '/vectors', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'get_vectors' ),
+			) );
+			register_rest_route( $this->namespace, '/vector', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'add_vector' ),
+			) );
+			register_rest_route( $this->namespace, '/vectors', array(
+				'methods' => 'DELETE',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'delete_vectors' ),
+			) );
+			
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -568,6 +579,17 @@ class Meow_MWAI_Rest
 		return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
 	}
 
+	function moderate( $request ) {
+		$params = $request->get_json_params();
+		$text = $params['text'];
+		if ( !$text ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => 'Text not found.' ], 404 );
+		}
+		$openai = new Meow_MWAI_OpenAI( $this->core );
+		$results = $openai->moderate( $text );
+		return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
+	}
+
 	function get_vectors( $request ) {
 		$params = $request->get_json_params();
 		$offset = $params['offset'];
@@ -578,14 +600,17 @@ class Meow_MWAI_Rest
 		return new WP_REST_Response([ 'success' => true, 'total' => $vectors['total'], 'vectors' => $vectors['rows'] ], 200 );
 	}
 
-	function moderate( $request ) {
+	function add_vector( $request ) {
 		$params = $request->get_json_params();
-		$text = $params['text'];
-		if ( !$text ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => 'Text not found.' ], 404 );
-		}
-		$openai = new Meow_MWAI_OpenAI( $this->core );
-		$results = $openai->moderate( $text );
-		return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
+		$vector = $params['vector'];
+		$success = apply_filters( 'mwai_embeddings_vectors_add', false, $vector );
+		return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
+	}
+
+	function delete_vectors( $request ) {
+		$params = $request->get_json_params();
+		$ids = $params['ids'];
+		$success = apply_filters( 'mwai_embeddings_vectors_delete', false, $ids );
+		return new WP_REST_Response([ 'success' => $success ], 200 );
 	}
 }

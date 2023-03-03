@@ -34,6 +34,14 @@ class Meow_MWAI_OpenAI
     return 'N/A';
   }
 
+  public function createEmbedding( $input, $model = "text-embedding-ada-002" ) {
+    $data = array(
+      'input' => $input,
+      'model' => $model
+    );
+    return $this->run( 'POST', '/embeddings', $data );
+  }
+
   public function listFineTunes( $clean = false )
   {
     $finetunes = $this->run('GET', '/fine-tunes');
@@ -163,18 +171,18 @@ class Meow_MWAI_OpenAI
     return $body;
   }
 
-  public function run($method, $url, $query = null, $file = null, $json = true)
+  public function run( $method, $url, $query = null, $file = null, $json = true )
   {
     $apiKey = $this->apiKey;
     $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n";
-    $body = $query ? json_encode($query) : null;
-    if (!empty($file)) {
-      $boundary = wp_generate_password(24, false);
+    $body = $query ? json_encode( $query ) : null;
+    if ( !empty( $file ) ) {
+      $boundary = wp_generate_password (24, false );
       $headers  = [
         'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         'Authorization' => 'Bearer ' . $this->apiKey,
       ];
-      $body = $this->create_body_for_file($file, $boundary);
+      $body = $this->create_body_for_file( $file, $boundary );
     }
 
     $url = 'https://api.openai.com/v1' . $url;
@@ -187,28 +195,28 @@ class Meow_MWAI_OpenAI
     ];
 
     try {
-      $response = wp_remote_request($url, $options);
-      if (is_wp_error($response)) {
-        throw new Exception($response->get_error_message());
+      $response = wp_remote_request( $url, $options );
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( $response->get_error_message() );
       }
-      $response = wp_remote_retrieve_body($response);
-      $data = $json ? json_decode($response, true) : $response;
+      $response = wp_remote_retrieve_body( $response );
+      $data = $json ? json_decode( $response, true ) : $response;
 
       // Error handling
-      if (isset($data['error'])) {
+      if ( isset( $data['error'] ) ) {
         $message = $data['error']['message'];
         // If the message contains "Incorrect API key provided: THE_KEY.", replace the key by "----".
-        if (preg_match('/API key provided(: .*)\./', $message, $matches)) {
-          $message = str_replace($matches[1], '', $message);
+        if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
+          $message = str_replace( $matches[1], '', $message );
         }
-        throw new Exception($message);
+        throw new Exception( $message );
       }
 
       return $data;
     }
-    catch (Exception $e) {
-      error_log($e->getMessage());
-      throw new Exception('Error while calling OpenAI: ' . $e->getMessage());
+    catch ( Exception $e ) {
+      error_log( $e->getMessage() );
+      throw new Exception( 'Error while calling OpenAI: ' . $e->getMessage() );
     }
   }
 

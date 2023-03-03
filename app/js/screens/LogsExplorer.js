@@ -1,5 +1,5 @@
-// Previous: 1.0.9
-// Current: 1.1.0
+// Previous: 1.1.0
+// Current: 1.1.8
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -39,28 +39,22 @@ const LogsExplorer = () => {
   });
   const [ currentTab, setCurrentTab ] = useState('all');
   const { getModelName } = useModels(options);
-  const [ page, setPage ] = useState(1);
-  const [ limit, setLimit ] = useState(20);
 
   useEffect(() => {
     if (currentTab === 'all') {
-      setLogsQueryParams({ ...logsQueryParams, filters: null });
+      setLogsQueryParams(prev => ({ ...prev, filters: null }));
     } else {
-      setLogsQueryParams({ ...logsQueryParams, filters: { env: currentTab } });
+      setLogsQueryParams(prev => ({ ...prev, filters: { env: currentTab } }));
     }
   }, [currentTab]);
 
-  useEffect(() => {
-    setLogsQueryParams(prev => ({ ...prev, page, limit }));
-  }, [page, limit]);
-
   const logsTotal = useMemo(() => {
-    return logsData?.total || 0;
+    return logsData?.total ?? 0;
   }, [logsData]);
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = new Date(x.time);
       time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
       let formattedTime = time.toLocaleDateString('ja-JP', {
@@ -71,20 +65,22 @@ const LogsExplorer = () => {
         id: x.id,
         env: x.env,
         ip: x.ip,
-        userId: x.userId ? <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
+        userId: x.userId ? <a target="_blank" rel="noopener" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
         model: <span title={x.model}>{getModelName(x.model)}</span>,
         units: x.units,
         type: x.type,
         price: <>${x.price}</>,
         time: formattedTime,
       }
-    })
+    });
   }, [logsData, getModelName]);
 
   return (<>
-
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-      <NekoQuickLinks value={currentTab} onChange={value => { setCurrentTab(value); setPage(1); }}>
+      <NekoQuickLinks value={currentTab} onChange={(value) => {
+          setCurrentTab(value);
+          setLogsQueryParams(prev => ({ ...prev, page: 1 }));
+        }}>
         <NekoLink title="All" value='all' />
         <NekoLink title="Chatbot" value='chatbot' />
         <NekoLink title="Form" value='form' />
@@ -92,9 +88,9 @@ const LogsExplorer = () => {
       </NekoQuickLinks>
       <div>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <NekoPaging currentPage={page} limit={limit}
-            total={logsTotal} onClick={p => { 
-              setPage(p);
+          <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
+            total={logsTotal} onClick={(page) => { 
+              setLogsQueryParams(prev => ({ ...prev, page }));
             }}
           />
           <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={isFetchingLogs}
@@ -107,7 +103,7 @@ const LogsExplorer = () => {
 
     <NekoTable alternateRowColor busy={isFetchingLogs}
       sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-        setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
+        setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
       }}
       data={logsRows} columns={logsColumns} 
     />
