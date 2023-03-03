@@ -1,8 +1,8 @@
-// Previous: 1.1.4
-// Current: 1.1.5
+// Previous: 1.1.5
+// Current: 1.1.7
 
 const { __ } = wp.i18n;
-const { useMemo, useState } = wp.element;
+const { useMemo, useState, useEffect } = wp.element;
 
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
@@ -23,6 +23,7 @@ import { NekoColorPicker } from "../components/NekoColorPicker";
 import i18n from '../../i18n';
 import QueriesExplorer from './LogsExplorer';
 import Moderation from './Settings/Moderation';
+import VectorDatabase from './Embeddings/VectorDatabase';
 
 const chatIcons = [
   'chat-robot-1.svg',
@@ -77,6 +78,7 @@ const Settings = () => {
   const module_generator_content = options?.module_generator_content;
   const module_generator_images = options?.module_generator_images;
   const module_moderation = options?.module_moderation;
+  const module_embeddings = options?.module_embeddings;
   const limits = options?.limits;
   const default_limits = options?.default_limits;
   const shortcode_chat = options?.shortcode_chat;
@@ -84,6 +86,7 @@ const Settings = () => {
   const shortcode_chat_logs = options?.shortcode_chat_logs;
   const openai_apikey = options?.openai_apikey ? options?.openai_apikey : '';
   const openai_usage = options?.openai_usage;
+  const pinecone = options?.pinecone;
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
   const shortcode_chat_typewriter = options?.shortcode_chat_typewriter;
   const extra_models = options?.extra_models;
@@ -181,7 +184,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits?.users, [id]: value };
+    const newParams = { ...limits.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -190,7 +193,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits?.guests, [id]: value };
+    const newParams = { ...limits.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -283,14 +286,13 @@ const Settings = () => {
         onChange={updateOption} />
     </NekoSettings>;
 
-  // const jsxAiBlocks = 
-  // <NekoSettings title="Gutenberg Blocks">
-  //   <NekoCheckboxGroup max="1">
-  //     <NekoCheckbox label={i18n.COMMON.ENABLE} disabled={true} value="1" checked={module_blocks}
-  //       description="Additional blocks. Let me know your ideas!"
-  //       onChange={updateOption} />
-  //   </NekoCheckboxGroup>
-  // </NekoSettings>;
+  const jsxEmbeddings = 
+    <NekoSettings title={<>{i18n.COMMON.EMBEDDINGS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
+    <NekoCheckbox name="module_embeddings" label={i18n.COMMON.ENABLE} value="1"
+      checked={module_embeddings} requirePro={true} isPro={isRegistered}
+      description={i18n.COMMON.EMBEDDINGS_HELP}
+      onChange={updateOption} />
+  </NekoSettings>;
 
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
@@ -343,12 +345,6 @@ const jsxShortcodeChatLogs =
     </NekoCheckboxGroup>
   </NekoSettings>;
 
-  // const jsxExtraModels =
-  //   <NekoSettings title="Extra Models">
-  //     <NekoInput id="extra_models" name="extra_models" value={extra_models}
-  //       description={<>You can enter additional models you would like to use (separated by a comma). Note that your fine-tuned models are already available.</>} onBlur={updateOption} />
-  //   </NekoSettings>;
-  
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
       <NekoCheckbox name="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
@@ -365,8 +361,17 @@ const jsxShortcodeChatLogs =
 
   const jsxOpenAiApiKey =
     <NekoSettings title={i18n.COMMON.API_KEY}>
-      <NekoInput id="openai_apikey" name="openai_apikey" value={openai_apikey}
+      <NekoInput name="openai_apikey" value={openai_apikey}
         description={toHTML(i18n.COMMON.API_KEY_HELP)} onBlur={updateOption} />
+    </NekoSettings>;
+
+  const jsxPineconeApiKey =
+    <NekoSettings title={i18n.COMMON.API_KEY}>
+      <NekoInput name="apikey" value={pinecone?.apikey ?? ''}
+        description={toHTML(i18n.COMMON.EMBEDDINGS_APIKEY_HELP)} onBlur={value => {
+          const freshPinecone = { ...pinecone, apikey: value };
+          updateOption(freshPinecone, 'pinecone');
+        }} />
     </NekoSettings>;
 
   const jsxUsage = useMemo(() => {
@@ -385,8 +390,10 @@ const jsxShortcodeChatLogs =
           if (model === 'dall-e' ) {
             const defaultOption = '1024x1024';
             const modelPrice = pricing.find(x => x.model === 'dall-e');
-            const modelOptionPrice = modelPrice.options.find(x => x.option === defaultOption);
-            price = modelUsage.images * modelOptionPrice.price;
+            const modelOptionPrice = modelPrice?.options?.find(x => x.option === defaultOption);
+            if (modelUsage.images && modelOptionPrice) {
+              price = modelUsage.images * modelOptionPrice.price;
+            }
             usageData[month].totalPrice += price;
             usageData[month].data.push({ 
               name: 'dall-e',
@@ -402,13 +409,13 @@ const jsxShortcodeChatLogs =
           }
           let modelPrice = pricing.find(x => x.model === realModel.short);
           if (modelPrice) {
-            price = modelUsage.total_tokens / 1000 * modelPrice.price;
+            price = (modelUsage?.total_tokens ?? 0) / 1000 * modelPrice.price;
             usageData[month].totalPrice += price;
             const name = realModel ? realModel.name : model;
             usageData[month].data.push({
               name: name,
               isImage: false,
-              usage: modelUsage.total_tokens,
+              usage: modelUsage?.total_tokens ?? 0,
               price: price
             });
           }
@@ -465,7 +472,7 @@ const jsxShortcodeChatLogs =
 
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams?.context && shortcodeParams?.context.includes('{CONTENT}');
         
   return (
     <NekoPage>
@@ -513,6 +520,9 @@ const jsxShortcodeChatLogs =
                     {jsxOpenAiApiKey}
                     {jsxOpenAiUsage}
                   </NekoBlock>
+                  {module_embeddings && <NekoBlock busy={busy} title="Pinecone" className="primary">
+                    {jsxPineconeApiKey}
+                  </NekoBlock>}
                 </NekoColumn>
 
               </NekoWrapper>
@@ -577,7 +587,6 @@ const jsxShortcodeChatLogs =
                       </div>
 
                       <div className="mwai-builder-row">
-                        
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.USER_NAME}:</label>
                           <NekoInput id="user_name" name="user_name"
@@ -631,7 +640,6 @@ const jsxShortcodeChatLogs =
                       </div>
 
                       <div className="mwai-builder-row">
-                        
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>{i18n.COMMON.POSITION}:</label>
                           <NekoSelect scrolldown id="icon_position" name="icon_position" disabled={!shortcodeParams.window}
@@ -752,8 +760,6 @@ const jsxShortcodeChatLogs =
                       label={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS}
                       disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
-                      // Missing dependency on previous check: this is okay but could cause rendering issues in some cases
-                      // but no actual bug here
                       description={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS_HELP}
                       onChange={updateOption} />
 
@@ -1007,6 +1013,10 @@ const jsxShortcodeChatLogs =
             <NekoTab title={i18n.COMMON.FINETUNING_TAB}>
               <FineTuning options={options} updateOption={updateOption} />
             </NekoTab>
+
+            {module_embeddings && <NekoTab title={i18n.COMMON.EMBEDDINGS_TAB}>
+              <VectorDatabase options={options} updateOption={updateOption} />
+            </NekoTab>}
 
             {module_moderation && <NekoTab title={i18n.COMMON.MODERATION}>
               <Moderation options={options} updateOption={updateOption} />

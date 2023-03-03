@@ -130,6 +130,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'get_logs' ),
 			) );
+			register_rest_route( $this->namespace, '/vectors', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'get_vectors' ),
+			) );
 			register_rest_route( $this->namespace, '/moderate', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -561,6 +566,16 @@ class Meow_MWAI_Rest
 		$sort = $params['sort'];
 		$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
 		return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
+	}
+
+	function get_vectors( $request ) {
+		$params = $request->get_json_params();
+		$offset = $params['offset'];
+		$limit = $params['limit'];
+		$filters = $params['filters'];
+		$sort = $params['sort'];
+		$vectors = apply_filters( 'mwai_embeddings_vectors', [], $offset, $limit, $filters, $sort );
+		return new WP_REST_Response([ 'success' => true, 'total' => $vectors['total'], 'vectors' => $vectors['rows'] ], 200 );
 	}
 
 	function moderate( $request ) {

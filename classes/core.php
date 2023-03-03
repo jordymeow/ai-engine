@@ -164,6 +164,8 @@ define( 'MWAI_OPTIONS', [
 	'module_generator_content' => true,
 	'module_generator_images' => true,
 	'module_moderation' => false,
+	'module_statistics' => false,
+	'module_embeddings' => false,
 	'shortcode_chat' => true,
 	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
 	'shortcode_chat_params_override' => false,
@@ -180,6 +182,9 @@ define( 'MWAI_OPTIONS', [
 	'openai_models' => MWAI_OPENAI_MODELS,
 	'openai_finetunes' => [],
 	'openai_finetunes_deleted' => [],
+	'pinecone' => [
+		'apikey' => false
+	],
 	'extra_models' => "",
 	'debug_mode' => true,
 	'resolve_shortcodes' => false,

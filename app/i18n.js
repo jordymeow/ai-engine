@@ -58,6 +58,7 @@ i18n.COMMON = {
   OPENAI_TAB: __( 'OpenAI', 'ai-engine' ),
   LICENSE_TAB: __( 'License', 'ai-engine' ),
   FINETUNING_TAB: __( 'Fine Tuning', 'ai-engine' ),
+  EMBEDDINGS_TAB: __( 'Embeddings', 'ai-engine' ),
   MODELS: __( 'Models', 'ai-engine' ),
   DATASETS: __( 'Datasets', 'ai-engine' ),
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
@@ -105,6 +106,9 @@ i18n.COMMON = {
   FORMATTING_HELP: __( 'Convert the reply from the AI into HTML. <b>Markdown is supported, so it is highly recommended to add \'Use Markdown.\' in your context.</b>', 'ai-engine' ),
   LOGS: __( 'Logs', 'ai-engine' ),
   CODE: __( 'Code', 'ai-engine' ),
+  EMBEDDINGS: __( 'Embeddings', 'ai-engine' ),
+  EMBEDDINGS_HELP: __( 'Make your data - such as website content - searchable. It can be used in many ways, especially to enhance the answers from the chatbot.', 'ai-engine' ),
+  EMBEDDINGS_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
 }
 
 i18n.FORMS = {

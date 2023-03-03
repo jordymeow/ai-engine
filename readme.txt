@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,12 +63,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.1.7 (2023/03/03) =
+* Fix: TextFields in Forms were broken.
+* Update: Make sur the forms are filled (we can add a better validation system at a later point).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! We are having so much fun all together! 🥰
+
 = 1.1.6 (2023/03/02) =
 * Add: The ChatGPT model is finally here! It's "gpt-3.5-turbo" and you can already use it with your chatbots, forms, in the playground, etc. It's very new so let me know if you find any issues, in the [forums](https://wordpress.org/support/plugin/ai-engine/). Set as the new default.
 * Add: Max Length for the Input and TextArea in AI Forms.
 * Update: Many little enhancements here and there.
 * Fix: Minor bug in the AI Playground.
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! We are having so much fun all together! 🥰
 
 = 1.1.3 (2023/03/01) =
 * Fix: UI issues in the Content Generator linked to the framework update.
