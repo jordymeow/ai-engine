@@ -1,199 +1,7 @@
 <?php
 
 require_once( MWAI_PATH . '/vendor/autoload.php' );
-
-#region Constants
-
-// Price as of March 2023: https://openai.com/api/pricing/
-define( 'MWAI_OPENAI_MODELS', [
-  // Base models:
-	[ 
-		"model" => "gpt-3.5-turbo",
-		"family" => "turbo",
-		"price" => 0.002,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 4096,
-		"mode" => "chat",
-		"finetune" => false,
-	],
-  [
-		"model" => "text-davinci-003",
-		"family" => "davinci",
-		"price" => 0.02,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 2048,
-		"mode" => "completion",
-		"finetune" => [
-			"price" => 0.12
-		]
-	],
-  [
-		"model" => "text-curie-001",
-		"family" => "curie",
-		"price" => 0.002,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 2048,
-		"mode" => "completion",
-		"finetune" => [
-			"price" => 0.012
-		]
-	],
-  [
-		"model" => "text-babbage-001",
-		"family" => "babbage",
-		"price" => 0.0005,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 2048,
-		"mode" => "completion",
-		"finetune" => [
-			"price" => 0.0024
-		]
-	],
-  [
-		"model" => "text-ada-001",
-		"family" => "ada",
-		"price" => 0.0004,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 2048,
-		"mode" => "completion",
-		"finetune" => [
-			"price" => 0.0016
-		]
-	],
-  // Image models:
-  [
-		"model" => "dall-e",
-		"family" => "dall-e",
-		"type" => "image",
-		"unit" => 1,
-		"options" => [
-      [
-				"option" => "1024x1024",
-				"price" => 0.02
-			],
-      [
-				"option" => "512x512",
-				"price" => 0.018
-			],
-      [
-				"option" => "256x256",
-				"price" => 0.016
-			]
-    ],
-		"finetune" => false,
-  ]
-]);
-
-define( 'MWAI_CHATBOT_PARAMS', [
-	// UI Parameters
-	'id' => '',
-	'env' => 'chatbot',
-	'mode' => 'chat',
-	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
-	'ai_name' => "AI: ",
-	'user_name' => "User: ",
-	'guest_name' => "Guest: ",
-	'sys_name' => "System: ",
-	'start_sentence' => "Hi! How can I help you?",
-	'text_send' => 'Send',
-	'text_clear' => 'Clear',
-	'text_input_placeholder' => 'Type your message...',
-	'text_compliance' => '',
-	'max_sentences' => 15,
-	'style' => 'chatgpt',
-	'window' => false,
-	'icon_text' => '',
-	'icon_position' => 'bottom-right',
-	'fullscreen' => false,
-	// Chatbot System Parameters
-	'casually_fine_tuned' => false,
-	'content_aware' => false, 
-	'prompt_ending' => null,
-	'completion_ending' => null,
-	// AI Parameters
-	'model' => 'gpt-3.5-turbo',
-	'temperature' => 0.8,
-	'max_tokens' => 1024,
-	'max_results' => 3,
-	'api_key' => null
-] );
-
-define( 'MWAI_LANGUAGES', [
-  'en' => 'English',
-	'de' => 'German',
-	'fr' => 'French',
-  'es' => 'Spanish',
-  'it' => 'Italian',
-	'zh' => 'Chinese',
-	'ja' => 'Japanese',
-  'pt' => 'Portuguese',
-  //'ru' => 'Russian',
-] );
-
-define ( 'MWAI_LIMITS', [
-	'enabled' => true,
-	'guests' => [
-		'credits' => 3,
-		'creditType' => 'queries',
-		'timeFrame' => 'day',
-		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit.",
-	],
-	'users' => [
-		'credits' => 10,
-		'creditType' => 'price',
-		'timeFrame' => 'month',
-		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit.",
-		'ignoredUsers' => "administrator,editor",
-	],
-] );
-
-define( 'MWAI_OPTIONS', [
-	'module_titles' => true,
-	'module_excerpts' => true,
-	'module_woocommerce' => true,
-	'module_forms' => false,
-	'module_blocks' => false,
-	'module_playground' => true,
-	'module_generator_content' => true,
-	'module_generator_images' => true,
-	'module_moderation' => false,
-	'module_statistics' => false,
-	'module_embeddings' => false,
-	'shortcode_chat' => true,
-	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
-	'shortcode_chat_params_override' => false,
-	'shortcode_chat_html' => true,
-	'shortcode_chat_formatting' => true,
-	'shortcode_chat_typewriter' => false,
-	'shortcode_chat_syntax_highlighting' => false,
-	'shortcode_chat_logs' => '', // 'file', 'db', 'file,db'
-	'shortcode_chat_inject' => false,
-	'shortcode_chat_styles' => [],
-	'limits' => MWAI_LIMITS,
-	'openai_apikey' => false,
-	'openai_usage' => [],
-	'openai_models' => MWAI_OPENAI_MODELS,
-	'openai_finetunes' => [],
-	'openai_finetunes_deleted' => [],
-	'pinecone' => [
-		'apikey' => false,
-		'server' => 'us-east1-gcp',
-		'indexes' => [],
-		'index' => null
-	],
-	'extra_models' => "",
-	'debug_mode' => true,
-	'resolve_shortcodes' => false,
-	'languages' => MWAI_LANGUAGES
-]);
-#endregion
+require_once( MWAI_PATH . '/constants/init.php' );
 
 class Meow_MWAI_Core
 {
@@ -234,7 +42,8 @@ class Meow_MWAI_Core
 		}
 	}
 
-	#region Helpers
+	#region Roles & Capabilities
+
 	function can_access_settings() {
 		return apply_filters( 'mwai_allow_setup', current_user_can( 'manage_options' ) );
 	}
@@ -244,9 +53,9 @@ class Meow_MWAI_Core
 		return apply_filters( 'mwai_allow_usage', $editor_or_admin );
 	}
 
-	function isUrl( $url ) {
-		return strpos( $url, 'http' ) === 0 ? true : false;
-	}
+	#endregion
+
+	#region Text-Related Helpers
 
 	// Clean the text perfectly, resolve shortcodes, etc, etc.
   function clean_text( $rawText = "" ) {
@@ -297,6 +106,15 @@ class Meow_MWAI_Core
 		return $text;
 	}
 
+	function markdown_to_html( $content ) {
+		$Parsedown = new Parsedown();
+		$content = $Parsedown->text( $content );
+		return $content;
+	}
+	#endregion
+
+	#region Users/Sessions Helpers
+
 	function get_session_id() {
 		if ( isset( $_COOKIE['mwai_session_id'] ) ) {
 			return $_COOKIE['mwai_session_id'];
@@ -336,11 +154,78 @@ class Meow_MWAI_Core
     return $data['ip'];
   }
 
-	function markdown_to_html( $content ) {
-		$Parsedown = new Parsedown();
-		$content = $Parsedown->text( $content );
-		return $content;
+	#endregion
+
+	#region Other Helpers
+
+	function isUrl( $url ) {
+		return strpos( $url, 'http' ) === 0 ? true : false;
 	}
+
+	#endregion
+
+	#region Usage & Costs
+
+  public function record_tokens_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
+    if ( !is_numeric( $prompt_tokens ) ) {
+      throw new Exception( 'Record usage: prompt_tokens is not a number.' );
+    }
+    if ( !is_numeric( $completion_tokens ) ) {
+      $completion_tokens = 0;
+    }
+    if ( !$model ) {
+      throw new Exception( 'Record usage: model is missing.' );
+    }
+    $usage = $this->get_option( 'openai_usage' );
+    $month = date( 'Y-m' );
+    if ( !isset( $usage[$month] ) ) {
+      $usage[$month] = array();
+    }
+    if ( !isset( $usage[$month][$model] ) ) {
+      $usage[$month][$model] = array(
+        'prompt_tokens' => 0,
+        'completion_tokens' => 0,
+        'total_tokens' => 0
+      );
+    }
+    $usage[$month][$model]['prompt_tokens'] += $prompt_tokens;
+    $usage[$month][$model]['completion_tokens'] += $completion_tokens;
+    $usage[$month][$model]['total_tokens'] += $prompt_tokens + $completion_tokens;
+    $this->update_option( 'openai_usage', $usage );
+    return [
+      'prompt_tokens' => $prompt_tokens,
+      'completion_tokens' => $completion_tokens,
+      'total_tokens' => $prompt_tokens + $completion_tokens
+    ];
+  }
+
+  public function record_images_usage( $model, $resolution, $images ) {
+    if ( !$model || !$resolution || !$images ) {
+      throw new Exception( 'Missing parameters for record_image_usage.' );
+    }
+    $usage = $this->get_option( 'openai_usage' );
+    $month = date( 'Y-m' );
+    if ( !isset( $usage[$month] ) ) {
+      $usage[$month] = array();
+    }
+    if ( !isset( $usage[$month][$model] ) ) {
+      $usage[$month][$model] = array(
+        'resolution' => array(),
+        'images' => 0
+      );
+    }
+    if ( !isset( $usage[$month][$model]['resolution'][$resolution] ) ) {
+      $usage[$month][$model]['resolution'][$resolution] = 0;
+    }
+    $usage[$month][$model]['resolution'][$resolution] += $images;
+    $usage[$month][$model]['images'] += $images;
+    $this->update_option( 'openai_usage', $usage );
+    return [
+      'resolution' => $resolution,
+      'images' => $images
+    ];
+  }
+
 	#endregion
 
 	#region Options
@@ -358,6 +243,7 @@ class Meow_MWAI_Core
 		}
 		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
+		$options['openai_models'] = MWAI_OPENAI_MODELS;
 		return $options;
 	}
 

@@ -34,14 +34,6 @@ class Meow_MWAI_OpenAI
     return 'N/A';
   }
 
-  public function createEmbedding( $input, $model = "text-embedding-ada-002" ) {
-    $data = array(
-      'input' => $input,
-      'model' => $model
-    );
-    return $this->run( 'POST', '/embeddings', $data );
-  }
-
   public function listFineTunes( $clean = false )
   {
     $finetunes = $this->run('GET', '/fine-tunes');
@@ -283,6 +275,19 @@ class Meow_MWAI_OpenAI
       $family = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
+    }
+    else if ( is_a( $query, 'Meow_MWAI_QueryEmbed' ) ) {
+      foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+        if ( $currentModel['model'] == $model ) {
+          $family = $currentModel['family'];
+          break;
+        }
+      }
+      $units = $answer->getTotalTokens();
+    }
+    else {
+      error_log("AI Engine: Cannot find the base model for $model.");
+      return null;
     }
     return $this->calculatePrice( $family, $units, $option, $finetune );
   }

@@ -1,9 +1,8 @@
-// Previous: 1.0.7
-// Current: 1.1.1
+// Previous: 1.1.1
+// Current: 1.1.9
 
-const { useMemo, useEffect, useState, useRef } = wp.element;
-import { NekoColumn, NekoMessage } from '@neko-ui';
-import { OpenAI_models } from './constants';
+const { useMemo, useState } = wp.element;
+import { NekoMessage } from '@neko-ui';
 
 const OptionsCheck = ({ options }) => {
   const { openai_apikey } = options;
@@ -40,51 +39,95 @@ function cleanSections(text) {
   return cleanedLines.join('\n');
 }
 
-const useModels = (options) => {
-  const [model, setModel] = useState(OpenAI_models[0].value);
-
+const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
+  const [model, setModel] = useState(defaultModel);
   const models = useMemo(() => {
-    let allModels = OpenAI_models;
+    let allModels = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
       options?.openai_finetunes.filter(x => x.enabled && x.model) : [];
     if (fineTunes.length) {
       allModels = [ ...allModels, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
+        const family = splitted[0];
         return { 
-          id: x.model, name: x.suffix, short: 'fn-' + splitted[0],
-          description: "Finetuned", finetuned: true
+          model: x.model,
+          name: `fn: ${x.suffix}/${family}`,
+          suffix: x.suffix,
+          mode: 'completion',
+          family,
+          description: "finetuned",
+          finetuned: true
         }
       })];
     }
     extraModels = extraModels?.split(',').filter(x => x);
     if (extraModels.length) {
-      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, name: x, description: "Extra" })) ];
+      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
     return allModels;
   }, [options]);
 
-  const isFineTunedModel = (id) => {
-    return !!models.find(x => x.id === id && x.finetuned);
-  }
-
-  useEffect(() => {
-    const defaultModel = models.find(x => x.name.includes('davinci'));
-    if (defaultModel) {
-      setModel(defaultModel.name);
-    }
+  const completionModels = useMemo(() => {
+    return models.filter(x => x.mode === 'completion' || x.mode === 'chat');
   }, [models]);
 
-  const getModelName = (id) => {
-    const model = models.find(x => x.id === id);
-    return model?.name || id;
+  const getModel = (model) => {
+    if (model === 'gpt-3.5-turbo-0301') {
+      model = 'gpt-3.5-turbo';
+    }
+    return models.find(x => x.model === model);
   }
 
-  return { model, models, setModel, isFineTunedModel, getModelName };
+  const isFineTunedModel = (model) => {
+    const modelObj = getModel(model);
+    return modelObj?.finetuned || false;
+  }
+
+  const getModelName = (model) => {
+    const modelObj = getModel(model);
+    return modelObj?.name || modelObj?.model || model;
+  }
+
+  const getFamilyName = (model) => {
+    const modelObj = getModel(model);
+    return modelObj?.family || null;
+  }
+
+  const getFamilyModel = (model) => {
+    const modelObj = getModel(model);
+    const coreModels = models.filter(x => x.tags?.includes('core'));
+    const coreModel = coreModels.find(x => x.family === modelObj.family);
+    return coreModel || null;
+  }
+
+  const getPrice = (model, option = "1024x1024") => {
+    const modelObj = getFamilyModel(model);
+    if (modelObj.type === 'image') {
+      if (modelObj?.options) {
+        const opt = modelObj.options.find(x => x.option === option);
+        return opt?.price || null;
+      }
+    }
+    return modelObj?.price || null;
+  }
+
+  const calculatePrice = (model, units, option = "1024x1024") => {
+    const modelObj = getFamilyModel(model);
+    const price = getPrice(model, option);
+    if (price) {
+      if (!modelObj || !modelObj['unit']) {
+        return 0;
+      }
+      return price * units * modelObj['unit'];
+    }
+    return 0;
+  }
+
+  return { model, models, completionModels, setModel, isFineTunedModel, getModelName,
+    getFamilyName, getPrice, getModel, calculatePrice };
 }
 
 const toHTML = (html) => {
   return <span dangerouslySetInnerHTML={{ __html: html }}></span>
 }
-
-export { OptionsCheck, cleanSections, useModels, toHTML };

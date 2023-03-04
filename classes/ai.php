@@ -9,68 +9,25 @@ class Meow_MWAI_AI {
     $this->localApiKey = $this->core->get_option( 'openai_apikey' );
   }
 
-  // Record usage of the API on a monthly basis
-  public function record_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
-    if ( !is_numeric( $prompt_tokens ) ) {
-      throw new Exception( 'Record usage: prompt_tokens is not a number.' );
+  public function runEmbedding( $query ) {
+    if ( empty( $query->apiKey ) ) {
+      $query->apiKey = $this->localApiKey;
     }
-    if ( !is_numeric( $completion_tokens ) ) {
-      $completion_tokens = 0;
+    $openai = new Meow_MWAI_OpenAI( $this->core );
+    $body = array( 'input' => $query->prompt, 'model' => $query->model );
+    $data = $openai->run( 'POST', '/embeddings', $body );
+    if ( empty( $data ) || !isset( $data['data'] ) ) {
+      throw new Exception( 'Invalid data for embedding.' );
     }
-    if ( !$model ) {
-      throw new Exception( 'Record usage: model is missing.' );
-    }
-    $usage = $this->core->get_option( 'openai_usage' );
-    $month = date( 'Y-m' );
-    if ( !isset( $usage[$month] ) ) {
-      $usage[$month] = array();
-    }
-    if ( !isset( $usage[$month][$model] ) ) {
-      $usage[$month][$model] = array(
-        'prompt_tokens' => 0,
-        'completion_tokens' => 0,
-        'total_tokens' => 0
-      );
-    }
-    $usage[$month][$model]['prompt_tokens'] += $prompt_tokens;
-    $usage[$month][$model]['completion_tokens'] += $completion_tokens;
-    $usage[$month][$model]['total_tokens'] += $prompt_tokens + $completion_tokens;
-    $this->core->update_option( 'openai_usage', $usage );
-    return [
-      'prompt_tokens' => $prompt_tokens,
-      'completion_tokens' => $completion_tokens,
-      'total_tokens' => $prompt_tokens + $completion_tokens
-    ];
+    $usage = $data['usage'];
+    $this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
+    $answer = new Meow_MWAI_Answer( $query );
+    $answer->setUsage( $usage );
+    $answer->setChoices( $data['data'] );
+    return $answer;
   }
 
-  public function record_image_usage( $model, $resolution, $images ) {
-    if ( !$model || !$resolution || !$images ) {
-      throw new Exception( 'Missing parameters for record_dalle_usage.' );
-    }
-    $usage = $this->core->get_option( 'openai_usage' );
-    $month = date( 'Y-m' );
-    if ( !isset( $usage[$month] ) ) {
-      $usage[$month] = array();
-    }
-    if ( !isset( $usage[$month][$model] ) ) {
-      $usage[$month][$model] = array(
-        'resolution' => array(),
-        'images' => 0
-      );
-    }
-    if ( !isset( $usage[$month][$model]['resolution'][$resolution] ) ) {
-      $usage[$month][$model]['resolution'][$resolution] = 0;
-    }
-    $usage[$month][$model]['resolution'][$resolution] += $images;
-    $usage[$month][$model]['images'] += $images;
-    $this->core->update_option( 'openai_usage', $usage );
-    return [
-      'resolution' => $resolution,
-      'images' => $images
-    ];
-  }
-
-  public function runTextQuery( $query ) {
+  public function runCompletion( $query ) {
     if ( empty( $query->apiKey ) ) {
       $query->apiKey = $this->localApiKey;
     }
@@ -126,7 +83,7 @@ class Meow_MWAI_AI {
         throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
       }
       $answer = new Meow_MWAI_Answer( $query );
-      $usage = $this->record_usage( $data['model'], $data['usage']['prompt_tokens'],
+      $usage = $this->core->record_tokens_usage( $data['model'], $data['usage']['prompt_tokens'],
         $data['usage']['completion_tokens'] );
       $answer->setUsage( $usage );
       $answer->setChoices( $data['choices'] );
@@ -139,7 +96,7 @@ class Meow_MWAI_AI {
   }
 
   // Request to DALL-E API
-  public function runImageQuery( $query ) {
+  public function runCreateImages( $query ) {
     if ( empty( $query->apiKey ) ) {
       $query->apiKey = $this->localApiKey;
     }
@@ -175,7 +132,7 @@ class Meow_MWAI_AI {
       }
 
       $answer = new Meow_MWAI_Answer( $query );
-      $usage = $this->record_image_usage( "dall-e", "1024x1024", $query->maxResults );
+      $usage = $this->core->record_images_usage( "dall-e", "1024x1024", $query->maxResults );
       $answer->setUsage( $usage );
       $answer->setChoices( $data['data'] );
       return $answer;
@@ -208,10 +165,13 @@ class Meow_MWAI_AI {
     $answer = null;
     try {
       if ( $query instanceof Meow_MWAI_QueryText ) {
-        $answer = $this->runTextQuery( $query );
+        $answer = $this->runCompletion( $query );
+      }
+      else if ( $query instanceof Meow_MWAI_QueryEmbed ) {
+        $answer = $this->runEmbedding( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryImage ) {
-        $answer = $this->runImageQuery( $query );
+        $answer = $this->runCreateImages( $query );
       }
       else {
         $this->throwException( 'Invalid query.' );

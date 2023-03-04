@@ -10,7 +10,9 @@ class Meow_MWAI_Query {
   public $maxResults = 1;
 
   public function __construct( $prompt = '' ) {
-    $this->prompt = $prompt;
+    global $mwai_core;
+    $this->setPrompt( $prompt );
+    $this->session = $mwai_core->get_session_id();
   }
 
   public function replace( $search, $replace ) {

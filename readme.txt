@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.1.8
+Stable tag: 1.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,11 +63,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.1.9 (2023/03/04) =
+* Update: Huge refactoring to make the plugin more extensible.
+* Fix: UI issue in the Images Generator.
+* Info: Help or discuss with other users on my Discord: https://discord.gg/bHDGh38.
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 🎵
+
 = 1.1.8 (2023/03/03) =
 * Fix: TextFields in Forms were broken.
 * Fix: Some UI issues on the admin side.
 * Update: Make sur the forms are filled (we can add a better validation system at a later point).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! We are having so much fun all together! 🥰
 
 = 1.1.6 (2023/03/02) =
 * Add: The ChatGPT model is finally here! It's "gpt-3.5-turbo" and you can already use it with your chatbots, forms, in the playground, etc. It's very new so let me know if you find any issues, in the [forums](https://wordpress.org/support/plugin/ai-engine/). Set as the new default.
@@ -80,8 +86,6 @@ Languages: English.
 * Add: Typewriter effect. I don't recommend it, but if you want to play with it, it's there :)
 * Add: New filter: mwai_forms_params.
 * Update: Refactoring and minor fixes. Making sure everything is stable and nice.
-* Info: If you want help/discuss with each other, join my Discord server: https://discord.gg/bHDGh38. However, please note that I will not be able to provide support there (I need to stay focus on coding).
-* Info: Please share your feedback in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 
 = 1.1.1 (2023/02/28) =
 * Add: New Moderation Module; it's beta, check it out and play with it.

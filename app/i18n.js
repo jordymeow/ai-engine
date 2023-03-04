@@ -110,6 +110,8 @@ i18n.COMMON = {
   EMBEDDINGS_HELP: __( 'Make your data - such as website content - searchable. It can be used in many ways, especially to enhance the answers from the chatbot.', 'ai-engine' ),
   EMBEDDINGS_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
   SERVER: __( 'Server', 'ai-engine' ),
+  COST: __( 'Cost', 'ai-engine' ),
+  COSTS: __( 'Costs', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -123,7 +125,7 @@ i18n.HELP = {
   TEMPERATURE: __( 'Between 0 and 1. Higher values means the model will take more risks.', 'ai-engine' ),
   MAX_TOKENS: __( 'The maximum number of tokens to generate. The model will stop generating once it hits this limit.', 'ai-engine' ),
   STOP_SEQUENCE: __( 'The sequence of tokens that will cause the model to stop generating text. You absolutely need this with fine-tuned models.', 'ai-engine' ),
-  USAGE: __( 'Keeps track of the current usage of the AI.', 'ai-engine' ),
+  COST: __( 'Keeps track of the current costs.', 'ai-engine' ),
   RESOLVE_SHORTCODE: __( 'Will resolve the shortcode in your content when needed (Content-Aware will use this, for instance).', 'ai-engine' ),
 }
 
@@ -231,6 +233,11 @@ i18n.FINETUNING = {
   NO_FINETUNES_YET: __( 'No fine-tunes yet. Create one by uploading a dataset.', 'ai-engine' ),
   CLEAN_MODELS_LIST: __( 'Clean Models List', 'ai-engine' ),
   DELETED_FINETUNE_ISSUE: __( 'For some reason, OpenAI still return the models even after you deleted them. Don\'t worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.', 'ai-engine' ),
+}
+
+i18n.EMBEDDINGS = {
+  EDIT: __( 'EDIT', 'ai-engine' ),
+  AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
 }
 
 export default i18n;

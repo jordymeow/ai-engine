@@ -1,5 +1,5 @@
-// Previous: 1.0.7
-// Current: 1.1.1
+// Previous: 1.1.1
+// Current: 1.1.9
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -133,7 +133,7 @@ const FineTuning = ({ options, updateOption }) => {
   const [ section, setSection ] = useState('finetunes');
   const [ dataSection, setDataSection ] = useState('editor');
   const [ isModeTrain, setIsModeTrain ] = useState(true);
-  const { models, model, setModel } = useModels(options);
+  const { models, model, setModel } = useModels(options, 'text-davinci-003');
   const [ suffix, setSuffix ] = useState('meow');
   const [ hyperParams, setHyperParams ] = useState(false);
   const [ nEpochs, setNEpochs ] = useState(4);
@@ -177,7 +177,7 @@ const FineTuning = ({ options, updateOption }) => {
     const currentSuffix = suffix;
     const rawModel = models.find(x => x.id === model);
     setBusyAction(true);
-    const isFineTuned = rawModel.short.startsWith('fn-');
+    const isFineTuned = rawModel.short.startsWith('fn-') || false;
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
       method: 'POST',
       nonce: restNonce,
@@ -578,13 +578,11 @@ const FineTuning = ({ options, updateOption }) => {
   return (<>
     <NekoContainer style={{ margin: 10 }} contentStyle={{ padding: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ marginRight: 15 }}>
-          <NekoSwitch 
-            onLabel={i18n.FINETUNING.MODEL_FINETUNE} offLabel={i18n.FINETUNING.DATASET_BUILDER} width={145}
-            onBackgroundColor={NekoTheme.purple} offBackgroundColor={NekoTheme.green}
-            onChange={setIsModeTrain} checked={isModeTrain}
-            />
-        </div>
+        <NekoSwitch style={{ marginRight: 10 }}
+          onLabel={i18n.FINETUNING.MODEL_FINETUNE} offLabel={i18n.FINETUNING.DATASET_BUILDER} width={145}
+          onBackgroundColor={NekoTheme.purple} offBackgroundColor={NekoTheme.green}
+          onChange={setIsModeTrain} checked={isModeTrain}
+        />
         {isModeTrain && <NekoQuickLinks value={section} busy={busy}
           onChange={value => { setSection(value) }}>
           <NekoLink title={i18n.COMMON.MODELS} value='finetunes' count={fineTuneRows?.length ?? null} />
@@ -725,8 +723,8 @@ const FineTuning = ({ options, updateOption }) => {
           <label>Base model:</label>
           <NekoSpacer height={5} />
           <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
-            {models.map((x) => (
-              <NekoOption value={x.id} label={x.name}></NekoOption>
+            {models.filter(x => x.tags?.includes('finetune')).map((x) => (
+              <NekoOption value={x.model} label={x.name}></NekoOption>
             ))}
           </NekoSelect>
           <NekoSpacer height={5} />
@@ -754,3 +752,5 @@ const FineTuning = ({ options, updateOption }) => {
     </NekoContainer>
   </>);
 };
+
+export default FineTuning;

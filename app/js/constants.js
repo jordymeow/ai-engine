@@ -1,43 +1,5 @@
-// Previous: 1.1.4
-// Current: 1.1.5
-
-const OpenAI_models = [
-  {
-    id: 'gpt-3.5-turbo',
-    name: 'gpt-3.5-turbo',
-    short: 'gpt-3.5-turbo',
-    description: 'urbo is the same model family that powers ChatGPT. It is optimized for conversational chat input and output but does equally well on completions when compared with the Davinci model family.',
-    strength: 'Conversation and text generation'
-  },
-  {
-    id: 'text-davinci-003',
-    name: 'text-davinci-003',
-    short: 'davinci',
-    description: 'Most capable GPT-3 model. Can do any task the other models can do, often with higher quality, longer output and better instruction-following. Also supports inserting completions within text.',
-    strength: 'Complex intent, cause and effect, summarization for audience'
-  },
-  {
-    id: 'text-curie-001',
-    name: 'text-curie-001',
-    short: 'curie',
-    description: 'Very capable, but faster and lower cost than Davinci.',
-    strength: 'Language translation, complex classification, text sentiment, summarization'
-  },
-  {
-    id: 'text-babbage-001',
-    name: 'text-babbage-001',
-    short: 'babbage',
-    description: 'Capable of straightforward tasks, very fast, and lower cost.',
-    strength: 'Moderate classification, semantic search classification'
-  },
-  {
-    id: 'text-ada-001',
-    name: 'text-ada-001',
-    short: 'ada',
-    description: 'Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost.',
-    strength: 'Parsing text, simple classification, address correction, keywords'
-  },
-];
+// Previous: 1.1.5
+// Current: 1.1.9
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -62,7 +24,7 @@ const WritingTones = [
   { value: 'informal', label: 'Informal' },
   { value: 'inspirational', label: 'Inspirational' },
   { value: 'professional', label: 'Professional' },
-  { value: 'confvalueent', label: 'Confvalueent' },
+  { value: 'confident', label: 'Confident' },
   { value: 'emotional', label: 'Emotional' },
   { value: 'persuasive', label: 'Persuasive' },
   { value: 'supportive', label: 'Supportive' },
@@ -73,20 +35,14 @@ const WritingTones = [
   { value: 'journalistic', label: 'Journalistic' },
 ];
 
-const OpenAI_PricingPerModel = [
-  { model: 'davinci', price: 0.02 },
-  { model: 'curie', price: 0.002 },
-  { model: 'babbage', price: 0.0005 },
-  { model: 'ada', price: 0.0004 },
-  { model: 'dall-e', price: 0.02 }
-];
+const defaultModel = 'gpt-3.5-turbo';
 
 const Templates_Playground = [
   {
     id: 'default',
     name: 'Default',
     mode: 'query',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
@@ -95,7 +51,7 @@ const Templates_Playground = [
     id: 'article_translator',
     name: 'Text Translator',
     mode: 'query',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.3,
     stopSequence: '',
     maxTokens: 2048,
@@ -104,7 +60,7 @@ const Templates_Playground = [
     id: 'restaurant_review',
     name: 'Restaurant Review Writer',
     mode: 'query',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
@@ -113,7 +69,7 @@ const Templates_Playground = [
     id: 'article_corrector',
     name: 'Text Corrector',
     mode: 'query',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.2,
     stopSequence: '',
     maxTokens: 2048,
@@ -122,7 +78,7 @@ const Templates_Playground = [
     id: 'seo_assistant',
     name: 'SEO Optimizer',
     mode: 'query',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.6,
     stopSequence: '',
     maxTokens: 1024,
@@ -131,7 +87,7 @@ const Templates_Playground = [
     id: 'wp_assistant',
     name: 'WordPress Assistant',
     mode: 'continuous',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 150,
@@ -189,7 +145,7 @@ const Templates_ContentGenerator = [
     topicsAreTitles: false,
     title: "",
     sections: "",
-    model: 'gpt-3.5-turbo',
+    model: defaultModel,
     temperature: 0.8,
     maxTokens: 2048,
     sectionsCount: 2,
@@ -205,5 +161,5 @@ const Templates_ContentGenerator = [
   }
 ];
 
-export { OpenAI_models, OpenAI_PricingPerModel, WritingStyles, WritingTones, 
+export { WritingStyles, WritingTones, 
   Templates_Playground, Templates_ImagesGenerator, Templates_ContentGenerator }

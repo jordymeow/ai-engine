@@ -59,6 +59,13 @@ class Meow_MWAI_Answer {
         $this->results[] = $url;
         $this->result = $url;
       }
+
+      // It's embedding
+      if ( isset( $choice['embedding'] ) ) {
+        $content = $choice['embedding'];
+        $this->results[] = $content;
+        $this->result = $content;
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
-// Previous: 1.1.7
-// Current: 1.1.8
+// Previous: 1.1.8
+// Current: 1.1.9
 
 const ENTRY_TYPES = {
   MANUAL: 'manual',
@@ -7,22 +7,33 @@ const ENTRY_TYPES = {
   POST_FRAGMENT: 'postFragment'
 }
 
-// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// NekoUI
-import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput,
-  NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoContainer, NekoSpacer } from '@neko-ui';
+import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput, NekoTheme,
+  NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoContainer, NekoSpacer, NekoSwitch } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
+import i18n from '../../../i18n';
 
-const vectorsColumns = [
+const searchColumns = [
   { accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'type', title: 'Type', sortable: true, width: '120px' },
-  { accessor: 'refId', title: 'Ref', sortable: false, width: '120px' },
+  { accessor: 'title', title: 'Title', sortable: true },
+  { accessor: 'status', title: 'Status', width: '80px' },
+  { accessor: 'refId', title: 'Ref', sortable: true, width: '60px' },
+  { accessor: 'score', title: 'Score', sortable: true, width: '65px' },
+  { accessor: 'updated', title: 'Updated', sortable: true, width: '80px' },
+  { accessor: 'created', title: 'Created', sortable: true, width: '80px' },
+  { accessor: 'actions', title: '', width: '30px'  }
+];
+
+const queryColumns = [
+  { accessor: 'id', title: 'ID', sortable: true, width: '60px' },
+  { accessor: 'type', title: 'Type', sortable: true, width: '120px' },
   { accessor: 'title', title: 'Title', sortable: false },
   { accessor: 'status', title: 'Status', sortable: true, width: '80px' },
+  { accessor: 'refId', title: 'Ref', sortable: false, width: '60px' },
   { accessor: 'updated', title: 'Updated', sortable: true, width: '80px' },
   { accessor: 'created', title: 'Created', sortable: true, width: '80px' },
   { accessor: 'actions', title: '', width: '30px'  }
@@ -37,31 +48,45 @@ const defaultVector = {
   type: ENTRY_TYPES.MANUAL
 }
 
-const retrieveVectors = async (vectorParams) => {
-  vectorParams.offset = (vectorParams.page - 1) * vectorParams.limit;
-  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: vectorParams });
+const searchVectors = async (queryParams) => {
+  if (queryParams?.filters?.aiSearch === "") {
+    return [];
+  }
+  queryParams.offset = (queryParams.page - 1) * queryParams.limit;
+  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
+  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
+}
+
+const retrieveVectors = async (queryParams) => {
+  queryParams.offset = (queryParams.page - 1) * queryParams.limit;
+  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
 const VectorDatabase = ({ options, updateOption }) => {
   const queryClient = useQueryClient();
   const [ busy, setBusy ] = useState(false);
-  const [ modal, setModal ] = useState(null);
-  //const [ currentTab, setCurrentTab ] = useState('all');
+  const [ mode, setMode ] = useState('edit');
+  const [ search, setSearch ] = useState('');
+  const [ modal, setModal ] = useState(false);
   const pinecone = options.pinecone || {};
   const indexes = pinecone.indexes || [];
   const index = pinecone.index || null;
-  const [ vectorParams, setVectorsQueryParams ] = useState({
+  const [ queryParams, setQueryParams ] = useState({
     filters: { env: index },
     sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 20
   });
-  const { isFetching: isFetchingVectors, data: vectorsData } = useQuery({
-    queryKey: ['vectors', vectorParams], queryFn: () => retrieveVectors(vectorParams),
+  const { isFetching: isBusyQuerying, data: vectorsData } = useQuery({
+    queryKey: ['vectors', queryParams], queryFn: () => retrieveVectors(queryParams),
     keepPreviousData: true
   });
+  const [ foundVectorsSort, setFoundVectorsSort ] = useState({ accessor: 'score', by: 'desc' });
+  const [ foundVectorsData, setFoundVectorsData ] = useState({ total: 0, vectors: [] });
+  const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
+  const columns = mode === 'search' ? searchColumns : queryColumns;
 
   useEffect(() => {
-    setVectorsQueryParams({ ...vectorParams, filters: { env: index ?? '' } });
+    setQueryParams({ ...queryParams, filters: { env: index ?? '' } });
   }, [index]);
 
   const onAddEmbedding = async () => {
@@ -72,6 +97,7 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (res.success) {
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
     }
+    setModal(false);
     setBusy(false);
   }
 
@@ -81,7 +107,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (res.success) {
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
     }
-    // Missing await here delays cache invalidation, potentially causing stale data
     setBusy(false);
   }
 
@@ -89,33 +114,39 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy('refreshIndexes');
     const res = await nekoFetch(`${apiUrl}/pinecone/list_indexes`, { nonce: restNonce, method: 'GET' });
     const freshPinecone = { ...pinecone, indexes: res.indexes };
-    // Mistakenly not awaiting updateOption, leading to race condition if updateOption is async
-    updateOption(freshPinecone, 'pinecone');
+    await updateOption(freshPinecone, 'pinecone');
     setBusy(false);
   }
 
-  const runTest = async () => {
-    const res = await nekoFetch(`${apiUrl}/pinecone/list_indexes`, { nonce: restNonce, method: 'GET' });
-    // console.log intentionally removed or commented out, making this function silent
+  const onSearch = async () => {
+    setBusy('searchVectors');
+    const vectors = await searchVectors({ ...queryParams, filters: { env: index ?? '', aiSearch: search } });
+    setFoundVectorsData(vectors);
+    setBusy(false);
   }
-
-  // useEffect for tab filtering commented out, may cause confusing UI bugs
-  // useEffect(() => {
-  //   if (currentTab === 'all') {
-  //     setVectorsQueryParams({ ...vectorParams, filters: null });
-  //   }
-  //   else {
-  //     setVectorsQueryParams({ ...vectorParams, filters: { env: currentTab } });
-  //   }
-  // }, [currentTab]);
 
   const vectorsTotal = useMemo(() => {
     return vectorsData?.total || 0;
   }, [vectorsData]);
 
   const vectorsRows = useMemo(() => {
-    if (!vectorsData?.vectors) { return []; }
-    return vectorsData?.vectors.sort((a, b) => b.created_at - a.created_at).map(x => {
+    const data = mode === 'edit' ? vectorsData : foundVectorsData;
+    if (!data?.vectors) { return []; }
+
+    if (mode === 'search') {
+      console.log(foundVectorsSort);
+      data.vectors = data.vectors.slice().sort((a, b) => {
+        if (foundVectorsSort.by === 'asc') {
+          return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
+        }
+        else {
+          return a[foundVectorsSort.accessor] < b[foundVectorsSort.accessor] ? 1 : -1;
+        }
+      });
+      console.log({ foundVectorsSort, data });
+    }
+
+    return data?.vectors.map(x => {
       let updated = new Date(x.updated);
       updated = new Date(updated.getTime() - updated.getTimezoneOffset() * 60 * 1000);
       let updatedFormattedTime = updated.toLocaleDateString('ja-JP', {
@@ -131,7 +162,8 @@ const VectorDatabase = ({ options, updateOption }) => {
       return {
         id: x.id,
         type: x.type,
-        refId: x.refId,
+        refId: x.refId ? x.refId : '-',
+        score: x.score ? (x.score.toFixed(4) * 100).toFixed(2) : '-',
         title: x.title,
         status: x.status,
         updated: updatedFormattedTime,
@@ -142,7 +174,7 @@ const VectorDatabase = ({ options, updateOption }) => {
         </NekoButton>
       }
     })
-  }, [vectorsData, busy]);
+  }, [mode, vectorsData, foundVectorsData, foundVectorsSort, busy]);
 
   return (<>
     <NekoContainer style={{ margin: 10 }} contentStyle={{ padding: 10 }}>
@@ -152,7 +184,6 @@ const VectorDatabase = ({ options, updateOption }) => {
           value={pinecone.index} onChange={value => {
             const freshPinecone = { ...pinecone, index: value };
             updateOption(freshPinecone, 'pinecone');
-            // Note: no reset of vectorParams filters here to match index change -- possible stale filter
           }}>
           {indexes.map(x => <NekoOption key={x.name} value={x.name} label={x.name} />)}
           <NekoOption value={''} label="None" />
@@ -161,51 +192,61 @@ const VectorDatabase = ({ options, updateOption }) => {
           isBusy={busy === 'refreshIndexes'} disabled={busy}>
           Refresh Indexes
         </NekoButton>
-        {/* <NekoButton className="primary" onClick={() => setModal(defaultVector)} disabled={busy}>
-          Create Index
-        </NekoButton> */}
-        {/* <NekoButton className="primary" onClick={runTest} disabled={busy}>Test</NekoButton> */}
       </div>
     </NekoContainer>
     <NekoContainer style={{ margin: 10 }} contentStyle={{ padding: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
+          <NekoSwitch style={{ marginRight: 10 }}
+            onLabel={i18n.EMBEDDINGS.AI_SEARCH} offLabel={i18n.EMBEDDINGS.EDIT} width={145}
+            onValue="search" offValue="edit"
+            checked={mode === 'search'} onChange={setMode} 
+            onBackgroundColor={NekoTheme.purple} offBackgroundColor={NekoTheme.green}
+          />
+          {mode === 'search' && <div style={{ flex: 'auto', display: 'flex' }}>
+            <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
+              value={search} onChange={val => setSearch(val)} />
+            <NekoButton className="primary" onClick={onSearch} disabled={busy} isBusy={busy === 'searchVectors'}>
+              Search
+            </NekoButton>
+          </div>}
+          {mode === 'edit' && <>
           <NekoButton className="primary" onClick={() => setModal(defaultVector)} disabled={busy}>
             Add Embedding
           </NekoButton>
-          {/* <NekoQuickLinks value={currentTab} onChange={value => { setCurrentTab(value); setPage(1); }}>
-            <NekoLink title="All" value='all' />
-            <NekoLink title="Chatbot" value='chatbot' />
-            <NekoLink title="Form" value='form' />
-            <NekoLink title="Playground" value='playground' />
-          </NekoQuickLinks> */}
+          </>}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <NekoPaging currentPage={vectorParams.page} limit={vectorParams.limit}
+        <div style={{ display: 'flex'}}>
+          <NekoPaging currentPage={queryParams.page} limit={queryParams.limit}
             total={vectorsTotal} onClick={page => { 
-              setVectorsQueryParams({ ...vectorParams, page });
+              setQueryParams({ ...queryParams, page });
             }}
           />
-          <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={isFetchingVectors}
+          <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={busyFetchingVectors}
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ['vectors'] });
           }}>Refresh Embeddings</NekoButton>
         </div>
       </div>
 
-      <NekoTable alternateRowColor busy={isFetchingVectors}
-        sort={vectorParams.sort} onSortChange={(accessor, by) => {
-          setVectorsQueryParams({ ...vectorParams, sort: { accessor, by } });
+      <NekoTable alternateRowColor busy={busyFetchingVectors}
+        sort={mode === 'edit' ? queryParams.sort : foundVectorsSort} onSortChange={(accessor, by) => {
+          if (mode === 'edit') {
+            setQueryParams({ ...queryParams, sort: { accessor, by } });
+          }
+          else {
+            setFoundVectorsSort({ accessor, by });
+          }
         }}
-        data={vectorsRows} columns={vectorsColumns} 
+        data={vectorsRows} columns={columns} 
       />
     </NekoContainer>
 
     <NekoModal isOpen={modal}
         title="Add Embedding"
         onOkClick={onAddEmbedding}
-        onRequestClose={() => setModal(null)}
-        onCancelClick={() => setModal(null)}
+        onRequestClose={() => setModal(false)}
+        onCancelClick={() => setModal(false)}
         ok="Add Embedding"
         disabled={busy === 'addEmbedding'}
         content={<>
@@ -222,6 +263,23 @@ const VectorDatabase = ({ options, updateOption }) => {
           <label>Content:</label>
           <NekoSpacer />
           <NekoTextArea value={modal?.content} onChange={value => setModal({ ...modal, content: value }) } />
+          <NekoSpacer />
+          <label>Type:</label>
+          <NekoSpacer />
+          <NekoSelect scrolldown name="type" disabled={busy} value={modal?.type} onChange={value => {
+            setModal({ ...modal, type: value });
+            }}>
+            <NekoOption value="manual" label="Manual" />
+            <NekoOption value="post" label="Post (Whole)" />
+            <NekoOption value="post-fragment" label="Post (Fragment)" />
+          </NekoSelect>
+          {(modal?.type === 'post' || modal?.type === 'post-fragment') && <>
+            <NekoSpacer />
+            <label>Post ID:</label>
+            <NekoSpacer />
+            <NekoInput value={modal?.refId} 
+              onChange={value => setModal({ ...modal, refId: value }) } />
+          </>}
         </>
         }
       />
