@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.2.2
+Stable tag: 1.2.21
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,7 +63,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.2.2 (2023/03/05) =
+= 1.2.21 (2023/03/05) =
 * Add: A little tool to play with Text-to-Speech using Whisper API.
 * Add: Quick Usage Costs in the Content Generation (same system as in the Playground).
 * Fix: There was an issue for new users without an OpenAI key.

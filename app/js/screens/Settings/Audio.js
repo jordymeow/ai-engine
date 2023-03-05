@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.2.2
+// Previous: 1.2.2
+// Current: 1.2.21
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -11,7 +11,7 @@ import { NekoWrapper, NekoBlock, NekoSpacer, NekoColumn, NekoTextArea, NekoButto
 import { nekoFetch } from '@neko-ui';
 
 const Audio = ({ options, updateOption }) => {
-  const [url, setUrl] = useState('http://gpt.nekod.net/wp-content/uploads/2023/03/2020-12-02-03-15-08.mp3');
+  const [url, setUrl] = useState('');
   const [mode, setMode] = useState('transcription');
   const [content, setContent] = useState('');
   const [prompt, setPrompt] = useState('');
