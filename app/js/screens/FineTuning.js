@@ -1,5 +1,5 @@
-// Previous: 1.1.1
-// Current: 1.1.9
+// Previous: 1.1.9
+// Current: 1.2.2
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -133,7 +133,7 @@ const FineTuning = ({ options, updateOption }) => {
   const [ section, setSection ] = useState('finetunes');
   const [ dataSection, setDataSection ] = useState('editor');
   const [ isModeTrain, setIsModeTrain ] = useState(true);
-  const { models, model, setModel } = useModels(options, 'text-davinci-003');
+  const { models, model, setModel, getModel, getFamilyName, isFineTunedModel } = useModels(options, 'text-davinci-003');
   const [ suffix, setSuffix ] = useState('meow');
   const [ hyperParams, setHyperParams ] = useState(false);
   const [ nEpochs, setNEpochs ] = useState(4);
@@ -175,15 +175,16 @@ const FineTuning = ({ options, updateOption }) => {
   const onStartFineTune = async () => {
     const currentFile = fileForFineTune;
     const currentSuffix = suffix;
-    const rawModel = models.find(x => x.id === model);
+
+    const rawModel = getModel(model);
     setBusyAction(true);
-    const isFineTuned = rawModel.short.startsWith('fn-') || false;
+    const isFineTuned = isFineTunedModel(model);
     const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
       method: 'POST',
       nonce: restNonce,
       json: {
         fileId: currentFile,
-        model: isFineTuned ? rawModel.id : rawModel.short,
+        model: isFineTuned ? rawModel.model : rawModel.family,
         suffix: currentSuffix,
         nEpochs,
         batchSize
@@ -481,8 +482,8 @@ const FineTuning = ({ options, updateOption }) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
-    const rawModel = models.find(x => x.id === model);
-    return `${rawModel?.short}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
+    const rawModel = getModel(model);
+    return `${rawModel?.family}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
   }, [suffix, model]);
 
   const onSelectFiles = async (files) => {
@@ -637,7 +638,7 @@ const FineTuning = ({ options, updateOption }) => {
       </>}
 
       {isModeTrain && section === 'files' && <>
-        <p>{i18n.FINETUNING.DATASETS_INTRO}</p>
+        <p>{toHTML(i18n.FINETUNING.DATASETS_INTRO)}</p>
         <NekoTable alternateRowColor busy={busy}
           data={fileRows} columns={fileColumns} 
           emptyMessage={<>You do not have any dataset files yet.</>}

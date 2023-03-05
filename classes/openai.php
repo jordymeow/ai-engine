@@ -99,7 +99,11 @@ class Meow_MWAI_OpenAI
 
   public function uploadFile( $filename, $data )
   {
-    $result = $this->run('POST', '/files', null, ['data' => $data, 'filename' => $filename]);
+    $result = $this->run('POST', '/files', null, [
+      'purpose' => 'fine-tune',
+      'data' => $data,
+      'file' => $filename
+    ] );
     return $result;
   }
 
@@ -140,22 +144,30 @@ class Meow_MWAI_OpenAI
     return $result;
   }
 
-  public function create_body_for_file($file, $boundary)
+  /**
+    * Build the body of a form request.
+    * If the field name is 'file', then the field value is the filename of the file to upload.
+    * The file contents are taken from the 'data' field.
+    *  
+    * @param array $fields
+    * @param string $boundary
+    * @return string
+   */
+  public function buildFormBody( $fields, $boundary )
   {
-    $fields = array(
-      'purpose' => 'fine-tune',
-      'file' => $file['filename']
-    );
-
     $body = '';
-    foreach ($fields as $name => $value) {
+    foreach ( $fields as $name => $value ) {
+      if ( $name == 'data' ) {
+        continue;
+      }
       $body .= "--$boundary\r\n";
       $body .= "Content-Disposition: form-data; name=\"$name\"";
-      if ($name == 'file') {
+      if ( $name == 'file' ) {
         $body .= "; filename=\"{$value}\"\r\n";
         $body .= "Content-Type: application/json\r\n\r\n";
-        $body .= $file['data'] . "\r\n";
-      } else {
+        $body .= $fields['data'] . "\r\n";
+      }
+      else {
         $body .= "\r\n\r\n$value\r\n";
       }
     }
@@ -163,18 +175,29 @@ class Meow_MWAI_OpenAI
     return $body;
   }
 
-  public function run( $method, $url, $query = null, $file = null, $json = true )
+  /**
+    * Run a request to the OpenAI API.
+    * Fore more information about the $formFields, refer to the buildFormBody method.
+    *
+    * @param string $method POST, PUT, GET, DELETE...
+    * @param string $url The API endpoint
+    * @param array $query The query parameters (json)
+    * @param array $formFields The form fields (multipart/form-data)
+    * @param bool $json Whether to return the response as json or not
+    * @return array
+   */
+  public function run( $method, $url, $query = null, $formFields = null, $json = true )
   {
     $apiKey = $this->apiKey;
     $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n";
     $body = $query ? json_encode( $query ) : null;
-    if ( !empty( $file ) ) {
+    if ( !empty( $formFields ) ) {
       $boundary = wp_generate_password (24, false );
       $headers  = [
         'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         'Authorization' => 'Bearer ' . $this->apiKey,
       ];
-      $body = $this->create_body_for_file( $file, $boundary );
+      $body = $this->buildFormBody( $formFields, $boundary );
     }
 
     $url = 'https://api.openai.com/v1' . $url;

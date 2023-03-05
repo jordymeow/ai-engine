@@ -79,6 +79,7 @@ define( 'MWAI_OPTIONS', [
 	'module_moderation' => false,
 	'module_statistics' => false,
 	'module_embeddings' => false,
+	'module_audio' => false,
 	'shortcode_chat' => true,
 	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
 	'shortcode_chat_params_override' => false,

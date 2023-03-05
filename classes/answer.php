@@ -37,35 +37,41 @@ class Meow_MWAI_Answer {
    */
   public function setChoices( $choices ) {
     $this->results = [];
-    foreach ( $choices as $choice ) {
+    if ( is_array( $choices ) ) {
+      foreach ( $choices as $choice ) {
 
-      // It's chat completion
-      if ( isset( $choice['message'] ) ) {
-        $content = trim( $choice['message']['content'] );
-        $this->results[] = $content;
-        $this->result = $content;
-      }
+        // It's chat completion
+        if ( isset( $choice['message'] ) ) {
+          $content = trim( $choice['message']['content'] );
+          $this->results[] = $content;
+          $this->result = $content;
+        }
 
-      // It's text completion
-      if ( isset( $choice['text'] ) ) {
-        $text = trim( $choice['text'] );
-        $this->results[] = $text;
-        $this->result = $text;
-      }
+        // It's text completion
+        if ( isset( $choice['text'] ) ) {
+          $text = trim( $choice['text'] );
+          $this->results[] = $text;
+          $this->result = $text;
+        }
 
-      // It's url/image
-      if ( isset( $choice['url'] ) ) {
-        $url = trim( $choice['url'] );
-        $this->results[] = $url;
-        $this->result = $url;
-      }
+        // It's url/image
+        if ( isset( $choice['url'] ) ) {
+          $url = trim( $choice['url'] );
+          $this->results[] = $url;
+          $this->result = $url;
+        }
 
-      // It's embedding
-      if ( isset( $choice['embedding'] ) ) {
-        $content = $choice['embedding'];
-        $this->results[] = $content;
-        $this->result = $content;
+        // It's embedding
+        if ( isset( $choice['embedding'] ) ) {
+          $content = $choice['embedding'];
+          $this->results[] = $content;
+          $this->result = $content;
+        }
       }
+    }
+    else {
+      $this->result = $choices;
+      $this->results[] = $choices;
     }
   }
 }

@@ -107,6 +107,18 @@ define( 'MWAI_OPENAI_MODELS', [
 		"mode" => "embedding",
 		"finetune" => false,
 		"tags" => ['core'],
+	],
+	// Audio Models:
+	[
+		"model" => "whisper-1",
+		"name" => "whisper-1",
+		"family" => "whisper",
+		"price" => 0.0006,
+		"type" => "minute",
+		"unit" => 1,
+		"mode" => "speech-to-text",
+		"finetune" => false,
+		"tags" => ['core'],
 	]
 ]);
 

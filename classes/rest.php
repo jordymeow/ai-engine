@@ -150,7 +150,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'delete_vectors' ),
 			) );
-			
+			register_rest_route( $this->namespace, '/transcribe', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'transcribe' ),
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -421,6 +425,20 @@ class Meow_MWAI_Rest
 		}
 	}
 
+	function x( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$filename = sanitize_text_field( $params['filename'] );
+			$data = $params['data'];
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$file = $openai->uploadFile( $filename, $data );
+			return new WP_REST_Response([ 'success' => true, 'file' => $file ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
 	function openai_files_delete( $request ) {
 		try {
 			$params = $request->get_json_params();
@@ -612,5 +630,14 @@ class Meow_MWAI_Rest
 		$ids = $params['ids'];
 		$success = apply_filters( 'mwai_embeddings_vectors_delete', false, $ids );
 		return new WP_REST_Response([ 'success' => $success ], 200 );
+	}
+	
+	function transcribe( $request ) {
+		$params = $request->get_json_params();
+		$query = new Meow_MWAI_QueryTranscribe();
+		$query->injectParams( $params );
+		$query->setEnv('admin-tools');
+		$answer = $this->core->ai->run( $query );
+		return new WP_REST_Response([ 'success' => true, 'data' => $answer->result ], 200 );
 	}
 }

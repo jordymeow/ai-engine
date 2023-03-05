@@ -9,6 +9,31 @@ class Meow_MWAI_AI {
     $this->localApiKey = $this->core->get_option( 'openai_apikey' );
   }
 
+  public function runTranscribe( $query ) {
+    if ( empty( $query->apiKey ) ) {
+      $query->apiKey = $this->localApiKey;
+    }
+    $openai = new Meow_MWAI_OpenAI( $this->core );
+    $fields = array( 
+      'prompt' => $query->prompt,
+      'model' => $query->model,
+      'response_format' => 'text',
+      'file' => basename( $query->url ),
+      'data' => file_get_contents( $query->url )
+    );
+    $modeEndpoint = $query->mode === 'translation' ? 'translations' : 'transcriptions';
+    $data = $openai->run( 'POST', '/audio/' . $modeEndpoint, null, $fields, false );
+    if ( empty( $data ) ) {
+      throw new Exception( 'Invalid data for transcription.' );
+    }
+    //$usage = $data['usage'];
+    //$this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
+    $answer = new Meow_MWAI_Answer( $query );
+    //$answer->setUsage( $usage );
+    $answer->setChoices( $data );
+    return $answer;
+  }
+
   public function runEmbedding( $query ) {
     if ( empty( $query->apiKey ) ) {
       $query->apiKey = $this->localApiKey;
@@ -172,6 +197,9 @@ class Meow_MWAI_AI {
       }
       else if ( $query instanceof Meow_MWAI_QueryImage ) {
         $answer = $this->runCreateImages( $query );
+      }
+      else if ( $query instanceof Meow_MWAI_QueryTranscribe ) {
+        $answer = $this->runTranscribe( $query );
       }
       else {
         $this->throwException( 'Invalid query.' );

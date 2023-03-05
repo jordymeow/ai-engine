@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.1.1
+// Previous: 1.1.1
+// Current: 1.2.2
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -38,10 +38,11 @@ const Moderation = ({ options, updateOption }) => {
       <NekoColumn minimal>
         <NekoBlock busy={busy} title="AI Moderation Tester" className="primary">
           <p>
-            This is beta! I have added this for you to play with. I am currently implementing the moderation so that it can be used by other parts of the plugin and in WordPress in general. I am thinking of a way to make it easy for you to set up based on the categories and scores.
+            I have added the Moderation Module for you to play with. Where would you like to see the moderation being implemented? Let me know. <b>OpenAI's moderation model is free! 🎵</b>
           </p>
           <NekoTextArea name="context" rows={3} value={content} onChange={setContent} />
-          <NekoButton onClick={onModerateClick}>Moderation AI Check</NekoButton> 
+          <NekoSpacer />
+          <NekoButton fullWidth onClick={onModerateClick}>Moderation AI Check</NekoButton> 
           <NekoSpacer />
           <label>Results:</label>
           <pre>

@@ -110,6 +110,9 @@ i18n.COMMON = {
   SERVER: __( 'Server', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
   USAGE_COSTS: __( 'Usage Costs', 'ai-engine' ),
+  AUDIO_TRANSCRIPTION: __( 'Audio-to-Text', 'ai-engine' ),
+  AUDIO_TRANSCRIPTION_HELP: __( 'Transcribe audio files into texts.', 'ai-engine' ),
+  AUDIO_TAB: __( 'Audio', 'ai-engine' ),
 }
 
 i18n.FORMS = {

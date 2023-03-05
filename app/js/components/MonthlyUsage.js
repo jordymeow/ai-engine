@@ -1,5 +1,5 @@
-// Previous: 1.1.9
-// Current: 1.2.1
+// Previous: none
+// Current: 1.2.2
 
 import { NekoTypo } from '@neko-ui';
 import { useModels } from "../helpers";
@@ -9,8 +9,9 @@ const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
 const UsageDetails = ({ month, usageData }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [isExpanded, setIsExpanded] = useState(currentMonth == month);
+  
   return <li>
     <strong style={{ marginLeft: 5, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>
       🗓️ {month} ({usageData[month].totalPrice.toFixed(2)}$) 
@@ -33,7 +34,7 @@ const UsageDetails = ({ month, usageData }) => {
   </li>;
 }
 
-const Usage = ({ options }) => {
+const MonthlyUsage = ({ options }) => {
   const { models, getModelName, getModel, calculatePrice } = useModels(options);
   const openai_usage = options?.openai_usage;
 
@@ -67,7 +68,6 @@ const Usage = ({ options }) => {
       Object.keys(usageData).forEach((month) => {
         usageData[month].data.sort((a, b) => b.price - a.price);
       });
-  
     }
     catch (e) {
       console.error(e);
@@ -75,7 +75,7 @@ const Usage = ({ options }) => {
 
     return (
       <ul style={{ marginLeft: -7, marginTop: 10, marginBottom: 0, paddingBottom: 0 }}>
-        {Object.keys(usageData).map((month, index) =>
+        {Object.keys(usageData).reverse().map((month, index) =>
           <UsageDetails key={index} month={month} usageData={usageData} />
         )}
       </ul>
@@ -87,6 +87,6 @@ const Usage = ({ options }) => {
   </>);
 }
 
-export default Usage;
+export default MonthlyUsage;
 
 

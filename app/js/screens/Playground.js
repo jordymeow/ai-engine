@@ -1,5 +1,5 @@
-// Previous: 1.1.9
-// Current: 1.2.1
+// Previous: 1.2.1
+// Current: 1.2.2
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -14,6 +14,7 @@ import { AiNekoHeader } from "../styles/CommonStyles";
 import { StyledNekoInput, StyledSidebar } from "../styles/StyledSidebar";
 import useTemplates from "../components/Templates";
 import i18n from "../../i18n";
+import UsageCosts from "../components/UsageCosts";
 
 const StyledTextArea = Styled(NekoTextArea)`
   .neko-textarea-container {
@@ -36,12 +37,11 @@ const StyledTextArea = Styled(NekoTextArea)`
 const Dashboard = () => {
   const { template, setTemplate, jsxTemplates } = useTemplates('playground');
   const [completion, setCompletion] = useState("");
-  const { completionModels, calculatePrice } = useModels(options);
+  const { completionModels } = useModels(options);
+  const { addUsage, jsxUsageCosts } = UsageCosts(options);
 
   const [busy, setBusy] = useState(false);
   const [continuousEntry, setContinuousEntry] = useState('');
-  const [sessionCost, setSessionCost] = useState(0);
-  const [lastCost, setLastCost] = useState(0);
   const [startTime, setStartTime] = useState();
   const [error, setError] = useState();
 
@@ -73,11 +73,6 @@ const Dashboard = () => {
     }
   }, [template]);
 
-  const onResetUsage = () => {
-    setSessionCost(0);
-    setLastCost(0);
-  }
-
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
     setStartTime(new Date());
@@ -102,14 +97,12 @@ const Dashboard = () => {
       else {
         setCompletion(res.data);
       }
-      const cost = calculatePrice(model, res.usage.total_tokens);
-      setLastCost(cost);
-      setSessionCost(sessionCost + cost);
+      addUsage(model, res?.usage?.total_tokens || 0);
     }
     else {
       setError(res.message);
     }
-    setStartTime(); // <-- bug introduced here (should pass a value)
+    setStartTime();
     setBusy(false);
   };
 
@@ -138,7 +131,7 @@ const Dashboard = () => {
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
             <NekoSelect scrolldown name="mode" disabled={true || busy} 
-              value={mode} description="" onChange={setTemplateProperty}>
+              value={mode} description="" onChange={(val) => setTemplateProperty(val, 'mode')}>
               <NekoOption key='query' value='query' label="Query" />
               <NekoOption key='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
@@ -151,17 +144,17 @@ const Dashboard = () => {
 
             {mode !== 'continuous' && <>
               <label style={{ marginTop: 0, marginBottom: 10 }}>{i18n.PLAYGROUND.PROMPT}:</label>
-              <StyledTextArea style={{ marginBottom: 5 }} rows={12} onChange={setPrompt} value={prompt} />
+              <StyledTextArea style={{ marginBottom: 5 }} rows={12} onChange={(e) => setPrompt(e.target.value)} value={prompt} />
               <label style={{ marginTop: 0, marginBottom: 10 }}>{i18n.PLAYGROUND.ANSWER}:</label>
-              <StyledTextArea countable="words" rows={14} onChange={setCompletion} value={completion} />
+              <StyledTextArea countable="words" rows={14} onChange={(e) => setCompletion(e.target.value)} value={completion} />
             </>}
 
             {mode === 'continuous' && <>
-              <StyledTextArea rows={18} onChange={setPrompt} value={prompt} />
-              <div style={{ display: 'flex' }}>
+              <StyledTextArea rows={18} onChange={(e) => setPrompt(e.target.value)} value={prompt} />
+              <div style={{ display: 'flex', position: 'relative' }}>
                 <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
-                  zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
+                  zIndex: 200, fontSize: 28, top: 12, left: 10 }}></span>
+                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={(e) => setContinuousEntry(e.target.value)}
                   onEnter={onPushContinuousEntry} disabled={busy} />
               </div>
             </>}
@@ -184,28 +177,28 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>{i18n.COMMON.SETTINGS}</h3>
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={(val) => setTemplateProperty(val, 'model')}>
               {completionModels.map((x) => (
-                <NekoOption value={x.model} label={x.name}></NekoOption>
+                <NekoOption value={x.model} label={x.name} key={x.model}></NekoOption>
               ))}
             </NekoSelect>
             <label>{i18n.COMMON.TEMPERATURE}:</label>
             <NekoInput name="temperature" value={temperature} type="number"
-              onChange={value => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
+              onChange={(value) => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   {i18n.HELP.TEMPERATURE}
                 </span>
               </>} />
             <label>{i18n.COMMON.MAX_TOKENS}:</label>
             <NekoInput name="maxTokens" value={maxTokens} type="number"
-              onChange={value => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
+              onChange={(value) => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
               <span>
               {i18n.HELP.MAX_TOKENS}
               </span>
             </>} />
             <label>{i18n.COMMON.STOP_SEQUENCE}:</label>
             <NekoInput name="stopSequence" value={stopSequence} type="text"
-              onChange={setTemplateProperty} description={<>
+              onChange={(e) => setTemplateProperty(e.target.value, 'stopSequence')} description={<>
               <span>
               {i18n.HELP.STOP_SEQUENCE}
               </span>
@@ -214,20 +207,13 @@ const Dashboard = () => {
 
           <NekoSpacer height={30} />
 
-          <StyledSidebar>
-            <h3>{i18n.COMMON.USAGE_COSTS}</h3>
-            <p>{i18n.HELP.USAGE_COST}</p>
-            <div>Session: <span style={{ float: 'right' }}>${sessionCost.toFixed(4)}</span></div>
-            <div>Last Request: <span style={{ float: 'right' }}>${lastCost.toFixed(4)}</span></div>
-            <NekoSpacer height={30} />
-            <NekoButton fullWidth onClick={onResetUsage}>Reset Usage</NekoButton>
-          </StyledSidebar>
+          {jsxUsageCosts}
 
         </NekoColumn>
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
+      <NekoModal isOpen={!!error}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"
