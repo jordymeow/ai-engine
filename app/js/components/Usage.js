@@ -1,6 +1,7 @@
-// Previous: none
-// Current: 1.1.9
+// Previous: 1.1.9
+// Current: 1.2.1
 
+import { NekoTypo } from '@neko-ui';
 import { useModels } from "../helpers";
 
 // React & Vendor Libs
@@ -33,9 +34,8 @@ const UsageDetails = ({ month, usageData }) => {
 }
 
 const Usage = ({ options }) => {
-  const { models, isFineTunedModel, getFamilyName, getModelName, getModel, calculatePrice } = useModels(options);
+  const { models, getModelName, getModel, calculatePrice } = useModels(options);
   const openai_usage = options?.openai_usage;
-  const openai_models = options?.openai_models;
 
   const jsxUsage = useMemo(() => {
     let usageData = {};
@@ -70,11 +70,11 @@ const Usage = ({ options }) => {
   
     }
     catch (e) {
-      console.log(e);
+      console.error(e);
     }
 
     return (
-      <ul style={{ marginTop: 2 }}>
+      <ul style={{ marginLeft: -7, marginTop: 10, marginBottom: 0, paddingBottom: 0 }}>
         {Object.keys(usageData).map((month, index) =>
           <UsageDetails key={index} month={month} usageData={usageData} />
         )}
@@ -83,10 +83,7 @@ const Usage = ({ options }) => {
   }, [ openai_usage, models ]);
 
   return (<>
-    {!Object.keys(openai_usage).length && <NekoTypo p>N/A</NekoTypo>}
-    {openai_usage && <>
-      {jsxUsage}
-    </>}
+    {!!openai_usage && !!Object.keys(openai_usage).length && jsxUsage}
   </>);
 }
 

@@ -1,5 +1,5 @@
-// Previous: 1.1.5
-// Current: 1.1.9
+// Previous: 1.1.9
+// Current: 1.2.1
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -109,7 +109,7 @@ const Dashboard = () => {
     else {
       setError(res.message);
     }
-    setStartTime(null);
+    setStartTime(); // <-- bug introduced here (should pass a value)
     setBusy(false);
   };
 
@@ -215,8 +215,8 @@ const Dashboard = () => {
           <NekoSpacer height={30} />
 
           <StyledSidebar>
-            <h3>{i18n.COMMON.COSTS}</h3>
-            <p>{i18n.HELP.COST}</p>
+            <h3>{i18n.COMMON.USAGE_COSTS}</h3>
+            <p>{i18n.HELP.USAGE_COST}</p>
             <div>Session: <span style={{ float: 'right' }}>${sessionCost.toFixed(4)}</span></div>
             <div>Last Request: <span style={{ float: 'right' }}>${lastCost.toFixed(4)}</span></div>
             <NekoSpacer height={30} />

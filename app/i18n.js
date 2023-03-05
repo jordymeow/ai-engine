@@ -18,7 +18,6 @@ i18n.COMMON = {
   TEMPERATURE: __( 'Temperature', 'ai-engine' ),
   MAX_TOKENS: __( 'Max Tokens', 'ai-engine' ),
   STOP_SEQUENCE: __( 'Stop Sequence', 'ai-engine' ),
-  USAGE: __( 'Usage', 'ai-engine' ),
   MODE: __( 'Mode', 'ai-engine' ),
   CONTEXT: __( 'Context', 'ai-engine' ),
   IMAGES_NUMBER: __( 'Number of Images', 'ai-engine' ),
@@ -83,8 +82,7 @@ i18n.COMMON = {
   DEBUG_MODE_HELP: __( 'Debugging information will be displayed in the console.', 'ai-engine' ),
   API_KEY: __( 'API Key', 'ai-engine' ),
   API_KEY_HELP: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
-  USAGE: __( 'Usage', 'ai-engine' ),
-  USAGE_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
+  USAGE_COSTS_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
   LANGUAGE: __( 'Language', 'ai-engine' ),
   HIDE: __( 'Hide', 'ai-engine' ),
   SHOW: __( 'Show', 'ai-engine' ),
@@ -111,7 +109,7 @@ i18n.COMMON = {
   EMBEDDINGS_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
   SERVER: __( 'Server', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
-  COSTS: __( 'Costs', 'ai-engine' ),
+  USAGE_COSTS: __( 'Usage Costs', 'ai-engine' ),
 }
 
 i18n.FORMS = {

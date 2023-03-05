@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,10 @@ The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plug
 Languages: English.
 
 == Changelog ==
+
+= 1.2.1 (2023/03/05) =
+* Fix: There was an issue for new users without an OpenAI key.
+* Add: The Content Generator now supports {TOPIC} and {TITLE} everywhere.
 
 = 1.2.0 (2023/03/04) =
 * Update: Huge refactoring to make the plugin more extensible.

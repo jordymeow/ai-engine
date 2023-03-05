@@ -1,5 +1,5 @@
-// Previous: 1.1.1
-// Current: 1.1.9
+// Previous: 1.1.9
+// Current: 1.2.1
 
 const { useMemo, useState } = wp.element;
 import { NekoMessage } from '@neko-ui';
@@ -15,7 +15,7 @@ const OptionsCheck = ({ options }) => {
   return (
     <>
       <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-        To use the features of AI Engine, you need to have an OpenAI account and create an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website.
+        To use the features of AI Engine, you need to have an OpenAI account and create an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">OpenAI</a> website.
       </NekoMessage>
     </>
   );
@@ -36,11 +36,12 @@ function cleanSections(text) {
     }
     return line;
   });
-  return cleanedLines.join('\n');
+  return cleanedLines.filter(x => x).join('\n');
 }
 
 const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const [model, setModel] = useState(defaultModel);
+
   const models = useMemo(() => {
     let allModels = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
@@ -69,7 +70,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   }, [options]);
 
   const completionModels = useMemo(() => {
-    return models.filter(x => x.mode === 'completion' || x.mode === 'chat');
+    return models.filter(x => x.mode === 'completion' || x.mode === 'chat' || x.mode === 'unknown');
   }, [models]);
 
   const getModel = (model) => {
@@ -103,7 +104,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getPrice = (model, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
-    if (modelObj.type === 'image') {
+    if (modelObj?.type === 'image') {
       if (modelObj?.options) {
         const opt = modelObj.options.find(x => x.option === option);
         return opt?.price || null;
@@ -115,10 +116,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const calculatePrice = (model, units, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    if (price) {
-      if (!modelObj || !modelObj['unit']) {
-        return 0;
-      }
+    if (price && units && modelObj?.unit) {
       return price * units * modelObj['unit'];
     }
     return 0;
@@ -131,3 +129,5 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 const toHTML = (html) => {
   return <span dangerouslySetInnerHTML={{ __html: html }}></span>
 }
+
+export { OptionsCheck, cleanSections, useModels, toHTML };
