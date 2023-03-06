@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.2.3
+Stable tag: 1.2.30
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,11 +65,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.2.3 (2023/03/06) =
+= 1.2.30 (2023/03/06) =
 * Add: Embeddings. Add more context to your chatbot based on your data.
 * Update: Better translations.
 * Fix: Better format for the system error messages in the chatbot.
-* Info: Help or discuss with other users on my Discord: https://discord.gg/bHDGh38.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 🎵
 
