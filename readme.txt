@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.2.21
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,8 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 * Train your AI to make it better at specific tasks
 * Quickly brainstorm new titles and excerpts for your posts
 * Quickly write the WooCommerce product fields (description, short description, etc)
+* Speech-to-Text with Whisper API
+* Embeddings to add more context to your chatbot based on your data
 * Keep track of your OpenAI usage with built-in statistics
 * Internal API for you to play with
 * Upcoming features are already in the works, and it will be surprising!
@@ -63,6 +65,14 @@ Languages: English.
 
 == Changelog ==
 
+= 1.2.3 (2023/03/06) =
+* Add: Embeddings. Add more context to your chatbot based on your data.
+* Update: Better translations.
+* Fix: Better format for the system error messages in the chatbot.
+* Info: Help or discuss with other users on my Discord: https://discord.gg/bHDGh38.
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 🎵
+
 = 1.2.21 (2023/03/05) =
 * Add: A little tool to play with Text-to-Speech using Whisper API.
 * Add: Quick Usage Costs in the Content Generation (same system as in the Playground).
@@ -73,9 +83,6 @@ Languages: English.
 = 1.2.0 (2023/03/04) =
 * Update: Huge refactoring to make the plugin more extensible.
 * Fix: UI issue in the Images Generator.
-* Info: Help or discuss with other users on my Discord: https://discord.gg/bHDGh38.
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 🎵
 
 = 1.1.8 (2023/03/03) =
 * Fix: TextFields in Forms were broken.

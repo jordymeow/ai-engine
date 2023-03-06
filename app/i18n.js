@@ -96,7 +96,7 @@ i18n.COMMON = {
   SYSTEM: __( 'System', 'ai-engine' ),
   SHORTCODES: __( 'Shortcodes', 'ai-engine' ),
   RESOLVE: __( 'Resolve', 'ai-engine' ),
-  MAX_SENTENCES: __( 'Max Sentences', 'ai-engine' ),
+  SENTENCES_BUFFER: __( 'Sentences Buffer', 'ai-engine' ),
   COMPLIANCE_TEXT: __( 'Compliance Text', 'ai-engine' ),
   MODERATION: __( 'Moderation', 'ai-engine' ),
   MODERATION_HELP: __( 'Moderation features with AI.', 'ai-engine' ),
@@ -105,7 +105,7 @@ i18n.COMMON = {
   LOGS: __( 'Logs', 'ai-engine' ),
   CODE: __( 'Code', 'ai-engine' ),
   EMBEDDINGS: __( 'Embeddings', 'ai-engine' ),
-  EMBEDDINGS_HELP: __( 'Make your data - such as website content - searchable. It can be used in many ways, especially to enhance the answers from the chatbot.', 'ai-engine' ),
+  EMBEDDINGS_HELP: __( 'Create searchable data that can be reused to feed the chatbot and other AI or UI elements.', 'ai-engine' ),
   EMBEDDINGS_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
   SERVER: __( 'Server', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
@@ -113,6 +113,7 @@ i18n.COMMON = {
   AUDIO_TRANSCRIPTION: __( 'Audio-to-Text', 'ai-engine' ),
   AUDIO_TRANSCRIPTION_HELP: __( 'Transcribe audio files into texts.', 'ai-engine' ),
   AUDIO_TAB: __( 'Audio', 'ai-engine' ),
+  EMBEDDINGS_INDEX: __( 'Embeddings Index', 'ai-engine' ),
 }
 
 i18n.FORMS = {

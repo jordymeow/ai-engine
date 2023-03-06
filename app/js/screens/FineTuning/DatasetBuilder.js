@@ -1,5 +1,5 @@
-// Previous: 0.9.89
-// Current: 1.1.5
+// Previous: 1.1.5
+// Current: 1.2.3
 
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -60,8 +60,9 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length === 0) continue;
-        entries[entries.length - 1].completion = arr[i].slice(2).trim();
+        if (entries.length > 0) {
+          entries[entries.length - 1].completion = arr[i].slice(2).trim();
+        }
       }
     }
     return entries;
@@ -72,9 +73,9 @@ const DatasetBuilder = ({ setBuilderData }) => {
     const resContent = await retrievePostContent(postType, suffix, postId ? postId : undefined);
     let error = null;
     let rawData = null;
-    let content = resContent?.content;
-    let url = resContent?.url;
-    let title = resContent?.title;
+    let content = resContent?.content || "";
+    let url = resContent?.url || "";
+    let title = resContent?.title || "";
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
@@ -84,13 +85,13 @@ const DatasetBuilder = ({ setBuilderData }) => {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
-      finalPrompt = finalPrompt.replace('{CONTENT}', content || '');
-      finalPrompt = finalPrompt.replace('{URL}', url || '');
-      finalPrompt = finalPrompt.replace('{TITLE}', title || '');
+      finalPrompt = finalPrompt.replace('{CONTENT}', content);
+      finalPrompt = finalPrompt.replace('{URL}', url);
+      finalPrompt = finalPrompt.replace('{TITLE}', title);
       const resGenerate = await nekoFetch(`${apiUrl}/make_completions`, {
         method: 'POST',
         json: {
-          env: 'admin-dataset',
+          env: 'admin-tools',
           session,
           prompt: finalPrompt,
           temperature: 0.8,
@@ -128,7 +129,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr);
+    const startOffset = parseInt(startOffsetStr, 10);
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
       if (startOffset && offset < startOffset) {
@@ -152,9 +153,9 @@ const DatasetBuilder = ({ setBuilderData }) => {
     if (postIdInput === null) {
       return;
     }
-    const postIdVal = postIdInput.trim();
+    const postId = postIdInput.trim() === "" ? undefined : postIdInput;
     setQuickBusy(true);
-    const result = await runProcess(0, postIdVal);
+    const result = await runProcess(0, postId);
     setQuickBusy(false);
     if (!result.entries || result.entries.length === 0) {
       alert("No entries were generated. Check the console for more information.");
@@ -177,10 +178,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
           Run Bulk Generate
         </NekoButton>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
-          {isLoadingCount && '...'}{!isLoadingCount && postsCount}
+          Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
+          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
           <NekoOption key={'post'} id={'post'} value={'post'} label="Posts" />
           <NekoOption key={'page'} id={'page'} value={'page'} label="Pages" />
         </NekoSelect>
@@ -192,7 +193,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
+        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
 
     </>
   );

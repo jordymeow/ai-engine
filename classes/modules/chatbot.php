@@ -67,6 +67,7 @@ class Meow_MWAI_Modules_Chatbot {
   function rest_chat( $request ) {
     try {
 			$params = $request->get_json_params();
+      $embeddingsIndex = $params['embeddingsIndex'];
 			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
       $query->injectParams( $params );
       $takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params  );
@@ -74,6 +75,15 @@ class Meow_MWAI_Modules_Chatbot {
         return new WP_REST_Response([ 'success' => true, 'answer' => $takeoverAnswer,
           'html' => $takeoverAnswer, 'usage' => null ], 200 );
       }
+
+      // Awareness & Embeddings
+      if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
+        $context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
+        if ( !empty( $context ) ) {
+          $query->injectContext( $context );
+        }
+      }
+
       $answer = $this->core->ai->run( $query );
       $rawText = $answer->result;
       $html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params  );
@@ -261,6 +271,7 @@ class Meow_MWAI_Modules_Chatbot {
     $sessionId = $this->core->get_session_id();
     $rest_nonce = wp_create_nonce( 'wp_rest' );
     $casuallyFineTuned = boolval( $atts['casually_fine_tuned'] );
+    $embeddingsIndex = $atts['embeddings_index'];
     $promptEnding = addslashes( trim( $atts['prompt_ending'] ) );
     $completionEnding = addslashes( trim( $atts['completion_ending'] ) );
     if ( $casuallyFineTuned ) {
@@ -348,6 +359,7 @@ class Meow_MWAI_Modules_Chatbot {
         let mode = '<?= $mode ?>';
         let model = '<?= $model ?>';
         let context = isCasuallyFineTuned ? null : '<?= $context ?>';
+        let embeddingsIndex = '<?= $embeddingsIndex ?>';
         let startSentence = '<?= $startSentence ?>';
         let maxSentences = <?= $maxSentences ?>;
         let memorizeChat = <?= $memorizeChat ? 'true' : 'false' ?>;
@@ -361,7 +373,7 @@ class Meow_MWAI_Modules_Chatbot {
             memorizedChat: memorizedChat,
             parameters: { mode: mode, model, temperature, maxTokens, context: context, startSentence,
               textCompliance, isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences,
-              
+              rawUserName, rawAiName, embeddingsIndex, typewriter
             }
           };
         }
@@ -549,7 +561,7 @@ class Meow_MWAI_Modules_Chatbot {
             rawInput: inputText,
             maxResults: <?= $maxResults ?>,
             model: model,
-            apiKey: '<?= $atts['api_key'] ?>',
+            apiKey: '<?= $apiKey ?>',
           // Prompt for the chat
           } : {
             env: '<?= $env ?>',
@@ -563,6 +575,7 @@ class Meow_MWAI_Modules_Chatbot {
             model: model,
             temperature: temperature,
             maxTokens: maxTokens,
+            embeddingsIndex: embeddingsIndex,
             stop: '<?= $completionEnding ?>',
             maxResults: 1,
             apiKey: '<?= $apiKey ?>',

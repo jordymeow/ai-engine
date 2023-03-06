@@ -167,6 +167,10 @@
 		}
 	}
 
+	.mwai-system .mwai-name {
+		display: none;
+	}
+
 	.mwai-input {
 		display: flex;
 		padding: var(--mwai-spacing);

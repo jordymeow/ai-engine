@@ -145,6 +145,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'add_vector' ),
 			) );
+			register_rest_route( $this->namespace, '/vector', array(
+				'methods' => 'PUT',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'modify_vector' ),
+			) );
 			register_rest_route( $this->namespace, '/vectors', array(
 				'methods' => 'DELETE',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -514,130 +519,193 @@ class Meow_MWAI_Rest
 	}
 
 	function count_posts( $request ) {
-		$params = $request->get_query_params();
-		$postType = $params['postType'];
-		$count = wp_count_posts( $postType );
-		return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
+		try {
+			$params = $request->get_query_params();
+			$postType = $params['postType'];
+			$count = wp_count_posts( $postType );
+			return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 
 	function post_content( $request ) {
-		$params = $request->get_query_params();
-		$offset = $params['offset'];
-		$postType = $params['postType'];
-		$postId = $params['postId'];
-		$post = null;
-		if ( !empty( $postId ) ) {
-			$post = get_post( $postId );
+		try {
+			$params = $request->get_query_params();
+			$offset = $params['offset'];
+			$postType = $params['postType'];
+			$postId = $params['postId'];
+			$post = null;
+			if ( !empty( $postId ) ) {
+				$post = get_post( $postId );
+			}
+			else {
+				$posts = get_posts( [
+					'posts_per_page' => 1,
+					'post_type' => $postType,
+					'offset' => $offset,
+					'post_status' => 'publish'
+				] );
+				$post = count( $posts ) === 0 ? null : $posts[0];
+			}
+			if ( !$post ) {
+				return new WP_REST_Response([ 'success' => false, 'message' => 'Post not found' ], 404 );
+			}
+			$content = apply_filters( 'the_content', $post->post_content );
+			$content = wp_strip_all_tags( $content );
+			$content = preg_replace( '/[\r\n]+/', "\n", $content );
+			$title = $post->post_title;
+			$excerpt = $post->post_excerpt;
+			$url = get_permalink( $post->ID );
+			return new WP_REST_Response([ 'success' => true, 'content' => $content,
+				'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
 		}
-		else {
-			$posts = get_posts( [
-				'posts_per_page' => 1,
-				'post_type' => $postType,
-				'offset' => $offset,
-				'post_status' => 'publish'
-			] );
-			$post = count( $posts ) === 0 ? null : $posts[0];
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
-		if ( !$post ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => 'Post not found' ], 404 );
-		}
-		$content = apply_filters( 'the_content', $post->post_content );
-		$content = wp_strip_all_tags( $content );
-		$content = preg_replace( '/[\r\n]+/', "\n", $content );
-		$title = $post->post_title;
-		$excerpt = $post->post_excerpt;
-		$url = get_permalink( $post->ID );
-		return new WP_REST_Response([ 'success' => true, 'content' => $content,
-			'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
 	}
 
 	function templates_get( $request ) {
-		$params = $request->get_query_params();
-		$category = $params['category'];
-		$templates = [];
-		$templates_option = get_option( 'mwai_templates', [] );
-		if ( !is_array( $templates_option ) ) {
-			update_option( 'mwai_templates', [] );
+		try {
+			$params = $request->get_query_params();
+			$category = $params['category'];
+			$templates = [];
+			$templates_option = get_option( 'mwai_templates', [] );
+			if ( !is_array( $templates_option ) ) {
+				update_option( 'mwai_templates', [] );
+			}
+			$categories = array_column( $templates_option, 'category' );
+			$index = array_search( $category, $categories );
+			$templates = [];
+			if ( $index !== false ) {
+				$templates = $templates_option[$index]['templates'];
+			}
+			return new WP_REST_Response([ 'success' => true, 'templates' => $templates ], 200 );
 		}
-		$categories = array_column( $templates_option, 'category' );
-		$index = array_search( $category, $categories );
-		$templates = [];
-		if ( $index !== false ) {
-			$templates = $templates_option[$index]['templates'];
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
-		return new WP_REST_Response([ 'success' => true, 'templates' => $templates ], 200 );
 	}
 
 	function templates_save( $request ) {
-		$params = $request->get_json_params();
-		$category = $params['category'];
-		$templates = $params['templates'];
-		$templates_option = get_option( 'mwai_templates', [] );
-		$categories = array_column( $templates_option, 'category' );
-		$index = array_search( $category, $categories );
-		if ( $index !== false && $index >= 0 ) {
-			$templates_option[$index]['templates'] = $templates;
-		}
-		else {
-			$group = [ 'category' => $category, 'templates' => $templates ];
-			$templates_option[] = $group;
-		}
+		try {
+			$params = $request->get_json_params();
+			$category = $params['category'];
+			$templates = $params['templates'];
+			$templates_option = get_option( 'mwai_templates', [] );
+			$categories = array_column( $templates_option, 'category' );
+			$index = array_search( $category, $categories );
+			if ( $index !== false && $index >= 0 ) {
+				$templates_option[$index]['templates'] = $templates;
+			}
+			else {
+				$group = [ 'category' => $category, 'templates' => $templates ];
+				$templates_option[] = $group;
+			}
 
-		update_option( 'mwai_templates', $templates_option );
-		return new WP_REST_Response([ 'success' => true ], 200 );
+			update_option( 'mwai_templates', $templates_option );
+			return new WP_REST_Response([ 'success' => true ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 
 	function get_logs( $request ) {
-		$params = $request->get_json_params();
-		$offset = $params['offset'];
-		$limit = $params['limit'];
-		$filters = $params['filters'];
-		$sort = $params['sort'];
-		$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
-		return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
+		try {
+			$params = $request->get_json_params();
+			$offset = $params['offset'];
+			$limit = $params['limit'];
+			$filters = $params['filters'];
+			$sort = $params['sort'];
+			$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
+			return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 
 	function moderate( $request ) {
-		$params = $request->get_json_params();
-		$text = $params['text'];
-		if ( !$text ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => 'Text not found.' ], 404 );
+		try {
+			$params = $request->get_json_params();
+			$text = $params['text'];
+			if ( !$text ) {
+				return new WP_REST_Response([ 'success' => false, 'message' => 'Text not found.' ], 404 );
+			}
+			$openai = new Meow_MWAI_OpenAI( $this->core );
+			$results = $openai->moderate( $text );
+			return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
 		}
-		$openai = new Meow_MWAI_OpenAI( $this->core );
-		$results = $openai->moderate( $text );
-		return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+
 	}
 
 	function get_vectors( $request ) {
-		$params = $request->get_json_params();
-		$offset = $params['offset'];
-		$limit = $params['limit'];
-		$filters = $params['filters'];
-		$sort = $params['sort'];
-		$vectors = apply_filters( 'mwai_embeddings_vectors', [], $offset, $limit, $filters, $sort );
-		return new WP_REST_Response([ 'success' => true, 'total' => $vectors['total'], 'vectors' => $vectors['rows'] ], 200 );
+		try {
+			$params = $request->get_json_params();
+			$offset = $params['offset'];
+			$limit = $params['limit'];
+			$filters = $params['filters'];
+			$sort = $params['sort'];
+			$vectors = apply_filters( 'mwai_embeddings_vectors', [], $offset, $limit, $filters, $sort );
+			return new WP_REST_Response([ 'success' => true, 'total' => $vectors['total'], 'vectors' => $vectors['rows'] ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 
 	function add_vector( $request ) {
-		$params = $request->get_json_params();
-		$vector = $params['vector'];
-		$success = apply_filters( 'mwai_embeddings_vectors_add', false, $vector );
-		return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
+		try {
+			$params = $request->get_json_params();
+			$vector = $params['vector'];
+			$success = apply_filters( 'mwai_embeddings_vectors_add', false, $vector );
+			return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function modify_vector( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$vector = $params['vector'];
+			$success = apply_filters( 'mwai_embeddings_vectors_update', false, $vector );
+			return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 
 	function delete_vectors( $request ) {
-		$params = $request->get_json_params();
-		$ids = $params['ids'];
-		$success = apply_filters( 'mwai_embeddings_vectors_delete', false, $ids );
-		return new WP_REST_Response([ 'success' => $success ], 200 );
+		try {
+			$params = $request->get_json_params();
+			$ids = $params['ids'];
+			$success = apply_filters( 'mwai_embeddings_vectors_delete', false, $ids );
+			return new WP_REST_Response([ 'success' => $success ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 	
 	function transcribe( $request ) {
-		$params = $request->get_json_params();
-		$query = new Meow_MWAI_QueryTranscribe();
-		$query->injectParams( $params );
-		$query->setEnv('admin-tools');
-		$answer = $this->core->ai->run( $query );
-		return new WP_REST_Response([ 'success' => true, 'data' => $answer->result ], 200 );
+		try {
+			$params = $request->get_json_params();
+			$query = new Meow_MWAI_QueryTranscribe();
+			$query->injectParams( $params );
+			$query->setEnv('admin-tools');
+			$answer = $this->core->ai->run( $query );
+			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
 	}
 }

@@ -25,7 +25,8 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'fullscreen' => false,
 	// Chatbot System Parameters
 	'casually_fine_tuned' => false,
-	'content_aware' => false, 
+	'content_aware' => false,
+	'embeddings_index' => '',
 	'prompt_ending' => null,
 	'completion_ending' => null,
 	// AI Parameters

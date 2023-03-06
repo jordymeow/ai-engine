@@ -108,6 +108,24 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->validateMessages();
   }
 
+  public function getLastMessage() {
+    if ( !empty( $this->messages ) ) {
+      return $this->messages[count( $this->messages ) - 1];
+    }
+    return null;
+  }
+
+  // Function that adds a message just before the last message
+  public function injectContext( $content ) {
+    if ( !empty( $this->messages ) ) {
+      $lastMessage = $this->getLastMessage();
+      $lastMessageIndex = count( $this->messages ) - 1;
+      $this->messages[$lastMessageIndex] = [ 'role' => 'system', 'content' => $content ];
+      array_push( $this->messages, $lastMessage );
+    }
+    $this->validateMessages();
+  }
+
   /**
    * The context that is used for the chat completion (mode === 'chat').
    * @param string $context The context to use.
