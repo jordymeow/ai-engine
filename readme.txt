@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1
 Requires PHP: 7.3
-Stable tag: 1.2.30
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,9 @@ The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plug
 Languages: English.
 
 == Changelog ==
+
+= 1.3.0 (2023/03/07) =
+* Fix: Includes the JS
 
 = 1.2.30 (2023/03/06) =
 * Add: Embeddings. Add more context to your chatbot based on your data.

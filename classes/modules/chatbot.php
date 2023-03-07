@@ -16,17 +16,12 @@ class Meow_MWAI_Modules_Chatbot {
       add_action( 'wp_footer', array( $this, 'inject_chat' ) );
     }
 
-    // Only for test now, but later we should probably import the JS/CSS
     if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
-      wp_enqueue_script( 'mwai_chatbot',
-      '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js', [], null, false );
-      wp_enqueue_style( 'mwai_chatbot',
-        '//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/stackoverflow-dark.min.css' );
+      wp_enqueue_script( 'mwai_chatbot', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
+      wp_enqueue_style( 'mwai_chatbot', MWAI_URL . '/vendor/highlightjs/stackoverflow-dark.min.css', [], '11.7' );
     }
-
     if ( $this->core->get_option( 'shortcode_chat_typewriter' ) ) {
-      wp_enqueue_script( 'mwai_chatbot_typewriter',
-        '//cdnjs.cloudflare.com/ajax/libs/TypewriterJS/2.19.0/core.min.js', [], null, false );
+      wp_enqueue_script( 'mwai_chatbot_typewriter', MWAI_URL . 'vendor/typewriterjs/typewriter.min.js', [], '2.0', true );
     }
 
     $logs = $this->core->get_option( 'shortcode_chat_logs' );
