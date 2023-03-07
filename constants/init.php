@@ -21,6 +21,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'style' => 'chatgpt',
 	'window' => false,
 	'icon_text' => '',
+	'icon_alt' => 'AI Chatbot Avatar',
 	'icon_position' => 'bottom-right',
 	'fullscreen' => false,
 	// Chatbot System Parameters

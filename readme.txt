@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,10 +65,13 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.1 (2023/03/07) =
+= 1.3.2 (2023/03/07) =
+* Add: New icon_alt parameter to add an Alt Text to the chatbot icon.
+* Add: Styles for the tables in the chabot.
 * Fix: Moved the external JS/CSS locally.
 * Fix: Escaping and sanitization issues.
 * Fix: General code cleaning and refactoring.
+* Fix: The icon displaying OpenAI status was not showing the warning sign when needed.
 
 = 1.2.30 (2023/03/06) =
 * Add: Embeddings. Add more context to your chatbot based on your data.

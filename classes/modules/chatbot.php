@@ -35,39 +35,34 @@ class Meow_MWAI_Modules_Chatbot {
 
 	}
 
-	function rest_api_init() {
-		try {
-			register_rest_route( $this->namespace, '/chat', array(
-				'methods' => 'POST',
-				'callback' => array( $this, 'rest_chat' ),
-				'permission_callback' => '__return_true'
-			) );
-			register_rest_route( $this->namespace, '/imagesbot', array(
-				'methods' => 'POST',
-				'callback' => array( $this, 'rest_imagesbot' ),
-				'permission_callback' => '__return_true'
-			) );
-		}
-		catch ( Exception $e ) {
-			var_dump( $e );
-		}
+	public function rest_api_init() {
+		register_rest_route( $this->namespace, '/chat', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_chat' ),
+			'permission_callback' => '__return_true'
+		) );
+		register_rest_route( $this->namespace, '/imagesbot', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_imagesbot' ),
+			'permission_callback' => '__return_true'
+		) );
 	}
 
-	function chatgpt_style( $id ) {
+	public function chatgpt_style( $id ) {
 		$css = file_get_contents( MWAI_PATH . '/classes/modules/chatbot-chatgpt.css' );
 		$css = str_replace( '#mwai-chat-id', "#mwai-chat-{$id}", $css );
-		return "<style>" . $css . "</style>";
+		return '<style>' . $css . '</style>';
 	}
 
-	function rest_chat( $request ) {
+	public function rest_chat( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$embeddingsIndex = $params['embeddingsIndex'];
 			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
 			$query->injectParams( $params );
-			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params  );
+			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 			if ( !empty( $takeoverAnswer ) ) {
-				return new WP_REST_Response([ 'success' => true, 'answer' => $takeoverAnswer,
+				return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,
 					'html' => $takeoverAnswer, 'usage' => null ], 200 );
 			}
 
@@ -81,59 +76,59 @@ class Meow_MWAI_Modules_Chatbot {
 
 			$answer = $this->core->ai->run( $query );
 			$rawText = $answer->result;
-			$html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params  );
+			$html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params );
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
 			}
-			return new WP_REST_Response([ 'success' => true, 'answer' => $rawText,
+			return new WP_REST_Response( [ 'success' => true, 'answer' => $rawText,
 				'html' => $html, 'usage' => $answer->usage ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
 	}
 
-	function rest_imagesbot( $request ) {
+	public function rest_imagesbot( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_QueryImage( $params['prompt'] );
 			$query->injectParams( $params );
 			$answer = $this->core->ai->run( $query );
-			return new WP_REST_Response([ 'success' => true, 'images' => $answer->results, 'usage' => $answer->usage ], 200 );
+			return new WP_REST_Response( [ 'success' => true, 'images' => $answer->results, 'usage' => $answer->usage ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
 	}
 
-	function apply_chat_styles( $css, $chatbotId ) {
+	public function apply_chat_styles( $css, $chatbotId ) {
 		$chatStyles = $this->core->get_option( 'shortcode_chat_styles' );
-		return preg_replace_callback( '/--mwai-(\w+):\s*([^;]+);/', function ( $matches ) use ($chatStyles ) {
-			if( isset( $chatStyles[$matches[1]] ) ) {
-				return "--mwai-" . $matches[1] . ": " . $chatStyles[$matches[1]] . ";";
+		return preg_replace_callback( '/--mwai-(\w+):\s*([^;]+);/', function ( $matches ) use ( $chatStyles ) {
+			if ( isset( $chatStyles[$matches[1]] ) ) {
+				return '--mwai-' . $matches[1] . ': ' . $chatStyles[$matches[1]] . ';';
 			}
 			return $matches[0];
 		}, $css );
 	}
 
-	function inject_chat() {
+	public function inject_chat() {
 		$params = $this->core->get_option( 'shortcode_chat_params' );
 		echo $this->chat( $params );
 	}
 
-	function imageschat( $atts ) {
+	public function imageschat( $atts ) {
 		$atts['mode'] = 'images';
 		return $this->chat( $atts );
 	}
 
-	function getCurrentUser() {
+	public function getCurrentUser() {
 		if ( is_user_logged_in() ) {
 			return wp_get_current_user();
 		}
 		return null;
 	}
 
-	function handlePlaceholders( $data, $guestName = "Guest: " ) {
+	public function handlePlaceholders( $data, $guestName = 'Guest: ' ) {
 		if ( strpos( $data, '{' ) === false ) {
 			return $data;
 		}
@@ -160,7 +155,7 @@ class Meow_MWAI_Modules_Chatbot {
 		return $guestName;
 	}
 
-	function formatUserName( $userName, $guestName = "Guest: " ) {
+	public function formatUserName( $userName, $guestName = 'Guest: ' ) {
 		// Default avatar
 		if ( empty( $userName ) ) {
 			$user = $this->getCurrentUser();
@@ -185,7 +180,7 @@ class Meow_MWAI_Modules_Chatbot {
 		return $userName;
 	}
 
-	function formatAiName( $aiName ) {
+	public function formatAiName( $aiName ) {
 		// Default avatar
 		if ( empty( $aiName ) ) {
 			$aiName = '<div class="mwai-avatar mwai-svg"><img src="' . MWAI_URL . '/images/avatar-ai.svg" /></div>';
@@ -200,15 +195,15 @@ class Meow_MWAI_Modules_Chatbot {
 		return $aiName;
 	}
 
-	function formatRawName( $aiName ) {
-		return "AI: ";
+	public function formatRawName( $aiName ) {
+		return 'AI: ';
 	}
 
-	function formatRawUserName( $userName, $guestName ) {
-		return "User: ";
+	public function formatRawUserName( $userName, $guestName ) {
+		return 'User: ';
 	}
 
-	function chat( $atts ) {
+	public function chat( $atts ) {
 		// Use the core default parameters, or the user default parameters
 		$override = $this->core->get_option( 'shortcode_chat_params_override' );
 		$defaults_params = $override ? $this->core->get_option( 'shortcode_chat_params' ) :
@@ -230,10 +225,10 @@ class Meow_MWAI_Modules_Chatbot {
 		$atts = apply_filters( 'mwai_chatbot_params', $atts );
 
 		// UI Parameters
-		$aiName = addslashes( trim($atts['ai_name']) );
-		$userName = addslashes( trim($atts['user_name']) );
-		$guestName = addslashes( trim($atts['guest_name']) );
-		$sysName = addslashes( trim($atts['sys_name']) );
+		$aiName = addslashes( trim( $atts['ai_name'] ) );
+		$userName = addslashes( trim( $atts['user_name'] ) );
+		$guestName = addslashes( trim( $atts['guest_name'] ) );
+		$sysName = addslashes( trim( $atts['sys_name'] ) );
 		$context = addslashes( $atts['context'] );
 		$context = preg_replace( '/\v+/', "\\n", $context );
 		$textSend = addslashes( trim( $atts['text_send'] ) );
@@ -243,9 +238,10 @@ class Meow_MWAI_Modules_Chatbot {
 		$startSentence = addslashes( trim( $atts['start_sentence'] ) );
 		$window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
 		$fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
-		$icon = isset( $atts['icon'] ) ? addslashes( trim( $atts['icon'] ) ) : "";
-		$iconText = trim($atts['icon_text']);
-		$iconPosition = addslashes( trim($atts['icon_position']) );
+		$icon = isset( $atts['icon'] ) ? addslashes( trim( $atts['icon'] ) ) : '';
+		$iconText = trim( $atts['icon_text'] );
+		$iconAlt = addslashes( trim( $atts['icon_alt'] ) );
+		$iconPosition = addslashes( trim( $atts['icon_position'] ) );
 		$style = $atts['style'];
 
 		// Validade & Enhance UI Parameters
@@ -273,7 +269,7 @@ class Meow_MWAI_Modules_Chatbot {
 			$promptEnding = "\\n\\n###\\n\\n";
 			$completionEnding = "\\n\\n";
 		}
-		$debugMode = $chatStyles = $this->core->get_option( 'debug_mode' );
+		$debugMode = $this->core->get_option( 'debug_mode' );
 
 		// OpenAI Parameters
 		$model = $atts['model'];
@@ -283,19 +279,20 @@ class Meow_MWAI_Modules_Chatbot {
 
 		// Variables
 		$apiUrl = get_rest_url( null, $mode === 'images' ? 'ai-chatbot/v1/imagesbot' : 'ai-chatbot/v1/chat' );
-		$baseClasses = "mwai-chat";
-		$baseClasses .= ( $window ? " mwai-window" : "" );
-		$baseClasses .= ( !$window && $fullscreen ? " mwai-fullscreen" : "" );
-		$baseClasses .= ( $style === 'chatgpt' ? " mwai-chatgpt" : "" );
-		$baseClasses .= ( $window && !empty( $iconPosition ) ? (" mwai-" . $iconPosition) : "" );
+		$baseClasses = 'mwai-chat';
+		$baseClasses .= ( $window ? ' mwai-window' : '' );
+		$baseClasses .= ( !$window && $fullscreen ? ' mwai-fullscreen' : '' );
+		$baseClasses .= ( $style === 'chatgpt' ? ' mwai-chatgpt' : '' );
+		$baseClasses .= ( $window && !empty( $iconPosition ) ? ( ' mwai-' . $iconPosition ) : '' );
 
 		// Output CSS
 		ob_start();
-		$style_content = "";
+		$style_content = '';
 		if ( $style === 'chatgpt' ) {
 			$style_content = $this->chatgpt_style( $id, $style );
 		}
-		echo apply_filters( 'mwai_chatbot_style', $style_content, $id );
+		$style_content = apply_filters( 'mwai_chatbot_style', $style_content, $id );
+		echo wp_kses( $style_content, array( 'style' => array() ) );
 
 		// Output HTML & CSS
 		$chatStyles = $this->core->get_option( 'shortcode_chat_styles' );
@@ -305,7 +302,7 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 		else if ( !empty( $chatStyles ) && isset( $chatStyles['icon'] ) ) {
 			$url = $chatStyles['icon'];
-			$iconUrl = $this->core->isUrl( $url ) ? $url : (MWAI_URL . 'images/' . $chatStyles['icon']);
+			$iconUrl = $this->core->isUrl( $url ) ? $url : ( MWAI_URL . 'images/' . $chatStyles['icon'] );
 		}
 		?>
 			<div id="mwai-chat-<?php echo esc_attr( $id ); ?>" class="<?php echo esc_attr( $baseClasses ); ?>">
@@ -314,7 +311,7 @@ class Meow_MWAI_Modules_Chatbot {
 						<?php if ( !empty( $iconText ) ) : ?>
 							<div class="mwai-icon-text"><?php echo esc_html( $iconText ); ?></div>
 						<?php endif; ?>
-						<img width="64" height="64" src="<?php echo esc_url( $iconUrl ); ?>" />
+						<img width="64" height="64" alt="<?php echo esc_attr( $iconAlt ); ?>" src="<?php echo esc_url( $iconUrl ); ?>" />
 					</div>
 					<div class="mwai-header">
 						<?php if ( $fullscreen ) : ?>
@@ -341,12 +338,12 @@ class Meow_MWAI_Modules_Chatbot {
 			<script>
 			(function () {
 				let isMobile = window.matchMedia( "only screen and (max-width: 760px)" ).matches;
-				let isWindow = <?php echo $window ? "true" : "false" ?>;
-				let isDebugMode = <?php echo $debugMode ? "true" : "false" ?>;
-				let isFullscreen = <?php echo $fullscreen ? "true" : "false" ?>;
+				let isWindow = <?php echo $window ? 'true' : 'false' ?>;
+				let isDebugMode = <?php echo $debugMode ? 'true' : 'false' ?>;
+				let isFullscreen = <?php echo $fullscreen ? 'true' : 'false' ?>;
 				let restNonce = '<?php echo esc_attr( $rest_nonce ) ?>';
 				let apiURL = '<?php echo esc_url( $apiUrl ) ?>';
-				let isCasuallyFineTuned = <?php echo $casuallyFineTuned ? "true" : "false" ?>;
+				let isCasuallyFineTuned = <?php echo $casuallyFineTuned ? 'true' : 'false' ?>;
 				let textCompliance = '<?php echo wp_kses_post( $textCompliance ) ?>';
 				let rawUserName = '<?php echo esc_attr( $rawUserName ) ?>';
 				let rawAiName = '<?php echo esc_attr( $rawAiName ) ?>';
@@ -364,12 +361,12 @@ class Meow_MWAI_Modules_Chatbot {
 				let stop = '<?php echo esc_attr( $completionEnding ) ?>';
 				let startSentence = '<?php echo esc_attr( $startSentence ) ?>';
 				let maxSentences = <?php echo (int)$maxSentences ?>;
-				let memorizeChat = <?php echo $memorizeChat ? "true" : "false" ?>;
+				let memorizeChat = <?php echo $memorizeChat ? 'true' : 'false' ?>;
 				let maxTokens = <?php echo (int)$maxTokens ?>;
 				let maxResults = <?php echo (int)$maxResults ?>;
 				let temperature = <?php echo (int)$temperature ?>;
 				let memorizedChat = [];
-				let typewriter = <?php echo $typewriter ? "true" : "false" ?>;
+				let typewriter = <?php echo $typewriter ? 'true' : 'false' ?>;
 
 				if (isDebugMode) {
 					window.mwai_<?php echo esc_attr( $id ) ?> = {
@@ -418,8 +415,8 @@ class Meow_MWAI_Modules_Chatbot {
 						if (timerElement) {
 							let minutes = Math.floor(timer / 60);
 							let seconds = timer - (minutes * 60);
-							seconds = seconds < 10 ? "0" + seconds : seconds;
-							let display = minutes + ":" + seconds;
+							seconds = seconds < 10 ? '0' + seconds : seconds;
+							let display = minutes + ':' + seconds;
 							timerElement.innerHTML = display;
 						}
 					}

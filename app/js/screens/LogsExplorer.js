@@ -1,5 +1,5 @@
-// Previous: 1.1.9
-// Current: 1.2.3
+// Previous: 1.2.3
+// Current: 1.3.2
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -15,7 +15,7 @@ const logsColumns = [
   { accessor: 'env',  title: 'Env', width: '80px' },
   { accessor: 'ip', title: 'IP', width: '85px' },
   { accessor: 'userId', title: 'User', width: '45px' },
-  { accessor: 'model', title: 'Model', width: '160px' },
+  { accessor: 'model', title: 'Model' },
   { accessor: 'units', title: 'Units', width: '65px', align: 'right', sortable: true },
   { accessor: 'type', title: 'Type', width: '50px' },
   { accessor: 'price', title: 'Price', width: '85px', align: 'right', sortable: true },
@@ -54,7 +54,7 @@ const LogsExplorer = () => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = new Date(x.time);
       time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
       let formattedTime = time.toLocaleDateString('ja-JP', {
@@ -65,18 +65,17 @@ const LogsExplorer = () => {
         id: x.id,
         env: x.env,
         ip: x.ip,
-        userId: x.userId ? <a target="_blank" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
+        userId: x.userId ? <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
         model: <span title={x.model}>{getModelName(x.model)}</span>,
         units: x.units,
         type: x.type,
         price: <>${x.price}</>,
         time: formattedTime,
       }
-    })
+    });
   }, [logsData, getModelName]);
 
   return (<>
-
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
       <NekoQuickLinks value={currentTab} onChange={value => {
           setCurrentTab(value);
@@ -101,7 +100,6 @@ const LogsExplorer = () => {
         </div>
       </div>
     </div>
-
     <NekoTable alternateRowColor busy={isFetchingLogs}
       sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
         setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));

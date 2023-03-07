@@ -148,6 +148,32 @@
 	.mwai-text {
 		flex: auto;
 
+		*:first-child {
+			margin-top: 0;
+		}
+
+		*:last-child {
+			margin-bottom: 0;
+		}
+
+		table {
+			width: 100%;
+			border: 2px solid var(--mwai-backgroundSecondaryColor);
+			border-collapse: collapse
+		}
+		
+		thead {
+				background: var(--mwai-backgroundSecondaryColor);
+		}
+		
+		tr, td {
+				padding: 2px 5px;
+		}
+		
+		td {
+				border: 2px solid var(--mwai-backgroundSecondaryColor);
+		}
+
 		.mwai-typewriter {
 			display: inline-block;
 

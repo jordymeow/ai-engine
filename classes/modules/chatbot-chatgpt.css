@@ -145,6 +145,32 @@
   flex: auto;
 }
 
+#mwai-chat-id .mwai-text *:first-child {
+  margin-top: 0;
+}
+
+#mwai-chat-id .mwai-text *:last-child {
+  margin-bottom: 0;
+}
+
+#mwai-chat-id .mwai-text table {
+  width: 100%;
+  border: 2px solid var(--mwai-backgroundSecondaryColor);
+  border-collapse: collapse;
+}
+
+#mwai-chat-id .mwai-text thead {
+  background: var(--mwai-backgroundSecondaryColor);
+}
+
+#mwai-chat-id .mwai-text tr, #mwai-chat-id .mwai-text td {
+  padding: 2px 5px;
+}
+
+#mwai-chat-id .mwai-text td {
+  border: 2px solid var(--mwai-backgroundSecondaryColor);
+}
+
 #mwai-chat-id .mwai-text .mwai-typewriter {
   display: inline-block;
 }

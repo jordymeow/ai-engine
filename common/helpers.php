@@ -36,9 +36,17 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 		// attribute names, attribute values, and HTML entities will occur in the given text string.
 		static function wp_kses( $html ) {
 			return wp_kses( $html, array(
+				'style' => array(),
+				'script' => array(),
 				'div' => array(
 					'class' => array(),
 					'data-rating-date' => array(),
+					'style' => array(),
+				),
+				'img' => array(
+					'src' => array(),
+					'decoding' => array(),
+					'class' => array(),
 					'style' => array(),
 				),
 				'p' => array(
@@ -74,6 +82,14 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 			) );
 		}
 
+		// Diff between two strings
+		static function diff( $first, $second ) {
+			$first = explode( ' ', $first );
+			$second = explode( ' ', $second );
+			$diff = array_diff( $first, $second );
+			return implode( ' ', $diff );
+		}
+ 
 		// Originally created by matzeeable, modified by jordymeow
 		static function is_rest() {
 
