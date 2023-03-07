@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, image generator
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
-Tested up to: 6.1
+Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,8 +65,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.0 (2023/03/07) =
-* Fix: Includes the JS
+= 1.3.1 (2023/03/07) =
+* Fix: Moved the external JS/CSS locally.
+* Fix: Escaping and sanitization issues.
+* Fix: General code cleaning and refactoring.
 
 = 1.2.30 (2023/03/06) =
 * Add: Embeddings. Add more context to your chatbot based on your data.

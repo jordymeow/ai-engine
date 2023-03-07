@@ -142,13 +142,13 @@ class Meow_MWAI_Core
     }
     else {
       if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-        $data['ip'] = $_SERVER['REMOTE_ADDR'];
+        $data['ip'] = sanitize_text_field( $_SERVER['REMOTE_ADDR'] );
       }
       else if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-        $data['ip'] = $_SERVER['HTTP_CLIENT_IP'];
+        $data['ip'] = sanitize_text_field( $_SERVER['HTTP_CLIENT_IP'] );
       }
       else if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-        $data['ip'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        $data['ip'] = sanitize_text_field( $_SERVER['HTTP_X_FORWARDED_FOR'] );
       }
     }
     return $data['ip'];

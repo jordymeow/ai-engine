@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ruleset>
+  <description>My PHPCS ruleset</description>
+  <rule ref="PHPCompatibilityWP">
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <properties>
+        <property name="testVersion" value="7.3" />
+    </properties>
+  </rule>
+  <rule ref="WordPress-Extra">
+    <exclude name="WordPress.Arrays.ArrayDeclarationSpacing"/>
+    <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+  </rule>
+</ruleset>

@@ -324,15 +324,9 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function curl_download( $Url ) {
-		if ( !function_exists( 'curl_init' ) ) {
-			die( 'CURL is not installed!' );
-		}
-		$ch = curl_init();
-		curl_setopt( $ch, CURLOPT_URL, $Url );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		$output = curl_exec( $ch );
-		curl_close( $ch );
+	function image_download( $url ) {
+		$response = wp_remote_get( $url );
+		$output = wp_remote_retrieve_body( $response );
 		return $output;
 	}
 
@@ -345,7 +339,7 @@ class Meow_MWAI_Rest
 			$description = sanitize_text_field( $params['description'] );
 			$url = $params['url'];
 			$filename = sanitize_text_field( $params['filename'] );
-			$image_data = $this->curl_download( $url );
+			$image_data = $this->image_download( $url );
 			if ( !$image_data ) {
 				throw new Exception( 'Could not download the image.' );
 			}
