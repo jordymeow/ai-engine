@@ -96,6 +96,78 @@
 	.mwai-reply {
 		display: flex;
 		padding: var(--mwai-spacing);
+		position: relative;
+
+		.mwai-copy-button {
+			opacity: 0;
+			transition: all 0.3s ease-out;
+			width: 22px;
+			height: 22px;
+			position: absolute;
+			right: var(--mwai-spacing);
+			
+			.mwai-copy-button-one {
+				position: absolute;
+				width: 16px;
+				height: 16px;
+				margin-top: 0px;
+				margin-left: 0px;
+				background: white;
+				opacity: 0.4;
+				transition: all 0.2s ease-in;
+				cursor: pointer;
+				border-radius: 2px;
+			}
+
+			.mwai-copy-button-two {
+				position: absolute;
+				width: 16px;
+				height: 16px;
+				margin-top: 6px;
+				margin-left: 6px;
+				background: white;
+				opacity: 0.6;
+				transition: all 0.2s ease-in;
+				cursor: pointer;
+				border-radius: 2px;
+			}
+
+			&:hover {
+				.mwai-copy-button-one {
+					opacity: 0.6;
+					margin-top: 0px;
+    			margin-left: 6px;
+				}
+
+				.mwai-copy-button-two {
+					opacity: 1;
+					margin-top: 6px;
+					margin-left: 0px;
+				}
+			}
+
+			&.mwai-animate {
+
+				.mwai-copy-button-one {
+					opacity: 0;
+				}
+
+				.mwai-copy-button-two {
+					width: 18px;
+					height: 18px;
+					margin-top: 2px;
+					margin-left: 2px;
+					opacity: 1;
+				}
+			}
+		}
+
+		&:hover {
+			.mwai-copy-button {
+				display: block;
+				opacity: 1;
+			}
+		}
 	}
 
 	.mwai-ai, .mwai-system {
@@ -291,69 +363,79 @@
     justify-content: flex-end;
     align-items: center;
 
-		.mwai-resize-button {
-			justify-content: center;
-			height: 40px;
-			width: 25px;
-			cursor: pointer;
+		.mwai-buttons {
 			display: flex;
-    	justify-content: center;
-    	align-items: center;
+			align-items: center;
+			margin-bottom: 5px;
 
-			&:before {
-				transition: all 0.2s ease-out;
+			.mwai-resize-button {
+				justify-content: center;
+				height: 32px;
+				width: 33px;
+				cursor: pointer;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				background-color: var(--mwai-backgroundSecondaryColor);
+				border-radius: var(--mwai-borderRadius);
+
+				&:before {
+					transition: all 0.2s ease-out;
+					content: ' ';
+					cursor: pointer;
+					position: absolute;
+					height: 13px;
+					width: 13px;
+					opacity: 0.75;
+					border: 2px solid var(--mwai-headerButtonsColor);
+				}
+
+				&:hover:before {
+					width: 16px;
+					height: 16px;
+				}
+			}
+
+			.mwai-close-button {
+				margin-left: 5px;	
+				justify-content: center;
+				height: 32px;
+				width: 33px;
+				cursor: pointer;
+				background-color: var(--mwai-backgroundSecondaryColor);
+				border-radius: var(--mwai-borderRadius);
+
+				&:before {
+					transition: all 0.2s ease-out;
+					transform: translate(16px, 5px) rotate(45deg);
+				}
+				&:after {
+					transition: all 0.2s ease-out;
+					transform: translate(16px, 5px) rotate(-45deg);
+				}
+			}
+
+			.mwai-close-button:before, .mwai-close-button:after {
 				content: ' ';
 				cursor: pointer;
 				position: absolute;
-				height: 15px;
-				width: 15px;
+				height: 22px;
+				width: 2px;
+				background-color: var(--mwai-headerButtonsColor);
 				opacity: 0.75;
-				border: 2px solid var(--mwai-headerButtonsColor);
 			}
 
-			&:hover:before {
-				width: 20px;
-				height: 20px;
+			.mwai-close-button:hover {
+				&:before {
+					opacity: 1;
+					transform: translate(16px, 5px) rotate(135deg);
+				}
+				&:after {
+					opacity: 1;
+					transform: translate(16px, 5px) rotate(45deg);
+				}
 			}
-		}
 
-		.mwai-close-button {
-			justify-content: center;
-			height: 35px;
-			width: 35px;
-			cursor: pointer;
-		}
-
-		.mwai-close-button:before, .mwai-close-button:after {
-			content: ' ';
-			cursor: pointer;
-			position: absolute;
-			height: 25px;
-			width: 2px;
-			background-color: var(--mwai-headerButtonsColor);
-			opacity: 0.75;
-		}
-
-		.mwai-close-button {
-			&:before {
-				transition: all 0.2s ease-out;
-				transform: translate(16px, 5px) rotate(45deg);
-			}
-			&:after {
-				transition: all 0.2s ease-out;
-				transform: translate(16px, 5px) rotate(-45deg);
-			}
-		}
-
-		.mwai-close-button:hover {
-			&:before {
-				opacity: 1;
-				transform: translate(16px, 5px) rotate(135deg);
-			}
-			&:after {
-				opacity: 1;
-				transform: translate(16px, 5px) rotate(45deg);
-			}
 		}
 	}
 
@@ -416,34 +498,36 @@
 
 #mwai-chat-id.mwai-window.mwai-fullscreen {
 
-	.mwai-close-button {
-		height: 40px;
+	.mwai-header  {
 
-		&:before, &:after {
-			height: 30px;
-		}
-	}
+		.mwai-buttons  {
+			margin-bottom: 0px;
 
-	.mwai-resize-button {
+			.mwai-resize-button {
+				&:before {
+					width: 16px;
+					height: 16px;
+				}
+		
+				&:hover:before {
+					width: 13px;
+					height: 13px;
+				}
+			}
 
-		&:before {
-			width: 20px;
-			height: 20px;
-		}
-
-		&:hover:before {
-			width: 15px;
-			height: 15px;
+			.mwai-close-button {
+				margin-left: -5px;
+			}
 		}
 	}
 }
 
 #mwai-chat-id.mwai-fullscreen:not(.mwai-window), #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
 	position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: 0 !important;
   width: inherit;
   height: inherit;
   max-height: inherit;
@@ -451,6 +535,8 @@
 	display: flex;
 	flex-direction: column;
 	margin: 0;
+	z-index: 999999;
+	background-color: var(--mwai-backgroundSecondaryColor);
 
   .mwai-content {
 		height: 100%;

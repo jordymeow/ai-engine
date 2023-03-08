@@ -24,6 +24,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'icon_alt' => 'AI Chatbot Avatar',
 	'icon_position' => 'bottom-right',
 	'fullscreen' => false,
+	'copy_button' => true,
 	// Chatbot System Parameters
 	'casually_fine_tuned' => false,
 	'content_aware' => false,

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,13 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.3 (2023/03/08) =
+* Add: Copy button to reuse the answer. Enabled by default, will add the UI for it later.
+* Fix: Enhanced the ChatGPT CSS (better header icons and fullscreen mode).
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
 = 1.3.2 (2023/03/07) =
 * Add: New icon_alt parameter to add an Alt Text to the chatbot icon.
 * Add: Styles for the tables in the chabot.
@@ -76,10 +83,7 @@ Languages: English.
 = 1.2.30 (2023/03/06) =
 * Add: Embeddings. Add more context to your chatbot based on your data.
 * Update: Better translations.
-* Fix: Better format for the system error messages in the chatbot.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 🎵
+* Fix: Better format for the system error messages in the chatbot.🎵
 
 = 1.2.21 (2023/03/05) =
 * Add: A little tool to play with Text-to-Speech using Whisper API.

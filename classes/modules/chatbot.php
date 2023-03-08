@@ -237,6 +237,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$textCompliance = addslashes( trim( $atts['text_compliance'] ) );
 		$startSentence = addslashes( trim( $atts['start_sentence'] ) );
 		$window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
+		$copyButton = filter_var( $atts['copy_button'], FILTER_VALIDATE_BOOLEAN );
 		$fullscreen = filter_var( $atts['fullscreen'], FILTER_VALIDATE_BOOLEAN );
 		$icon = isset( $atts['icon'] ) ? addslashes( trim( $atts['icon'] ) ) : '';
 		$iconText = trim( $atts['icon_text'] );
@@ -314,10 +315,12 @@ class Meow_MWAI_Modules_Chatbot {
 						<img width="64" height="64" alt="<?php echo esc_attr( $iconAlt ); ?>" src="<?php echo esc_url( $iconUrl ); ?>" />
 					</div>
 					<div class="mwai-header">
-						<?php if ( $fullscreen ) : ?>
-							<div class="mwai-resize-button"></div>
-						<?php endif; ?>
-						<div class="mwai-close-button"></div>
+						<div class="mwai-buttons">
+							<?php if ( $fullscreen ) : ?>
+								<div class="mwai-resize-button"></div>
+							<?php endif; ?>
+							<div class="mwai-close-button"></div>
+						</div>
 					</div>
 				<?php endif; ?>
 				<div class="mwai-content">
@@ -367,6 +370,7 @@ class Meow_MWAI_Modules_Chatbot {
 				let temperature = <?php echo (int)$temperature ?>;
 				let memorizedChat = [];
 				let typewriter = <?php echo $typewriter ? 'true' : 'false' ?>;
+				let copyButton = <?php echo $copyButton ? 'true' : 'false' ?>;
 
 				if (isDebugMode) {
 					window.mwai_<?php echo esc_attr( $id ) ?> = {
@@ -476,6 +480,33 @@ class Meow_MWAI_Modules_Chatbot {
 					textSpan.innerHTML = text;
 					div.appendChild(nameSpan);
 					div.appendChild(textSpan);
+
+					// Copy Button
+					if (copyButton && role === 'assistant') {
+						var button = document.createElement('div');
+						button.classList.add('mwai-copy-button');
+						var firstElement = document.createElement('div');
+						firstElement.classList.add('mwai-copy-button-one');
+						var secondElement = document.createElement('div');
+						secondElement.classList.add('mwai-copy-button-two');
+						button.appendChild(firstElement);
+						button.appendChild(secondElement);
+						div.appendChild(button);
+						button.addEventListener('click', function () {
+							try {
+								var content = textSpan.innerHTML;
+								navigator.clipboard.writeText(content);
+								button.classList.add('mwai-animate');
+								setTimeout(function () {
+									button.classList.remove('mwai-animate');
+								}, 1000);
+							}
+							catch (err) {
+								console.warn('Not allowed to copy to clipboard. Make sure your website uses HTTPS.');
+							}
+						});
+					}
+
 					conversation.appendChild(div);
 
 					if (typewriter) {

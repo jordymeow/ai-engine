@@ -98,6 +98,71 @@
 #mwai-chat-id .mwai-reply {
   display: flex;
   padding: var(--mwai-spacing);
+  position: relative;
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button {
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  width: 22px;
+  height: 22px;
+  position: absolute;
+  right: var(--mwai-spacing);
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button .mwai-copy-button-one {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-top: 0px;
+  margin-left: 0px;
+  background: white;
+  opacity: 0.4;
+  transition: all 0.2s ease-in;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button .mwai-copy-button-two {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-top: 6px;
+  margin-left: 6px;
+  background: white;
+  opacity: 0.6;
+  transition: all 0.2s ease-in;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button:hover .mwai-copy-button-one {
+  opacity: 0.6;
+  margin-top: 0px;
+  margin-left: 6px;
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button:hover .mwai-copy-button-two {
+  opacity: 1;
+  margin-top: 6px;
+  margin-left: 0px;
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button.mwai-animate .mwai-copy-button-one {
+  opacity: 0;
+}
+
+#mwai-chat-id .mwai-reply .mwai-copy-button.mwai-animate .mwai-copy-button-two {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  margin-left: 2px;
+  opacity: 1;
+}
+
+#mwai-chat-id .mwai-reply:hover .mwai-copy-button {
+  display: block;
+  opacity: 1;
 }
 
 #mwai-chat-id .mwai-ai, #mwai-chat-id .mwai-system {
@@ -283,65 +348,76 @@
   align-items: center;
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-resize-button {
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-resize-button {
   justify-content: center;
-  height: 40px;
-  width: 25px;
+  height: 32px;
+  width: 33px;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: var(--mwai-backgroundSecondaryColor);
+  border-radius: var(--mwai-borderRadius);
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-resize-button:before {
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:before {
   transition: all 0.2s ease-out;
   content: ' ';
   cursor: pointer;
   position: absolute;
-  height: 15px;
-  width: 15px;
+  height: 13px;
+  width: 13px;
   opacity: 0.75;
   border: 2px solid var(--mwai-headerButtonsColor);
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-resize-button:hover:before {
-  width: 20px;
-  height: 20px;
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
+  width: 16px;
+  height: 16px;
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button {
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button {
+  margin-left: 5px;
   justify-content: center;
-  height: 35px;
-  width: 35px;
+  height: 32px;
+  width: 33px;
   cursor: pointer;
+  background-color: var(--mwai-backgroundSecondaryColor);
+  border-radius: var(--mwai-borderRadius);
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button:before, #mwai-chat-id.mwai-window .mwai-header .mwai-close-button:after {
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before {
+  transition: all 0.2s ease-out;
+  transform: translate(16px, 5px) rotate(45deg);
+}
+
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
+  transition: all 0.2s ease-out;
+  transform: translate(16px, 5px) rotate(-45deg);
+}
+
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before, #mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
   content: ' ';
   cursor: pointer;
   position: absolute;
-  height: 25px;
+  height: 22px;
   width: 2px;
   background-color: var(--mwai-headerButtonsColor);
   opacity: 0.75;
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button:before {
-  transition: all 0.2s ease-out;
-  transform: translate(16px, 5px) rotate(45deg);
-}
-
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button:after {
-  transition: all 0.2s ease-out;
-  transform: translate(16px, 5px) rotate(-45deg);
-}
-
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button:hover:before {
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:before {
   opacity: 1;
   transform: translate(16px, 5px) rotate(135deg);
 }
 
-#mwai-chat-id.mwai-window .mwai-header .mwai-close-button:hover:after {
+#mwai-chat-id.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:after {
   opacity: 1;
   transform: translate(16px, 5px) rotate(45deg);
 }
@@ -398,30 +474,30 @@
   width: 100%;
 }
 
-#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-close-button {
-  height: 40px;
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons {
+  margin-bottom: 0px;
 }
 
-#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-close-button:before, #mwai-chat-id.mwai-window.mwai-fullscreen .mwai-close-button:after {
-  height: 30px;
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:before {
+  width: 16px;
+  height: 16px;
 }
 
-#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-resize-button:before {
-  width: 20px;
-  height: 20px;
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
+  width: 13px;
+  height: 13px;
 }
 
-#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-resize-button:hover:before {
-  width: 15px;
-  height: 15px;
+#mwai-chat-id.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-close-button {
+  margin-left: -5px;
 }
 
 #mwai-chat-id.mwai-fullscreen:not(.mwai-window), #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: 0 !important;
   width: inherit;
   height: inherit;
   max-height: inherit;
@@ -429,6 +505,8 @@
   display: flex;
   flex-direction: column;
   margin: 0;
+  z-index: 999999;
+  background-color: var(--mwai-backgroundSecondaryColor);
 }
 
 #mwai-chat-id.mwai-fullscreen:not(.mwai-window) .mwai-content, #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open .mwai-content {
