@@ -230,11 +230,12 @@ class Meow_MWAI_Modules_Chatbot {
 		$guestName = addslashes( trim( $atts['guest_name'] ) );
 		$sysName = addslashes( trim( $atts['sys_name'] ) );
 		$context = addslashes( $atts['context'] );
-		$context = preg_replace( '/\v+/', "\\n", $context );
+		// This breaks Japanese:
+		// $context = preg_replace( '/\v+/', "\\n", $context );
 		$textSend = addslashes( trim( $atts['text_send'] ) );
 		$textClear = addslashes( trim( $atts['text_clear'] ) );
 		$textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
-		$textCompliance = addslashes( trim( $atts['text_compliance'] ) );
+		$textCompliance = ( trim( $atts['text_compliance'] ) );
 		$startSentence = addslashes( trim( $atts['start_sentence'] ) );
 		$window = filter_var( $atts['window'], FILTER_VALIDATE_BOOLEAN );
 		$copyButton = filter_var( $atts['copy_button'], FILTER_VALIDATE_BOOLEAN );
@@ -332,7 +333,7 @@ class Meow_MWAI_Modules_Chatbot {
 					</div>
 					<?php if ( !empty( $textCompliance ) ) : ?>
 						<div class="mwai-compliance">
-							⚠️ <?php echo esc_html( $textCompliance ); ?>
+							⚠️ <?php echo wp_kses_post( $textCompliance ); ?>
 						</div>
 					<?php endif; ?>
 				</div>
@@ -347,7 +348,6 @@ class Meow_MWAI_Modules_Chatbot {
 				let restNonce = '<?php echo esc_attr( $rest_nonce ) ?>';
 				let apiURL = '<?php echo esc_url( $apiUrl ) ?>';
 				let isCasuallyFineTuned = <?php echo $casuallyFineTuned ? 'true' : 'false' ?>;
-				let textCompliance = '<?php echo wp_kses_post( $textCompliance ) ?>';
 				let rawUserName = '<?php echo esc_attr( $rawUserName ) ?>';
 				let rawAiName = '<?php echo esc_attr( $rawAiName ) ?>';
 				let userName = '<?php echo wp_kses_post( $userName ) ?>';
@@ -376,7 +376,7 @@ class Meow_MWAI_Modules_Chatbot {
 					window.mwai_<?php echo esc_attr( $id ) ?> = {
 						memorizedChat: memorizedChat,
 						parameters: { mode: mode, model, temperature, maxTokens, context: context, startSentence,
-							textCompliance, isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences,
+							isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences,
 							rawUserName, rawAiName, embeddingsIndex, typewriter, maxResults, userName, aiName, env, apiKey, session
 						}
 					};
@@ -494,7 +494,7 @@ class Meow_MWAI_Modules_Chatbot {
 						div.appendChild(button);
 						button.addEventListener('click', function () {
 							try {
-								var content = textSpan.innerHTML;
+								var content = textSpan.textContent;
 								navigator.clipboard.writeText(content);
 								button.classList.add('mwai-animate');
 								setTimeout(function () {
