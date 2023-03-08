@@ -145,6 +145,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'add_vector' ),
 			) );
+			register_rest_route( $this->namespace, '/vectors_ref', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'get_vectors_ref' ),
+			) );
 			register_rest_route( $this->namespace, '/vector', array(
 				'methods' => 'PUT',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -305,10 +310,8 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$title = sanitize_text_field( $params['title'] );
-			// Sanitize content that contains line returns and HTML tags
 			$content = sanitize_textarea_field( $params['content'] );
 			$excerpt = sanitize_text_field( $params['excerpt'] );
-			//$postType = sanitize_text_field( $params['postType'] );
 			$post = new stdClass();
 			$post->post_title = $title;
 			$post->post_excerpt = $excerpt;
@@ -527,12 +530,15 @@ class Meow_MWAI_Rest
 	function post_content( $request ) {
 		try {
 			$params = $request->get_query_params();
-			$offset = $params['offset'];
+			$offset = (int)$params['offset'];
 			$postType = $params['postType'];
-			$postId = $params['postId'];
+			$postId = (int)$params['postId'];
 			$post = null;
 			if ( !empty( $postId ) ) {
 				$post = get_post( $postId );
+				if ( $post->post_status !== 'publish' && $post->post_status !== 'future' && $post->post_status !== 'draft' ) {
+					$post = null;
+				}
 			}
 			else {
 				$posts = get_posts( [
@@ -553,7 +559,7 @@ class Meow_MWAI_Rest
 			$excerpt = $post->post_excerpt;
 			$url = get_permalink( $post->ID );
 			return new WP_REST_Response([ 'success' => true, 'content' => $content,
-				'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
+				'postId' => $post->ID, 'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -659,6 +665,18 @@ class Meow_MWAI_Rest
 			$vector = $params['vector'];
 			$success = apply_filters( 'mwai_embeddings_vectors_add', false, $vector );
 			return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function get_vectors_ref( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$refId = $params['refId'];
+			$vectors = apply_filters( 'mwai_embeddings_vectors_ref', false, $refId );
+			return new WP_REST_Response([ 'success' => true, 'vectors' => $vectors ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

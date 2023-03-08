@@ -1,8 +1,33 @@
-// Previous: 1.1.9
-// Current: 1.2.1
+// Previous: 1.2.1
+// Current: 1.3.31
 
 const { useMemo, useState } = wp.element;
-import { NekoMessage } from '@neko-ui';
+import { NekoMessage, nekoFetch } from '@neko-ui';
+import { apiUrl, restNonce } from '@app/settings';
+
+const ENTRY_TYPES = {
+  MANUAL: 'manual',
+  POST_CONTENT: 'postContent',
+  POST_FRAGMENT: 'postFragment'
+}
+
+const ENTRY_BEHAVIORS = {
+  CONTEXT: 'context',
+  ANSWER: 'answer',
+}
+
+const DEFAULT_VECTOR = {
+  title: '',
+  content: '',
+  refId: null,
+  type: ENTRY_TYPES.MANUAL,
+  behavior: ENTRY_BEHAVIORS.CONTEXT,
+}
+
+const DEFAULT_INDEX = {
+  name: '',
+  podType: 'p2',
+}
 
 const OptionsCheck = ({ options }) => {
   const { openai_apikey } = options;
@@ -58,7 +83,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
           mode: 'completion',
           family,
           description: "finetuned",
-          finetuned: true
+          finetuned: true,
+          tags: ['finetune']
         }
       })];
     }
@@ -70,7 +96,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   }, [options]);
 
   const completionModels = useMemo(() => {
-    return models.filter(x => x.mode === 'completion' || x.mode === 'chat' || x.mode === 'unknown');
+    return models.filter(x => x.mode === 'completion' || x.mode === 'chat');
   }, [models]);
 
   const getModel = (model) => {
@@ -116,8 +142,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const calculatePrice = (model, units, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    if (price && units && modelObj?.unit) {
-      return price * units * modelObj['unit'];
+    if (price) {
+      return price * units * modelObj?.unit;
     }
     return 0;
   }
@@ -130,4 +156,33 @@ const toHTML = (html) => {
   return <span dangerouslySetInnerHTML={{ __html: html }}></span>
 }
 
-export { OptionsCheck, cleanSections, useModels, toHTML };
+const searchVectors = async (queryParams) => {
+  if (queryParams?.filters?.aiSearch === "") {
+    return [];
+  }
+  queryParams.offset = (queryParams.page - 1) * queryParams.limit + 1; // Off-by-one bug: should be without '+1'
+  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
+  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
+}
+
+const retrieveVectors = async (queryParams) => {
+  queryParams.offset = (queryParams.page - 1) * queryParams.limit; // Correct but might be inconsistent
+  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
+  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
+}
+
+const retrievePostsCount = async (postType) => {
+  const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}`, { nonce: restNonce });
+  return res?.count?.publish ? parseInt(res?.count?.publish) : null;
+}
+
+const retrievePostContent = async (postType, offset = 0, postId = 0) => {
+  const res = await nekoFetch(`${apiUrl}/post_content?postType=${postType}&offset=${offset}&postId=${postId}`, 
+    { nonce: restNonce });
+  return res;
+}
+
+export { OptionsCheck, cleanSections, useModels, toHTML,
+  searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent,
+  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
+};
