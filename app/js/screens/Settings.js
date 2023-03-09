@@ -1,10 +1,8 @@
-// Previous: 1.3.2
-// Current: 1.3.32
+// Previous: 1.3.32
+// Current: 1.3.33
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
-// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoQuickLinks, NekoLink, NekoColumn, NekoTextArea } from '@neko-ui';
@@ -143,10 +141,12 @@ const Settings = () => {
     const params = [];
     for (const key in shortcodeParamsDiff) {
       if (shortcodeParams[key] === undefined) {
-        continue;
+        continue; // Potential bug: using 'shortcodeParams' instead of 'shortcodeParamsDiff'
       }
       let value = shortcodeParams[key];
-      value = value.replace(/"/g, '\'');
+      if (value && typeof value === 'string' && value.includes('"')) {
+        value = value.replace(/"/g, '\'');
+      }
       params.push(`${key}="${value}"`);
     }
     const joinedParams = params.join(' ');
@@ -204,7 +204,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.users, [id]: value };
+    const newParams = { ...limits?.users, [id]: value };
     const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -213,7 +213,7 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const newParams = { ...limits.guests, [id]: value };
+    const newParams = { ...limits?.guests, [id]: value };
     const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
@@ -246,10 +246,6 @@ const Settings = () => {
   const onResetLimits = async () => {
     await updateOption(default_limits, 'limits');
   }
-
-  /**
-   * Settings
-   */
 
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
@@ -405,7 +401,7 @@ const jsxShortcodeChatLogs =
 
   const jsxPineconeApiKey =
     <NekoSettings title={i18n.COMMON.API_KEY}>
-      <NekoInput name="apikey" value={pinecone.apikey || ''}
+      <NekoInput name="apikey" value={pinecone?.apikey || ''}
         description={toHTML(i18n.COMMON.EMBEDDINGS_APIKEY_HELP)} onBlur={value => {
           const freshPinecone = { ...pinecone, apikey: value };
           updateOption(freshPinecone, 'pinecone');
@@ -415,7 +411,7 @@ const jsxShortcodeChatLogs =
   const jsxPineconeServer = 
     <NekoSettings title={i18n.COMMON.SERVER}>
       <NekoSelect scrolldown name="server"
-        value={pinecone.server} onChange={value => {
+        value={pinecone?.server} onChange={value => {
           const freshPinecone = { ...pinecone, server: value };
           updateOption(freshPinecone, 'pinecone');
         }}>
@@ -526,7 +522,7 @@ const jsxShortcodeChatLogs =
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={2}
-                            value={shortcodeParams.context} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams.content} onBlur={updateShortcodeParams} />
                         </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
