@@ -230,8 +230,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$guestName = addslashes( trim( $atts['guest_name'] ) );
 		$sysName = addslashes( trim( $atts['sys_name'] ) );
 		$context = addslashes( $atts['context'] );
-		// This breaks Japanese:
-		// $context = preg_replace( '/\v+/', "\\n", $context );
+		$context = preg_replace( '/\n/', "\\n", $context );
 		$textSend = addslashes( trim( $atts['text_send'] ) );
 		$textClear = addslashes( trim( $atts['text_clear'] ) );
 		$textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );

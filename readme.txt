@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.33
+Stable tag: 1.3.34
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,8 +65,13 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.33 (2023/03/09) =
+= 1.3.34 (2023/03/09) =
 * Fix: The shortcode builder when tackling empty values.
+* Fix: Make it so that the context doesn't break anything whatever the language. Hey, not easy somehow!
+* Fix: The embeddings dashboard handles cancellation of bulk operations better.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.32 (2023/03/08) =
 * Add: Sync embeddings and posts.
@@ -74,9 +79,6 @@ Languages: English.
 * Fix: Support of basics HTML in the compliance text.
 * Fix: Avoid issues with Japanese.
 * Fix: Enhanced the ChatGPT CSS (better header icons and fullscreen mode).
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.2 (2023/03/07) =
 * Add: New icon_alt parameter to add an Alt Text to the chatbot icon.
