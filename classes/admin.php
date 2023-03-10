@@ -31,21 +31,21 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
 		// Generate New (under Posts)
 		if ( $this->generator_content) {
-			add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'manage_options', 'mwai_content_generator', 
+			add_submenu_page( 'edit.php', 'Generate New', 'Generate New', 'read', 'mwai_content_generator', 
 				array( $this, 'ai_content_generator' ), 2 );
 		}
 
 		// In Tools
 		if ( $this->playground ) {
-			add_management_page( 'AI Playground', __( 'AI Playground', 'ai-engine' ), 'manage_options', 
+			add_management_page( 'AI Playground', __( 'AI Playground', 'ai-engine' ), 'read', 
 				'mwai_dashboard', array( $this, 'ai_playground' ) );
 		}
 		if ( $this->generator_content ) {
-			add_management_page( 'Content Generator', 'AI Content Generator', 'manage_options', 'mwai_content_generator', 
+			add_management_page( 'Content Generator', 'AI Content Generator', 'read', 'mwai_content_generator', 
 				array( $this, 'ai_content_generator' ) );
 		}
 		if ( $this->generator_images ) {
-			add_management_page( 'Image Generator', 'AI Image Generator', 'manage_options', 'mwai_image_generator', 
+			add_management_page( 'Image Generator', 'AI Image Generator', 'read', 'mwai_image_generator', 
 				array( $this, 'ai_image_generator' ) );
 		}
 

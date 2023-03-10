@@ -6,9 +6,6 @@ class Meow_MWAI_Rest
 	private $namespace = 'ai-engine/v1';
 
 	public function __construct( $core ) {
-		if ( !current_user_can( 'administrator' ) ) {
-			return;
-		} 
 		$this->core = $core;
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 	}

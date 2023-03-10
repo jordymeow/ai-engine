@@ -16,6 +16,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'text_send' => 'Send',
 	'text_clear' => 'Clear',
 	'text_input_placeholder' => 'Type your message...',
+	'text_input_maxlength' => '512',
 	'text_compliance' => '',
 	'max_sentences' => 15,
 	'style' => 'chatgpt',

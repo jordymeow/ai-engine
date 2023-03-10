@@ -3,6 +3,7 @@
 class Meow_MWAI_Modules_Chatbot {
 	private $core = null;
 	private $namespace = 'ai-chatbot/v1';
+	private $usingChat = false;
 
 	public function __construct() {
 		global $mwai_core;
@@ -12,16 +13,11 @@ class Meow_MWAI_Modules_Chatbot {
 		add_shortcode( 'mwai_chatbot', array( $this, 'chat' ) );
 		add_shortcode( 'mwai_imagesbot', array( $this, 'imageschat' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+
+
 		if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
 			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
-		}
-
-		if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
-			wp_enqueue_script( 'mwai_chatbot', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
-			wp_enqueue_style( 'mwai_chatbot', MWAI_URL . '/vendor/highlightjs/stackoverflow-dark.min.css', [], '11.7' );
-		}
-		if ( $this->core->get_option( 'shortcode_chat_typewriter' ) ) {
-			wp_enqueue_script( 'mwai_chatbot_typewriter', MWAI_URL . 'vendor/typewriterjs/typewriter.min.js', [], '2.0', true );
 		}
 
 		$logs = $this->core->get_option( 'shortcode_chat_logs' );
@@ -33,6 +29,16 @@ class Meow_MWAI_Modules_Chatbot {
 			add_filter( 'mwai_chatbot_style', [ $this, 'apply_chat_styles' ], 10, 2 );
 		}
 
+	}
+
+	public function enqueue_scripts() {
+		if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
+			wp_enqueue_script( 'mwai_chatbot', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
+			wp_enqueue_style( 'mwai_chatbot', MWAI_URL . '/vendor/highlightjs/stackoverflow-dark.min.css', [], '11.7' );
+		}
+		if ( $this->core->get_option( 'shortcode_chat_typewriter' ) ) {
+			wp_enqueue_script( 'mwai_chatbot_typewriter', MWAI_URL . 'vendor/typewriterjs/typewriter.min.js', [], '2.0', true );
+		}
 	}
 
 	public function rest_api_init() {
@@ -204,6 +210,8 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function chat( $atts ) {
+		$this->usingChat = true;
+
 		// Use the core default parameters, or the user default parameters
 		$override = $this->core->get_option( 'shortcode_chat_params_override' );
 		$defaults_params = $override ? $this->core->get_option( 'shortcode_chat_params' ) :
@@ -233,6 +241,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$context = preg_replace( '/\n/', "\\n", $context );
 		$textSend = addslashes( trim( $atts['text_send'] ) );
 		$textClear = addslashes( trim( $atts['text_clear'] ) );
+		$textInputMaxLength = intval( $atts['text_input_maxlength'] );
 		$textInputPlaceholder = addslashes( trim( $atts['text_input_placeholder'] ) );
 		$textCompliance = ( trim( $atts['text_compliance'] ) );
 		$startSentence = addslashes( trim( $atts['start_sentence'] ) );
@@ -327,7 +336,7 @@ class Meow_MWAI_Modules_Chatbot {
 					<div class="mwai-conversation">
 					</div>
 					<div class="mwai-input">
-						<textarea rows="1" placeholder="<?php echo esc_attr( $textInputPlaceholder ); ?>"></textarea>
+						<textarea rows="1" maxlength="<?php echo (int)$textInputMaxLength; ?>" placeholder="<?php echo esc_attr( $textInputPlaceholder ); ?>"></textarea>
 						<button><span><?php echo esc_html( $textSend ); ?></span></button>
 					</div>
 					<?php if ( !empty( $textCompliance ) ) : ?>

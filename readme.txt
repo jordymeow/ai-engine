@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.36
+Stable tag: 1.3.37
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,8 +65,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.36 (2023/03/10) =
+= 1.3.37 (2023/03/10) =
+* Fix: Role management and capabilities.
+* Fix: Avoid issue with wp_enqueue_script called at the wrong place.
 * Add: Simplified API.
+* Add: Maxlength for the chatbot input.
 * Update: Working on the UI framework (dark theme will be possible on the WP side).
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
