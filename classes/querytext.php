@@ -7,7 +7,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $messages = [];
   public $context = null;
   
-  public function __construct( $prompt = '', $maxTokens = 16, $model = 'gpt-3.5-turbo' ) {
+  public function __construct( $prompt = '', $maxTokens = 1024, $model = 'gpt-3.5-turbo' ) {
     parent::__construct( $prompt );
     $this->setModel( $model );
     $this->setMaxTokens( $maxTokens );

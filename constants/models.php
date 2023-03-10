@@ -14,7 +14,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxTokens" => 4096,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core']
+		"tags" => ['core', 'chat']
 	],
   [
 		"model" => "text-davinci-003",
@@ -28,7 +28,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.12
 		],
-		"tags" => ['core', 'finetune']
+		"tags" => ['core', 'chat', 'finetune']
 	],
   [
 		"model" => "text-curie-001",
@@ -42,7 +42,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.012
 		],
-		"tags" => ['core', 'finetune']
+		"tags" => ['core', 'chat', 'finetune']
 	],
   [
 		"model" => "text-babbage-001",
@@ -94,7 +94,7 @@ define( 'MWAI_OPENAI_MODELS', [
 			]
     ],
 		"finetune" => false,
-		"tags" => ['core']
+		"tags" => ['core', 'image']
   ],
 	// Embedding models:
 	[
@@ -106,7 +106,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000,
 		"mode" => "embedding",
 		"finetune" => false,
-		"tags" => ['core'],
+		"tags" => ['core', 'embedding'],
 	],
 	// Audio Models:
 	[
@@ -118,7 +118,22 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1,
 		"mode" => "speech-to-text",
 		"finetune" => false,
-		"tags" => ['core'],
-	]
+		"tags" => ['core', 'audio'],
+	],
+	// Coding
+	[
+		"model" => "code-davinci-002",
+		"name" => "code-davinci-002",
+		"family" => "davinci",
+		"price" => 0.02,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 8000,
+		"mode" => "completion",
+		"finetune" => [
+			"price" => 0.12
+		],
+		"tags" => ['core', 'code']
+	],
 ]);
 
