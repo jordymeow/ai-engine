@@ -23,6 +23,18 @@ class Meow_MWAI_Answer {
     return $this->usage['total_tokens'];
   }
 
+  public function getResults() {
+    return $this->results;
+  }
+
+  public function getUsage() {
+    return $this->usage;
+  }
+
+  public function getResult() {
+    return $this->result;
+  }
+
   public function replace( $search, $replace ) {
     $this->result = str_replace( $search, $replace, $this->result );
     $this->results = array_map( function( $result ) use ( $search, $replace ) {

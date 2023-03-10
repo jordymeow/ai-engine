@@ -1,7 +1,7 @@
 <?php
 
 class Meow_MWAI_QueryText extends Meow_MWAI_Query {
-  public $maxTokens = 16;
+  public $maxTokens = 1024;
   public $temperature = 0.8;
   public $stop = null;
   public $messages = [];

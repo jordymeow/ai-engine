@@ -1,5 +1,5 @@
-// Previous: 1.2.1
-// Current: 1.3.31
+// Previous: 1.3.31
+// Current: 1.3.36
 
 const { useMemo, useState } = wp.element;
 import { NekoMessage, nekoFetch } from '@neko-ui';
@@ -40,7 +40,7 @@ const OptionsCheck = ({ options }) => {
   return (
     <>
       <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-        To use the features of AI Engine, you need to have an OpenAI account and create an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">OpenAI</a> website.
+        To use the features of AI Engine, you need to have an OpenAI account and create an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website.
       </NekoMessage>
     </>
   );
@@ -143,7 +143,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
     if (price) {
-      return price * units * modelObj?.unit;
+      return price * units * modelObj['unit'];
     }
     return 0;
   }
@@ -160,13 +160,13 @@ const searchVectors = async (queryParams) => {
   if (queryParams?.filters?.aiSearch === "") {
     return [];
   }
-  queryParams.offset = (queryParams.page - 1) * queryParams.limit + 1; // Off-by-one bug: should be without '+1'
+  queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
 const retrieveVectors = async (queryParams) => {
-  queryParams.offset = (queryParams.page - 1) * queryParams.limit; // Correct but might be inconsistent
+  queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
