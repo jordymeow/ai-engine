@@ -1,11 +1,9 @@
-// Previous: 1.3.38
+// Previous: 1.3.39
 // Current: 1.3.39
 
-// React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// NekoUI
 import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput, NekoTheme,
   NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock, NekoCheckbox,
   NekoWrapper, NekoColumn } from '@neko-ui';
@@ -51,7 +49,7 @@ const VectorDatabase = ({ options, updateOption }) => {
   //const [ currentTab, setCurrentTab ] = useState('all');
   const [ syncSettings, setSyncSettings ] = useState({
     rewriteContent: true,
-    prompt: "Please rewrite the given content in a concise and easily comprehensible format while maintaining the original style and preserving all the essential information. The final text should be within 1200 words and divided into paragraphs of no more than 140-200 words each. Exclude any non-textual elements and eliminate any unnecessary repetition. If you are unable to meet these requirements, please respond with an empty message.\n\n{CONTENT}",
+    prompt: "Please rewrite the given content in a concise while maintaining the original style and preserving all essential information. The new content should be less than 800 words and divided into paragraphs of 160-280 words each. Exclude any non-textual elements and eliminate any unnecessary repetition. If you are unable to meet these requirements, please respond with an empty message.\n\n{CONTENT}",
     createEmbeddingEachParagraph: false,
     forceRecreate: false,
   });
@@ -101,8 +99,6 @@ const VectorDatabase = ({ options, updateOption }) => {
       setFoundVectorsData({ total: 0, vectors: [] });
     }
   }, [mode]);
-
-  // #region Indexes
 
   const onAddIndex = async () => {
     setBusy('addIndex');
@@ -159,10 +155,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy(false);
   }
 
-  // #endregion
-
-  // #region Embeddings
-
   const onSearch = async () => {
     setBusy('searchVectors');
     const vectors = await searchVectors({ ...queryParams, filters: { env: index ?? '', aiSearch: search } });
@@ -206,7 +198,7 @@ const VectorDatabase = ({ options, updateOption }) => {
       if (mode === 'search') {
         const freshFoundVectorsData = { ...foundVectorsData };
         freshFoundVectorsData.vectors = [ 
-          ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), embedding
+          ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), inEmbedding
         ]
         setFoundVectorsData(freshFoundVectorsData);
       }
@@ -327,10 +319,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     })
   }, [mode, vectorsData, foundVectorsData, foundVectorsSort, isBusy]);
 
-  // #endregion
-
-  // #region Sync
-
   const onStopClick = () => {
     bulkTasks.stop();
   }
@@ -371,7 +359,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     rawData = resSimplify?.data;
     if (!resSimplify.success) {
       alert(resSimplify.message);
-      // TODO: This is the right way?
       cancelledByUser();
       return false;
     }
@@ -494,8 +481,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy(false);
   }
 
-  // #endregion
-
   return (<>
   <NekoWrapper>
 
@@ -550,7 +535,6 @@ const VectorDatabase = ({ options, updateOption }) => {
             <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
               value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
           </>}
-          {/* <NekoButton className="primary" onClick={runTest} disabled={busy}>Test</NekoButton> */}
         </div>
       </NekoBlock>
     </NekoColumn>
@@ -750,3 +734,5 @@ const VectorDatabase = ({ options, updateOption }) => {
     />
   </>);
 }
+
+export default VectorDatabase;

@@ -24,8 +24,8 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     // "min" is the min of word and char
     $word_count = count(explode(" ", $text));
     $char_count = strlen($text);
-    $tokens_count_word_est = $word_count / 0.75;
-    $tokens_count_char_est = $char_count / 4.0;
+    $tokens_count_word_est = $word_count / 0.70;
+    $tokens_count_char_est = $char_count / 3.0;
     $output = 0;
     if ( $method == 'average' ) {
       $output = ($tokens_count_word_est + $tokens_count_char_est) / 2;
@@ -53,7 +53,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * Make sure the maxTokens is not greater than the model's context length.
    */
   private function validateMaxTokens() {
-    $realMax = 256;
+    $realMax = 4096;
     $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
     $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
     $foundModel = null;
@@ -65,7 +65,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       }
     }
     $estimatedTokens = $this->estimateTokens( $this->prompt );
-    $realMax = $realMax - $estimatedTokens - 64;
+    $realMax = $realMax - $estimatedTokens;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
     }
