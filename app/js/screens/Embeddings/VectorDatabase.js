@@ -1,20 +1,21 @@
-// Previous: 1.3.31
-// Current: 1.3.34
+// Previous: 1.3.34
+// Current: 1.3.38
 
+// React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput, NekoTheme,
-  NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock,
+  NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock, NekoCheckbox,
   NekoWrapper, NekoColumn } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
-import { apiUrl, restNonce } from '@app/settings';
+import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '../../../i18n';
 import { searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent,
   DEFAULT_INDEX, DEFAULT_VECTOR } from '../../helpers';
 
 const searchColumns = [
-  //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'status', title: 'Status', width: '80px' },
   { accessor: 'title', title: 'Title', sortable: true },
   { accessor: 'type', title: 'Type', sortable: true, width: '60px' },
@@ -26,7 +27,6 @@ const searchColumns = [
 ];
 
 const queryColumns = [
-  //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'status', title: 'Status', sortable: true, width: '80px' },
   { accessor: 'title', title: 'Title', sortable: false },
   { accessor: 'type', title: 'Type', sortable: true, width: '60px' },
@@ -45,6 +45,12 @@ const VectorDatabase = ({ options, updateOption }) => {
   const [ search, setSearch ] = useState('');
   const [ embeddingModal, setEmbeddingModal ] = useState(false);
   const [ indexModal, setIndexModal ] = useState(false);
+  const [ syncSettings, setSyncSettings ] = useState({
+    rewriteContent: true,
+    prompt: "Please rewrite the given content in a concise and easily comprehensible format while maintaining the original style and preserving all the essential information. The final text should be within 1200 words and divided into paragraphs of no more than 140-200 words each. Exclude any non-textual elements and eliminate any unnecessary repetition. If you are unable to meet these requirements, please respond with an empty message.\n\n{CONTENT}",
+    createEmbeddingEachParagraph: false,
+    forceRecreate: false,
+  });
   const pinecone = options.pinecone || {};
   const indexes = pinecone.indexes || [];
   const { index, indexIsReady } = useMemo(() => {
@@ -159,7 +165,7 @@ const VectorDatabase = ({ options, updateOption }) => {
       setBusy('addEmbedding');
     }
     const res = await nekoFetch(`${apiUrl}/vector`, { nonce: restNonce, method: 'POST',
-      json: { vector: { ...inEmbedding, index } }
+      json: { vector: { ...inEmbedding, dbIndex: index } }
     });
     if (res.success) {
       setEmbeddingModal(false);
@@ -168,7 +174,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     }
     else {
       console.error(res.message);
-      alert(res.message);
     }
     if (!skipBusy) {
       setBusy(false);
@@ -181,12 +186,12 @@ const VectorDatabase = ({ options, updateOption }) => {
       setBusy('addEmbedding');
     }
     const res = await nekoFetch(`${apiUrl}/vector`, { nonce: restNonce, method: 'PUT',
-      json: { vector: { ...inEmbedding, index } }
+      json: { vector: { ...inEmbedding, dbIndex: index } }
     });
     if (res.success) {
       let embedding = {...inEmbedding};
       setEmbeddingModal(false);
-      console.log("Embedding Updated", inEmbedding);
+      console.log("Embeddings updated.", inEmbedding);
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
       if (mode === 'search') {
         const freshFoundVectorsData = { ...foundVectorsData };
@@ -256,17 +261,15 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (!data?.vectors) { return []; }
 
     if (mode === 'search') {
-      console.log(foundVectorsSort);
-      // Mutating data.vectors directly (bad practice in React)
-      data.vectors = data.vectors.sort((a, b) => {
+      data.vectors = data.vectors.slice().sort((a, b) => {
+        const accessor = foundVectorsSort.accessor;
         if (foundVectorsSort.by === 'asc') {
-          return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
+          return a[accessor] > b[accessor] ? 1 : -1;
         }
         else {
-          return a[foundVectorsSort.accessor] < b[foundVectorsSort.accessor] ? 1 : -1;
+          return a[accessor] < b[accessor] ? 1 : -1;
         }
       });
-      console.log({ foundVectorsSort, data });
     }
 
     return data?.vectors.map(x => {
@@ -302,7 +305,7 @@ const VectorDatabase = ({ options, updateOption }) => {
           </NekoButton>
         </>
       }
-    })
+    });
   }, [mode, vectorsData, foundVectorsData, foundVectorsSort, isBusy]);
 
   const onStopClick = () => {
@@ -328,14 +331,41 @@ const VectorDatabase = ({ options, updateOption }) => {
     bulkTasks.reset();
   }
 
+  const rewriteContent = async (content, signal) => {
+    if (!syncSettings.rewriteContent) {
+      return content;
+    }
+    let rawData = null;
+    let prompt = syncSettings.prompt.replace('{CONTENT}', content);
+    const resSimplify = await nekoFetch(`${apiUrl}/make_completions`, {
+      method: 'POST',
+      json: { env: 'admin-tools', session, prompt: prompt,
+        temperature: 0.4, model: 'gpt-3.5-turbo', maxTokens: 4096, stop: ''
+      },
+      signal: signal,
+      nonce: restNonce
+    });
+    rawData = resSimplify?.data;
+    if (!resSimplify.success) {
+      alert(resSimplify.message);
+      cancelledByUser();
+      return false;
+    }
+    else {
+      console.log("Content rewritten.", { from: content, to: rawData });
+      content = rawData;
+    }
+    return content;
+  }
+
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = null;
-    // finalPrompt is set to null, but should be conditionally assigned
-    // Intentionally no assignment to mimic subtle bug
+    finalPrompt = null;
     const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let error = null;
     let content = resContent?.content ?? null;
     let title = resContent?.title ?? null;
+    let checksum = resContent?.checksum ?? null;
     postId = resContent?.postId ? parseInt(resContent?.postId) : null;
     let tokens = 0;
     if (!resContent.success) {
@@ -343,60 +373,64 @@ const VectorDatabase = ({ options, updateOption }) => {
       error = resContent.message;
       return false;
     }
-    else if (content.length < 64) {
-      console.log("Issue: Content is too short. Skipped!", { content });
-    }
 
-    console.log("Post ID " + postId);
-
-    if (finalPrompt) {
-      let rawData = null;
-      finalPrompt = finalPrompt.replace('{CONTENT}', content);
-      finalPrompt = finalPrompt.replace('{URL}', url);
-      finalPrompt = finalPrompt.replace('{TITLE}', title);
-      const resSimplify = await nekoFetch(`${apiUrl}/make_completions`, {
-        method: 'POST',
-        json: { env: 'admin-tools', session, prompt: finalPrompt,
-          temperature: 0.8, model: 'gpt-3.5-turbo', maxTokens: 2048, stop: ''
-        },
-        signal: signal,
-        nonce: restNonce
-      });
-      rawData = resSimplify?.data;
-      if (!resSimplify.success) {
-        alert(resSimplify.message);
-        error = resSimplify.message;
-      }
-      else {
-        content = rawData;
-      }
-    }
-
+    console.log("* Post ID " + postId);
 
     const embeddings = await onGetEmbeddingsForRef(postId, true, signal);
-    if (embeddings.length > 1) {
+    if (content.length < 64) {
+      if (embeddings.length > 0) {
+        await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
+        console.warn("Content is too short. Embeddings deleted.", { content });
+      }
+      else {
+        console.log("Content is too short. Skipped.", { content });
+      }
+      return false;
+    }
+    else if (embeddings.length > 1) {
       alert(`Multiple embeddings for one single post are not handled yet. Please delete the embeddings related to ${postId} manually.`);
       return false;
     }
     else if (embeddings.length === 1) {
       const embedding = embeddings[0];
-      if (embedding.content === content) {
-        console.log(`Post ${postId}: Embedding already exists with the same content.`, { embedding });
+      if (embedding.refChecksum === checksum && !syncSettings.forceRecreate) {
+        console.log(`Embedding exists with same content.`, { embedding });
       }
       else {
-        console.log(`Post ${postId}: Embedding already exists with a different content. Updating...`);
-        if (!await onModifyEmbedding({ ...embedding, content }, true, signal)) {
+        if (embedding.refChecksum === checksum) {
+          console.log(`Embedding exists with same content (but force re-create).`);
+        }
+        else {
+          console.log(`Embedding exists with different content.`, { 
+            current: embedding.content,
+            new: content
+          });
+        }
+        let embeddingContent = await rewriteContent(content, signal);
+        if (!embeddingContent || embeddingContent.length < 64) {
+          await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
+          console.warn("Embeddings are too short. Embeddings deleted.", { content });
           return false; 
         }
-        console.log(`Post ${postId}: Updated!`, { embedding });
+        if (!await onModifyEmbedding({ ...embedding, content: embeddingContent,
+          refChecksum: checksum }, true, signal)) {
+          return false; 
+        }
       }
     }
     else {
-      const embedding = { ...DEFAULT_VECTOR, title, content, type: 'postId', refId: postId, behavior: 'context' };
+      let embeddingContent = await rewriteContent(content, signal);
+      if (!embeddingContent || embeddingContent.length < 64) {
+        await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
+        console.log("Embeddings are too short. Skipped.", { content });
+        return false; 
+      }
+      const embedding = { ...DEFAULT_VECTOR, title, content: embeddingContent,
+        type: 'postId', refId: postId, refChecksum: checksum, behavior: 'context' };
       if (!await onAddEmbedding(embedding, true, signal)) {
         return false;
       }
-      console.log(`Post ${postId}: Added!`, { embedding });
+      console.log(`Embeddings added!`, { embedding });
     }
     if (signal?.aborted) {
       cancelledByUser();
@@ -405,13 +439,11 @@ const VectorDatabase = ({ options, updateOption }) => {
   }
 
   const onRunClick = async () => {
-    //setTotalTokens(0);
     setBusy('bulkRun');
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr);
+    const startOffset = 0; // intentionally static, no prompt
     let tasks = offsets.map(offset => async (signal) => {
-      if (startOffsetStr !== null && offset < startOffset) {
+      if (startOffset && offset < startOffset) {
         return { success: true };
       }
       await runProcess(offset, null, signal);
@@ -450,7 +482,7 @@ const VectorDatabase = ({ options, updateOption }) => {
             <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
               disabled={isBusy || !index || !indexIsReady}
               value={search} onChange={setSearch} onEnter={onSearch}
-              onReset={() => { setSearch(); setFoundVectorsData({ total: 0, vectors: [] }); }} />
+              onReset={() => { setSearch(''); setFoundVectorsData({ total: 0, vectors: [] }); }} />
             <NekoButton className="primary" onClick={onSearch} disabled={isBusy || !index || !indexIsReady}
               isBusy={busy === 'searchVectors'}>
               Search
@@ -522,7 +554,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     <NekoColumn minimal>
       <NekoBlock className="primary">
         <label>Index:</label>
-        <NekoSpacer />
         <NekoSelect fullWidth scrolldown name="server" style={{ marginRight: 5 }} disabled={isBusy}
           value={pinecone.index} onChange={value => onSelectIndex(value)}>
           {indexes.map(x => <NekoOption value={x.name} label={x.name} />)}
@@ -543,13 +574,28 @@ const VectorDatabase = ({ options, updateOption }) => {
             Delete
           </NekoButton>
         </div>
-        {/* <NekoButton className="primary" onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} disabled={busy}>
-          Create Index
-        </NekoButton> */}
+        <NekoSpacer />
+        <label>Namespace:</label>
+        <NekoInput fullWidth disabled={true} value={pinecone.namespace} />
         {index && !indexIsReady && <NekoMessage variant="danger" style={{ marginTop: 15, padding: '8px 12px' }}>
           This index is currently being build by Pinecone. Wait a few minutes, then use the <b>Refresh</b> button.
         </NekoMessage>}
         <p>The embeddings of this index will be used by the chatbot to build an answer if <b>the score for the query is above 75</b>. More control over this will be available soon.</p>
+      </NekoBlock>
+      <NekoBlock className="primary" title="Sync Settings">
+        <NekoCheckbox label="Rewrite content (using GPT Turbo)" checked={syncSettings.rewriteContent}
+          onChange={value => { setSyncSettings({ ...syncSettings, rewriteContent: value }); }}
+          description={`Your content might contain badly formatted text, be too long, repetitive, etc. By enabling this option, the content will be rewritten using GPT Turbo.`}
+        />
+        <NekoSpacer />
+        {syncSettings.rewriteContent && <NekoTextArea value={syncSettings.prompt} rows={10}
+          onChange={value => { setSyncSettings({ ...syncSettings, prompt: value }); }}
+          description={`This is the prompt that will be used to rewrite the content. Use {CONTENT} to insert the original content.`}
+        />}
+        <NekoCheckbox label="Force re-create" checked={syncSettings.forceRecreate}
+          onChange={value => { setSyncSettings({ ...syncSettings, forceRecreate: value }); }}
+          description={`Re-create all the embeddings, even if they already exist with the same content.`}
+        />
       </NekoBlock>
     </NekoColumn>
 

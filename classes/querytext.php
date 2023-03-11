@@ -65,7 +65,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       }
     }
     $estimatedTokens = $this->estimateTokens( $this->prompt );
-    $realMax = $realMax - $estimatedTokens - 32;
+    $realMax = $realMax - $estimatedTokens - 64;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
     }

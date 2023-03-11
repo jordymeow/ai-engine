@@ -552,10 +552,11 @@ class Meow_MWAI_Rest
 			$content = apply_filters( 'the_content', $post->post_content );
 			$content = wp_strip_all_tags( $content );
 			$content = preg_replace( '/[\r\n]+/', "\n", $content );
+			$checksum = wp_hash( $content );
 			$title = $post->post_title;
 			$excerpt = $post->post_excerpt;
 			$url = get_permalink( $post->ID );
-			return new WP_REST_Response([ 'success' => true, 'content' => $content,
+			return new WP_REST_Response([ 'success' => true, 'content' => $content, 'checksum' => $checksum,
 				'postId' => $post->ID, 'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
 		}
 		catch ( Exception $e ) {

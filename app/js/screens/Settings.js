@@ -1,8 +1,10 @@
-// Previous: 1.3.32
-// Current: 1.3.33
+// Previous: 1.3.33
+// Current: 1.3.38
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
+// NekoUI
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoQuickLinks, NekoLink, NekoColumn, NekoTextArea } from '@neko-ui';
@@ -103,7 +105,7 @@ const Settings = () => {
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
 
   const accidentsPastDay = incidents?.filter(x => {
     const incidentDate = new Date(x.date);
@@ -127,7 +129,6 @@ const Settings = () => {
       delete diff.max_results;
     }
     if (isImagesChat) {
-      delete diff.context;
       delete diff.content_aware;
       delete diff.casually_fine_tuned;
       delete diff.model;
@@ -141,7 +142,7 @@ const Settings = () => {
     const params = [];
     for (const key in shortcodeParamsDiff) {
       if (shortcodeParams[key] === undefined) {
-        continue; // Potential bug: using 'shortcodeParams' instead of 'shortcodeParamsDiff'
+        continue;
       }
       let value = shortcodeParams[key];
       if (value && typeof value === 'string' && value.includes('"')) {
@@ -246,6 +247,10 @@ const Settings = () => {
   const onResetLimits = async () => {
     await updateOption(default_limits, 'limits');
   }
+
+  /**
+   * Settings
+   */
 
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
@@ -410,8 +415,9 @@ const jsxShortcodeChatLogs =
 
   const jsxPineconeServer = 
     <NekoSettings title={i18n.COMMON.SERVER}>
-      <NekoSelect scrolldown name="server"
-        value={pinecone?.server} onChange={value => {
+      <NekoSelect scrolldown name="server" value={pinecone?.server} 
+        description={toHTML(i18n.COMMON.SERVER_HELP)}
+        onChange={value => {
           const freshPinecone = { ...pinecone, server: value };
           updateOption(freshPinecone, 'pinecone');
         }}>
@@ -420,7 +426,14 @@ const jsxShortcodeChatLogs =
       </NekoSelect>
     </NekoSettings>;
 
-  
+  const jsxPineconeNamespace =
+    <NekoSettings title={i18n.COMMON.NAMESPACE}>
+      <NekoInput name="namespace" value={pinecone?.namespace || 'mwai'}
+        description={toHTML(i18n.COMMON.NAMESPACE_HELP)} onBlur={value => {
+          const freshPinecone = { ...pinecone, namespace: value };
+          updateOption(freshPinecone, 'pinecone');
+        }} />
+    </NekoSettings>;
 
   const jsxOpenAiUsage = <div>
     <h3>{i18n.COMMON.USAGE_COSTS}</h3>
@@ -482,6 +495,7 @@ const jsxShortcodeChatLogs =
                   {module_embeddings && <NekoBlock busy={busy} title="Pinecone" className="primary">
                     {jsxPineconeApiKey}
                     {jsxPineconeServer}
+                    {jsxPineconeNamespace}
                   </NekoBlock>}
                 </NekoColumn>
 
@@ -510,7 +524,7 @@ const jsxShortcodeChatLogs =
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col"
-                          style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
+                          style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'auto' }}>
                             <label>{i18n.COMMON.MODE}:</label>
                             <NekoSelect scrolldown id="mode" name="mode"
                               value={shortcodeParams.mode} onChange={updateShortcodeParams}>
@@ -522,7 +536,7 @@ const jsxShortcodeChatLogs =
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={2}
-                            value={shortcodeParams.content} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams.context} onBlur={updateShortcodeParams} />
                         </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
@@ -722,7 +736,7 @@ const jsxShortcodeChatLogs =
                         </NekoMessage>
                       }
 
-                      {isContentAware && !contextHasContent && 
+                      {isContentAware && !contentHasContent && 
                         <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
                         </NekoMessage>
@@ -970,15 +984,12 @@ const jsxShortcodeChatLogs =
                       {limitSection === 'users' && <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
-                          <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
-                            value={limits?.users?.ignoredUsers} description="" onChange={updateUserLimits}>
-                              <NekoOption key={'none'} id={'none'} value={''}
+                          <NekoOption key={'none'} id={'none'} value={''}
                                 label={i18n.COMMON.NONE} />
-                              <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
+                          <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
                                 label={i18n.COMMON.EDITORS_ADMINS} />
-                              <NekoOption key={'admin'} id={'admin'} value={'administrator'}
+                          <NekoOption key={'admin'} id={'admin'} value={'administrator'}
                                 label={i18n.COMMON.ADMINS_ONLY} />
-                          </NekoSelect>
                         </div>
                       </div>}
 

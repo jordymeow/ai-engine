@@ -103,6 +103,7 @@ define( 'MWAI_OPTIONS', [
 	'pinecone' => [
 		'apikey' => false,
 		'server' => 'us-east1-gcp',
+		'namespace' => 'mwai',
 		'indexes' => [],
 		'index' => null
 	],

@@ -108,12 +108,15 @@ i18n.COMMON = {
   EMBEDDINGS_HELP: __( 'Create searchable data that can be reused to feed the chatbot and other AI or UI elements.', 'ai-engine' ),
   EMBEDDINGS_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
   SERVER: __( 'Server', 'ai-engine' ),
+  SERVER_HELP: __( 'The region which was set for your account.', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
   USAGE_COSTS: __( 'Usage Costs', 'ai-engine' ),
   AUDIO_TRANSCRIPTION: __( 'Audio-to-Text', 'ai-engine' ),
   AUDIO_TRANSCRIPTION_HELP: __( 'Transcribe audio files into texts.', 'ai-engine' ),
   AUDIO_TAB: __( 'Audio', 'ai-engine' ),
   EMBEDDINGS_INDEX: __( 'Embeddings Index', 'ai-engine' ),
+  NAMESPACE: __( 'Namespace', 'ai-engine' ),
+  NAMESPACE_HELP: __( 'The namespace is used to separate the data from other data. This allows you to use the same index on more than one website.', 'ai-engine' ),
 }
 
 i18n.FORMS = {
