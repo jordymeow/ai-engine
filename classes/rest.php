@@ -550,8 +550,11 @@ class Meow_MWAI_Rest
 				return new WP_REST_Response([ 'success' => false, 'message' => 'Post not found' ], 404 );
 			}
 			$content = apply_filters( 'the_content', $post->post_content );
+			// REsolve html entities
+			$content = html_entity_decode( $content );
 			$content = wp_strip_all_tags( $content );
 			$content = preg_replace( '/[\r\n]+/', "\n", $content );
+			// Remove all the non-characters except \n
 			$checksum = wp_hash( $content );
 			$title = $post->post_title;
 			$excerpt = $post->post_excerpt;

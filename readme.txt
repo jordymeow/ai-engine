@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.40
+Stable tag: 1.3.41
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,7 +65,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.40 (2023/03/10) =
+= 1.3.41 (2023/03/10) =
 * Fix: Better guess to lower the limit of max tokens dynamically.
 * Update: Huge update on the way embeddings are created, synchronized and managed.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
