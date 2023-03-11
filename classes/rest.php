@@ -549,6 +549,7 @@ class Meow_MWAI_Rest
 			if ( !$post ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => 'Post not found' ], 404 );
 			}
+			$language = $this->core->get_post_language( $post->ID );
 			$content = apply_filters( 'the_content', $post->post_content );
 			// REsolve html entities
 			$content = html_entity_decode( $content );
@@ -560,7 +561,8 @@ class Meow_MWAI_Rest
 			$excerpt = $post->post_excerpt;
 			$url = get_permalink( $post->ID );
 			return new WP_REST_Response([ 'success' => true, 'content' => $content, 'checksum' => $checksum,
-				'postId' => $post->ID, 'title' => $title, 'url' => $url, 'excerpt' => $excerpt ], 200 );
+				'language' => $language, 'excerpt' => $excerpt,
+				'postId' => $post->ID, 'title' => $title, 'url' => $url ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

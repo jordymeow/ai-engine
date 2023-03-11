@@ -1,5 +1,5 @@
-// Previous: 1.3.39
-// Current: 1.3.41
+// Previous: 1.3.41
+// Current: 1.3.42
 
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent
   DEFAULT_INDEX, DEFAULT_VECTOR } from '../../helpers';
 
 const searchColumns = [
+  //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'status', title: 'Status', width: '80px' },
   { accessor: 'title', title: 'Title', sortable: true },
   { accessor: 'type', title: 'Type', sortable: true, width: '60px' },
@@ -25,6 +26,7 @@ const searchColumns = [
 ];
 
 const queryColumns = [
+  //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'status', title: 'Status', sortable: true, width: '80px' },
   { accessor: 'title', title: 'Title', sortable: false },
   { accessor: 'type', title: 'Type', sortable: true, width: '60px' },
@@ -44,9 +46,10 @@ const VectorDatabase = ({ options, updateOption }) => {
   const [ embeddingModal, setEmbeddingModal ] = useState(false);
   const [ indexModal, setIndexModal ] = useState(false);
   const [ selectedIds, setSelectedIds ] = useState([]);
+  //const [ currentTab, setCurrentTab ] = useState('all');
   const [ syncSettings, setSyncSettings ] = useState({
     rewriteContent: true,
-    prompt: "Please rewrite the given content in a concise while maintaining the original style and preserving all essential information. The new content should be less than 800 words and divided into paragraphs of 160-280 words each. Exclude any non-textual elements and eliminate any unnecessary repetition. If you are unable to meet these requirements, please respond with an empty message.\n\n{CONTENT}",
+    prompt: "Rewrite the following content in a concise way, in {LANGUAGE}, with the same style and information. The new content should be less than 800 words and divided into paragraphs of 160-280 words each. Exclude any non-textual elements and eliminate any unnecessary repetition. If you are unable to meet these requirements, please respond with an empty message.\n\n{CONTENT}",
     createEmbeddingEachParagraph: false,
     forceRecreate: false,
   });
@@ -96,6 +99,8 @@ const VectorDatabase = ({ options, updateOption }) => {
       setFoundVectorsData({ total: 0, vectors: [] });
     }
   }, [mode]);
+
+  // #region Indexes
 
   const onAddIndex = async () => {
     setBusy('addIndex');
@@ -152,6 +157,10 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy(false);
   }
 
+  // #endregion
+
+  // #region Embeddings
+
   const onSearch = async () => {
     setBusy('searchVectors');
     const vectors = await searchVectors({ ...queryParams, filters: { env: index ?? '', aiSearch: search } });
@@ -196,7 +205,7 @@ const VectorDatabase = ({ options, updateOption }) => {
         const freshFoundVectorsData = { ...foundVectorsData };
         freshFoundVectorsData.vectors = [ 
           ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), embedding
-        ];
+        ]
         setFoundVectorsData(freshFoundVectorsData);
       }
     }
@@ -270,7 +279,7 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (!data?.vectors) { return []; }
 
     if (mode === 'search') {
-      data.vectors = data.vectors.slice().sort((a, b) => {
+      data.vectors = data.vectors.sort((a, b) => {
         if (foundVectorsSort.by === 'asc') {
           return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
         }
@@ -316,6 +325,10 @@ const VectorDatabase = ({ options, updateOption }) => {
     })
   }, [mode, vectorsData, foundVectorsData, foundVectorsSort, isBusy]);
 
+  // #endregion
+
+  // #region Sync
+
   const onStopClick = () => {
     bulkTasks.stop();
   }
@@ -339,21 +352,25 @@ const VectorDatabase = ({ options, updateOption }) => {
     bulkTasks.reset();
   }
 
-  const rewriteContent = async (content, signal) => {
+  const rewriteContent = async (content, language = "english", signal) => {
     if (!syncSettings.rewriteContent) {
       return content;
     }
     let rawData = null;
     let prompt = syncSettings.prompt.replace('{CONTENT}', content);
+    prompt = prompt.replace('{LANGUAGE}', language);
     const resSimplify = await nekoFetch(`${apiUrl}/make_completions`, {
       method: 'POST',
       json: { env: 'admin-tools', session, prompt: prompt,
-        temperature: 0.4, model: 'gpt-3.5-turbo', maxTokens: 4096, stop: '' }
-      , signal, nonce: restNonce
+        temperature: 0.4, model: 'gpt-3.5-turbo', maxTokens: 4096, stop: ''
+      },
+      signal: signal,
+      nonce: restNonce
     });
     rawData = resSimplify?.data;
     if (!resSimplify.success) {
       alert(resSimplify.message);
+      // TODO: This is the right way?
       cancelledByUser();
       return false;
     }
@@ -365,20 +382,21 @@ const VectorDatabase = ({ options, updateOption }) => {
   }
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
-    let finalPrompt = null;
     const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
-    let error = null;
     let content = resContent?.content ?? null;
-    let title = resContent?.title ?? null;
-    let checksum = resContent?.checksum ?? null;
+    const title = resContent?.title ?? null;
+    const checksum = resContent?.checksum ?? null;
+    const language = resContent?.language ?? "english";
     postId = resContent?.postId ? parseInt(resContent?.postId) : null;
-    let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
       error = resContent.message;
       return false;
     }
+
     console.log("* Post ID " + postId);
+
+    // If content is too big, we'll need to reduce it to maximum 6000 characters.
     if (content.length > 6000) {
       console.log("Content is too big. Reducing it to 6000 characters.");
       content = content.substring(0, 6000);
@@ -386,7 +404,7 @@ const VectorDatabase = ({ options, updateOption }) => {
 
     const embeddings = await onGetEmbeddingsForRef(postId, true, signal);
     if (content.length < 64) {
-      if (embeddings && embeddings.length > 0) {
+      if (embeddings.length > 0) {
         await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
         console.warn("Content is too short. Embeddings deleted.", { content });
       }
@@ -395,11 +413,12 @@ const VectorDatabase = ({ options, updateOption }) => {
       }
       return false;
     }
-    else if (embeddings && embeddings.length > 1) {
+    else if (embeddings.length > 1) {
       alert(`Multiple embeddings for one single post are not handled yet. Please delete the embeddings related to ${postId} manually.`);
       return false;
     }
-    else if (embeddings && embeddings.length === 1) {
+    // EXISTING EMBEDDING
+    else if (embeddings.length === 1) {
       const embedding = embeddings[0];
       if (embedding.refChecksum === checksum && !syncSettings.forceRecreate) {
         console.log(`Embedding exists with same content.`, { embedding });
@@ -414,9 +433,9 @@ const VectorDatabase = ({ options, updateOption }) => {
             new: content
           });
         }
-        let embeddingContent = await rewriteContent(content, signal);
+        let embeddingContent = await rewriteContent(content, language, signal);
         if (!embeddingContent || embeddingContent.length < 64) {
-          await onDeleteEmbedding([embedding.id], true, signal);
+          await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
           console.warn("Embeddings are too short. Embeddings deleted.", { content });
           return false; 
         }
@@ -426,10 +445,11 @@ const VectorDatabase = ({ options, updateOption }) => {
         }
       }
     }
+    // NEW EMBEDDING
     else {
-      let embeddingContent = await rewriteContent(content, signal);
+      let embeddingContent = await rewriteContent(content, language, signal);
       if (!embeddingContent || embeddingContent.length < 64) {
-        await onDeleteEmbedding([], true, signal);
+        await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
         console.log("Embeddings are too short. Skipped.", { content });
         return false; 
       }
@@ -447,8 +467,10 @@ const VectorDatabase = ({ options, updateOption }) => {
   }
 
   const onRunClick = async () => {
+    //setTotalTokens(0);
     setBusy('bulkRun');
     const offsets = Array.from(Array(postsCount).keys());
+    //const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
     const startOffset = 0;
     let tasks = offsets.map(offset => async (signal) => {
       if (startOffset && offset < startOffset) {
@@ -474,6 +496,8 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy(false);
   }
 
+  // #endregion
+
   return (<>
   <NekoWrapper>
 
@@ -490,7 +514,7 @@ const VectorDatabase = ({ options, updateOption }) => {
             <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
               disabled={isBusy || !index || !indexIsReady}
               value={search} onChange={setSearch} onEnter={onSearch}
-              onReset={() => { setSearch(''); setFoundVectorsData({ total: 0, vectors: [] }); }} />
+              onReset={() => { setSearch(); setFoundVectorsData({ total: 0, vectors: [] }); }} />
             <NekoButton className="primary" onClick={onSearch} disabled={isBusy || !index || !indexIsReady}
               isBusy={busy === 'searchVectors'}>
               Search
@@ -498,7 +522,7 @@ const VectorDatabase = ({ options, updateOption }) => {
           </div>}
           {mode === 'edit' && <>
             <NekoButton className="primary" disabled={isBusy || !index || !indexIsReady}
-              onClick={() => setEmbeddingModal({ ...DEFAULT_VECTOR })} >
+              onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} >
               Add
             </NekoButton>
             {selectedIds.length > 0 && <>
@@ -528,6 +552,7 @@ const VectorDatabase = ({ options, updateOption }) => {
             <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
               value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
           </>}
+          {/* <NekoButton className="primary" onClick={runTest} disabled={busy}>Test</NekoButton> */}
         </div>
       </NekoBlock>
     </NekoColumn>
@@ -578,7 +603,7 @@ const VectorDatabase = ({ options, updateOption }) => {
         </NekoSelect>
         <NekoSpacer />
         <div style={{ display: 'flex' }}>
-          <NekoButton className="primary" onClick={() => setIndexModal({ ...DEFAULT_INDEX })} style={{ flex: 1 }}
+          <NekoButton className="primary" onClick={() => setIndexModal(DEFAULT_INDEX)} style={{ flex: 1 }}
             isBusy={busy === 'addIndex'} disabled={isBusy}>
             Add Index
           </NekoButton>
@@ -587,13 +612,16 @@ const VectorDatabase = ({ options, updateOption }) => {
             Refresh
           </NekoButton>
           <NekoButton className="danger" onClick={onDeleteIndex} style={{ flex: 1 }}
-            isBusy={busy === 'deleteIndex'} disabled={isBusy || !index || !indexIsReady}>
+            isBusy={busy === 'deleteEmbeddings'} disabled={isBusy || !index || !indexIsReady}>
             Delete
           </NekoButton>
         </div>
         <NekoSpacer />
         <label>Namespace:</label>
         <NekoInput fullWidth disabled={true} value={pinecone.namespace} />
+        {/* <NekoButton className="primary" onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} disabled={busy}>
+          Create Index
+        </NekoButton> */}
         {index && !indexIsReady && <NekoMessage variant="danger" style={{ marginTop: 15, padding: '8px 12px' }}>
           This index is currently being build by Pinecone. Wait a few minutes, then use the <b>Refresh</b> button.
         </NekoMessage>}
@@ -724,5 +752,3 @@ const VectorDatabase = ({ options, updateOption }) => {
     />
   </>);
 }
-
-export default VectorDatabase;
