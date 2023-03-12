@@ -14,58 +14,46 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   }
 
   // Quick and dirty token estimation
-  function estimateTokens( $text, $method = "max" )
+  function estimateTokens( $text )
   {
-    // method can be "average", "words", "chars", "max", "min", defaults to "max"
-    // "average" is the average of words and chars
-    // "words" is the word count divided by 0.75
-    // "chars" is the char count divided by 4
-    // "max" is the max of word and char
-    // "min" is the min of word and char
-    $word_count = count(explode(" ", $text));
-    $char_count = strlen($text);
-    $tokens_count_word_est = $word_count / 0.70;
-    $tokens_count_char_est = $char_count / 3.0;
-    $output = 0;
-    if ( $method == 'average' ) {
-      $output = ($tokens_count_word_est + $tokens_count_char_est) / 2;
+    $asciiCount = 0;
+    $nonAsciiCount = 0;
+    for ($i = 0; $i < mb_strlen( $text ); $i++) {
+      $char = mb_substr( $text, $i, 1 );
+      if ( ord($char) < 128 ) {
+        $asciiCount++;
+      }
+      else {
+        $nonAsciiCount++;
+      }
     }
-    else if ( $method == 'words' ) {
-      $output = $tokens_count_word_est;
-    }
-    else if ( $method == 'chars' ) {
-      $output = $tokens_count_char_est;
-    }
-    else if ( $method == 'max') {
-      $output = max($tokens_count_word_est, $tokens_count_char_est);
-    }
-    else if ( $method == 'min') {
-      $output = min($tokens_count_word_est, $tokens_count_char_est);
-    }
-    else {
-      // return invalid method message
-      return "Invalid method. Use 'average', 'words', 'chars', 'max', or 'min'.";
-    }
-    return  (int)$output;
+    $asciiTokens = $asciiCount / 4;
+    $nonAsciiTokens = $nonAsciiCount * 2;
+    $tokens = $asciiTokens + $nonAsciiTokens;
+    return (int)$tokens;
   }
 
   /**
    * Make sure the maxTokens is not greater than the model's context length.
    */
   private function validateMaxTokens() {
+    if ( empty( $this->model )  ) { return; }
     $realMax = 4096;
     $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
     $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
     $foundModel = null;
     foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
       if ( $currentModel['model'] === $this->model || $currentModel['family'] === $finetuneFamily ) {
-        $foundModel = $currentModel;
+        $foundModel = $currentModel['name'];
         $realMax = $currentModel['maxTokens'];
         break;
       }
     }
     $estimatedTokens = $this->estimateTokens( $this->prompt );
-    $realMax = $realMax - ($estimatedTokens > $realMax ? $realMax : $estimatedTokens);
+    if ( ( $estimatedTokens - 256) > $realMax ) {
+      throw new Exception( "The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
+    }
+    $realMax = $realMax - $estimatedTokens;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
     }

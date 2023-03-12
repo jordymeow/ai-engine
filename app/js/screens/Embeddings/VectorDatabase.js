@@ -1,9 +1,11 @@
-// Previous: 1.3.41
-// Current: 1.3.42
+// Previous: 1.3.42
+// Current: 1.3.43
 
+// React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput, NekoTheme,
   NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock, NekoCheckbox,
   NekoWrapper, NekoColumn } from '@neko-ui';
@@ -37,7 +39,6 @@ const queryColumns = [
 ];
 
 const VectorDatabase = ({ options, updateOption }) => {
-  const bulkTasks = useNekoTasks();
   const queryClient = useQueryClient();
   const [ postType, setPostType ] = useState('post');
   const [ busy, setBusy ] = useState(false);
@@ -78,6 +79,7 @@ const VectorDatabase = ({ options, updateOption }) => {
   const [ foundVectorsData, setFoundVectorsData ] = useState({ total: 0, vectors: [] });
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy;
 
   useEffect(() => {
@@ -175,18 +177,17 @@ const VectorDatabase = ({ options, updateOption }) => {
     const res = await nekoFetch(`${apiUrl}/vector`, { nonce: restNonce, method: 'POST',
       json: { vector: { ...inEmbedding, dbIndex: index } }
     });
-    if (res.success) {
-      setEmbeddingModal(false);
-      console.log("Embedding Added", inEmbedding);
-      queryClient.invalidateQueries({ queryKey: ['vectors'] });
-    }
-    else {
+    if (!res.success) {
       console.error(res.message);
+      throw new Error(res.message ?? "Unknown error, check your console logs.");
     }
+    setEmbeddingModal(false);
+    console.log("Embedding Added", inEmbedding);
+    queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (!skipBusy) {
       setBusy(false);
     }
-    return !!res.success;
+    return true;
   }
 
   const onModifyEmbedding = async (inEmbedding = embeddingModal, skipBusy) => {
@@ -196,23 +197,20 @@ const VectorDatabase = ({ options, updateOption }) => {
     const res = await nekoFetch(`${apiUrl}/vector`, { nonce: restNonce, method: 'PUT',
       json: { vector: { ...inEmbedding, dbIndex: index } }
     });
-    if (res.success) {
-      let embedding = {...inEmbedding};
-      setEmbeddingModal(false);
-      console.log("Embeddings updated.", inEmbedding);
-      queryClient.invalidateQueries({ queryKey: ['vectors'] });
-      if (mode === 'search') {
-        const freshFoundVectorsData = { ...foundVectorsData };
-        freshFoundVectorsData.vectors = [ 
-          ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), embedding
-        ]
-        setFoundVectorsData(freshFoundVectorsData);
-      }
-    }
-    else {
+    if (!res.success) {
       console.error(res.message);
-      alert(res.message);
-      return false;
+      throw new Error(res.message ?? "Unknown error, check your console logs.");
+    }
+    let embedding = {...inEmbedding};
+    setEmbeddingModal(false);
+    console.log("Embeddings updated.", inEmbedding);
+    queryClient.invalidateQueries({ queryKey: ['vectors'] });
+    if (mode === 'search') {
+      const freshFoundVectorsData = { ...foundVectorsData };
+      freshFoundVectorsData.vectors = [ 
+        ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), embedding
+      ]
+      setFoundVectorsData(freshFoundVectorsData);
     }
     if (!skipBusy) {
       setBusy(false);
@@ -225,16 +223,14 @@ const VectorDatabase = ({ options, updateOption }) => {
       setBusy('getEmbedding');
     }
     const res = await nekoFetch(`${apiUrl}/vectors_ref`, { nonce: restNonce, method: 'POST', json: { refId } });
-    if (res.success) {
-      return res.vectors;
-    }
-    else {
+    if (!res.success) {
       console.error(res.message);
-      alert(res.message);
+      throw new Error(res.message ?? "Unknown error, check your console logs.");
     }
     if (!skipBusy) {
       setBusy(false);
     }
+    return res.vectors;
   }
 
   const onDeleteEmbedding = async (ids, skipBusy) => {
@@ -242,18 +238,16 @@ const VectorDatabase = ({ options, updateOption }) => {
       setBusy('deleteEmbedding');
     }
     const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'DELETE', json: { ids } });
-    if (res.success) {
-      console.log("Embedded Deleted", { ids });
-      queryClient.invalidateQueries({ queryKey: ['vectors'] });
-      if (mode === 'search') {
-        const freshFoundVectorsData = { ...foundVectorsData };
-        freshFoundVectorsData.vectors = freshFoundVectorsData.vectors.filter(v => !ids.includes(v.id));
-        setFoundVectorsData(freshFoundVectorsData);
-      }
-    }
-    else {
+    if (!res.success) {
       console.error(res.message);
-      alert(res.message);
+      throw new Error(res.message ?? "Unknown error, check your console logs.");
+    }
+    console.log("Embeddings deleted.", { ids });
+    queryClient.invalidateQueries({ queryKey: ['vectors'] });
+    if (mode === 'search') {
+      const freshFoundVectorsData = { ...foundVectorsData };
+      freshFoundVectorsData.vectors = freshFoundVectorsData.vectors.filter(v => !ids.includes(v.id));
+      setFoundVectorsData(freshFoundVectorsData);
     }
     if (!skipBusy) {
       setBusy(false);
@@ -268,6 +262,29 @@ const VectorDatabase = ({ options, updateOption }) => {
     await onDeleteEmbedding(selectedIds);
     setSelectedIds([]);
     setBusy(false);
+  }
+
+  const rewriteContent = async (content, language = "english", signal) => {
+    if (!syncSettings.rewriteContent) {
+      return content;
+    }
+    let prompt = syncSettings.prompt.replace('{CONTENT}', content);
+    prompt = prompt.replace('{LANGUAGE}', language);
+    const res = await nekoFetch(`${apiUrl}/make_completions`, {
+      method: 'POST',
+      json: { env: 'admin-tools', session, prompt: prompt,
+        temperature: 0.4, model: 'gpt-3.5-turbo', maxTokens: 4096, stop: ''
+      },
+      signal: signal,
+      nonce: restNonce
+    });
+    if (!res.success) {
+      console.error(res.message);
+      throw new Error(res.message ?? "Unknown error, check your console logs.");
+    }
+    const rewrittenContent = res?.data;
+    console.log("Content rewritten.", { from: content, to: rewrittenContent });
+    return rewrittenContent;
   }
 
   const vectorsTotal = useMemo(() => {
@@ -329,56 +346,10 @@ const VectorDatabase = ({ options, updateOption }) => {
 
   // #region Sync
 
-  const onStopClick = () => {
-    bulkTasks.stop();
-  }
-
-  const onErrorSkipClick = () => {
-    bulkTasks.resume();
-  }
-
-  const onErrorRetryClick = () => {
-    bulkTasks.retry();
-  }
-
-  const onErrorAlwaysSkipClick = () => {
-    bulkTasks.setAlwaysSkip();
-    bulkTasks.resume();
-  }
-
   const cancelledByUser = () => {
     console.log('User aborted.');
     setBusy(false);
     bulkTasks.reset();
-  }
-
-  const rewriteContent = async (content, language = "english", signal) => {
-    if (!syncSettings.rewriteContent) {
-      return content;
-    }
-    let rawData = null;
-    let prompt = syncSettings.prompt.replace('{CONTENT}', content);
-    prompt = prompt.replace('{LANGUAGE}', language);
-    const resSimplify = await nekoFetch(`${apiUrl}/make_completions`, {
-      method: 'POST',
-      json: { env: 'admin-tools', session, prompt: prompt,
-        temperature: 0.4, model: 'gpt-3.5-turbo', maxTokens: 4096, stop: ''
-      },
-      signal: signal,
-      nonce: restNonce
-    });
-    rawData = resSimplify?.data;
-    if (!resSimplify.success) {
-      alert(resSimplify.message);
-      // TODO: This is the right way?
-      cancelledByUser();
-      return false;
-    }
-    else {
-      console.log("Content rewritten.", { from: content, to: rawData });
-      content = rawData;
-    }
-    return content;
   }
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
@@ -389,9 +360,7 @@ const VectorDatabase = ({ options, updateOption }) => {
     const language = resContent?.language ?? "english";
     postId = resContent?.postId ? parseInt(resContent?.postId) : null;
     if (!resContent.success) {
-      alert(resContent.message);
-      error = resContent.message;
-      return false;
+      throw new Error(resContent.message);
     }
 
     console.log("* Post ID " + postId);
@@ -463,10 +432,10 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (signal?.aborted) {
       cancelledByUser();
     }
-    return true;
+    return true;``
   }
 
-  const onRunClick = async () => {
+  const onBulkRunClick = async () => {
     //setTotalTokens(0);
     setBusy('bulkRun');
     const offsets = Array.from(Array(postsCount).keys());
@@ -491,8 +460,12 @@ const VectorDatabase = ({ options, updateOption }) => {
       return;
     }
     setBusy('singleRun');
-    await runProcess(0, postId);
-    bulkTasks.reset();
+    try {
+      await runProcess(0, postId);
+    }
+    catch (error) {
+      alert(error);
+    }
     setBusy(false);
   }
 
@@ -538,7 +511,7 @@ const VectorDatabase = ({ options, updateOption }) => {
               Sync One
             </NekoButton>
             <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
-              onClick={() => onRunClick()}>
+              onClick={() => onBulkRunClick()}>
               Sync All
             </NekoButton>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
@@ -671,8 +644,8 @@ const VectorDatabase = ({ options, updateOption }) => {
     <NekoModal isOpen={embeddingModal}
       title={embeddingModal?.id ? "Modify Embedding" : "Add Embedding"}
       onOkClick={() => { embeddingModal?.id ? onModifyEmbedding() : onAddEmbedding() }}
-      onRequestClose={() => setEmbeddingModal(false)}
-      onCancelClick={() => setEmbeddingModal(false)}
+      onRequestClose={() => setEmbeddingModal(null)}
+      onCancelClick={() => setEmbeddingModal(null)}
       ok={embeddingModal?.id ? "Modify" : "Add"}
       disabled={busy === 'addEmbedding'}
       content={<>
@@ -750,5 +723,10 @@ const VectorDatabase = ({ options, updateOption }) => {
         </NekoSelect>
       </>}
     />
+
+    {bulkTasks.TasksErrorModal}
+
   </>);
 }
+
+export default VectorDatabase;

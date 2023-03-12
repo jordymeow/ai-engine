@@ -117,6 +117,13 @@ i18n.COMMON = {
   EMBEDDINGS_INDEX: __( 'Embeddings Index', 'ai-engine' ),
   NAMESPACE: __( 'Namespace', 'ai-engine' ),
   NAMESPACE_HELP: __( 'The namespace is used to separate the data from other data. This allows you to use the same index on more than one website.', 'ai-engine' ),
+  ERROR: __( 'Error', 'ai-engine' ),
+  RETRY: __( 'Retry', 'ai-engine' ),
+  AUTO_RETRY: __( 'Auto Retry', 'ai-engine' ),
+  SKIP: __( 'Skip', 'ai-engine' ),
+  AUTO_SKIP: __( 'Auto Skip', 'ai-engine' ),
+  STOP: __( 'Stop', 'ai-engine' ),
+  AUTO_RETRY_DESCRIPTION: __( 'Auto Retry retries actions up to 10 times with increasing delay to avoid timeouts.', 'ai-engine' ),
 }
 
 i18n.FORMS = {

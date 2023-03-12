@@ -1,5 +1,5 @@
-// Previous: 1.2.3
-// Current: 1.3.31
+// Previous: 1.3.31
+// Current: 1.3.43
 
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { NekoButton,
   NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
+import i18n from '../../../i18n';
 
 const retrievePostsCount = async (postType) => {
   const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}`, { nonce: restNonce });
@@ -21,7 +22,6 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
 }
 
 const DatasetBuilder = ({ setBuilderData }) => {
-  const bulkTasks = useNekoTasks();
   const [postType, setPostType] = useState('post');
   const [totalTokens, setTotalTokens] = useState(0);
   const [quickBusy, setQuickBusy] = useState(false);
@@ -30,24 +30,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount;
-
-  const onStopClick = () => {
-    bulkTasks.stop();
-  }
-
-  const onErrorSkipClick = () => {
-    bulkTasks.resume();
-  }
-
-  const onErrorRetryClick = () => {
-    bulkTasks.retry();
-  }
-
-  const onErrorAlwaysSkipClick = () => {
-    bulkTasks.setAlwaysSkip();
-    bulkTasks.resume();
-  }
 
   const createEntriesFromRaw = (rawData) => {
     if (!rawData) {
@@ -60,9 +44,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length > 0) {
-          entries[entries.length - 1].completion = arr[i].slice(2).trim();
-        }
+        if (entries.length === 0) continue; // Prevent error if 'A:' appears without prior 'Q:'
+        entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
     return entries;
@@ -70,7 +53,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
+    const resContent = await retrievePostContent(postType, offset, postId || null);
     let error = null;
     let rawData = null;
     let content = resContent?.content;
@@ -81,14 +64,14 @@ const DatasetBuilder = ({ setBuilderData }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content && content.length < 64) {
+    else if (content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
       finalPrompt = finalPrompt.replace('{CONTENT}', content);
       finalPrompt = finalPrompt.replace('{URL}', url);
       finalPrompt = finalPrompt.replace('{TITLE}', title);
-      const resGenerate = await nekoFetch(`${apiUrl}/make_completions`, {
+      const res = await nekoFetch(`${apiUrl}/make_completions`, {
         method: 'POST',
         json: {
           env: 'admin-tools',
@@ -102,22 +85,21 @@ const DatasetBuilder = ({ setBuilderData }) => {
         signal: signal,
         nonce: restNonce
       });
-      rawData = resGenerate?.data || '';
-      if (!resGenerate.success) {
-        if (resGenerate.error?.code === 'USER-ABORTED') {
-          console.log('User aborted.');
-          bulkTasks.reset();
-          return { success: true };
+      if (!res.success) {
+        if (res.error?.cancelledByUser) {
+          return null;
         }
-        alert(resGenerate.message);
-        error = resGenerate.message;
+        console.error(res.message ?? "Unknown error, check your console logs.");
+        throw new Error(res.message ?? "Unknown error, check your console logs.");
       }
-      else {
-        if (resGenerate?.usage?.total_tokens) {
-          tokens = resGenerate.usage.total_tokens;
-          setTotalTokens(totalTokens => totalTokens + resGenerate.usage.total_tokens);
-        }
+      rawData = res?.data;
+      if (res?.usage?.total_tokens) {
+        tokens = res.usage.total_tokens;
+        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
       }
+    }
+    if (signal?.aborted) {
+      cancelledByUser();
     }
     const entries = createEntriesFromRaw(rawData);
     const result = { content, prompt: finalPrompt, rawData, entries, error, tokens };
@@ -125,18 +107,25 @@ const DatasetBuilder = ({ setBuilderData }) => {
     return result;
   }
 
+  const cancelledByUser = () => {
+    console.log('User aborted.');
+    setQuickBusy(false);
+    bulkTasks.reset();
+  }
+
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr);
-    let tasks = offsets.map(offset => async (signal) => {
+    const startOffset = parseInt(startOffsetStr, 10);
+    const startIdx = isNaN(startOffset) ? 0 : startOffset;
+    const tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetStr && offset < startOffset) {
+      if (startIdx !== 0 && offset < startIdx) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
-      if (result.entries) {
+      if (result?.entries?.length > 0) {
         setBuilderData(builderData => [...builderData, ...result.entries]);
       }
       return { success: true };
@@ -150,10 +139,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onQuickTestClick = async () => {
     setTotalTokens(0);
     const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    if (postIdInput === null) {
+    const postId = postIdInput === "" ? null : postIdInput;
+    if (postId === null) {
       return;
     }
-    const postId = postIdInput.trim() !== "" ? postIdInput.trim() : null;
     setQuickBusy(true);
     const result = await runProcess(0, postId);
     setQuickBusy(false);
@@ -193,7 +182,9 @@ const DatasetBuilder = ({ setBuilderData }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
+        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
+
+      {bulkTasks.TasksErrorModal}
     </>
   );
 }

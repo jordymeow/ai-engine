@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.42
+Stable tag: 1.3.43
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,13 +65,17 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.42 (2023/03/10) =
-* Fix: Better guess to lower the limit of max tokens dynamically.
-* Update: Supports multilingual websites with embedddings (WPML, Polylang).
-* Update: Huge update on the way embeddings are created, synchronized and managed.
+= 1.3.43 (2023/03/12)
+* Update: Enhanced the whole bulk system.
+* Update: Enhanced the tokens prediction for non-latin languages.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
+= 1.3.42 (2023/03/11) =
+* Fix: Better guess to lower the limit of max tokens dynamically.
+* Update: Supports multilingual websites with embedddings (WPML, Polylang).
+* Update: Huge update on the way embeddings are created, synchronized and managed.
 
 = 1.3.37 (2023/03/10) =
 * Fix: Role management and capabilities.
