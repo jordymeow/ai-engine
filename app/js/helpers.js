@@ -1,5 +1,5 @@
-// Previous: 1.3.31
-// Current: 1.3.36
+// Previous: 1.3.36
+// Current: 1.3.44
 
 const { useMemo, useState } = wp.element;
 import { NekoMessage, nekoFetch } from '@neko-ui';
@@ -103,7 +103,11 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     if (model === 'gpt-3.5-turbo-0301') {
       model = 'gpt-3.5-turbo';
     }
-    return models.find(x => x.model === model);
+    const found = models.find(x => x.model === model);
+    if (!found) {
+      return { model, name: model };
+    }
+    return found;
   }
 
   const isFineTunedModel = (model) => {
@@ -142,8 +146,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const calculatePrice = (model, units, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    if (price) {
-      return price * units * modelObj['unit'];
+    if (price !== null && price !== undefined) {
+      return price * units * (modelObj['unit'] || 1);
     }
     return 0;
   }
@@ -162,13 +166,19 @@ const searchVectors = async (queryParams) => {
   }
   queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
-  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
+  if (res && res.vectors) {
+    return { total: res.total, vectors: res.vectors };
+  }
+  return { total: 0, vectors: [] };
 }
 
 const retrieveVectors = async (queryParams) => {
   queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
-  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
+  if (res && res.vectors) {
+    return { total: res.total, vectors: res.vectors };
+  }
+  return { total: 0, vectors: [] };
 }
 
 const retrievePostsCount = async (postType) => {
@@ -182,7 +192,37 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
-export { OptionsCheck, cleanSections, useModels, toHTML,
-  searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent,
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
+function estimateTokens(text) {
+  let asciiCount = 0;
+  let nonAsciiCount = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char.charCodeAt(0) < 128) {
+      asciiCount++;
+    }
+    else {
+      nonAsciiCount++;
+    }
+  }
+  const asciiTokens = asciiCount / 4;
+  const nonAsciiTokens = nonAsciiCount * 2.5;
+  const tokens = asciiTokens + nonAsciiTokens;
+  return tokens;
+}
+
+function reduceContent(content, tokens = 2048) {
+  let reduced = content;
+  let reducedTokens = estimateTokens(reduced);
+  while (reducedTokens > tokens) {
+    reduced = reduced.slice(0, -32);
+    reducedTokens = estimateTokens(reduced);
+  }
+  return reduced;
+}
+
+export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens,
+  searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
 };

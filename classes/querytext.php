@@ -14,6 +14,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   }
 
   // Quick and dirty token estimation
+  // Let's keep this synchronized with Helpers in JS
   function estimateTokens( $text )
   {
     $asciiCount = 0;
@@ -28,7 +29,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       }
     }
     $asciiTokens = $asciiCount / 4;
-    $nonAsciiTokens = $nonAsciiCount * 2;
+    $nonAsciiTokens = $nonAsciiCount * 2.5;
     $tokens = $asciiTokens + $nonAsciiTokens;
     return (int)$tokens;
   }

@@ -1,5 +1,5 @@
-// Previous: 1.3.42
-// Current: 1.3.43
+// Previous: 1.3.43
+// Current: 1.3.44
 
 // React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
@@ -13,7 +13,7 @@ import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '../../../i18n';
 import { searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent,
-  DEFAULT_INDEX, DEFAULT_VECTOR } from '../../helpers';
+  DEFAULT_INDEX, DEFAULT_VECTOR, reduceContent, estimateTokens } from '../../helpers';
 
 const searchColumns = [
   //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
@@ -366,9 +366,15 @@ const VectorDatabase = ({ options, updateOption }) => {
     console.log("* Post ID " + postId);
 
     // If content is too big, we'll need to reduce it to maximum 6000 characters.
-    if (content.length > 6000) {
-      console.log("Content is too big. Reducing it to 6000 characters.");
-      content = content.substring(0, 6000);
+    
+    if (estimateTokens(content) > 2048) {
+      content = reduceContent(content, 2048);
+      console.log("Too much content. Reduced it to approximatively 2048 tokens.", { 
+        before: resContent.content,
+        beforeLength: resContent.content.length,
+        after: content,
+        afterLength: content.length
+      });
     }
 
     const embeddings = await onGetEmbeddingsForRef(postId, true, signal);
@@ -448,6 +454,7 @@ const VectorDatabase = ({ options, updateOption }) => {
       await runProcess(offset, null, signal);
       return { success: true };
     });
+
     await bulkTasks.start(tasks);
     setBusy(false);
     alert("All done!");
