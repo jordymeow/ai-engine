@@ -28,7 +28,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
         $nonAsciiCount++;
       }
     }
-    $asciiTokens = $asciiCount / 4;
+    $asciiTokens = $asciiCount / 3.5;
     $nonAsciiTokens = $nonAsciiCount * 2.5;
     $tokens = $asciiTokens + $nonAsciiTokens;
     return (int)$tokens;
