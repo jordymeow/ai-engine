@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.45
+Stable tag: 1.3.46
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,7 +65,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.45 (2023/03/13) =
+= 1.3.46 (2023/03/13) =
+* Add: More Pinecone servers.
 * Fix: Enhanced the tokens prediction; client-side also automatically limits the total content depending on it.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
