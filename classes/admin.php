@@ -132,12 +132,8 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
 		// The MD5 of the translation file built by WP uses app/i18n.js instead of app/index.js
 		add_filter( 'load_script_translation_file', function( $file, $handle, $domain ) {
-			if ( $domain !== 'ai-engine' ) {
-				return $file;
-			}
-			$old = md5( 'app/index.js' );
-			$new = md5( 'app/i18n.js' );
-			$file = str_replace( $old, $new, $file );
+			if ( $domain !== 'ai-engine' ) { return $file; }
+			$file = str_replace( md5( 'app/index.js' ), md5( 'app/i18n.js' ), $file );
 			return $file;
 		}, 10, 3 );
 

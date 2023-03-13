@@ -20,6 +20,7 @@ function createConfig(env, options) {
 		plugins.push(new BundleAnalyzerPlugin());
 	}
 	console.log("Production: " + isProduction);
+
 	return {
 		...WordPressDefaults,
 		context: __dirname,
@@ -59,6 +60,7 @@ function createConfig(env, options) {
 
 		resolve: {
 			alias: {
+				'@root': path.resolve(__dirname, './app/'),
 				'@app': path.resolve(__dirname, './app/js/'),
 				'@common': path.resolve(__dirname, './common/js/'),
 				'@neko-ui': path.resolve(__dirname, '../neko-ui/'),

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.46
+Stable tag: 1.3.47
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,17 +32,19 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 * Internal API for you to play with
 * Upcoming features are already in the works, and it will be surprising!
 
-== Chatbot (ChatGPT-like) ==
+== Chatbot: Your own ChatGPT ==
 
-Looking to add some AI-powered chat functionality to your website? Our chatbot is here to help! Using vanilla JS on the frontend, it's lightweight and easy to use, with this shortcode: [mwai_chatbot]. Looks simple? Yes, but there are many parameters and countless ideas. Visit the [official documentation](https://meowapps.com/ai-engine/) for more info. 
+Are you interested in integrating AI-powered chat functionality to your website? Our chatbot can assist you with that! It's a lightweight and user-friendly tool that utilizes vanilla JS on the frontend, and can be easily added to your site with this shortcode: [mwai_chat]. Although it appears simple, the possibilities are limitless, with a variety of parameters and concepts to explore. Visit our [official documentation](https://meowapps.com/ai-engine/) for more information.
 
-== Optimize/Generate Content ==
+Take your AI capabilities to the next level with finetuning and embeddings. By reusing your website's content and other pertinent information, you can train your AI to better cater to your target audience. AI Engine makes this process simple and straightforward with its user-friendly interface. If you'd like to learn more about finetuning, check out our article: [How to Train an AI Model](https://meowapps.com/wordpress-chatbot-finetuned-model-ai/).
 
-Generate articles with customizable headings, language, and other parameters. Feel free to play around with the settings and even modify the prompts to craft exactly the content you need. You can also generate images using DALL-E model. Keep in mind that currently, the images generated are only in square format (1024x1024) and there are some limitations (OpenAI is in beta).
+== Generate Content, Images & More! ==
 
-== Train/Finetune your AI Model ==
+Generating content has never been easier! Simply adjust the parameters to your preference, customize the prompts, and discover the results. Furthermore, you can save your parameters as templates for future use, generate content in bulk, and even produce images. The AI Playground also enables you to create your own custom use cases, such as swiftly acquiring recipes based on your refrigerator's contents or quickly drafting restaurant reviews. With AI Engine, the possibilities are endless, and you can personalize the user interface to suit your needs.
 
-In the Fine Tuning section of AI Engine, you can prepare/generate datasets, and train new models based on them, in just a few click! Please check my article on [How to Train an AI Model](https://meowapps.com/wordpress-chatbot-finetuned-model-ai/).
+== Boost your WordPress with AI ==
+
+AI Engine offers its own internal API that can be utilized by various plugins. For example, [Media File Renamer](https://wordpress.org/plugins/media-file-renamer/) leverages this API to suggest improved filenames for media files. Additionally, [Social Engine](https://wordpress.org/plugins/social-engine/), a plugin that facilitates post-sharing on social media platforms, can also benefit from AI Engine's capabilities to create accompanying text.
 
 == My Dream for AI ==
 
@@ -65,7 +67,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.46 (2023/03/13) =
+= 1.3.47 (2023/03/13) =
 * Add: More Pinecone servers.
 * Fix: Enhanced the tokens prediction; client-side also automatically limits the total content depending on it.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
