@@ -1,0 +1,128 @@
+{
+    "packages": [
+        {
+            "name": "erusev/parsedown",
+            "version": "1.7.4",
+            "version_normalized": "1.7.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/erusev/parsedown.git",
+                "reference": "cb17b6477dfff935958ba01325f2e8a2bfa6dab3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/erusev/parsedown/zipball/cb17b6477dfff935958ba01325f2e8a2bfa6dab3",
+                "reference": "cb17b6477dfff935958ba01325f2e8a2bfa6dab3",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8.35"
+            },
+            "time": "2019-12-30T22:54:17+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-0": {
+                    "Parsedown": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Emanuil Rusev",
+                    "email": "hello@erusev.com",
+                    "homepage": "http://erusev.com"
+                }
+            ],
+            "description": "Parser for Markdown.",
+            "homepage": "http://parsedown.org",
+            "keywords": [
+                "markdown",
+                "parser"
+            ],
+            "support": {
+                "issues": "https://github.com/erusev/parsedown/issues",
+                "source": "https://github.com/erusev/parsedown/tree/1.7.x"
+            },
+            "install-path": "../erusev/parsedown"
+        },
+        {
+            "name": "rahul900day/gpt-3-encoder",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/RahulDey12/gpt-3-encoder.git",
+                "reference": "bb1a827397e616e531473f22484456daf89a6059"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/RahulDey12/gpt-3-encoder/zipball/bb1a827397e616e531473f22484456daf89a6059",
+                "reference": "bb1a827397e616e531473f22484456daf89a6059",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.5",
+                "pestphp/pest": "^1.22",
+                "phpstan/phpstan": "^1.10",
+                "rector/rector": "^0.15.21",
+                "symfony/var-dumper": "^6.0"
+            },
+            "time": "2023-03-11T19:00:35+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Rahul900day\\Gpt3Encoder\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Rahul Dey",
+                    "email": "rahul900day@gmail.com"
+                }
+            ],
+            "description": "GPT-3-Encoder is a PHP implementation of OpenAI's original python encoder/decoder.",
+            "keywords": [
+                "GPT-2-Encoder",
+                "GPT-2-Tokenizer",
+                "GPT-3",
+                "GPT-3-Encoder",
+                "GPT-3-Tokenizer",
+                "decoder",
+                "encoder",
+                "gpt-2",
+                "php",
+                "tokenizer"
+            ],
+            "support": {
+                "issues": "https://github.com/RahulDey12/gpt-3-encoder/issues",
+                "source": "https://github.com/RahulDey12/gpt-3-encoder/tree/1.0.1"
+            },
+            "funding": [
+                {
+                    "url": "https://ko-fi.com/rahul900day",
+                    "type": "ko_fi"
+                }
+            ],
+            "install-path": "../rahul900day/gpt-3-encoder"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

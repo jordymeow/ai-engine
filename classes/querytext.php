@@ -1,5 +1,7 @@
 <?php
 
+use Rahul900day\Gpt3Encoder\Encoder;
+
 class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $maxTokens = 1024;
   public $temperature = 0.8;
@@ -17,6 +19,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   // Let's keep this synchronized with Helpers in JS
   function estimateTokens( $text )
   {
+    // Approximation (fast, no lib)
     $asciiCount = 0;
     $nonAsciiCount = 0;
     for ($i = 0; $i < mb_strlen( $text ); $i++) {
@@ -31,6 +34,18 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $asciiTokens = $asciiCount / 3.5;
     $nonAsciiTokens = $nonAsciiCount * 2.5;
     $tokens = $asciiTokens + $nonAsciiTokens;
+
+    // More exact (slower, and lib)
+    try {
+      $token_array = Encoder::encode( $text );
+      if ( !empty( $token_array ) ) {
+        $tokens = count( $token_array );
+      }
+    }
+    catch ( Exception $e ) {
+      error_log( $e->getMessage() );
+    }
+
     return (int)$tokens;
   }
 
@@ -51,7 +66,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       }
     }
     $estimatedTokens = $this->estimateTokens( $this->prompt );
-    if ( ( $estimatedTokens - 256) > $realMax ) {
+    if ( $estimatedTokens > $realMax ) {
       throw new Exception( "The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
     }
     $realMax = $realMax - $estimatedTokens;

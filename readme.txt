@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.48
+Stable tag: 1.3.49
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,8 +67,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.48 (2023/03/14) =
+= 1.3.49 (2023/03/14) =
+* Add: Sanitize the content of the context for the shortcode.
 * Add: Parameter in the builder for text_input_maxlength.
+* Update: Enhanced handling of tokens.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 

@@ -1,5 +1,5 @@
-// Previous: 1.3.46
-// Current: 1.3.48
+// Previous: 1.3.48
+// Current: 1.3.49
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -104,7 +104,7 @@ const Settings = () => {
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
 
   const accidentsPastDay = incidents?.filter(x => {
     const incidentDate = new Date(x.date);
@@ -128,6 +128,7 @@ const Settings = () => {
       delete diff.max_results;
     }
     if (isImagesChat) {
+      delete diff.context;
       delete diff.content_aware;
       delete diff.casually_fine_tuned;
       delete diff.model;
@@ -146,6 +147,15 @@ const Settings = () => {
       let value = shortcodeParams[key];
       if (value && typeof value === 'string' && value.includes('"')) {
         value = value.replace(/"/g, '\'');
+      }
+      if (value && typeof value === 'string' && value.includes('\n')) {
+        value = value.replace(/\n/g, '\\n');
+      }
+      if (value && typeof value === 'string' && value.includes('[')) {
+        value = value.replace(/\[/g, '&#91;');
+      }
+      if (value && typeof value === 'string' && value.includes(']')) {
+        value = value.replace(/\]/g, '&#93;');
       }
       params.push(`${key}="${value}"`);
     }
@@ -425,7 +435,7 @@ const jsxShortcodeChatLogs =
 
   const jsxPineconeNamespace =
     <NekoSettings title={i18n.COMMON.NAMESPACE}>
-      <NekoInput name="namespace" value={pinecone.namespace || 'mwai'}
+      <NekoInput name="namespace" value={pinecone.namespace ?? 'mwai'}
         description={toHTML(i18n.COMMON.NAMESPACE_HELP)} onBlur={value => {
           const freshPinecone = { ...pinecone, namespace: value };
           updateOption(freshPinecone, 'pinecone');
@@ -441,9 +451,7 @@ const jsxShortcodeChatLogs =
   </div>;
 
   return (
-    // <NekoUI theme="light">
     <NekoPage>
-
       <AiNekoHeader options={options} />
 
       <NekoWrapper>
@@ -479,7 +487,6 @@ const jsxShortcodeChatLogs =
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title="Advanced" className="primary">
-                    {/* {jsxExtraModels} */}
                     {jsxDebugMode}
                     {jsxResolveShortcodes}
                   </NekoBlock>
@@ -534,7 +541,7 @@ const jsxShortcodeChatLogs =
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={2}
-                            value={shortcodeParams.context} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams.content} onBlur={updateShortcodeParams} />
                         </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
@@ -656,7 +663,7 @@ const jsxShortcodeChatLogs =
                           <NekoSelect scrolldown id="model" name="model"
                             value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
                             {completionModels.map((x) => (
-                              <NekoOption value={x.model} label={x.name}></NekoOption>
+                              <NekoOption key={x.model} value={x.model} label={x.name} />
                             ))}
                           </NekoSelect>
                         </div>
@@ -678,7 +685,8 @@ const jsxShortcodeChatLogs =
                         
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.MAX_TOKENS}:</label>
-                          <NekoInput id="max_tokens" name="max_tokens" type="number" min="10" max="2048"
+                          <NekoInput id="max_tokens" name="max_tokens" type="number"
+                            min="10" max="2048"
                             value={shortcodeParams.max_tokens} onBlur={updateShortcodeParams} />
                         </div>
 
@@ -708,9 +716,9 @@ const jsxShortcodeChatLogs =
                             disabled={!indexes?.length || currentModel?.mode !== 'chat'}
                             value={shortcodeParams.embeddings_index} onChange={updateShortcodeParams}>
                             {indexes.map((x) => (
-                              <NekoOption value={x.name} label={x.name}></NekoOption>
+                              <NekoOption key={x.name} value={x.name} label={x.name} />
                             ))}
-                            <NekoOption value={""} label={"Disabled"}></NekoOption>
+                            <NekoOption key="disabled" value="" label="Disabled" />
                           </NekoSelect>
                         </div>
 
@@ -997,7 +1005,7 @@ const jsxShortcodeChatLogs =
                                 label={i18n.COMMON.EDITORS_ADMINS} />
                               <NekoOption key={'admin'} id={'admin'} value={'administrator'}
                                 label={i18n.COMMON.ADMINS_ONLY} />
-                          </NekoSelect>
+                          </NekoOption>
                         </div>
                       </div>}
 
@@ -1043,7 +1051,6 @@ const jsxShortcodeChatLogs =
       </NekoWrapper>
 
     </NekoPage>
-    // </NekoUI>
   );
 };
 
