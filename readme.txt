@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.47
+Stable tag: 1.3.48
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,12 +67,15 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.47 (2023/03/13) =
-* Add: More Pinecone servers.
-* Fix: Enhanced the tokens prediction; client-side also automatically limits the total content depending on it.
+= 1.3.48 (2023/03/14) =
+* Add: Parameter in the builder for text_input_maxlength.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
+= 1.3.47 (2023/03/13) =
+* Add: More Pinecone servers.
+* Fix: Enhanced the tokens prediction; client-side also automatically limits the total content depending on it.
 
 = 1.3.44 (2023/03/12)
 * Update: Enhanced the whole bulk system.

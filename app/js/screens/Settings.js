@@ -1,11 +1,12 @@
-// Previous: 1.3.38
-// Current: 1.3.46
+// Previous: 1.3.46
+// Current: 1.3.48
 
 const { useMemo, useState, useEffect } = wp.element;
 
 import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoQuickLinks, NekoLink, NekoColumn, NekoTextArea } from '@neko-ui';
+
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
@@ -103,7 +104,7 @@ const Settings = () => {
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
 
   const accidentsPastDay = incidents?.filter(x => {
     const incidentDate = new Date(x.date);
@@ -127,7 +128,6 @@ const Settings = () => {
       delete diff.max_results;
     }
     if (isImagesChat) {
-      delete diff.context;
       delete diff.content_aware;
       delete diff.casually_fine_tuned;
       delete diff.model;
@@ -441,6 +441,7 @@ const jsxShortcodeChatLogs =
   </div>;
 
   return (
+    // <NekoUI theme="light">
     <NekoPage>
 
       <AiNekoHeader options={options} />
@@ -688,6 +689,13 @@ const jsxShortcodeChatLogs =
                             value={shortcodeParams.max_sentences} onBlur={updateShortcodeParams} />
                         </div>
 
+                        <div className="mwai-builder-col" style={{ flex: 1 }}>
+                          <label>{i18n.COMMON.INPUT_MAXLENGTH}:</label>
+                          <NekoInput id="text_input_maxlength" name="text_input_maxlength"
+                            step="1" min="1" max="512"
+                            value={shortcodeParams.text_input_maxlength} onBlur={updateShortcodeParams} />
+                        </div>
+
                       </div>}
 
 
@@ -700,9 +708,9 @@ const jsxShortcodeChatLogs =
                             disabled={!indexes?.length || currentModel?.mode !== 'chat'}
                             value={shortcodeParams.embeddings_index} onChange={updateShortcodeParams}>
                             {indexes.map((x) => (
-                              <NekoOption key={x.name} value={x.name} label={x.name}></NekoOption>
+                              <NekoOption value={x.name} label={x.name}></NekoOption>
                             ))}
-                            <NekoOption key="disabled" value="" label={"Disabled"}></NekoOption>
+                            <NekoOption value={""} label={"Disabled"}></NekoOption>
                           </NekoSelect>
                         </div>
 
@@ -733,7 +741,7 @@ const jsxShortcodeChatLogs =
                         </NekoMessage>
                       }
 
-                      {isContentAware && !contentHasContent && 
+                      {isContentAware && !contextHasContent && 
                         <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
                         </NekoMessage>
@@ -983,9 +991,12 @@ const jsxShortcodeChatLogs =
                           <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
                           <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
                             value={limits?.users?.ignoredUsers} description="" onChange={updateUserLimits}>
-                              <NekoOption key="none" value={''} label={i18n.COMMON.NONE} />
-                              <NekoOption key="editor" value={'administrator,editor'} label={i18n.COMMON.EDITORS_ADMINS} />
-                              <NekoOption key="admin" value={'administrator'} label={i18n.COMMON.ADMINS_ONLY} />
+                              <NekoOption key={'none'} id={'none'} value={''}
+                                label={i18n.COMMON.NONE} />
+                              <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
+                                label={i18n.COMMON.EDITORS_ADMINS} />
+                              <NekoOption key={'admin'} id={'admin'} value={'administrator'}
+                                label={i18n.COMMON.ADMINS_ONLY} />
                           </NekoSelect>
                         </div>
                       </div>}
@@ -1032,6 +1043,7 @@ const jsxShortcodeChatLogs =
       </NekoWrapper>
 
     </NekoPage>
+    // </NekoUI>
   );
 };
 
