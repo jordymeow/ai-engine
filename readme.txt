@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.49
+Stable tag: 1.3.50
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,9 @@ The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plug
 Languages: English.
 
 == Changelog ==
+
+= 1.3.50 (2023/03/15) =
+* Fix: Compatibility issues with older versions of PHP.
 
 = 1.3.49 (2023/03/14) =
 * Add: Sanitize the content of the context for the shortcode.
