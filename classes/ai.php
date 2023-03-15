@@ -185,6 +185,7 @@ class Meow_MWAI_AI {
 
     // Allow to modify the query
     $query = apply_filters( 'mwai_ai_query', $query );
+    $query->checkFix();
 
     // Run the query
     $answer = null;

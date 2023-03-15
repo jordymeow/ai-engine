@@ -78,4 +78,10 @@ class Meow_MWAI_Query {
   public function setMaxResults( $maxResults ) {
     $this->maxResults = intval( $maxResults );
   }
+
+  // **
+  //  * Check if everything is correct, otherwise fix it (like the max number of tokens).
+  //  */
+  public function checkFix() {
+  }
 }

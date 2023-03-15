@@ -17,8 +17,15 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 
   // Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
-  function estimateTokens( $text )
+  function estimateTokens( $content )
   {
+    $text = $content;
+    if ( is_array( $content ) ) {
+      foreach ( $content as $message ) {
+        $text .= $message['content'];
+      }
+    }
+
     // Approximation (fast, no lib)
     $asciiCount = 0;
     $nonAsciiCount = 0;
@@ -52,7 +59,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   /**
    * Make sure the maxTokens is not greater than the model's context length.
    */
-  private function validateMaxTokens() {
+  public function checkFix() {
     if ( empty( $this->model )  ) { return; }
     $realMax = 4096;
     $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
@@ -65,11 +72,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
         break;
       }
     }
-    $estimatedTokens = $this->estimateTokens( $this->prompt );
+    $estimatedTokens = $this->estimateTokens( $this->messages );
     if ( $estimatedTokens > $realMax ) {
       throw new Exception( "The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
     }
-    $realMax = $realMax - $estimatedTokens;
+    $realMax = (int)(($realMax - $estimatedTokens) * 0.95);
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
     }
@@ -96,7 +103,6 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setPrompt( $prompt ) {
     parent::setPrompt( $prompt );
-    $this->validateMaxTokens();
     $this->validateMessages();
   }
 
@@ -166,7 +172,6 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setMaxTokens( $maxTokens ) {
     $this->maxTokens = intval( $maxTokens );
-    $this->validateMaxTokens();
   }
 
   /**

@@ -108,10 +108,10 @@ const LicenseBlock = () => {
       message = 'Unknown error :(';
     }
     else if (license.issue === 'no_activations_left') {
-      message = <span>There are no activations left for this license. You can visit your account at the <a target='_blank' rel="noreferrer" href='https://meowapps.com'>Meow Apps Store</a>, unregister a site, and click on <i>Retry to validate</i>.</span>;
+      message = <span>There are no activations left for this license. You can visit your account at <a target='_blank' rel="noreferrer" href='https://meowapps.com'>Meow Apps</a>, unregister a site, and click on <i>Retry to validate</i>.</span>;
     }
     else if (license.issue === 'expired') {
-      message = <span>Your license has expired. You can get another license or renew the current one by visiting your account at the <a target='_blank' rel="noreferrer" href='https://meowapps.com'>Meow Apps Store</a>.</span>;
+      message = <span>Your license has expired. You can get another license or renew the current one by visiting your account at <a target='_blank' rel="noreferrer" href='https://meowapps.com'>Meow Apps</a>.</span>;
     }
     else if (license.issue === 'missing') {
       message = 'This license does not exist.';
@@ -133,7 +133,7 @@ const LicenseBlock = () => {
 
   const jsxNonPro = 
     <NekoBlock title="Pro Version (Not Installed)" className="primary">
-      You will find more information about the Pro Version <a target='_blank' rel="noreferrer" href={`https://meowapps.com`}>here</a>. If you actually bought the Pro Version already, please remove the current plugin and download the Pro Version from your account at the <a target='_blank' rel="noreferrer" href='https://meowapps.com/'>Meow Apps Store</a>.
+      You will find more information about the Pro Version <a target='_blank' rel="noreferrer" href={`https://meowapps.com`}>here</a>. If you actually bought the Pro Version already, please remove the current plugin and download the Pro Version from your account at <a target='_blank' rel="noreferrer" href='https://meowapps.com/'>Meow Apps</a>.
     </NekoBlock>;
 
   const jsxProVersion = 
@@ -141,7 +141,7 @@ const LicenseBlock = () => {
 
       {!isOverridenLicense && !(license && license.key === serialKey) && <>
         <div style={{ marginBottom: 10 }}>License Key:</div>
-        <NekoInput id="mfrh_pro_serial" label="YOOO" name="mfrh_pro_serial" disabled={busy} value={serialKey}
+        <NekoInput id="mfrh_pro_serial" name="mfrh_pro_serial" disabled={busy} value={serialKey}
           onChange={(txt) => setSerialKey(txt)} placeholder="Type your license key..." />
         <NekoTypo p>Insert your serial key above. If you don&apos;t have one yet, you can get one <a href="https://meowapps.com">here</a>. If there was an error during the validation, try the <i>Retry</i> to <i>validate</i> button.
         </NekoTypo>
