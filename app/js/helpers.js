@@ -1,5 +1,5 @@
-// Previous: 1.3.44
-// Current: 1.3.45
+// Previous: 1.3.45
+// Current: 1.3.51
 
 const { useMemo, useState } = wp.element;
 import { NekoMessage, nekoFetch } from '@neko-ui';
@@ -96,7 +96,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   }, [options]);
 
   const completionModels = useMemo(() => {
-    return models.filter(x => x.mode === 'completion' || x.mode === 'chat');
+    return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
   }, [models]);
 
   const getModel = (model) => {
@@ -143,7 +143,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
     if (price) {
-      return price * units * (modelObj['unit'] || 1);
+      return price * units * modelObj['unit'];
     }
     return 0;
   }
@@ -182,6 +182,8 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;

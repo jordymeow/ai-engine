@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.50
+Stable tag: 1.3.51
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,22 +67,23 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.50 (2023/03/15) =
+= 1.3.51 (2023/03/15) =
 * Fix: Compatibility issues with older versions of PHP.
+* Fix: For some reason, some models didn't have the mode and that was leading to the UI to crash.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.49 (2023/03/14) =
 * Add: Sanitize the content of the context for the shortcode.
 * Add: Parameter in the builder for text_input_maxlength.
 * Update: Enhanced handling of tokens.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.47 (2023/03/13) =
 * Add: More Pinecone servers.
 * Fix: Enhanced the tokens prediction; client-side also automatically limits the total content depending on it.
 
-= 1.3.44 (2023/03/12)
+= 1.3.44 (2023/03/12) =
 * Update: Enhanced the whole bulk system.
 * Update: Enhanced the tokens prediction for non-latin languages.
 
