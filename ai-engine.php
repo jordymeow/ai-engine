@@ -3,7 +3,7 @@
 Plugin Name: AI Engine: ChatGPT Chatbot, GPT Content Generator, Custom Playground & Features
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: GPT AI for WordPress. ChatGPT-style chatbot, image/content generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
-Version: 1.3.53
+Version: 1.3.54
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,14 +13,14 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '1.3.53' );
+define( 'MWAI_VERSION', '1.3.54' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
 define( 'MWAI_PATH', dirname( __FILE__ ) );
 define( 'MWAI_URL', plugin_dir_url( __FILE__ ) );
 
-require_once( 'classes/init.php' );
+require_once( MWAI_PATH . '/classes/init.php' );
 
 // TODO: Avoid AI Engine JS to load on Rank Math.
 // https://wordpress.org/support/topic/conflict-with-another-plugin-rank-math-seo-breaks-image-uploads/

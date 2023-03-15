@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.53
+Stable tag: 1.3.54
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.53 (2023/03/15) =
+= 1.3.54 (2023/03/15) =
 * Update: In the Content Generator, sections (headings) are not mandatory anymore. You can simply delete the associated prompt, and the sections fields will be removed as well. You can save it as your new template.
 * Add: Width and Max Height for the Chatbot Popup in the Settings.
 * Fix: Compatibility issues with older versions of PHP.

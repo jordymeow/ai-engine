@@ -19,11 +19,14 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   // Let's keep this synchronized with Helpers in JS
   function estimateTokens( $content )
   {
-    $text = $content;
+    $text = "";
     if ( is_array( $content ) ) {
       foreach ( $content as $message ) {
         $text .= $message['content'];
       }
+    }
+    else {
+      $text = $content;
     }
 
     // Approximation (fast, no lib)
@@ -43,14 +46,16 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $tokens = $asciiTokens + $nonAsciiTokens;
 
     // More exact (slower, and lib)
-    try {
-      $token_array = Encoder::encode( $text );
-      if ( !empty( $token_array ) ) {
-        $tokens = count( $token_array );
+    if ( PHP_VERSION_ID >= 70400 ) {
+      try {
+        $token_array = Encoder::encode( $text );
+        if ( !empty( $token_array ) ) {
+          $tokens = count( $token_array );
+        }
       }
-    }
-    catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      catch ( Exception $e ) {
+        error_log( $e->getMessage() );
+      }
     }
 
     return (int)$tokens;
