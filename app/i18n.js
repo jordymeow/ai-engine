@@ -94,6 +94,7 @@ i18n.COMMON = {
   PROMPTS: __( 'Prompts', 'ai-engine' ),
   LABEL: __( 'Label', 'ai-engine' ),
   SYSTEM: __( 'System', 'ai-engine' ),
+  SHORTCODE: __( 'Shortcode', 'ai-engine' ),
   SHORTCODES: __( 'Shortcodes', 'ai-engine' ),
   RESOLVE: __( 'Resolve', 'ai-engine' ),
   SENTENCES_BUFFER: __( 'Sentences Buffer', 'ai-engine' ),
@@ -125,6 +126,11 @@ i18n.COMMON = {
   AUTO_SKIP: __( 'Auto Skip', 'ai-engine' ),
   STOP: __( 'Stop', 'ai-engine' ),
   AUTO_RETRY_DESCRIPTION: __( 'Auto Retry retries actions up to 10 times with increasing delay to avoid timeouts.', 'ai-engine' ),
+  WIDTH: __( 'Width', 'ai-engine' ),
+  MAX_HEIGHT: __( 'Max Height', 'ai-engine' ),
+  TECHNICAL_SETTINGS: __( 'Technical Settings', 'ai-engine' ),
+  MAIN_SETTINGS: __( 'Main Settings', 'ai-engine' ),
+  VISUAL_SETTINGS: __( 'Visual Settings', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -153,7 +159,7 @@ i18n.SETTINGS = {
   SET_AS_DEFAULT_PARAMETERS_HELP: __( 'Set the parameters above as the default parameters for the chatbot. You can then use the shortcode [mwai_chat] anywhere on your website.', 'ai-engine' ),
   INJECT_DEFAULT_CHATBOT: __( 'Inject Default Chatbot in Entire Website', 'ai-engine' ),
   INJECT_DEFAULT_CHATBOT_HELP: __( 'Inject the chatbot [mwai_chat] in the entire website.', 'ai-engine' ),
-  CHATGPT_STYLE_INTRO: __( 'Keep in mind that you can also style the chatbot (or aspecific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>. Header Buttons are the ones used to close or resize the Popup Window. For more, check the <a target="_blank" href="https://meowapps.com/ai-engine/faq">FAQ</a>.', 'ai-engine' ),
+  CHATGPT_STYLE_INTRO: __( 'Keep in mind that you can also style the chatbot (or a specific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>. More information in the <a target="_blank" href="https://meowapps.com/ai-engine/faq">FAQ</a>.', 'ai-engine' ),
   TYPEWRITER_EFFECT: __( 'Typewriter Effect', 'ai-engine' ),
   TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. I actually do not recommend this feature.', 'ai-engine' ),
 }

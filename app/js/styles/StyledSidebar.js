@@ -1,5 +1,5 @@
-// Previous: 0.6.8
-// Current: 0.8.6
+// Previous: 0.8.6
+// Current: 1.3.53
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -86,6 +86,14 @@ const StyledBuilderForm = Styled.div`
   display: flex;
   flex-direction: column;
 
+  .mwai-category {
+    text-transform: uppercase;
+    margin-bottom: 0;
+    padding-bottom: 2px;
+    border-bottom: 2px solid #d1e3f2;
+    color: #007cb9;
+  }
+
   label {
     margin-bottom: 3px;
   }
@@ -94,7 +102,6 @@ const StyledBuilderForm = Styled.div`
     margin-top: 10px;
     display: flex;
     flex-direction: row;
-    align-items: center;
 
     .neko-color-picker {
       margin-left: 5px;
@@ -119,7 +126,7 @@ const StyledBuilderForm = Styled.div`
     padding: 10px;
     font-size: 13px;
     font-weight: bold;
-    margin: 20px 0;
+    margin: 10px 0 10px 0;
   }
 
   .neko-spacer {
@@ -131,6 +138,7 @@ const StyledBuilderForm = Styled.div`
 
   .nui-select-option {
   }
+
 `;
 
-export { StyledSidebar, StyledNekoInput, StyledBuilderForm };
+export { StyledSidebar, StyledNekoInput, StyledBuilderForm }
