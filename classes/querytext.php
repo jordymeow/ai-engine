@@ -165,7 +165,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( $temperature < 0 ) {
       $temperature = 0;
     }
-    $this->temperature = $temperature;
+    $this->temperature = round( $temperature, 2 );
   }
 
   /**

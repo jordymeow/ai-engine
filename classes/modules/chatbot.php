@@ -15,6 +15,7 @@ class Meow_MWAI_Modules_Chatbot {
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
+		new Meow_MWAI_Modules_Chatbot_Chats();
 
 		if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
 			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
@@ -28,7 +29,6 @@ class Meow_MWAI_Modules_Chatbot {
 		if ( $this->core->get_option( 'shortcode_chat_styles' ) ) {
 			add_filter( 'mwai_chatbot_style', [ $this, 'apply_chat_styles' ], 10, 2 );
 		}
-
 	}
 
 	public function enqueue_scripts() {
@@ -63,7 +63,6 @@ class Meow_MWAI_Modules_Chatbot {
 	public function rest_chat( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$embeddingsIndex = $params['embeddingsIndex'];
 			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
 			$query->injectParams( $params );
 
@@ -86,6 +85,7 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			// Awareness & Embeddings
+			$embeddingsIndex = $params['embeddingsIndex'];
 			if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
 				$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
 				if ( !empty( $context ) ) {
@@ -388,10 +388,11 @@ class Meow_MWAI_Modules_Chatbot {
 				let memorizeChat = <?php echo $memorizeChat ? 'true' : 'false' ?>;
 				let maxTokens = <?php echo (int)$maxTokens ?>;
 				let maxResults = <?php echo (int)$maxResults ?>;
-				let temperature = <?php echo (int)$temperature ?>;
-				let memorizedChat = [];
+				let temperature = <?php echo (float)$temperature ?>;
 				let typewriter = <?php echo $typewriter ? 'true' : 'false' ?>;
 				let copyButton = <?php echo $copyButton ? 'true' : 'false' ?>;
+				let clientId = randomStr();
+				let memorizedChat = { clientId, messages: [] };
 
 				if (isDebugMode) {
 					window.mwai_<?php echo esc_attr( $id ) ?> = {
@@ -403,12 +404,16 @@ class Meow_MWAI_Modules_Chatbot {
 					};
 				}
 
+				function randomStr() {
+					return Math.random().toString(36).substring(2);
+				}
+
 				// Set button text
 				function setButtonText() {
 					let input = document.querySelector('#mwai-chat-<?php echo esc_attr( $id ) ?> .mwai-input textarea');
 					let button = document.querySelector('#mwai-chat-<?php echo esc_attr( $id ) ?> .mwai-input button');
 					let buttonSpan = button.querySelector('span');
-					if (memorizedChat.length < 2) {
+					if (memorizedChat.messages.length < 2) {
 						buttonSpan.innerHTML = '<?php echo esc_html( $textSend ); ?>';
 					}
 					else if (!input.value.length) {
@@ -556,17 +561,17 @@ class Meow_MWAI_Modules_Chatbot {
 
 				function buildPrompt(last = 15) {
 					let prompt = context ? (context + '\n\n') : '';
-					memorizedChat = memorizedChat.slice(-last);
+					memorizedChat.messages = memorizedChat.messages.slice(-last);
 
 					// Casually fine tuned, let's use the last question
 					if (isCasuallyFineTuned) {
-						let lastLine = memorizedChat[memorizedChat.length - 1];
+						let lastLine = memorizedChat.messages[memorizedChat.messages.length - 1];
 						prompt = lastLine.content + promptEnding;
 						return prompt;
 					}
 
 					// Otherwise let's compile the latest conversation
-					let conversation = memorizedChat.map(x => x.who + x.content);
+					let conversation = memorizedChat.messages.map(x => x.who + x.content);
 					prompt += conversation.join('\n');
 					prompt += '\n' + rawAiName;
 					return prompt;
@@ -579,10 +584,17 @@ class Meow_MWAI_Modules_Chatbot {
 
 					// Reset the conversation if empty
 					if (inputText === '') {
+						clientId = randomStr();
 						document.querySelector('#mwai-chat-<?php echo esc_attr( $id ) ?> .mwai-conversation').innerHTML = '';
-						localStorage.removeItem('mwai-chat-<?php echo esc_attr( $id ) ?>');
-						memorizedChat = [];
-						memorizedChat.push({ role: 'assistant', content: startSentence, who: rawAiName, html: startSentence });
+						localStorage.removeItem('mwai-chat-<?php echo esc_attr( $id ) ?>')
+						memorizedChat = { clientId: clientId, messages: [] };
+						memorizedChat.messages.push({ 
+							id: randomStr(),
+							role: 'assistant',
+							content: startSentence,
+							who: rawAiName,
+							html: startSentence
+						});
 						addReply(startSentence, 'assistant');
 						return;
 					}
@@ -592,7 +604,13 @@ class Meow_MWAI_Modules_Chatbot {
 					button.disabled = true;
 
 					// Add the user reply
-					memorizedChat.push({ role: 'user', content: inputText, who: rawUserName, html: inputText });
+					memorizedChat.messages.push({
+						id: randomStr(),
+						role: 'user',
+						content: inputText,
+						who: rawUserName,
+						html: inputText
+					});
 					addReply(inputText, 'user');
 					input.value = '';
 					input.setAttribute('rows', 1);
@@ -603,14 +621,14 @@ class Meow_MWAI_Modules_Chatbot {
 					const data = mode === 'images' ? {
 						env, session: session,
 						prompt: inputText, rawInput: inputText,
-						model: model, maxResults, apiKey: apiKey,
+						model: model, maxResults, apiKey: apiKey, clientId: clientId,
 					} : {
 						env, session: session,
 						prompt: prompt, context: context,
-						messages: memorizedChat, rawInput: inputText,
+						messages: memorizedChat.messages, rawInput: inputText,
 						userName: userName, aiName: aiName,
 						model: model, temperature: temperature, maxTokens: maxTokens, maxResults: 1, apiKey: apiKey,
-						embeddingsIndex: embeddingsIndex, stop: stop,
+						embeddingsIndex: embeddingsIndex, stop: stop, clientId: clientId,
 					};
 
 					// Start the timer
@@ -636,7 +654,13 @@ class Meow_MWAI_Modules_Chatbot {
 						}
 						else {
 							let html = data.images ? data.images : data.html;
-							memorizedChat.push({ role: 'assistant', content: data.answer, who: rawAiName, html: html });
+							memorizedChat.messages.push({
+								id: randomStr(),
+								role: 'assistant',
+								content: data.answer,
+								who: rawAiName,
+								html: html
+							});
 							addReply(html, 'assistant');
 						}
 						button.disabled = false;
@@ -737,17 +761,32 @@ class Meow_MWAI_Modules_Chatbot {
 						chatHistory = localStorage.getItem('mwai-chat-<?php echo esc_attr( $id ) ?>');
 						if (chatHistory) {
 							memorizedChat = JSON.parse(chatHistory);
-							memorizedChat = memorizedChat.filter(x => x && x.html && x.role);
-							memorizedChat.forEach(x => {
-								addReply(x.html, x.role, true);
-							});
+							if (memorizedChat && memorizedChat.clientId && memorizedChat.messages) {
+								clientId = memorizedChat.clientId;
+								memorizedChat.messages = memorizedChat.messages.filter(x => x && x.html && x.role);
+								memorizedChat.messages.forEach(x => {
+									addReply(x.html, x.role, true);
+								});
+							}
+							else {
+								memorizedChat = null;
+							}
 						}
-						else {
-							memorizedChat = [];
+						if (!memorizedChat) {
+							memorizedChat = {
+								clientId: clientId,
+								messages: []
+							};
 						}
 					}
-					if (memorizedChat.length === 0) {
-						memorizedChat.push({ role: 'assistant', content: startSentence, who: rawAiName, html: startSentence });
+					if (memorizedChat.messages.length === 0) {
+						memorizedChat.messages.push({ 
+							id: randomStr(),
+							role: 'assistant',
+							content: startSentence,
+							who: rawAiName,
+							html: startSentence
+						});
 						addReply(startSentence, 'assistant');
 					}
 				}

@@ -16,6 +16,18 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'chat']
 	],
+	// [ 
+	// 	"model" => "gpt-4",
+	// 	"name" => "gpt-4",
+	// 	"family" => "gpt4",
+	// 	"price" => 0.03,
+	// 	"type" => "token",
+	// 	"unit" => 1 / 1000,
+	// 	"maxTokens" => 8192,
+	// 	"mode" => "chat",
+	// 	"finetune" => false,
+	// 	"tags" => ['core', 'chat']
+	// ],
   [
 		"model" => "text-davinci-003",
 		"name" => "davinci-003",

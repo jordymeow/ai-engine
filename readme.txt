@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.56
+Stable tag: 1.3.57
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.56 (2023/03/16) =
+= 1.3.57 (2023/03/16) =
+* Fix: Temperature was sometimes a bit too rounded.
 * Update: Clean the admin screens a little.
 * Update: Allow other models in the Content Generator.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
