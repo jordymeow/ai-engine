@@ -54,7 +54,7 @@ i18n.COMMON = {
   TYPE: __( 'Type', 'ai-engine' ),
   USERS: __( 'Users', 'ai-engine' ),
   GUESTS: __( 'Guests', 'ai-engine' ),
-  OPENAI_TAB: __( 'OpenAI', 'ai-engine' ),
+  OPENAI: __( 'Open AI', 'ai-engine' ),
   LICENSE_TAB: __( 'License', 'ai-engine' ),
   FINETUNING_TAB: __( 'Fine Tuning', 'ai-engine' ),
   EMBEDDINGS_TAB: __( 'Embeddings', 'ai-engine' ),
@@ -131,6 +131,9 @@ i18n.COMMON = {
   TECHNICAL_SETTINGS: __( 'Technical Settings', 'ai-engine' ),
   MAIN_SETTINGS: __( 'Main Settings', 'ai-engine' ),
   VISUAL_SETTINGS: __( 'Visual Settings', 'ai-engine' ),
+  DASHBOARD: __( 'Dashboard', 'ai-engine' ),
+  ADVANCED: __( 'Advanced', 'ai-engine' ),
+  DYNAMIC_MAX_TOKENS: __( 'Dynamic Max Tokens', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -146,9 +149,12 @@ i18n.HELP = {
   STOP_SEQUENCE: __( 'The sequence of tokens that will cause the model to stop generating text. You absolutely need this with fine-tuned models.', 'ai-engine' ),
   COST: __( 'Keeps track of the current costs.', 'ai-engine' ),
   RESOLVE_SHORTCODE: __( 'Will resolve the shortcode in your content when needed (Content-Aware will use this, for instance).', 'ai-engine' ),
+  DYNAMIC_MAX_TOKENS: __( 'Max Tokens will be dynamically decreased based on the length of the prompt.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {
+  OPENAI_SETUP: __( 'To use the features of AI Engine, you need an OpenAI account and an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website to create an account, then insert your OpenAI API Key in the <b>Settings</b> tab.', 'ai-engine' ),
+  PINECONE_SETUP: __( 'You choose to use Embeddings. To use them, you need to a Pinecone account. Visit the <a href="https://app.pinecone.io" target="_blank">Pinecone</a> website to create an account, then insert your Pinecone API Key in the <b>Settings</b> tab.', 'ai-engine' ),
   INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
   ALERT_INJECT_BUT_NO_POPUP: __( 'You choose to inject the chatbot in your website. You probably also want to use the chatbot in a Popup.', 'ai-engine' ),
@@ -162,6 +168,7 @@ i18n.SETTINGS = {
   CHATGPT_STYLE_INTRO: __( 'Keep in mind that you can also style the chatbot (or a specific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>. More information in the <a target="_blank" href="https://meowapps.com/ai-engine/faq">FAQ</a>.', 'ai-engine' ),
   TYPEWRITER_EFFECT: __( 'Typewriter Effect', 'ai-engine' ),
   TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. I actually do not recommend this feature.', 'ai-engine' ),
+  CHATBOT_MODERATION_HELP: __( 'If the conversation seems offensive, the chatbot will reject it.', 'ai-engine' ),
 }
 
 i18n.CHATBOT = {

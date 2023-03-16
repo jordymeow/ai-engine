@@ -324,7 +324,7 @@ class Meow_MWAI_OpenAI
     $response = wp_remote_retrieve_body( $response );
     $xml = simplexml_load_string( $response );
     $incidents = array();
-    $oneWeekAgo = time() - 7 * 24 * 60 * 60;
+    $oneWeekAgo = time() - 5 * 24 * 60 * 60;
     foreach ( $xml->channel->item as $item ) {
       $date = strtotime( $item->pubDate );
       if ( $date > $oneWeekAgo ) {

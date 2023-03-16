@@ -1,7 +1,5 @@
 <?php
 
-use Rahul900day\Gpt3Encoder\Encoder;
-
 class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $maxTokens = 1024;
   public $temperature = 0.8;
@@ -20,45 +18,20 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   function estimateTokens( $content )
   {
     $text = "";
+    // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     if ( is_array( $content ) ) {
       foreach ( $content as $message ) {
-        $text .= $message['content'];
+        $name = "";
+        $role = $message['role'];
+        $content = $message['content'];
+        $text .= "=#=$role\n$content=#=\n";
       }
     }
     else {
       $text = $content;
     }
-
-    // Approximation (fast, no lib)
-    $asciiCount = 0;
-    $nonAsciiCount = 0;
-    for ($i = 0; $i < mb_strlen( $text ); $i++) {
-      $char = mb_substr( $text, $i, 1 );
-      if ( ord($char) < 128 ) {
-        $asciiCount++;
-      }
-      else {
-        $nonAsciiCount++;
-      }
-    }
-    $asciiTokens = $asciiCount / 3.5;
-    $nonAsciiTokens = $nonAsciiCount * 2.5;
-    $tokens = $asciiTokens + $nonAsciiTokens;
-
-    // More exact (slower, and lib)
-    if ( PHP_VERSION_ID >= 70400 ) {
-      try {
-        $token_array = Encoder::encode( $text );
-        if ( !empty( $token_array ) ) {
-          $tokens = count( $token_array );
-        }
-      }
-      catch ( Exception $e ) {
-        error_log( $e->getMessage() );
-      }
-    }
-
-    return (int)$tokens;
+    $tokens = 0;
+    return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $this->model );
   }
 
   /**
@@ -81,7 +54,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( $estimatedTokens > $realMax ) {
       throw new Exception( "The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
     }
-    $realMax = (int)(($realMax - $estimatedTokens) * 0.95);
+    $realMax = (int)($realMax - $estimatedTokens);
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
     }

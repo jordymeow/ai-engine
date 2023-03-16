@@ -90,6 +90,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
 	'shortcode_chat_typewriter' => false,
+	'shortcode_chat_moderation' => false,
 	'shortcode_chat_syntax_highlighting' => false,
 	'shortcode_chat_logs' => '', // 'file', 'db', 'file,db'
 	'shortcode_chat_inject' => false,
@@ -110,5 +111,6 @@ define( 'MWAI_OPTIONS', [
 	'extra_models' => "",
 	'debug_mode' => true,
 	'resolve_shortcodes' => false,
+	'dynamic_max_tokens' => true,
 	'languages' => MWAI_LANGUAGES
 ]);

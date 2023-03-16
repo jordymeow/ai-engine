@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.54
+Stable tag: 1.3.56
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,15 +67,19 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.56 (2023/03/16) =
+* Update: Clean the admin screens a little.
+* Update: Allow other models in the Content Generator.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
 = 1.3.54 (2023/03/15) =
 * Update: In the Content Generator, sections (headings) are not mandatory anymore. You can simply delete the associated prompt, and the sections fields will be removed as well. You can save it as your new template.
 * Add: Width and Max Height for the Chatbot Popup in the Settings.
 * Fix: Compatibility issues with older versions of PHP.
 * Fix: Make sure the extra context brought by embedding doesn't break the maximum number of tokens.
 * Fix: For some reason, some models didn't have the mode and that was leading to the UI to crash.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.49 (2023/03/14) =
 * Add: Sanitize the content of the context for the shortcode.

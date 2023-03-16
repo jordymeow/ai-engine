@@ -66,10 +66,23 @@ class Meow_MWAI_Modules_Chatbot {
 			$embeddingsIndex = $params['embeddingsIndex'];
 			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
 			$query->injectParams( $params );
+
 			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 			if ( !empty( $takeoverAnswer ) ) {
 				return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,
 					'html' => $takeoverAnswer, 'usage' => null ], 200 );
+			}
+
+			// Moderation
+			if ( $this->core->get_option( 'shortcode_chat_moderation' ) ) {
+				global $mwai;
+				$isFlagged = $mwai->moderationCheck( $query->prompt );
+				if ( $isFlagged ) {
+					return new WP_REST_Response( [ 
+						'success' => false, 
+						'message' => 'Sorry, your message has been rejected by moderation.' ], 403
+					);
+				}
 			}
 
 			// Awareness & Embeddings

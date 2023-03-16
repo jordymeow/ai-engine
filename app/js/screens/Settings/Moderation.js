@@ -1,19 +1,23 @@
-// Previous: 1.1.1
-// Current: 1.2.2
+// Previous: 1.2.2
+// Current: 1.3.56
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 import { apiUrl, restNonce, session, options } from '@app/settings';
 
 // NekoUI
-import { NekoWrapper, NekoBlock, NekoSpacer, NekoColumn, NekoTextArea, NekoButton } from '@neko-ui';
+import { NekoWrapper, NekoBlock, NekoSpacer, NekoColumn, NekoTextArea, 
+  NekoButton, NekoSettings, NekoCheckbox } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
+import i18n from '@root/i18n';
 
-const Moderation = ({ options, updateOption }) => {
+const Moderation = ({ options, updateOption, busy: busyParent }) => {
   const [content, setContent] = useState('I would love to live on a tropical island with beautiful and sexy felines, where we could bask in the sun on the sandy beaches, sip on refreshing coconut milk, and enjoy each other\'s company. While we might occasionally fight in the trees, our days would mostly be spent in peaceful slumber. However, I am not sure of how we would handle any potential disruptions to our idyllic existence if human were to come...');
   const [results, setResults] = useState([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const shortcode_chat_moderation = options?.shortcode_chat_moderation;
+  const isBusy = busy || busyParent;
 
   const onModerateClick = async () => {
     setBusy(true);
@@ -33,16 +37,30 @@ const Moderation = ({ options, updateOption }) => {
     setBusy(false);
   };
 
+  const jsxChatbot = 
+    <NekoSettings title={i18n.COMMON.CHATBOT}>
+      <NekoCheckbox name="shortcode_chat_moderation" label={i18n.COMMON.ENABLE} value="1"
+        checked={shortcode_chat_moderation}
+        description={i18n.SETTINGS.CHATBOT_MODERATION_HELP}
+        onChange={updateOption} />
+  </NekoSettings>;
+
   return (<>
     <NekoWrapper>
       <NekoColumn minimal>
-        <NekoBlock busy={busy} title="AI Moderation Tester" className="primary">
+        <NekoBlock busy={isBusy} title={i18n.COMMON.SETTINGS} className="primary">
+          <p>You can enable moderation various parts of WordPress. It will slow down the processing a little.</p>
+          {jsxChatbot}
+        </NekoBlock>
+      </NekoColumn>
+      <NekoColumn minimal>
+        <NekoBlock busy={isBusy} title="AI Moderation Tester" className="primary">
           <p>
-            I have added the Moderation Module for you to play with. Where would you like to see the moderation being implemented? Let me know. <b>OpenAI's moderation model is free! 🎵</b>
+            Paste a text below, and check if it is safe for your website. <b>OpenAI Moderation Model is free!</b> Learn more about it <a href="https://platform.openai.com/docs/guides/moderation/overview" target="_blank">here</a>.
           </p>
-          <NekoTextArea name="context" rows={3} value={content} onChange={setContent} />
+          <NekoTextArea name="context" rows={8} value={content} onChange={setContent} />
           <NekoSpacer />
-          <NekoButton fullWidth onClick={onModerateClick}>Moderation AI Check</NekoButton> 
+          <NekoButton fullWidth onClick={onModerateClick}>Moderation Check</NekoButton> 
           <NekoSpacer />
           <label>Results:</label>
           <pre>

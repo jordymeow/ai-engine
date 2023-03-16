@@ -1,9 +1,10 @@
-// Previous: 1.3.45
-// Current: 1.3.51
+// Previous: 1.3.51
+// Current: 1.3.56
 
 const { useMemo, useState } = wp.element;
-import { NekoMessage, nekoFetch } from '@neko-ui';
+import { NekoMessage, nekoFetch, toHTML } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
+import i18n from '@root/i18n';
 
 const ENTRY_TYPES = {
   MANUAL: 'manual',
@@ -30,18 +31,18 @@ const DEFAULT_INDEX = {
 }
 
 const OptionsCheck = ({ options }) => {
-  const { openai_apikey } = options;
-  const valid_key = openai_apikey && openai_apikey.length > 0;
-
-  if (valid_key) {
-    return null;
-  }
+  const { openai_apikey, pinecone } = options;
+  const openAiKey = openai_apikey && openai_apikey.length > 0;
+  const pineconeIsOK = !options?.module_embeddings || (pinecone.apikey && pinecone.apikey.length > 0);
 
   return (
     <>
-      <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-        To use the features of AI Engine, you need to have an OpenAI account and create an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website.
-      </NekoMessage>
+      {!openAiKey && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
+        {toHTML(i18n.SETTINGS.OPENAI_SETUP)}
+      </NekoMessage>}
+      {!pineconeIsOK && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
+        {toHTML(i18n.SETTINGS.PINECONE_SETUP)}
+      </NekoMessage>}
     </>
   );
 }
@@ -150,10 +151,6 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   return { model, models, completionModels, setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
-}
-
-const toHTML = (html) => {
-  return <span dangerouslySetInnerHTML={{ __html: html }}></span>
 }
 
 const searchVectors = async (queryParams) => {

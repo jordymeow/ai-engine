@@ -3,6 +3,8 @@
 require_once( MWAI_PATH . '/vendor/autoload.php' );
 require_once( MWAI_PATH . '/constants/init.php' );
 
+use Rahul900day\Gpt3Encoder\Encoder;
+
 class Meow_MWAI_Core
 {
 	public $admin = null;
@@ -41,6 +43,11 @@ class Meow_MWAI_Core
 		// Advanced core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
 			new MeowPro_MWAI_Core( $this );
+		}
+
+		// Dynamic max tokens
+		if ( $this->get_option( 'dynamic_max_tokens' ) ) {
+			add_filter( 'mwai_estimate_tokens', array( $this, 'dynamic_max_tokens' ), 10, 2 );
 		}
 	}
 
@@ -365,6 +372,40 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Usage & Costs
+
+	public function dynamic_max_tokens( $tokens, $text ) {
+		// Approximation (fast, no lib)
+    $asciiCount = 0;
+    $nonAsciiCount = 0;
+    for ( $i = 0; $i < mb_strlen( $text ); $i++ ) {
+      $char = mb_substr( $text, $i, 1 );
+      if ( ord( $char ) < 128 ) {
+        $asciiCount++;
+      }
+      else {
+        $nonAsciiCount++;
+      }
+    }
+    $asciiTokens = $asciiCount / 3.5;
+    $nonAsciiTokens = $nonAsciiCount * 2.5;
+    $tokens = $asciiTokens + $nonAsciiTokens;
+
+    // More exact (slower, and lib)
+    if ( PHP_VERSION_ID >= 70400 ) {
+      try {
+        $token_array = Encoder::encode( $text );
+        if ( !empty( $token_array ) ) {
+          $tokens = count( $token_array );
+        }
+      }
+      catch ( Exception $e ) {
+        error_log( $e->getMessage() );
+      }
+    }
+
+		$tokens = $tokens;
+		return (int)$tokens;
+	}
 
   public function record_tokens_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
     if ( !is_numeric( $prompt_tokens ) ) {
