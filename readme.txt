@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.58
+Stable tag: 1.3.59
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.58 (2023/03/17) =
+= 1.3.59 (2023/03/17) =
 * Add: Discussions tab.
 * Update: New colors framework.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).

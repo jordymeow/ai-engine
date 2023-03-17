@@ -1,8 +1,8 @@
-// Previous: 1.2.2
-// Current: 1.2.21
+// Previous: 1.2.21
+// Current: 1.3.59
 
 // React & Vendor Libs
-const { useState, useEffect, useMemo } = wp.element;
+const { useState } = wp.element;
 import { apiUrl, restNonce, session, options } from '@app/settings';
 
 // NekoUI
@@ -10,7 +10,7 @@ import { NekoWrapper, NekoBlock, NekoSpacer, NekoColumn, NekoTextArea, NekoButto
   NekoOption } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
-const Audio = ({ options, updateOption }) => {
+const Audio = () => {
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState('transcription');
   const [content, setContent] = useState('');

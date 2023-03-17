@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.58
+// Previous: 1.3.58
+// Current: 1.3.59
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -9,12 +9,16 @@ import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessa
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useModels } from '../helpers';
+import i18n from '@root/i18n';
+import { useModels } from '@app/helpers';
 
 const chatsColumns = [
   { accessor: 'id', title: 'ID', width: '50px' },
+  //{ accessor: 'chatId',  title: 'ChatID', width: '80px' },
   { accessor: 'lastMessage', title: 'Last Message' },
   { accessor: 'messages', title: '#', width: '45px' },
+  //{ accessor: 'extra', title: 'Info', width: '45px' },
+  //{ accessor: 'created', title: 'Started', width: '140px', sortable: true },
   { accessor: 'updated', title: 'Last Message', width: '140px', sortable: true }
 ];
 
@@ -27,7 +31,7 @@ const retrieveChats = async (chatsQueryParams) => {
 const Chats = () => {
   const queryClient = useQueryClient();
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
-    filters: null, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 20
+    filters: null, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 5
   });
   const [ autoRefresh, setAutoRefresh ] = useState(false);
   const { isFetching: isFetchingChats, data: chatsData } = useQuery({
@@ -36,22 +40,6 @@ const Chats = () => {
   });
   const [ currentTab, setCurrentTab ] = useState('all');
   const [ selectedRow, setSelectedRow ] = useState(null);
-
-  const discussion = useMemo(() => {
-    if (!selectedRow) { return null; }
-    let currentDiscussion = chatsData?.chats.find(x => x.id === selectedRow);
-    if (!currentDiscussion) { return null; }
-    let messages = JSON.parse(currentDiscussion.messages);
-    let extra = JSON.parse(currentDiscussion.extra);
-    return {
-      id: currentDiscussion.id,
-      chatId: currentDiscussion.chatId,
-      messages: messages,
-      extra: extra,
-      created: currentDiscussion.created,
-      updated: currentDiscussion.updated
-    }
-  }, [selectedRow]);
 
   useEffect(() => {
     if (currentTab === 'all') {
@@ -67,7 +55,7 @@ const Chats = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       let created = new Date(x.created);
       created = new Date(created.getTime() - created.getTimezoneOffset() * 60 * 1000);
       let formattedCreated = created.toLocaleDateString('ja-JP', {
@@ -82,7 +70,7 @@ const Chats = () => {
       });
       let messages = JSON.parse(x.messages);
       let extra = JSON.parse(x.extra);
-      let userMessages = messages?.filter(x => x.type === 'user');
+      let userMessages = messages?.filter(msg => msg.type === 'user');
       let lastMessage = userMessages?.length ? userMessages[userMessages.length - 1].text : '';
     
       return {
@@ -94,15 +82,34 @@ const Chats = () => {
         created: formattedCreated,
         updated: formattedUpdated,
       }
-    })
+    });
   }, [chatsData]);
 
-  console.log({ discussion });
+  const discussion = useMemo(() => {
+    if (!selectedRow) { return null; }
+    let currentDiscussion = chatsData?.chats.find(x => x.id === selectedRow);
+    if (!currentDiscussion) { return null; }
+    let messages = [];
+    let extra = {};
+    try {
+      messages = JSON.parse(currentDiscussion.messages);
+      extra = JSON.parse(currentDiscussion.extra);
+    }
+    catch (e) {
+      console.log(e);
+    }
+    return {
+      id: currentDiscussion.id,
+      chatId: currentDiscussion.chatId,
+      messages: messages,
+      extra: extra,
+      created: currentDiscussion.created,
+      updated: currentDiscussion.updated
+    }
+  }, [selectedRow, chatsData]);
 
   return (<>
-
     <NekoWrapper>
-
       <NekoColumn minimal fullWidth>
         <NekoMessage variant="success" style={{ padding: '5px 10px' }}>
         <b>This is extremely beta!</b> I need your feedback. I am looking for ways to make this useful for you. The idea is that you can improve your chatbot by analyzing the conversations (then delete them when done). Another idea is to interact in a way or another with those conversations.
@@ -110,9 +117,12 @@ const Chats = () => {
       </NekoColumn>
 
       <NekoColumn minimal>
-
-        <NekoBlock className="primary" title="Discussions">
-
+        <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
+          {!autoRefresh && <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={isFetchingChats}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['chats'] });
+            }}>Refresh</NekoButton>}
+        </>}>
           <NekoTable busy={!autoRefresh && isFetchingChats}
             selectedRow={selectedRow ? selectedRow : []}
             sort={chatsQueryParams.sort}
@@ -124,7 +134,6 @@ const Chats = () => {
               setSelectedRow(row[0]);
             }}
           />
-
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
             onChange={() => setAutoRefresh(prev => !prev)} />
@@ -135,37 +144,24 @@ const Chats = () => {
                     setChatsQueryParams(prev => ({ ...prev, page }));
                   }}
                 />
-                {!autoRefresh && <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={isFetchingChats}
-                  onClick={() => {
-                    queryClient.invalidateQueries({ queryKey: ['chats'] });
-                }}>Refresh</NekoButton>}
               </div>
             </div>
           </div>
-
         </NekoBlock>
-
       </NekoColumn>
-
       <NekoColumn minimal>
-
         <NekoBlock className="primary" title="Current Discussion">
-
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
-
           {discussion?.messages?.map((x, i) => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
               <div style={{ width: 100, fontWeight: 'bold' }}>{x.type}</div>
               <div>{x.text}</div>
             </div>
           ))}
-
         </NekoBlock>
-
       </NekoColumn>
-
     </NekoWrapper>
   </>);
 }

@@ -38,8 +38,9 @@ class Meow_MWAI_Modules_Chatbot_Chats {
 	}
 
   function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
+    $this->check_db();
     $offset = !empty( $offset ) ? intval( $offset ) : 0;
-    $limit = !empty( $limit ) ? intval( $limit ) : 100;
+    $limit = !empty( $limit ) ? intval( $limit ) : 5;
     $filters = !empty( $filters ) ? $filters : [];
     $sort = !empty( $sort ) ? $sort : [ "accessor" => "time", "by" => "desc" ];
     $query = "SELECT * FROM $this->table_chats";
@@ -90,8 +91,10 @@ class Meow_MWAI_Modules_Chatbot_Chats {
         'text' => $rawText
       ];
       $chat->messages = json_encode( $chat->messages );
-      $chat->updated = wp_date( 'Y-m-d H:i:s' );
-      $this->wpdb->update( $this->table_chats, (array) $chat, [ 'id' => $chat->id ] );
+      $this->wpdb->update( $this->table_chats, [ 
+        'messages' => $chat->messages,
+        'updated' => date( 'Y-m-d H:i:s' )
+       ], [ 'id' => $chat->id ] );
     }
     else {
       $chat = [
@@ -112,7 +115,9 @@ class Meow_MWAI_Modules_Chatbot_Chats {
           'session' => $query->session,
           'model' => $query->model,
           'temperature' => $query->temperature
-        ] )
+        ] ),
+        'created' => date( 'Y-m-d H:i:s' ),
+        'updated' => date( 'Y-m-d H:i:s' )
       ];
       $this->wpdb->insert( $this->table_chats, $chat );
     }
@@ -142,9 +147,10 @@ class Meow_MWAI_Modules_Chatbot_Chats {
       chatId VARCHAR(64) NOT NULL NULL,
       messages TEXT NOT NULL NULL,
       extra TEXT NOT NULL NULL,
-      created DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      updated DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      PRIMARY KEY  (id)
+      created DATETIME NOT NULL,
+      updated DATETIME NOT NULL,
+      PRIMARY KEY  (id),
+      INDEX chatId (chatId)
     ) $charset_collate;";
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
     dbDelta( $sqlLogs );
