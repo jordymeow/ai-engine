@@ -10,7 +10,7 @@ class Meow_MWAI_Modules_Chatbot_Chats {
     global $wpdb;
     $this->wpdb = $wpdb;
     $this->table_chats = $wpdb->prefix . 'mwai_chats';
-    add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 3 );
+    add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
     add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
   }
 
@@ -20,6 +20,11 @@ class Meow_MWAI_Modules_Chatbot_Chats {
 			'callback' => array( $this, 'rest_chats' ),
 			'permission_callback' => '__return_true'
 		) );
+    register_rest_route( $this->namespace, '/chats_delete', array(
+      'methods' => 'POST',
+      'callback' => array( $this, 'rest_chats_delete' ),
+      'permission_callback' => '__return_true'
+    ) );
 	}
 
   function rest_chats( $request ) {
@@ -37,6 +42,18 @@ class Meow_MWAI_Modules_Chatbot_Chats {
 		}
 	}
 
+  function rest_chats_delete( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $chatId = $params['chatId'];
+      $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId ] );
+      return new WP_REST_Response([ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+  
   function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
     $this->check_db();
     $offset = !empty( $offset ) ? intval( $offset ) : 0;
@@ -72,7 +89,7 @@ class Meow_MWAI_Modules_Chatbot_Chats {
     return $chats;
   }
 
-  function chatbot_reply( $rawText, $query, $params ) {
+  function chatbot_reply( $rawText, $query, $params, $extra ) {
     global $mwai_core;
     $userIp = $mwai_core->get_ip_address();
     $userId = $mwai_core->get_user_id();
@@ -80,6 +97,15 @@ class Meow_MWAI_Modules_Chatbot_Chats {
     $ssChatId = hash( 'sha256', $userIp . $userId . $chatClientId );
     $this->check_db();
     $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $ssChatId ) );
+    $extra = [
+      'embedding' => isset( $extra['embedding'] ) ? [
+        'id' => $extra['embedding']['id'],
+        'type' => $extra['embedding']['type'],
+        'title' => $extra['embedding']['title'],
+        'refId' => $extra['embedding']['refId'],
+        'score' => $extra['embedding']['score']
+      ] : null
+    ];
     if ( $chat ) {
       $chat->messages = json_decode( $chat->messages );
       $chat->messages[] = [
@@ -88,7 +114,8 @@ class Meow_MWAI_Modules_Chatbot_Chats {
       ];
       $chat->messages[] = [
         'type' => 'ai',
-        'text' => $rawText
+        'text' => $rawText,
+        'extra' => $extra
       ];
       $chat->messages = json_encode( $chat->messages );
       $this->wpdb->update( $this->table_chats, [ 
@@ -106,7 +133,8 @@ class Meow_MWAI_Modules_Chatbot_Chats {
           ],
           [
             'type' => 'ai',
-            'text' => $rawText
+            'text' => $rawText,
+            'extra' => $extra
           ]
         ] ),
         'extra' => json_encode( [

@@ -85,17 +85,19 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			// Awareness & Embeddings
+			$embedding = null;
 			$embeddingsIndex = $params['embeddingsIndex'];
 			if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
-				$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
-				if ( !empty( $context ) ) {
-					$query->injectContext( $context );
+				$embedding = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
+				if ( !empty( $embedding ) ) {
+					$query->injectContext( $embedding['content'] );
 				}
 			}
 
 			$answer = $this->core->ai->run( $query );
 			$rawText = $answer->result;
-			$html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params );
+			$extra = [ 'embedding' => $embedding ];
+			$html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
 			}

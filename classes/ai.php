@@ -108,8 +108,16 @@ class Meow_MWAI_AI {
         throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
       }
       $answer = new Meow_MWAI_Answer( $query );
-      $usage = $this->core->record_tokens_usage( $data['model'], $data['usage']['prompt_tokens'],
-        $data['usage']['completion_tokens'] );
+      try {
+        $usage = $this->core->record_tokens_usage( 
+          $data['model'], 
+          $data['usage']['prompt_tokens'],
+          $data['usage']['completion_tokens']
+        );
+      }
+      catch ( Exception $e ) {
+        error_log( $e->getMessage() );
+      }
       $answer->setUsage( $usage );
       $answer->setChoices( $data['choices'] );
       return $answer;

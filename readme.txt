@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.59
+Stable tag: 1.3.60
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,8 +67,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.59 (2023/03/17) =
-* Add: Discussions tab.
+= 1.3.60 (2023/03/17) =
+* Add: Discussions tab, with embedding's title displayed in the message, when used.
+* Add: Catch errors in the statistics if OpenAI returns something unexpected.
 * Update: New colors framework.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
