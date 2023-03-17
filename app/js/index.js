@@ -1,11 +1,12 @@
-// Previous: 0.9.84
-// Current: 0.9.86
+// Previous: 0.9.86
+// Current: 1.3.58
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
 // Neko UI
+import { NekoUI } from '@neko-ui';
 import { Dashboard } from '@common';
 
 // Components
@@ -28,37 +29,45 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Settings
 	const settings = document.getElementById('mwai-admin-settings');
 	if (settings) {
-		render((<QueryClientProvider client={queryClient}><Settings /></QueryClientProvider>), settings);
+		render(<QueryClientProvider client={queryClient}>
+			<NekoUI><Settings /></NekoUI>
+		</QueryClientProvider>, settings);
 	}
 
 	// Content Generator
 	const generator = document.getElementById('mwai-content-generator');
 	if (generator) {
-		render((<QueryClientProvider client={queryClient}><ContentGenerator /></QueryClientProvider>), generator);
+		render(<QueryClientProvider client={queryClient}>
+			<NekoUI><ContentGenerator /></NekoUI>
+		</QueryClientProvider>, generator);
 	}
 
 	// Image Generator
 	const imgGen = document.getElementById('mwai-image-generator');
 	if (imgGen) {
-		render((<QueryClientProvider client={queryClient}><ImageGenerator /></QueryClientProvider>), imgGen);
+		render(<QueryClientProvider client={queryClient}>
+			<NekoUI><ImageGenerator /></NekoUI>
+		</QueryClientProvider>, imgGen);
 	}
 
 	// Dashboard
 	const dashboard = document.getElementById('mwai-playground');
 	if (dashboard) {
-		render((<QueryClientProvider client={queryClient}><Playground /></QueryClientProvider>), dashboard);
+		render(<QueryClientProvider client={queryClient}>
+			<NekoUI><Playground /></NekoUI>
+		</QueryClientProvider>, dashboard);
 	}
 
 	// Admin Tools
 	const postsListTools = document.getElementById('mwai-admin-postsList');
 	if (postsListTools) {
-		render((<PostsListTools />), postsListTools);
+		render(<NekoUI><PostsListTools /></NekoUI>, postsListTools);
 	}
 
 	// Admin Tools
 	const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
 	if (wcAssistant) {
-		render((<WooCommerceAssistant />), wcAssistant);
+		render(<NekoUI><WooCommerceAssistant /></NekoUI>, wcAssistant);
 	}
 
 	// Common

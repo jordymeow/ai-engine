@@ -4,12 +4,71 @@ class Meow_MWAI_Modules_Chatbot_Chats {
   private $wpdb = null;
   private $table_chats = null;
   private $db_check = false;
+  private $namespace = 'ai-engine/v1';
 
   public function __construct() {
     global $wpdb;
     $this->wpdb = $wpdb;
     $this->table_chats = $wpdb->prefix . 'mwai_chats';
     add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 3 );
+    add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+  }
+
+  public function rest_api_init() {
+		register_rest_route( $this->namespace, '/chats', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_chats' ),
+			'permission_callback' => '__return_true'
+		) );
+	}
+
+  function rest_chats( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$offset = $params['offset'];
+			$limit = $params['limit'];
+			$filters = $params['filters'];
+			$sort = $params['sort'];
+			$chats = $this->chats_query( [], $offset, $limit, $filters, $sort );
+			return new WP_REST_Response([ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+  function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
+    $offset = !empty( $offset ) ? intval( $offset ) : 0;
+    $limit = !empty( $limit ) ? intval( $limit ) : 100;
+    $filters = !empty( $filters ) ? $filters : [];
+    $sort = !empty( $sort ) ? $sort : [ "accessor" => "time", "by" => "desc" ];
+    $query = "SELECT * FROM $this->table_chats";
+
+    // Filters
+    $where = array();
+    if ( isset( $filters['from'] ) ) {
+      $where[] = "time >= '" . esc_sql( $filters['from'] ) . "'";
+    }
+    if ( isset( $filters['to'] ) ) {
+      $where[] = "time <= '" . esc_sql( $filters['to'] ) . "'";
+    }
+    if ( count( $where ) > 0 ) {
+      $query .= " WHERE " . implode( " AND ", $where );
+    }
+
+    // Count based on this query
+    $chats['total'] = $this->wpdb->get_var( "SELECT COUNT(*) FROM ($query) AS t" );
+
+    // Order by
+    $query .= " ORDER BY " . esc_sql( $sort['accessor'] ) . " " . esc_sql( $sort['by'] );
+
+    // Limits
+    if ( $limit > 0 ) {
+      $query .= " LIMIT $offset, $limit";
+    }
+
+    $chats['rows'] = $this->wpdb->get_results( $query, ARRAY_A );
+    return $chats;
   }
 
   function chatbot_reply( $rawText, $query, $params ) {

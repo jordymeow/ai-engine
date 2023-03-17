@@ -134,6 +134,7 @@ i18n.COMMON = {
   DASHBOARD: __( 'Dashboard', 'ai-engine' ),
   ADVANCED: __( 'Advanced', 'ai-engine' ),
   DYNAMIC_MAX_TOKENS: __( 'Dynamic Max Tokens', 'ai-engine' ),
+  DISCUSSIONS: __( 'Discussions', 'ai-engine' ),
 }
 
 i18n.FORMS = {

@@ -1,14 +1,16 @@
-// Previous: 1.1.9
-// Current: 1.2.2
+// Previous: 1.2.2
+// Current: 1.3.58
 
+// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
+// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
-  NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage,
+  NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage, NekoColumn,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
-import { nekoFetch, formatBytes } from '@neko-ui';
+import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '../helpers';
 import DatasetBuilder from './FineTuning/DatasetBuilder';
@@ -47,9 +49,11 @@ let defaultPromptEnding = "\n\n###\n\n";
 let defaultCompletionEnding = "\n\n";
 
 const StatusIcon = ({ status, includeText = false }) => {
-  const orange = NekoTheme.orange;
-  const green = NekoTheme.green;
-  const red = NekoTheme.red;
+  const { colors } = useNekoColors();
+  
+  const orange = colors.orange;
+  const green = colors.green;
+  const red = colors.red;
 
   let icon = null;
   switch (status) {
@@ -127,6 +131,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
 }
 
 const FineTuning = ({ options, updateOption }) => {
+  const { colors } = useNekoColors();
   const queryClient = useQueryClient();
   const [ fileForFineTune, setFileForFineTune ] = useState();
   const [ busyAction, setBusyAction ] = useState(false);
@@ -327,6 +332,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const deleteFineTune = async (modelId) => {
+    // Are you sure
     if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
       return;
     }
@@ -338,6 +344,7 @@ const FineTuning = ({ options, updateOption }) => {
         await refreshFineTunes();
       }
       else {
+        // If message contains "does not exist"
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
@@ -577,11 +584,11 @@ const FineTuning = ({ options, updateOption }) => {
   const ref = useRef(null);
 
   return (<>
-    <NekoContainer style={{ margin: 10 }} contentStyle={{ padding: 10 }}>
+    <NekoContainer style={{ margin: '10px 10px 25px 10px' }} contentStyle={{ padding: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <NekoSwitch style={{ marginRight: 10 }}
           onLabel={i18n.FINETUNING.MODEL_FINETUNE} offLabel={i18n.FINETUNING.DATASET_BUILDER} width={145}
-          onBackgroundColor={NekoTheme.purple} offBackgroundColor={NekoTheme.green}
+          onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
           onChange={setIsModeTrain} checked={isModeTrain}
         />
         {isModeTrain && <NekoQuickLinks value={section} busy={busy}
@@ -704,52 +711,8 @@ const FineTuning = ({ options, updateOption }) => {
             <li>• If you need the chatbot to work with a <b>Casually Fined Tuned</b> model, you can add <i>casually_fine_tuned="true"</i>  in the shortcode.</li>
           </ul>
         </>}
-      </>}
 
-      <NekoModal isOpen={fileForFineTune}
-        title="Train a new model"
-        onOkClick={onStartFineTune}
-        onRequestClose={() => setFileForFineTune()}
-        onCancelClick={() => setFileForFineTune()}
-        ok="Start"
-        disabled={busyAction}
-        content={<>
-          <p>
-            Exciting! 🎵 You are about to create your own new model, based on your dataset. You simply need to select a base model, and optionally, to modify the <a href="https://beta.openai.com/docs/guides/fine-tuning/hyperparameters" target="_blank">hyperparameters</a>. Before starting the process, make sure that:
-          </p>
-          <ul>
-            <li>✅ The dataset is well-defined.</li>
-            <li>✅ You understand <a href="https://openai.com/api/pricing/#faq-fine-tuning-pricing-calculation" target="_blank">OpenAI pricing</a> about fine-tuning.</li>
-          </ul>
-          <label>Base model:</label>
-          <NekoSpacer height={5} />
-          <NekoSelect id="models" value={model} scrolldown={true} onChange={setModel}>
-            {models.filter(x => x.tags?.includes('finetune')).map((x) => (
-              <NekoOption value={x.model} label={x.name}></NekoOption>
-            ))}
-          </NekoSelect>
-          <NekoSpacer height={5} />
-          <small>For now, the hyperparameters can't be modified - they are set automatically by OpenAI.</small>
-          <NekoSpacer height={10} />
-          <label>Suffix (for new model name):</label>
-          <NekoSpacer height={5} />
-          <NekoInput value={suffix} onChange={setSuffix} />
-          <NekoSpacer height={5} />
-          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
-          <NekoSpacer line height={20} />
-          <NekoCheckbox label="Enable HyperParams" checked={hyperParams}
-            onChange={setHyperParams} />
-          {hyperParams && <>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-              <label style={{ marginRight: 5 }}>Number of Epochs:</label>
-              <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
-              <label style={{ marginRight: 5 }}>Batch Size:</label>
-              <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
-            </div>
-          </>}
-        </>
-        }
-      />
+      </>}
     </NekoContainer>
   </>);
 };
