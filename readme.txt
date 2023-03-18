@@ -1,15 +1,15 @@
-=== AI Engine: ChatGPT Chatbot, Content Generator, Custom Playground & Features ===
+=== AI Engine: ChatGPT Chatbot, Content Generator, GPT 3 & 4, Ultra-Customizable ===
 Contributors: TigrouMeow
 Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, image generator
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.61
+Stable tag: 1.3.62
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-GPT AI for WordPress. ChatGPT chatbot, image andcontent generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
+GPT for WordPress. ChatGPT chatbot, image & content generator, finetune/train models, etc. Ultra customizable, extensible, sleek UI. You will love it!
 
 == Description ==
 Create a chatbot like ChatGPT (or any other), generate content, images, let you organize everything in templates, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
@@ -67,9 +67,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.61 (2023/03/18) =
+= 1.3.62 (2023/03/18) =
 * Add: New GPT-4 and GPT-4 32k models.
 * Update: Enhanced the way the prices are calculated to handle the new models.
+* Fix: Better handling on the status icon for the OpenAI servers status.
+* Add: Additional servers for Pinecone.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
