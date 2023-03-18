@@ -1,15 +1,15 @@
-=== AI Engine: ChatGPT Chatbot, GPT Content Generator, Custom Playground & Features ===
+=== AI Engine: ChatGPT Chatbot, Content Generator, Custom Playground & Features ===
 Contributors: TigrouMeow
 Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, image generator
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.60
+Stable tag: 1.3.61
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-GPT AI for WordPress. ChatGPT chatbots, image/content generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
+GPT AI for WordPress. ChatGPT chatbot, image andcontent generator, finetune and train models, etc. Customizable and sleek UI. Extensible features. Your AI Engine for WP!
 
 == Description ==
 Create a chatbot like ChatGPT (or any other), generate content, images, let you organize everything in templates, quickly suggest titles and excerpts, track your OpenAI usage stats, and much more! Then explore the AI Playground to try out a variety of AI tools like translation, correction, SEO, suggestion, WooCommerce product fields, etc. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback!
@@ -67,13 +67,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.61 (2023/03/18) =
+* Add: New GPT-4 and GPT-4 32k models.
+* Update: Enhanced the way the prices are calculated to handle the new models.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
 = 1.3.60 (2023/03/17) =
 * Add: Discussions tab, with embedding's title displayed in the message, when used.
 * Add: Catch errors in the statistics if OpenAI returns something unexpected.
 * Update: New colors framework.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.57 (2023/03/16) =
 * Fix: Temperature was sometimes a bit too rounded.

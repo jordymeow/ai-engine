@@ -66,11 +66,14 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    */
   public function setModel( $model ) {
     $this->model = $model;
-    if ( $model ===  'gpt-3.5-turbo') {
-      $this->mode = 'chat';
-    }
-    else {
-      $this->mode = 'completion';
+    $this->mode = 'completion';
+    foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+      if ( $currentModel['model'] === $this->model ) {
+        if ( $currentModel['mode'] ) {
+          $this->mode = $currentModel['mode'];
+        }
+        break;
+      }
     }
   }
 

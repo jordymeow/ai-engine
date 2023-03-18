@@ -254,7 +254,7 @@ class Meow_MWAI_OpenAI
         }
         else {
           if ( $finetune ) {
-            // Why * 2? Need to check why I did this.
+            // The price is doubled for finetuned models.
             return $currentModel['finetune']['price'] * $currentModel['unit'] * $units * 2;
           }
           return $currentModel['price'] * $currentModel['unit'] * $units;
@@ -271,6 +271,8 @@ class Meow_MWAI_OpenAI
     $family = null;
     $units = 0;
     $option = null;
+    $currentModel = null;
+    $priceRules = null;
 
     $finetune = false;
     if ( is_a( $query, 'Meow_MWAI_QueryText' ) ) {
@@ -284,6 +286,7 @@ class Meow_MWAI_OpenAI
         foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
           if ( $currentModel['model'] == $model ) {
             $family = $currentModel['family'];
+            $priceRules = $currentModel['priceRules'];
             break;
           }
         }
@@ -292,12 +295,27 @@ class Meow_MWAI_OpenAI
         error_log("AI Engine: Cannot find the base model for $model.");
         return null;
       }
-      $units = $answer->getTotalTokens();
+      if ( !empty( $priceRules ) ) {
+        if ( $priceRules === "completion_x2" ) {
+          $units = $answer->getPromptTokens();
+          $units += $answer->getCompletionTokens() * 2;
+          return $this->calculatePrice( $family, $units, $option, $finetune );
+        }
+        else {
+          error_log("AI Engine: Unknown price rules ($priceRules) for $model.");
+          return null;
+        }
+      }
+      else {
+        $units = $answer->getTotalTokens();
+        return $this->calculatePrice( $family, $units, $option, $finetune );
+      }
     }
     else if ( is_a( $query, 'Meow_MWAI_QueryImage' ) ) {
       $family = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
+      return $this->calculatePrice( $family, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_QueryEmbed' ) ) {
       foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
@@ -307,12 +325,10 @@ class Meow_MWAI_OpenAI
         }
       }
       $units = $answer->getTotalTokens();
+      return $this->calculatePrice( $family, $units, $option, $finetune );
     }
-    else {
-      error_log("AI Engine: Cannot find the base model for $model.");
-      return null;
-    }
-    return $this->calculatePrice( $family, $units, $option, $finetune );
+    error_log("AI Engine: Cannot calculate price for $model.");
+    return null;
   }
 
   public function getIncidents() {

@@ -23,6 +23,14 @@ class Meow_MWAI_Answer {
     return $this->usage['total_tokens'];
   }
 
+  public function getPromptTokens() {
+    return $this->usage['prompt_tokens'];
+  }
+
+  public function getCompletionTokens() {
+    return $this->usage['completion_tokens'];
+  }
+
   public function getResults() {
     return $this->results;
   }

@@ -16,18 +16,32 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'chat']
 	],
-	// [ 
-	// 	"model" => "gpt-4",
-	// 	"name" => "gpt-4",
-	// 	"family" => "gpt4",
-	// 	"price" => 0.03,
-	// 	"type" => "token",
-	// 	"unit" => 1 / 1000,
-	// 	"maxTokens" => 8192,
-	// 	"mode" => "chat",
-	// 	"finetune" => false,
-	// 	"tags" => ['core', 'chat']
-	// ],
+	[ 
+		"model" => "gpt-4",
+		"name" => "gpt-4",
+		"family" => "gpt4",
+		"price" => 0.03,
+		"priceRules" => "completion_x2",
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 8192,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat']
+	],
+	[ 
+		"model" => "gpt-4-32k",
+		"name" => "gpt-4-32k",
+		"family" => "gpt4-32k",
+		"price" => 0.06,
+		"priceRules" => "completion_x2",
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 32768,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat']
+	],
   [
 		"model" => "text-davinci-003",
 		"name" => "davinci-003",
