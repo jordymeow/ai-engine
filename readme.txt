@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.62
+Stable tag: 1.3.63
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,12 +18,14 @@ Official website: [AI Engine](https://meowapps.com/ai-engine/).
 
 == Features ==
 
-* Add a ChatGPT-style chatbot (or an images creation bot) to your website with a simple shortcode
+* ChatGPT, GPT-3, GPT-4, and GPT-4 32k models
+* Add a ChatGPT chatbot (or an images creation bot) to your website easily
 * Generate fresh and engaging content for your site
 * Explore the AI Playground for a variety of tools like translation, correction, SEO, etc
 * Create templates for everything you do, to save time and be more productive
 * Fullscreen, popup, and window modes for the chatbot
 * Train your AI to make it better at specific tasks
+* Moderation AI for various tasks
 * Quickly brainstorm new titles and excerpts for your posts
 * Quickly write the WooCommerce product fields (description, short description, etc)
 * Speech-to-Text with Whisper API
@@ -67,7 +69,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.62 (2023/03/18) =
+= 1.3.63 (2023/03/18) =
 * Add: New GPT-4 and GPT-4 32k models.
 * Update: Enhanced the way the prices are calculated to handle the new models.
 * Fix: Better handling on the status icon for the OpenAI servers status.
