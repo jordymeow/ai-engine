@@ -107,6 +107,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'count_posts' ),
 			) );
+			register_rest_route( $this->namespace, '/post_types', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'post_types' ),
+			) );
 			register_rest_route( $this->namespace, '/post_content', array(
 				'methods' => 'GET',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
@@ -718,6 +723,16 @@ class Meow_MWAI_Rest
 			$query->setEnv('admin-tools');
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function post_types() {
+		try {
+			$postTypes = $this->core->getPostTypes();
+			return new WP_REST_Response([ 'success' => true, 'postTypes' => $postTypes ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

@@ -1,8 +1,10 @@
-// Previous: 1.3.52
-// Current: 1.3.56
+// Previous: 1.3.56
+// Current: 1.3.64
 
+// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
+// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -16,6 +18,8 @@ import { StyledSidebar } from "../styles/StyledSidebar";
 import useTemplates from '../components/Templates';
 import i18n from '../../i18n';
 import UsageCosts from '../components/UsageCosts';
+import { retrievePostTypes } from '@app/requests';
+import { useQuery } from '@tanstack/react-query';
 
 const languagesObject = options?.languages || [];
 const languages = Object.keys(languagesObject).map((key) => {
@@ -32,21 +36,26 @@ const getSeoMessage = (title) => {
   const charCount = title.length;
   const seoMessage = [];
 
-  if (charCount === 0) {
+  if (!charCount) {
     return;
-  } else if (wordCount < 3) {
+  }
+  else if (wordCount < 3) {
     seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_SHORT);
-  } else if (wordCount > 8) {
+  }
+  else if (wordCount > 8) {
     seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_LONG);
-  } else if (charCount < 40) {
+  }
+  else if (charCount < 40) {
     seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_SHORT);
-  } else if (charCount > 70) {
+  }
+  else if (charCount > 70) {
     seoMessage.push(i18n.CONTENT_GENERATOR.TITLE_TOO_LONG_2);
   }
   return seoMessage.join(' ');
 };
 
 const ContentGenerator = () => {
+
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
 
@@ -54,7 +63,6 @@ const ContentGenerator = () => {
   const { completionModels } = useModels(options);
   const bulkTasks = useNekoTasks();
   const [busy, setBusy] = useState(false);
-  const isBusy = bulkTasks.busy || busy;
   const [error, setError] = useState();
   const [showModelParams, setShowModelParams] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
@@ -63,6 +71,13 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
+  const title = useMemo(() => getSeoMessage(title), [title]);
+  const { addUsage, jsxUsageCosts } = UsageCosts(options);
+  const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
+    queryKey: ['postTypes'], queryFn: retrievePostTypes
+  });
+  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
+
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
@@ -95,7 +110,7 @@ const ContentGenerator = () => {
     console.warn("A system language or a custom language should be set.");
     return "english";
   }, [language]);
-
+  
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
@@ -139,7 +154,7 @@ const ContentGenerator = () => {
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = '', maxTokensValue = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = prompt, maxTokens = 2048, isBulk = false) => {
     const res = await nekoFetch(`${apiUrl}/make_completions`, { 
       method: 'POST',
       nonce: restNonce,
@@ -148,7 +163,7 @@ const ContentGenerator = () => {
         session: session,
         prompt: promptToUse,
         temperature,
-        maxTokens: maxTokensValue,
+        maxTokens,
         model 
     } });
     if (!res.success) {
@@ -238,7 +253,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(x => ({ ...x, all: new Date() }));
+    setRunTimes(() => ({ ...runTimes, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -271,7 +286,8 @@ const ContentGenerator = () => {
         }
       }
       return { title: freshTitle, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
-    } catch (e) {
+    }
+    catch (e) {
       setBusy(false);
       setRunTimes({});
       throw e;
@@ -305,10 +321,12 @@ const ContentGenerator = () => {
         if (title && content && excerpt) {
           let postId = await onSubmitNewPost(title, content, excerpt, true);
           setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt }]);
-        } else {
+        }
+        else {
           console.warn("Could not generate the post for: " + topic);
         }
-      } catch (e) {
+      }
+      catch (e) {
         if ( !confirm("An error was caught (" + e.message + "). Should we continue?") ) {
           bulkTasks.stop();
           bulkTasks.reset();
@@ -380,8 +398,9 @@ const ContentGenerator = () => {
               </div>
               <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
                 style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
-                <NekoOption key={'post'} value={'post'} label="Posts" />
-                <NekoOption key={'page'} value={'page'} label="Pages" />
+                  {postTypes?.map(postType => 
+                    <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+                  )}
               </NekoSelect>
               <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
                 value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
@@ -395,8 +414,8 @@ const ContentGenerator = () => {
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
-                <li key={x.postId}>
-                  {x.title} <a target="_blank" rel="noopener noreferrer" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
+                <li>
+                  {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
             </ul>}
@@ -581,7 +600,7 @@ const ContentGenerator = () => {
               <NekoSelect name="model" value={model}
                 description={i18n.CONTENT_GENERATOR.MODEL_HELP}
                 scrolldown={true} onChange={setTemplateProperty}>
-                {completionModels.map(x => <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>)}
+                {completionModels.map(x => <NekoOption value={x.model} label={x.name}></NekoOption>)}
               </NekoSelect>
             </>}
           </StyledSidebar>

@@ -1,0 +1,48 @@
+// Previous: none
+// Current: 1.3.64
+
+// NekoUI
+import { nekoFetch } from '@neko-ui';
+import { apiUrl, restNonce, session } from '@app/settings';
+
+const retrievePostTypes = async () => {
+  const res = await nekoFetch(`${apiUrl}/post_types`, { nonce: restNonce });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res.postTypes;
+}
+
+// TODO: We should do error handling here, with throw when success is false
+// The error should be then caught in the component and displayed to the user
+const retrievePostsCount = async (postType) => {
+  const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}`, { nonce: restNonce });
+  return res?.count?.publish ? parseInt(res?.count?.publish) : null;
+}
+
+// TODO: We should do error handling here, with throw when success is false
+// The error should be then caught in the component and displayed to the user
+const retrievePostContent = async (postType, offset = 0, postId = 0) => {
+  const res = await nekoFetch(`${apiUrl}/post_content?postType=${postType}&offset=${offset}&postId=${postId}`, 
+    { nonce: restNonce });
+  return res;
+}
+
+const retrieveFiles = async () => {
+  const res = await nekoFetch(`${apiUrl}/openai_files`, { nonce: restNonce });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res?.files?.data;
+}
+
+const retrieveFineTunes = async (clean = false) => {
+  const queryClean = clean ? "?clean=true" : "";
+  const res = await nekoFetch(`${apiUrl}/openai_finetunes${queryClean}`, { nonce: restNonce });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res?.finetunes?.data;
+}
+
+export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, retrieveFineTunes };

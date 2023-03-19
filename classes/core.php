@@ -369,6 +369,22 @@ class Meow_MWAI_Core
 		return strpos( $url, 'http' ) === 0 ? true : false;
 	}
 
+	function getPostTypes() {
+		$excluded = array( 'attachment', 'revision', 'nav_menu_item' );
+		$post_types = array();
+		$types = get_post_types( array( 'public' => true ), 'objects' );
+		foreach ( $types as $type ) {
+			if ( in_array( $type->name, $excluded ) ) {
+				continue;
+			}
+			$post_types[] = array(
+				'name' => $type->labels->name,
+				'type' => $type->name,
+			);
+		}
+		return $post_types;
+	}
+
 	#endregion
 
 	#region Usage & Costs

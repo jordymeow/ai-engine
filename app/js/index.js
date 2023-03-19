@@ -1,9 +1,17 @@
-// Previous: 0.9.86
-// Current: 1.3.58
+// Previous: 1.3.58
+// Current: 1.3.64
 
 const { render } = wp.element;
 import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
-const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
+const queryClient = new QueryClient({ 
+	defaultOptions: { 
+		queries: { 
+			refetchOnWindowFocus: false,
+			refetchOnMount: false,
+			retry: false,
+		}
+	}
+});
 
 // Neko UI
 import { NekoUI } from '@neko-ui';

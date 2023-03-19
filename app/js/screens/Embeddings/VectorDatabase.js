@@ -1,5 +1,5 @@
-// Previous: 1.3.44
-// Current: 1.3.58
+// Previous: 1.3.58
+// Current: 1.3.64
 
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '@root/i18n';
 import { searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent,
   DEFAULT_INDEX, DEFAULT_VECTOR, reduceContent, estimateTokens } from '@app/helpers';
+import { retrievePostTypes } from '@app/requests';
 
 const searchColumns = [
   { accessor: 'status', title: 'Status', width: '80px' },
@@ -59,6 +60,9 @@ const VectorDatabase = ({ options, updateOption }) => {
       indexIsReady: !!realIndex?.ready
     }
   }, [pinecone, indexes]);
+  const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
+    queryKey: ['postTypes'], queryFn: retrievePostTypes
+  });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
@@ -76,10 +80,10 @@ const VectorDatabase = ({ options, updateOption }) => {
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
   const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
-  const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy;
+  const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   useEffect(() => {
-    setQueryParams({ ...queryParams, filters: { index: index ?? '' } });
+    setQueryParams({ ...queryParams, filters: { index } });
   }, [index]);
 
   useEffect(() => {
@@ -117,7 +121,7 @@ const VectorDatabase = ({ options, updateOption }) => {
   
   const onSelectIndex = async (index) => {
     const freshPinecone = { ...pinecone, index };
-    updateOption(freshPinecone, 'pinecone');
+    await updateOption(freshPinecone, 'pinecone');
   }
 
   const onDeleteIndex = async () => {
@@ -197,10 +201,9 @@ const VectorDatabase = ({ options, updateOption }) => {
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
       const freshFoundVectorsData = { ...foundVectorsData };
-      // Mutate directly
       freshFoundVectorsData.vectors = [ 
         ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), embedding
-      ];
+      ]
       setFoundVectorsData(freshFoundVectorsData);
     }
     if (!skipBusy) {
@@ -237,7 +240,6 @@ const VectorDatabase = ({ options, updateOption }) => {
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
       const freshFoundVectorsData = { ...foundVectorsData };
-      // Mutate directly
       freshFoundVectorsData.vectors = freshFoundVectorsData.vectors.filter(v => !ids.includes(v.id));
       setFoundVectorsData(freshFoundVectorsData);
     }
@@ -288,8 +290,7 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (!data?.vectors) { return []; }
 
     if (mode === 'search') {
-      data.vectors = data.vectors.slice(); // Clone to prevent mutation
-      data.vectors.sort((a, b) => {
+      data.vectors = [...data.vectors].sort((a, b) => {
         if (foundVectorsSort.by === 'asc') {
           return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
         }
@@ -342,7 +343,7 @@ const VectorDatabase = ({ options, updateOption }) => {
   }
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
-    const resContent = await retrievePostContent(postType, offset, postId);
+    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let content = resContent?.content ?? null;
     const title = resContent?.title ?? null;
     const checksum = resContent?.checksum ?? null;
@@ -423,14 +424,14 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (signal?.aborted) {
       cancelledByUser();
     }
-    return true; // Intentional: in case of abort, still returns true
+    return true;
   }
 
   const onBulkRunClick = async () => {
     setBusy('bulkRun');
     const offsets = Array.from(Array(postsCount).keys());
     const startOffset = 0;
-    const tasks = offsets.map(offset => async (signal) => {
+    let tasks = offsets.map(offset => async (signal) => {
       if (startOffset && offset < startOffset) {
         return { success: true };
       }
@@ -475,7 +476,7 @@ const VectorDatabase = ({ options, updateOption }) => {
                 <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
                   disabled={isBusy || !index || !indexIsReady}
                   value={search} onChange={setSearch} onEnter={onSearch}
-                  onReset={() => { setSearch(''); setFoundVectorsData({ total: 0, vectors: [] }); }} />
+                  onReset={() => { setSearch(); setFoundVectorsData({ total: 0, vectors: [] }); }} />
                 <NekoButton className="primary" onClick={onSearch} disabled={isBusy || !index || !indexIsReady}
                   isBusy={busy === 'searchVectors'}>
                   Search
@@ -507,8 +508,9 @@ const VectorDatabase = ({ options, updateOption }) => {
                 </div>
                 <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                   style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
-                  <NekoOption key={'post'} id={'post'} value={'post'} label="Posts" />
-                  <NekoOption key={'page'} id={'page'} value={'page'} label="Pages" />
+                  {postTypes?.map(postType => 
+                    <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+                  )}
                 </NekoSelect>
                 <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
                   value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
@@ -559,7 +561,7 @@ const VectorDatabase = ({ options, updateOption }) => {
           <label>Index:</label>
           <NekoSelect fullWidth scrolldown name="server" style={{ marginRight: 5 }} disabled={isBusy}
             value={pinecone.index} onChange={value => onSelectIndex(value)}>
-            {indexes.map(x => <NekoOption value={x.name} label={x.name} />)}
+            {indexes.map(x => <NekoOption key={x.name} value={x.name} />)}
             {!indexes?.length && <NekoOption value={''} label="None" />}
           </NekoSelect>
           <NekoSpacer />

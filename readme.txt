@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.1.1
 Requires PHP: 7.3
-Stable tag: 1.3.63
+Stable tag: 1.3.64
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,14 +69,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.64 (2023/03/19) =
+* Update: Retrieve post types rather than only proposing post/page.
+* Update: Handle errors from OpenAI a bit better in the admin (there is currently a huge one!).
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
 = 1.3.63 (2023/03/18) =
 * Add: New GPT-4 and GPT-4 32k models.
 * Update: Enhanced the way the prices are calculated to handle the new models.
 * Fix: Better handling on the status icon for the OpenAI servers status.
 * Add: Additional servers for Pinecone.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.60 (2023/03/17) =
 * Add: Discussions tab, with embedding's title displayed in the message, when used.
