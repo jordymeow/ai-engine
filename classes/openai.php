@@ -34,56 +34,50 @@ class Meow_MWAI_OpenAI
     return 'N/A';
   }
 
-  public function listFineTunes( $clean = false )
+  public function listDeletedFineTunes()
   {
     $finetunes = $this->run('GET', '/fine-tunes');
-
-    if ( $clean ) {
-      $deleted = [];
-      $finetunes['data'] = array_filter( $finetunes['data'], function ( $finetune ) use ( &$deleted ) {
-        $name = $finetune['fine_tuned_model'];
-        $isSucceeded = $finetune['status'] === 'succeeded';
-        $exist = true;
-        if ($isSucceeded) {
-          try {
-            $finetune = $this->getModel( $name );
-          }
-          catch ( Exception $e ) {
-            $exist = false;
-            $deleted[] = $name;
-          }
+    $deleted = [];
+    $finetunes['data'] = array_filter( $finetunes['data'], function ( $finetune ) use ( &$deleted ) {
+      $name = $finetune['fine_tuned_model'];
+      $isSucceeded = $finetune['status'] === 'succeeded';
+      $exist = true;
+      if ($isSucceeded) {
+        try {
+          $finetune = $this->getModel( $name );
         }
-        return $exist;
-      });
-      $this->core->update_option( 'openai_finetunes_deleted', $deleted );
-    }
+        catch ( Exception $e ) {
+          $exist = false;
+          $deleted[] = $name;
+        }
+      }
+      return $exist;
+    });
+    //$this->core->update_option( 'openai_finetunes_deleted', $deleted );
+    return $deleted;
+  }
 
+  public function listFineTunes()
+  {
+    $finetunes = $this->run('GET', '/fine-tunes');
     $finetunes['data'] = array_map( function ( $finetune ) {
       $finetune['suffix'] = $this->getSuffixForModel( $finetune['fine_tuned_model'] );
       return $finetune;
     }, $finetunes['data']);
 
-    // Get option openai_finetunes_deleted
-    $deleted_finetunes = $this->core->get_option('openai_finetunes_deleted');
-
-    // Remove all deleted finetunes from the list, make a new array, without using array_filter
-    $finetunes['data'] = array_values(array_filter($finetunes['data'], function ($finetune) use ($deleted_finetunes) {
-      return !in_array($finetune['fine_tuned_model'], $deleted_finetunes);
-    }));
-
-    $finetunes_option = $this->core->get_option('openai_finetunes');
-    $fresh_finetunes_options = array_map(function ($finetune) use ($finetunes_option) {
+    //$finetunes_option = $this->core->get_option('openai_finetunes');
+    $fresh_finetunes_options = array_map(function ($finetune) {
       $entry = [];
       $model = $finetune['fine_tuned_model'];
       $entry['suffix'] = $finetune['suffix'];
       $entry['model'] = $model;
-      $entry['enabled'] = true;
-      for ($i = 0; $i < count($finetunes_option); $i++) {
-        if ($finetunes_option[$i]['model'] === $model) {
-          $entry['enabled'] = $finetunes_option[$i]['enabled'];
-          break;
-        }
-      }
+      //$entry['enabled'] = true;
+      // for ($i = 0; $i < count($finetunes_option); $i++) {
+      //   if ($finetunes_option[$i]['model'] === $model) {
+      //     $entry['enabled'] = $finetunes_option[$i]['enabled'];
+      //     break;
+      //   }
+      // }
       return $entry;
     }, $finetunes['data']);
     $this->core->update_option('openai_finetunes', $fresh_finetunes_options);
@@ -115,6 +109,11 @@ class Meow_MWAI_OpenAI
   public function getModel( $modelId )
   {
     return $this->run('GET', '/models/' . $modelId);
+  }
+
+  public function cancelFineTune( $fineTuneId )
+  {
+    return $this->run('POST', '/fine-tunes/' . $fineTuneId . '/cancel');
   }
 
   public function deleteFineTune( $modelId )

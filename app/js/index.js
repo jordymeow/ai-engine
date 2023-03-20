@@ -1,8 +1,8 @@
-// Previous: 1.3.58
-// Current: 1.3.64
+// Previous: 1.3.64
+// Current: 1.3.65
 
 const { render } = wp.element;
-import { QueryClient, useQuery, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient({ 
 	defaultOptions: { 
 		queries: { 

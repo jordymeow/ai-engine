@@ -56,8 +56,7 @@ i18n.COMMON = {
   GUESTS: __( 'Guests', 'ai-engine' ),
   OPENAI: __( 'Open AI', 'ai-engine' ),
   LICENSE_TAB: __( 'License', 'ai-engine' ),
-  FINETUNING_TAB: __( 'Fine Tuning', 'ai-engine' ),
-  EMBEDDINGS_TAB: __( 'Embeddings', 'ai-engine' ),
+  FINETUNES: __( 'Finetunes', 'ai-engine' ),
   MODELS: __( 'Models', 'ai-engine' ),
   DATASETS: __( 'Datasets', 'ai-engine' ),
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
@@ -257,7 +256,7 @@ i18n.FINETUNING = {
   ENTRIES_EDITOR: __( 'Entries Editor', 'ai-engine' ),
   ENTRIES_GENERATOR: __( 'Entries Generator', 'ai-engine' ),
   HUGE_DATASET_WARNING: __( 'Caution: The data is too large to be saved in your browser\'s local storage.', 'ai-engine' ),
-  NO_FINETUNES_YET: __( 'No fine-tunes yet. Create one by uploading a dataset.', 'ai-engine' ),
+  NO_FINETUNES_YET: __( 'No fine-tunes found. Refresh the list, or create a new one (via a dataset).', 'ai-engine' ),
   CLEAN_MODELS_LIST: __( 'Clean Models List', 'ai-engine' ),
   DELETED_FINETUNE_ISSUE: __( 'For some reason, OpenAI still return the models even after you deleted them. Don\'t worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.', 'ai-engine' ),
 }

@@ -99,8 +99,9 @@ define( 'MWAI_OPTIONS', [
 	'openai_apikey' => false,
 	'openai_usage' => [],
 	'openai_models' => MWAI_OPENAI_MODELS,
-	'openai_finetunes' => [],
-	'openai_finetunes_deleted' => [],
+	'openai_finetunes' => [], // Used by AI Engine
+	'openai_finetunes_all' => [], // All finetunes listed by OpenAI
+	'openai_finetunes_deleted' => [], // The finetunes that have been deleted
 	'pinecone' => [
 		'apikey' => false,
 		'server' => 'us-east1-gcp',

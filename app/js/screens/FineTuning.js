@@ -1,10 +1,12 @@
-// Previous: 1.3.58
-// Current: 1.3.64
+// Previous: 1.3.64
+// Current: 1.3.65
 
+// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
+// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
   NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage, NekoColumn,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
@@ -14,6 +16,7 @@ import { toHTML, useModels } from '@app/helpers';
 import DatasetBuilder from '@app/screens/FineTuning/DatasetBuilder';
 import i18n from '@root/i18n';
 import { retrieveFiles, retrieveFineTunes } from '@app/requests';
+import { retrieveDeletedFineTunes } from '../requests';
 
 const builderColumns = [
   { accessor: 'row', title: "#", width: 15, verticalAlign: 'top' },
@@ -106,8 +109,8 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
-        onBlur={onSave} value={data}/ >
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+        onBlur={onSave} value={data} />
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -125,23 +128,28 @@ const FineTuning = ({ options, updateOption }) => {
   const [ section, setSection ] = useState('finetunes');
   const [ dataSection, setDataSection ] = useState('editor');
   const [ isModeTrain, setIsModeTrain ] = useState(true);
-  const { models, model, setModel, getModel, getFamilyName, isFineTunedModel } = useModels(options, 'text-davinci-003');
+  const { models, model, setModel, getModel, isFineTunedModel } = useModels(options);
   const [ suffix, setSuffix ] = useState('meow');
   const [ hyperParams, setHyperParams ] = useState(false);
   const [ nEpochs, setNEpochs ] = useState(4);
   const [ batchSize, setBatchSize ] = useState(null);
-  const { isLoading: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
-    queryKey: ['datasets'], queryFn: retrieveFiles
-  });
-  const { isLoading: isBusyFineTunes, error: errFineTunes, data: dataFineTunes } = useQuery({
-    queryKey: ['finetunes'],
-    queryFn: () => retrieveFineTunes(),
+  const [ datasetsQueryEnabled, setDatasetsQueryEnabled ] = useState(false);
+  const { isFetching: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
+    queryKey: ['datasets'],
+    enabled: datasetsQueryEnabled,
+    queryFn: retrieveFiles
   });
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
   const [ errorModal, setErrorModal ] = useState(false);
+  const allFineTunes = options?.openai_finetunes_all || [];
+
+  useEffect(() => {
+    if (section === 'files' && !datasetsQueryEnabled) {
+      setDatasetsQueryEnabled(true);
+    }
+  }, [section]);
 
   useEffect(() => { errFiles && !errorModal && setErrorModal(errFiles) }, [errFiles]);
-  useEffect(() => { errFineTunes && !errorModal && setErrorModal(errFineTunes) }, [errFineTunes]);
 
   const rowsPerPage = 10;
   const [ hasStorageBackup, setHasStorageBackup ] = useState(true);
@@ -187,7 +195,7 @@ const FineTuning = ({ options, updateOption }) => {
       }
     });
     if (res.success) {
-      await refreshFineTunes();
+      await onRefreshFineTunes();
       alert(i18n.ALERTS.FINETUNING_STARTED);
       setSection('finetunes');
       setFileForFineTune();
@@ -198,20 +206,14 @@ const FineTuning = ({ options, updateOption }) => {
     setBusyAction(false);
   }
 
-  const refreshFineTunes = async () => {
-    await queryClient.invalidateQueries(['finetunes']);
-  }
-
   const onRefreshFineTunes = async () => {
-    setBusyAction(true);
-    await refreshFineTunes();
-    setBusyAction(false);
+    onRefreshFineTunesAll();
   }
 
   const onCleanFineTunes = async () => {
-    setBusyAction(true);
-    await retrieveFineTunes(true);
-    await queryClient.invalidateQueries(['finetunes']);
+    setBusyAction('clean');
+    const freshDeletedFineTunes = await retrieveDeletedFineTunes();
+    await updateOption(freshDeletedFineTunes, 'openai_finetunes_deleted');
     setBusyAction(false);
   }
 
@@ -322,6 +324,30 @@ const FineTuning = ({ options, updateOption }) => {
     setBusyAction(false);
   };
 
+  const cancelFineTune = async (finetuneId) => {
+    // Are you sure
+    // if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
+    //   return;
+    // }
+    setBusyAction(true);
+    try {
+      const res = await nekoFetch(`${apiUrl}/openai_finetunes_cancel`, { 
+        method: 'POST', nonce: restNonce, json: { finetuneId }
+      });
+      if (res.success) {
+        onRefreshFineTunes();
+      }
+      else {
+        alert(res.message);
+      }
+    }
+    catch (err) {
+      console.log(err);
+      alert(i18n.ALERTS.CHECK_CONSOLE);
+    }
+    setBusyAction(false);
+  };
+
   const deleteFineTune = async (modelId) => {
     if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
       return;
@@ -331,13 +357,11 @@ const FineTuning = ({ options, updateOption }) => {
       const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { method: 'DELETE', nonce: restNonce, json: { modelId } });
       if (res.success) {
         await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
-        await refreshFineTunes();
       }
       else {
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
-          await refreshFineTunes();
         }
         else {
           alert(res.message);
@@ -405,29 +429,45 @@ const FineTuning = ({ options, updateOption }) => {
     })
   }, [dataFiles]);
 
-  const fineTuneRows = useMemo(() => {
-    if (!dataFineTunes) {
-      return [];
-    }
-    return dataFineTunes.sort((a, b) => b.created_at - a.created_at).map(x => {
-      const currentModel = x.fine_tuned_model;
+  const onRefreshFineTunesAll = async () => {
+    setBusyAction('finetunes');
+    let data = await retrieveFineTunes();
+    data = data.sort((a, b) => b.created_at - a.created_at).map(x => {
       const createdOn = new Date(x.created_at * 1000);
       return {
-        status: <StatusIcon status={(x.status)} includeText />,
         id: x.id,
+        status: x.status,
         suffix: x.suffix,
         model: x.fine_tuned_model,
         base_model: x.model,
-        createdOn: <>{createdOn.toLocaleDateString()}<br />{createdOn.toLocaleTimeString()}</>,
-        actions:  <NekoButton className="danger" rounded icon="trash"
-          disabled={x.status !== 'succeeded'}
-          onClick={() => deleteFineTune(currentModel)}>
-        </NekoButton>
+        createdOn
       }
-    })
-  }, [dataFineTunes]);
+    });
+    updateOption(data, 'openai_finetunes_all');
+    setBusyAction(false);
+  }
 
-  const busy = isBusyFiles || busyAction || isBusyFineTunes;
+  const fineTuneRows = useMemo(() => {
+    if (!allFineTunes) { return [] }
+    return allFineTunes.filter(x => !deletedFineTunes.includes(x.model)).map(x => {
+      const createdOn = new Date(x.createdOn);
+      return {
+        ...x,
+        status: <StatusIcon status={(x.status)} includeText />,
+        createdOn: <>{createdOn.toLocaleDateString()}<br />{createdOn.toLocaleTimeString()}</>,
+        actions:  <>
+          {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
+            onClick={() => deleteFineTune(x.model)}>
+          </NekoButton>}
+          {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
+            onClick={() => cancelFineTune(x.id)}>
+          </NekoButton>}
+        </>
+      }
+    });
+  }, [deletedFineTunes, allFineTunes]);
+
+  const busy = isBusyFiles || busyAction;
 
   const exportAsCSV = () => {
     const csv = Papa.unparse(builderData);
@@ -473,7 +513,7 @@ const FineTuning = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; 
+    const month = date.getMonth() + 1; // getMonth returns a 0-based value
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -555,8 +595,8 @@ const FineTuning = ({ options, updateOption }) => {
 
   const onFormatWithDefaults = () => {
     const newBuilderData = builderData.map(x => {
-      let prompt = x.prompt;
-      let completion = x.completion;
+      let prompt = x.prompt || '';
+      let completion = x.completion || '';
       if (!prompt.endsWith(defaultPromptEnding)) {
         prompt = prompt.trim();
         prompt += defaultPromptEnding;
@@ -582,12 +622,13 @@ const FineTuning = ({ options, updateOption }) => {
         />
         {isModeTrain && <NekoQuickLinks value={section} busy={busy}
           onChange={value => { setSection(value) }}>
-          <NekoLink title={i18n.COMMON.MODELS} value='finetunes' count={fineTuneRows?.length ?? null} />
-          <NekoLink title={i18n.COMMON.DATASETS} value='files' count={fileRows?.length ?? null} />
+          <NekoLink title={i18n.COMMON.MODELS} value='finetunes' count={fineTuneRows?.length ?? '-'} />
+          <NekoLink title={i18n.COMMON.DATASETS} value='files' count={fileRows?.length ?? '-'} />
         </NekoQuickLinks>}
         {isModeTrain && section === 'finetunes' && <>
           <div style={{ flex: 'auto' }} />
-          <NekoButton disabled={busyAction} onClick={onRefreshFineTunes} className="primary">
+          <NekoButton disabled={busyAction} busy={busyAction === 'finetunes'}
+            onClick={onRefreshFineTunes} className="primary">
             Refresh Models
           </NekoButton>
         </>}
@@ -625,7 +666,8 @@ const FineTuning = ({ options, updateOption }) => {
         />
         <div style={{ marginTop: 5, display: 'flex', justifyContent: 'end', lineHeight: '12px',
           alignItems: 'center' }}>
-          <NekoButton small disabled={busyAction} onClick={onCleanFineTunes} className="primary">
+          <NekoButton small disabled={busyAction} busy={busyAction === 'clean'}
+            onClick={onCleanFineTunes} className="primary">
             {i18n.FINETUNING.CLEAN_MODELS_LIST}
           </NekoButton>
           <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>

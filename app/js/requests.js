@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.64
+// Previous: 1.3.64
+// Current: 1.3.65
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -36,13 +36,21 @@ const retrieveFiles = async () => {
   return res?.files?.data;
 }
 
-const retrieveFineTunes = async (clean = false) => {
-  const queryClean = clean ? "?clean=true" : "";
-  const res = await nekoFetch(`${apiUrl}/openai_finetunes${queryClean}`, { nonce: restNonce });
+const retrieveDeletedFineTunes = async () => {
+  const res = await nekoFetch(`${apiUrl}/openai_deleted_finetunes`, { nonce: restNonce });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res?.finetunes;
+}
+
+const retrieveFineTunes = async () => {
+  const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
   return res?.finetunes?.data;
 }
 
-export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, retrieveFineTunes };
+export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, 
+  retrieveDeletedFineTunes, retrieveFineTunes };

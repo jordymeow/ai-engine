@@ -1,5 +1,5 @@
-// Previous: 1.3.51
-// Current: 1.3.56
+// Previous: 1.3.56
+// Current: 1.3.65
 
 const { useMemo, useState } = wp.element;
 import { NekoMessage, nekoFetch, toHTML } from '@neko-ui';
@@ -67,14 +67,19 @@ function cleanSections(text) {
 
 const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const [model, setModel] = useState(defaultModel);
+  const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
-  const models = useMemo(() => {
-    let allModels = options.openai_models;
-    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+  const allModelsState = useMemo(() => {
+    let allModelsTemp = options.openai_models;
+    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let extraModels = [];
+    if (extraModelsStr.length > 0) {
+      extraModels = extraModelsStr.split(',').filter(x => x);
+    }
     let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
-      options?.openai_finetunes.filter(x => x.enabled && x.model) : [];
+      options?.openai_finetunes.filter(x => x.model) : [];
     if (fineTunes.length) {
-      allModels = [ ...allModels, ...fineTunes.map(x => {
+      allModelsTemp = [ ...allModelsTemp, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
         const family = splitted[0];
         return { 
@@ -89,48 +94,57 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         }
       })];
     }
-    extraModels = extraModels?.split(',').filter(x => x);
     if (extraModels.length) {
-      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+      allModelsTemp = [ ...allModelsTemp, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return allModels;
+    // Introduced bug: caching allModels in a variable that is not a ref or state
+    return allModelsTemp;
   }, [options]);
+
+  const allModels = allModelsState;
+
+  const models = useMemo(() => {
+    return allModels.filter(x => !deletedFineTunes.includes(x.model));
+  }, [allModels, deletedFineTunes]);
 
   const completionModels = useMemo(() => {
     return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
   }, [models]);
 
-  const getModel = (model) => {
-    if (model === 'gpt-3.5-turbo-0301') {
-      model = 'gpt-3.5-turbo';
+  const getModel = (modelParam) => {
+    let modelName = modelParam;
+    if (modelName === 'gpt-3.5-turbo-0301') {
+      modelName = 'gpt-3.5-turbo';
+    } else if (modelName === 'gpt-4-0314') {
+      modelName = 'gpt-4';
     }
-    return models.find(x => x.model === model);
+    return allModels.find(x => x.model === modelName);
   }
 
-  const isFineTunedModel = (model) => {
-    const modelObj = getModel(model);
+  const isFineTunedModel = (modelParam) => {
+    const modelObj = getModel(modelParam);
     return modelObj?.finetuned || false;
   }
 
-  const getModelName = (model) => {
-    const modelObj = getModel(model);
-    return modelObj?.name || modelObj?.model || model;
+  const getModelName = (modelParam) => {
+    const modelObj = getModel(modelParam);
+    return modelObj?.name || modelObj?.model || modelParam;
   }
 
-  const getFamilyName = (model) => {
-    const modelObj = getModel(model);
+  const getFamilyName = (modelParam) => {
+    const modelObj = getModel(modelParam);
     return modelObj?.family || null;
   }
 
-  const getFamilyModel = (model) => {
-    const modelObj = getModel(model);
-    const coreModels = models.filter(x => x.tags?.includes('core'));
-    const coreModel = coreModels.find(x => x.family === modelObj.family);
+  const getFamilyModel = (modelParam) => {
+    const modelObj = getModel(modelParam);
+    const coreModels = allModels.filter(x => x.tags?.includes('core'));
+    const coreModel = coreModels.find(x => x.family === modelObj?.family);
     return coreModel || null;
   }
 
-  const getPrice = (model, option = "1024x1024") => {
-    const modelObj = getFamilyModel(model);
+  const getPrice = (modelParam, option = "1024x1024") => {
+    const modelObj = getFamilyModel(modelParam);
     if (modelObj?.type === 'image') {
       if (modelObj?.options) {
         const opt = modelObj.options.find(x => x.option === option);
@@ -140,16 +154,17 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return modelObj?.price || null;
   }
 
-  const calculatePrice = (model, units, option = "1024x1024") => {
-    const modelObj = getFamilyModel(model);
-    const price = getPrice(model, option);
+  const calculatePrice = (modelParam, units, option = "1024x1024") => {
+    const modelObj = getFamilyModel(modelParam);
+    const price = getPrice(modelParam, option);
     if (price) {
+      // Bug: referencing allModels instead of modelObj for unit property
       return price * units * modelObj['unit'];
     }
     return 0;
   }
 
-  return { model, models, completionModels, setModel, isFineTunedModel, getModelName,
+  return { allModels, model, models, completionModels, setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
 }
 
@@ -157,12 +172,14 @@ const searchVectors = async (queryParams) => {
   if (queryParams?.filters?.aiSearch === "") {
     return [];
   }
+  // Bug: not cloning queryParams, potentially mutating external object
   queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
 const retrieveVectors = async (queryParams) => {
+  // Bug: same pattern, side effect on queryParams
   queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
@@ -179,8 +196,7 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
-// Quick and dirty token estimation
-// Let's keep this synchronized with PHP's QueryText
+// Token estimation remains unchanged but with a lurking bug
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -203,7 +219,9 @@ function reduceContent(content, tokens = 2048) {
   let reduced = content;
   let reducedTokens = estimateTokens(reduced);
   while (reducedTokens > tokens) {
+    // Bug: infinite loop possibility if estimateTokens returns minimal change
     reduced = reduced.slice(0, -32);
+    // Introduced bug: no break condition if content does not shrink properly
     reducedTokens = estimateTokens(reduced);
   }
   return reduced;
