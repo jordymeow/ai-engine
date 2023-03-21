@@ -1,30 +1,24 @@
-// Previous: 1.3.56
-// Current: 1.3.64
+// Previous: 1.3.64
+// Current: 1.3.66
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
-// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
-import { WritingStyles, WritingTones } from "../constants";
-import { cleanSections, OptionsCheck, useModels, toHTML } from "../helpers";
-import { AiNekoHeader, StyledTitleWithButton } from "../styles/CommonStyles";
-import { StyledSidebar } from "../styles/StyledSidebar";
-import useTemplates from '../components/Templates';
-import i18n from '../../i18n';
+import { WritingStyles, WritingTones } from "@app/constants";
+import { cleanSections, OptionsCheck, useModels, toHTML } from "@app/helpers";
+import { AiNekoHeader, StyledTitleWithButton } from "@app/styles/CommonStyles";
+import { StyledSidebar } from "@app/styles/StyledSidebar";
+import useTemplates from '@app/components/Templates';
+import i18n from '@root/i18n';
 import UsageCosts from '../components/UsageCosts';
 import { retrievePostTypes } from '@app/requests';
 import { useQuery } from '@tanstack/react-query';
-
-const languagesObject = options?.languages || [];
-const languages = Object.keys(languagesObject).map((key) => {
-  return { value: key, label: languagesObject[key] };
-});
+import { useLanguages } from '../helpers';
 
 const getSeoMessage = (title) => {
   if (!title){
@@ -55,7 +49,6 @@ const getSeoMessage = (title) => {
 };
 
 const ContentGenerator = () => {
-
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
 
@@ -71,12 +64,6 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
-  const title = useMemo(() => getSeoMessage(title), [title]);
-  const { addUsage, jsxUsageCosts } = UsageCosts(options);
-  const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
-    queryKey: ['postTypes'], queryFn: retrievePostTypes
-  });
-  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
 
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
@@ -86,8 +73,6 @@ const ContentGenerator = () => {
   const model = template?.model ?? "gpt-3.5-turbo";
   const sectionsCount = template?.sectionsCount ?? 2;
   const paragraphsCount = template?.paragraphsCount ?? 3;
-  const language = template?.language ?? "en";
-  const customLanguage = template?.customLanguage ?? "";
   const writingStyle = template?.writingStyle ?? "creative";
   const writingTone = template?.writingTone ?? "cheerful";
   const titlePromptFormat = template?.titlePromptFormat ?? "";
@@ -99,21 +84,31 @@ const ContentGenerator = () => {
   const topicsAreTitles = template?.topicsAreTitles ?? false;
   const noSections = !sectionsPromptFormat || !sectionsCount;
 
-  const humanLanguage = useMemo(() => {
-    let systemLanguage = languages.find(l => l.value === language);
-    if (systemLanguage) {
-      return systemLanguage.label;
-    }
-    if (customLanguage) {
-      return customLanguage;
-    }
-    console.warn("A system language or a custom language should be set.");
-    return "english";
-  }, [language]);
+  const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
+    useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
   
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
+
+  const title = template?.title ?? "";
+  const sections = template?.sections ?? "";
+  const mode = template?.mode ?? 'single';
+  const topic = template?.topic ?? "";
+  const topics = template?.topics ?? "";
+  const model = template?.model ?? "gpt-3.5-turbo";
+  const sectionsCount = template?.sectionsCount ?? 2;
+  const paragraphsCount = template?.paragraphsCount ?? 3;
+  const writingStyle = template?.writingStyle ?? "creative";
+  const writingTone = template?.writingTone ?? "cheerful";
+  const titlePromptFormat = template?.titlePromptFormat ?? "";
+  const sectionsPromptFormat = template?.sectionsPromptFormat ?? "";
+  const contentPromptFormat = template?.contentPromptFormat ?? "";
+  const excerptPromptFormat = template?.excerptPromptFormat ?? "";
+  const temperature = template?.temperature ?? 0.6;
+  const maxTokens = template?.maxTokens ?? 2048;
+  const topicsAreTitles = template?.topicsAreTitles ?? false;
+  const noSections = !sectionsPromptFormat || !sectionsCount;
 
   useEffect(() => {
     const freshTopicsArray = topics.split('\n').map(x => x.trim()).filter(x => !!x);
@@ -131,6 +126,21 @@ const ContentGenerator = () => {
     setExcerpt('');
     setCreatedPostId();
   }, [sections, paragraphsCount]);
+
+  useEffect(() => {
+    if (!template) {
+      return;
+    }
+    if (!isCustom && template.customLanguage) {
+      setTemplateProperty(null, 'customLanguage');
+    }
+    if (isCustom && template.customLanguage !== currentHumanLanguage) {
+      setTemplateProperty(currentHumanLanguage, 'customLanguage');
+    }
+    if (template.language !== currentLanguage) {
+      setTemplateProperty(currentLanguage, 'language');
+    }
+  }, [isCustom, currentLanguage, currentHumanLanguage]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -541,19 +551,7 @@ const ContentGenerator = () => {
 
             {formInputs.language && <>
               <label>{i18n.COMMON.LANGUAGE}:</label>
-              <NekoSelect scrolldown name="language" disabled={isBusy} 
-                value={language} description="" onChange={setTemplateProperty}>
-                  {languages.map((lang) => {
-                    return <NekoOption key={lang.value} value={lang.value} label={lang.label} />
-                  })}
-                  <NekoOption key="custom" value="custom" label="Other" />
-              </NekoSelect>
-              {language === 'custom' && <>
-                <label>{i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE}:</label>
-                <NekoInput name="customLanguage" disabled={isBusy}
-                  description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-                  value={customLanguage} onChange={setTemplateProperty} />
-              </>}
+              {jsxLanguageSelector}
             </>}
 
             {formInputs.writingStyle && <>

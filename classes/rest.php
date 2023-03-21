@@ -251,8 +251,12 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$postId = intval( $params['postId'] );
-			$text = $this->core->get_text_from_postId( $postId );
-			$prompt = "Create a short SEO-friendly title for this article: " . $text;
+			$text = $this->core->getCleanPostContent( $postId );
+			if ( empty( $text ) ) {
+				return new WP_REST_Response([ 'success' => false, 'message' => "No text found for this post." ], 500 );
+			}
+			$language = $this->core->get_post_language( $postId );
+			$prompt = "Using the same original language ($language), create a short but SEO-friendly title for this text: " . $text;
 			$query = new Meow_MWAI_QueryText( $prompt, 128 );
 			$query->setMaxResults( 5 );
 			$query->setEnv( 'admin-tools' );
@@ -268,8 +272,12 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$postId = intval( $params['postId'] );
-			$text = $this->core->get_text_from_postId( $postId );
-			$prompt = "Create a SEO-friendly introduction to this article, 120 to 170 characters max, no URLs: " . $text;
+			$text = $this->core->getCleanPostContent( $postId );
+			if ( empty( $text ) ) {
+				return new WP_REST_Response([ 'success' => false, 'message' => "No text found for this post." ], 500 );
+			}
+			$language = $this->core->get_post_language( $postId );
+			$prompt = "Using the same original language ($language), create a SEO-friendly introduction to this text, 120 to 170 characters max, no URLs: " . $text;
 			$query = new Meow_MWAI_QueryText( $prompt, 512 );
 			$query->setMaxResults( 5 );
 			$query->setEnv( 'admin-tools' );
@@ -448,20 +456,6 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function x( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$filename = sanitize_text_field( $params['filename'] );
-			$data = $params['data'];
-			$openai = new Meow_MWAI_OpenAI( $this->core );
-			$file = $openai->uploadFile( $filename, $data );
-			return new WP_REST_Response([ 'success' => true, 'file' => $file ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
 	function openai_files_delete( $request ) {
 		try {
 			$params = $request->get_json_params();
@@ -588,7 +582,7 @@ class Meow_MWAI_Rest
 			}
 			$language = $this->core->get_post_language( $post->ID );
 			$content = apply_filters( 'the_content', $post->post_content );
-			// REsolve html entities
+			// Resolve html entities
 			$content = html_entity_decode( $content );
 			$content = wp_strip_all_tags( $content );
 			$content = preg_replace( '/[\r\n]+/', "\n", $content );

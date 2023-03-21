@@ -67,9 +67,12 @@ class Meow_MWAI_Core
 	#region Text-Related Helpers
 
 	// Clean the text perfectly, resolve shortcodes, etc, etc.
-  function clean_text( $rawText = "" ) {
+  function cleanText( $rawText = "" ) {
     $text = strip_tags( $rawText );
     $text = strip_shortcodes( $text );
+
+		// Remove everything <script>...</script>, <style>...</style> ?
+
     $text = html_entity_decode( $text );
     $text = str_replace( array( "\r", "\n" ), "", $text );
     $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
@@ -82,8 +85,9 @@ class Meow_MWAI_Core
   }
 
   // Make sure there are no duplicate sentences, and keep the length under a maximum length.
-  function clean_sentences( $text, $maxLength = 1024 ) {
-    $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
+  function cleanSentences( $text, $maxTokens = 512 ) {
+    //$sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
+		$sentences = preg_split('/(?<=[.?!。．！？])+/u', $text);
     $hashes = array();
     $uniqueSentences = array();
     $length = 0;
@@ -91,27 +95,28 @@ class Meow_MWAI_Core
       $sentence = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $sentence );
       $hash = md5( $sentence );
       if ( !in_array( $hash, $hashes ) ) {
-        if ( $length + strlen( $sentence ) > $maxLength ) {
+				$tokensCount = apply_filters( 'mwai_estimate_tokens', 0, $sentence );
+        if ( $length + $tokensCount > $maxTokens ) {
           continue;
         }
         $hashes[] = $hash;
         $uniqueSentences[] = $sentence;
-        $length += strlen( $sentence );
+        $length += $tokensCount;
       }
     }
-    $text = implode( " ", $uniqueSentences );
-    $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
-    return $text;
+    $freshText = implode( " ", $uniqueSentences );
+    $freshText = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $freshText );
+    return $freshText;
   }
 
-	function get_text_from_postId( $postId ) {
+	function getCleanPostContent( $postId ) {
 		$post = get_post( $postId );
 		if ( !$post ) {
 			return false;
 		}
 		$post->post_content = apply_filters( 'the_content', $post->post_content );
-		$text = $this->clean_text( $post->post_content );
-		$text = $this->clean_sentences( $text );
+		$text = $this->cleanText( $post->post_content );
+		$text = $this->cleanSentences( $text );
 		return $text;
 	}
 

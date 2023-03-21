@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.65
+Stable tag: 1.3.66
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,11 +69,15 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.65 (2023/03/20) =
-* Update: Handle the finetuned models a bit differently, for a faster UI, and lot of improvements (like the ability to cancel a finetune, calculate historical spent amount on deleted models, etc).
+= 1.3.66 (2023/03/21) =
+* Update: Overhaul of the language system. It's now unified, and I'll make it even better a bit later.
+* Update: AI Engine automatically makes sure the texts aren't too long for some operations; it now uses the number of tokens rather than the number of characters. Give better results.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
+= 1.3.65 (2023/03/20) =
+* Update: Handle the finetuned models a bit differently, for a faster UI, and lot of improvements (like the ability to cancel a finetune, calculate historical spent amount on deleted models, etc). 
 
 = 1.3.64 (2023/03/19) =
 * Update: Retrieve post types rather than only proposing post/page.
