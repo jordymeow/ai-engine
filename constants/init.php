@@ -82,6 +82,7 @@ define( 'MWAI_OPTIONS', [
 	'module_generator_images' => true,
 	'module_moderation' => false,
 	'module_statistics' => false,
+	'module_finetunes' => false,
 	'module_embeddings' => false,
 	'module_audio' => false,
 	'shortcode_chat' => true,

@@ -150,6 +150,7 @@ i18n.HELP = {
   COST: __( 'Keeps track of the current costs.', 'ai-engine' ),
   RESOLVE_SHORTCODE: __( 'Will resolve the shortcode in your content when needed (Content-Aware will use this, for instance).', 'ai-engine' ),
   DYNAMIC_MAX_TOKENS: __( 'Max Tokens will be dynamically decreased based on the length of the prompt.', 'ai-engine' ),
+  FINETUNES: __( 'Train your own AI models.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

@@ -1,8 +1,10 @@
-// Previous: 1.3.64
-// Current: 1.3.66
+// Previous: 1.3.66
+// Current: 1.3.67
 
+// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
+// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -64,6 +66,11 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
+  const { addUsage, jsxUsageCosts } = UsageCosts(options);
+  const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
+    queryKey: ['postTypes'], queryFn: retrievePostTypes
+  });
+  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
 
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
@@ -90,25 +97,6 @@ const ContentGenerator = () => {
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
-
-  const title = template?.title ?? "";
-  const sections = template?.sections ?? "";
-  const mode = template?.mode ?? 'single';
-  const topic = template?.topic ?? "";
-  const topics = template?.topics ?? "";
-  const model = template?.model ?? "gpt-3.5-turbo";
-  const sectionsCount = template?.sectionsCount ?? 2;
-  const paragraphsCount = template?.paragraphsCount ?? 3;
-  const writingStyle = template?.writingStyle ?? "creative";
-  const writingTone = template?.writingTone ?? "cheerful";
-  const titlePromptFormat = template?.titlePromptFormat ?? "";
-  const sectionsPromptFormat = template?.sectionsPromptFormat ?? "";
-  const contentPromptFormat = template?.contentPromptFormat ?? "";
-  const excerptPromptFormat = template?.excerptPromptFormat ?? "";
-  const temperature = template?.temperature ?? 0.6;
-  const maxTokens = template?.maxTokens ?? 2048;
-  const topicsAreTitles = template?.topicsAreTitles ?? false;
-  const noSections = !sectionsPromptFormat || !sectionsCount;
 
   useEffect(() => {
     const freshTopicsArray = topics.split('\n').map(x => x.trim()).filter(x => !!x);
@@ -140,11 +128,11 @@ const ContentGenerator = () => {
     if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage]);
+  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
 
   const finalizePrompt = (prompt) => {
     return prompt
-      .replace('{LANGUAGE}', humanLanguage)
+      .replace('{LANGUAGE}', currentHumanLanguage)
       .replace('{WRITING_STYLE}', writingStyle)
       .replace('{WRITING_TONE}', writingTone)
       .replace('{PARAGRAPHS_PER_SECTION}', paragraphsCount)
