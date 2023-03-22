@@ -2,13 +2,17 @@
 
 class Meow_MWAI_Modules_Assistants {
   private $core = null;
+  private $module_woocommerce = false;
 
   public function __construct() {
     global $mwai_core;
     $this->core = $mwai_core;
+    $this->module_woocommerce = $this->core->get_option( 'module_woocommerce' );
 
     // Add Metadata Metabox to Product Post Type Edit Page
-    add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
+    if ( $this->module_woocommerce ) {
+      add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
+    }
   }
 
   function add_meta_boxes() {

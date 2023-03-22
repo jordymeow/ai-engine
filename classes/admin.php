@@ -5,6 +5,8 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 	public $generator_content;
 	public $generator_images;
 	public $playground;
+	
+	public $module_suggestions = false;
 
 	public function __construct( $core ) {
 		$this->core = $core;
@@ -21,7 +23,13 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			if ( $this->core->can_access_features() ) {
 				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 				add_action( 'admin_menu', array( $this, 'admin_menu' ) );
-				add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
+
+				// Only if the Suggestions are enabled.
+				$module_suggestions = $this->core->get_option( 'module_suggestions' );
+				if ( $module_suggestions ) {
+					add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
+				}
+
 				add_action( 'admin_footer', [ $this, 'admin_footer' ] );
 			}
 		}

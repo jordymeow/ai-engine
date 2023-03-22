@@ -72,8 +72,7 @@ define ( 'MWAI_LIMITS', [
 ] );
 
 define( 'MWAI_OPTIONS', [
-	'module_titles' => true,
-	'module_excerpts' => true,
+	'module_suggestions' => true,
 	'module_woocommerce' => true,
 	'module_forms' => false,
 	'module_blocks' => false,
