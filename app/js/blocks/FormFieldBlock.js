@@ -1,5 +1,5 @@
-// Previous: 1.0.5
-// Current: 1.1.6
+// Previous: 1.1.6
+// Current: 1.3.69
 
 import i18n from "../../i18n";
 import { AiBlockContainer, meowIcon } from "./common";
@@ -15,7 +15,8 @@ function capitalizeFirstLetter(string) {
 }
 
 const saveFormField = (props) => {
-	const { attributes: { id, label, type, name, options = [], placeholder, maxlength } } = props;
+	const { attributes: { id, label, type, name, options = [],
+		placeholder, rows, defaultValue, maxlength } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
 	let shortcode = '[mwai-form-field';
 	if (id) {
@@ -36,6 +37,12 @@ const saveFormField = (props) => {
 	if (placeholder) {
 		shortcode += ` placeholder="${placeholder}"`;
 	}
+	if (type === 'textarea' && rows) {
+		shortcode += ` rows="${rows}"`;
+	}
+	if (defaultValue) {
+		shortcode += ` default="${defaultValue}"`;
+	}
 	if (maxlength) {
 		shortcode += ` maxlength="${maxlength}"`;
 	}
@@ -43,8 +50,9 @@ const saveFormField = (props) => {
 	return shortcode;
 }
 
-const FormFieldBlock = props => {
-	const { attributes: { id, type, name, options = [], label, placeholder, maxlength }, setAttributes } = props;
+const FormFieldBlock = (props) => {
+	const { attributes: { id, type, name, options = [], label, placeholder, rows,
+		defaultValue, maxlength }, setAttributes } = props;
 
 	useEffect(() => {
 		if (!id) {
@@ -56,7 +64,7 @@ const FormFieldBlock = props => {
 	const onUpdateLabel = (value) => {
 		setAttributes({ label: value });
 		const newName = value.trim().replace(/ /g, '_').replace(/[^\w-]+/g, '').toUpperCase();
-		if (!!newName) {
+		if (newName.length > 0) {
 			setAttributes({ name: newName });
 		}
 	}
@@ -91,15 +99,23 @@ const FormFieldBlock = props => {
 						onChange={value => setAttributes({ placeholder: value })} />
 				}
 				{(type === 'input' || type === 'textarea') &&
+					<TextControl label="Default Value" value={defaultValue}
+						onChange={value => setAttributes({ defaultValue: value })} />
+				}
+				{(type === 'input' || type === 'textarea') &&
 					<TextControl label="Max Length" value={maxlength}
 						onChange={value => setAttributes({ maxlength: value })} />
+				}
+				{(type === 'textarea') &&
+					<TextControl label={i18n.COMMON.ROWS} value={rows}
+						onChange={value => setAttributes({ rows: value })}
+						type="number" step="1" min="1" max="100" />
 				}
 			</PanelBody>
 			{(type === 'select' || type === 'radio' || type === 'checkbox') && <PanelBody title={
 				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
 					<div>{ __( 'Options' ) }</div>
 				</div>}>
-				
 				{options.map((option, index) => {
 					return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
 						<div style={{ marginRight: 5 }}>
@@ -114,7 +130,7 @@ const FormFieldBlock = props => {
 							}
 						} />
 						</div>
-						<TextControl style={{  }}
+						<TextControl style={{}}
 							label="Value"
 							isSubtle={true}
 							value={option.value}
@@ -135,7 +151,6 @@ const FormFieldBlock = props => {
 						</div>
 						
 				})}
-
 				<Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={(ev) => {
 					const newOptions = [...options];
 					newOptions.push({ label: '', value: '' });
@@ -182,10 +197,18 @@ const createFormFieldBlock = () => {
 				type: 'string',
 				default: ''
 			},
+			defaultValue: {
+				type: 'string',
+				default: ''
+			},
 			maxlength: {
 				type: 'string',
 				default: ''
-			}
+			},
+			rows: {
+				type: 'rows',
+				default: 4
+			},
 		},
 		edit: FormFieldBlock,
 		save: saveFormField

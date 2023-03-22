@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.68
+Stable tag: 1.3.69
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.68 (2023/03/22) =
+= 1.3.69 (2023/03/22) =
+* Fix: Issue with non-default models in the forms.
+* Add: Default value and rows for textarea and input fields.
 * Fix: Assistants weren't really disabled (depending on the settings).
 * Fix: Simplified a few UI elements.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).

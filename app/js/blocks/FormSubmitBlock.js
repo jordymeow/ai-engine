@@ -1,5 +1,5 @@
-// Previous: 0.9.97
-// Current: 1.0.5
+// Previous: 1.0.5
+// Current: 1.3.69
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
@@ -27,24 +27,24 @@ const FormSubmitBlock = props => {
 			const newId = Math.random().toString(36).substr(2, 9);
 			setAttributes({ id: 'mwai-' + newId });
 		}
-	}, [id]);
+	}, [id, setAttributes]);
 
 	useEffect(() => {
-		const matches = prompt.match(/{([^}]+)}/g);
+		const matches = prompt && prompt.match(/{([^}]+)}/g);
 		if (matches) {
 			const freshPlaceholders = matches.map(match => match.replace('{', '').replace('}', ''));
 			if (freshPlaceholders.join(',') !== placeholders.join(',')) {
 				setAttributes({ placeholders: freshPlaceholders });
 			}
 		}
-	}, [prompt]);
+	}, [prompt, placeholders, setAttributes]);
 
 	const fieldsCount = useMemo(() => {
-		return placeholders ? placeholders.length : 0;
+		return (placeholders || []).length;
 	}, [placeholders]);
 
 	const modelOptions = useMemo(() => {
-		let freshModels = models.map(model => ({ label: model.name, value: model.id }));
+		let freshModels = models ? models.map(model => ({ label: model.name, value: model.model })) : [];
 		freshModels.push({ label: 'dall-e', value: 'dall-e' });
 		return freshModels;
 	}, [models]);
@@ -53,7 +53,7 @@ const FormSubmitBlock = props => {
 		<>
 			<AiBlockContainer title="Submit" type="submit"
 				hint={<>
-					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '} 
+					<span className="mwai-pill">{fieldsCount} field{fieldsCount !== 1 ? 's' : ''}</span> to{' '} 
 					<span className="mwai-pill mwai-pill-purple">{outputElement}</span></>
 				}>
 				Input Fields: {placeholders.join(', ')}<br />

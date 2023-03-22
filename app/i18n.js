@@ -132,6 +132,7 @@ i18n.COMMON = {
   ADVANCED: __( 'Advanced', 'ai-engine' ),
   DYNAMIC_MAX_TOKENS: __( 'Dynamic Max Tokens', 'ai-engine' ),
   DISCUSSIONS: __( 'Discussions', 'ai-engine' ),
+  ROWS: __( 'Rows', 'ai-engine' ),
 }
 
 i18n.FORMS = {
