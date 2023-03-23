@@ -412,7 +412,7 @@ class Meow_MWAI_Core
     $tokens = $asciiTokens + $nonAsciiTokens;
 
     // More exact (slower, and lib)
-    if ( PHP_VERSION_ID >= 70400 ) {
+    if ( PHP_VERSION_ID >= 70400 && function_exists( 'mb_convert_encoding' ) ) {
       try {
         $token_array = Encoder::encode( $text );
         if ( !empty( $token_array ) ) {
