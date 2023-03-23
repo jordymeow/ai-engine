@@ -23,7 +23,7 @@
     "papaparse": "^5.3.2",
     "react-colorful": "^5.6.1",
     "styled-components": "^5.3.6",
-    "swr": "^2.0.0",
+    "swr": "^0.0.2",
     "webpack": "^5.75.0",
     "webpack-bundle-analyzer": "^4.7.0",
     "webpack-cli": "^5.0.1"

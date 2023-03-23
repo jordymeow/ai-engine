@@ -1,5 +1,5 @@
-// Previous: 1.3.64
-// Current: 1.3.65
+// Previous: 1.3.65
+// Current: 1.3.71
 
 const { render } = wp.element;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -81,6 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Common
 	const meowDashboard = document.getElementById('meow-common-dashboard');
 	if (meowDashboard) {
-		render(<Dashboard />, meowDashboard);
+		render(<NekoUI><Dashboard /></NekoUI>, meowDashboard);
 	}
 });
