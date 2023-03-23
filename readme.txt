@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.71
+Stable tag: 1.3.72
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.71 (2023/03/23) =
+= 1.3.72 (2023/03/23) =
 * Fix: Avoid a crash for the server which didn't install mbstring.
 * Fix: The Meow Apps dashboard is back, with PHP Error Logs and evergthing.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
