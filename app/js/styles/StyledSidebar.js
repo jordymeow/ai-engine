@@ -1,5 +1,5 @@
-// Previous: 0.8.6
-// Current: 1.3.53
+// Previous: 1.3.53
+// Current: 1.3.73
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -14,7 +14,7 @@ const StyledSidebar = Styled.div`
     margin-bottom: 8px;
   }
   
-  h3:first-child {
+  h2:first-child, h3:first-child {
     margin-top: 0;
   }
 

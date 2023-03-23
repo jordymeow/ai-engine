@@ -79,7 +79,8 @@ i18n.COMMON = {
   DEBUG_MODE_HELP: __( 'Debugging information will be displayed in the console.', 'ai-engine' ),
   API_KEY: __( 'API Key', 'ai-engine' ),
   API_KEY_HELP: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
-  USAGE_COSTS_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>. If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
+  USAGE_COSTS_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>.', 'ai-engine' ),
+  USAGE_COSTS_PRO_HELP: __( 'If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
   LANGUAGE: __( 'Language', 'ai-engine' ),
   HIDE: __( 'Hide', 'ai-engine' ),
   SHOW: __( 'Show', 'ai-engine' ),
@@ -133,6 +134,7 @@ i18n.COMMON = {
   DYNAMIC_MAX_TOKENS: __( 'Dynamic Max Tokens', 'ai-engine' ),
   DISCUSSIONS: __( 'Discussions', 'ai-engine' ),
   ROWS: __( 'Rows', 'ai-engine' ),
+  POST_TYPE: __( 'Post Type', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -192,6 +194,7 @@ i18n.CONTENT_GENERATOR = {
   SINGLE_GENERATE: __( 'Single Generate', 'ai-engine' ),
   BULK_GENERATE: __( 'Bulk Generate', 'ai-engine' ),
   CONTENT_PARAMS: __( 'Content Params', 'ai-engine' ),
+  POST_PARAMS: __( 'Post Params', 'ai-engine' ),
   CONTENT_PARAMS_INTRO: __( 'Input fields are displayed for certain placeholders used in prompts, such as {LANGUAGE} or {WRITING_TONE}', 'ai-engine' ),
   CUSTOM_LANGUAGE: __( 'Custom Language', 'ai-engine' ),
   WRITING_STYLE: __( 'Writing Style', 'ai-engine' ),

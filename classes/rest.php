@@ -332,12 +332,13 @@ class Meow_MWAI_Rest
 			$title = sanitize_text_field( $params['title'] );
 			$content = sanitize_textarea_field( $params['content'] );
 			$excerpt = sanitize_text_field( $params['excerpt'] );
+			$postType = sanitize_text_field( $params['postType'] );
 			$post = new stdClass();
 			$post->post_title = $title;
 			$post->post_excerpt = $excerpt;
 			$post->post_content = $content;
 			$post->post_status = 'draft';
-			$post->post_type = 'post';
+			$post->post_type = isset( $postType ) ? $postType : 'post';
 			$post->post_content = $this->core->markdown_to_html( $post->post_content );
 			$postId = wp_insert_post( $post );
 			return new WP_REST_Response([ 'success' => true, 'postId' => $postId ], 200 );
