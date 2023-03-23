@@ -390,7 +390,7 @@ class Meow_MWAI_Modules_Chatbot {
 				let memorizeChat = <?php echo $memorizeChat ? 'true' : 'false' ?>;
 				let maxTokens = <?php echo (int)$maxTokens ?>;
 				let maxResults = <?php echo (int)$maxResults ?>;
-				let temperature = <?php echo (float)$temperature ?>;
+				let temperature = <?php echo str_replace(',', '.', (float)$temperature) ?>;
 				let typewriter = <?php echo $typewriter ? 'true' : 'false' ?>;
 				let copyButton = <?php echo $copyButton ? 'true' : 'false' ?>;
 				let clientId = randomStr();
