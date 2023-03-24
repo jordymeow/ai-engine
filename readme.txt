@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.74
+Stable tag: 1.3.75
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.74 (2023/03/24) =
+= 1.3.75 (2023/03/24) =
+* Fix: The TextArea in AI Forms was not working correctly with a default value.
+* Fix: Casually Fined Tuned should be turn off if the model is not finetuned.
 * Fix: On some installs, floats would be echoed with commas instead of dots.
 * Info: It's my birthday ✌️🥳
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
