@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.75
+Stable tag: 1.3.76
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,20 +69,23 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.76 (2023/03/25) =
+* Add: Max Tokens for the Forms.
+* Add: Discussions tab has now a setting to be disabled (or not).
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
 = 1.3.75 (2023/03/24) =
 * Fix: The TextArea in AI Forms was not working correctly with a default value.
 * Fix: Casually Fined Tuned should be turn off if the model is not finetuned.
 * Fix: On some installs, floats would be echoed with commas instead of dots.
 * Info: It's my birthday ✌️🥳
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.73 (2023/03/23) =
 * Add: Post Type for Content Generator.
 * Fix: Avoid a crash for the server which didn't install mbstring.
 * Fix: The Meow Apps dashboard is back, with PHP Error Logs and evergthing.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-
 
 = 1.3.69 (2023/03/22) =
 * Fix: Issue with non-default models in the forms.

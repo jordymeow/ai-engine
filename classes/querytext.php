@@ -54,7 +54,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( $estimatedTokens > $realMax ) {
       throw new Exception( "The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
     }
-    $realMax = (int)($realMax - $estimatedTokens);
+    $realMax = (int)($realMax - $estimatedTokens) - 16;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
     }

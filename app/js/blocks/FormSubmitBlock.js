@@ -1,5 +1,5 @@
-// Previous: 1.0.5
-// Current: 1.3.69
+// Previous: 1.3.69
+// Current: 1.3.76
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
@@ -13,38 +13,38 @@ const { PanelBody, TextControl, TextareaControl, SelectControl, UnitControl } = 
 const { InspectorControls } = wp.blockEditor;
 
 const saveFormField = (props) => {
-	const { attributes: { id, label, prompt, outputElement, model, temperature } } = props;
+	const { attributes: { id, label, prompt, outputElement, model, temperature, maxTokens } } = props;
 	const encodedPrompt = encodeURIComponent(prompt);
-	return `[mwai-form-submit id="${id}" label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}" temperature="${temperature}"]`;
+	return `[mwai-form-submit id="${id}" label="${label}" prompt="${encodedPrompt}" output_element="${outputElement}" model="${model}" temperature="${temperature} max_tokens="${maxTokens}"]`;
 }
 
 const FormSubmitBlock = props => {
 	const { models } = useModels(options);
-	const { attributes: { id, label, prompt, model, temperature, outputElement, placeholders = [] }, setAttributes } = props;
+	const { attributes: { id, label, prompt, model, temperature, maxTokens, outputElement, placeholders = [] }, setAttributes } = props;
 
 	useEffect(() => {
 		if (!id) {
 			const newId = Math.random().toString(36).substr(2, 9);
 			setAttributes({ id: 'mwai-' + newId });
 		}
-	}, [id, setAttributes]);
+	}, [id]);
 
 	useEffect(() => {
-		const matches = prompt && prompt.match(/{([^}]+)}/g);
+		const matches = prompt.match(/{([^}]+)}/g);
 		if (matches) {
 			const freshPlaceholders = matches.map(match => match.replace('{', '').replace('}', ''));
 			if (freshPlaceholders.join(',') !== placeholders.join(',')) {
 				setAttributes({ placeholders: freshPlaceholders });
 			}
 		}
-	}, [prompt, placeholders, setAttributes]);
+	}, [prompt]);
 
 	const fieldsCount = useMemo(() => {
-		return (placeholders || []).length;
+		return placeholders ? placeholders.length : 0;
 	}, [placeholders]);
 
 	const modelOptions = useMemo(() => {
-		let freshModels = models ? models.map(model => ({ label: model.name, value: model.model })) : [];
+		let freshModels = models.map(model => ({ label: model.name, value: model.model }));
 		freshModels.push({ label: 'dall-e', value: 'dall-e' });
 		return freshModels;
 	}, [models]);
@@ -53,7 +53,7 @@ const FormSubmitBlock = props => {
 		<>
 			<AiBlockContainer title="Submit" type="submit"
 				hint={<>
-					<span className="mwai-pill">{fieldsCount} field{fieldsCount !== 1 ? 's' : ''}</span> to{' '} 
+					<span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span> to{' '} 
 					<span className="mwai-pill mwai-pill-purple">{outputElement}</span></>
 				}>
 				Input Fields: {placeholders.join(', ')}<br />
@@ -79,6 +79,10 @@ const FormSubmitBlock = props => {
 						onChange={value => setAttributes({ temperature: value })}
 						type="number" step="0.1" min="0" max="1"
 						help={i18n.HELP.TEMPERATURE} />
+					<TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
+						onChange={value => setAttributes({ maxTokens: value })}
+						type="number" step="16" min="32" max="4096"
+						help={i18n.HELP.MAX_TOKENS} />
 				</PanelBody>
 				<PanelBody title={i18n.COMMON.SYSTEM}>
 					<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
@@ -119,6 +123,10 @@ const createSubmitBlock = () => {
 			temperature: {
 				type: 'number',
 				default: 0.8
+			},
+			maxTokens: {
+				type: 'number',
+				default: 4096
 			},
 			placeholders: {
 				type: 'array',

@@ -2,16 +2,22 @@
 
 class Meow_MWAI_Modules_Chatbot_Chats {
   private $wpdb = null;
+  private $core = null;
   private $table_chats = null;
   private $db_check = false;
   private $namespace = 'ai-engine/v1';
 
   public function __construct() {
     global $wpdb;
+    global $mwai_core;
+    $this->core = $mwai_core;
     $this->wpdb = $wpdb;
     $this->table_chats = $wpdb->prefix . 'mwai_chats';
-    add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
-    add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+
+    if ( $this->core->get_option( 'shortcode_chat_discussions' ) ) {
+      add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
+      add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+    }
   }
 
   public function rest_api_init() {
