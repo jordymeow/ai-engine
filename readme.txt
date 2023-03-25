@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.76
+Stable tag: 1.3.77
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,9 +69,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.76 (2023/03/25) =
+= 1.3.77 (2023/03/25) =
 * Add: Max Tokens for the Forms.
 * Add: Discussions tab has now a setting to be disabled (or not).
+* Update: Pinecone servers.
+* Fix: Color of the progress bars.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
