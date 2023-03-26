@@ -1,11 +1,13 @@
-// Previous: 0.8.2
-// Current: 0.8.6
+// Previous: 0.8.6
+// Current: 1.3.79
 
 import Styled from "styled-components";
-import { NekoHeader, NekoButton } from '@neko-ui';
+import { NekoHeader, NekoButton, NekoIcon } from '@neko-ui';
 import { options as defaultOptions } from '@app/settings';
+import i18n from "@root/i18n";
+import AiIcon from "./AiIcon";
 
-const AiNekoHeader = ({ title = "Settings", options = defaultOptions }) => {
+const AiNekoHeader = ({ title = i18n.COMMON.SETTINGS, options = defaultOptions }) => {
   const module_playground = options?.module_playground;
   const module_generator_content = options?.module_generator_content;
   const module_generator_images = options?.module_generator_images;
@@ -13,21 +15,24 @@ const AiNekoHeader = ({ title = "Settings", options = defaultOptions }) => {
   return (
     <NekoHeader title={`AI Engine | ${title}`} subtitle='By Jordy Meow'>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        {module_generator_content && <NekoButton className='header' icon=''
+        {module_generator_content && <NekoButton className='header'
           onClick={() => location.href = 'edit.php?page=mwai_content_generator'}>
-          Build Content
+          <AiIcon icon="wand" style={{ marginRight: 8 }} />
+          {i18n.COMMON.CONTENT}
         </NekoButton>}
         {module_generator_images && <NekoButton className='header' icon=''
-          onClick={() => location.href = 'edit.php?page=mwai_image_generator'}>
-          Build Images
+          onClick={() => location.href = 'edit.php?page=mwai_images_generator'}>
+          <AiIcon icon="wand" style={{ marginRight: 8 }} />
+          {i18n.COMMON.IMAGES}
         </NekoButton>}
         {module_playground && <NekoButton className='header' icon=''
           onClick={() => location.href = 'tools.php?page=mwai_dashboard'}>
-          Playground
+          <AiIcon icon="wand" style={{ marginRight: 8 }} />
+          {i18n.COMMON.PLAYGROUND}
         </NekoButton>}
         <NekoButton className='header' icon='tools'
           onClick={() => location.href = 'admin.php?page=mwai_settings'}>
-          Settings
+          
         </NekoButton>
       </div>
     </NekoHeader>
@@ -39,9 +44,8 @@ const AiButton = Styled(NekoButton)`
 
 const StyledTitleWithButton = Styled.div`
   display: flex;
-  justify-content: unset;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 0 0 2px 0;
 
   h2 {
@@ -89,8 +93,9 @@ const StyledForm = Styled.div`
 
   .form-row {
     display: flex;
+    flex-wrap: wrap;
     .nui-button, .neko-textarea, .neko-input {
-      margin: 0;
+      margin: 0 5px 5px 0;
     }
   }
 

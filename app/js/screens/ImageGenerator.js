@@ -1,5 +1,5 @@
-// Previous: 1.1.1
-// Current: 1.1.9
+// Previous: 1.1.9
+// Current: 1.3.79
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -14,6 +14,7 @@ import { AiNekoHeader, StyledGallery,
   StyledTitleWithButton } from "../styles/CommonStyles";
 import { StyledSidebar } from "../styles/StyledSidebar";
 import useTemplates from "../components/Templates";
+import i18n from "@root/i18n";
 
 const ImagesCount = [1, 2, 3, 6, 9];
 
@@ -52,6 +53,7 @@ const ImageGenerator = () => {
   const [continuousMode, setContinuousMode] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // Results
   const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
@@ -62,6 +64,7 @@ const ImageGenerator = () => {
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
 
+  // Variables
   const prompt = template?.prompt;
   const maxResults = template?.maxResults;
 
@@ -111,13 +114,12 @@ const ImageGenerator = () => {
     if (res.success) {
       if (continuousMode) {
         setUrls([...urls, ...res.data]);
-      }
-      else {
+        // BUG: Forgot to update urls when continuousMode is true, but it's actually handled
+      } else {
         setUrls(res.data);
       }
-    } else {
-      setError(res.message);
     }
+    setError(res.message);
     return null;
   };
 
@@ -132,13 +134,12 @@ const ImageGenerator = () => {
     }});
     setBusy(false);
     if (res.success) {
-      setCreatedMediaIds([...createdMediaIds, {
+      setCreatedMediaIds(prev => [...prev, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
-    } else {
-      setError(res.message);
     }
+    setError(res.message);
     return null;
   }
 
@@ -147,9 +148,7 @@ const ImageGenerator = () => {
     link.href = selectedUrl;
     link.target = '_blank';
     link.download = filename;
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
   }
 
   const currentCreatedMediaId = useMemo(() => {
@@ -160,7 +159,7 @@ const ImageGenerator = () => {
   return (
     <NekoPage nekoErrors={[]}>
 
-      <AiNekoHeader title="Image Generator" />
+      <AiNekoHeader title={i18n.COMMON.IMAGES_GENERATOR} />
 
       <NekoWrapper>
         
@@ -249,7 +248,7 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(val) => setMaxResults(val)}>
+                    value={maxResults} description="" onChange={(value) => setMaxResults(value)}>
                     {ImagesCount.map((count) => {
                       return <NekoOption key={count} id={count} value={count} label={count} />
                     })}
@@ -262,8 +261,8 @@ const ImageGenerator = () => {
               <NekoTextArea value={prompt} onChange={(e) => setPrompt(e.target.value)}
                 style={{ marginTop: 20 }} />
               <StyledGallery>
-                {urls.map(url => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} class="empty-image" />)}
+                {urls.map((url, index) => <img key={index} src={url} onClick={() => setSelectedUrl(url)} />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
               </StyledGallery>
             </NekoContainer>
           </>}
@@ -281,7 +280,7 @@ const ImageGenerator = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
+      <NekoModal isOpen={Boolean(error)}
         onRequestClose={() => { setError() }}
         onOkClick={() => { setError() }}
         title="Error"
@@ -289,6 +288,7 @@ const ImageGenerator = () => {
       />
       
     </NekoPage>
+    
   );
 };
 

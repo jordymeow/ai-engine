@@ -1,5 +1,5 @@
-// Previous: 1.2.1
-// Current: 1.2.2
+// Previous: 1.2.2
+// Current: 1.3.79
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -58,14 +58,14 @@ const Dashboard = () => {
 
   const setPrompt = (prompt) => {
     setTemplate({ ...template, prompt: prompt });
-  }
+  };
 
   const onPushContinuousEntry = () => {
     const newPrompt = prompt + "Human: " + continuousEntry;
     setPrompt(newPrompt);
     setContinuousEntry("");
     onSubmitPrompt(newPrompt);
-  }
+  };
 
   useEffect(() => {
     if (template) {
@@ -102,14 +102,14 @@ const Dashboard = () => {
     else {
       setError(res.message);
     }
-    setStartTime();
+    setStartTime(undefined);
     setBusy(false);
   };
 
   return (
     <NekoPage nekoErrors={[]}>
 
-      <AiNekoHeader title="Playground" />
+      <AiNekoHeader title={i18n.COMMON.PLAYGROUND} />
 
       <NekoWrapper>
         
@@ -131,7 +131,7 @@ const Dashboard = () => {
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
             <NekoSelect scrolldown name="mode" disabled={true || busy} 
-              value={mode} description="" onChange={(val) => setTemplateProperty(val, 'mode')}>
+              value={mode} description="" onChange={(value) => setTemplateProperty(value, 'mode')}>
               <NekoOption key='query' value='query' label="Query" />
               <NekoOption key='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
@@ -151,9 +151,9 @@ const Dashboard = () => {
 
             {mode === 'continuous' && <>
               <StyledTextArea rows={18} onChange={(e) => setPrompt(e.target.value)} value={prompt} />
-              <div style={{ display: 'flex', position: 'relative' }}>
+              <div style={{ display: 'flex' }}>
                 <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
-                  zIndex: 200, fontSize: 28, top: 12, left: 10 }}></span>
+                  zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
                 <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={(e) => setContinuousEntry(e.target.value)}
                   onEnter={onPushContinuousEntry} disabled={busy} />
               </div>
@@ -177,9 +177,9 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>{i18n.COMMON.SETTINGS}</h3>
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect name="model" value={model} scrolldown={true} onChange={(val) => setTemplateProperty(val, 'model')}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={(value) => setTemplateProperty(value, 'model')}>
               {completionModels.map((x) => (
-                <NekoOption value={x.model} label={x.name} key={x.model}></NekoOption>
+                <NekoOption value={x.model} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>{i18n.COMMON.TEMPERATURE}:</label>
@@ -213,9 +213,9 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+      <NekoModal isOpen={error}
+        onRequestClose={() => { setError(undefined) }}
+        onOkClick={() => { setError(undefined) }}
         title="Error"
         content={<p>{error}</p>}
       />

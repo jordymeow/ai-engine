@@ -145,21 +145,6 @@ define( 'MWAI_OPENAI_MODELS', [
 		"mode" => "speech-to-text",
 		"finetune" => false,
 		"tags" => ['core', 'audio'],
-	],
-	// Coding
-	[
-		"model" => "code-davinci-002",
-		"name" => "code-davinci-002",
-		"family" => "davinci",
-		"price" => 0.02,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 8000,
-		"mode" => "completion",
-		"finetune" => [
-			"price" => 0.12
-		],
-		"tags" => ['core', 'code']
-	],
+	]
 ]);
 

@@ -85,6 +85,7 @@ i18n.COMMON = {
   HIDE: __( 'Hide', 'ai-engine' ),
   SHOW: __( 'Show', 'ai-engine' ),
   CONTENT: __( 'Content', 'ai-engine' ),
+  IMAGES: __( 'Images', 'ai-engine' ),
   EXCERPT: __( 'Excerpt', 'ai-engine' ),
   GENERATE: __( 'Generate', 'ai-engine' ),
   MODEL_PARAMS: __( 'Model Params', 'ai-engine' ),
@@ -135,6 +136,9 @@ i18n.COMMON = {
   DISCUSSIONS: __( 'Discussions', 'ai-engine' ),
   ROWS: __( 'Rows', 'ai-engine' ),
   POST_TYPE: __( 'Post Type', 'ai-engine' ),
+  GENERATE_CONTENT: __( 'Generate Content', 'ai-engine' ),
+  GENERATE_IMAGES: __( 'Generate Images', 'ai-engine' ),
+  ADMIN_BAR: __( 'Admin Bar', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -172,6 +176,7 @@ i18n.SETTINGS = {
   TYPEWRITER_EFFECT: __( 'Typewriter Effect', 'ai-engine' ),
   TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. I actually do not recommend this feature.', 'ai-engine' ),
   CHATBOT_MODERATION_HELP: __( 'If the conversation seems offensive, the chatbot will reject it.', 'ai-engine' ),
+  CUSTOM_URL: __( 'Custom URL', 'ai-engine' ),
 }
 
 i18n.CHATBOT = {
