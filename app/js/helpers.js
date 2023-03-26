@@ -1,5 +1,5 @@
-// Previous: 1.3.65
-// Current: 1.3.66
+// Previous: 1.3.66
+// Current: 1.3.78
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -78,17 +78,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   }, [languagesObject]);
 
   useEffect(() => {
-    let detectedLanguage = (document.querySelector('html').lang || navigator.language || navigator.userLanguage).substr(0, 2);
-    if (languages.find(l => l.value === detectedLanguage)) {
-      setCurrentLanguage(detectedLanguage);
-    }
-  }, []);
-
-  useEffect(() => {
-    setCurrentLanguage(startLanguage);
-  }, [startLanguage]);
-
-  useEffect(() => {
     if (startCustom) {
       setIsCustom(true);
       setCustomLanguage(startCustom);
@@ -98,7 +87,30 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startCustom]);
+
+  useEffect(() => {
+    setCurrentLanguage(startLanguage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startLanguage]);
+
+  useEffect(() => {
+    // Use the language stored in the local storage if it exists
+    let preferredLanguage = localStorage.getItem('mwai_preferred_language');
+    if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
+      setCurrentLanguage(preferredLanguage);
+      return;
+    }
+
+    // Otherwise, try to detect the language from the browser
+    let detectedLanguage = (document.querySelector('html').lang || navigator.language
+      || navigator.userLanguage).substr(0, 2);
+    if (languages.find(l => l.value === detectedLanguage)) {
+      setCurrentLanguage(detectedLanguage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
@@ -110,7 +122,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom, languages]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -118,6 +130,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       return;
     }
     setCurrentLanguage(value);
+    localStorage.setItem('mwai_preferred_language', value);
   }
 
   const jsxLanguageSelector = useMemo(() => {
@@ -137,7 +150,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, languages, isCustom, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -145,7 +158,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 
 const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const [model, setModel] = useState(defaultModel);
-  const deletedFineTunes = options?.openai_finetunes_deleted || [];
+  const decryptedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
     let allModels = options.openai_models;
@@ -176,8 +189,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   }, [options]);
 
   const models = useMemo(() => {
-    return allModels.filter(x => !deletedFineTunes.includes(x.model));
-  }, [allModels, deletedFineTunes]);
+    return allModels.filter(x => !decryptedFineTunes.includes(x.model));
+  }, [allModels, decryptedFineTunes]);
 
   const completionModels = useMemo(() => {
     return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
@@ -186,8 +199,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301') {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model === 'gpt-4-0314') {
+    } else if (model === 'gpt-4-0314') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -230,7 +242,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
     if (price) {
-      return price * units * (modelObj['unit'] || 1);
+      return price * units * modelObj['unit'];
     }
     return 0;
   }
@@ -265,6 +277,8 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -292,3 +306,8 @@ function reduceContent(content, tokens = 2048) {
   }
   return reduced;
 }
+
+export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages,
+  searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,
+  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
+};
