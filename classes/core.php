@@ -68,20 +68,23 @@ class Meow_MWAI_Core
 
 	// Clean the text perfectly, resolve shortcodes, etc, etc.
   function cleanText( $rawText = "" ) {
-    $text = strip_tags( $rawText );
-    $text = strip_shortcodes( $text );
+		$text = html_entity_decode( $rawText );
+		$text = wp_strip_all_tags( $text );
+		$text = preg_replace( '/[\r\n]+/', "\n", $text );
+		return $text . " ";
 
-		// Remove everything <script>...</script>, <style>...</style> ?
-
-    $text = html_entity_decode( $text );
-    $text = str_replace( array( "\r", "\n" ), "", $text );
-    $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
-    foreach ( $sentences as $key => $sentence ) {
-      $sentences[$key] = trim( $sentence );
-    }
-    $text = implode( " ", $sentences );
-    $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
-    return $text . " ";
+		// Before simplification:
+    // $text = strip_tags( $rawText );
+    // $text = strip_shortcodes( $text );
+    // $text = html_entity_decode( $text );
+		// $text = preg_replace( '/[\r\n]+/', "\n", $text );
+    // $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
+    // foreach ( $sentences as $key => $sentence ) {
+    //   $sentences[$key] = trim( $sentence );
+    // }
+    // $text = implode( " ", $sentences );
+    // $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
+    // return $text . " ";
   }
 
   // Make sure there are no duplicate sentences, and keep the length under a maximum length.
@@ -388,6 +391,27 @@ class Meow_MWAI_Core
 			);
 		}
 		return $post_types;
+	}
+
+	function getCleanPost( $post ) {
+		if ( is_object( $post ) ) {
+			$post = (array)$post;
+		}
+		$language = $this->get_post_language( $post['ID'] );
+		$content = $this->cleanText( $post['post_content'] );
+		$title = $post['post_title'];
+		$excerpt = $post['post_excerpt'];
+		$url = get_permalink( $post['ID'] );
+		$checksum = wp_hash( $content . $title . $url );
+		return [
+			'postId' => $post['ID'],
+			'title' => $title,
+			'content' => $content,
+			'excerpt' => $excerpt,
+			'url' => $url,
+			'language' => $language,
+			'checksum' => $checksum,
+		];
 	}
 
 	#endregion

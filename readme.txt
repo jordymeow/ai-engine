@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.79
+Stable tag: 1.3.80
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.79 (2023/03/26) =
+= 1.3.80 (2023/03/26) =
+* Update: Embeddings are more dynamic, handle better hashes, better bulk actions, more placeholders.
 * Add: Customization of the admin bar.
 * Update: Enhanced the language picker to remember current user choice.
 * Fix: The limits were off of one unit.

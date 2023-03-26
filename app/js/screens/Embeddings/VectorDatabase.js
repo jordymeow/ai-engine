@@ -1,12 +1,14 @@
-// Previous: 1.3.58
-// Current: 1.3.64
+// Previous: 1.3.64
+// Current: 1.3.80
 
+// React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput,
   NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock, NekoCheckbox,
-  NekoWrapper, NekoColumn, NekoContainer } from '@neko-ui';
+  NekoWrapper, NekoColumn, NekoContainer, NekoIcon } from '@neko-ui';
 import { nekoFetch, useNekoTasks, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '@root/i18n';
@@ -15,6 +17,7 @@ import { searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent
 import { retrievePostTypes } from '@app/requests';
 
 const searchColumns = [
+  //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'status', title: 'Status', width: '80px' },
   { accessor: 'title', title: 'Title', sortable: true },
   { accessor: 'type', title: 'Type', sortable: true, width: '60px' },
@@ -26,6 +29,7 @@ const searchColumns = [
 ];
 
 const queryColumns = [
+  //{ accessor: 'id', title: 'ID', sortable: true, width: '60px' },
   { accessor: 'status', title: 'Status', sortable: true, width: '80px' },
   { accessor: 'title', title: 'Title', sortable: false },
   { accessor: 'type', title: 'Type', sortable: true, width: '60px' },
@@ -34,6 +38,36 @@ const queryColumns = [
   { accessor: 'created', title: 'Created', sortable: true, width: '80px' },
   { accessor: 'actions', title: '', width: '65px'  }
 ];
+
+// Status can be: pending, succeeded, failed, or cancelled
+const StatusIcon = ({ status, includeText = false }) => {
+  const { colors } = useNekoColors();
+  
+  const orange = colors.orange;
+  const green = colors.green;
+  const red = colors.red;
+
+  // Let's set the right icon and color based on the status
+  let icon = null;
+  switch (status) {
+    case 'outdated':
+      icon = <NekoIcon title={status} icon="alert" width={24} color={orange} />;
+      break;
+    case 'ok':
+      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
+      break;
+    default:
+      icon = <NekoIcon title={status} icon="alert" width={24} color={orange} />;
+      break;
+  }
+  if (includeText) {
+    return <div style={{ display: 'flex', alignItems: 'center' }}>
+      {icon} 
+      <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3 }}>{status}</span>
+    </div>;
+  }
+  return icon;
+}
 
 const VectorDatabase = ({ options, updateOption }) => {
   const queryClient = useQueryClient();
@@ -45,9 +79,10 @@ const VectorDatabase = ({ options, updateOption }) => {
   const [ embeddingModal, setEmbeddingModal ] = useState(false);
   const [ indexModal, setIndexModal ] = useState(false);
   const [ selectedIds, setSelectedIds ] = useState([]);
+  //const [ currentTab, setCurrentTab ] = useState('all');
   const [ syncSettings, setSyncSettings ] = useState({
     rewriteContent: true,
-    prompt: "Rewrite the following content in a concise way, in {LANGUAGE}, with the same style and information. The new content should be less than 800 words and divided into paragraphs of 160-280 words each. Exclude any non-textual elements and eliminate any unnecessary repetition. If you are unable to meet these requirements, please respond with an empty message.\n\n{CONTENT}",
+    prompt: "Rewrite the content concisely in {LANGUAGE}, maintaining the same style and information. The revised text should be under 800 words, with paragraphs ranging from 160-280 words each. Omit non-textual elements and avoid unnecessary repetition. Conclude with a statement directing readers to find more information at {URL}. If you cannot meet these requirements, please leave a blank response.\n\n{CONTENT}",
     createEmbeddingEachParagraph: false,
     forceRecreate: false,
   });
@@ -102,6 +137,8 @@ const VectorDatabase = ({ options, updateOption }) => {
     }
   }, [mode]);
 
+  // #region Indexes
+
   const onAddIndex = async () => {
     setBusy('addIndex');
     const res = await nekoFetch(`${apiUrl}/pinecone/add_index`, { nonce: restNonce, method: 'POST',
@@ -121,7 +158,7 @@ const VectorDatabase = ({ options, updateOption }) => {
   
   const onSelectIndex = async (index) => {
     const freshPinecone = { ...pinecone, index };
-    await updateOption(freshPinecone, 'pinecone');
+    updateOption(freshPinecone, 'pinecone');
   }
 
   const onDeleteIndex = async () => {
@@ -156,6 +193,10 @@ const VectorDatabase = ({ options, updateOption }) => {
     }
     setBusy(false);
   }
+
+  // #endregion
+
+  // #region Embeddings
 
   const onSearch = async () => {
     setBusy('searchVectors');
@@ -258,11 +299,15 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy(false);
   }
 
-  const rewriteContent = async (content, language = "english", signal) => {
+  const rewriteContent = async (post, language = "english", signal) => {
     if (!syncSettings.rewriteContent) {
-      return content;
+      return post.content;
     }
-    let prompt = syncSettings.prompt.replace('{CONTENT}', content);
+    let prompt = syncSettings.prompt.replace('{CONTENT}', post.content);
+    prompt = prompt.replace('{TITLE}', post.title);
+    prompt = prompt.replace('{URL}', post.url);
+    prompt = prompt.replace('{EXCERPT}', post.excerpt);
+    prompt = prompt.replace('{ID}', post.postId);
     prompt = prompt.replace('{LANGUAGE}', language);
     const res = await nekoFetch(`${apiUrl}/make_completions`, {
       method: 'POST',
@@ -277,7 +322,7 @@ const VectorDatabase = ({ options, updateOption }) => {
       throw new Error(res.message ?? "Unknown error, check your console logs.");
     }
     const rewrittenContent = res?.data;
-    console.log("Content rewritten.", { from: content, to: rewrittenContent });
+    console.log("Content rewritten.", { from: post.content, to: rewrittenContent });
     return rewrittenContent;
   }
 
@@ -290,7 +335,7 @@ const VectorDatabase = ({ options, updateOption }) => {
     if (!data?.vectors) { return []; }
 
     if (mode === 'search') {
-      data.vectors = [...data.vectors].sort((a, b) => {
+      data.vectors = data.vectors.sort((a, b) => {
         if (foundVectorsSort.by === 'asc') {
           return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
         }
@@ -319,7 +364,7 @@ const VectorDatabase = ({ options, updateOption }) => {
         refId: x.refId ? x.refId : '-',
         score: x.score ? (x.score.toFixed(4) * 100).toFixed(2) : '-',
         title: x.title,
-        status: x.status,
+        status: <StatusIcon status={x.status} includeText />,
         updated: updatedFormattedTime,
         created: createdFormattedTime,
         actions: <>
@@ -336,6 +381,10 @@ const VectorDatabase = ({ options, updateOption }) => {
     })
   }, [mode, vectorsData, foundVectorsData, foundVectorsSort, isBusy]);
 
+  // #endregion
+
+  // #region Sync
+
   const cancelledByUser = () => {
     console.log('User aborted.');
     setBusy(false);
@@ -346,6 +395,8 @@ const VectorDatabase = ({ options, updateOption }) => {
     const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let content = resContent?.content ?? null;
     const title = resContent?.title ?? null;
+    const url = resContent?.url ?? null;
+    const excerpt = resContent?.excerpt ?? null;
     const checksum = resContent?.checksum ?? null;
     const language = resContent?.language ?? "english";
     postId = resContent?.postId ? parseInt(resContent?.postId) : null;
@@ -355,6 +406,8 @@ const VectorDatabase = ({ options, updateOption }) => {
 
     console.log("* Post ID " + postId);
 
+    // If content is too big, we'll need to reduce it to maximum 6000 characters.
+    
     if (estimateTokens(content) > 2048) {
       content = reduceContent(content, 2048);
       console.log("Too much content. Reduced it to approximatively 2048 tokens.", { 
@@ -380,6 +433,7 @@ const VectorDatabase = ({ options, updateOption }) => {
       alert(`Multiple embeddings for one single post are not handled yet. Please delete the embeddings related to ${postId} manually.`);
       return false;
     }
+    // EXISTING EMBEDDING
     else if (embeddings.length === 1) {
       const embedding = embeddings[0];
       if (embedding.refChecksum === checksum && !syncSettings.forceRecreate) {
@@ -395,7 +449,8 @@ const VectorDatabase = ({ options, updateOption }) => {
             new: content
           });
         }
-        let embeddingContent = await rewriteContent(content, language, signal);
+        const post = { postId, content, title, url, excerpt, checksum, language };
+        let embeddingContent = await rewriteContent(post, language, signal);
         if (!embeddingContent || embeddingContent.length < 64) {
           await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
           console.warn("Embeddings are too short. Embeddings deleted.", { content });
@@ -407,8 +462,10 @@ const VectorDatabase = ({ options, updateOption }) => {
         }
       }
     }
+    // NEW EMBEDDING
     else {
-      let embeddingContent = await rewriteContent(content, language, signal);
+      const post = { postId, content, title, url, excerpt, checksum, language };
+      let embeddingContent = await rewriteContent(post, language, signal);
       if (!embeddingContent || embeddingContent.length < 64) {
         await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
         console.log("Embeddings are too short. Skipped.", { content });
@@ -429,15 +486,24 @@ const VectorDatabase = ({ options, updateOption }) => {
 
   const onBulkRunClick = async () => {
     setBusy('bulkRun');
-    const offsets = Array.from(Array(postsCount).keys());
-    const startOffset = 0;
-    let tasks = offsets.map(offset => async (signal) => {
-      if (startOffset && offset < startOffset) {
+    let tasks = [];
+    if (selectedIds.length > 0) {
+      // Selected IDs
+      const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id))
+        .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null);
+      tasks = postIds.map(postId => async (signal) => {
+        await runProcess(0, postId, signal);
         return { success: true };
-      }
-      await runProcess(offset, null, signal);
-      return { success: true };
-    });
+      });
+    }
+    else {
+      // All IDs
+      const offsets = Array.from(Array(postsCount).keys());
+      tasks = offsets.map(offset => async (signal) => {
+        await runProcess(offset, null, signal);
+        return { success: true };
+      });
+    }
     await bulkTasks.start(tasks);
     setBusy(false);
     alert("All done!");
@@ -459,10 +525,14 @@ const VectorDatabase = ({ options, updateOption }) => {
     setBusy(false);
   }
 
+  // #endregion
+
   return (<>
     <NekoWrapper>
 
       <NekoColumn fullWidth minimal style={{ marginBottom: -10 }}>
+
+        <div style={{ display: 'flex' }}>
 
           <NekoContainer style={{ margin: 10 }} contentStyle={{ padding: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -472,38 +542,26 @@ const VectorDatabase = ({ options, updateOption }) => {
                 checked={mode === 'search'} onChange={setMode} 
                 onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
               />
-              {mode === 'search' && <div style={{ flex: 'auto', display: 'flex' }}>
-                <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
-                  disabled={isBusy || !index || !indexIsReady}
-                  value={search} onChange={setSearch} onEnter={onSearch}
-                  onReset={() => { setSearch(); setFoundVectorsData({ total: 0, vectors: [] }); }} />
-                <NekoButton className="primary" onClick={onSearch} disabled={isBusy || !index || !indexIsReady}
-                  isBusy={busy === 'searchVectors'}>
-                  Search
-                </NekoButton>
-              </div>}
               {mode === 'edit' && <>
                 <NekoButton className="primary" disabled={isBusy || !index || !indexIsReady}
                   onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} >
                   Add
                 </NekoButton>
-                {selectedIds.length > 0 && <>
-                  <NekoButton className="danger" disabled={isBusy || !index || !indexIsReady}
-                    onClick={deleteSelected} >
-                    Delete
-                  </NekoButton>
-                </>}
-                <div style={{ marginRight: 10, width: 2, background: '#bedceb', marginLeft: 10,
-                  height: 30, borderRadius: 10 }} />
-                <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'singleRun'}
-                  onClick={() => OnSingleRunClick()}>
-                  Sync One
-                </NekoButton>
-                <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
-                  onClick={() => onBulkRunClick()}>
-                  Sync All
-                </NekoButton>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
+              </>}
+            </div>
+          </NekoContainer>
+
+          <NekoContainer style={{ margin: 10, flex: 'auto' }} contentStyle={{ padding: 10, display: 'flex' }}>
+            {mode === 'edit' && <>
+
+              {/* Selected Items */}
+              {selectedIds.length > 0 && <div style={{ display: 'flex', alignItems: 'center' }}>
+                {selectedIds.length} selected
+              </div>}
+
+              {/* Total Posts + Post Type Select */}
+              {!selectedIds.length && <>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
                 </div>
                 <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
@@ -512,11 +570,50 @@ const VectorDatabase = ({ options, updateOption }) => {
                     <NekoOption key={postType.type} value={postType.type} label={postType.name} />
                   )}
                 </NekoSelect>
-                <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
-                  value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
               </>}
-            </div>
+
+              {/* Progress Bar */}
+              <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
+                value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
+
+              {/* Actions for Selected Items */}
+              {selectedIds.length > 0 && <>
+                <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
+                  style={{ marginLeft: 10 }}
+                  onClick={onBulkRunClick}>
+                  Sync Selected
+                </NekoButton>
+                <NekoButton className="danger" disabled={isBusy || !index || !indexIsReady}
+                  onClick={deleteSelected} >
+                  Delete Selected
+                </NekoButton>
+              </>}
+
+              {/* Actions for All Posts */}
+              {!selectedIds.length && <>
+                <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
+                  style={{ marginLeft: 10 }}
+                  onClick={onBulkRunClick}>
+                  Sync All
+                </NekoButton>
+                <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'singleRun'}
+                  onClick={OnSingleRunClick}>
+                  Sync One
+                </NekoButton>
+              </>}
+            </>}
+            {mode === 'search' && <div style={{ flex: 'auto', display: 'flex' }}>
+              <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
+                disabled={isBusy || !index || !indexIsReady}
+                value={search} onChange={setSearch} onEnter={onSearch}
+                onReset={() => { setSearch(); setFoundVectorsData({ total: 0, vectors: [] }); }} />
+              <NekoButton className="primary" onClick={onSearch} disabled={isBusy || !index || !indexIsReady}
+                isBusy={busy === 'searchVectors'}>
+                Search
+              </NekoButton>
+            </div>}
           </NekoContainer>
+        </div>
 
       </NekoColumn>
 
@@ -533,6 +630,7 @@ const VectorDatabase = ({ options, updateOption }) => {
               }
             }}
             data={vectorsRows} columns={columns} 
+            onSelectRow={id => { setSelectedIds(id) }}
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
             selectedItems={selectedIds}
@@ -561,7 +659,7 @@ const VectorDatabase = ({ options, updateOption }) => {
           <label>Index:</label>
           <NekoSelect fullWidth scrolldown name="server" style={{ marginRight: 5 }} disabled={isBusy}
             value={pinecone.index} onChange={value => onSelectIndex(value)}>
-            {indexes.map(x => <NekoOption key={x.name} value={x.name} />)}
+            {indexes.map(x => <NekoOption value={x.name} label={x.name} />)}
             {!indexes?.length && <NekoOption value={''} label="None" />}
           </NekoSelect>
           <NekoSpacer />
@@ -582,6 +680,9 @@ const VectorDatabase = ({ options, updateOption }) => {
           <NekoSpacer />
           <label>Namespace:</label>
           <NekoInput fullWidth disabled={true} value={pinecone.namespace} />
+          {/* <NekoButton className="primary" onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} disabled={busy}>
+            Create Index
+          </NekoButton> */}
           {index && !indexIsReady && <NekoMessage variant="danger" style={{ marginTop: 15, padding: '8px 12px' }}>
             This index is currently being build by Pinecone. Wait a few minutes, then use the <b>Refresh</b> button.
           </NekoMessage>}
@@ -653,7 +754,7 @@ const VectorDatabase = ({ options, updateOption }) => {
         <NekoSpacer />
         <label>Behavior:</label>
         <NekoSpacer />
-        <NekoSelect scrolldown name="behavior" disabled={isBusy}
+        <NekoSelect scrolldown name="behavior" disabled={isBusy || true}
           value={embeddingModal?.behavior} onChange={value => {
             setEmbeddingModal({ ...embeddingModal, behavior: value });
           }}>
@@ -663,7 +764,7 @@ const VectorDatabase = ({ options, updateOption }) => {
         <NekoSpacer />
         <label>Type:</label>
         <NekoSpacer />
-        <NekoSelect scrolldown name="type" disabled={isBusy}
+        <NekoSelect scrolldown name="type" disabled={isBusy || true}
           value={embeddingModal?.type} onChange={value => {
             setEmbeddingModal({ ...embeddingModal, type: value });
           }}>

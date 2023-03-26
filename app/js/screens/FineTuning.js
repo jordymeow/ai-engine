@@ -1,12 +1,10 @@
-// Previous: 1.3.64
-// Current: 1.3.65
+// Previous: 1.3.65
+// Current: 1.3.80
 
-// React & Vendor Libs
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
-// NekoUI
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
   NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage, NekoColumn,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
@@ -84,7 +82,7 @@ const StatusIcon = ({ status, includeText = false }) => {
   if (includeText) {
     return <div style={{ display: 'flex', alignItems: 'center' }}>
       {icon} 
-      <span style={{ textTransform: 'uppercase', fontSize: 10, marginLeft: 5 }}>{status}</span>
+      <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3 }}>{status}</span>
     </div>;
   }
   return icon;
@@ -110,7 +108,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data} />
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -167,7 +165,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries(['datasets']);
+    await queryClient.invalidateQueries('datasets');
   }
 
   const onRefreshFiles = async () => {
@@ -325,10 +323,6 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const cancelFineTune = async (finetuneId) => {
-    // Are you sure
-    // if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
-    //   return;
-    // }
     setBusyAction(true);
     try {
       const res = await nekoFetch(`${apiUrl}/openai_finetunes_cancel`, { 
@@ -336,6 +330,7 @@ const FineTuning = ({ options, updateOption }) => {
       });
       if (res.success) {
         onRefreshFineTunes();
+        //await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
       }
       else {
         alert(res.message);
@@ -513,7 +508,7 @@ const FineTuning = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; // getMonth returns a 0-based value
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -595,8 +590,8 @@ const FineTuning = ({ options, updateOption }) => {
 
   const onFormatWithDefaults = () => {
     const newBuilderData = builderData.map(x => {
-      let prompt = x.prompt || '';
-      let completion = x.completion || '';
+      let prompt = x.prompt;
+      let completion = x.completion;
       if (!prompt.endsWith(defaultPromptEnding)) {
         prompt = prompt.trim();
         prompt += defaultPromptEnding;
@@ -708,7 +703,7 @@ const FineTuning = ({ options, updateOption }) => {
           </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-              onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+              onCurrentPage={setCurrentPage} />
         </div>
       </>}
 
@@ -721,9 +716,9 @@ const FineTuning = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPage={setCurrentPage} />
         </div>
-        <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
+        <NekoSpacer height={40} line style={{ marginBottom: 0 }} />
 
         {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
           Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
