@@ -1,5 +1,5 @@
-// Previous: 1.3.65
-// Current: 1.3.80
+// Previous: none
+// Current: 1.3.81
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,10 +11,10 @@ import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon
 import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers';
-import DatasetBuilder from '@app/screens/FineTuning/DatasetBuilder';
+import DatasetEditor from '@app/screens/finetunes/DatasetsEditor';
 import i18n from '@root/i18n';
 import { retrieveFiles, retrieveFineTunes } from '@app/requests';
-import { retrieveDeletedFineTunes } from '../requests';
+import { retrieveDeletedFineTunes } from '../../requests';
 
 const builderColumns = [
   { accessor: 'row', title: "#", width: 15, verticalAlign: 'top' },
@@ -50,7 +50,7 @@ let defaultCompletionEnding = "\n\n";
 
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
-  
+
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -58,22 +58,16 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
-      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
     case 'succeeded':
-      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
-      break;
     case 'processed':
       icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
       break;
     case 'failed':
-      icon = <NekoIcon title={status} icon="close" width={24} color={red} />;
-      break;
     case 'cancelled':
-      icon = <NekoIcon title={status} icon="close" width={24} color={orange} />;
+      icon = <NekoIcon title={status} icon="close" width={24} color={red} />;
       break;
     default:
       icon = <NekoIcon title={status} icon="alert" width={24} color={orange} />;
@@ -108,7 +102,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data} />
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -118,7 +112,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     onClick={() => setIsEdit(true)}>{children}</pre>;
 }
 
-const FineTuning = ({ options, updateOption }) => {
+const Finetunes = ({ options, updateOption }) => {
   const { colors } = useNekoColors();
   const queryClient = useQueryClient();
   const [ fileForFineTune, setFileForFineTune ] = useState();
@@ -165,7 +159,7 @@ const FineTuning = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries('datasets');
+    await queryClient.invalidateQueries(['datasets']);
   }
 
   const onRefreshFiles = async () => {
@@ -330,7 +324,6 @@ const FineTuning = ({ options, updateOption }) => {
       });
       if (res.success) {
         onRefreshFineTunes();
-        //await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
       }
       else {
         alert(res.message);
@@ -357,8 +350,7 @@ const FineTuning = ({ options, updateOption }) => {
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
-        }
-        else {
+        } else {
           alert(res.message);
         }
       }
@@ -373,10 +365,8 @@ const FineTuning = ({ options, updateOption }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
-      console.log({ fileId, filename });
       const res = await nekoFetch(`${apiUrl}/openai_files_download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
-        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -485,7 +475,6 @@ const FineTuning = ({ options, updateOption }) => {
         let json = JSON.stringify(x);
         return json;
       }).join("\n");
-      console.log(data);
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
       if (res.success) {
@@ -584,7 +573,6 @@ const FineTuning = ({ options, updateOption }) => {
   }
 
   const addRow = (prompt = 'Text...\n\n###\n\n', completion = 'Text...\n\n') => {
-    console.log(prompt, completion);
     setBuilderData([...builderData, { prompt, completion }]);
   }
 
@@ -667,7 +655,6 @@ const FineTuning = ({ options, updateOption }) => {
           </NekoButton>
           <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
         </div>
-        
       </>}
 
       {isModeTrain && section === 'files' && <>
@@ -679,7 +666,7 @@ const FineTuning = ({ options, updateOption }) => {
       </>}
 
       {!isModeTrain && dataSection === 'generator' && <>
-        <DatasetBuilder setBuilderData={setBuilderData} />
+        <DatasetEditor setBuilderData={setBuilderData} />
       </>}
 
       {!isModeTrain && dataSection === 'editor' && <>
@@ -703,7 +690,7 @@ const FineTuning = ({ options, updateOption }) => {
           </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-              onCurrentPage={setCurrentPage} />
+              onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
       </>}
 
@@ -716,9 +703,9 @@ const FineTuning = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPage={setCurrentPage} />
+            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
-        <NekoSpacer height={40} line style={{ marginBottom: 0 }} />
+        <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 
         {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
           Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
@@ -795,3 +782,5 @@ const FineTuning = ({ options, updateOption }) => {
     </NekoContainer>
   </>);
 };
+
+export default Finetunes;

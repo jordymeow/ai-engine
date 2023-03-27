@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.80
+Stable tag: 1.3.81
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,15 +69,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.81 (2023/03/27) =
+* Update: Enhanced the discussions management.
+* Update: Translations.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
+
 = 1.3.80 (2023/03/26) =
 * Update: Embeddings are more dynamic, handle better hashes, better bulk actions, more placeholders.
 * Add: Customization of the admin bar.
 * Update: Enhanced the language picker to remember current user choice.
 * Fix: The limits were off of one unit.
 * Add: Copy button for the output field in the AI Forms.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Share your feedbacks/issues in the [Support Threads](https://wordpress.org/support/plugin/ai-engine/).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.77 (2023/03/25) =
 * Add: Max Tokens for the Forms.

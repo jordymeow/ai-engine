@@ -1,5 +1,5 @@
-// Previous: 1.3.64
-// Current: 1.3.80
+// Previous: none
+// Current: 1.3.81
 
 // React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
@@ -47,7 +47,6 @@ const StatusIcon = ({ status, includeText = false }) => {
   const green = colors.green;
   const red = colors.red;
 
-  // Let's set the right icon and color based on the status
   let icon = null;
   switch (status) {
     case 'outdated':
@@ -69,7 +68,7 @@ const StatusIcon = ({ status, includeText = false }) => {
   return icon;
 }
 
-const VectorDatabase = ({ options, updateOption }) => {
+const Embeddings = ({ options, updateOption }) => {
   const queryClient = useQueryClient();
   const { colors } = useNekoColors();
   const [ postType, setPostType ] = useState('post');
@@ -155,10 +154,10 @@ const VectorDatabase = ({ options, updateOption }) => {
     }
     setBusy(false);
   }
-  
-  const onSelectIndex = async (index) => {
-    const freshPinecone = { ...pinecone, index };
-    updateOption(freshPinecone, 'pinecone');
+
+  const onSelectIndex = async (idx) => {
+    const freshPinecone = { ...pinecone, index: idx };
+    await updateOption(freshPinecone, 'pinecone');
   }
 
   const onDeleteIndex = async () => {
@@ -406,8 +405,6 @@ const VectorDatabase = ({ options, updateOption }) => {
 
     console.log("* Post ID " + postId);
 
-    // If content is too big, we'll need to reduce it to maximum 6000 characters.
-    
     if (estimateTokens(content) > 2048) {
       content = reduceContent(content, 2048);
       console.log("Too much content. Reduced it to approximatively 2048 tokens.", { 
@@ -585,7 +582,7 @@ const VectorDatabase = ({ options, updateOption }) => {
                 </NekoButton>
                 <NekoButton className="danger" disabled={isBusy || !index || !indexIsReady}
                   onClick={deleteSelected} >
-                  Delete Selected
+                  {i18n.COMMON.DELETE_SELECTED}
                 </NekoButton>
               </>}
 
@@ -648,7 +645,7 @@ const VectorDatabase = ({ options, updateOption }) => {
               disabled={busyFetchingVectors || !index}
               onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ['vectors'] });
-            }}>Refresh</NekoButton>
+            }}>{i18n.COMMON.REFRESH}</NekoButton>
           </div>
 
         </NekoBlock>
@@ -670,15 +667,15 @@ const VectorDatabase = ({ options, updateOption }) => {
             </NekoButton>
             <NekoButton className="secondary" onClick={onRefreshIndexes} style={{ flex: 1 }}
               isBusy={busy === 'refreshIndexes'} disabled={isBusy}>
-              Refresh
+              {i18n.COMMON.REFRESH}
             </NekoButton>
             <NekoButton className="danger" onClick={onDeleteIndex} style={{ flex: 1 }}
               isBusy={busy === 'deleteEmbeddings'} disabled={isBusy || !index || !indexIsReady}>
-              Delete
+              {i18n.COMMON.DELETE}
             </NekoButton>
           </div>
           <NekoSpacer />
-          <label>Namespace:</label>
+          <label>{i18n.COMMON.NAMESPACE}:</label>
           <NekoInput fullWidth disabled={true} value={pinecone.namespace} />
           {/* <NekoButton className="primary" onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} disabled={busy}>
             Create Index
@@ -696,7 +693,7 @@ const VectorDatabase = ({ options, updateOption }) => {
           <NekoSpacer />
           {syncSettings.rewriteContent && <NekoTextArea value={syncSettings.prompt} rows={10}
             onChange={value => { setSyncSettings({ ...syncSettings, prompt: value }); }}
-            description={`This is the prompt that will be used to rewrite the content. Use {CONTENT} to insert the original content.`}
+            description={`This is the prompt that will be used to rewrite the content. Use {CONTENT} to insert the original content. Also supports {TITLE}, {URL}, {EXCERPT}, {LANGUAGE} and {ID}.`}
           />}
           <NekoCheckbox label="Force re-create" checked={syncSettings.forceRecreate}
             onChange={value => { setSyncSettings({ ...syncSettings, forceRecreate: value }); }}
@@ -817,4 +814,4 @@ const VectorDatabase = ({ options, updateOption }) => {
   </>);
 }
 
-export default VectorDatabase;
+export default Embeddings;

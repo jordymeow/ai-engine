@@ -1,5 +1,5 @@
-// Previous: 1.3.58
-// Current: 1.3.64
+// Previous: none
+// Current: 1.3.81
 
 const { useState, useEffect } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +23,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
 
   const createEntriesFromRaw = (rawData) => {
@@ -37,9 +37,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length > 0) {
-          entries[entries.length - 1].completion = arr[i].slice(2).trim();
-        }
+        if (entries.length === 0) continue;
+        entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
     return entries;
@@ -47,7 +46,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId);
+    const resContent = await retrievePostContent(postType, offset, postId !== undefined ? postId : undefined);
     let error = null;
     let rawData = null;
     let content = resContent?.content;
@@ -58,10 +57,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content && content.length < 64) {
+    else if (content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
-    else if (content) {
+    else {
       finalPrompt = finalPrompt.replace('{CONTENT}', content);
       finalPrompt = finalPrompt.replace('{URL}', url);
       finalPrompt = finalPrompt.replace('{TITLE}', title);
@@ -89,7 +88,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
       rawData = res?.data;
       if (res?.usage?.total_tokens) {
         tokens = res.usage.total_tokens;
-        setTotalTokens(prev => prev + res.usage.total_tokens);
+        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
       }
     }
     if (signal?.aborted) {
@@ -110,11 +109,12 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffsetInput = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetInput, 10);
+    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffset = parseInt(startOffsetStr);
+    const validStartOffset = isNaN(startOffset) ? 0 : startOffset;
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetInput && offset < startOffset) {
+      if (startOffsetStr !== null && offset < validStartOffset) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
@@ -132,14 +132,14 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onQuickTestClick = async () => {
     setTotalTokens(0);
     const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    const postId = postIdInput !== "" ? postIdInput : null;
-    if (postId === null) {
+    if (postIdInput === null) {
       return;
     }
+    const postId = postIdInput.trim() === "" ? undefined : postIdInput.trim();
     setQuickBusy(true);
     const result = await runProcess(0, postId);
     setQuickBusy(false);
-    if (!result.entries || result.entries.length === 0) {
+    if (!(result?.entries?.length)) {
       alert("No entries were generated. Check the console for more information.");
     }
     else {
@@ -160,12 +160,12 @@ const DatasetBuilder = ({ setBuilderData }) => {
           Run Bulk Generate
         </NekoButton>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
-          {isLoadingCount ? '...' : `Based on ${postsCount}`}
+          Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
-          {postTypes?.map(pt => 
-            <NekoOption key={pt.type} value={pt.type} label={pt.name} />
+          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          {postTypes?.map(postType => 
+            <NekoOption key={postType.type} value={postType.type} label={postType.name} />
           )}
         </NekoSelect>
         <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}

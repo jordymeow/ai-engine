@@ -51,8 +51,12 @@ class Meow_MWAI_Modules_Chatbot_Chats {
   function rest_chats_delete( $request ) {
     try {
       $params = $request->get_json_params();
-      $chatId = $params['chatId'];
-      $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId ] );
+      $chatsIds = $params['chatIds'];
+      if ( is_array( $chatsIds ) ) {
+        foreach( $chatsIds as $chatId ) {
+          $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId ] );
+        }
+      }
       return new WP_REST_Response([ 'success' => true ], 200 );
     }
     catch ( Exception $e ) {

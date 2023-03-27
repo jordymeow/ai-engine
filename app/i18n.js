@@ -139,6 +139,9 @@ i18n.COMMON = {
   GENERATE_CONTENT: __( 'Generate Content', 'ai-engine' ),
   GENERATE_IMAGES: __( 'Generate Images', 'ai-engine' ),
   ADMIN_BAR: __( 'Admin Bar', 'ai-engine' ),
+  REFRESH: __( 'Refresh', 'ai-engine' ),
+  DELETE: __( 'Delete', 'ai-engine' ),
+  DELETE_SELECTED: __( 'Delete Selected', 'ai-engine' ),
 }
 
 i18n.FORMS = {

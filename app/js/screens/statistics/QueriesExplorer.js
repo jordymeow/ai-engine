@@ -1,5 +1,5 @@
-// Previous: 1.2.3
-// Current: 1.3.2
+// Previous: none
+// Current: 1.3.81
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -8,7 +8,7 @@ import { apiUrl, restNonce, options } from '@app/settings';
 import { NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoButton } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useModels } from '../helpers';
+import { useModels } from '../../helpers';
 
 const logsColumns = [
   { accessor: 'id', title: 'ID', width: '50px' },
@@ -28,7 +28,7 @@ const retrieveLogs = async (logsQueryParams) => {
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
 }
 
-const LogsExplorer = () => {
+const QueriesExplorer = () => {
   const queryClient = useQueryClient();
   const [ logsQueryParams, setLogsQueryParams ] = useState({
     filters: null, sort: { accessor: 'time', by: 'desc' }, page: 1, limit: 20
@@ -42,9 +42,9 @@ const LogsExplorer = () => {
 
   useEffect(() => {
     if (currentTab === 'all') {
-      setLogsQueryParams(prev => ({ ...prev, filters: null }));
+      setLogsQueryParams({ ...logsQueryParams, filters: null });
     } else {
-      setLogsQueryParams(prev => ({ ...prev, filters: { env: currentTab } }));
+      setLogsQueryParams({ ...logsQueryParams, filters: { env: currentTab } });
     }
   }, [currentTab]);
 
@@ -54,7 +54,7 @@ const LogsExplorer = () => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = new Date(x.time);
       time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
       let formattedTime = time.toLocaleDateString('ja-JP', {
@@ -65,21 +65,22 @@ const LogsExplorer = () => {
         id: x.id,
         env: x.env,
         ip: x.ip,
-        userId: x.userId ? <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
+        userId: x.userId ? <a target="_blank" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
         model: <span title={x.model}>{getModelName(x.model)}</span>,
         units: x.units,
         type: x.type,
         price: <>${x.price}</>,
         time: formattedTime,
       }
-    });
+    })
   }, [logsData, getModelName]);
 
   return (<>
+
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
       <NekoQuickLinks value={currentTab} onChange={value => {
           setCurrentTab(value);
-          setLogsQueryParams(prev => ({ ...prev, page: 1 }));
+          setLogsQueryParams({ ...logsQueryParams, page: 1 });
         }}>
         <NekoLink title="All" value='all' />
         <NekoLink title="Chatbot" value='chatbot' />
@@ -90,7 +91,7 @@ const LogsExplorer = () => {
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
             total={logsTotal} onClick={page => { 
-              setLogsQueryParams(prev => ({ ...prev, page }));
+              setLogsQueryParams({ ...logsQueryParams, page });
             }}
           />
           <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={isFetchingLogs}
@@ -100,13 +101,14 @@ const LogsExplorer = () => {
         </div>
       </div>
     </div>
+
     <NekoTable alternateRowColor busy={isFetchingLogs}
       sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-        setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+        setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
       }}
       data={logsRows} columns={logsColumns} 
     />
   </>);
 }
 
-export default LogsExplorer;
+export default QueriesExplorer;
