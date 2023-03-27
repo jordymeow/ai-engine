@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.81
+Stable tag: 1.3.82
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,8 +69,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.81 (2023/03/27) =
+= 1.3.82 (2023/03/27) =
 * Update: Enhanced the discussions management.
+* Update: Enhanced the embeddings management.
 * Update: Translations.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
