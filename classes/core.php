@@ -398,7 +398,9 @@ class Meow_MWAI_Core
 			$post = (array)$post;
 		}
 		$language = $this->get_post_language( $post['ID'] );
-		$content = $this->cleanText( $post['post_content'] );
+		$content = apply_filters( 'mwai_pre_post_content', $post['post_content'], $post['ID'] );
+		$content = $this->cleanText( $content );
+		$content = apply_filters( 'mwai_post_content', $content, $post['ID'] );
 		$title = $post['post_title'];
 		$excerpt = $post['post_excerpt'];
 		$url = get_permalink( $post['ID'] );
