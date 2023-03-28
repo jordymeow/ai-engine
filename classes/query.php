@@ -5,9 +5,15 @@ class Meow_MWAI_Query {
   public $prompt = '';
   public $model = '';
   public $mode = '';
-  public $apiKey = null;
   public $session = null;
   public $maxResults = 1;
+
+  // OpenAI
+  public $apiKey = null;
+  public $service = null;
+  public $azureEndpoint = null;
+  public $azureApiKey = null;
+  public $azureDeployment = null;
 
   public function __construct( $prompt = '' ) {
     global $mwai_core;
@@ -59,6 +65,38 @@ class Meow_MWAI_Query {
    */
   public function setApiKey( $apiKey ) {
     $this->apiKey = $apiKey;
+  }
+
+  /**
+   * The service to use.
+   * @param string $service The service.
+   */
+  public function setService( $service ) {
+    $this->service = $service;
+  }
+
+  /**
+   * The Azure endpoint to use.
+   * @param string $endpoint The endpoint.
+   */
+  public function setAzureEndpoint( $endpoint ) {
+    $this->azureEndpoint = $endpoint;
+  }
+
+  /**
+   * The Azure API key to use.
+   * @param string $apiKey The API key.
+   */
+  public function setAzureApiKey( $apiKey ) {
+    $this->azureApiKey = $apiKey;
+  }
+
+  /**
+   * The Azure deployment to use.
+   * @param string $deployment The deployment.
+   */
+  public function setAzureDeployment( $deployment ) {
+    $this->azureDeployment = $deployment;
   }
 
   /**

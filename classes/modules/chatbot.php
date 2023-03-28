@@ -300,6 +300,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$model = $atts['model'];
 		$temperature = $atts['temperature'];
 		$maxTokens = $atts['max_tokens'];
+		$service = $atts['service'];
 		$apiKey = $atts['api_key'];
 
 		// Variables
@@ -378,6 +379,7 @@ class Meow_MWAI_Modules_Chatbot {
 				let sysName = '<?php echo wp_kses_post( $sysName ) ?>';
 				let env = '<?php echo esc_attr( $env ) ?>';
 				let apiKey = '<?php echo esc_attr( $apiKey ) ?>';
+				let service = '<?php echo esc_attr( $service ) ?>';
 				let session = '<?php echo esc_attr( $sessionId ) ?>';
 				let mode = '<?php echo esc_attr( $mode ) ?>';
 				let model = '<?php echo esc_attr( $model ) ?>';
@@ -401,7 +403,7 @@ class Meow_MWAI_Modules_Chatbot {
 						memorizedChat: memorizedChat,
 						parameters: { mode: mode, model, temperature, maxTokens, context: context, startSentence,
 							isMobile, isWindow, isFullscreen, isCasuallyFineTuned, memorizeChat, maxSentences,
-							rawUserName, rawAiName, embeddingsIndex, typewriter, maxResults, userName, aiName, env, apiKey, session
+							rawUserName, rawAiName, embeddingsIndex, typewriter, maxResults, userName, aiName, env, apiKey, service, session
 						}
 					};
 				}
@@ -623,14 +625,13 @@ class Meow_MWAI_Modules_Chatbot {
 					const data = mode === 'images' ? {
 						env, session: session,
 						prompt: inputText, rawInput: inputText,
-						model: model, maxResults, apiKey: apiKey, clientId: clientId,
+						model: model, maxResults, apiKey: apiKey, service: service, clientId: clientId,
 					} : {
 						env, session: session,
 						prompt: prompt, context: context,
 						messages: memorizedChat.messages, rawInput: inputText,
 						userName: userName, aiName: aiName,
-						model: model, temperature: temperature, maxTokens: maxTokens, maxResults: 1, apiKey: apiKey,
-						embeddingsIndex: embeddingsIndex, stop: stop, clientId: clientId,
+						model: model, temperature: temperature, maxTokens: maxTokens, maxResults: 1, apiKey: apiKey, service: service, embeddingsIndex: embeddingsIndex, stop: stop, clientId: clientId,
 					};
 
 					// Start the timer

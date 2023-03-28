@@ -142,6 +142,10 @@ i18n.COMMON = {
   REFRESH: __( 'Refresh', 'ai-engine' ),
   DELETE: __( 'Delete', 'ai-engine' ),
   DELETE_SELECTED: __( 'Delete Selected', 'ai-engine' ),
+  OPENAI_SERVICE: __( 'Service', 'ai-engine' ),
+  OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
+  OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
+  OPENAI_AZURE_DEPLOYMENT: __( 'Deploy Name', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -160,6 +164,8 @@ i18n.HELP = {
   DYNAMIC_MAX_TOKENS: __( 'Max Tokens will be dynamically decreased based on the length of the prompt.', 'ai-engine' ),
   FINETUNES: __( 'Train your own AI models.', 'ai-engine' ),
   DISCUSSIONS: __( 'Keep the conversations and enable browsing them via the Conversations tab.', 'ai-engine' ),
+  OPENAI_SERVICE: __( 'Open AI can be used through Open AI directly, but also through Azure.', 'ai-engine' ),
+  OPENAI_AZURE_DEPLOYMENT: __( 'The name of the deployment you created for the model. It will be used by default.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

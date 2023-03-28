@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.84
+Stable tag: 1.3.85
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.84 (2023/03/28) =
+= 1.3.85 (2023/03/28) =
+* Add: Support for OpenAI on Microsoft Azure (it's faster than Open AI servers).
 * Update: Updated dashboard, and lighter bundles.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 

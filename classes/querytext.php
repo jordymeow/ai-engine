@@ -205,9 +205,6 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 		if ( isset( $params['stop'] ) ) {
 			$this->setStop( $params['stop'] );
 		}
-		if ( isset( $params['apiKey'] ) ) {
-			$this->setApiKey( $params['apiKey'] );
-		}
 		if ( isset( $params['maxResults'] ) ) {
 			$this->setMaxResults( $params['maxResults'] );
 		}
@@ -216,6 +213,13 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 		}
 		if ( isset( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
+		}
+    // Should add the params related to Open AI and Azure
+    if ( isset( $params['service'] ) ) {
+			$this->setService( $params['service'] );
+		}
+    if ( isset( $params['apiKey'] ) ) {
+			$this->setApiKey( $params['apiKey'] );
 		}
   }
 }

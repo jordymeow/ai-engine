@@ -3,16 +3,42 @@
 class Meow_MWAI_AI {
   private $core = null;
   private $localApiKey = null;
+  private $localService = null;
+  private $localAzureEndpoint = null;
+  private $localAzureApiKey = null;
+  private $localAzureDeployment = null;
 
   public function __construct( $core ) {
     $this->core = $core;
+    $this->localService = $this->core->get_option( 'openai_service' );
     $this->localApiKey = $this->core->get_option( 'openai_apikey' );
+    $this->localAzureEndpoint = $this->core->get_option( 'openai_azure_endpoint' );
+    $this->localAzureApiKey = $this->core->get_option( 'openai_azure_apikey' );
+    $this->localAzureDeployment = $this->core->get_option( 'openai_azure_deployment' );
   }
 
-  public function runTranscribe( $query ) {
+  public function applyQueryParameters( $query ) {
     if ( empty( $query->apiKey ) ) {
       $query->apiKey = $this->localApiKey;
     }
+    if ( empty( $query->service ) ) {
+      $query->service = $this->localService;
+    }
+    if ( $query->service === 'azure' ) {
+      if ( empty( $query->azureEndpoint ) ) {
+        $query->azureEndpoint = $this->localAzureEndpoint;
+      }
+      if ( empty( $query->azureApiKey ) ) {
+        $query->azureApiKey = $this->localAzureApiKey;
+      }
+      if ( empty( $query->azureDeployment ) ) {
+        $query->azureDeployment = $this->localAzureDeployment;
+      }
+    }
+  }
+
+  public function runTranscribe( $query ) {
+    $this->applyQueryParameters( $query );
     $openai = new Meow_MWAI_OpenAI( $this->core );
     $fields = array( 
       'prompt' => $query->prompt,
@@ -35,9 +61,7 @@ class Meow_MWAI_AI {
   }
 
   public function runEmbedding( $query ) {
-    if ( empty( $query->apiKey ) ) {
-      $query->apiKey = $this->localApiKey;
-    }
+    $this->applyQueryParameters( $query );
     $openai = new Meow_MWAI_OpenAI( $this->core );
     $body = array( 'input' => $query->prompt, 'model' => $query->model );
     $data = $openai->run( 'POST', '/embeddings', $body );
@@ -53,11 +77,12 @@ class Meow_MWAI_AI {
   }
 
   public function runCompletion( $query ) {
-    if ( empty( $query->apiKey ) ) {
-      $query->apiKey = $this->localApiKey;
-    }
-
+    $this->applyQueryParameters( $query );
     $url = "";
+    $headers = array(
+      'Content-Type' => 'application/json',
+      'Authorization' => 'Bearer ' . $query->apiKey,
+    );
     $body = array(
       "model" => $query->model,
       "stop" => $query->stop,
@@ -69,6 +94,17 @@ class Meow_MWAI_AI {
     if ( $query->mode === 'chat' ) {
       $url = 'https://api.openai.com/v1/chat/completions';
       $body['messages'] = $query->messages;
+
+      // TODO: Let's follow closely the changes at Azure.
+      // Seems we need to specify an API version, otherwise it breaks.
+      if ( $query->service === 'azure' ) {
+        $url = trailingslashit( $query->azureEndpoint ) . 'openai/deployments/' .
+          $query->azureDeployment . '/chat/completions?api-version=2023-03-15-preview';
+        $headers = array(
+          'Content-Type' => 'application/json',
+          'api-key' => $query->azureApiKey,
+        );
+      }
     }
     else if ( $query->mode === 'completion' ) {
       $url = 'https://api.openai.com/v1/completions';
@@ -79,7 +115,7 @@ class Meow_MWAI_AI {
     }
 
     $options = array(
-      "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
+      "headers" => $headers,
       "method" => "POST",
       "timeout" => 120,
       "body" => json_encode( $body ),
@@ -130,9 +166,7 @@ class Meow_MWAI_AI {
 
   // Request to DALL-E API
   public function runCreateImages( $query ) {
-    if ( empty( $query->apiKey ) ) {
-      $query->apiKey = $this->localApiKey;
-    }
+    $this->applyQueryParameters( $query );
     $url = 'https://api.openai.com/v1/images/generations';
     $options = array(
       "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
@@ -182,6 +216,11 @@ class Meow_MWAI_AI {
   }
 
   public function run( $query ) {
+
+    
+    if ( $this->localService === 'azure' && $query->mode === 'chat' ) {
+
+    }
 
     // Check if the query is allowed
     $limits = $this->core->get_option( 'limits' );

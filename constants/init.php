@@ -37,7 +37,8 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'temperature' => 0.8,
 	'max_tokens' => 1024,
 	'max_results' => 3,
-	'api_key' => null
+	'api_key' => null,
+	'service' => 'openai'
 ] );
 
 define( 'MWAI_LANGUAGES', [
@@ -98,6 +99,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_styles' => [],
 	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
+	'openai_service' => 'openai',
 	'openai_usage' => [],
 	'openai_models' => MWAI_OPENAI_MODELS,
 	'openai_finetunes' => [], // Used by AI Engine
