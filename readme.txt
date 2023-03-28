@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.85
+Stable tag: 1.3.86
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,8 +69,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.85 (2023/03/28) =
+= 1.3.86 (2023/03/28) =
 * Add: Support for OpenAI on Microsoft Azure (it's faster than Open AI servers).
+* Fix: Issue with Sync All for embeddings.
+* Update: Better layouts and colors when code is embedded in the chat.
 * Update: Updated dashboard, and lighter bundles.
 * Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
 * Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 

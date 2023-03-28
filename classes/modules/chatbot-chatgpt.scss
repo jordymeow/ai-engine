@@ -75,12 +75,24 @@
 		font-size: 120%;
 	}
 
+	p {
+		code {
+			background: var(--mwai-backgroundSecondaryColor);
+			padding: 2px 6px;
+			border-radius: 8px;
+			font-size: 90%;
+			font-family: system-ui;
+		}
+	}
+
 	pre {
 		color: var(--mwai-fontColor);
 		border-radius: var(--mwai-borderRadius);
 		padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
 		break-after: auto;
 		font-size: 95%;
+		max-width: 100%;
+    width: 100%;
 		font-family: system-ui;
 		background: #343541;
 
