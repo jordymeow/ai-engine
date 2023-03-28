@@ -112,6 +112,12 @@ define( 'MWAI_OPTIONS', [
 		'indexes' => [],
 		'index' => null
 	],
+	'embeddings' => [
+		'rewriteContent' => true,
+		'rewritePrompt' => "Rewrite the content concisely in {LANGUAGE}, maintaining the same style and information. The revised text should be under 800 words, with paragraphs ranging from 160-280 words each. Omit non-textual elements and avoid unnecessary repetition. Conclude with a statement directing readers to find more information at {URL}. If you cannot meet these requirements, please leave a blank response.\n\n{CONTENT}",
+		'forceRecreate' => false,
+		'syncPosts' => false,
+	],
 	'extra_models' => "",
 	'debug_mode' => true,
 	'resolve_shortcodes' => false,
