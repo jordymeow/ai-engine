@@ -249,7 +249,7 @@ const Dashboard = () => {
                     <StyledPluginImage
                       src='https://ps.w.org/seo-kiss/assets/icon-256x256.png' />
                     <div className="plugin-desc">
-                      <h2><a target='_blank' href='https://wordpress.org/plugins/seo-kiss/'>SEO Kiss (Keep It Simple Stupid SEO)</a></h2>
+                      <h2><a target='_blank' href='https://wordpress.org/plugins/seo-kiss/'>AI-SEO KISS (Keep It Simple Stupid)</a></h2>
                       <p>Optimize your content for SEO. Keep everything simple and fast.</p>
                     </div>
                   </StyledPluginBlock>

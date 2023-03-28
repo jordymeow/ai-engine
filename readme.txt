@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.83
+Stable tag: 1.3.84
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,6 +68,11 @@ The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plug
 Languages: English.
 
 == Changelog ==
+
+= 1.3.84 (2023/03/28) =
+* Update: Updated dashboard, and lighter bundles.
+* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
+* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.83 (2023/03/27) =
 * Add: New filters to handle the content of the posts.
