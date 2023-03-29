@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.87
+Stable tag: 1.3.88
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,22 +69,23 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.87 (2023/03/28) =
-* Update: Content Settings for Embeddings can be saved. Enhanced UI.
+= 1.3.88 (2023/03/28) =
+* Update: Moving towards a better UI for embeddings.
+* 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 💞 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks so much for your support! 
+
+= 1.3.87 (2023/03/29) =
+* Update: Content Settings for Embeddings can be saved.
 * Add: Support for OpenAI on Microsoft Azure (it's faster than Open AI servers).
 * Fix: Issue with Sync All for embeddings.
 * Update: Better layouts and colors when code is embedded in the chat.
 * Update: Updated dashboard, and lighter bundles.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.83 (2023/03/27) =
 * Add: New filters to handle the content of the posts.
 * Update: Enhanced the discussions management.
 * Update: Enhanced the embeddings management.
 * Update: Translations.
-* Info: Help or discuss with other users on [my Discord](https://discord.gg/bHDGh38).
-* Info: Motivate me with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you! 
 
 = 1.3.80 (2023/03/26) =
 * Update: Embeddings are more dynamic, handle better hashes, better bulk actions, more placeholders.
