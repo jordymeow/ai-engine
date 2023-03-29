@@ -108,13 +108,7 @@ class Meow_MWAI_Modules_Chatbot_Chats {
     $this->check_db();
     $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $ssChatId ) );
     $extra = [
-      'embedding' => isset( $extra['embedding'] ) ? [
-        'id' => $extra['embedding']['id'],
-        'type' => $extra['embedding']['type'],
-        'title' => $extra['embedding']['title'],
-        'refId' => $extra['embedding']['refId'],
-        'score' => $extra['embedding']['score']
-      ] : null
+      'embeddings' => isset( $extra['embeddings'] ) ? $extra['embeddings'] : null
     ];
     if ( $chat ) {
       $chat->messages = json_decode( $chat->messages );

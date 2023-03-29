@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.88
+Stable tag: 1.3.89
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,8 +69,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.88 (2023/03/28) =
-* Update: Moving towards a better UI for embeddings.
+= 1.3.89 (2023/03/28) =
+* Add: Minimum Score and Max Embeddings.
+* Update: Moving towards a better UI. I hope you'll like it!
 * 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 💞 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks so much for your support! 
 

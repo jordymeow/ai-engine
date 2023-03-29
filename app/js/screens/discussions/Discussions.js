@@ -1,13 +1,11 @@
-// Previous: none
-// Current: 1.3.81
+// Previous: 1.3.81
+// Current: 1.3.89
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import styled from 'styled-components';
 
 import { apiUrl, restNonce } from '@app/settings';
 
-// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
@@ -35,17 +33,19 @@ const StyledMessage = styled.div`
 `;
 
 const Message = ({ message }) => {
-  const embedding = message?.extra?.embedding;
+  const embeddings = message?.extra?.embeddings ? message?.extra?.embeddings : (
+    message?.extra?.embedding ? [message?.extra?.embedding] : []
+  );
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
       <StyledContext>
         <StyledType>{message.type}</StyledType>
       </StyledContext>
-      {embedding && 
-          <StyledEmbedding>
-            Embedding: {embedding.title} ({embedding.score.toFixed(2)})
-          </StyledEmbedding>
-        }
+      {embeddings && <StyledEmbedding>
+        {embeddings.map(embedding => <div key={embedding.title}>
+          <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
+        </div>)}
+      </StyledEmbedding>}
       <StyledMessage>{message.text}</StyledMessage>
     </div>
   );
@@ -115,7 +115,7 @@ const Discussions = () => {
       });
       let messages = JSON.parse(x.messages);
       let extra = JSON.parse(x.extra);
-      let userMessages = messages?.filter(msg => msg.type === 'user');
+      let userMessages = messages?.filter(x => x.type === 'user');
       let firstExchange = userMessages?.length ? userMessages[0].text : '';
       let lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].text : '';
 
@@ -132,7 +132,7 @@ const Discussions = () => {
         created: formattedCreated,
         updated: formattedUpdated
       }
-    });
+    })
   }, [chatsData]);
 
   const discussion = useMemo(() => {
@@ -188,9 +188,9 @@ const Discussions = () => {
             }}
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
-            onSelectRow={id => { setSelectedIds([id]) }}
+            onSelectRow={id => { setSelectedIds(prev => [id]) }}
             onSelect={ids => { setSelectedIds(prev => [...prev, ...ids]) }}
-            onUnselect={ids => { setSelectedIds(prev => [...prev.filter(x => !ids.includes(x))]) }}
+            onUnselect={ids => { setSelectedIds(prev => prev.filter(x => !ids.includes(x))) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -199,7 +199,7 @@ const Discussions = () => {
             <div>
               <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
-                  total={chatsTotal} onClick={(page) => { 
+                  total={chatsTotal} onClick={page => { 
                     setChatsQueryParams(prev => ({ ...prev, page }));
                   }}
                 />
