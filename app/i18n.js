@@ -8,6 +8,7 @@ i18n.COMMON = {
   MODULES: __( 'Modules', 'ai-engine' ),
   SETTINGS: __( 'Settings', 'ai-engine' ),
   CHATBOT: __( 'Chatbot', 'ai-engine' ),
+  CHATBOTS: __( 'Chatbots', 'ai-engine' ),
   CHATBOT_HELP: __( 'Highly customizable chatbot.', 'ai-engine' ),
   STATISTICS: __( 'Statistics', 'ai-engine' ),
   STYLE: __( 'Style', 'ai-engine' ),

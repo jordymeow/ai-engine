@@ -5,6 +5,11 @@ require_once( MWAI_PATH . '/constants/init.php' );
 
 use Rahul900day\Gpt3Encoder\Encoder;
 
+define( 'MWAI_IMG_WAND', MWAI_URL . '/images/wand.png' );
+define( 'MWAI_IMG_WAND_HTML', "<img style='height: 22px; margin-bottom: -5px; margin-right: 8px;'
+  src='" . MWAI_IMG_WAND . "' alt='AI Wand' />" );
+define( 'MWAI_IMG_WAND_HTML_XS', "<img style='height: 16px; margin-bottom: -2px;'
+  src='" . MWAI_IMG_WAND . "' alt='AI Wand' />" );
 class Meow_MWAI_Core
 {
 	public $admin = null;

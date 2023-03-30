@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.89
+Stable tag: 1.3.90
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,13 +69,14 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.89 (2023/03/28) =
-* Add: Minimum Score and Max Embeddings.
-* Update: Moving towards a better UI. I hope you'll like it!
-* 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 💞 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thanks so much for your support! 
+= 1.3.90 (2023/03/30) =
+* Add: Sync Posts with Embeddings (on Publish, on Update, and on Trash).
+* Update: When missing orphan embeddings are found (a vector is in Pinecone, but not in WordPress), a specific orphan entry will be created. You can safely delete it. Best to keep everything clean.
+* Update: Pinecone servers.
+* Update: Internal API.
+* 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38). Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
-= 1.3.87 (2023/03/29) =
+= 1.3.88 (2023/03/29) =
 * Update: Content Settings for Embeddings can be saved.
 * Add: Support for OpenAI on Microsoft Azure (it's faster than Open AI servers).
 * Fix: Issue with Sync All for embeddings.

@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 1.3.68
+// Previous: 1.3.68
+// Current: 1.3.90
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -11,6 +11,7 @@ import { nekoFetch } from '@neko-ui';
 // AI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import GenerateTitlesModal from './modals/GenerateTitles';
+import GenerateExcerptsModal from './modals/GenerateExcerpts';
 
 const PostsListTools = () => {
   const [post, setPost] = useState();
@@ -20,7 +21,14 @@ const PostsListTools = () => {
       const postId = item.getAttribute('data-id');
       const postTitle = item.getAttribute('data-title');
       item.addEventListener('click', () => { 
-        setPost({ postId, postTitle });
+        setPost({ postId, postTitle, mode: 'title' });
+      }, false);
+    });
+    document.querySelectorAll('.mwai-link-excerpt').forEach(item => {
+      const postId = item.getAttribute('data-id');
+      const postTitle = item.getAttribute('data-title');
+      item.addEventListener('click', () => { 
+        setPost({ postId, postTitle, mode: 'excerpt' });
       }, false);
     });
   }, [])
@@ -54,10 +62,31 @@ const PostsListTools = () => {
     }
   }
 
+  const onExcerptClick = async (excerpt) => {
+    const res = await nekoFetch(`${apiUrl}/update_post_excerpt`, {
+      method: 'POST',
+      nonce: restNonce,
+      json: {
+        postId: post.postId,
+        excerpt
+      }});
+    if (!res.success) {
+      throw new Error(res.message);
+    }
+    else {
+      setPost();
+    }
+  }
+
   return (
     <NekoUI>
       <NekoWrapper>
-        <GenerateTitlesModal post={post} onTitleClick={onTitleClick} onClose={() => { setPost() }} />
+        <GenerateTitlesModal post={post?.mode === 'title' ? post : null} onTitleClick={onTitleClick}
+          onClose={() => { setPost() }}
+        />
+        <GenerateExcerptsModal post={post?.mode === 'excerpt' ? post : null} onExcerptClick={onExcerptClick}
+          onClose={() => { setPost() }}
+        />
       </NekoWrapper>
     </NekoUI>
   );

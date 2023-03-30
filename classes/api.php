@@ -1,8 +1,52 @@
 <?php
 
 class Meow_MWAI_API {
+	public $core;
 
-  public function simpleTextQuery( $prompt, $options = array() ) {
+	public function __construct() {
+		global $mwai_core;
+		$this->core = $mwai_core;
+	}
+
+	function rest_api_init() {
+		register_rest_route( 'mwai/v1', '/simpleTextQuery', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_simpleTextQuery' ),
+			'permission_callback' => array( $this->core, 'can_access_features' ),
+		) );
+		register_rest_route( 'mwai/v1', '/moderationCheck', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_moderationCheck' ),
+			'permission_callback' => array( $this->core, 'can_access_features' ),
+		) );
+	}
+
+	public function rest_simpleTextQuery( $request ) {
+		try {
+			$params = $request->get_params();
+			$prompt = $params['prompt'];
+			$options = isset( $params['options'] ) ? $params['options'] : [];
+			$answer = $this->simpleTextQuery( $prompt, $options );
+			return new WP_REST_Response([ 'success' => true, 'data' => $answer ], 200 );
+		}
+		catch (Exception $e) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	public function rest_moderationCheck( $request ) {
+		try {
+			$params = $request->get_params();
+			$text = $params['text'];
+			$answer = $this->moderationCheck( $text );
+			return new WP_REST_Response([ 'success' => true, 'data' => $answer ], 200 );
+		}
+		catch (Exception $e) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+  public function simpleTextQuery( $prompt, $options = [] ) {
     global $mwai_core;
 		$query = new Meow_MWAI_QueryText( $prompt );
 		$query->injectParams( $options );

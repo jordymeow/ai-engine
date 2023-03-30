@@ -285,7 +285,7 @@ class Meow_MWAI_OpenAI
         foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
           if ( $currentModel['model'] == $model ) {
             $family = $currentModel['family'];
-            $priceRules = $currentModel['priceRules'];
+            $priceRules = isset( $currentModel['priceRules'] ) ? $currentModel['priceRules'] : null;
             break;
           }
         }
