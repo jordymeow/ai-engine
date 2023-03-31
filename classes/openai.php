@@ -18,7 +18,7 @@ class Meow_MWAI_OpenAI
 
   function getSuffixForModel($model)
   {
-    preg_match("/:([a-zA-Z\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
+    preg_match("/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
     if ( count( $matches ) > 0 ) {
       return $matches[1];
     }
@@ -27,7 +27,7 @@ class Meow_MWAI_OpenAI
 
   function getBaseModel($model)
   {
-    preg_match("/:([a-zA-Z\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
+    preg_match("/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
     if (count($matches) > 0) {
       return $matches[1];
     }

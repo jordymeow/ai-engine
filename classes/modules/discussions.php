@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Modules_Chatbot_Chats {
+class Meow_MWAI_Modules_Discussions {
   private $wpdb = null;
   private $core = null;
   private $table_chats = null;

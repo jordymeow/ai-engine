@@ -31,6 +31,8 @@
   "devDependencies": {
     "@babel/core": "^7.20.12",
     "@babel/preset-env": "^7.20.2",
-    "eslint-plugin-react-hooks": "^4.6.0"
+    "css-loader": "^6.7.3",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "style-loader": "^3.3.2"
   }
 }

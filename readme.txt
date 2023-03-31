@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.90
+Stable tag: 1.3.91
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,12 +69,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.91 (2023/03/31) =
+* Fix: Issue with finetuned models when their suffix contained a number.
+* Update: UI elements.
+* Update: Improved internal API.
+* 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38). Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.3.90 (2023/03/30) =
 * Add: Sync Posts with Embeddings (on Publish, on Update, and on Trash).
 * Update: When missing orphan embeddings are found (a vector is in Pinecone, but not in WordPress), a specific orphan entry will be created. You can safely delete it. Best to keep everything clean.
 * Update: Pinecone servers.
-* Update: Internal API.
-* 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38). Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.3.88 (2023/03/29) =
 * Update: Content Settings for Embeddings can be saved.

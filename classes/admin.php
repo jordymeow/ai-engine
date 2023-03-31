@@ -147,13 +147,10 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 	function admin_enqueue_scripts() {
 		$physical_file = MWAI_PATH . '/app/index.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-		wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js',
-			['wp-element', 'wp-i18n'], $cache_buster
-		);
-		wp_register_script( 'mwai', MWAI_URL . 'app/index.js',
-			['mwai-vendor', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post',
-				'wp-editor', 'wp-element', 'wp-i18n', 'wp-plugins'], $cache_buster
-		);
+		wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js', null, $cache_buster );
+		wp_register_script( 'mwai', MWAI_URL . 'app/index.js', [ 'mwai-vendor',
+			'wp-components', 'wp-edit-post', 'wp-plugins', 'wp-i18n'
+		], $cache_buster );
 		wp_enqueue_script( 'mwai' );
 
 		// The MD5 of the translation file built by WP uses app/i18n.js instead of app/index.js

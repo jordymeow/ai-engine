@@ -147,6 +147,8 @@ i18n.COMMON = {
   OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
   OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENT: __( 'Deploy Name', 'ai-engine' ),
+  THEME: __( 'Theme', 'ai-engine' ),
+  THEMES: __( 'Themes', 'ai-engine' ),
 }
 
 i18n.FORMS = {

@@ -15,7 +15,7 @@ class Meow_MWAI_Modules_Chatbot {
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-		new Meow_MWAI_Modules_Chatbot_Chats();
+		new Meow_MWAI_Modules_Discussions();
 
 		if ( $this->core->get_option( 'shortcode_chat_inject' ) ) {
 			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
@@ -55,7 +55,7 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function chatgpt_style( $id ) {
-		$css = file_get_contents( MWAI_PATH . '/classes/modules/chatbot-chatgpt.css' );
+		$css = file_get_contents( MWAI_PATH . '/themes/ChatGPT.module.css' );
 		$css = str_replace( '#mwai-chat-id', "#mwai-chat-{$id}", $css );
 		return '<style>' . $css . '</style>';
 	}

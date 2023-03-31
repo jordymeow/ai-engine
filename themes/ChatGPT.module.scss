@@ -1,4 +1,4 @@
-#mwai-chat-id {
+.mwai-chat {
 	--mwai-spacing: 15px;
 	--mwai-fontSize: 15px;
 	--mwai-borderRadius: 10px;
@@ -370,7 +370,7 @@
 	}
 }
 
-#mwai-chat-id.mwai-window {
+.mwai-chat.mwai-window {
 	position: fixed;
 	right: 30px;
 	bottom: 30px;
@@ -503,7 +503,7 @@
 
 // GALLERY
 
-#mwai-chat-id .mwai-gallery {
+.mwai-chat .mwai-gallery {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	grid-gap: 5px;
@@ -515,7 +515,7 @@
 
 // FULLSCREEN & WINDOW
 
-#mwai-chat-id.mwai-window.mwai-fullscreen {
+.mwai-chat.mwai-window.mwai-fullscreen {
 
 	.mwai-header  {
 
@@ -541,7 +541,7 @@
 	}
 }
 
-#mwai-chat-id.mwai-fullscreen:not(.mwai-window), #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
+.mwai-chat.mwai-fullscreen:not(.mwai-window), .mwai-chat.mwai-fullscreen.mwai-window.mwai-open {
 	position: fixed;
   left: 0 !important;
   right: 0 !important;
@@ -568,7 +568,7 @@
   }
 }
 
-#mwai-chat-id.mwai-window.mwai-open {
+.mwai-chat.mwai-window.mwai-open {
 
 	.mwai-header {
 		display: flex;
@@ -587,7 +587,7 @@
 
 @media (max-width: 760px) {
 
-	#mwai-chat-id {
+	.mwai-chat {
 
 		&.mwai-window {
 			left: 10px;
@@ -630,7 +630,7 @@
 
 // WordPress Admin Bar
 
-.admin-bar #mwai-chat-id.mwai-fullscreen:not(.mwai-window),
-.admin-bar #mwai-chat-id.mwai-fullscreen.mwai-window.mwai-open {
+.admin-bar .mwai-chat.mwai-fullscreen:not(.mwai-window),
+.admin-bar .mwai-chat.mwai-fullscreen.mwai-window.mwai-open {
 	top: 32px;
 }
