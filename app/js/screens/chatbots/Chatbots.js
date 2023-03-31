@@ -1,11 +1,12 @@
-// Previous: 1.3.90
-// Current: 1.3.91
+// Previous: 1.3.91
+// Current: 1.3.92
 
 // React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
 // NekoUI
 import { NekoSpacer, NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoColumn } from '@neko-ui';
+import { pluginUrl, apiUrl, userData, restNonce, session, options } from '@app/settings';
 
 import i18n from '@root/i18n';
 import { useNekoColors } from '@neko-ui';
@@ -61,7 +62,16 @@ const Chatbots = (props) => {
         </>}
       </NekoColumn>
       <NekoColumn minimal style={{ margin: 10 }}>
-          <Chatbot 
+          <Chatbot
+            system={{
+              sessionId: session,
+              restNonce: restNonce,
+              debugMode: options?.debug_mode,
+              apiUrl: apiUrl,
+              pluginUrl: pluginUrl,
+              userData: userData,
+              typewriter: options?.shortcode_chat_typewriter,
+            }}
             shortcodeParams={shortcodeParams}
             shortcodeStyles={shortcodeStyles}
           />

@@ -356,6 +356,18 @@ class Meow_MWAI_Core
     return null;
   }
 
+	function getUserData() {
+		$user = wp_get_current_user();
+		$placeholders = array(
+			'FIRST_NAME' => get_user_meta($user->ID, 'first_name', true),
+			'LAST_NAME' => get_user_meta($user->ID, 'last_name', true),
+			'USER_LOGIN' => $user->data->user_login,
+			'DISPLAY_NAME' => $user->data->display_name,
+			'AVATAR_URL' => get_avatar_url( get_current_user_id() ),
+		);
+		return $placeholders;
+	}		
+
 	function get_ip_address( $data = null ) {
     if ( isset( $data ) && isset( $data['ip'] ) ) {
       $data['ip'] = (string)$data['ip'];

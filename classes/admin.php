@@ -165,6 +165,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'api_url' => rest_url( 'ai-engine/v1' ),
 			'rest_url' => rest_url(),
 			'plugin_url' => MWAI_URL,
+			'user_data' => $this->core->getUserData(),
 			'prefix' => MWAI_PREFIX,
 			'domain' => MWAI_DOMAIN,
 			'is_pro' => class_exists( 'MeowPro_MWAI_Core' ),

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.91
+Stable tag: 1.3.92
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.91 (2023/03/31) =
+= 1.3.92 (2023/03/31) =
+* Fix: Post Edit links were not working.
 * Fix: Issue with finetuned models when their suffix contained a number.
 * Update: UI elements.
 * Update: Improved internal API.

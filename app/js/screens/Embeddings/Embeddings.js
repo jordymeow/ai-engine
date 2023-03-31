@@ -1,5 +1,5 @@
-// Previous: 1.3.89
-// Current: 1.3.90
+// Previous: 1.3.90
+// Current: 1.3.92
 
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,7 +37,6 @@ const queryColumns = [
 
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
-  
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -70,8 +69,8 @@ const Embeddings = ({ options, updateOption }) => {
   const [ busy, setBusy ] = useState(false);
   const [ mode, setMode ] = useState('edit');
   const [ search, setSearch ] = useState('');
-  const [ embeddingModal, setEmbeddingModal ] = useState(null);
-  const [ indexModal, setIndexModal ] = useState(null);
+  const [ embeddingModal, setEmbeddingModal ] = useState(false);
+  const [ indexModal, setIndexModal ] = useState(false);
   const [ selectedIds, setSelectedIds ] = useState([]);
   const embeddingsSettings = options.embeddings || {};
   const pinecone = options.pinecone || {};
@@ -115,7 +114,7 @@ const Embeddings = ({ options, updateOption }) => {
   }
 
   useEffect(() => {
-    setQueryParams(prev => ({ ...prev, filters: { index } })); 
+    setQueryParams({ ...queryParams, filters: { index } });
   }, [index]);
 
   useEffect(() => {
@@ -123,9 +122,9 @@ const Embeddings = ({ options, updateOption }) => {
       onSelectIndex('');
     }
     else if (!index) {
-      onSelectIndex(indexes[0]?.name ?? '');
+      onSelectIndex(indexes[0].name);
     }
-  }, [indexes, index]);
+  }, [indexes]);
 
   useEffect(() => {
     if (mode === 'edit') {
@@ -137,12 +136,12 @@ const Embeddings = ({ options, updateOption }) => {
   const onAddIndex = async () => {
     setBusy('addIndex');
     const res = await nekoFetch(`${apiUrl}/pinecone/add_index`, { nonce: restNonce, method: 'POST',
-      json: { name: indexModal?.name, podType: indexModal?.podType }
+      json: { name: indexModal.name, podType: indexModal.podType }
     });
     if (res.success) {
       const freshPinecone = { ...pinecone, indexes: res.indexes };
       await updateOption(freshPinecone, 'pinecone');
-      setIndexModal(null);
+      setIndexModal(false);
     }
     else {
       console.error(res.message);
@@ -151,9 +150,9 @@ const Embeddings = ({ options, updateOption }) => {
     setBusy(false);
   }
   
-  const onSelectIndex = async (indexName) => {
-    const freshPinecone = { ...pinecone, index: indexName };
-    await updateOption(freshPinecone, 'pinecone');
+  const onSelectIndex = async (index) => {
+    const freshPinecone = { ...pinecone, index };
+    updateOption(freshPinecone, 'pinecone');
   }
 
   const onDeleteIndex = async () => {
@@ -207,7 +206,7 @@ const Embeddings = ({ options, updateOption }) => {
       console.error(res.message);
       throw new Error(res.message ?? "Unknown error, check your console logs.");
     }
-    setEmbeddingModal(null);
+    setEmbeddingModal(false);
     console.log("Embedding Added", inEmbedding);
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (!skipBusy) {
@@ -228,15 +227,15 @@ const Embeddings = ({ options, updateOption }) => {
       throw new Error(res.message ?? "Unknown error, check your console logs.");
     }
     let embedding = {...inEmbedding};
-    setEmbeddingModal(null);
+    setEmbeddingModal(false);
     console.log("Embeddings updated.", inEmbedding);
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
-      setFoundVectorsData(prev => {
-        const newData = { ...prev };
-        newData.vectors = newData.vectors.map(v => v.id === inEmbedding.id ? { ...v, ...inEmbedding } : v);
-        return newData;
-      });
+      const freshFoundVectorsData = { ...foundVectorsData };
+      freshFoundVectorsData.vectors = [ 
+        ...freshFoundVectorsData.vectors.filter(v => inEmbedding.id !== v.id), embedding
+      ]
+      setFoundVectorsData(freshFoundVectorsData);
     }
     if (!skipBusy) {
       setBusy(false);
@@ -271,11 +270,9 @@ const Embeddings = ({ options, updateOption }) => {
     console.log("Embeddings deleted.", { ids });
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
-      setFoundVectorsData(prev => {
-        const newData = { ...prev };
-        newData.vectors = newData.vectors.filter(v => !ids.includes(v.id));
-        return newData;
-      });
+      const freshFoundVectorsData = { ...foundVectorsData };
+      freshFoundVectorsData.vectors = freshFoundVectorsData.vectors.filter(v => !ids.includes(v.id));
+      setFoundVectorsData(freshFoundVectorsData);
     }
     if (!skipBusy) {
       setBusy(false);
@@ -320,7 +317,7 @@ const Embeddings = ({ options, updateOption }) => {
   }
 
   const vectorsTotal = useMemo(() => {
-    return vectorsData?.total ?? 0;
+    return vectorsData?.total || 0;
   }, [vectorsData]);
 
   const vectorsRows = useMemo(() => {
@@ -328,7 +325,7 @@ const Embeddings = ({ options, updateOption }) => {
     if (!data?.vectors) { return []; }
 
     if (mode === 'search') {
-      data.vectors = [...data.vectors].sort((a, b) => {
+      data.vectors = data.vectors.slice().sort((a, b) => {
         if (foundVectorsSort.by === 'asc') {
           return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
         }
@@ -358,7 +355,7 @@ const Embeddings = ({ options, updateOption }) => {
 
       return {
         id: x.id,
-        type: <small>{x.refId ? <>ID <a href={`http://ai.nekod.net/wp-admin/post.php?post=${x.refId}&action=edit`} target="_blank">#{x.refId}</a></> : 'MANUAL'}</small>,
+        type: <small>{x.refId ? <>ID <a href={`/wp-admin/post.php?post=${x.refId}&action=edit`} target="_blank">#{x.refId}</a></> : 'MANUAL'}</small>,
         score: score,
         title: x.title,
         status: <StatusIcon status={x.status} includeText />,
@@ -385,7 +382,7 @@ const Embeddings = ({ options, updateOption }) => {
   }
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
-    const resContent = await retrievePostContent(postType, offset, postId);
+    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let content = resContent?.content ?? null;
     const title = resContent?.title ?? null;
     const url = resContent?.url ?? null;
@@ -426,11 +423,12 @@ const Embeddings = ({ options, updateOption }) => {
     }
     else if (embeddings.length === 1) {
       const embedding = embeddings[0];
-      if (embedding.refChecksum === checksum && !embeddingsSettings.forceRecreate) {
+      // BUG: should check refChecksum, but missed: incorrect variable referencing
+      if (embedding?.refChecksum === checksum && !embeddingsSettings.forceRecreate) {
         console.log(`Embedding exists with same content.`, { embedding });
       }
       else {
-        if (embedding.refChecksum === checksum) {
+        if (embedding?.refChecksum === checksum) {
           console.log(`Embedding exists with same content (but force re-create).`);
         }
         else {
@@ -492,6 +490,7 @@ const Embeddings = ({ options, updateOption }) => {
         return { success: true };
       });
     }
+    
     await bulkTasks.start(tasks);
     setBusy(false);
     alert("All done! For more information, check the console (Chrome Developer Tools). Posts with very short content (or content that could not be retrieved) are skipped.");
@@ -540,6 +539,7 @@ const Embeddings = ({ options, updateOption }) => {
           <NekoContainer style={{ margin: 10, flex: 'auto' }} contentStyle={{ padding: 10, display: 'flex' }}>
             {mode === 'edit' && <>
 
+              {/* Actions for Selected Items */}
               {selectedIds.length > 0 && <>
                 <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
                   onClick={() => onBulkRunClick(false)}>
@@ -551,11 +551,13 @@ const Embeddings = ({ options, updateOption }) => {
                 </NekoButton>
               </>}
 
+              {/* Selected Items */}
               {selectedIds.length > 0 && <div style={{ display: 'flex',
                 alignItems: 'center', marginLeft: 10, marginRight: 10 }}>
                 {selectedIds.length} selected
               </div>}
 
+              {/* Progress Bar */}
               <NekoProgress busy={bulkTasks.busy} style={{ flex: 'auto' }}
                 value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
             </>}
@@ -563,7 +565,7 @@ const Embeddings = ({ options, updateOption }) => {
               <NekoInput style={{ flex: 'auto', marginRight: 5 }} placeholder="Search"
                 disabled={isBusy || !index || !indexIsReady}
                 value={search} onChange={setSearch} onEnter={onSearch}
-                onReset={() => { setSearch(''); setFoundVectorsData({ total: 0, vectors: [] }); }} />
+                onReset={() => { setSearch(); setFoundVectorsData({ total: 0, vectors: [] }); }} />
               <NekoButton className="primary" onClick={onSearch} disabled={isBusy || !index || !indexIsReady}
                 isBusy={busy === 'searchVectors'}>
                 Search
@@ -580,7 +582,7 @@ const Embeddings = ({ options, updateOption }) => {
           <NekoTable busy={isBusy}
             sort={mode === 'edit' ? queryParams.sort : foundVectorsSort} onSortChange={(accessor, by) => {
               if (mode === 'edit') {
-                setQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+                setQueryParams({ ...queryParams, sort: { accessor, by } });
               }
               else {
                 setFoundVectorsSort({ accessor, by });
@@ -598,7 +600,7 @@ const Embeddings = ({ options, updateOption }) => {
           <div style={{ display: 'flex', justifyContent: 'end' }}>
             <NekoPaging currentPage={queryParams.page} limit={queryParams.limit}
               total={vectorsTotal} onClick={page => { 
-                setQueryParams(prev => ({ ...prev, page }));
+                setQueryParams({ ...queryParams, page });
               }}
             />
             <NekoButton className="primary" style={{ marginLeft: 5 }}
@@ -621,8 +623,8 @@ const Embeddings = ({ options, updateOption }) => {
               <NekoSelect fullWidth scrolldown name="server"
                 style={{ marginRight: 5, flex: 1.5 }} disabled={isBusy}
                 value={pinecone.index} onChange={value => onSelectIndex(value)}>
-                {indexes.map(x => <NekoOption key={x.name} value={x.name} label={x.name} />)}
-                {!indexes.length && <NekoOption value={''} label="None" />}
+                {indexes.map(x => <NekoOption value={x.name} label={x.name} />)}
+                {!indexes?.length && <NekoOption value={''} label="None" />}
               </NekoSelect>
               <NekoInput style={{ flex: 1 }} disabled={true} value={pinecone.namespace}
                 title={i18n.COMMON.NAMESPACE} />
@@ -635,8 +637,8 @@ const Embeddings = ({ options, updateOption }) => {
             <NekoSelect fullWidth scrolldown name="server"
               style={{ marginRight: 5, flex: 1.5 }} disabled={isBusy}
               value={pinecone.index} onChange={value => onSelectIndex(value)}>
-              {indexes.map(x => <NekoOption key={x.name} value={x.name} label={x.name} />)}
-              {!indexes.length && <NekoOption value={''} label="None" />}
+              {indexes.map(x => <NekoOption value={x.name} label={x.name} />)}
+              {!indexes?.length && <NekoOption value={''} label="None" />}
             </NekoSelect>
             <NekoSpacer />
             <div style={{ display: 'flex' }}>
@@ -663,7 +665,7 @@ const Embeddings = ({ options, updateOption }) => {
                 <NekoSpacer />
                 <NekoInput value={minScore} type="number" min={0} max={98} step={0.50}
                   onBlur={value => { 
-                    setEmbeddingsSettings(prev => ({ ...prev, minScore: value })); 
+                    setEmbeddingsSettings({ ...embeddingsSettings, minScore: value });
                   }}
                 />
               </div>
@@ -672,7 +674,7 @@ const Embeddings = ({ options, updateOption }) => {
                 <NekoSpacer />
                 <NekoInput value={maxSelect} type="number" min={1} max={20} step={1}
                   onBlur={value => { 
-                    setEmbeddingsSettings(prev => ({ ...prev, maxSelect: value }));
+                    setEmbeddingsSettings({ ...embeddingsSettings, maxSelect: value });
                   }}
                 />
               </div>
@@ -687,7 +689,7 @@ const Embeddings = ({ options, updateOption }) => {
           <NekoTab title="Sync" inversed>
             <NekoCheckbox label="Rewrite Content" checked={embeddingsSettings.rewriteContent}
               disabled={busy}
-              onChange={value => { setEmbeddingsSettings(prev => ({ ...prev, rewriteContent: value })); }}
+              onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, rewriteContent: value }); }}
               description={`Shorten and improve the content for your embedding with GPT Turbo.
               `}
             />
@@ -697,13 +699,13 @@ const Embeddings = ({ options, updateOption }) => {
             {embeddingsSettings.rewriteContent && 
               <NekoTextArea value={embeddingsSettings.rewritePrompt} rows={5}
                 disabled={busy}
-                onBlur={value => { setEmbeddingsSettings(prev => ({ ...prev, rewritePrompt: value })); }}
+                onBlur={value => { setEmbeddingsSettings({ ...embeddingsSettings, rewritePrompt: value }); }}
                 description={`Prompt used for rewriting. Supports {CONTENT}, {TITLE}, {URL}, {EXCERPT}, {LANGUAGE} and {ID}.`}
             />}
             <NekoSpacer />
             <NekoCheckbox label="Force Recreate" checked={embeddingsSettings.forceRecreate}
               disabled={busy}
-              onChange={value => { setEmbeddingsSettings(prev => ({ ...prev, forceRecreate: value })); }}
+              onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, forceRecreate: value }); }}
               description={`Recreate embeddings when "Sync All" is used, even if they already exist with the same content.`}
             />
 
@@ -711,6 +713,7 @@ const Embeddings = ({ options, updateOption }) => {
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
 
+              {/* Total Posts + Post Type Select */}
               <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                 style={{ width: 100 }} onChange={setPostType} value={postType}>
                 {postTypes?.map(postType => 
@@ -718,6 +721,7 @@ const Embeddings = ({ options, updateOption }) => {
                 )}
               </NekoSelect>
 
+              {/* Actions for All Posts */}
               <NekoButton fullWidth className="primary" style={{ marginLeft: 10 }}
                 disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
                 onClick={() => onBulkRunClick(true)}>
@@ -736,7 +740,7 @@ const Embeddings = ({ options, updateOption }) => {
           <NekoTab title="Settings" inversed>
             <NekoCheckbox label="Sync Posts" checked={embeddingsSettings.syncPosts}
               disabled={busy}
-              onChange={value => { setEmbeddingsSettings(prev => ({ ...prev, syncPosts: value })); }}
+              onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, syncPosts: value }); }}
               description={`When publishing a post, an embedding will be created for it. The embedding will be removed when the post is deleted.`}
             />
           </NekoTab>
@@ -785,17 +789,17 @@ const Embeddings = ({ options, updateOption }) => {
         <NekoInput value={embeddingModal?.title} 
           placeholder={`Title, like "My Website Information"`}
           description="This is for your convenience only, it's not used anywhere."
-          onChange={value => setEmbeddingModal(prev => ({ ...prev, title: value })) } />
+          onChange={value => setEmbeddingModal({ ...embeddingModal, title: value }) } />
         <NekoSpacer />
         <label>Content:</label>
         <NekoSpacer />
-        <NekoTextArea value={embeddingModal?.content} onChange={value => setEmbeddingModal(prev => ({ ...prev, content: value })) } />
+        <NekoTextArea value={embeddingModal?.content} onChange={value => setEmbeddingModal({ ...embeddingModal, content: value }) } />
         <NekoSpacer />
         <label>Behavior:</label>
         <NekoSpacer />
-        <NekoSelect scrolldown name="behavior" disabled={true}
+        <NekoSelect scrolldown name="behavior" disabled={isBusy || true}
           value={embeddingModal?.behavior} onChange={value => {
-            setEmbeddingModal(prev => ({ ...prev, behavior: value }));
+            setEmbeddingModal({ ...embeddingModal, behavior: value });
           }}>
           <NekoOption value="context" label="Context" />
           <NekoOption value="answer" label="Answer" />
@@ -803,9 +807,9 @@ const Embeddings = ({ options, updateOption }) => {
         <NekoSpacer />
         <label>Type:</label>
         <NekoSpacer />
-        <NekoSelect scrolldown name="type" disabled={true}
+        <NekoSelect scrolldown name="type" disabled={isBusy || true}
           value={embeddingModal?.type} onChange={value => {
-            setEmbeddingModal(prev => ({ ...prev, type: value }));
+            setEmbeddingModal({ ...embeddingModal, type: value });
           }}>
           <NekoOption value="manual" label="Manual" />
           <NekoOption value="post" label="Post (Whole)" />
@@ -816,7 +820,7 @@ const Embeddings = ({ options, updateOption }) => {
           <label>Post ID:</label>
           <NekoSpacer />
           <NekoInput value={embeddingModal?.refId} 
-            onChange={value => setEmbeddingModal(prev => ({ ...prev, refId: value })) } />
+            onChange={value => setEmbeddingModal({ ...embeddingModal, refId: value }) } />
         </>}
       </>}
     />
@@ -837,12 +841,12 @@ const Embeddings = ({ options, updateOption }) => {
         <NekoSpacer />
         <NekoInput value={indexModal?.name} 
           placeholder={`Name for your index`}
-          onChange={value => setIndexModal(prev => ({ ...prev, name: value })) } />
+          onChange={value => setIndexModal({ ...indexModal, name: value }) } />
         <NekoSpacer />
         <label>Type:</label>
         <NekoSpacer />
         <NekoSelect scrolldown name="podType" disabled={isBusy} value={indexModal?.podType}
-          onChange={value => { setIndexModal(prev => ({ ...prev, podType: value })); } }
+          onChange={value => { setIndexModal({ ...indexModal, podType: value }); } }
           description={<>Pick S1 only if you will have more than 1 million of embeddings. P2 is faster for querying, slower for adding, and more expensive if you are not using the <a href="https://www.pinecone.io/pricing/" target="_blank">Starter Plan</a> (free) of Pinecone. P2 is recommended.</>}>
           <NekoOption value="s1" label="S1 (5M Embeddings)" />
           <NekoOption value="p1" label="P1 (1M Embeddings & High Perf)" />
@@ -854,6 +858,6 @@ const Embeddings = ({ options, updateOption }) => {
     {bulkTasks.TasksErrorModal}
 
   </>);
-}
+};
 
 export default Embeddings;
