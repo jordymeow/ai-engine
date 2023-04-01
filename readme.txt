@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.92
+Stable tag: 1.3.93
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,12 +69,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.3.93 (2023/04/01) =
+* Update: Since some of you suddently asked for it, the Magic Wand is back (and it will evolve).
+* Fix: The situation with the "Clear" button has been... clarified! 
+* Fix: Various fix related to how the Gutenberg librairies are used to avoid collisions.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.3.92 (2023/03/31) =
 * Fix: Post Edit links were not working.
 * Fix: Issue with finetuned models when their suffix contained a number.
 * Update: UI elements.
 * Update: Improved internal API.
-* 🌴 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38). Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.3.90 (2023/03/30) =
 * Add: Sync Posts with Embeddings (on Publish, on Update, and on Trash).

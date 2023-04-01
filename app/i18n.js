@@ -61,7 +61,7 @@ i18n.COMMON = {
   MODELS: __( 'Models', 'ai-engine' ),
   DATASETS: __( 'Datasets', 'ai-engine' ),
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
-  POSTS_SUGGESTIONS: __( 'Suggestions (Titles & Excerpts)', 'ai-engine' ),
+  POSTS_SUGGESTIONS: __( 'Suggestions', 'ai-engine' ),
   POSTS_SUGGESTIONS_HELP: __( 'Generate suggestions based on the content.', 'ai-engine' ),
   GENERATORS: __( 'Generators', 'ai-engine' ),
   WOOCOMMERCE_PRODUCT_GENERATOR: __( 'WooCommerce Product Generator', 'ai-engine' ),

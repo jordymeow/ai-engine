@@ -1,5 +1,5 @@
-// Previous: 1.3.66
-// Current: 1.3.78
+// Previous: 1.3.78
+// Current: 1.3.93
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -33,7 +33,7 @@ const DEFAULT_INDEX = {
 const OptionsCheck = ({ options }) => {
   const { openai_apikey, pinecone } = options;
   const openAiKey = openai_apikey && openai_apikey.length > 0;
-  const pineconeIsOK = !options?.module_embeddings || (pinecone.apikey && pinecone.apikey.length > 0);
+  const pineconeIsOK = !options?.module_embeddings || (pinecone?.apikey && pinecone.apikey.length > 0);
 
   return (
     <>
@@ -87,12 +87,10 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startLanguage]);
 
   useEffect(() => {
@@ -109,7 +107,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentHumanLanguage = useMemo(() => {
@@ -122,7 +119,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom, languages]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -150,7 +147,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, customLanguage, languages, isCustom, disabled]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -158,7 +155,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 
 const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const [model, setModel] = useState(defaultModel);
-  const decryptedFineTunes = options?.openai_finetunes_deleted || [];
+  const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
     let allModels = options.openai_models;
@@ -189,18 +186,18 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   }, [options]);
 
   const models = useMemo(() => {
-    return allModels.filter(x => !decryptedFineTunes.includes(x.model));
-  }, [allModels, decryptedFineTunes]);
+    return allModels.filter(x => !deletedFineTunes.includes(x.model));
+  }, [allModels, deletedFineTunes]);
 
   const completionModels = useMemo(() => {
     return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
   }, [models]);
 
   const getModel = (model) => {
-    if (model === 'gpt-3.5-turbo-0301') {
-      model = 'gpt-3.5-turbo';
+    if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
+      return 'gpt-3.5-turbo';
     } else if (model === 'gpt-4-0314') {
-      model = 'gpt-4';
+      return 'gpt-4';
     }
     return allModels.find(x => x.model === model);
   }

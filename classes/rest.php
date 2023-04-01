@@ -137,6 +137,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'templates_save' ),
 			) );
+			register_rest_route( $this->namespace, '/magic_wand', array(
+				'methods' => 'POST',
+				'callback' => array( $this, 'magic_wand' ),
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+			) );
 			register_rest_route( $this->namespace, '/logs', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -241,6 +246,52 @@ class Meow_MWAI_Rest
 			$query->injectParams( $params );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results, 'usage' => $answer->usage ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function magic_wand( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$action = isset( $params['action'] ) ? $params['action'] : null;
+			$data = isset( $params['data'] ) ? $params['data'] : null;
+			if ( empty( $data ) || empty( $action ) ) {
+				return new WP_REST_Response([ 'success' => false, 'message' => "An action and some data are required." ], 500 );
+			}
+			$postId = isset( $data['postId'] ) ? $data['postId'] : null;
+			$text = isset( $data['text'] ) ? $data['text'] : null;
+			$selectedText = isset( $data['selectedText'] ) ? $data['selectedText'] : null;
+
+			// TODO: As soon as we have a wide range of usages and possibilities,
+			// let's refactor this into a nice and extensible UI/API.
+			$query = new Meow_MWAI_QueryText( "", 1024 );
+			$query->setEnv( 'admin-tools' );
+			$mode = 'replace';
+			if ( $action === 'correctText' ) {
+				$query->setPrompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.\n\n" . $text );
+			}
+			else if ( $action === 'enhanceText' ) {
+				$query->setPrompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.\n\n" . $text );
+			}
+			else if ( $action === 'suggestSynonyms' ) {
+				$mode = 'suggest';
+				$query->setPrompt( "Suggest a synonym or an alternative wording for the given word or sentence, maintaining the original language and preserving the initial and final punctuation. Provide only the resulting word or expression, without any extra information.\n\n" . $selectedText );
+				$query->setTemperature( 1 );
+				$query->setMaxResults( 5 );
+			}
+			else if ( $action === 'translateText' ) {
+				$query->setPrompt( "Translate the text into {LANGUAGE}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
+				$language = $this->core->get_post_language( $postId );
+				$query->replace( '{LANGUAGE}', $language );
+			}
+			$answer = $this->core->ai->run( $query );
+			return new WP_REST_Response([ 'success' => true, 'data' => [
+				'mode' => $mode,
+				'result' => $answer->result,
+				'results' => $answer->results
+			] ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
