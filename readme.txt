@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.93
+Stable tag: 1.3.94
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.93 (2023/04/01) =
+= 1.3.94 (2023/04/01) =
+* Fix: Icon param and query->replace (which caused AI Translate not to use the right language).
 * Update: Since some of you suddently asked for it, the Magic Wand is back (and it will evolve).
 * Fix: The situation with the "Clear" button has been... clarified! 
 * Fix: Various fix related to how the Gutenberg librairies are used to avoid collisions.

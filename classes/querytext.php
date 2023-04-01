@@ -87,6 +87,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->validateMessages();
   }
 
+  public function replace( $search, $replace ) {
+    $this->prompt = str_replace( $search, $replace, $this->prompt );
+    $this->validateMessages();
+  }
+
   /**
    * Similar to the prompt, but use an array of messages instead.
    * @param string $prompt The messages to generate completions.
@@ -132,6 +137,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       if ( !empty( $this->prompt ) ) {
         array_push( $this->messages, [ 'role' => 'user', 'content' => $this->prompt ] );
       }
+    }
+    else if ( !empty( $this->prompt ) ) {
+      $lastMessage = $this->getLastMessage();
+      $lastMessageIndex = count( $this->messages ) - 1;
+      $this->messages[$lastMessageIndex] = [ 'role' => $lastMessage['role'], 'content' => $this->prompt ];
     }
     if ( !empty( $this->context ) ) {
       if ( is_array( $this->messages ) && count( $this->messages ) > 0 ) {

@@ -324,12 +324,13 @@ class Meow_MWAI_Core
 			'za' => 'Zhuang; Chuang',
 			'zu' => 'Zulu',
 		);
-		$language = strtr( $code, $lang_codes );
+		$humanLanguage = strtr( $code, $lang_codes );
 		$lang = apply_filters( 'wpml_post_language_details', null, $postId );
 		if ( !empty( $lang ) ) {
-			$language = $lang['display_name'];
+			$locale = $lang['locale'];
+			$humanLanguage = $lang['display_name'];
 		}
-		return strtolower( $language );
+		return strtolower( "$locale ($humanLanguage)" );
 	}
 	#endregion
 

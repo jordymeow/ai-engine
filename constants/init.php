@@ -21,6 +21,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'max_sentences' => 15,
 	'style' => 'chatgpt',
 	'window' => false,
+	'icon' => '',
 	'icon_text' => '',
 	'icon_alt' => 'AI Chatbot Avatar',
 	'icon_position' => 'bottom-right',
