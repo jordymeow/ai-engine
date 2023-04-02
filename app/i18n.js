@@ -149,6 +149,9 @@ i18n.COMMON = {
   OPENAI_AZURE_DEPLOYMENT: __( 'Deploy Name', 'ai-engine' ),
   THEME: __( 'Theme', 'ai-engine' ),
   THEMES: __( 'Themes', 'ai-engine' ),
+  BANNED_WORDS: __( 'Banned Words', 'ai-engine' ),
+  BANNED_IPS: __( 'Banned IPs', 'ai-engine' ),
+  SECURITY: __( 'Security', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -169,6 +172,8 @@ i18n.HELP = {
   DISCUSSIONS: __( 'Keep the conversations and enable browsing them via the Conversations tab.', 'ai-engine' ),
   OPENAI_SERVICE: __( 'Open AI can be used through Open AI directly, but also through Azure.', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENT: __( 'The name of the deployment you created for the model. It will be used by default.', 'ai-engine' ),
+  BANNED_WORDS: __( 'Reject queries containing these words; separate with commas.', 'ai-engine' ),
+  BANNED_IPS: __( 'Block access from specified IP addresses or ranges using CIDR notation; separate with commas.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

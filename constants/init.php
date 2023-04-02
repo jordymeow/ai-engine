@@ -125,5 +125,7 @@ define( 'MWAI_OPTIONS', [
 	'debug_mode' => true,
 	'resolve_shortcodes' => false,
 	'dynamic_max_tokens' => true,
+	'banned_words' => [],
+	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES
 ]);

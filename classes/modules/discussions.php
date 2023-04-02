@@ -114,7 +114,7 @@ class Meow_MWAI_Modules_Discussions {
       $chat->messages = json_decode( $chat->messages );
       $chat->messages[] = [
         'type' => 'user',
-        'text' => $params['rawInput']
+        'text' => $params['newMessage']
       ];
       $chat->messages[] = [
         'type' => 'ai',
@@ -133,7 +133,7 @@ class Meow_MWAI_Modules_Discussions {
         'messages' => json_encode( [
           [
             'type' => 'user',
-            'text' => $params['rawInput']
+            'text' => $params['newMessage']
           ],
           [
             'type' => 'ai',

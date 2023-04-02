@@ -60,9 +60,30 @@ class Meow_MWAI_Modules_Chatbot {
 		return '<style>' . $css . '</style>';
 	}
 
+	public function basics_security_check( $params ) {
+		if ( empty( $params['newMessage'] ) ) {
+			return false;
+		}
+		$length = strlen( trim( $params['newMessage'] ) );
+		if ( $length < 3 || $length > ( 4096 - 512 ) ) {
+			return false;
+		}
+		if ( empty( $params['prompt'] ) ) {
+			return false;
+		}
+		return true;
+	}
+
 	public function rest_chat( $request ) {
 		try {
 			$params = $request->get_json_params();
+			if ( !$this->basics_security_check( $params )) {
+				return new WP_REST_Response( [ 
+					'success' => false, 
+					'message' => 'Sorry, your query has been rejected.' ], 403
+				);
+			}
+
 			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
 			$query->injectParams( $params );
 
@@ -96,7 +117,10 @@ class Meow_MWAI_Modules_Chatbot {
 
 			$answer = $this->core->ai->run( $query );
 			$rawText = $answer->result;
-			$extra = [ 'embeddings' => $context['embeddings'] ];
+			$extra = [];
+			if ( $context ) {
+				$extra = [ 'embeddings' => $context['embeddings'] ];
+			}
 			$html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
@@ -624,12 +648,12 @@ class Meow_MWAI_Modules_Chatbot {
 
 					const data = mode === 'images' ? {
 						env, session: session,
-						prompt: inputText, rawInput: inputText,
+						prompt: inputText, newMessage: inputText,
 						model: model, maxResults, apiKey: apiKey, service: service, clientId: clientId,
 					} : {
 						env, session: session,
 						prompt: prompt, context: context,
-						messages: memorizedChat.messages, rawInput: inputText,
+						messages: memorizedChat.messages, newMessage: inputText,
 						userName: userName, aiName: aiName,
 						model: model, temperature: temperature, maxTokens: maxTokens, maxResults: 1, apiKey: apiKey, service: service, embeddingsIndex: embeddingsIndex, stop: stop, clientId: clientId,
 					};

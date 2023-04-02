@@ -31,6 +31,7 @@ class Meow_MWAI_Core
 	function init() {
 		global $mwai;
 		$mwai = new Meow_MWAI_API();
+		new Meow_MWAI_Security( $this );
 		if ( $this->is_rest ) {
 			new Meow_MWAI_Rest( $this );
 		}

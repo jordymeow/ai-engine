@@ -6,7 +6,7 @@ class Meow_MWAI_Modules_Chatbot_Logs {
     add_filter( 'mwai_chatbot_reply', function ( $reply, $query, $params ) {
       try {
         global $mwai_core;
-        $rawInput = !empty( $params['rawInput'] ) ? $params['rawInput'] : $query->prompt;
+        $newMessage = !empty( $params['newMessage'] ) ? $params['newMessage'] : "";
 
         // We need to identify the user or session
         $id = $mwai_core->get_user_id();
@@ -32,7 +32,7 @@ class Meow_MWAI_Modules_Chatbot_Logs {
           mkdir( $chatbot_logs_dir, 0777, true );
         }
         $content = @file_get_contents( $file );
-        $content .= "USER: " . $rawInput . "\n";
+        $content .= "USER: " . $newMessage . "\n";
         $content .= "AI: " . $reply . "\n";
         file_put_contents( $file, $content );
       }

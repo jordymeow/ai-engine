@@ -13,6 +13,14 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->setMaxTokens( $maxTokens );
   }
 
+  public function getLastPrompt() {
+    if ( empty( $this->messages ) ) {
+      return $this->prompt;
+    }
+    $lastMessage = end( $this->messages );
+    return $lastMessage['content'];
+  }
+
   // Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
   function estimateTokens( $content )

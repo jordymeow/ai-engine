@@ -25,6 +25,10 @@ class Meow_MWAI_Query {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
   }
 
+  public function getLastPrompt() {
+    return $this->prompt; 
+  }
+
   /**
    * The environment, like "chatbot", "imagesbot", "chatbot-007", "textwriter", etc...
    * Used for statistics, mainly.
