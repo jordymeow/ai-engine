@@ -65,7 +65,7 @@ class Meow_MWAI_Modules_Chatbot {
 			return false;
 		}
 		$length = strlen( trim( $params['newMessage'] ) );
-		if ( $length < 3 || $length > ( 4096 - 512 ) ) {
+		if ( $length < 1 || $length > ( 4096 - 512 ) ) {
 			return false;
 		}
 		if ( empty( $params['prompt'] ) ) {
@@ -84,7 +84,7 @@ class Meow_MWAI_Modules_Chatbot {
 				);
 			}
 
-			$query = new Meow_MWAI_QueryText( $params['prompt'], 1024 );
+			$query = new Meow_MWAI_QueryText( $params['newMessage'], 1024 );
 			$query->injectParams( $params );
 
 			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
@@ -648,12 +648,14 @@ class Meow_MWAI_Modules_Chatbot {
 
 					const data = mode === 'images' ? {
 						env, session: session,
-						prompt: inputText, newMessage: inputText,
+						prompt: inputText,
+						newMessage: inputText,
 						model: model, maxResults, apiKey: apiKey, service: service, clientId: clientId,
 					} : {
 						env, session: session,
 						prompt: prompt, context: context,
-						messages: memorizedChat.messages, newMessage: inputText,
+						messages: memorizedChat.messages,
+						newMessage: inputText,
 						userName: userName, aiName: aiName,
 						model: model, temperature: temperature, maxTokens: maxTokens, maxResults: 1, apiKey: apiKey, service: service, embeddingsIndex: embeddingsIndex, stop: stop, clientId: clientId,
 					};

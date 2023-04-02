@@ -6,6 +6,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $stop = null;
   public $messages = [];
   public $context = null;
+  public $newMessage = null;
   
   public function __construct( $prompt = '', $maxTokens = 1024, $model = 'gpt-3.5-turbo' ) {
     parent::__construct( $prompt );
@@ -95,6 +96,16 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->validateMessages();
   }
 
+  /**
+   * Similar to the prompt, but focus on the new/last message.
+   * Only used when the model has a chat mode (and only used in messages).
+   * @param string $prompt The messages to generate completions.
+   */
+  public function setNewMessage( $newMessage ) {
+    $this->newMessage = $newMessage;
+    $this->validateMessages();
+  }
+
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
     $this->validateMessages();
@@ -140,17 +151,19 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   }
 
   private function validateMessages() {
+    // Messages should end with either the prompt or, if exists, the newMessage.
+    $message = empty( $this->newMessage ) ? $this->prompt : $this->newMessage;
     if ( empty( $this->messages ) ) {
-      $this->messages = [];
-      if ( !empty( $this->prompt ) ) {
-        array_push( $this->messages, [ 'role' => 'user', 'content' => $this->prompt ] );
+      $this->messages = [ [ 'role' => 'user', 'content' => $message ] ];
+    }
+    else {
+      $last = end( $this->messages );
+      if ( $last['role'] === 'user' ) {
+        $last['content'] = $message;
       }
     }
-    else if ( !empty( $this->prompt ) ) {
-      $lastMessage = $this->getLastMessage();
-      $lastMessageIndex = count( $this->messages ) - 1;
-      $this->messages[$lastMessageIndex] = [ 'role' => $lastMessage['role'], 'content' => $this->prompt ];
-    }
+    
+    // The main context must be first.
     if ( !empty( $this->context ) ) {
       if ( is_array( $this->messages ) && count( $this->messages ) > 0 ) {
         if ( $this->messages[0]['role'] !== 'system' ) {
@@ -208,11 +221,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( isset( $params['prompt'] ) ) {
       $this->setPrompt( $params['prompt'] );
     }
-    if ( isset( $params['messages'] ) ) {
-      $this->setMessages( $params['messages'] );
-    }
     if ( isset( $params['context'] ) ) {
       $this->setContext( $params['context'] );
+    }
+    if ( isset( $params['newMessage'] ) ) {
+      $this->setNewMessage( $params['newMessage'] );
     }
 		if ( isset( $params['maxTokens'] ) ) {
 			$this->setMaxTokens( $params['maxTokens'] );

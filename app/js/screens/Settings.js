@@ -1,5 +1,5 @@
-// Previous: 1.3.93
-// Current: 1.3.95
+// Previous: 1.3.95
+// Current: 1.3.96
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -104,7 +104,7 @@ const Settings = () => {
   const admin_bar = options?.admin_bar ?? ['settings'];
   const resolve_shortcodes = options?.resolve_shortcodes;
 
-  const isChat = (shortcodeParams?.mode === 'chat') ?? true;
+  const isChat = shortcodeParams?.mode === 'chat' ?? true;
   const isImagesChat = shortcodeParams?.mode === 'images' ?? false;
   const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
@@ -116,14 +116,12 @@ const Settings = () => {
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = shortcodeParams.content_aware && shortcodeParams.content_aware.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
 
-  const accidentsPastDay = useMemo(() => {
-    return incidents?.filter(x => {
-      const incidentDate = new Date(x.date);
-      return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
-    }).length ?? 0;
-  }, [incidents]);
+  const accidentsPastDay = useMemo(() => incidents?.filter(x => {
+    const incidentDate = new Date(x.date);
+    return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
+  }).length, [incidents]);
 
   const busy = busyAction;
 
@@ -207,7 +205,7 @@ const Settings = () => {
   }
 
   useEffect(() => {
-    if (currentModel?.mode !== 'chat' && shortcodeParams?.embeddings_index) {
+    if (currentModel?.mode !== 'chat' && !!shortcodeParams.embeddings_index) {
       updateShortcodeParams('', 'embeddings_index');
     }
   }, [shortcodeParams]);
@@ -218,22 +216,16 @@ const Settings = () => {
   }
 
   const updateLimits = async (value, id) => {
-    const newLimits = { ...limits };
-    if (id === 'credits') {
-      value = Math.max(0, value);
-    }
-    if (limits?.[limitSection]) {
-      newLimits[limitSection] = { ...limits[limitSection], [id]: value };
-    }
-    await updateOption(newLimits, 'limits');
+    const newParams = { ...limits, [id]: value };
+    await updateOption(newParams, 'limits');
   }
 
   const updateUserLimits = async (value, id) => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const userLimits = { ...limits?.users, [id]: value };
-    const newLimits = { ...limits, users: userLimits };
+    const newParams = { ...limits.users, [id]: value };
+    const newLimits = { ...limits, users: newParams };
     await updateOption(newLimits, 'limits');
   }
 
@@ -241,8 +233,8 @@ const Settings = () => {
     if (id === 'credits') {
       value = Math.max(0, value);
     }
-    const guestLimits = { ...limits?.guests, [id]: value };
-    const newLimits = { ...limits, guests: guestLimits };
+    const newParams = { ...limits.guests, [id]: value };
+    const newLimits = { ...limits, guests: newParams };
     await updateOption(newLimits, 'limits');
   }
 
@@ -273,7 +265,7 @@ const Settings = () => {
   const onResetLimits = async () => {
     await updateOption(default_limits, 'limits');
   }
-
+  
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
       <NekoCheckboxGroup max="1">
@@ -361,7 +353,8 @@ const Settings = () => {
           description={i18n.COMMON.CHATBOT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
-    </NekoSettings>;
+    </NekoSettings>
+   ;
 
   const jsxShortcodeFormatting =
     <NekoSettings title={i18n.COMMON.FORMATTING}>
@@ -409,7 +402,7 @@ const Settings = () => {
           value={shortcode_chat_logs} description="" onChange={updateOption}>
           <NekoOption value='' label="None" />
           <NekoOption value='file' label="Files (/uploads/chatbot folder)" />
-        </NekoSelect>
+        </NekoOption>
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -433,8 +426,6 @@ const Settings = () => {
         description={i18n.HELP.DYNAMIC_MAX_TOKENS}
         onChange={updateOption} />
     </NekoSettings>;
-
-  console.log({ banned_words, banned_ips });
 
   const jsxBannedKeywords =
     <NekoSettings title={i18n.COMMON.BANNED_WORDS}>
@@ -662,7 +653,7 @@ const Settings = () => {
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={4}
-                            value={shortcodeParams.context} onBlur={updateShortcodeParams} />
+                            value={shortcodeParams.content} onBlur={updateShortcodeParams} />
                         </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
@@ -810,7 +801,7 @@ const Settings = () => {
                         
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.MAX_TOKENS}:</label>
-                          <NekoInput id="max_tokens" name="max_tokens" type="number" min="10" max="2048"
+                          <NekoInput id="max_tokens" name="max_tokens" type="number"
                             value={shortcodeParams.max_tokens} onBlur={updateShortcodeParams} />
                         </div>
 
@@ -888,7 +879,7 @@ const Settings = () => {
 
                     <NekoCheckbox name="shortcode_chat_params_override"
                       label={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS}
-                      disabled={Object.keys(shortcodeParamsDiff).length < 1 || !shortcodeParamsOverride}
+                      disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
                       description={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS_HELP}
                       onChange={updateOption} />
@@ -1069,15 +1060,19 @@ const Settings = () => {
                     <NekoButton className="danger" onClick={onResetLimits}>
                       Reset Limits
                     </NekoButton>}>
+
                       <NekoCheckbox name="enabled" label={i18n.STATISTICS.ENABLE_LIMITS}
                         checked={limits?.enabled} value="1" onChange={updateLimits}
                       />
+
                       <NekoSpacer />
+
                       <NekoQuickLinks value={limitSection} busy={busy} 
                         onChange={value => { setLimitSection(value) }}>
                         <NekoLink title={i18n.COMMON.USERS} value='users' disabled={!limits?.enabled} />
                         <NekoLink title={i18n.COMMON.GUESTS} value='guests' />
                       </NekoQuickLinks>
+
                       {limits?.target === 'userId' && <>
                         <div className="mwai-builder-row">
                           <div className="mwai-builder-col">
@@ -1087,6 +1082,7 @@ const Settings = () => {
                           </div>
                         </div>
                       </>}
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CREDITS}:</label>
@@ -1105,15 +1101,20 @@ const Settings = () => {
                           </NekoSelect>
                         </div>
                       </div>
+
                       {limits?.[limitSection]?.credits !== 0 && <p>
                         If you want to apply variable amount of credits, <a href="https://meowapps.com/ai-engine/faq/#limits" target="_blank">click here</a>.
                       </p>}
+
                       {limits?.[limitSection]?.credits !== 0 && limits?.[limitSection].creditType === 'price' &&
                         <p>The dollars represent the budget you spent through OpenAI.</p>
                       }
+
                       {limits?.[limitSection]?.credits === 0 && <p>
                         Since there are no credits, the Message for No Credits Message with be displayed.
                       </p>}
+
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.TIMEFRAME}:</label>
@@ -1138,14 +1139,16 @@ const Settings = () => {
                       {limits?.[limitSection]?.isAbsolute && <p>
                         {toHTML(i18n.STATISTICS.ABSOLUTE_HELP)}
                       </p>}
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
-                          <label>{i18n.STATISTICS.OVER_LIMIT_MESSAGE}:</label>
+                          <label>{i18n.STATISTICS.NO_CREDITS_MESSAGE}:</label>
                           <NekoInput id="overLimitMessage" name="overLimitMessage" disabled={!limits?.enabled}
                             value={limits?.[limitSection]?.overLimitMessage}
                             onBlur={limitSection === 'users' ? updateUserLimits : updateGuestLimits} />
                         </div>
                       </div>
+
                       {limitSection === 'users' && <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
@@ -1160,6 +1163,7 @@ const Settings = () => {
                           </NekoOption>
                         </div>
                       </div>}
+
                     </NekoBlock>
                   </StyledBuilderForm>
                 </NekoColumn>

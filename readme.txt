@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.95
+Stable tag: 1.3.96
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.95 (2023/04/02) =
+= 1.3.96 (2023/04/02) =
+* Fix: Fixes and enhancements related to embeddings.
+* Add: Post types filter for Sync Posts for embeddings.
 * Add: Security improvements, avoid empty requests, banned words and banned IPs (CIDR ranges supported).
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

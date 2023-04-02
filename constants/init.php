@@ -120,6 +120,7 @@ define( 'MWAI_OPTIONS', [
 		'maxSelect' => 1,
 		'minScore' => 75,
 		'syncPosts' => false,
+		'syncPostTypes' => ['post', 'page', 'product'],
 	],
 	'extra_models' => "",
 	'debug_mode' => true,
