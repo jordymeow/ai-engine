@@ -112,6 +112,16 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'openai_incidents' ),
 			) );
+			register_rest_route( $this->namespace, '/chatbots', array(
+				'methods' => ['GET', 'PUT'],
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_chatbots' ),
+			) );
+			register_rest_route( $this->namespace, '/themes', array(
+				'methods' => ['GET', 'PUT'],
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_themes' ),
+			) );
 			register_rest_route( $this->namespace, '/count_posts', array(
 				'methods' => 'GET',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
@@ -801,6 +811,39 @@ class Meow_MWAI_Rest
 		try {
 			$postTypes = $this->core->getPostTypes();
 			return new WP_REST_Response([ 'success' => true, 'postTypes' => $postTypes ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function rest_themes( $request ) {
+		try {
+			$method = $request->get_method();
+			if ( $method === 'GET' ) {
+				$themes = $this->core->getThemes();
+				return new WP_REST_Response([ 'success' => true, 'themes' => $themes ], 200 );
+			}
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function rest_chatbots( $request ) {
+		try {
+			$method = $request->get_method();
+			if ( $method === 'GET' ) {
+				$chatbots = $this->core->getChatbots();
+				return new WP_REST_Response([ 'success' => true, 'chatbots' => $chatbots ], 200 );
+			}
+			else if ( $method === 'PUT' ) {
+				$params = $request->get_json_params();
+				$chatbots = $params['chatbots'];
+				$chatbots = $this->core->updateChatbots( $chatbots );
+				return new WP_REST_Response([ 'success' => true, 'chatbots' => $chatbots ], 200 );
+			}
+			return new WP_REST_Response([ 'success' => false, 'message' => 'Method not allowed' ], 405 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

@@ -18,6 +18,8 @@ class Meow_MWAI_Core
 	public $site_url = null;
 	public $ai = null;
 	private $option_name = 'mwai_options';
+	private $themes_option_name = 'mwai_themes';
+	private $chatbots_option_name = 'mwai_chatbots';
 	public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
 
 	public function __construct() {
@@ -536,6 +538,39 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Options
+	function getThemes() {
+		$themes = get_option( $this->themes_option_name, [
+			'theme' => 'chatgpt',
+			'params' => [],
+			'style' => ""
+		] );		
+		return $themes;
+	}
+
+	function updateThemes( $themes ) {
+		update_option( $this->themes_option_name, $themes );
+	}
+
+	function getChatbots() {
+		$chatbots = get_option( $this->chatbots_option_name, [] );
+		if ( empty( $chatbots ) ) {
+			$chatbots = [ array_merge( MWAI_CHATBOT_PARAMS, ['name' => 'Default', 'chatId' => 'default' ] ) ];
+		}
+		foreach ( $chatbots as $chatbot ) {
+			foreach ( MWAI_CHATBOT_PARAMS as $key => $value ) {
+				if ( !isset( $chatbot[$key] ) ) {
+					$chatbot[$key] = $value;
+				}
+			}
+		}
+		return $chatbots;
+	}
+
+	function updateChatbots( $chatbots ) {
+		update_option( $this->chatbots_option_name, $chatbots );
+		return $chatbots;
+	}
+
 	function get_all_options() {
 		$options = get_option( $this->option_name, null );
 		foreach ( MWAI_OPTIONS as $key => $value ) {

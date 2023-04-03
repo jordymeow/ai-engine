@@ -1,11 +1,23 @@
-// Previous: 1.3.92
-// Current: 1.3.93
+// Previous: 1.3.93
+// Current: 1.3.97
 
 const { useState } = wp.element;
 import css from '../../../../themes/ChatGPT.module.css';
 
-const modCss = (className) => {
-  return `${className} ${css[className]}`;
+const modCss = (classNames, conditionalClasses) => {
+  if (!Array.isArray(classNames)) {
+    classNames = [classNames];
+  }
+  if (conditionalClasses) {
+    Object.entries(conditionalClasses).forEach(([className, condition]) => {
+      if (condition) {
+        classNames.push(className);
+      }
+    });
+  }
+  return classNames
+    .map(className => `${className} ${css[className]}`)
+    .join(' ');
 };
 
 function isUrl(url) {
@@ -52,14 +64,18 @@ function formatAiName(aiName, pluginUrl) {
 }
 
 const Chatbot = (props) => {
-  const { system, shortcodeParams, shortcodeStyles } = props;
+  const { system, shortcodeParams, shortcodeStyles, style } = props;
+
+  const [ open, setOpen ] = useState(false);
+  const [ minimized, setMinimized ] = useState(true);
+
   let CssVariables = {};
   for (let key in shortcodeStyles) {
     CssVariables[`--mwai-${key}`] = shortcodeStyles[key];
   }
   const atts = shortcodeParams;
 
-  let id = atts.id ? atts.id : uniqid();
+  let id = atts.chatId ? atts.chatId : (atts.id ? atts.id : '');
   id = id.replace(/[^a-zA-Z0-9]/g, '');
   const userData = system.userData;
   const sessionId = system.sessionId;
@@ -85,9 +101,17 @@ const Chatbot = (props) => {
   let iconText = atts.icon_text.trim();
   let iconAlt = atts.icon_alt.trim();
   let iconPosition = atts.icon_position.trim();
-  let style = atts.style;
+  let themeStyle = atts.style;
   let aiName = atts.ai_name.trim();
   let userName = atts.user_name.trim();
+
+  let iconUrl = pluginUrl + '/images/chat-green.svg';
+  if ( icon ) {
+    iconUrl = icon;
+  } else if ( shortcodeStyles['icon'] ) {
+    let url = shortcodeStyles['icon'];
+    iconUrl = isUrl( url ) ? url : ( pluginUrl + '/images/' + shortcodeStyles['icon'] );
+  }
 
   aiName = formatAiName(aiName, pluginUrl);
   userName = formatUserName(userName, guestName, userData, pluginUrl);
@@ -112,26 +136,56 @@ const Chatbot = (props) => {
   const service = atts.service;
   const apiKey = atts.api_key;
 
-  return (<div className={modCss('mwai-chat')} style={CssVariables}>
-    <div className={modCss('mwai-content')}>
-      <div className={modCss('mwai-conversation')}>
-        <div className={modCss('mwai-reply') + ' ' + modCss('mwai-ai')}>
-          <span className={modCss('mwai-name')}>
-            <div className={modCss('mwai-name-text')}>{aiName}</div>
-          </span>
-          <span className={modCss('mwai-text')}>{startSentence}</span>
-          <div className={modCss('mwai-copy-button')}>
-            <div className={modCss('mwai-copy-button-one')}></div>
-            <div className={modCss('mwai-copy-button-two')}></div>
+  return (<>
+    <div className={modCss('mwai-chat', { 'mwai-window': window, 'mwai-open': open, 'mwai-fullscreen': !minimized })}
+      style={{ ...CssVariables, ...style }}>
+
+      {window && (<>
+        <div class={modCss('mwai-open-button')}>
+          {iconText && <div class={modCss('mwai-icon-text')}>{iconText}</div>}
+          <img width="64" height="64" alt={iconAlt} src={iconUrl}
+            onClick={() => setOpen(!open)}
+          />
+        </div>
+        <div class={modCss('mwai-header')}>
+          <div class={modCss('mwai-buttons')}>
+            {fullscreen && 
+              <div class={modCss('mwai-resize-button')}
+                onClick={() => setMinimized(!minimized)}
+              />
+            }
+            <div class={modCss('mwai-close-button')}
+              onClick={() => setOpen(!open)}
+            />
           </div>
         </div>
-      </div>
-      <div className={modCss('mwai-input')}>
-        <textarea rows="1" maxLength="512" placeholder={textInputPlaceholder} ></textarea>
-        <button>
-          <span>{textSend}</span>
-        </button>
+      </>)}
+
+      <div className={modCss('mwai-content')}>
+        <div className={modCss('mwai-conversation')}>
+          <div className={modCss('mwai-reply') + ' ' + modCss('mwai-ai')}>
+            <span className={modCss('mwai-name')}>
+              <div className={modCss('mwai-name-text')}>{aiName}</div>
+            </span>
+            <span className={modCss('mwai-text')}>{startSentence}</span>
+            <div className={modCss('mwai-copy-button')}>
+              <div className={modCss('mwai-copy-button-one')}></div>
+              <div className={modCss('mwai-copy-button-two')}></div>
+            </div>
+          </div>
+        </div>
+        <div className={modCss('mwai-input')}>
+          <textarea rows="1" maxLength="512" placeholder={textInputPlaceholder} ></textarea>
+          <button>
+            <span>{textSend}</span>
+          </button>
+        </div>
+        {textCompliance && <div class={modCss('mwai-compliance')}>
+          {textCompliance}
+        </div>}
       </div>
     </div>
-  </div>);
+  </>);
 };
+
+export default Chatbot;

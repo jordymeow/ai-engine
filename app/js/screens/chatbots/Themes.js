@@ -1,7 +1,7 @@
-// Previous: none
-// Current: 1.3.91
+// Previous: 1.3.91
+// Current: 1.3.97
 
-const { useState } = wp.element;
+const { useState, useEffect } = wp.element;
 
 import { NekoButton, NekoInput, NekoSpacer, NekoWrapper, NekoTabs, NekoTab } from '@neko-ui';
 
@@ -36,7 +36,7 @@ const Themes = (props) => {
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
 
   const updateShortcodeStyles = async (value, id) => {
-    if (value) {
+    if (value !== undefined && value !== null) {
       const newStyles = { ...shortcodeStyles, [id]: value };
       await updateOption(newStyles, 'shortcode_chat_styles');
     }
@@ -46,11 +46,21 @@ const Themes = (props) => {
     await updateOption({}, 'shortcode_chat_styles');
   }
 
-  const updateIcon = (newVal) => {
-    // This function is not updating the full style object, only the icon, but in the onBlur calls
-    // earlier it was used as if it were updateShortcodeStyles, so here it'll cause inconsistent behavior.
-    // Also, the input passes event, but we are expecting a value, so it may get unintended data.
+  const handleIconChange = (newIcon) => {
+    updateShortcodeStyles(newIcon, 'icon');
   }
+
+  const updateIcon = (e) => {
+    handleIconChange(e.target.value);
+  }
+
+  useEffect(() => {
+    if (shortcodeStyles?.icon !== chatIcon) {
+      setTimeout(() => {
+        updateShortcodeStyles(chatIcon, 'icon');
+      }, 100);
+    }
+  }, [shortcodeStyles?.icon, chatIcon]);
 
   return (<>
     <NekoTabs inversed>
@@ -63,27 +73,39 @@ const Themes = (props) => {
             <div className="mwai-builder-col" style={{ flex: 0.66 }}>
               <label>{i18n.COMMON.SPACING}:</label>
               <NekoInput id="spacing" name="spacing"
-                value={shortcodeStyles?.spacing ?? '15px'} onBlur={updateShortcodeStyles} />
+                value={shortcodeStyles?.spacing ?? '15px'}
+                onBlur={updateShortcodeStyles}
+                onEnter={updateShortcodeStyles}
+              />
             </div>
             <div className="mwai-builder-col" style={{ flex: 0.66 }}>
               <label>{i18n.COMMON.BORDER_RADIUS}:</label>
               <NekoInput id="borderRadius" name="borderRadius"
-                value={shortcodeStyles?.borderRadius ?? '10px'} onBlur={updateShortcodeStyles} />
+                value={shortcodeStyles?.borderRadius ?? '10px'}
+                onBlur={updateShortcodeStyles}
+                onEnter={updateShortcodeStyles}
+              />
             </div>
             <div className="mwai-builder-col" style={{ flex: 0.66 }}>
               <label>{i18n.COMMON.FONT_SIZE}:</label>
               <NekoInput id="fontSize" name="fontSize"
-                value={shortcodeStyles?.fontSize ?? '15px'} onBlur={updateShortcodeStyles} />
+                value={shortcodeStyles?.fontSize ?? '15px'}
+                onBlur={updateShortcodeStyles}
+                onEnter={updateShortcodeStyles}
+              />
             </div>
             <div className="mwai-builder-col" style={{ flex: 1 }}>
               <label>{i18n.COMMON.FONT_COLOR}:</label>
               <div style={{ display: 'flex' }}>
                 <NekoInput id="fontColor" name="fontColor"
                   value={shortcodeStyles?.fontColor ?? '#FFFFFF'} 
-                  onBlur={updateShortcodeStyles} />
+                  onBlur={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
                 <NekoColorPicker id="fontColor" name="fontColor"
                   value={shortcodeStyles?.fontColor ?? '#FFFFFF'}
-                  onChange={updateShortcodeStyles} />
+                  onChange={updateShortcodeStyles}
+                />
               </div>
             </div>
           </div>
@@ -95,10 +117,14 @@ const Themes = (props) => {
               <div style={{ display: 'flex' }}>
                 <NekoInput id="backgroundPrimaryColor" name="backgroundPrimaryColor"
                   value={shortcodeStyles?.backgroundPrimaryColor ?? '#454654'} 
-                  onBlur={updateShortcodeStyles} />
+                  onBlur={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
                 <NekoColorPicker id="backgroundPrimaryColor" name="backgroundPrimaryColor"
                   value={shortcodeStyles?.backgroundPrimaryColor ?? '#454654'}
-                  onChange={updateShortcodeStyles} />
+                  onChange={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
               </div>
             </div>
             <div className="mwai-builder-col">
@@ -106,10 +132,14 @@ const Themes = (props) => {
               <div style={{ display: 'flex' }}>
                 <NekoInput id="backgroundSecondaryColor" name="backgroundSecondaryColor"
                   value={shortcodeStyles?.backgroundSecondaryColor ?? '#343541'} 
-                  onBlur={updateShortcodeStyles} />
+                  onBlur={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
                 <NekoColorPicker id="backgroundSecondaryColor" name="backgroundSecondaryColor"
                   value={shortcodeStyles?.backgroundSecondaryColor ?? '#343541'}
-                  onChange={updateShortcodeStyles} />
+                  onChange={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
               </div>
             </div>
             <div className="mwai-builder-col">
@@ -117,10 +147,14 @@ const Themes = (props) => {
               <div style={{ display: 'flex' }}>
                 <NekoInput id="headerButtonsColor" name="headerButtonsColor"
                   value={shortcodeStyles?.headerButtonsColor ?? '#FFFFFF'} 
-                  onBlur={updateShortcodeStyles} />
+                  onBlur={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
                 <NekoColorPicker id="headerButtonsColor" name="headerButtonsColor"
                   value={shortcodeStyles?.headerButtonsColor ?? '#FFFFFF'}
-                  onChange={updateShortcodeStyles} />
+                  onChange={updateShortcodeStyles}
+                  onEnter={updateShortcodeStyles}
+                />
               </div>                          
             </div>
           </div>
@@ -131,16 +165,16 @@ const Themes = (props) => {
             <div className="mwai-builder-col" style={{ flex: 2 }}>
               <label>{i18n.COMMON.POPUP_ICON}:</label>
               <div style={{ display: 'flex' }}>
-              {chatIcons.map(x => 
-                <>
+              {chatIcons.map(x => (
+                <React.Fragment key={x}>
                   <img style={{ marginRight: 2, cursor: 'pointer' }} width={24} height={24}
                     src={`${pluginUrl}/images/${x}`} onClick={() => {
-                      updateShortcodeStyles(x, 'icon')
+                      handleIconChange(x)
                     }} />
-                </>
-              )}
+                </React.Fragment>
+              ))}
               <NekoButton small className="primary" style={{ marginLeft: 5 }}
-                onClick={() => { updateShortcodeStyles(`${pluginUrl}/images/chat-color-green.svg`, 'icon') }}>
+                onClick={() => { handleIconChange(`${pluginUrl}/images/chat-color-green.svg`) }}>
                 {i18n.SETTINGS.CUSTOM_URL}
               </NekoButton>
               </div>
@@ -153,7 +187,9 @@ const Themes = (props) => {
             <div className="mwai-builder-col">
               <label>{i18n.COMMON.CUSTOM_ICON_URL}:</label>
               <NekoInput id="icon" name="icon" value={chatIcon}
-                onBlur={(e) => updateIcon(e.target.value)} />
+                onBlur={updateIcon}
+                onEnter={updateIcon}
+              />
             </div>
           </div>}
 
@@ -161,12 +197,18 @@ const Themes = (props) => {
             <div className="mwai-builder-col" style={{ flex: 1 }}>
               <label>{i18n.COMMON.WIDTH}:</label>
               <NekoInput id="width" name="width"
-                value={shortcodeStyles?.width ?? '460px'} onBlur={updateShortcodeStyles} />
+                value={shortcodeStyles?.width ?? '460px'}
+                onBlur={updateShortcodeStyles}
+                onEnter={updateShortcodeStyles}
+              />
             </div>
             <div className="mwai-builder-col" style={{ flex: 1 }}>
               <label>{i18n.COMMON.MAX_HEIGHT}:</label>
               <NekoInput id="maxHeight" name="maxHeight"
-                value={shortcodeStyles?.maxHeight ?? '40vh'} onBlur={updateShortcodeStyles} />
+                value={shortcodeStyles?.maxHeight ?? '40vh'}
+                onBlur={updateShortcodeStyles}
+                onEnter={updateShortcodeStyles}
+              />
             </div>
           </div>
 

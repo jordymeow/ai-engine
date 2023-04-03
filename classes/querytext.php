@@ -224,6 +224,9 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( isset( $params['context'] ) ) {
       $this->setContext( $params['context'] );
     }
+    if ( isset( $params['messages'] ) ) {
+      $this->setMessages( $params['messages'] );
+    }
     if ( isset( $params['newMessage'] ) ) {
       $this->setNewMessage( $params['newMessage'] );
     }
