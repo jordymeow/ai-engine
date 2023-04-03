@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.3.97
+Stable tag: 1.3.98
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,8 +69,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.3.97 (2023/04/03) =
+= 1.3.98 (2023/04/03) =
 * Fix: An issue related to memorizing the chats with GPT-Turbo.
+* Fix: The Magic Wand was going a bit wild because of my previous optimization.
 * Add: {EXCERPT} is now also usable via content aware.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

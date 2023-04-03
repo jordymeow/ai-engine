@@ -157,9 +157,9 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       $this->messages = [ [ 'role' => 'user', 'content' => $message ] ];
     }
     else {
-      $last = end( $this->messages );
+      $last = &$this->messages[ count( $this->messages ) - 1 ];
       if ( $last['role'] === 'user' ) {
-        $last['content'] = $message;
+          $last['content'] = $message;
       }
     }
     
