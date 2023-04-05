@@ -71,6 +71,14 @@ define ( 'MWAI_LIMITS', [
 		'overLimitMessage' => "You have reached the limit.",
 		'ignoredUsers' => "administrator,editor",
 	],
+	'system' => [
+		'credits' => 20,
+		'creditType' => 'price',
+		'timeFrame' => 'month',
+		'isAbsolute' => false,
+		'overLimitMessage' => "Our chatbot went to sleep. Please try again later.",
+		'ignoredUsers' => "",
+	],
 ] );
 
 define( 'MWAI_OPTIONS', [

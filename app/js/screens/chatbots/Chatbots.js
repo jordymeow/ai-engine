@@ -1,5 +1,5 @@
-// Previous: 1.3.92
-// Current: 1.3.97
+// Previous: 1.3.97
+// Current: 1.3.99
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,7 +33,7 @@ const Chatbots = (props) => {
 
   const currentChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots[botIndex];
+      const chatbot = chatbots[botIndex];queryClient
       if (!chatbot) return null;
       return chatbot;
     }
@@ -47,11 +47,11 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
-  };
+  }
 
-  const onChangeTab = (index) => {
-    setBotIndex(index);
-  };
+  const onChangeTab = (botIndex) => {
+    setBotIndex(botIndex);
+  }
 
   const addNewChatbot = async () => {
     setBusy(true);
@@ -62,7 +62,7 @@ const Chatbots = (props) => {
     }]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
-  };
+  }
 
   const deleteCurrentChatbot = async () => {
     setBusy(true);
@@ -71,7 +71,7 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
-  };
+  }
 
   return (<>
     <NekoWrapper>
@@ -80,30 +80,30 @@ const Chatbots = (props) => {
         <NekoSwitch style={{ marginRight: 10 }} disabled={busy}
           onLabel={i18n.COMMON.THEMES} offLabel={i18n.COMMON.CHATBOTS} width={110}
           onValue="themes" offValue="chatbots"
-          checked={mode === 'themes'} onChange={(value) => setMode(value)} 
+          checked={mode === 'themes'} onChange={setMode} 
           onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
         />
-
-        <NekoButton onClick={addNewChatbot}>
-          New Chatbot
-        </NekoButton>
-
-        <NekoButton onClick={deleteCurrentChatbot} disabled={!currentChatbot || currentChatbot.chatId === 'default'}>
-          Delete Chatbot
-        </NekoButton>
 
         <NekoSpacer medium />
 
         {mode === 'chatbots' && <>
-          <NekoTabs inversed onChange={onChangeTab} selectedIndex={botIndex}>
-            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busy}>
+          <NekoTabs inversed onChange={onChangeTab}
+            action={<>
+              <NekoButton className="primary-block" onClick={addNewChatbot}>
+                + 
+              </NekoButton>
+              <NekoButton className="danger" onClick={deleteCurrentChatbot}
+                disabled={!currentChatbot || currentChatbot.chatId === 'default'}>
+                -
+              </NekoButton>
+            </>}
+          >
+            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busy}>
               <ChatbotParams options={options}
                 shortcodeParams={chatbotParams}
                 updateShortcodeParams={updateChatbotParams}
               />
             </NekoTab>)}
-            <NekoTab title="?">
-            </NekoTab>
           </NekoTabs>
         </>}
         {mode === 'themes' && <>
