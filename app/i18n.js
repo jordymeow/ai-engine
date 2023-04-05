@@ -153,6 +153,7 @@ i18n.COMMON = {
   BANNED_IPS: __( 'Banned IPs', 'ai-engine' ),
   SECURITY: __( 'Security', 'ai-engine' ),
   POST_TYPES: __( 'Post Types', 'ai-engine' ),
+  COPY_BUTTON: __( 'Copy Button', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -292,6 +293,11 @@ i18n.FINETUNING = {
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
+}
+
+i18n.ERROR = {
+  UPDATING_OPTIONS: __( 'An error occured while updating the options.' ),
+  CHECK_YOUR_CONSOLE: __( 'For more information, check <a target="_blank" href="https://meowapps.com/tutorial-network-activity-dev-tools/">your console</a>. You might also want to check your <a target="_blank" href="https://meowapps.com/tutorial-php-error-logs/">PHP Error Logs</a>.', 'ai-engine' ),
 }
 
 export default i18n;

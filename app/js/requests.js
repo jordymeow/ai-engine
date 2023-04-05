@@ -1,5 +1,5 @@
-// Previous: 1.3.65
-// Current: 1.3.97
+// Previous: 1.3.97
+// Current: 1.4.0
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -55,7 +55,7 @@ const retrieveFineTunes = async () => {
 const retrieveChatbots = async () => {
   const res = await nekoFetch(`${apiUrl}/chatbots`, { method: 'GET', nonce: restNonce });
   if (!res.success) {
-    throw new Error(res.message);
+    throw new Error(res?.message);
   }
   return res?.chatbots;
 }
@@ -70,11 +70,19 @@ const updateChatbots = async (chatbots) => {
 
 const retrieveThemes = async () => {
   const res = await nekoFetch(`${apiUrl}/themes`, { method: 'GET', nonce: restNonce });
-  if (!res.success) {
-    throw new Error(res.message);
-  }
   return res?.themes;
 }
 
+const updateThemes = async (themes) => {
+  try {
+    const res = await nekoFetch(`${apiUrl}/themes`, { method: 'PUT', nonce: restNonce, json: { themes } });
+    return res?.themes;
+  }
+  catch (err) {
+    throw err;
+  }
+}
+
 export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, 
-  retrieveDeletedFineTunes, retrieveFineTunes, retrieveChatbots, retrieveThemes, updateChatbots };
+  retrieveDeletedFineTunes, retrieveFineTunes,
+  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };

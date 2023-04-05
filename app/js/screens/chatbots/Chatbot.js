@@ -1,24 +1,9 @@
-// Previous: 1.3.93
-// Current: 1.3.97
+// Previous: 1.3.97
+// Current: 1.4.0
 
 const { useState } = wp.element;
-import css from '../../../../themes/ChatGPT.module.css';
-
-const modCss = (classNames, conditionalClasses) => {
-  if (!Array.isArray(classNames)) {
-    classNames = [classNames];
-  }
-  if (conditionalClasses) {
-    Object.entries(conditionalClasses).forEach(([className, condition]) => {
-      if (condition) {
-        classNames.push(className);
-      }
-    });
-  }
-  return classNames
-    .map(className => `${className} ${css[className]}`)
-    .join(' ');
-};
+import cssChatGPT from '../../../../themes/ChatGPT.module.css';
+import cssIOSDark from '../../../../themes/iOSDark.module.css';
 
 function isUrl(url) {
   return url.indexOf('http') === 0;
@@ -86,8 +71,6 @@ const Chatbot = (props) => {
   const memorizeChat = Boolean(atts.id);
 
   let guestName = atts.guest_name.trim();
-  let sysName = atts.sys_name.trim();
-  let context = atts.context.replace(/\n/g, "\\n");
   let textSend = atts.text_send.trim();
   let textClear = atts.text_clear.trim();
   let textInputMaxLength = parseInt(atts.text_input_maxlength);
@@ -108,7 +91,8 @@ const Chatbot = (props) => {
   let iconUrl = pluginUrl + '/images/chat-green.svg';
   if ( icon ) {
     iconUrl = icon;
-  } else if ( shortcodeStyles['icon'] ) {
+  }
+  else if ( shortcodeStyles['icon'] ) {
     let url = shortcodeStyles['icon'];
     iconUrl = isUrl( url ) ? url : ( pluginUrl + '/images/' + shortcodeStyles['icon'] );
   }
@@ -136,8 +120,49 @@ const Chatbot = (props) => {
   const service = atts.service;
   const apiKey = atts.api_key;
 
+  const modCss = (classNames, conditionalClasses, theme = themeStyle) => {
+    let cssTheme = cssChatGPT;
+    if (theme === 'none') {
+      cssTheme = null;
+    }
+    if (theme === 'iosdark') {
+      cssTheme = cssIOSDark;
+    }
+
+    if (!Array.isArray(classNames)) {
+      classNames = [classNames];
+    }
+    if (conditionalClasses) {
+      Object.entries(conditionalClasses).forEach(([className, condition]) => {
+        if (condition) { classNames.push(className); }
+      });
+    }
+
+    return classNames.map(className => {
+      if (!cssTheme) {
+        return className;
+      }
+      else if (cssTheme[className]) {
+        return `${className} ${cssTheme[className]}`;
+      }
+      else {
+        console.warn(`The class name "${className}" is not defined in the CSS theme.`);
+        return className;
+      }
+    }).join(' ');
+  };
+
+  const baseClasses = modCss('mwai-chat', { 
+    'mwai-window': window,
+    'mwai-open': open,
+    'mwai-fullscreen': !minimized,
+    'mwai-bottom-left': iconPosition === 'bottom-left',
+    'mwai-top-right': iconPosition === 'top-right',
+    'mwai-top-left': iconPosition === 'top-left',
+  });
+
   return (<>
-    <div className={modCss('mwai-chat', { 'mwai-window': window, 'mwai-open': open, 'mwai-fullscreen': !minimized })}
+    <div className={baseClasses}
       style={{ ...CssVariables, ...style }}>
 
       {window && (<>
@@ -157,6 +182,7 @@ const Chatbot = (props) => {
             <div class={modCss('mwai-close-button')}
               onClick={() => setOpen(!open)}
             />
+
           </div>
         </div>
       </>)}
@@ -168,16 +194,16 @@ const Chatbot = (props) => {
               <div className={modCss('mwai-name-text')}>{aiName}</div>
             </span>
             <span className={modCss('mwai-text')}>{startSentence}</span>
-            <div className={modCss('mwai-copy-button')}>
+            {copyButton && <div className={modCss('mwai-copy-button')}>
               <div className={modCss('mwai-copy-button-one')}></div>
               <div className={modCss('mwai-copy-button-two')}></div>
-            </div>
+            </div>}
           </div>
         </div>
         <div className={modCss('mwai-input')}>
-          <textarea rows="1" maxLength="512" placeholder={textInputPlaceholder} ></textarea>
+          <textarea rows="1" maxLength={textInputMaxLength} placeholder={textInputPlaceholder} ></textarea>
           <button>
-            <span>{textSend}</span>
+            <span>{textSend} {textClear}</span>
           </button>
         </div>
         {textCompliance && <div class={modCss('mwai-compliance')}>

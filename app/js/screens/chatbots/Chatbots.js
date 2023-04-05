@@ -1,5 +1,5 @@
-// Previous: 1.3.97
-// Current: 1.3.99
+// Previous: 1.3.99
+// Current: 1.4.0
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,26 +49,27 @@ const Chatbots = (props) => {
     setBusy(false);
   }
 
-  const onChangeTab = (botIndex) => {
-    setBotIndex(botIndex);
+  const onChangeTab = (index) => {
+    setBotIndex(index);
   }
 
   const addNewChatbot = async () => {
     setBusy(true);
-    const newChatbots = await updateChatbots([...chatbots, {
+    const newChatbotsArray = [...chatbots, {
       ...shortcodeDefaultParams,
       chatId: 'chatbot-' + (chatbots.length + 1),
       name: 'Chatbot ' + (chatbots.length + 1)
-    }]);
+    }];
+    const newChatbots = await updateChatbots(newChatbotsArray);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
   }
 
   const deleteCurrentChatbot = async () => {
     setBusy(true);
-    let newChatbots = [...chatbots];
-    newChatbots.splice(botIndex, 1);
-    newChatbots = await updateChatbots(newChatbots);
+    let newChatbotsArray = [...chatbots];
+    newChatbotsArray.splice(botIndex, 1);
+    const newChatbots = await updateChatbots(newChatbotsArray);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
   }
@@ -89,16 +90,12 @@ const Chatbots = (props) => {
         {mode === 'chatbots' && <>
           <NekoTabs inversed onChange={onChangeTab}
             action={<>
-              <NekoButton className="primary-block" onClick={addNewChatbot}>
-                + 
-              </NekoButton>
-              <NekoButton className="danger" onClick={deleteCurrentChatbot}
-                disabled={!currentChatbot || currentChatbot.chatId === 'default'}>
-                -
-              </NekoButton>
-            </>}
-          >
-            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busy}>
+              <NekoButton className="primary-block" icon='plus' onClick={addNewChatbot} />
+              {currentChatbot && currentChatbot.chatId !== 'default' &&
+                <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
+              }
+            </>}>
+            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busy}>
               <ChatbotParams options={options}
                 shortcodeParams={chatbotParams}
                 updateShortcodeParams={updateChatbotParams}
@@ -108,6 +105,7 @@ const Chatbots = (props) => {
         </>}
         {mode === 'themes' && <>
           <Themes
+            themes={themes}
             options={options}
             updateOption={updateOption}
           />
@@ -128,7 +126,7 @@ const Chatbots = (props) => {
             }}
             shortcodeParams={currentChatbot}
             shortcodeStyles={shortcodeStyles}
-            style={currentChatbot.window ? { position: 'absolute', right: 15, bottom: 15 } : {}}
+            style={currentChatbot.window ? { position: 'absolute' } : {}}
           />}
           </div>
           <div style={{ marginLeft: 10, fontSize: 11 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>

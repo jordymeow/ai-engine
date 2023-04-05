@@ -1,0 +1,111 @@
+.mwai-chat {
+
+  .mwai-conversation {
+    padding: 5px;
+    overflow: hidden !important;
+  }
+
+  .mwai-ai code {
+  padding-bottom:20px;
+  font-size:.85rem;
+  font-family:monospace !important;
+  /*scrollbar-color: #666 #343541;*/
+  }
+
+  .mwai-name-text {
+    display: none;
+  }
+
+  .mwai-conversation {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mwai-ai {
+    align-self: flex-start;
+  }
+  .mwai-user {
+    align-self: flex-end;
+  }
+
+  .mwai-ai {
+    background-color: #333!important;
+    position: relative;
+    max-width: 255px;
+    margin-bottom: 15px;
+    padding: 10px 20px;
+    font-family: Helvetica Neue,Helvetica,Arial,sans-serif;
+    line-height: 24px;
+    word-wrap: break-word;
+    border-radius: 25px;
+  }
+  .mwai-ai::before {
+    width: 20px
+  }
+  .mwai-ai::after {
+    width: 26px;
+    background: #333!important;
+  }
+
+  .mwai-ai::before, .mwai-ai::after {
+    position: absolute;
+    bottom: 0;
+    height: 25px;
+    transition: transform .2s ease-out;
+    content: "";
+  }
+
+  .mwai-user {
+    background: #0B93F6 !important;
+    background-attachment: scroll;
+    background-attachment: fixed;
+    position: relative;
+    border-radius: 20px;
+    padding: 9px 15px !important;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    display: inline-block;
+  }
+  .mwai-user::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    bottom: 0;
+    right: -8px;
+    height: 20px;
+    width: 20px;
+    background: #0b93f6 !important;
+    background-attachment: scroll;
+    background-attachment: fixed;
+    border-bottom-left-radius: 15px;
+  }
+  .mwai-user::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    bottom: 0;
+    right: -10px;
+    width: 10px;
+    height: 20px;
+    background: #121212;
+    border-bottom-left-radius: 10px;
+  }
+
+}
+
+.mwai-chat.mwai-window.mwai-open {
+
+	.mwai-header {
+		display: flex;
+	}
+
+	.mwai-content {
+		display: flex;
+		transition: opacity 200ms ease-in-out 0s;
+		opacity: 1;
+	}
+
+	.mwai-open-button {
+		display: none;
+	}
+}

@@ -539,16 +539,22 @@ class Meow_MWAI_Core
 
 	#region Options
 	function getThemes() {
-		$themes = get_option( $this->themes_option_name, [
-			'theme' => 'chatgpt',
-			'params' => [],
-			'style' => ""
-		] );		
+		$themes = get_option( $this->themes_option_name, [] );		
+		if ( empty( $themes ) ) {
+			$themes = [ [ 
+				'type' => 'internal',
+				'name' => 'ChatGPT',
+				'themeId' => 'chatgpt',
+				'settings' => [],
+				'style' => ""
+			] ];
+		}
 		return $themes;
 	}
 
 	function updateThemes( $themes ) {
 		update_option( $this->themes_option_name, $themes );
+		return $themes;
 	}
 
 	function getChatbots() {

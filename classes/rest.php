@@ -824,6 +824,12 @@ class Meow_MWAI_Rest
 				$themes = $this->core->getThemes();
 				return new WP_REST_Response([ 'success' => true, 'themes' => $themes ], 200 );
 			}
+			else if ( $method === 'PUT' ) {
+				$params = $request->get_json_params();
+				$themes = $params['themes'];
+				$themes = $this->core->updateThemes( $themes );
+				return new WP_REST_Response([ 'success' => true, 'themes' => $themes ], 200 );
+			}
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
