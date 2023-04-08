@@ -3,10 +3,13 @@
 class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $maxTokens = 1024;
   public $temperature = 0.8;
+  public $isChat = false;
   public $stop = null;
   public $messages = [];
   public $context = null;
   public $newMessage = null;
+  public $promptEnding = null;
+  public $casuallyFineTuned = false;
   
   public function __construct( $prompt = '', $maxTokens = 1024, $model = 'gpt-3.5-turbo' ) {
     parent::__construct( $prompt );
@@ -97,6 +100,49 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   }
 
   /**
+   * The prompt is used by models who uses Text Completion (and not Chat Completion).
+   * This returns the prompt if it's not a chat, otherwise it will build a prompt with
+   * all the messages nicely formatted.
+   */
+  public function getPrompt() {
+    if ( !$this->isChat ) {
+      return $this->prompt;
+    }
+    
+    $first = reset( $this->messages );
+    $prompt = "";
+    if ( $first && $first['role'] === 'system' ) {
+      $prompt = $first['content'] . "\n\n";
+    }
+
+    // Casually Fine-Tuned or Prompt-Ending
+    if ( !empty( $this->promptEnding ) ) {
+      $last = end( $this->messages );
+      if ( $last && $last['role'] === 'user' ) {
+        $prompt = $last['content'] . $this->promptEnding;
+      }
+      return $prompt;
+    }
+
+    // Standard Completion
+    while ( $message = next( $this->messages ) ) {
+      $role = $message['role'];
+      $content = $message['content'];
+      if ( $role === 'system' ) {
+        $prompt .= "$content\n\n";
+      }
+      if ( $role === 'user' ) {
+        $prompt .= "User: $content\n";
+      }
+      if ( $role === 'assistant' ) {
+        $prompt .= "AI: $content\n";
+      }
+    }
+    $prompt .= "AI: ";
+    return $prompt;
+  }
+
+  /**
    * Similar to the prompt, but focus on the new/last message.
    * Only used when the model has a chat mode (and only used in messages).
    * @param string $prompt The messages to generate completions.
@@ -109,6 +155,10 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
     $this->validateMessages();
+  }
+
+  public function setIsChat( $isChat ) {
+    $this->isChat = $isChat;
   }
 
   /**
@@ -160,6 +210,9 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
       $last = &$this->messages[ count( $this->messages ) - 1 ];
       if ( $last['role'] === 'user' ) {
           $last['content'] = $message;
+      }
+      else {
+        array_push( $this->messages, [ 'role' => 'user', 'content' => $message ] );
       }
     }
     
@@ -218,6 +271,16 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( isset( $params['model'] ) ) {
 			$this->setModel( $params['model'] );
 		}
+    if ( isset( $params['casually_fine_tuned'] ) && $params['casually_fine_tuned'] === true ) {
+      $this->promptEnding = "\\n\\n###\\n\\n";
+      $this->stop = "\\n\\n";
+      $this->casuallyFineTuned = true;
+		}
+    if ( isset( $params['casuallyFineTuned'] ) && $params['casuallyFineTuned'] === true ) {
+      $this->promptEnding = "\\n\\n###\\n\\n";
+      $this->stop = "\\n\\n";
+      $this->casuallyFineTuned = true;
+		}
     if ( isset( $params['prompt'] ) ) {
       $this->setPrompt( $params['prompt'] );
     }
@@ -227,11 +290,17 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( isset( $params['messages'] ) ) {
       $this->setMessages( $params['messages'] );
     }
+    if ( isset( $params['new_message'] ) ) {
+      $this->setNewMessage( $params['newMessage'] );
+    }
     if ( isset( $params['newMessage'] ) ) {
       $this->setNewMessage( $params['newMessage'] );
     }
-		if ( isset( $params['maxTokens'] ) ) {
-			$this->setMaxTokens( $params['maxTokens'] );
+		if ( isset( $params['max_tokens'] ) && intval( $params['max_tokens'] ) > 0 ) {
+			$this->setMaxTokens( intval( $params['max_tokens'] ) );
+		}
+    if ( isset( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
+			$this->setMaxTokens( intval( $params['maxTokens'] ) );
 		}
 		if ( isset( $params['temperature'] ) ) {
 			$this->setTemperature( $params['temperature'] );
@@ -239,7 +308,10 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 		if ( isset( $params['stop'] ) ) {
 			$this->setStop( $params['stop'] );
 		}
-		if ( isset( $params['maxResults'] ) ) {
+		if ( isset( $params['max_results'] ) ) {
+			$this->setMaxResults( $params['max_results'] );
+		}
+    if ( isset( $params['maxResults'] ) ) {
 			$this->setMaxResults( $params['maxResults'] );
 		}
 		if ( isset( $params['env'] ) ) {
@@ -251,6 +323,9 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     // Should add the params related to Open AI and Azure
     if ( isset( $params['service'] ) ) {
 			$this->setService( $params['service'] );
+		}
+    if ( isset( $params['api_key'] ) ) {
+			$this->setApiKey( $params['apiKey'] );
 		}
     if ( isset( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );

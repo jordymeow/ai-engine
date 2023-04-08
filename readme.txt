@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,12 +69,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.4.1 (2023/04/08) =
+* Add: New system for chatbots. It's in beta, not everything is working, but as you can see, it will be easier and better to handle the chatbots from now on (and new features will be much easier to add too). You can try them out by heading to the Chatbots tab.
+* Update: Pinecone servers.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.4.0 (2023/04/05) =
 * Update: Pinecone servers.
 * Add: System-wise limits (in order to prevent many kinds of abuse).
 * Add: Limits can be set with minutes and seconds.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.3.98 (2023/04/03) =
 * Fix: An issue related to memorizing the chats with GPT-Turbo.

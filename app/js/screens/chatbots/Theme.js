@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.4.0
+// Previous: 1.4.0
+// Current: 1.4.1
 
 // NekoUI
 import { NekoButton, NekoSpacer } from '@neko-ui';
@@ -19,20 +19,16 @@ const Theme = (props) => {
     updateTheme(settings, 'settings');
   };
 
-  const onUpdateStyle = (style) => {
-    updateTheme(style, 'style');
-  };
-
   return (<>
     {theme.type === 'internal' && theme.themeId === 'chatgpt' && (
       <ChatGPTTheme settings={theme.settings ?? []} onUpdateSettings={onUpdateSettings} />
     )}
 
     {theme.type !== 'internal' && (
-      <CustomTheme theme={theme} onUpdateStyle={onUpdateStyle} />
+      <CustomTheme theme={theme} onUpdateTheme={updateTheme} />
     )}
 
-    <NekoSpacer medium />
+    <NekoSpacer line={true} medium />
 
     <NekoButton fullWidth className="danger" onClick={onResetTheme}>
       Reset Theme

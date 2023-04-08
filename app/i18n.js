@@ -128,6 +128,7 @@ i18n.COMMON = {
   AUTO_RETRY_DESCRIPTION: __( 'Auto Retry retries actions up to 10 times with increasing delay to avoid timeouts.', 'ai-engine' ),
   WIDTH: __( 'Width', 'ai-engine' ),
   MAX_HEIGHT: __( 'Max Height', 'ai-engine' ),
+  AI_SETTINGS: __( 'AI Settings', 'ai-engine' ),
   TECHNICAL_SETTINGS: __( 'Technical Settings', 'ai-engine' ),
   MAIN_SETTINGS: __( 'Main Settings', 'ai-engine' ),
   VISUAL_SETTINGS: __( 'Visual Settings', 'ai-engine' ),
@@ -154,6 +155,7 @@ i18n.COMMON = {
   SECURITY: __( 'Security', 'ai-engine' ),
   POST_TYPES: __( 'Post Types', 'ai-engine' ),
   COPY_BUTTON: __( 'Copy Button', 'ai-engine' ),
+  POPUP_SETTINGS: __( 'Popup Settings', 'ai-engine' ),
 }
 
 i18n.FORMS = {

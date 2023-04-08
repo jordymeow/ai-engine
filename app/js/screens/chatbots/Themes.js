@@ -1,21 +1,22 @@
-// Previous: 1.3.97
-// Current: 1.4.0
+// Previous: 1.4.0
+// Current: 1.4.1
 
 const { useState, useMemo } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
 
+import { themes as initThemes } from '@app/settings';
 import { retrieveThemes, updateThemes } from '@app/requests';
 import Theme from './Theme';
 
 const Themes = (props) => {
   const queryClient = useQueryClient();
-  const { options } = props;
+  const { onSwitchTheme = () => {} } = props;
   const [ busy, setBusy ] = useState(false);
   const [ themeIndex, setThemeIndex ] = useState(0);
-  const { isLoading: isLoadingThemes, data: themes } = useQuery({
-    queryKey: ['themes'], queryFn: retrieveThemes, defaultData: []
+  const { data: themes } = useQuery({
+    queryKey: ['themes'], queryFn: retrieveThemes, initialData: initThemes
   });
 
   const currentTheme = useMemo(() => {
@@ -24,10 +25,14 @@ const Themes = (props) => {
       if (!theme) return null;
       return theme;
     }
+    return null;
   }, [themes, themeIndex]);
 
   const onChangeTab = (index) => {
     setThemeIndex(index);
+    if (themes[index]?.themeId) {
+      onSwitchTheme(themes[index].themeId);
+    }
   }
 
   const updateTheme = async (value, id) => {
@@ -48,14 +53,14 @@ const Themes = (props) => {
   const addNewTheme = async () => {
     setBusy(true);
     try {
-      const newTheme = {
+      const newThemesArray = [...themes, {
         type: 'css',
         name: 'Theme ' + (themes.length + 1),
         themeId: 'theme-' + (themes.length + 1),
         settings: [],
         style: ""
-      };
-      const newThemes = await updateThemes([...themes, newTheme]);
+      }];
+      const newThemes = await updateThemes(newThemesArray);
       queryClient.setQueryData(['themes'], newThemes);
     }
     catch (e) {
@@ -69,27 +74,20 @@ const Themes = (props) => {
     const newThemes = [...themes];
     newThemes.splice(themeIndex, 1);
     await updateThemes(newThemes);
-    queryClient.setQueryData(['themes'], newThemes);
-    if (themeIndex >= newThemes.length) {
-      setThemeIndex(newThemes.length - 1 >=0 ? newThemes.length - 1 : 0);
-    }
+    await queryClient.setQueryData(['themes'], newThemes);
+    setThemeIndex(prev => prev > 0 ? prev - 1 : 0);
     setBusy(false);
   }
 
   const resetTheme = async () => {
-    if (!themes || themes.length === 0 || themeIndex >= themes.length) return;
     setBusy(true);
-    const current = themes[themeIndex];
+    const themeToReset = { ...themes[themeIndex] };
+    themeToReset.settings = [];
+    themeToReset.style = "";
     const newThemes = [...themes];
-    newThemes[themeIndex] = {
-      type: current.type,
-      name: current.name,
-      themeId: current.themeId,
-      settings: [],
-      style: ""
-    };
+    newThemes[themeIndex] = themeToReset;
     await updateThemes(newThemes);
-    queryClient.setQueryData(['themes'], newThemes);
+    await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
 
@@ -97,15 +95,13 @@ const Themes = (props) => {
     <NekoTabs inversed onChange={onChangeTab} currentTab={themeIndex}
       action={<>
         <NekoButton className="primary-block" icon='plus' onClick={addNewTheme} />
-        {themes && themes.length > 0 && themes[themeIndex]?.type !== 'internal' &&
+        {themes && themes[themeIndex]?.type !== 'internal' &&
           <NekoButton className="danger" icon='delete' onClick={deleteCurrentTheme} />
         }
       </>}>
-      {themes?.map((x, idx) => (
-        <NekoTab key={x.themeId} title={x.name} busy={busy}>
-          <Theme options={options} theme={x} updateTheme={updateTheme} resetTheme={resetTheme} />
-        </NekoTab>
-      ))}
+      {themes?.map(x => <NekoTab key={x.themeId} title={x.name} busy={busy}>
+        <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} />
+      </NekoTab>)}
     </NekoTabs>
   </>);
 };

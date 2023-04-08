@@ -149,7 +149,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
 		wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js', null, $cache_buster );
 		wp_register_script( 'mwai', MWAI_URL . 'app/index.js', [ 'mwai-vendor',
-			'wp-components', 'wp-edit-post', 'wp-plugins', 'wp-i18n'
+			'wp-element', 'wp-components', 'wp-edit-post', 'wp-plugins', 'wp-i18n'
 		], $cache_buster );
 		wp_enqueue_script( 'mwai' );
 
@@ -174,6 +174,8 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'session' => $this->core->get_session_id(),
 			'options' => $this->core->get_all_options(),
 			'pricing' => MWAI_OPENAI_MODELS,
+			'chatbots' => $this->core->getChatbots(),
+			'themes' => $this->core->getThemes(),
 		] );
 	}
 

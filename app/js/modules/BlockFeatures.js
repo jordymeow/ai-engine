@@ -1,22 +1,19 @@
-// Previous: none
-// Current: 1.3.93
+// Previous: 1.3.93
+// Current: 1.4.1
 
-const { useState, useEffect, useMemo } = wp.element;
+const { useState } = wp.element;
 const { __ } = wp.i18n;
 const { registerPlugin } = wp.plugins;
-const { Button, ToolbarDropdownMenu, ToolbarButton, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
-const { BlockFormatControls, RichTextToolbarButton, BlockControls } = wp.blockEditor;
+const { Button, ToolbarDropdownMenu, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
+const { BlockControls } = wp.blockEditor;
 const { PluginDocumentSettingPanel, PluginBlockSettingsMenuItem } = wp.editPost;
-const { registerFormatType, toggleFormat } = wp.richText;
-const { useDispatch } = wp.data;
+const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoWrapper, NekoUI } from '@neko-ui';
 
-// UI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
@@ -35,12 +32,12 @@ function BlockAIWand({ isActive, onChange, value }) {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const block = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = block.attributes.content;
+    const selectedBlockInternal = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = selectedBlockInternal.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(block.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlockInternal.clientId, { content: updatedContent });
   }
 
   const onClick = (text) => {
@@ -87,7 +84,7 @@ function BlockAIWand({ isActive, onChange, value }) {
         <ToolbarDropdownMenu
           icon={busy ? <Spinner /> : <AiIcon icon="wand" style={{ marginRight: 0 }} />}
           label={__('AI Wand')}>
-          {({ onClose }) => (<>
+          {() => (<>
             <MenuGroup>
               <MenuItem onClick={() => doAction('correctText')}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -118,7 +115,7 @@ function BlockAIWand({ isActive, onChange, value }) {
       </ToolbarGroup>
     </BlockControls>
     <MagicWandModal
-        isOpen={results?.length}
+        isOpen={results.length}
         results={results}
         onClick={onClick}
         onClose={() => setResults([])}
@@ -135,13 +132,13 @@ const MWAI_Block_AI_Actions = () => (
       <PluginBlockSettingsMenuItem
         allowedBlocks={['core/paragraph']}
         icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-        label={<> {__('Enhance text')}</>}
+        label={<>{__('Enhance text')}</>}
         onClick={doOnClick}
       />
       <PluginBlockSettingsMenuItem
         allowedBlocks={['core/paragraph']}
         icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-        label={<> {__('Translate text')}</>}
+        label={<>{__('Translate text')}</>}
         onClick={doOnClick}
       />
   </>
@@ -154,13 +151,13 @@ const MWAI_DocumentSettings = () => {
 
   const onTitlesModalOpen = () => {
     const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title, excerpt } = getCurrentPost();
+    const { id, title } = getCurrentPost();
     setPostForTitle({ postId: id, postTitle: title });
   }
 
   const onExcerptsModalOpen = () => {
     const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title, excerpt } = getCurrentPost();
+    const { id, title } = getCurrentPost();
     setPostForExcerpt({ postId: id, postTitle: title });
   }
 

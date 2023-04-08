@@ -1,63 +1,45 @@
 const path = require('path');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const WordPressDefaults = require("@wordpress/scripts/config/webpack.config");
+//const WordPressDefaults = require("@wordpress/scripts/config/webpack.config");
 const regexNodeModules = /[\\/]node_modules[\\/]/;
 const regexNekoUI = /[\\/]neko-ui[\\/]/;
 
-function createConfig(env, options) {
+module.exports = function (env, options) {
+
 	const isProduction = options.mode === 'production';
 	const isAnalysis = env && env.analysis === 'true';
 	
 	const cleanPlugin = new CleanWebpackPlugin({
 		protectWebpackAssets: false,
 		cleanOnceBeforeBuildPatterns: ["!app/"],
-		cleanAfterEveryBuildPatterns: isProduction ? ['!app', '*.LICENSE.txt', '*.map'] : ['!app', '*.LICENSE.txt'],
+		cleanAfterEveryBuildPatterns: ['!app', '!chatbot.js', '*.LICENSE.txt', '*.map'],
 	});
+	
 
-	const plugins = [cleanPlugin];
+	const plugins = [];
+	if (isProduction) {
+		plugins.push(cleanPlugin);
+	}
 	if (isAnalysis) {
 		plugins.push(new BundleAnalyzerPlugin());
 	}
 	console.log("Production: " + isProduction);
 
-	return {
-		...WordPressDefaults,
+	const baseConfig = {
 		context: __dirname,
 		mode: isProduction ? 'production' : 'development',
 		plugins: plugins,
-		entry: {
-			index: './app/js/index.js'
-		},
 		devtool: isProduction ? false : 'source-map',
 		output: {
 			filename: '[name].js',
 			path: __dirname + '/app/',
 			chunkLoadingGlobal: 'wpJsonMwai'
 		},
-
-		optimization: {
-			minimize: isProduction ? true : false,
-			splitChunks: {
-				chunks: 'all',
-				name: 'vendor',
-				cacheGroups: {
-					vendor: {
-						test: function (module) {
-							if (module.resource) {
-								return (module.context.match(regexNodeModules) || module.context.match(regexNekoUI));
-							}
-						},
-						name: "vendor"
-					}
-				}
-			}
-		},
 		externals: {
 			"react": "React",
 			"react-dom": "ReactDOM"
 		},
-
 		resolve: {
 			alias: {
 				'@root': path.resolve(__dirname, './app/'),
@@ -90,6 +72,38 @@ function createConfig(env, options) {
       }]
 		}
 	};
-}
 
-module.exports = createConfig;
+	const adminWebPack = Object.assign({}, baseConfig, {
+		entry: {
+			index: './app/js/index.js',
+		},
+		optimization: {
+			minimize: isProduction ? true : false,
+			splitChunks: {
+				chunks: 'all',
+				name: 'vendor',
+				cacheGroups: {
+					vendor: {
+						test: function (module) {
+							if (module.resource) {
+								return (module.context.match(regexNodeModules) || module.context.match(regexNekoUI));
+							}
+						},
+						name: "vendor"
+					}
+				}
+			}
+		},
+	});
+
+	const chatbotWebPack = Object.assign({}, baseConfig, {
+		entry: {
+			chatbot: './app/js/chatbot.js'
+		},
+		optimization: {
+			minimize: isProduction ? true : false,
+		}
+	});
+
+	return [adminWebPack, chatbotWebPack];
+};

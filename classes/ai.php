@@ -108,7 +108,8 @@ class Meow_MWAI_AI {
     }
     else if ( $query->mode === 'completion' ) {
       $url = 'https://api.openai.com/v1/completions';
-      $body['prompt'] = $query->prompt;
+      $prompt = $query->getPrompt();
+      $body['prompt'] = $prompt;
     }
     else {
       throw new Exception( 'Unknown mode for query: ' . $query->mode );

@@ -1,6 +1,7 @@
 .mwai-chat {
   --mwai-spacing: 15px;
   --mwai-fontSize: 15px;
+  --mwai-lineHeight: 1.5;
   --mwai-borderRadius: 10px;
   --mwai-fontColor: #FFFFFF;
   --mwai-backgroundPrimaryColor: #454654;
@@ -56,61 +57,11 @@
   box-sizing: border-box;
 }
 
-.mwai-chat a {
-  color: #2196f3;
-}
-
-.mwai-chat h1 {
-  font-size: 200%;
-}
-
-.mwai-chat h2 {
-  font-size: 160%;
-}
-
-.mwai-chat h3 {
-  font-size: 140%;
-}
-
-.mwai-chat h4 {
-  font-size: 120%;
-}
-
-.mwai-chat p code {
-  background: var(--mwai-backgroundSecondaryColor);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 90%;
-  font-family: system-ui;
-}
-
-.mwai-chat pre {
-  color: var(--mwai-fontColor);
-  border-radius: var(--mwai-borderRadius);
-  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
-  break-after: auto;
-  font-size: 95%;
-  max-width: 100%;
-  width: 100%;
-  font-family: system-ui;
-  background: #343541;
-}
-
-.mwai-chat pre code {
-  padding: 0 !important;
-  font-family: system-ui;
-  background: #343541;
-}
-
-.mwai-chat ol {
-  padding: 0;
-  margin: 0 0 0 20px;
-}
-
 .mwai-chat .mwai-reply {
   display: flex;
   padding: var(--mwai-spacing);
   position: relative;
+  line-height: var(--mwai-lineHeight);
 }
 
 .mwai-chat .mwai-reply .mwai-copy-button {
@@ -230,6 +181,62 @@
   margin-bottom: 0;
 }
 
+.mwai-chat .mwai-text a {
+  color: #2196f3;
+}
+
+.mwai-chat .mwai-text h1 {
+  font-size: 200%;
+}
+
+.mwai-chat .mwai-text h2 {
+  font-size: 160%;
+}
+
+.mwai-chat .mwai-text h3 {
+  font-size: 140%;
+}
+
+.mwai-chat .mwai-text h4 {
+  font-size: 120%;
+}
+
+.mwai-chat .mwai-text p {
+  font-size: var(--mwai-fontSize);
+  line-height: var(--mwai-lineHeight);
+}
+
+.mwai-chat .mwai-text p code {
+  background: var(--mwai-backgroundSecondaryColor);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 90%;
+  font-family: system-ui;
+}
+
+.mwai-chat .mwai-text pre {
+  color: var(--mwai-fontColor);
+  border-radius: var(--mwai-borderRadius);
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  break-after: auto;
+  font-size: 95%;
+  max-width: 100%;
+  width: 100%;
+  font-family: system-ui;
+  background: #343541;
+}
+
+.mwai-chat .mwai-text pre code {
+  padding: 0 !important;
+  font-family: system-ui;
+  background: #343541;
+}
+
+.mwai-chat .mwai-text ol {
+  padding: 0;
+  margin: 0 0 0 20px;
+}
+
 .mwai-chat .mwai-text table {
   width: 100%;
   border: 2px solid var(--mwai-backgroundSecondaryColor);
@@ -320,6 +327,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 90%;
 }
 
 .mwai-chat button .mwai-timer {

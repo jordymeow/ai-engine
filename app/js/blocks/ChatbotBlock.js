@@ -1,18 +1,17 @@
-// Previous: 0.9.89
-// Current: 0.9.92
+// Previous: 0.9.92
+// Current: 1.4.1
 
 import i18n from "../../i18n";
 import { meowIcon } from "./common";
 
 const { __ } = wp.i18n;
-const { registerBlockType, createBlock } = wp.blocks;
-const { useMemo, useEffect, useState } = wp.element;
-const { Button, DropZone, PanelBody, RangeControl, CheckboxControl, TextControl,
-	SelectControl, Toolbar, withNotices } = wp.components;
-const { BlockControls, InspectorControls } = wp.blockEditor;
+const { registerBlockType } = wp.blocks;
+const { useMemo } = wp.element;
+const { PanelBody } = wp.components;
+const { InspectorControls } = wp.blockEditor;
 
 const saveChatbot = (props) => {
-	const { attributes: { id, fieldName, labelText } } = props;
+	const { } = props;
 	console.log(props);
 	return (
 		<>[mwai_chatbot]</>
@@ -20,7 +19,7 @@ const saveChatbot = (props) => {
 }
 
 const FormFieldBlock = props => {
-	const { attributes: { id, fieldName, labelText }, setAttributes } = props;
+	const {  } = props;
 	
 	const html = useMemo(() => {
 		return saveChatbot(props);

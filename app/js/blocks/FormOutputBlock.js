@@ -1,12 +1,12 @@
-// Previous: 0.8.7
-// Current: 1.0.5
+// Previous: 1.0.5
+// Current: 1.4.1
 
 import i18n from "../../i18n";
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
-const { useMemo, useEffect } = wp.element;
+const { useEffect } = wp.element;
 const { PanelBody, TextControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 

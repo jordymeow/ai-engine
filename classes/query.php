@@ -48,7 +48,7 @@ class Meow_MWAI_Query {
 
   /**
    * The mode
-   * @param string $model ID of the model to use.
+   * @param string $mode.
    */
   public function setMode( $mode ) {
     $this->mode = $mode;
@@ -61,6 +61,10 @@ class Meow_MWAI_Query {
    */
   public function setPrompt( $prompt ) {
     $this->prompt = $prompt;
+  }
+
+  public function getPrompt() {
+    return $this->prompt;
   }
 
   /**

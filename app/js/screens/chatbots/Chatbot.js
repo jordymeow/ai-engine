@@ -1,12 +1,55 @@
-// Previous: 1.3.97
-// Current: 1.4.0
+// Previous: 1.4.0
+// Current: 1.4.1
 
-const { useState } = wp.element;
-import cssChatGPT from '../../../../themes/ChatGPT.module.css';
-import cssIOSDark from '../../../../themes/iOSDark.module.css';
+const { useState, useMemo, useEffect, useCallback, useRef } = wp.element;
+import cssChatGPT from '@root/../themes/chatGPT.module.css';
+import cssIOSDark from '@root/../themes/iOSDark.module.css';
+
+const useModClasses = (theme) => {
+  const modCss = useMemo(() => {
+    return (classNames, conditionalClasses) => {
+      let cssTheme = cssChatGPT;
+
+      if (!theme || theme.themeId === 'none' || theme.type === 'css') {
+        cssTheme = null;
+      }
+      if (theme?.themeId === 'iosdark') {
+        cssTheme = cssIOSDark;
+      }
+
+      if (!Array.isArray(classNames)) {
+        classNames = [classNames];
+      }
+      if (conditionalClasses) {
+        Object.entries(conditionalClasses).forEach(([className, condition]) => {
+          if (condition) { classNames.push(className); }
+        });
+      }
+
+      return classNames.map(className => {
+        if (!cssTheme) {
+          return className;
+        }
+        else if (cssTheme[className]) {
+          return `${className} ${cssTheme[className]}`;
+        }
+        else {
+          console.warn(`The class name "${className}" is not defined in the CSS theme.`);
+          return className;
+        }
+      }).join(' ');
+    };
+  }, [theme]);
+
+  return { modCss };
+};
 
 function isUrl(url) {
   return url.indexOf('http') === 0;
+}
+
+function randomStr() {
+  return Math.random().toString(36).substring(2);
 }
 
 function handlePlaceholders(data, guestName = 'Guest: ', userData) {
@@ -14,142 +57,280 @@ function handlePlaceholders(data, guestName = 'Guest: ', userData) {
     return data;
   }
   for (const [placeholder, value] of Object.entries(userData)) {
-    if (!data.includes(placeholder)) continue;
-    data = data.replace(placeholder, value);
+    let realPlaceHolder = `{${placeholder}}`;
+    if (!data.includes(realPlaceHolder)) continue;
+    data = data.replace(realPlaceHolder, value);
   }
   return data || guestName;
 }
 
-function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl) {
-  if (!userName) {
-    const user = getCurrentUser();
-    if (user) {
-      userName = <div class="mwai-avatar"><img src={userData.AVATAR_URL} /></div>;
-    } else {
-      userName = <div class="mwai-avatar mwai-svg"><img src={`${pluginUrl}/images/avatar-user.svg`} /></div>;
-    }
-  } else if (isUrl(userName)) {
-    userName = <div class="mwai-avatar"><img src={userName} /></div>;
-  } else {
-    userName = handlePlaceholders(userName, guestName, userData);
-    userName = <div class="mwai-name-text">{userName}</div>;
-  }
-  return userName;
-}
+function useChrono() {
+  const [timeElapsed, setTimeElapsed] = useState(null);
+  const intervalIdRef = useRef(null);
 
-function formatAiName(aiName, pluginUrl) {
-  if (!aiName) {
-    aiName = <div class="mwai-avatar mwai-svg"><img src={`${pluginUrl}/images/avatar-ai.svg`} /></div>;
-  } else if (isUrl(aiName)) {
-    aiName = <div class="mwai-avatar"><img src={aiName} /></div>;
-  } else {
-    aiName = <div class="mwai-name-text">{aiName}</div>;
+  function startChrono() {
+    if (intervalIdRef.current !== null) return;
+
+    const startTime = Date.now();
+    intervalIdRef.current = setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      setTimeElapsed(formatTime(elapsedSeconds));
+    }, 500);
   }
-  return aiName;
+
+  function stopChrono() {
+    clearInterval(intervalIdRef.current);
+    intervalIdRef.current = null;
+    setTimeElapsed(null);
+  }
+
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
+  useEffect(() => {
+    return () => {
+      clearInterval(intervalIdRef.current);
+    };
+  }, []);
+
+  return { timeElapsed, startChrono, stopChrono };
 }
 
 const Chatbot = (props) => {
-  const { system, shortcodeParams, shortcodeStyles, style } = props;
+  const { system, params, theme, style } = props;
+  const [ messages, setMessages ] = useState([]);
+  const [ busy, setBusy ] = useState(false);
+  const { timeElapsed, startChrono, stopChrono } = useChrono();
+  const inputRef = useRef();
 
+  const [ clientId, setClientId ] = useState(randomStr());
+  const [ inputText, setInputText ] = useState('');
   const [ open, setOpen ] = useState(false);
   const [ minimized, setMinimized ] = useState(true);
+  const shortcodeStyles = theme?.settings || {};
+  const { modCss } = useModClasses(theme);
+  const isMobile = document.innerWidth <= 768;
 
-  let CssVariables = {};
-  for (let key in shortcodeStyles) {
-    CssVariables[`--mwai-${key}`] = shortcodeStyles[key];
-  }
-  const atts = shortcodeParams;
-
-  let id = atts.chatId ? atts.chatId : (atts.id ? atts.id : '');
-  id = id.replace(/[^a-zA-Z0-9]/g, '');
+  const chatId = params.chatId || system.chatId;
+  const safeChatId = chatId?.replace(/[^a-zA-Z0-9]/g, '');
   const userData = system.userData;
   const sessionId = system.sessionId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
+  const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
   const typewriter = system?.typewriter ?? false;
-  const memorizeChat = Boolean(atts.id);
 
-  let guestName = atts.guest_name.trim();
-  let textSend = atts.text_send.trim();
-  let textClear = atts.text_clear.trim();
-  let textInputMaxLength = parseInt(atts.text_input_maxlength);
-  let textInputPlaceholder = atts.text_input_placeholder.trim();
-  let textCompliance = atts.text_compliance.trim();
-  let startSentence = atts.start_sentence.trim();
-  let window = Boolean(atts.window);
-  let copyButton = Boolean(atts.copy_button);
-  let fullscreen = Boolean(atts.fullscreen);
-  let icon = atts.icon ? atts.icon.trim() : '';
-  let iconText = atts.icon_text.trim();
-  let iconAlt = atts.icon_alt.trim();
-  let iconPosition = atts.icon_position.trim();
-  let themeStyle = atts.style;
-  let aiName = atts.ai_name.trim();
-  let userName = atts.user_name.trim();
+  let guestName = params.guestName?.trim() ?? "";
+  let textSend = params.textSend?.trim() ?? "";
+  let textClear = params.textClear?.trim() ?? "";
+  let textInputMaxLength = parseInt(params.textInputMaxLength);
+  let textInputPlaceholder = params.textInputPlaceholder?.trim() ?? "";
+  let textCompliance = params.textCompliance?.trim() ?? "";
+  let startSentence = params.startSentence?.trim() ?? "";
+  let window = Boolean(params.window);
+  let copyButton = Boolean(params.copyButton);
+  let fullscreen = Boolean(params.fullscreen);
+  let icon = params.icon?.trim() ?? "";
+  let iconText = params.iconText?.trim() ?? "";
+  let iconAlt = params.iconAlt?.trim() ?? "";
+  let iconPosition = params.iconPosition?.trim() ?? "";
+  let aiName = params.aiName?.trim() ?? "";
+  let userName = params.userName?.trim() ?? "";
 
-  let iconUrl = pluginUrl + '/images/chat-green.svg';
-  if ( icon ) {
-    iconUrl = icon;
+  function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl) {
+    if (!userName) {
+      if (userData) {
+        userName = <div className={modCss(['mwai-avatar'])}>
+          <img src={userData.AVATAR_URL} />
+        </div>;
+      }
+      else {
+        userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
+          <img src={`${pluginUrl}/images/avatar-user.svg`} />
+        </div>;
+      }
+    }
+    else if (isUrl(userName)) {
+      userName = <div className={modCss(['mwai-avatar'])}>
+        <img src={userName} />
+      </div>;
+    }
+    else {
+      userName = handlePlaceholders(userName, guestName, userData);
+      userName = <div className={modCss(['mwai-name-text'])}>{userName}</div>;
+    }
+    return userName;
   }
-  else if ( shortcodeStyles['icon'] ) {
-    let url = shortcodeStyles['icon'];
-    iconUrl = isUrl( url ) ? url : ( pluginUrl + '/images/' + shortcodeStyles['icon'] );
+  
+  function formatAiName(aiName, pluginUrl) {
+    if (!aiName) {
+      aiName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
+        <img src={`${pluginUrl}/images/avatar-ai.svg`} />
+      </div>;
+    }
+    else if (isUrl(aiName)) {
+      aiName = <div className={modCss('mwai-avatar')}><img src={aiName} /></div>;
+    }
+    else {
+      aiName = <div className={modCss('mwai-name-text')}>{aiName}</div>;
+    }
+    return aiName;
   }
+
+  const themeStyle = useMemo(() => {
+    if (theme?.type === 'css') {
+      return theme?.style;
+    }
+    return null;
+  }, [theme]);
+
+  const { cssVariables, iconUrl } = useMemo(() => {
+    let cssVariables = {};
+    let iconUrl = pluginUrl + '/images/chat-green.svg';
+    if (icon) {
+      iconUrl = isUrl(icon) ? icon : pluginUrl + '/images/' + icon;
+    }
+    for (let key in shortcodeStyles) {
+      cssVariables[`--mwai-${key}`] = shortcodeStyles[key];
+    }
+    return { cssVariables, iconUrl };
+  }, [icon, pluginUrl, shortcodeStyles]);
 
   aiName = formatAiName(aiName, pluginUrl);
   userName = formatUserName(userName, guestName, userData, pluginUrl);
   const rawAiName = 'AI: ';
   const rawUserName = 'User: ';
-  
-  const casuallyFineTuned = Boolean(atts.casually_fine_tuned);
-  const embeddingsIndex = atts.embeddings_index;
-  let promptEnding = atts?.prompt_ending?.trim();
-  let completionEnding = atts?.completion_ending?.trim();
-  if (casuallyFineTuned) {
-    promptEnding = "\\n\\n###\\n\\n";
-    completionEnding = "\\n\\n";
+
+  useEffect(() => {
+    initChatbot();
+  }, []);
+
+  const initChatbot = useCallback(() => {
+    var chatHistory = [];
+    resetMessages();
+  }, []);
+
+  const resetMessages = () => {
+    if (startSentence) {
+      setMessages((messages) => [{
+        id: randomStr(),
+        role: 'assistant',
+        content: startSentence,
+        who: rawAiName,
+        html: startSentence,
+        timestamp: new Date().getTime(),
+      }]);
+    }
+    else {
+      setMessages([]);
+    }
+  };
+
+  const onClear = () => {
+    setClientId(randomStr());
+    localStorage.removeItem(`mwai-chat-${chatId}`);
+    resetMessages();
+    setInputText('');
+  };
+
+  const onKeyPress = (event) => {
+    if (event.charCode === 13 && !inputText && !event.shiftKey) {
+      event.preventDefault();
+      return;
+    }
+    if (event.charCode === 13 && inputText && !event.shiftKey) {
+      onSubmit();
+      event.preventDefault();
+    }
   }
-  const env = atts.env;
-  const mode = atts.mode;
-  const maxResults = mode === 'chat' ? 1 : parseInt(atts.max_results);
-  const maxSentences = atts.max_sentences ? parseInt(atts.max_sentences) : 1;
-  const model = atts.model;
-  const temperature = atts.temperature;
-  const maxTokens = atts.max_tokens;
-  const service = atts.service;
-  const apiKey = atts.api_key;
 
-  const modCss = (classNames, conditionalClasses, theme = themeStyle) => {
-    let cssTheme = cssChatGPT;
-    if (theme === 'none') {
-      cssTheme = null;
-    }
-    if (theme === 'iosdark') {
-      cssTheme = cssIOSDark;
-    }
+  const onKeyDown = (event) => {
+    // var rows = input.getAttribute('rows');
+    // if (event.charCode === 13 && event.shiftKey) {
+    //   var lines = input.value.split('\n').length + 1;
+    //   //mwaiSetTextAreaHeight(input, lines);
+    // }
+  }
 
-    if (!Array.isArray(classNames)) {
-      classNames = [classNames];
-    }
-    if (conditionalClasses) {
-      Object.entries(conditionalClasses).forEach(([className, condition]) => {
-        if (condition) { classNames.push(className); }
-      });
-    }
+  const onKeyUp = (event) => {
+    // var rows = input.getAttribute('rows');
+    // var lines = input.value.split('\n').length ;
+    // //mwaiSetTextAreaHeight(input, lines);
+    // setButtonText();
+  }
 
-    return classNames.map(className => {
-      if (!cssTheme) {
-        return className;
+  const onSubmit = () => {
+    setBusy(true);
+    startChrono();
+    setMessages((messages) => [...messages, {
+      id: randomStr(),
+      role: 'user',
+      content: inputText,
+      who: rawUserName,
+      html: inputText,
+      timestamp: new Date().getTime(),
+    }]);
+
+    const data = {
+      chatId: chatId,
+      session: sessionId,
+      clientId: clientId,
+      messages: messages,
+      newMessage: inputText,
+    };
+
+    if (debugMode) {
+      console.log('[BOT] Sent: ', data);
+    }
+    fetch(`${restUrl}/mwai-bot/v1/chat`, { method: 'POST', headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': restNonce,
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (debugMode) {
+        console.log('[BOT] Recv: ', data);
       }
-      else if (cssTheme[className]) {
-        return `${className} ${cssTheme[className]}`;
+      if (!data.success) {
+        setMessages((messages) => [...messages, {
+          id: randomStr(),
+          role: 'system',
+          content: data.message,
+          who: rawAiName,
+          html: data.message,
+          timestamp: new Date().getTime(),
+        }]);
       }
       else {
-        console.warn(`The class name "${className}" is not defined in the CSS theme.`);
-        return className;
+        let html = data.images ? data.images : data.html;
+        setMessages((messages) => [...messages, {
+          id: randomStr(),
+          role: 'assistant',
+          content: data.answer,
+          who: rawAiName,
+          html: html,
+          timestamp: new Date().getTime(),
+        }]);
       }
-    }).join(' ');
+      setBusy(false);
+      stopChrono();
+
+      if (!isMobile) {
+        inputRef.current.focus(); 
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      setBusy(false);
+      stopChrono();
+    });
+    setInputText('');
   };
 
   const baseClasses = modCss('mwai-chat', { 
@@ -161,52 +342,74 @@ const Chatbot = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
+  const clearMode = inputText.length < 1 && messages?.length > 1;
+
   return (<>
-    <div className={baseClasses}
-      style={{ ...CssVariables, ...style }}>
+    <div className={baseClasses} style={{ ...cssVariables, ...style }}>
+
+      {themeStyle && <style>{themeStyle}</style>}
 
       {window && (<>
-        <div class={modCss('mwai-open-button')}>
-          {iconText && <div class={modCss('mwai-icon-text')}>{iconText}</div>}
+        <div className={modCss('mwai-open-button')}>
+          {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
             onClick={() => setOpen(!open)}
           />
         </div>
-        <div class={modCss('mwai-header')}>
-          <div class={modCss('mwai-buttons')}>
+        <div className={modCss('mwai-header')}>
+          <div className={modCss('mwai-buttons')}>
             {fullscreen && 
-              <div class={modCss('mwai-resize-button')}
+              <div className={modCss('mwai-resize-button')}
                 onClick={() => setMinimized(!minimized)}
               />
             }
-            <div class={modCss('mwai-close-button')}
+            <div className={modCss('mwai-close-button')}
               onClick={() => setOpen(!open)}
             />
-
           </div>
         </div>
       </>)}
 
       <div className={modCss('mwai-content')}>
         <div className={modCss('mwai-conversation')}>
-          <div className={modCss('mwai-reply') + ' ' + modCss('mwai-ai')}>
-            <span className={modCss('mwai-name')}>
-              <div className={modCss('mwai-name-text')}>{aiName}</div>
-            </span>
-            <span className={modCss('mwai-text')}>{startSentence}</span>
-            {copyButton && <div className={modCss('mwai-copy-button')}>
-              <div className={modCss('mwai-copy-button-one')}></div>
-              <div className={modCss('mwai-copy-button-two')}></div>
-            </div>}
-          </div>
+
+          {messages.map(message => 
+            <div 
+              className={modCss('mwai-reply', { 
+                'mwai-ai': message.role === 'assistant',
+                'mwai-user': message.role === 'user'
+              })}>
+              <span className={modCss('mwai-name')}>
+                  {message.role === 'assistant' && aiName}
+                  {message.role === 'user' && userName}
+              </span>
+              <span className={modCss('mwai-text')}
+                dangerouslySetInnerHTML={{ __html: message.html }}>
+              </span>
+              {copyButton && <div className={modCss('mwai-copy-button')}>
+                <div className={modCss('mwai-copy-button-one')}></div>
+                <div className={modCss('mwai-copy-button-two')}></div>
+              </div>}
+            </div>
+          )}
+
         </div>
         <div className={modCss('mwai-input')}>
-          <textarea rows="1" maxLength={textInputMaxLength} placeholder={textInputPlaceholder} ></textarea>
-          <button>
-            <span>{textSend} {textClear}</span>
+          <textarea
+            ref={inputRef}
+            disabled={busy} rows="1" maxLength={textInputMaxLength}
+            placeholder={textInputPlaceholder} value={inputText}
+            onKeyPress={onKeyPress}
+            onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
+            onChange={e => setInputText(e.target.value)}>
+          </textarea>
+          <button disabled={busy} onClick={clearMode ? onClear : onSubmit}>
+            <span>{clearMode ? textClear : textSend}</span>
+            {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
           </button>
         </div>
-        {textCompliance && <div class={modCss('mwai-compliance')}>
+        {textCompliance && <div className={modCss('mwai-compliance')}>
           {textCompliance}
         </div>}
       </div>

@@ -1,8 +1,8 @@
-// Previous: 1.3.68
-// Current: 1.3.90
+// Previous: 1.3.90
+// Current: 1.4.1
 
 // React & Vendor Libs
-const { useState, useEffect, useMemo } = wp.element;
+const { useState, useEffect } = wp.element;
 
 // NekoUI
 import { NekoUI, NekoWrapper } from '@neko-ui';

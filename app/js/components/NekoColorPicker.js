@@ -1,9 +1,11 @@
-// Previous: 0.4.5
-// Current: 1.1.8
+// Previous: 1.1.8
+// Current: 1.4.1
 
 const { useState, useEffect, useRef, useCallback } = wp.element;
+
 import { HexColorPicker } from "react-colorful";
 import Styled from "styled-components";
+import { NekoButton } from '@neko-ui';
 
 const StyledColorPicker = Styled.div`
   position: relative;
@@ -11,7 +13,6 @@ const StyledColorPicker = Styled.div`
   .swatch {
     width: 24px;
     height: 24px;
-    border-radius: 8px;
     border: 3px solid #fff;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
     cursor: pointer;
@@ -23,6 +24,7 @@ const StyledColorPicker = Styled.div`
     left: -80px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     z-index: 9999;
+    border-radius: 8px;
   }
 `;
 
@@ -76,8 +78,11 @@ const NekoColorPicker = ({ name, value, onChange }) => {
     <StyledColorPicker className="neko-color-picker">
       <div className="swatch" style={{ backgroundColor: color }} onClick={() => toggle(true)} />
       {isOpen && (
-        <div className="popover" ref={popover}>
+        <div className="popover" ref={popover} style={{ background: 'white' }}>
           <HexColorPicker color={color} onChange={setColor} />
+          <div style={{ display: 'flex', padding: 5 }}>
+            <NekoButton style={{ flex: 1 }} onClick={() => onChange(color, name)}>Apply</NekoButton>
+          </div>
         </div>
       )}
     </StyledColorPicker>

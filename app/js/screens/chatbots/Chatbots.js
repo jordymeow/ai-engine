@@ -1,18 +1,72 @@
-// Previous: 1.3.99
-// Current: 1.4.0
+// Previous: 1.4.0
+// Current: 1.4.1
 
-const { useMemo, useState, useEffect } = wp.element;
+// React & Vendor Libs
+import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Styled from "styled-components";
 
-import { NekoSpacer, NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoColumn, NekoButton } from '@neko-ui';
-import { pluginUrl, apiUrl, userData, restNonce, session } from '@app/settings';
+// NekoUI
+import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
+  NekoColumn, NekoButton } from '@neko-ui';
 
+import { pluginUrl, apiUrl, restUrl, userData, restNonce, session,
+  themes as initThemes, chatbots as initChatbots } from '@app/settings';
 import i18n from '@root/i18n';
 import { retrieveChatbots, retrieveThemes, updateChatbots } from '@app/requests';
 import { useNekoColors } from '@neko-ui';
 import ChatbotParams from './ChatbotParams';
 import Chatbot from './Chatbot';
 import Themes from './Themes';
+
+const StyledShortcode = Styled.div`
+  
+  pre {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fcff;
+    height: 26px;
+    color: #779bb8;
+    margin: 0px;
+    padding: 0px 10px;
+    font-size: 13px;
+    text-align: center;
+    border: 2px solid rgb(210 228 243);
+    border-radius: 8px;
+    font-family: system-ui;
+    cursor: pointer;
+    width: 240px;
+  }
+`;
+
+const Shortcode = ({ currentChatbot }) => {
+  const [ copyMessage, setCopyMessage ] = useState(null);
+
+  const onClick = async () => {
+    const text = `[mwai_chatbot_v2 id="${currentChatbot?.chatId}"]`;
+    await navigator.clipboard.writeText(text);
+    setCopyMessage('Copied!');
+    setTimeout(() => {
+      setCopyMessage(null);
+    }, 1000); // clear message after 2 seconds
+  };
+
+  if (!currentChatbot) {
+    return null;
+  }
+
+  const jsxShortcode = <span>[mwai_chatbot_v2 id="<span style={{ color: 'var(--neko-green)' }}>{currentChatbot?.chatId}</span>"]</span>;
+
+  return (
+    <>
+      <pre onClick={onClick}>
+        {!copyMessage && jsxShortcode}
+        {copyMessage && <span>{copyMessage}</span>}
+      </pre>
+    </>
+  );
+};
 
 const Chatbots = (props) => {
   const queryClient = useQueryClient();
@@ -21,14 +75,12 @@ const Chatbots = (props) => {
   const [ mode, setMode ] = useState('chatbots');
   const [ busy, setBusy ] = useState(false);
   const [ botIndex, setBotIndex ] = useState(0);
-  const shortcodeParams = options?.shortcode_chat_params;
-  const shortcodeStyles = options?.shortcode_chat_styles;
-  const shortcodeDefaultParams = options?.shortcode_chat_default_params;
-  const { isLoading: isLoadingChatbots, data: chatbots } = useQuery({
-    queryKey: ['chatbots'], queryFn: retrieveChatbots, defaultData: []
+  const chatbotDefaults = options?.chatbot_defaults;
+  const { data: chatbots } = useQuery({
+    queryKey: ['chatbots'], queryFn: retrieveChatbots, initialData: initChatbots
   });
-  const { isLoading: isLoadingThemes, data: themes } = useQuery({
-    queryKey: ['themes'], queryFn: retrieveThemes, defaultData: []
+  const { data: themes } = useQuery({
+    queryKey: ['themes'], queryFn: retrieveThemes, initialData: initThemes
   });
 
   const currentChatbot = useMemo(() => {
@@ -38,6 +90,19 @@ const Chatbots = (props) => {
       return chatbot;
     }
   }, [chatbots, botIndex]);
+
+  const currentTheme = useMemo(() => {
+    if (currentChatbot && currentChatbot.themeId === 'none') {
+      return null;
+    }
+    const defaultTheme = themes && themes.find(theme => theme.themeId === 'chatgpt');
+    if (themes && currentChatbot) {
+      const theme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
+      if (!theme) return defaultTheme;
+      return theme;
+    }
+    return defaultTheme;
+  }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
     setBusy(true);
@@ -49,45 +114,57 @@ const Chatbots = (props) => {
     setBusy(false);
   }
 
-  const onChangeTab = (index) => {
-    setBotIndex(index);
+  const onChangeTab = (botIndex) => {
+    setBotIndex(botIndex);
+  }
+
+  const onSwitchTheme = (themeId) => {
+    //updateChatbotParams(themeId, 'themeId');
   }
 
   const addNewChatbot = async () => {
     setBusy(true);
-    const newChatbotsArray = [...chatbots, {
-      ...shortcodeDefaultParams,
+    const newChatbots = await updateChatbots([...chatbots, {
+      ...chatbotDefaults,
       chatId: 'chatbot-' + (chatbots.length + 1),
       name: 'Chatbot ' + (chatbots.length + 1)
-    }];
-    const newChatbots = await updateChatbots(newChatbotsArray);
+    }]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
   }
 
   const deleteCurrentChatbot = async () => {
     setBusy(true);
-    let newChatbotsArray = [...chatbots];
-    newChatbotsArray.splice(botIndex, 1);
-    const newChatbots = await updateChatbots(newChatbotsArray);
+    let newChatbots = [...chatbots];
+    newChatbots.splice(botIndex, 1);
+    newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusy(false);
   }
 
   return (<>
     <NekoWrapper>
+
+      <NekoColumn minimal fullWidth style={{ margin: 10 }}>
+        <NekoContainer contentStyle={{ padding: 10, marginBottom: -20 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <NekoSwitch style={{ marginRight: 10 }} disabled={busy}
+              onLabel={i18n.COMMON.THEMES} offLabel={i18n.COMMON.CHATBOTS} width={110}
+              onValue="themes" offValue="chatbots"
+              checked={mode === 'themes'} onChange={setMode} 
+              onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
+            />
+            <div style={{ flex: 'auto' }}></div>
+            <StyledShortcode>
+              <Shortcode currentChatbot={currentChatbot} />
+            </StyledShortcode>
+          </div>
+        </NekoContainer>
+      </NekoColumn>
+
       <NekoColumn minimal style={{ margin: 10 }}>
 
-        <NekoSwitch style={{ marginRight: 10 }} disabled={busy}
-          onLabel={i18n.COMMON.THEMES} offLabel={i18n.COMMON.CHATBOTS} width={110}
-          onValue="themes" offValue="chatbots"
-          checked={mode === 'themes'} onChange={setMode} 
-          onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
-        />
-
-        <NekoSpacer medium />
-
-        {mode === 'chatbots' && <>
+        <div style={{ display: mode === 'chatbots' ? 'block' : 'none' }}>
           <NekoTabs inversed onChange={onChangeTab}
             action={<>
               <NekoButton className="primary-block" icon='plus' onClick={addNewChatbot} />
@@ -95,37 +172,33 @@ const Chatbots = (props) => {
                 <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
               }
             </>}>
-            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busy}>
-              <ChatbotParams options={options}
-                shortcodeParams={chatbotParams}
-                updateShortcodeParams={updateChatbotParams}
+            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busy}>
+              <ChatbotParams options={options} themes={themes}
+                shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
               />
             </NekoTab>)}
           </NekoTabs>
-        </>}
-        {mode === 'themes' && <>
-          <Themes
-            themes={themes}
-            options={options}
-            updateOption={updateOption}
-          />
-        </>}
+        </div>
+        <div style={{ display: mode === 'themes' ? 'block' : 'none' }}>
+          <Themes themes={themes} options={options} updateOption={updateOption} onSwitchTheme={onSwitchTheme} />
+        </div>
       </NekoColumn>
       <NekoColumn minimal>
-        <div style={{ position: 'relative', margin: 10, minHeight: 480,
+        <div style={{ position: 'relative', margin: '15px 10px 10px 10px', minHeight: 480, borderRadius: 5,
           padding: 10, border: '2px dashed rgb(0 0 0 / 20%)', background: 'rgb(0 0 0 / 5%)' }}>
-          {!!currentChatbot && !!shortcodeStyles && <Chatbot
+          {!!currentChatbot && <Chatbot
             system={{
               sessionId: session,
               restNonce: restNonce,
               debugMode: options?.debug_mode,
               apiUrl: apiUrl,
+              restUrl: restUrl,
               pluginUrl: pluginUrl,
               userData: userData,
               typewriter: options?.shortcode_chat_typewriter,
             }}
-            shortcodeParams={currentChatbot}
-            shortcodeStyles={shortcodeStyles}
+            params={currentChatbot}
+            theme={currentTheme}
             style={currentChatbot.window ? { position: 'absolute' } : {}}
           />}
           </div>
