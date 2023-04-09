@@ -1,5 +1,5 @@
-// Previous: 1.4.0
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.2
 
 const { useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 import cssChatGPT from '@root/../themes/chatGPT.module.css';
@@ -166,10 +166,11 @@ const Chatbot = (props) => {
     return userName;
   }
   
-  function formatAiName(aiName, pluginUrl) {
+  function formatAiName(aiName, pluginUrl, iconUrl) {
     if (!aiName) {
-      aiName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
-        <img src={`${pluginUrl}/images/avatar-ai.svg`} />
+      let avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
+      aiName = <div className={modCss(['mwai-avatar'])}>
+        <img src={`${avatar}`} />
       </div>;
     }
     else if (isUrl(aiName)) {
@@ -200,7 +201,7 @@ const Chatbot = (props) => {
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
 
-  aiName = formatAiName(aiName, pluginUrl);
+  aiName = formatAiName(aiName, pluginUrl, iconUrl);
   userName = formatUserName(userName, guestName, userData, pluginUrl);
   const rawAiName = 'AI: ';
   const rawUserName = 'User: ';
@@ -212,7 +213,7 @@ const Chatbot = (props) => {
   const initChatbot = useCallback(() => {
     var chatHistory = [];
     resetMessages();
-  }, []);
+  });
 
   const resetMessages = () => {
     if (startSentence) {
@@ -249,18 +250,9 @@ const Chatbot = (props) => {
   }
 
   const onKeyDown = (event) => {
-    // var rows = input.getAttribute('rows');
-    // if (event.charCode === 13 && event.shiftKey) {
-    //   var lines = input.value.split('\n').length + 1;
-    //   //mwaiSetTextAreaHeight(input, lines);
-    // }
   }
 
   const onKeyUp = (event) => {
-    // var rows = input.getAttribute('rows');
-    // var lines = input.value.split('\n').length ;
-    // //mwaiSetTextAreaHeight(input, lines);
-    // setButtonText();
   }
 
   const onSubmit = () => {

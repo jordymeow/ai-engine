@@ -6,7 +6,6 @@
   --mwai-fontColor: #FFFFFF;
   --mwai-backgroundPrimaryColor: #454654;
   --mwai-backgroundSecondaryColor: #343541;
-  --mwai-aiAvatarBackgroundColor: #10a37f;
   --mwai-userAvatarBackgroundColor: #135ea4;
   --mwai-headerButtonsColor: #FFFFFF;
   --mwai-width: 460px;
@@ -146,7 +145,6 @@
   margin-right: 10px;
   width: 40px;
   height: 40px;
-  background: var(--mwai-aiAvatarBackgroundColor);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -156,6 +156,7 @@ i18n.COMMON = {
   POST_TYPES: __( 'Post Types', 'ai-engine' ),
   COPY_BUTTON: __( 'Copy Button', 'ai-engine' ),
   POPUP_SETTINGS: __( 'Popup Settings', 'ai-engine' ),
+  AI_AVATAR: __( 'Avatar', 'ai-engine' ),
 }
 
 i18n.FORMS = {
