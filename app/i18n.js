@@ -143,6 +143,7 @@ i18n.COMMON = {
   ADMIN_BAR: __( 'Admin Bar', 'ai-engine' ),
   REFRESH: __( 'Refresh', 'ai-engine' ),
   DELETE: __( 'Delete', 'ai-engine' ),
+  DELETE_ALL: __( 'Delete All', 'ai-engine' ),
   DELETE_SELECTED: __( 'Delete Selected', 'ai-engine' ),
   OPENAI_SERVICE: __( 'Service', 'ai-engine' ),
   OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
@@ -278,6 +279,7 @@ i18n.ALERTS = {
   DATASET_UPLOADED: __( 'Uploaded successfully! You can now train a model based on this dataset.', 'ai-engine' ),
   ONLY_SUPPORTS_FILES: __( 'This only supports JSON, JSONL, and CSV files.', 'ai-engine' ),
   EMPTY_LINES: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'prompt\' and \'completion\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
+  ARE_YOU_SURE: __( 'Are you sure?', 'ai-engine' ),
 }
 
 i18n.FINETUNING = {

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,17 +69,19 @@ Languages: English.
 
 == Changelog ==
 
+= 1.4.3 (2023/04/11) =
+* Add: Delete all discussions at once.
+* Update: Refresh of the tables and checkboxes (better to keep everything consistent).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.4.2 (2023/04/09) =
 * Update: Icon and Avatar for AI are now a bit more unified in the new chatbot system.
 * Info: If you miss it, I released a new chabots system, check it out. It's beta!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.4.1 (2023/04/08) =
 * Add: New system for chatbots. It's in beta, not everything is working, but as you can see, it will be easier and better to handle the chatbots from now on (and new features will be much easier to add too). You can try them out by heading to the Chatbots tab.
 * Update: Pinecone servers.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.4.0 (2023/04/05) =
 * Update: Pinecone servers.

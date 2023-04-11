@@ -53,6 +53,9 @@ class Meow_MWAI_Modules_Discussions {
       $params = $request->get_json_params();
       $chatsIds = $params['chatIds'];
       if ( is_array( $chatsIds ) ) {
+        if ( count( $chatsIds ) === 0 ) {
+          $this->wpdb->query( "TRUNCATE TABLE $this->table_chats" );
+        }
         foreach( $chatsIds as $chatId ) {
           $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId ] );
         }
