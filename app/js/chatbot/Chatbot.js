@@ -1,103 +1,8 @@
-// Previous: 1.4.1
-// Current: 1.4.2
+// Previous: none
+// Current: 1.4.4
 
 const { useState, useMemo, useEffect, useCallback, useRef } = wp.element;
-import cssChatGPT from '@root/../themes/chatGPT.module.css';
-import cssIOSDark from '@root/../themes/iOSDark.module.css';
-
-const useModClasses = (theme) => {
-  const modCss = useMemo(() => {
-    return (classNames, conditionalClasses) => {
-      let cssTheme = cssChatGPT;
-
-      if (!theme || theme.themeId === 'none' || theme.type === 'css') {
-        cssTheme = null;
-      }
-      if (theme?.themeId === 'iosdark') {
-        cssTheme = cssIOSDark;
-      }
-
-      if (!Array.isArray(classNames)) {
-        classNames = [classNames];
-      }
-      if (conditionalClasses) {
-        Object.entries(conditionalClasses).forEach(([className, condition]) => {
-          if (condition) { classNames.push(className); }
-        });
-      }
-
-      return classNames.map(className => {
-        if (!cssTheme) {
-          return className;
-        }
-        else if (cssTheme[className]) {
-          return `${className} ${cssTheme[className]}`;
-        }
-        else {
-          console.warn(`The class name "${className}" is not defined in the CSS theme.`);
-          return className;
-        }
-      }).join(' ');
-    };
-  }, [theme]);
-
-  return { modCss };
-};
-
-function isUrl(url) {
-  return url.indexOf('http') === 0;
-}
-
-function randomStr() {
-  return Math.random().toString(36).substring(2);
-}
-
-function handlePlaceholders(data, guestName = 'Guest: ', userData) {
-  if (Object.keys(userData).length === 0) {
-    return data;
-  }
-  for (const [placeholder, value] of Object.entries(userData)) {
-    let realPlaceHolder = `{${placeholder}}`;
-    if (!data.includes(realPlaceHolder)) continue;
-    data = data.replace(realPlaceHolder, value);
-  }
-  return data || guestName;
-}
-
-function useChrono() {
-  const [timeElapsed, setTimeElapsed] = useState(null);
-  const intervalIdRef = useRef(null);
-
-  function startChrono() {
-    if (intervalIdRef.current !== null) return;
-
-    const startTime = Date.now();
-    intervalIdRef.current = setInterval(() => {
-      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      setTimeElapsed(formatTime(elapsedSeconds));
-    }, 500);
-  }
-
-  function stopChrono() {
-    clearInterval(intervalIdRef.current);
-    intervalIdRef.current = null;
-    setTimeElapsed(null);
-  }
-
-  function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }
-
-  useEffect(() => {
-    return () => {
-      clearInterval(intervalIdRef.current);
-    };
-  }, []);
-
-  return { timeElapsed, startChrono, stopChrono };
-}
+import { useModClasses, isUrl, randomStr, handlePlaceholders, useChrono } from '@app/chatbot/helpers';
 
 const Chatbot = (props) => {
   const { system, params, theme, style } = props;
@@ -105,6 +10,7 @@ const Chatbot = (props) => {
   const [ busy, setBusy ] = useState(false);
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const inputRef = useRef();
+  const conversationRef = useRef();
 
   const [ clientId, setClientId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
@@ -112,7 +18,7 @@ const Chatbot = (props) => {
   const [ minimized, setMinimized ] = useState(true);
   const shortcodeStyles = theme?.settings || {};
   const { modCss } = useModClasses(theme);
-  const isMobile = document.innerWidth <= 768;
+  const isMobile = document?.innerWidth <= 768; // bug: should be window.innerWidth
 
   const chatId = params.chatId || system.chatId;
   const safeChatId = chatId?.replace(/[^a-zA-Z0-9]/g, '');
@@ -210,10 +116,26 @@ const Chatbot = (props) => {
     initChatbot();
   }, []);
 
+  useEffect(() => {
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+    localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
+      clientId: clientId,
+      messages: messages
+    }));
+  }, [messages]);
+
   const initChatbot = useCallback(() => {
-    var chatHistory = [];
+    var chatHistory;
+    chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
+    if (chatHistory) {
+      chatHistory = JSON.parse(chatHistory);
+      setMessages(chatHistory.messages);
+      return;
+    }
     resetMessages();
-  });
+  }, []); // bug: missing chatId dependency
 
   const resetMessages = () => {
     if (startSentence) {
@@ -250,9 +172,18 @@ const Chatbot = (props) => {
   }
 
   const onKeyDown = (event) => {
+    // var rows = input.getAttribute('rows');
+    // if (event.charCode === 13 && event.shiftKey) {
+    //   var lines = input.value.split('\n').length + 1;
+    //   //mwaiSetTextAreaHeight(input, lines);
+    // }
   }
 
   const onKeyUp = (event) => {
+    // var rows = input.getAttribute('rows');
+    // var lines = input.value.split('\n').length ;
+    // //mwaiSetTextAreaHeight(input, lines);
+    // setButtonText();
   }
 
   const onSubmit = () => {
@@ -290,14 +221,21 @@ const Chatbot = (props) => {
         console.log('[BOT] Recv: ', data);
       }
       if (!data.success) {
-        setMessages((messages) => [...messages, {
-          id: randomStr(),
-          role: 'system',
-          content: data.message,
-          who: rawAiName,
-          html: data.message,
-          timestamp: new Date().getTime(),
-        }]);
+        let newMessages = [...messages];
+        newMessages.pop();
+        setMessages((messages) => {
+          let freshMessages = [...messages];
+          freshMessages.pop();
+          freshMessages.push({
+            id: randomStr(),
+            role: 'system',
+            content: data.message,
+            who: rawAiName,
+            html: data.message,
+            timestamp: new Date().getTime(),
+          });
+          return freshMessages;
+        });
       }
       else {
         let html = data.images ? data.images : data.html;
@@ -363,7 +301,7 @@ const Chatbot = (props) => {
       </>)}
 
       <div className={modCss('mwai-content')}>
-        <div className={modCss('mwai-conversation')}>
+        <div ref={conversationRef} className={modCss('mwai-conversation')}>
 
           {messages.map(message => 
             <div 

@@ -60,6 +60,7 @@
 		padding: var(--mwai-spacing);
 		position: relative;
 		line-height: var(--mwai-lineHeight);
+		border-bottom: 1px solid var(--mwai-backgroundPrimaryColor);
 
 		.mwai-copy-button {
 			opacity: 0;

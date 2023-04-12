@@ -1,7 +1,6 @@
 const path = require('path');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-//const WordPressDefaults = require("@wordpress/scripts/config/webpack.config");
 const regexNodeModules = /[\\/]node_modules[\\/]/;
 const regexNekoUI = /[\\/]neko-ui[\\/]/;
 
@@ -16,7 +15,6 @@ module.exports = function (env, options) {
 		cleanAfterEveryBuildPatterns: ['!app', '!chatbot.js', '*.LICENSE.txt', '*.map'],
 	});
 	
-
 	const plugins = [];
 	if (isProduction) {
 		plugins.push(cleanPlugin);
@@ -31,14 +29,15 @@ module.exports = function (env, options) {
 		mode: isProduction ? 'production' : 'development',
 		plugins: plugins,
 		devtool: isProduction ? false : 'source-map',
+		cache: false,
+		externals: {
+			"react": "React",
+			"react-dom": "ReactDOM"
+		},
 		output: {
 			filename: '[name].js',
 			path: __dirname + '/app/',
 			chunkLoadingGlobal: 'wpJsonMwai'
-		},
-		externals: {
-			"react": "React",
-			"react-dom": "ReactDOM"
 		},
 		resolve: {
 			alias: {

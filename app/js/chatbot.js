@@ -1,8 +1,8 @@
-// Previous: none
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.4
 
 const { render } = wp.element;
-import Chatbot from './screens/chatbots/Chatbot';
+import Chatbot from '@app/chatbot/chatbot';
 
 function decodeHtmlEntities(encodedStr) {
   const textarea = document.createElement('textarea');

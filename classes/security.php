@@ -11,10 +11,10 @@ class Meow_MWAI_Security {
     $this->banned_words = $this->core->get_option( 'banned_words' );
 
     if ( !empty( $this->banned_ips ) ) {
-      add_filter( 'mwai_ai_allowed', [ $this, 'check_banned_ips' ], 10, 3 );
+      add_filter( 'mwai_ai_allowed', [ $this, 'check_banned_ips' ], 5, 3 );
     }
     if ( !empty( $this->banned_words ) ) {
-      add_filter( 'mwai_ai_allowed', [ $this, 'check_banned_words' ], 10, 3 );
+      add_filter( 'mwai_ai_allowed', [ $this, 'check_banned_words' ], 5, 3 );
     }
   }
 
@@ -25,7 +25,7 @@ class Meow_MWAI_Security {
     $ip = $this->core->get_ip_address();
     if ( $this->is_blocked_ip( $ip, $this->banned_ips ) ) {
       error_log( "AI Engine blocked IP: $ip" );
-      return "Your query has been rejected.";
+      throw new Exception( "Your query has been rejected." );
     }
     return $ok;
   }
@@ -38,7 +38,7 @@ class Meow_MWAI_Security {
     foreach ( $this->banned_words as $word ) {
       if ( stripos( $text, $word ) !== false ) {
         error_log( "AI Engine blocked word: $word" );
-        return "Your query has been rejected.";
+        throw new Exception( "Your query has been rejected." );
       }
     }
     return $ok;

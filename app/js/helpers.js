@@ -1,5 +1,5 @@
-// Previous: 1.3.93
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.4
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -118,7 +118,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -146,7 +146,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -167,7 +167,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         const family = splitted[0];
         return { 
           model: x.model,
-          name: `fn: ${x.suffix}/${family}`,
+          name: <>{x.suffix}&nbsp;<small style={{ background: 'var(--neko-green)', color: 'white', padding: '4px 6px',
+            margin: '-4px 0px', borderRadius: 3, fontSize: 9, lineHeight: '100%' }}>TUNED</small></>,
           suffix: x.suffix,
           mode: 'completion',
           family,
@@ -273,8 +274,6 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
-// Quick and dirty token estimation
-// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -282,8 +281,7 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    }
-    else {
+    } else {
       nonAsciiCount++;
     }
   }

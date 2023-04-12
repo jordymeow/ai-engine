@@ -158,6 +158,7 @@ i18n.COMMON = {
   COPY_BUTTON: __( 'Copy Button', 'ai-engine' ),
   POPUP_SETTINGS: __( 'Popup Settings', 'ai-engine' ),
   AI_AVATAR: __( 'Avatar', 'ai-engine' ),
+  SITE_WIDE_CHAT: __( 'Site-Wide Chat', 'ai-engine' ),
 }
 
 i18n.FORMS = {
