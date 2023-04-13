@@ -1,5 +1,5 @@
-// Previous: 1.4.4
-// Current: 1.4.5
+// Previous: 1.4.5
+// Current: 1.4.6
 
 const { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 import { useModClasses, isUrl, randomStr, handlePlaceholders, useChrono } from '@app/chatbot/helpers';
@@ -30,18 +30,20 @@ const Chatbot = (props) => {
   const [ minimized, setMinimized ] = useState(true);
   const shortcodeStyles = theme?.settings || {};
   const { modCss } = useModClasses(theme);
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = document?.innerWidth <= 768;
 
+  // System Parameters
   const chatId = params.chatId || system.chatId || params.id || system.id;
-  const safeChatId = chatId?.replace(/[^a-zA-Z0-9]/g, '');
   const userData = system.userData;
   const sessionId = system.sessionId;
+  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
   const typewriter = system?.typewriter ?? false;
 
+  // UI Parameters
   let guestName = params.guestName?.trim() ?? "";
   let textSend = params.textSend?.trim() ?? "";
   let textClear = params.textClear?.trim() ?? "";
@@ -78,13 +80,14 @@ const Chatbot = (props) => {
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
 
+  // Validate & Enhance UI Parameters
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
   const rawAiName = 'AI: ';
   const rawUserName = 'User: ';
 
   useLayoutEffect(() => {
-    if(conversationRef.current) {
+    if (conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [messages]);
@@ -120,9 +123,11 @@ const Chatbot = (props) => {
         html: startSentence,
         timestamp: new Date().getTime(),
       }];
-      setMessages(freshMessages);
-    }
-    else {
+      setMessages(prev => {
+        // Potential subtle bug: using previous state might cause stale data if concurrent updates occur
+        return freshMessages;
+      });
+    } else {
       setMessages([]);
     }
   };
@@ -143,40 +148,39 @@ const Chatbot = (props) => {
       onSubmit();
       event.preventDefault();
     }
-  }
+  };
 
   const onKeyDown = (event) => {
-    // Placeholder for potential future logic
-  }
+    // Placeholder for potential bug: not handling shift+enter properly
+  };
 
   const onKeyUp = (event) => {
-    // Placeholder for potential future logic
-  }
+    // Placeholder for potential bug: no sync with textarea height
+  };
 
   const onSubmit = () => {
     setBusy(true);
     startChrono();
-    const currentMessages = [...messages];
-    const newUserMessage = {
-      id: randomStr(),
+    const newMessageId = randomStr();
+    const userMessage = {
+      id: newMessageId,
       role: 'user',
       content: inputText,
       who: rawUserName,
       html: inputText,
       timestamp: new Date().getTime(),
     };
-    currentMessages.push(newUserMessage);
-    setMessages(currentMessages);
-    saveMessages(currentMessages);
-
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    saveMessages(updatedMessages);
     const data = {
       chatId: chatId,
       session: sessionId,
       clientId: clientId,
-      messages: currentMessages,
+      contextId: contextId,
+      messages: messages, // potential mistake: using previous messages, not updated after setMessages
       newMessage: inputText,
     };
-
     if (debugMode) {
       console.log('[BOT] Sent: ', data);
     }
@@ -192,12 +196,12 @@ const Chatbot = (props) => {
         console.log('[BOT] Recv: ', data);
       }
       if (!data.success) {
-        let lastMessages = [...messages];
-        lastMessages.pop();
-        setMessages((prevMessages) => {
-          let freshMessages = [...prevMessages];
-          freshMessages.pop();
-          freshMessages.push({
+        setMessages(prevMessages => {
+          let tempMessages = [...prevMessages];
+          if (tempMessages.length > 0) {
+            tempMessages.pop();
+          }
+          tempMessages.push({
             id: randomStr(),
             role: 'system',
             content: data.message,
@@ -205,30 +209,29 @@ const Chatbot = (props) => {
             html: data.message,
             timestamp: new Date().getTime(),
           });
-          saveMessages(freshMessages);
-          return freshMessages;
+          saveMessages(tempMessages);
+          return tempMessages;
         });
-      }
-      else {
-        let htmlContent = data.images ? data.images : data.html;
-        setMessages(prevMessages => {
-          let freshMessages = [...prevMessages, {
+      } else {
+        const htmlContent = data.images ? data.images : data.html;
+        setMessages(prev => {
+          const newMsg = {
             id: randomStr(),
             role: 'assistant',
             content: data.answer,
             who: rawAiName,
             html: htmlContent,
             timestamp: new Date().getTime(),
-          }];
-          saveMessages(freshMessages);
-          return freshMessages;
+          };
+          const newMessages = [...prev, newMsg];
+          saveMessages(newMessages);
+          return newMessages;
         });
       }
       setBusy(false);
       stopChrono();
-
-      if (!isMobile) {
-        inputRef.current.focus(); 
+      if (!isMobile && inputRef.current) {
+        inputRef.current.focus();
       }
     })
     .catch(error => {
@@ -259,18 +262,18 @@ const Chatbot = (props) => {
         <div className={modCss('mwai-open-button')}>
           {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(prev => !prev)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(!minimized)}
+                onClick={() => setMinimized(prev => !prev)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(!open)}
+              onClick={() => setOpen(prev => !prev)}
             />
           </div>
         </div>
@@ -281,6 +284,7 @@ const Chatbot = (props) => {
 
           {!!messages && messages.map(message => 
             <div 
+              key={message.id}
               className={modCss('mwai-reply', { 
                 'mwai-ai': message.role === 'assistant',
                 'mwai-user': message.role === 'user'
@@ -298,6 +302,8 @@ const Chatbot = (props) => {
               </div>}
             </div>
           )}
+
+          {/* <ThinkingEffect active={timeElapsed} /> */}
 
         </div>
         <div className={modCss('mwai-input')}>

@@ -124,8 +124,13 @@ class Meow_MWAI_Core
 		if ( !$post ) {
 			return false;
 		}
-		$post->post_content = apply_filters( 'the_content', $post->post_content );
-		$text = $this->cleanText( $post->post_content );
+		$text = $post->post_content;
+		$pattern = '/\[mwai_.*?\]/';
+    $text = preg_replace( $pattern, '', $text );
+		if ( $this->get_option( 'resolve_shortcodes' ) ) {
+			$text = apply_filters( 'the_content', $text );
+		}
+		$text = $this->cleanText( $text );
 		$text = $this->cleanSentences( $text );
 		return $text;
 	}
@@ -195,11 +200,12 @@ class Meow_MWAI_Core
       else if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
         $data['ip'] = sanitize_text_field( $_SERVER['HTTP_CLIENT_IP'] );
       }
-      else if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+      else if ( isset( $_SERVER['HTTP_X_FORWARDED_ FOR'] ) ) {
         $data['ip'] = sanitize_text_field( $_SERVER['HTTP_X_FORWARDED_FOR'] );
       }
     }
-    return $data['ip'];
+		$ip = apply_filters( 'mwai_get_ip_address', $data['ip'] );
+    return $ip;
   }
 
 	#endregion

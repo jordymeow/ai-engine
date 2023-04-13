@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.4.5
+Stable tag: 1.4.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,8 +69,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.4.5 (2023/04/13) =
-* Fix: Many fixed related to the V2 chatbot.
+= 1.4.6 (2023/04/13) =
+* Add: Friendly message to those who don't have access to GPT-4.
+* Fix: Many fixed related to the Chatbot V2.
+* Update: Enhanced the content-aware feature (and fixed it for the Chatbot V2)
+* Add: Remove failed and cancelled finetuning jobs.
 * Update: Cleaned the internal API.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

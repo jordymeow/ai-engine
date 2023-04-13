@@ -169,7 +169,7 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function chat( $atts ) {
-		$chatId = isset( $atts['id'] ) ? $atts['id'] : 'default';
+		$chatId = isset( $atts['chatId'] ) ? $atts['chatId'] : 'default';
 		$chatbot = $this->core->getChatbot( $chatId );
 		if ( !$chatbot ) {
 			return "Chatbot not found.";
@@ -190,6 +190,7 @@ class Meow_MWAI_Modules_Chatbot {
 			'userData' => $this->core->getUserData(),
 			'sessionId' => $this->core->get_session_id(),
 			'restNonce' => wp_create_nonce( 'wp_rest' ),
+			'contextId' => get_the_ID(),
 			'pluginUrl' => MWAI_URL,
 			'restUrl' => untrailingslashit( rest_url() ),
 			'debugMode' => $this->core->get_option( 'debug_mode' ),

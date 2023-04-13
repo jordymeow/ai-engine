@@ -1,5 +1,5 @@
-// Previous: 1.3.81
-// Current: 1.3.91
+// Previous: 1.3.91
+// Current: 1.4.6
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -109,7 +109,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
         onEnter={onSave}
         onBlur={onSave} value={data} />
       <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
-    </div>;
+    </div>
   }
 
   return <pre style={{ width: '100%', height: '100%', whiteSpace: 'break-spaces',
@@ -310,8 +310,7 @@ const Finetunes = ({ options, updateOption }) => {
       const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'DELETE', nonce: restNonce, json: { fileId } });
       if (res.success) {
         await refreshFiles();
-      }
-      else {
+      } else {
         alert(res.message);
       }
     }
@@ -342,6 +341,21 @@ const Finetunes = ({ options, updateOption }) => {
     setBusyAction(false);
   };
 
+  const removeFineTune = async (modelId) => {
+    if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
+      return;
+    }
+    setBusyAction(true);
+    try {
+      await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
+    }
+    catch (err) {
+      console.log(err);
+      alert(i18n.ALERTS.CHECK_CONSOLE);
+    }
+    setBusyAction(false);
+  };
+
   const deleteFineTune = async (modelId) => {
     if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
       return;
@@ -356,8 +370,7 @@ const Finetunes = ({ options, updateOption }) => {
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
-        }
-        else {
+        } else {
           alert(res.message);
         }
       }
@@ -384,8 +397,7 @@ const Finetunes = ({ options, updateOption }) => {
         document.body.appendChild(link);
         link.click();
         link.remove();
-      }
-      else {
+      } else {
         alert(res.message);
       }
     }
@@ -420,7 +432,7 @@ const Finetunes = ({ options, updateOption }) => {
             onClick={() => deleteFile(currentId)} />
         </>
       }
-    )
+    })
   }, [dataFiles]);
 
   const onRefreshFineTunesAll = async () => {
@@ -441,9 +453,14 @@ const Finetunes = ({ options, updateOption }) => {
     setBusyAction(false);
   }
 
+  const isNotDeleted = (x, deletedFineTunes) => {
+    return !deletedFineTunes.includes(x.model) && !deletedFineTunes.includes(x.id);
+  };
+
   const fineTuneRows = useMemo(() => {
     if (!allFineTunes) { return [] }
-    return allFineTunes.filter(x => !deletedFineTunes.includes(x.model)).map(x => {
+    return allFineTunes.filter(x => isNotDeleted(x, deletedFineTunes))
+    .map(x => {
       const createdOn = new Date(x.createdOn);
       return {
         ...x,
@@ -452,6 +469,12 @@ const Finetunes = ({ options, updateOption }) => {
         actions:  <>
           {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => deleteFineTune(x.model)}>
+          </NekoButton>}
+          {x.status === 'cancelled' && <NekoButton className="danger" rounded icon="trash"
+            onClick={() => removeFineTune(x.id)}>
+          </NekoButton>}
+          {x.status === 'failed' && <NekoButton className="danger" rounded icon="trash"
+            onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
           {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
             onClick={() => cancelFineTune(x.id)}>
@@ -470,6 +493,7 @@ const Finetunes = ({ options, updateOption }) => {
     const link = document.createElement('a');
     link.href = url;
     const date = new Date();
+
     const filename = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-WP.csv`;
     link.download = filename;
     document.body.appendChild(link);
@@ -507,7 +531,7 @@ const Finetunes = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; 
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
