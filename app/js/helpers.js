@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.4.4
+// Previous: 1.4.4
+// Current: 1.4.5
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -88,19 +88,23 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
-    setCurrentLanguage(startLanguage);
+    if (startLanguage) {
+      setCurrentLanguage(startLanguage);
+    }
   }, [startLanguage]);
 
   useEffect(() => {
+    // Use the language stored in the local storage if it exists
     let preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
       return;
     }
 
+    // Otherwise, try to detect the language from the browser
     let detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -118,7 +122,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -146,7 +150,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -167,8 +171,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         const family = splitted[0];
         return { 
           model: x.model,
-          name: <>{x.suffix}&nbsp;<small style={{ background: 'var(--neko-green)', color: 'white', padding: '4px 6px',
-            margin: '-4px 0px', borderRadius: 3, fontSize: 9, lineHeight: '100%' }}>TUNED</small></>,
+          name: <>{x.suffix}&nbsp;<small style={{ background: 'var(--neko-green)', color: 'white', padding: '3px 4px',
+            margin: '-3px 2px', borderRadius: 3, fontSize: 9, lineHeight: '100%' }}>TUNED</small></>,
           suffix: x.suffix,
           mode: 'completion',
           family,
@@ -274,6 +278,8 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 }
 
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -281,7 +287,8 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    } else {
+    }
+    else {
       nonAsciiCount++;
     }
   }

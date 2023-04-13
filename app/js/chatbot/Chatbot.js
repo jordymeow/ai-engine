@@ -1,8 +1,20 @@
-// Previous: none
-// Current: 1.4.4
+// Previous: 1.4.4
+// Current: 1.4.5
 
-const { useState, useMemo, useEffect, useCallback, useRef } = wp.element;
+const { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 import { useModClasses, isUrl, randomStr, handlePlaceholders, useChrono } from '@app/chatbot/helpers';
+import { formatAiName, formatUserName } from './helpers';
+
+const ThinkingEffect = (props) => {
+  const { theme, style, active } = props;
+  const { modCss } = useModClasses(theme);
+  if  (!active) {
+    return null;
+  }
+  return <div className={modCss('mwai-thinking-effect')}>
+    I am thinking...
+  </div>;
+};
 
 const Chatbot = (props) => {
   const { system, params, theme, style } = props;
@@ -18,9 +30,9 @@ const Chatbot = (props) => {
   const [ minimized, setMinimized ] = useState(true);
   const shortcodeStyles = theme?.settings || {};
   const { modCss } = useModClasses(theme);
-  const isMobile = document?.innerWidth <= 768; // bug: should be window.innerWidth
+  const isMobile = window.innerWidth <= 768;
 
-  const chatId = params.chatId || system.chatId;
+  const chatId = params.chatId || system.chatId || params.id || system.id;
   const safeChatId = chatId?.replace(/[^a-zA-Z0-9]/g, '');
   const userData = system.userData;
   const sessionId = system.sessionId;
@@ -47,47 +59,6 @@ const Chatbot = (props) => {
   let aiName = params.aiName?.trim() ?? "";
   let userName = params.userName?.trim() ?? "";
 
-  function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl) {
-    if (!userName) {
-      if (userData) {
-        userName = <div className={modCss(['mwai-avatar'])}>
-          <img src={userData.AVATAR_URL} />
-        </div>;
-      }
-      else {
-        userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
-          <img src={`${pluginUrl}/images/avatar-user.svg`} />
-        </div>;
-      }
-    }
-    else if (isUrl(userName)) {
-      userName = <div className={modCss(['mwai-avatar'])}>
-        <img src={userName} />
-      </div>;
-    }
-    else {
-      userName = handlePlaceholders(userName, guestName, userData);
-      userName = <div className={modCss(['mwai-name-text'])}>{userName}</div>;
-    }
-    return userName;
-  }
-  
-  function formatAiName(aiName, pluginUrl, iconUrl) {
-    if (!aiName) {
-      let avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
-      aiName = <div className={modCss(['mwai-avatar'])}>
-        <img src={`${avatar}`} />
-      </div>;
-    }
-    else if (isUrl(aiName)) {
-      aiName = <div className={modCss('mwai-avatar')}><img src={aiName} /></div>;
-    }
-    else {
-      aiName = <div className={modCss('mwai-name-text')}>{aiName}</div>;
-    }
-    return aiName;
-  }
-
   const themeStyle = useMemo(() => {
     if (theme?.type === 'css') {
       return theme?.style;
@@ -107,46 +78,49 @@ const Chatbot = (props) => {
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
 
-  aiName = formatAiName(aiName, pluginUrl, iconUrl);
-  userName = formatUserName(userName, guestName, userData, pluginUrl);
+  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
+  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
   const rawAiName = 'AI: ';
   const rawUserName = 'User: ';
 
-  useEffect(() => {
-    initChatbot();
-  }, []);
-
-  useEffect(() => {
-    if (conversationRef.current) {
+  useLayoutEffect(() => {
+    if(conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
+  }, [messages]);
+
+  const saveMessages = useCallback((messages) => {
     localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
       clientId: clientId,
       messages: messages
     }));
-  }, [messages]);
+  }, [clientId, chatId]);
 
   const initChatbot = useCallback(() => {
-    var chatHistory;
-    chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
+    let chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
     if (chatHistory) {
       chatHistory = JSON.parse(chatHistory);
       setMessages(chatHistory.messages);
       return;
     }
     resetMessages();
-  }, []); // bug: missing chatId dependency
+  }, [chatId]);
+
+  useEffect(() => {
+    initChatbot();
+  }, [chatId]);
 
   const resetMessages = () => {
     if (startSentence) {
-      setMessages((messages) => [{
+      const freshMessages = [{
         id: randomStr(),
         role: 'assistant',
         content: startSentence,
         who: rawAiName,
         html: startSentence,
         timestamp: new Date().getTime(),
-      }]);
+      }];
+      setMessages(freshMessages);
     }
     else {
       setMessages([]);
@@ -172,37 +146,34 @@ const Chatbot = (props) => {
   }
 
   const onKeyDown = (event) => {
-    // var rows = input.getAttribute('rows');
-    // if (event.charCode === 13 && event.shiftKey) {
-    //   var lines = input.value.split('\n').length + 1;
-    //   //mwaiSetTextAreaHeight(input, lines);
-    // }
+    // Placeholder for potential future logic
   }
 
   const onKeyUp = (event) => {
-    // var rows = input.getAttribute('rows');
-    // var lines = input.value.split('\n').length ;
-    // //mwaiSetTextAreaHeight(input, lines);
-    // setButtonText();
+    // Placeholder for potential future logic
   }
 
   const onSubmit = () => {
     setBusy(true);
     startChrono();
-    setMessages((messages) => [...messages, {
+    const currentMessages = [...messages];
+    const newUserMessage = {
       id: randomStr(),
       role: 'user',
       content: inputText,
       who: rawUserName,
       html: inputText,
       timestamp: new Date().getTime(),
-    }]);
+    };
+    currentMessages.push(newUserMessage);
+    setMessages(currentMessages);
+    saveMessages(currentMessages);
 
     const data = {
       chatId: chatId,
       session: sessionId,
       clientId: clientId,
-      messages: messages,
+      messages: currentMessages,
       newMessage: inputText,
     };
 
@@ -221,10 +192,10 @@ const Chatbot = (props) => {
         console.log('[BOT] Recv: ', data);
       }
       if (!data.success) {
-        let newMessages = [...messages];
-        newMessages.pop();
-        setMessages((messages) => {
-          let freshMessages = [...messages];
+        let lastMessages = [...messages];
+        lastMessages.pop();
+        setMessages((prevMessages) => {
+          let freshMessages = [...prevMessages];
           freshMessages.pop();
           freshMessages.push({
             id: randomStr(),
@@ -234,19 +205,24 @@ const Chatbot = (props) => {
             html: data.message,
             timestamp: new Date().getTime(),
           });
+          saveMessages(freshMessages);
           return freshMessages;
         });
       }
       else {
-        let html = data.images ? data.images : data.html;
-        setMessages((messages) => [...messages, {
-          id: randomStr(),
-          role: 'assistant',
-          content: data.answer,
-          who: rawAiName,
-          html: html,
-          timestamp: new Date().getTime(),
-        }]);
+        let htmlContent = data.images ? data.images : data.html;
+        setMessages(prevMessages => {
+          let freshMessages = [...prevMessages, {
+            id: randomStr(),
+            role: 'assistant',
+            content: data.answer,
+            who: rawAiName,
+            html: htmlContent,
+            timestamp: new Date().getTime(),
+          }];
+          saveMessages(freshMessages);
+          return freshMessages;
+        });
       }
       setBusy(false);
       stopChrono();
@@ -303,7 +279,7 @@ const Chatbot = (props) => {
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
 
-          {messages.map(message => 
+          {!!messages && messages.map(message => 
             <div 
               className={modCss('mwai-reply', { 
                 'mwai-ai': message.role === 'assistant',
@@ -339,8 +315,8 @@ const Chatbot = (props) => {
             {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
           </button>
         </div>
-        {textCompliance && <div className={modCss('mwai-compliance')}>
-          {textCompliance}
+        {textCompliance && <div className={modCss('mwai-compliance')}
+          dangerouslySetInnerHTML={{ __html: textCompliance }}>
         </div>}
       </div>
     </div>

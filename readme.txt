@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.4.4
+Stable tag: 1.4.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,13 +69,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.4.5 (2023/04/13) =
+* Fix: Many fixed related to the V2 chatbot.
+* Update: Cleaned the internal API.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.4.4 (2023/04/12) =
 * Add: Site-wide V2 chatbot.
 * Add: Remember chats for V2 chatbot.
 * Update: Rejected messages will be removed from the conversation and will not be reused in further requests.
 * Update: The 'finetuned' status of the models now stand out more in the UI.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.4.3 (2023/04/11) =
 * Add: Delete all discussions at once.

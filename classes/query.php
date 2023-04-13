@@ -67,6 +67,10 @@ class Meow_MWAI_Query {
     return $this->prompt;
   }
 
+  public function getLastMessage() {
+    return $this->getPrompt();
+  }
+
   /**
    * The API key to use.
    * @param string $apiKey The API key.

@@ -175,7 +175,9 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 
   public function getLastMessage() {
     if ( !empty( $this->messages ) ) {
-      return $this->messages[count( $this->messages ) - 1];
+      $lastMessageIndex = count( $this->messages ) - 1;
+      $lastMessage = $this->messages[$lastMessageIndex];
+      return $lastMessage['content'];
     }
     return null;
   }
@@ -183,8 +185,8 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   // Function that adds a message just before the last message
   public function injectContext( $content ) {
     if ( !empty( $this->messages ) ) {
-      $lastMessage = $this->getLastMessage();
       $lastMessageIndex = count( $this->messages ) - 1;
+      $lastMessage = $this->messages[$lastMessageIndex];
       $this->messages[$lastMessageIndex] = [ 'role' => 'system', 'content' => $content ];
       array_push( $this->messages, $lastMessage );
     }

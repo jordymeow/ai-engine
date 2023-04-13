@@ -1,15 +1,17 @@
-// Previous: 1.4.1
-// Current: 1.4.4
+// Previous: 1.4.4
+// Current: 1.4.5
 
+// React & Vendor Libs
 import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
+// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
 
-import { pluginUrl, apiUrl, restUrl, userData, restNonce, session,
+import { pluginUrl, restUrl, userData, restNonce, session,
   themes as initThemes, chatbots as initChatbots } from '@app/settings';
 import i18n from '@root/i18n';
 import { retrieveChatbots, retrieveThemes, updateChatbots } from '@app/requests';
@@ -88,7 +90,6 @@ const Chatbots = (props) => {
       if (!chatbot) return null;
       return chatbot;
     }
-    return null;
   }, [chatbots, botIndex]);
 
   const currentTheme = useMemo(() => {
@@ -196,13 +197,13 @@ const Chatbots = (props) => {
           padding: 10, border: '2px dashed rgb(0 0 0 / 20%)', background: 'rgb(0 0 0 / 5%)' }}>
           {!!currentChatbot && <Chatbot
             system={{
+              chatId: currentChatbot.chatId,
+              userData: userData,
               sessionId: session,
               restNonce: restNonce,
-              debugMode: options?.debug_mode,
-              apiUrl: apiUrl,
-              restUrl: restUrl,
               pluginUrl: pluginUrl,
-              userData: userData,
+              restUrl: restUrl,
+              debugMode: options?.debug_mode,
               typewriter: options?.shortcode_chat_typewriter,
             }}
             params={currentChatbot}

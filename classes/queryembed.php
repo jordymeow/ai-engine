@@ -7,7 +7,7 @@ class Meow_MWAI_QueryEmbed extends Meow_MWAI_Query {
 		if ( is_a( $promptOrQuery, 'Meow_MWAI_QueryText' ) ) {
 			$lastMessage = $promptOrQuery->getLastMessage();
 			if ( !empty( $lastMessage ) ) {
-				$this->setPrompt( $lastMessage['content'] );
+				$this->setPrompt( $lastMessage );
 			}
 			$this->setModel( $model );
 			$this->mode = 'embedding';

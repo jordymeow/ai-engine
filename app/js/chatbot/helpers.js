@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.4.4
+// Previous: 1.4.4
+// Current: 1.4.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -100,7 +100,7 @@ function useChrono() {
   return { timeElapsed, startChrono, stopChrono };
 }
 
-function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl) {
+function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, modCss) {
   if (!userName) {
     if (userData) {
       userName = <div className={modCss(['mwai-avatar'])}>
@@ -125,7 +125,7 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl) {
   return userName;
 }
 
-function formatAiName(aiName, pluginUrl, iconUrl) {
+function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
   if (!aiName) {
     let avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
     aiName = <div className={modCss(['mwai-avatar'])}>
