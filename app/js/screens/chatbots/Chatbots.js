@@ -1,12 +1,10 @@
-// Previous: 1.4.4
-// Current: 1.4.5
+// Previous: 1.4.5
+// Current: 1.4.7
 
-// React & Vendor Libs
 import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
-// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
@@ -17,7 +15,7 @@ import i18n from '@root/i18n';
 import { retrieveChatbots, retrieveThemes, updateChatbots } from '@app/requests';
 import ChatbotParams from '@app/screens/chatbots/ChatbotParams';
 import Themes from '@app/screens/chatbots/Themes';
-import Chatbot from '@app/chatbot/chatbot';
+import ChatbotSystem from '@app/chatbot/ChatbotSystem';
 
 const StyledShortcode = Styled.div`
   
@@ -86,7 +84,7 @@ const Chatbots = (props) => {
 
   const currentChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots[botIndex];queryClient
+      const chatbot = chatbots[botIndex];
       if (!chatbot) return null;
       return chatbot;
     }
@@ -115,8 +113,8 @@ const Chatbots = (props) => {
     setBusyAction(false);
   }
 
-  const onChangeTab = (botIndex) => {
-    setBotIndex(botIndex);
+  const onChangeTab = (index) => {
+    setBotIndex(index);
   }
 
   const onSwitchTheme = (themeId) => {
@@ -181,7 +179,7 @@ const Chatbots = (props) => {
                 <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
               }
             </>}>
-            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
+            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
               <ChatbotParams options={options} themes={themes}
                 shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
               />
@@ -195,7 +193,7 @@ const Chatbots = (props) => {
       <NekoColumn minimal>
         <div style={{ position: 'relative', margin: '15px 10px 10px 10px', minHeight: 480, borderRadius: 5,
           padding: 10, border: '2px dashed rgb(0 0 0 / 20%)', background: 'rgb(0 0 0 / 5%)' }}>
-          {!!currentChatbot && <Chatbot
+          {!!currentChatbot && <ChatbotSystem
             system={{
               chatId: currentChatbot.chatId,
               userData: userData,

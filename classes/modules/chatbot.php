@@ -169,7 +169,7 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function chat( $atts ) {
-		$chatId = isset( $atts['chatId'] ) ? $atts['chatId'] : 'default';
+		$chatId = isset( $atts['id'] ) ? $atts['id'] : 'default';
 		$chatbot = $this->core->getChatbot( $chatId );
 		if ( !$chatbot ) {
 			return "Chatbot not found.";

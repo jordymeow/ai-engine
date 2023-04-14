@@ -11,6 +11,7 @@
 	--mwai-width: 460px;
 	--mwai-maxHeight: 40vh;
 
+	
 	.mwai-open-button {
 		position: absolute;
 		right: 0;
@@ -124,6 +125,12 @@
 					opacity: 1;
 				}
 			}
+		}
+
+		transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+		&.mwai-fade-out {
+			opacity: 0;
 		}
 
 		&:hover {

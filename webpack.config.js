@@ -29,7 +29,6 @@ module.exports = function (env, options) {
 		mode: isProduction ? 'production' : 'development',
 		plugins: plugins,
 		devtool: isProduction ? false : 'source-map',
-		cache: false,
 		externals: {
 			"react": "React",
 			"react-dom": "ReactDOM"

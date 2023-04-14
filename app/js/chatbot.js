@@ -1,8 +1,8 @@
-// Previous: 1.4.1
-// Current: 1.4.4
+// Previous: 1.4.4
+// Current: 1.4.7
 
 const { render } = wp.element;
-import Chatbot from '@app/chatbot/chatbot';
+import ChatbotSystem from '@app/chatbot/ChatbotSystem';
 
 function decodeHtmlEntities(encodedStr) {
   const textarea = document.createElement('textarea');
@@ -19,6 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     mwaiChatbot.removeAttribute('data-params');
     mwaiChatbot.removeAttribute('data-system');
     mwaiChatbot.removeAttribute('data-theme');
-    render(<Chatbot system={system} params={params} theme={theme} />, mwaiChatbot);
+    render(<ChatbotSystem system={system} params={params} theme={theme} />, mwaiChatbot);
   });
 });

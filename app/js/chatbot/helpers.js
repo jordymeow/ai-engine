@@ -1,5 +1,5 @@
-// Previous: 1.4.4
-// Current: 1.4.5
+// Previous: 1.4.5
+// Current: 1.4.7
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -54,7 +54,7 @@ function randomStr() {
 }
 
 function handlePlaceholders(data, guestName = 'Guest: ', userData) {
-  if (Object.keys(userData).length === 0) {
+  if (!userData || Object.keys(userData).length === 0) {
     return data;
   }
   for (const [placeholder, value] of Object.entries(userData)) {
@@ -82,7 +82,7 @@ function useChrono() {
   function stopChrono() {
     clearInterval(intervalIdRef.current);
     intervalIdRef.current = null;
-    setTimeElapsed(null);
+    setTimeElapsed('0:00');
   }
 
   function formatTime(seconds) {
@@ -140,3 +140,32 @@ function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
   }
   return aiName;
 }
+
+const processParameters = (params) => {
+  const guestName = params.guestName?.trim() ?? "";
+  const textSend = params.textSend?.trim() ?? "";
+  const textClear = params.textClear?.trim() ?? "";
+  const textInputMaxLength = parseInt(params.textInputMaxLength);
+  const textInputPlaceholder = params.textInputPlaceholder?.trim() ?? "";
+  const textCompliance = params.textCompliance?.trim() ?? "";
+  const window = Boolean(params.window);
+  const copyButton = Boolean(params.copyButton);
+  const fullscreen = Boolean(params.fullscreen);
+  const icon = params.icon?.trim() ?? "";
+  const iconText = params.iconText?.trim() ?? "";
+  const iconAlt = params.iconAlt?.trim() ?? "";
+  const iconPosition = params.iconPosition?.trim() ?? "";
+  const aiName = params.aiName?.trim() ?? "";
+  const userName = params.userName?.trim() ?? "";
+
+  return { 
+    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
+    window, copyButton, fullscreen,
+    icon, iconText, iconAlt, iconPosition,
+    aiName, userName, guestName
+  };
+};
+
+export { useModClasses, isUrl, randomStr, handlePlaceholders,
+  useChrono, formatUserName, formatAiName, processParameters
+};
