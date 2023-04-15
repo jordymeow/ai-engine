@@ -1,17 +1,19 @@
 .mwai-chat {
-  --mwai-spacing: 15px;
-  --mwai-fontSize: 15px;
+  --mwai-spacing: 10px;
+  --mwai-fontSize: 13px;
   --mwai-lineHeight: 1.5;
   --mwai-borderRadius: 10px;
   --mwai-width: 460px;
   --mwai-maxHeight: 40vh;
-  --mwai-iconTextColor: white;
-  --mwai-iconTextBackgroundColor: #343541;
-  --mwai-fontColor: #FFFFFF;
-  --mwai-backgroundPrimaryColor: #454654;
-  --mwai-backgroundHeaderColor: #343541;
-  --mwai-headerButtonsColor: #FFFFFF;
-  --mwai-backgroundSecondaryColor: #343541;
+  --mwai-iconTextColor: black;
+  --mwai-iconTextBackgroundColor: white;
+  --mwai-fontColor: black;
+  --mwai-backgroundPrimaryColor: white;
+  --mwai-backgroundHeaderColor: #0084ff;
+  --mwai-headerButtonsColor: white;
+  --mwai-backgroundUserColor: #0084ff;
+  --mwai-backgroundAiColor: #eee;
+  --mwai-backgroundAiSecondaryColor: #ddd;
 }
 
 .mwai-chat * {
@@ -19,134 +21,101 @@
 }
 
 .mwai-chat .mwai-content {
-  background: var(--mwai-backgroundSecondaryColor);
-  color: var(--mwai-fontColor);
+  background: var(--mwai-backgroundPrimaryColor);
   font-size: var(--mwai-fontSize);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  color: var(--mwai-fontColor);
   border-radius: var(--mwai-borderRadius);
+  flex-direction: column;
 }
 
 .mwai-chat .mwai-conversation {
+  display: flex;
+  flex-direction: column;
   overflow: auto;
-}
-
-.mwai-chat * {
-  box-sizing: border-box;
-}
-
-.mwai-chat .mwai-reply {
-  display: flex;
+  max-height: var(--mwai-maxHeight);
   padding: var(--mwai-spacing);
-  position: relative;
-  line-height: var(--mwai-lineHeight);
-  border-bottom: 1px solid var(--mwai-backgroundPrimaryColor);
-  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mwai-chat .mwai-reply .mwai-copy-button {
-  opacity: 0;
-  transition: all 0.3s ease-out;
-  width: 22px;
-  height: 22px;
-  position: absolute;
-  right: var(--mwai-spacing);
-}
-
-.mwai-chat .mwai-reply .mwai-copy-button .mwai-copy-button-one {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin-top: 0px;
-  margin-left: 0px;
-  background: white;
-  opacity: 0.4;
-  transition: all 0.2s ease-in;
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.mwai-chat .mwai-reply .mwai-copy-button .mwai-copy-button-two {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin-top: 6px;
-  margin-left: 6px;
-  background: white;
-  opacity: 0.6;
-  transition: all 0.2s ease-in;
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.mwai-chat .mwai-reply .mwai-copy-button:hover .mwai-copy-button-one {
-  opacity: 0.6;
-  margin-top: 0px;
-  margin-left: 6px;
-}
-
-.mwai-chat .mwai-reply .mwai-copy-button:hover .mwai-copy-button-two {
-  opacity: 1;
-  margin-top: 6px;
-  margin-left: 0px;
-}
-
-.mwai-chat .mwai-reply .mwai-copy-button.mwai-animate .mwai-copy-button-one {
-  opacity: 0;
-}
-
-.mwai-chat .mwai-reply .mwai-copy-button.mwai-animate .mwai-copy-button-two {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  margin-left: 2px;
-  opacity: 1;
-}
-
-.mwai-chat .mwai-reply.mwai-fade-out {
-  opacity: 0;
-}
-
-.mwai-chat .mwai-reply:hover .mwai-copy-button {
-  display: block;
-  opacity: 1;
-}
-
-.mwai-chat .mwai-ai, .mwai-chat .mwai-system {
-  background: var(--mwai-backgroundPrimaryColor);
-}
-
-.mwai-chat .mwai-name {
+.mwai-chat .mwai-conversation .mwai-reply {
+  margin-bottom: var(--mwai-spacing);
+  padding: 7px 12px;
+  border-radius: 15px;
+  font-size: var(--mwai-fontSize);
   color: var(--mwai-fontColor);
-  margin-right: 5px;
+  position: relative;
 }
 
-.mwai-chat .mwai-name .mwai-name-text {
-  opacity: 0.50;
-  white-space: nowrap;
+.mwai-chat .mwai-conversation .mwai-reply .mwai-name {
+  display: none;
 }
 
-.mwai-chat .mwai-name .mwai-avatar {
+.mwai-chat .mwai-conversation .mwai-reply .mwai-name-text {
+  display: none;
+}
+
+.mwai-chat .mwai-conversation .mwai-reply *:first-child {
+  margin-top: 0px;
+}
+
+.mwai-chat .mwai-conversation .mwai-reply *:last-child {
+  margin-bottom: 0px;
+}
+
+.mwai-chat .mwai-conversation .mwai-reply.mwai-ai {
+  align-self: flex-start;
+  background: var(--mwai-backgroundAiColor);
+  margin-left: 5px;
+}
+
+.mwai-chat .mwai-conversation .mwai-reply.mwai-ai::before, .mwai-chat .mwai-conversation .mwai-reply.mwai-ai::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  left: -10px;
+  width: 10px;
+  height: 20px;
+  background: var(--mwai-backgroundPrimaryColor);
+  border-bottom-right-radius: 10px;
+}
+
+.mwai-chat .mwai-conversation .mwai-reply.mwai-ai::before {
+  z-index: 0;
+  left: -7px;
+  height: 20px;
+  width: 20px;
+  background: var(--mwai-backgroundAiColor);
+  border-bottom-right-radius: 15px;
+}
+
+.mwai-chat .mwai-conversation .mwai-reply.mwai-user {
+  align-self: flex-end;
+  background: var(--mwai-backgroundUserColor);
+  color: white;
   margin-right: 10px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  overflow: hidden;
+  text-align: right;
 }
 
-.mwai-chat .mwai-name .mwai-avatar img {
-  max-width: 100%;
-  max-height: 100%;
+.mwai-chat .mwai-conversation .mwai-reply.mwai-user::before, .mwai-chat .mwai-conversation .mwai-reply.mwai-user::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  right: -10px;
+  width: 10px;
+  height: 20px;
+  background: var(--mwai-backgroundPrimaryColor);
+  border-bottom-left-radius: 10px;
 }
 
-.mwai-chat .mwai-name .mwai-avatar.mwai-svg img {
-  width: 28px;
-  height: 28px;
-  filter: brightness(0) invert(1);
+.mwai-chat .mwai-conversation .mwai-reply.mwai-user::before {
+  z-index: 0;
+  right: -10px;
+  height: 20px;
+  width: 20px;
+  background: var(--mwai-backgroundUserColor);
+  background-attachment: fixed;
+  border-bottom-left-radius: 15px;
 }
 
 .mwai-chat .mwai-text {
@@ -187,7 +156,7 @@
 }
 
 .mwai-chat .mwai-text p code {
-  background: var(--mwai-backgroundSecondaryColor);
+  background: var(--mwai-backgroundAiSecondaryColor);
   padding: 2px 6px;
   border-radius: 8px;
   font-size: 90%;
@@ -197,20 +166,19 @@
 .mwai-chat .mwai-text pre {
   color: var(--mwai-fontColor);
   border-radius: var(--mwai-borderRadius);
-  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
   break-after: auto;
   white-space: pre-wrap;
-  font-size: 95%;
   max-width: 100%;
   width: 100%;
   font-family: system-ui;
-  background: #343541;
+  background: var(--mwai-backgroundAiSecondaryColor);
+  padding: var(--mwai-spacing);
 }
 
 .mwai-chat .mwai-text pre code {
   padding: 0 !important;
   font-family: system-ui;
-  background: #343541;
+  background: var(--mwai-backgroundAiSecondaryColor);
 }
 
 .mwai-chat .mwai-text ol {
@@ -220,12 +188,12 @@
 
 .mwai-chat .mwai-text table {
   width: 100%;
-  border: 2px solid var(--mwai-backgroundSecondaryColor);
+  border: 2px solid var(--mwai-backgroundAiSecondaryColor);
   border-collapse: collapse;
 }
 
 .mwai-chat .mwai-text thead {
-  background: var(--mwai-backgroundSecondaryColor);
+  background: var(--mwai-backgroundAiSecondaryColor);
 }
 
 .mwai-chat .mwai-text tr, .mwai-chat .mwai-text td {
@@ -233,7 +201,7 @@
 }
 
 .mwai-chat .mwai-text td {
-  border: 2px solid var(--mwai-backgroundSecondaryColor);
+  border: 2px solid var(--mwai-backgroundAiSecondaryColor);
 }
 
 .mwai-chat .mwai-text .mwai-typewriter {
@@ -252,28 +220,22 @@
   margin-bottom: 0;
 }
 
-.mwai-chat .mwai-system .mwai-name {
-  display: none;
+.mwai-chat .mwai-avatar img {
+  width: 24px;
+  border-radius: 5px;
 }
 
 .mwai-chat .mwai-input {
   display: flex;
+  align-items: center;
   padding: var(--mwai-spacing);
-  border-top: 1px solid var(--mwai-backgroundPrimaryColor);
 }
 
 .mwai-chat .mwai-input textarea {
-  background: var(--mwai-backgroundPrimaryColor);
-  color: var(--mwai-fontColor);
   flex: auto;
-  padding: var(--mwai-spacing);
-  border: none;
-  border-radius: var(--mwai-borderRadius);
-  font-size: var(--mwai-fontSize);
-  resize: none;
+  padding: 5px 10px;
+  height: 32px;
   font-family: inherit;
-  margin: 0;
-  overflow: hidden;
 }
 
 .mwai-chat .mwai-input textarea:focus {
@@ -286,46 +248,29 @@
   opacity: 0.5;
 }
 
-.mwai-chat button {
-  background: none;
-  color: var(--mwai-fontColor);
-  background-color: var(--mwai-backgroundSecondaryColor);
-  border: 1px solid var(--mwai-backgroundPrimaryColor);
+.mwai-chat .mwai-input button {
   margin-left: var(--mwai-spacing);
-  width: 90px;
-  border-radius: 5px;
+  padding: 5px 15px;
+  background-color: var(--mwai-backgroundUserColor);
+  color: white;
+  border: none;
+  border-radius: var(--mwai-borderRadius);
   cursor: pointer;
-  transition: all 0.2s ease-out;
+  height: 32px;
+  width: 110px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 90%;
-  position: relative;
+  align-items: center;
 }
 
-.mwai-chat button .mwai-timer {
+.mwai-chat .mwai-input button .mwai-timer {
   margin-left: 5px;
   margin-right: 5px;
   font-size: 11px;
 }
 
-.mwai-chat button:hover {
-  background: var(--mwai-backgroundPrimaryColor);
-}
-
-.mwai-chat button[disabled] span {
-  display: none;
-}
-
-.mwai-chat button[disabled]::before {
-  content: '';
-  width: 18px;
-  height: 18px;
-  margin: auto;
-  border: 3px solid transparent;
-  border-top-color: var(--mwai-fontColor);
-  border-radius: 50%;
-  animation: mwai-button-spinner 1s ease infinite;
+.mwai-chat .mwai-input button:hover {
+  filter: brightness(1.2);
 }
 
 .mwai-chat .mwai-compliance {
@@ -649,14 +594,16 @@
   opacity: 1;
 }
 
-@media (max-width: 760px) {
-  .mwai-chat .mwai-input button {
-    margin: 15px 0 0 0;
-    height: 40px;
-    width: inherit;
-  }
-  .mwai-chat .mwai-name {
-    margin-right: 0;
-    max-width: inherit;
-  }
+.mwai-copy-button {
+  position: absolute;
+  left: 15px;
+  zoom: 0.5;
+  top: 18px;
+  filter: revert;
+}
+
+.mwai-ai .mwai-copy-button {
+  right: 15px;
+  left: inherit;
+  filter: brightness(0.4);
 }

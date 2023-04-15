@@ -28,25 +28,19 @@ const jsxTextStory =
 const jsxTextPerformance = 
   <TabText>
     <NekoTypo p>
-      ⭐️ The <b>Empty Request Time</b> helps you analyzing the raw performance of your install by giving you the average time it takes to run an empty request to your server. You can try to disable some plugins then start this again to see how it modifies the results. Keep it absolutely under 2,000 ms! That said, I recommend it to keep it below 500ms.
-    </NekoTypo>
-    <NekoTypo p>
-      ⭐️ <b>File Operation Time</b> creates a temporary size of 10MB every time.
-    </NekoTypo>
-    <NekoTypo p>
-      ⭐️ <b>SQL Request Time</b> counts the number of posts. Those two should be very fast, and almost the same as the <b>Empty Request Time</b>.
+      The <b>Empty Request Time</b> measures your installation's basic performance by showing the average time needed to process an empty request on your server. To see how disabling plugins affects the results, turn some off and run the test again. Aim for a time under 2,000 ms, but ideally, keep it below 500 ms. The <b>File Operation Time</b> creates a temporary 10MB file each time it runs. <b>The SQL Request Time</b> calculates the total number of posts. This process should be quick and have a similar duration to the Empty Request Time.
     </NekoTypo>
   </TabText>;
 
 const jsxTextRecommendations = 
   <TabText>
     <NekoTypo p>
-      Keep your WordPress install simple and efficient by using only necessary plugins and a reliable hosting service. Avoid trying to self-host unless you have professional experience. Follow best practices and stay up-to-date with the latest recommendations on the Meow Apps website.
+      Maintain a streamlined WordPress setup by using essential plugins and a dependable hosting provider. Refrain from self-hosting unless you're an expert. Go further by reading our tutorials:
       <ul>
-        <li>💜 <a href="https://meowapps.com/tutorial-improve-seo-wordpress/" target="_blank">SEO Checklist &amp; Optimization</a></li>
-        <li>💜 <a href="https://meowapps.com/tutorial-faster-wordpress-optimize/" target="_blank">Optimize your WordPress Speed</a></li>
-        <li>💜 <a href="https://meowapps.com/tutorial-optimize-images-wordpress/" target="_blank">Optimize Images (CDN, and so on)</a></li>
-        <li>💜 <a href="https://meowapps.com/tutorial-hosting-service-wordpress/" target="_blank">The Best Hosting Services for WordPress</a></li>
+        <li>⭐️ <a href="https://meowapps.com/tutorial-improve-seo-wordpress/" target="_blank">SEO Checklist &amp; Optimization</a></li>
+        <li>⭐️ <a href="https://meowapps.com/tutorial-faster-wordpress-optimize/" target="_blank">Optimize your WordPress Speed</a></li>
+        <li>⭐️ <a href="https://meowapps.com/tutorial-optimize-images-wordpress/" target="_blank">Optimize Images (CDN, and so on)</a></li>
+        <li>⭐️ <a href="https://meowapps.com/tutorial-hosting-service-wordpress/" target="_blank">The Best Hosting Services for WordPress</a></li>
       </ul>
     </NekoTypo>
   </TabText>;
@@ -96,7 +90,7 @@ const Dashboard = () => {
   }
 
   const loadErrorLogs = async () => {
-    setBusy(true);
+    setBusy('isLoadingErrorLogs');
     const res = await nekoFetch(`${CommonApiUrl}/error_logs`, {
       method: 'POST',
       nonce: restNonce
@@ -275,7 +269,8 @@ const Dashboard = () => {
 
             <NekoTab title="PHP Error Logs">
               <TabText>
-                <NekoButton style={{ marginBottom: 10 }} color={'#ccb027'} onClick={loadErrorLogs}>
+                <NekoButton style={{ marginBottom: 10 }} color={'#ccb027'} onClick={loadErrorLogs}
+                  disabled={busy} isBusy={busy === 'isLoadingErrorLogs'}>
                   Load PHP Error Logs
                 </NekoButton>
                 <StyledPhpErrorLogs>
@@ -286,12 +281,9 @@ const Dashboard = () => {
                   </li>)}
                 </StyledPhpErrorLogs>
                 <NekoTypo p>
-                  If nothing appears after loading, it might be that your hosting service does not allow you to access the PHP error logs directly from here. Please contact them directly.
+                  If you don't see any errors, your host might not allow remote access to PHP error logs. Contact them for assistance, or look in your hosting control panel.
                 </NekoTypo>
               </TabText>
-              {/* {jsxPhpErrorLogs}
-              <StyledPhpErrorLogs dangerouslySetInnerHTML={{ __html: phpErrorLogs }} />
-              <StyledPhpInfo dangerouslySetInnerHTML={{ __html: phpInfo }} /> */}
             </NekoTab>
 
             <NekoTab title="Settings">

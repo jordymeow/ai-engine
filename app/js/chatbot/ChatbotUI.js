@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.4.7
+// Previous: 1.4.7
+// Current: 1.4.8
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -10,13 +10,14 @@ import ChatbotReply from '@app/chatbot/ChatbotReply';
 
 const ChatbotUI = (props) => {
   const { system, params, theme, style } = props;
+  const { modCss } = useModClasses(theme);
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const inputRef = useRef();
   const conversationRef = useRef();
   const [ open, setOpen ] = useState(false);
   const [ minimized, setMinimized ] = useState(true);
   const shortcodeStyles = theme?.settings || {};
-  const { modCss } = useModClasses(theme);
+  
   const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext({ system, params, theme, style });
@@ -49,8 +50,17 @@ const ChatbotUI = (props) => {
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (messages.length > 0 && conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [messages]);
+
+  const onSubmitAction = () => {
+    if (inputText.length > 0) {
+      onSubmit(inputText);
+      setInputText('');
+    }
+  };
 
   const baseClasses = modCss('mwai-chat', { 
     'mwai-window': isWindow,
@@ -100,15 +110,16 @@ const ChatbotUI = (props) => {
         <div className={modCss('mwai-input')}>
           <TextAreaAutosize ref={inputRef} disabled={busy} placeholder={textInputPlaceholder}
             value={inputText} maxLength={textInputMaxLength}
-            onKeyUp={event => {
-              if (event.code === 'Enter' && inputText && !event.shiftKey) {
+            onKeyDown={event => {
+              if (event.code === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                onSubmit();
+                event.stopPropagation();
+                onSubmitAction();
               }
             }}
             onChange={e => setInputText(e.target.value)}>
           </TextAreaAutosize>
-          <button disabled={busy} onClick={clearMode ? onClear : onSubmit}>
+          <button disabled={busy} onClick={clearMode ? onClear : onSubmitAction}>
             <span>{clearMode ? textClear : textSend}</span>
             {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
           </button>

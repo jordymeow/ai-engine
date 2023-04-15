@@ -75,6 +75,7 @@ module.exports = function (env, options) {
 		entry: {
 			index: './app/js/index.js',
 		},
+		cache: { type: "filesystem" },
 		optimization: {
 			minimize: isProduction ? true : false,
 			splitChunks: {
@@ -98,8 +99,11 @@ module.exports = function (env, options) {
 		entry: {
 			chatbot: './app/js/chatbot.js'
 		},
-		optimization: {
-			minimize: isProduction ? true : false,
+		cache: { type: "memory" },
+		output: {
+			filename: '[name].js',
+			path: __dirname + '/app/',
+			chunkLoadingGlobal: 'wpJsonMwaiChatbot'
 		}
 	});
 

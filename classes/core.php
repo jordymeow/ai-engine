@@ -25,7 +25,7 @@ class Meow_MWAI_Core
 	public function __construct() {
 		$this->site_url = get_site_url();
 		$this->is_rest = MeowCommon_Helpers::is_rest();
-		$this->is_cli = defined( 'WP_CLI' ) && WP_CLI;
+		$this->is_cli = defined( 'WP_CLI' );
 		$this->ai = new Meow_MWAI_AI( $this );
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
 	}
@@ -180,10 +180,10 @@ class Meow_MWAI_Core
 	function getUserData() {
 		$user = wp_get_current_user();
 		$placeholders = array(
-			'FIRST_NAME' => get_user_meta($user->ID, 'first_name', true),
-			'LAST_NAME' => get_user_meta($user->ID, 'last_name', true),
-			'USER_LOGIN' => $user->data->user_login,
-			'DISPLAY_NAME' => $user->data->display_name,
+			'FIRST_NAME' => get_user_meta( $user->ID, 'first_name', true ),
+			'LAST_NAME' => get_user_meta( $user->ID, 'last_name', true ),
+			'USER_LOGIN' => $user ? $user->data->user_login : null,
+			'DISPLAY_NAME' => $user ? $user->data->display_name : null,
 			'AVATAR_URL' => get_avatar_url( get_current_user_id() ),
 		);
 		return $placeholders;
@@ -356,18 +356,30 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Options
-	function getThemes() {
-		$themes = get_option( $this->themes_option_name, [] );		
-		if ( empty( $themes ) ) {
-			$themes = [ [ 
-				'type' => 'internal',
-				'name' => 'ChatGPT',
-				'themeId' => 'chatgpt',
-				'settings' => [],
-				'style' => ""
-			] ];
+	function getThemes()
+	{
+		$themes = get_option( $this->themes_option_name, [] );
+		$themes = empty( $themes ) ? [] : $themes;
+
+		$internalThemes = [
+			'chatgpt' => [
+				'type' => 'internal', 'name' => 'ChatGPT', 'themeId' => 'chatgpt',
+				'settings' => [], 'style' => ""
+			],
+			'messages' => [
+				'type' => 'internal', 'name' => 'Messages', 'themeId' => 'messages',
+				'settings' => [], 'style' => ""
+			],
+		];
+		$customThemes = [];
+		foreach ( $themes as $theme ) {
+			if ( isset( $internalThemes[$theme['themeId']] ) ) {
+				$internalThemes[$theme['themeId']] = $theme;
+				continue;
+			}
+			$customThemes[] = $theme;
 		}
-		return $themes;
+		return array_merge(array_values($internalThemes), $customThemes);
 	}
 
 	function updateThemes( $themes ) {

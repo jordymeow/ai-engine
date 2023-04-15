@@ -1,7 +1,5 @@
-// Previous: none
-// Current: 1.4.7
-
-import React from 'react';
+// Previous: 1.4.7
+// Current: 1.4.8
 
 const BouncingDots = (props) => {
   const bouncingLoaderStyles = {

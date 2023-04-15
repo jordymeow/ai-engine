@@ -1,7 +1,9 @@
-// Previous: none
-// Current: 1.4.7
+// Previous: 1.4.7
+// Current: 1.4.8
 
-import { useState, useEffect } from 'react';
+// React & Vendor Libs
+const { useState, useEffect } = wp.element;
+
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 
 const ChatbotReply = ({ message, aiName, userName, copyButton, modCss }) => {

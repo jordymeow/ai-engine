@@ -1,11 +1,12 @@
-// Previous: 1.4.0
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.8
 
 // NekoUI
 import { NekoButton, NekoSpacer } from '@neko-ui';
 
 import ChatGPTTheme from './themes/ChatGPTTheme';
 import CustomTheme from './themes/CustomTheme';
+import MessagesTheme from './themes/MessagesTheme';
 
 const Theme = (props) => {
   const { theme, updateTheme, resetTheme } = props;
@@ -22,6 +23,10 @@ const Theme = (props) => {
   return (<>
     {theme.type === 'internal' && theme.themeId === 'chatgpt' && (
       <ChatGPTTheme settings={theme.settings ?? []} onUpdateSettings={onUpdateSettings} />
+    )}
+
+    {theme.type === 'internal' && theme.themeId === 'messages' && (
+      <MessagesTheme settings={theme.settings ?? []} onUpdateSettings={onUpdateSettings} />
     )}
 
     {theme.type !== 'internal' && (

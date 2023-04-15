@@ -1,10 +1,12 @@
-// Previous: 1.4.5
-// Current: 1.4.7
+// Previous: 1.4.7
+// Current: 1.4.8
 
+// React & Vendor Libs
 import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
+// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
@@ -46,7 +48,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 1000); // clear message after 2 seconds
   };
 
   if (!currentChatbot) {
@@ -94,7 +96,7 @@ const Chatbots = (props) => {
     if (currentChatbot && currentChatbot.themeId === 'none') {
       return null;
     }
-    const defaultTheme = themes && themes.find(theme => theme.themeId === 'chatgpt');
+    const defaultTheme = { themeId: currentChatbot?.themeId ?? 'chatgpt' };
     if (themes && currentChatbot) {
       const theme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
       if (!theme) return defaultTheme;
@@ -113,8 +115,8 @@ const Chatbots = (props) => {
     setBusyAction(false);
   }
 
-  const onChangeTab = (index) => {
-    setBotIndex(index);
+  const onChangeTab = (botIndex) => {
+    setBotIndex(botIndex);
   }
 
   const onSwitchTheme = (themeId) => {
@@ -179,7 +181,7 @@ const Chatbots = (props) => {
                 <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
               }
             </>}>
-            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
+            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
               <ChatbotParams options={options} themes={themes}
                 shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
               />
@@ -191,7 +193,10 @@ const Chatbots = (props) => {
         </div>
       </NekoColumn>
       <NekoColumn minimal>
-        <div style={{ position: 'relative', margin: '15px 10px 10px 10px', minHeight: 480, borderRadius: 5,
+        <small style={{ marginLeft: 15, marginBottom: -20 }}>
+          Chabot: <b>{currentChatbot?.name}</b> - Theme: <b>{currentTheme?.name}</b>
+        </small>
+        <div style={{ position: 'relative', margin: '5px 10px 10px 10px', minHeight: 480, borderRadius: 5,
           padding: 10, border: '2px dashed rgb(0 0 0 / 20%)', background: 'rgb(0 0 0 / 5%)' }}>
           {!!currentChatbot && <ChatbotSystem
             system={{
@@ -208,8 +213,8 @@ const Chatbots = (props) => {
             theme={currentTheme}
             style={currentChatbot.window ? { position: 'absolute' } : {}}
           />}
-          </div>
-          <div style={{ marginLeft: 10, fontSize: 11 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
+        </div>
+        <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
       </NekoColumn>
     </NekoWrapper>
   </>);

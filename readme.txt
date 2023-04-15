@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.4.7
+Stable tag: 1.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,11 +69,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.4.8 (2023/04/15) =
+* Add: Messages Theme.
+* Update: Enhanced the theme system extensively.
+* Fix: Many various little fixes.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.4.7 (2023/04/14) =
 * Add: Slowing moving to a system for the Chatbot V2 that can handle animations.
 * Fix: With the Chatbot V2, always the default chatbot was displayed.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.4.6 (2023/04/13) =
 * Add: Friendly message to those who don't have access to GPT-4.

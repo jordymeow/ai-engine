@@ -111,10 +111,10 @@ const StyledPhpErrorLogs = Styled.ul`
   white-space: pre;
   overflow-x: auto;
   width: calc(100vw - 276px);
-  color: black;
+  color: white;
 
   .log-date {
-    color: white;
+    color: var(--neko-yellow);
     margin-left: 8px;
   }
 
@@ -130,12 +130,12 @@ const StyledPhpErrorLogs = Styled.ul`
   }
 
   .log-warning .log-type {
-    background: #ccb028;
+    background: var(--neko-yellow);
     color: white;
   }
 
   .log-fatal .log-type {
-    background: #cc2828;
+    background: var(--neko-red);
     color: white;
   }
 `;

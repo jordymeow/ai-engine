@@ -41,8 +41,16 @@ i18n.COMMON = {
   FONT_SIZE: __( 'Font Size', 'ai-engine' ),
   FONT_COLOR: __( 'Font Color', 'ai-engine' ),
   BACK_PRIMARY_COLOR: __( 'Back Primary Color', 'ai-engine' ),
-  BACK_SECONDARY_COLOR: __( 'Back Secondary Color', 'ai-engine' ),
+  BACK_SECONDARY_COLOR: __( 'Back 2nd Color', 'ai-engine' ),
   HEADER_BUTTONS_COLOR: __( 'Header Buttons Color', 'ai-engine' ),
+  HEADER_BACKGROUND_COLOR: __( 'Header Back Color', 'ai-engine' ),
+
+  BACK_USER_COLOR: __( 'Back User Color', 'ai-engine' ),
+  BACK_AI_COLOR: __( 'Back AI Color', 'ai-engine' ),
+  BACK_AI_SECONDARY_COLOR: __( 'Back AI 2nd Color', 'ai-engine' ),
+
+  AVATAR_MESSAGE_BACKGROUND_COLOR: __( 'Message Background', 'ai-engine' ),
+  AVATAR_MESSAGE_FONT_COLOR: __( 'Message Color', 'ai-engine' ),
   POPUP_ICON: __( 'Popup Icon', 'ai-engine' ),
   CUSTOM_ICON_URL: __( 'Custom Icon URL', 'ai-engine' ),
   FEATURES: __( 'Features', 'ai-engine' ),

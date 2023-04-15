@@ -1,10 +1,10 @@
-// Previous: 1.4.5
-// Current: 1.4.7
+// Previous: 1.4.7
+// Current: 1.4.8
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
-import cssChatGPT from '@root/../themes/chatGPT.module.css';
-import cssIOSDark from '@root/../themes/iOSDark.module.css';
+import cssChatGPT from '@root/../themes/ChatGPT.module.css';
+import cssMessages from '@root/../themes/Messages.module.css';
 
 const useModClasses = (theme) => {
   const modCss = useMemo(() => {
@@ -14,8 +14,9 @@ const useModClasses = (theme) => {
       if (!theme || theme.themeId === 'none' || theme.type === 'css') {
         cssTheme = null;
       }
-      if (theme?.themeId === 'iosdark') {
-        cssTheme = cssIOSDark;
+
+      if (theme?.themeId === 'messages') {
+        cssTheme = cssMessages;
       }
 
       if (!Array.isArray(classNames)) {
@@ -82,7 +83,7 @@ function useChrono() {
   function stopChrono() {
     clearInterval(intervalIdRef.current);
     intervalIdRef.current = null;
-    setTimeElapsed('0:00');
+    setTimeElapsed(null);
   }
 
   function formatTime(seconds) {
@@ -117,6 +118,7 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, mo
     userName = <div className={modCss(['mwai-avatar'])}>
       <img src={userName} />
     </div>;
+    userName = handlePlaceholders(userName, guestName, userData);
   }
   else {
     userName = handlePlaceholders(userName, guestName, userData);
@@ -164,8 +166,4 @@ const processParameters = (params) => {
     icon, iconText, iconAlt, iconPosition,
     aiName, userName, guestName
   };
-};
-
-export { useModClasses, isUrl, randomStr, handlePlaceholders,
-  useChrono, formatUserName, formatAiName, processParameters
 };

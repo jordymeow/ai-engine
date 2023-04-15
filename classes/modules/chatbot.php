@@ -158,6 +158,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$params = $this->core->getChatbot( $this->siteWideChatId );
 		if ( !empty( $params ) ) {
 			$params['window'] = true;
+			$params['id'] = $this->siteWideChatId;
 			echo $this->chat( $params );
 		}
 		return null;

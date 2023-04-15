@@ -1,0 +1,65 @@
+// main: ChatGPT.module.scss, Messages.module.scss
+
+.mwai-copy-button {
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  width: 22px;
+  height: 22px;
+  position: absolute;
+  right: var(--mwai-spacing);
+}
+
+.mwai-copy-button .mwai-copy-button-one {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-top: 0px;
+  margin-left: 0px;
+  background: white;
+  opacity: 0.4;
+  transition: all 0.2s ease-in;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.mwai-copy-button .mwai-copy-button-two {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-top: 6px;
+  margin-left: 6px;
+  background: white;
+  opacity: 0.6;
+  transition: all 0.2s ease-in;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.mwai-copy-button:hover .mwai-copy-button-one {
+  opacity: 0.6;
+  margin-top: 0px;
+  margin-left: 6px;
+}
+
+.mwai-copy-button:hover .mwai-copy-button-two {
+  opacity: 1;
+  margin-top: 6px;
+  margin-left: 0px;
+}
+
+.mwai-copy-button.mwai-animate .mwai-copy-button-one {
+  opacity: 0;
+}
+
+.mwai-copy-button.mwai-animate .mwai-copy-button-two {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  margin-left: 2px;
+  opacity: 1;
+}
+
+.mwai-chat .mwai-reply:hover .mwai-copy-button {
+  display: block;
+  opacity: 1;
+}

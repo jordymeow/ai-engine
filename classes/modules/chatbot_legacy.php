@@ -261,9 +261,9 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 		}
 
 		// Override with the shortcode, and before/after filters
-		$atts = apply_filters( 'mwai_chatbot_params_before', $atts );
+		//$atts = apply_filters( 'mwai_chatbot_params_before', $atts );
 		$atts = shortcode_atts( $defaults, $atts );
-		$atts = apply_filters( 'mwai_chatbot_params', $atts );
+		//$atts = apply_filters( 'mwai_chatbot_params', $atts );
 
 		// UI Parameters
 		$aiName = addslashes( trim( $atts['ai_name'] ) );
