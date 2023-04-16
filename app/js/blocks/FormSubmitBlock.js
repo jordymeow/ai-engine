@@ -1,5 +1,5 @@
-// Previous: 1.3.76
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.5.1
 
 import { useModels } from "../helpers";
 import { options } from '@app/settings';
@@ -16,6 +16,8 @@ const saveFormField = (props) => {
   const { attributes: { id, label, prompt, outputElement, index, model, temperature, maxTokens } } = props;
   const encodedPrompt = encodeURIComponent(prompt);
 
+  console.log({ index });
+
   const shortcodeAttributes = {
     id: { value: id, insertIfNull: true },
     label: { value: label, insertIfNull: true },
@@ -28,8 +30,11 @@ const saveFormField = (props) => {
   };
 
   const shortcode = Object.entries(shortcodeAttributes)
-    .filter(([key, { value, insertIfNull }]) => value !== null || insertIfNull)
+    .filter(([key, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-submit");
+
+  console.log(shortcode);
+
   return `${shortcode}]`;
 };
 
@@ -77,9 +82,9 @@ const FormSubmitBlock = (props) => {
     <>
       <AiBlockContainer title="Submit" type="submit"
         hint={<>
-          IN:{' '} 
+          IN: 
           <span className="mwai-pill">{fieldsCount} field{fieldsCount > 1 ? 's' : ''}</span>
-          {' '}OUT:{' '}
+          OUT: 
           <span className="mwai-pill mwai-pill-purple">{outputElement}</span></>
         }>
         Input Fields: {placeholders.join(', ')}<br />
@@ -88,41 +93,39 @@ const FormSubmitBlock = (props) => {
       </AiBlockContainer>
       <InspectorControls>
         <PanelBody title={i18n.COMMON.OUTPUT}>
-          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={value => setAttributes({ label: value })} />
+          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={(value) => setAttributes({ label: value })} />
           <TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
-            onChange={value => setAttributes({ prompt: value })}
+            onChange={(value) => setAttributes({ prompt: value })}
             help={i18n.FORMS.PROMPT_INFO} />
           <TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
-            onChange={value => setAttributes({ outputElement: value })}
+            onChange={(value) => setAttributes({ outputElement: value })}
             help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
-          {models && models.length > 0 && 
+          {models && models.length > 0 &&
             <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-              onChange={value => setAttributes({ model: value })}
-          />}
+              onChange={(value) => setAttributes({ model: value })} />}
           <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={value => setAttributes({ temperature: value })}
+            onChange={(value) => setAttributes({ temperature: value })}
             type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={value => setAttributes({ maxTokens: value })}
+            onChange={(value) => setAttributes({ maxTokens: value })}
             type="number" step="16" min="32" max="4096"
             help={i18n.HELP.MAX_TOKENS} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
-          {indexes && indexes.length > 0 && 
+          {indexes && indexes.length > 0 &&
             <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
-              onChange={value => setAttributes({ index: value })}
-          />}
+              onChange={(value) => setAttributes({ index: value })} />}
         </PanelBody>
         <PanelBody title={i18n.COMMON.SYSTEM}>
-          <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
+          <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
         </PanelBody>
       </InspectorControls>
     </>
   );
-}
+};
 
 const createSubmitBlock = () => {
   registerBlockType('ai-engine/form-submit', {
@@ -130,7 +133,7 @@ const createSubmitBlock = () => {
     description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
-    keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
+    keywords: [__( 'ai' ), __( 'openai' ), __( 'form' )],
     attributes: {
       id: {
         type: 'string',
@@ -168,6 +171,6 @@ const createSubmitBlock = () => {
     edit: FormSubmitBlock,
     save: saveFormField
   });
-}
+};
 
 export default createSubmitBlock;

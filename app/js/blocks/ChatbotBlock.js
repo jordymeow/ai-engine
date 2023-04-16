@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.5.1
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -22,7 +22,7 @@ const saveChatbot = (props) => {
 
 	// Create the shortcode
   const shortcode = Object.entries(shortcodeAttributes)
-    .filter(([key, { value, insertIfNull }]) => value !== null || insertIfNull)
+    .filter(([key, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai_chatbot_v2");
   return `${shortcode}]`;
 };
