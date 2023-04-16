@@ -1,5 +1,5 @@
-// Previous: 1.3.93
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.9
 
 const { render } = wp.element;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -25,15 +25,17 @@ import PostsListTools from './modules/PostsListTools';
 import ContentGenerator from './screens/ContentGenerator';
 import ImageGenerator from './screens/ImageGenerator';
 import BlockFeatures from './modules/BlockFeatures';
+import BlockCopilot from './modules/BlockCopilot';
 
 // Gutenberg Blocks
 import initBlocks from './blocks/index';
 import WooCommerceAssistant from './modules/WooCommerce';
+
 initBlocks();
+BlockFeatures();
+BlockCopilot();
 
 document.addEventListener('DOMContentLoaded', function() {
-
-	BlockFeatures();
 
 	// Settings
 	const settings = document.getElementById('mwai-admin-settings');

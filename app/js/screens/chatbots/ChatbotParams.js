@@ -1,6 +1,9 @@
-// Previous: 1.4.6
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.4.9
 
+// React & Vendor Libs
+
+// NekoUI
 import { NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoColumn, NekoTextArea, NekoButton } from '@neko-ui';
 
@@ -19,15 +22,15 @@ const ChatbotParams = (props) => {
 
   const pinecone = options?.pinecone || {};
   const shortcodeChatInject = options?.shortcode_chat_inject;
-  const isChat = (shortcodeParams?.mode ?? 'chat') === 'chat';
-  const isImagesChat = shortcodeParams?.mode === 'images';
-  const indexes = pinecone.indexes || [];
+  const isChat = (shortcodeParams?.mode === 'chat') ?? true;
+  const isImagesChat = shortcodeParams?.mode === 'images' ?? false;
+  const indexes = pinecone?.indexes || [];
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.contentAware;
   const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
-  const chatIcon = shortcodeParams?.icon ?? 'chat-color-green.svg';
-  const isCustomURL = chatIcon.startsWith('https://') || chatIcon.startsWith('http://');
+  const chatIcon = shortcodeParams?.icon ? shortcodeParams?.icon : 'chat-color-green.svg';
+  const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
 
   return (<>
@@ -74,7 +77,7 @@ const ChatbotParams = (props) => {
 
             <div className="mwai-builder-row">
               <div className="mwai-builder-col"
-                style={{ height: (shortcodeParams?.mode ?? 'chat') === 'chat' ? 76 : 'inherit' }}>
+                style={{ height: (shortcodeParams?.mode === 'chat') ? 76 : 'inherit' }}>
                 <label>{i18n.COMMON.MODE}:</label>
                 <NekoSelect scrolldown id="mode" name="mode"
                   value={shortcodeParams?.mode}
@@ -147,18 +150,16 @@ const ChatbotParams = (props) => {
               <div className="mwai-builder-col" style={{ flex: 1.5 }}>
                 <label>{i18n.COMMON.SEND}:</label>
                 <NekoInput name="textSend" value={shortcodeParams.textSend}
-                
-                onBlur={updateShortcodeParams}
-                onEnter={updateShortcodeParams}
-              />
+                  onBlur={updateShortcodeParams}
+                  onEnter={updateShortcodeParams}
+                />
               </div>
               <div className="mwai-builder-col" style={{ flex: 1.5 }}>
                 <label>{i18n.COMMON.CLEAR}:</label>
                 <NekoInput name="textClear" value={shortcodeParams.textClear}
-                
-                onBlur={updateShortcodeParams}
-                onEnter={updateShortcodeParams}
-              />
+                  onBlur={updateShortcodeParams}
+                  onEnter={updateShortcodeParams}
+                />
               </div>
             </div>
 
@@ -327,7 +328,7 @@ const ChatbotParams = (props) => {
                 <label>{i18n.COMMON.EMBEDDINGS_INDEX}:</label>
                 <NekoSelect scrolldown name="embeddingsIndex"
                   requirePro={true} isPro={isRegistered}
-                  disabled={!indexes.length || currentModel?.mode !== 'chat'}
+                  disabled={!indexes?.length || currentModel?.mode !== 'chat'}
                   value={shortcodeParams.embeddingsIndex} onChange={updateShortcodeParams}>
                   {indexes.map((x) => (
                     <NekoOption value={x.name} label={x.name}></NekoOption>

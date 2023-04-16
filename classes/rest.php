@@ -52,6 +52,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'update_post_excerpt' ),
 			) );
+			register_rest_route( $this->namespace, '/copilot', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'copilot' ),
+			) );
 			register_rest_route( $this->namespace, '/create_post', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
@@ -285,9 +290,15 @@ class Meow_MWAI_Rest
 			else if ( $action === 'enhanceText' ) {
 				$query->setPrompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.\n\n" . $text );
 			}
+			else if ( $action === 'longerText' ) {
+				$query->setPrompt( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.\n\n" . $text );
+			}
+			else if ( $action === 'shorterText' ) {
+				$query->setPrompt( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.\n\n" . $text );
+			}
 			else if ( $action === 'suggestSynonyms' ) {
 				$mode = 'suggest';
-				$query->setPrompt( "Suggest a synonym or an alternative wording for the given word or sentence, maintaining the original language and preserving the initial and final punctuation. Provide only the resulting word or expression, without any extra information.\n\n" . $selectedText );
+				$query->setPrompt( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.\n\n" . $selectedText );
 				$query->setTemperature( 1 );
 				$query->setMaxResults( 5 );
 			}
@@ -344,6 +355,24 @@ class Meow_MWAI_Rest
 			$query->setEnv( 'admin-tools' );
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function copilot( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$action = sanitize_text_field( $params['action'] );
+			$prompt = sanitize_text_field( $params['prompt'] );
+			if ( empty( $action ) || empty( $prompt ) ) {
+				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
+			}
+			$query = new Meow_MWAI_QueryText( $prompt, 2048 );
+			$query->setEnv( 'admin-tools' );
+			$answer = $this->core->ai->run( $query );
+			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

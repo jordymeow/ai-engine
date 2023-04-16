@@ -1,7 +1,7 @@
-// Previous: 1.3.69
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.9
 
-import i18n from "../../i18n";
+import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
@@ -18,6 +18,7 @@ const saveFormField = (props) => {
 	const { attributes: { id, label, type, name, options = [],
 		placeholder, rows, defaultValue, maxlength } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
+	// Build shortcode
 	let shortcode = '[mwai-form-field';
 	if (id) {
 		shortcode += ` id="${id}"`;
@@ -31,7 +32,7 @@ const saveFormField = (props) => {
 	if (name) {
 		shortcode += ` name="${name}"`;
 	}
-	if (encodedOptions) {
+	if (encodedOptions && options.length > 0) {
 		shortcode += ` options="${encodedOptions}"`;
 	}
 	if (placeholder) {
@@ -68,17 +69,11 @@ const FormFieldBlock = (props) => {
 			setAttributes({ name: newName });
 		}
 	}
-	
-	const handleOptionsChange = (index, field, value) => {
-		const newOptions = [...options];
-		newOptions[index][field] = value;
-		setAttributes({ options: newOptions });
-	};
 
 	return (
 		<>
 		<AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
-			hint={<span className="mwai-pill">{name}</span>}>
+			hint={<span className="mwai-pill">{'{'}{name}{'}'}</span>}>
 			<div>
 				{label}
 			</div>
@@ -100,7 +95,7 @@ const FormFieldBlock = (props) => {
 						{ label: 'Text Area', value: 'textarea' },
 					]}
 				/>
-			{(type === 'input' || type === 'textarea') &&
+				{(type === 'input' || type === 'textarea') &&
 					<TextControl label="Placeholder" value={placeholder}
 						onChange={value => setAttributes({ placeholder: value })} />
 				}
@@ -114,12 +109,7 @@ const FormFieldBlock = (props) => {
 				}
 				{(type === 'textarea') &&
 					<TextControl label={i18n.COMMON.ROWS} value={rows}
-						onChange={value => {
-							const num = parseInt(value);
-							if (!isNaN(num)) {
-								setAttributes({ rows: num });
-							}
-						}}
+						onChange={value => setAttributes({ rows: value })}
 						type="number" step="1" min="1" max="100" />
 				}
 			</PanelBody>
@@ -135,13 +125,23 @@ const FormFieldBlock = (props) => {
 							label="Label"
 							isInline={true}
 							value={option.label}
-							onChange={value => handleOptionsChange(index, 'label', value)} />
+							onChange={value => {
+								const newOptions = [...options];
+								newOptions[index].label = value;
+								setAttributes({ options: newOptions });
+							}
+						} />
 						</div>
 						<TextControl style={{  }}
 							label="Value"
 							isSubtle={true}
 							value={option.value}
-							onChange={value => handleOptionsChange(index, 'value', value)} />
+							onChange={value => {
+								const newOptions = [...options];
+								newOptions[index].value = value;
+								setAttributes({ options: newOptions });
+							}
+						} />
 						<div style={{ marginLeft: 5, position: 'relative', top: 23 }}>
 							<Button style={{ height: 30 }} isDestructive
 								icon="trash" isSmall onClick={() => {
@@ -150,8 +150,10 @@ const FormFieldBlock = (props) => {
 								setAttributes({ options: newOptions });
 							}} />
 						</div>
-						</div>						
+						</div>
+						
 				})}
+
 				<Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={() => {
 					const newOptions = [...options];
 					newOptions.push({ label: '', value: '' });

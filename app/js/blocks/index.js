@@ -1,5 +1,5 @@
-// Previous: 0.6.9
-// Current: 0.7.5
+// Previous: 0.7.5
+// Current: 1.4.9
 
 import createChatbotBlock from './ChatbotBlock';
 import createContainerBlock from './FormContainerBlock';
@@ -11,11 +11,15 @@ import createSubmitBlock from './FormSubmitBlock';
 // https://wordpress.github.io/gutenberg
 
 const initBlocks = () => {
+
+  // AI Forms
   createFormFieldBlock();
   createOutputBlock();
-  createChatbotBlock();
   createSubmitBlock();
   createContainerBlock();
+
+  // Chatbot
+  createChatbotBlock();
 }
 
 export default initBlocks;

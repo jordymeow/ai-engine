@@ -1,7 +1,7 @@
-// Previous: 1.0.5
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.9
 
-import i18n from "../../i18n";
+import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;

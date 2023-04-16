@@ -123,6 +123,7 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 			}
 
+			// Query the AI
 			$answer = $this->core->ai->run( $query );
 			$rawText = $answer->result;
 			$extra = [];

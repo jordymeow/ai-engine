@@ -1,35 +1,59 @@
-// Previous: 0.9.92
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.9
 
-import i18n from "../../i18n";
-import { meowIcon } from "./common";
+import i18n from '@root/i18n';
+import { AiBlockContainer, meowIcon } from "./common";
+import { chatbots } from '@app/settings';
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo } = wp.element;
-const { PanelBody } = wp.components;
+const { PanelBody, TextControl, TextareaControl, SelectControl, UnitControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 const saveChatbot = (props) => {
-	const { } = props;
-	console.log(props);
-	return (
-		<>[mwai_chatbot]</>
-	);
-}
+	// Prepare attributes
+  const { attributes: { chatbotId } } = props;
 
-const FormFieldBlock = props => {
-	const {  } = props;
-	
-	const html = useMemo(() => {
-		return saveChatbot(props);
-	}, [props]);
+	// Shortcode attributes
+  const shortcodeAttributes = {
+    id: { value: chatbotId, insertIfNull: true },
+  };
+
+	// Create the shortcode
+  const shortcode = Object.entries(shortcodeAttributes)
+    .filter(([key, { value, insertIfNull }]) => value !== null || insertIfNull)
+    .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai_chatbot_v2");
+  return `${shortcode}]`;
+};
+
+const ChatbotBlock = props => {
+	const { attributes: { chatbotId }, setAttributes } = props;
+
+	const chatbotsOptions = useMemo(() => {
+		let freshChatbots = chatbots.map(chatbot => ({ label: chatbot.name, value: chatbot.chatId }));
+		freshChatbots.unshift({ label: 'None', value: null });
+		return freshChatbots;
+	}, [chatbots]);
+
+	const currentChatbot = useMemo(() => {
+		return chatbots.find(chatbot => chatbot.chatId === chatbotId);
+	}, [chatbotId]);
+
+	const title = useMemo(() => {
+		return currentChatbot ? `Chatbot (${currentChatbot.name})` : 'Chatbot';
+	}, [ chatbotId ]);
 
 	return (
 		<>
-		{html}
+		<AiBlockContainer title={title} type="chatbot">
+		</AiBlockContainer>
 		<InspectorControls>
 			<PanelBody title={i18n.COMMON.CHATBOT}>
+				{chatbotsOptions && chatbotsOptions.length > 0 && 
+					<SelectControl label={i18n.COMMON.CHATBOT} value={chatbotId} options={chatbotsOptions}
+						onChange={value => setAttributes({ chatbotId: value })}
+				/>}
 			</PanelBody>
 			<PanelBody title={i18n.COMMON.SETTINGS}>
 			</PanelBody>
@@ -49,9 +73,13 @@ const createChatbotBlock = () => {
 			id: {
 				type: 'string',
 				default: ''
+			},
+			chatbotId: {
+				type: 'string',
+				default: 'default'
 			}
 		},
-		edit: FormFieldBlock,
+		edit: ChatbotBlock,
 		save: saveChatbot
 	});
 }

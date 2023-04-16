@@ -1,5 +1,5 @@
-// Previous: 1.3.93
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.4.9
 
 const { useState } = wp.element;
 const { __ } = wp.i18n;
@@ -11,9 +11,11 @@ const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoWrapper, NekoUI } from '@neko-ui';
 
+// UI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
@@ -32,12 +34,12 @@ function BlockAIWand({ isActive, onChange, value }) {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const selectedBlockInternal = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = selectedBlockInternal.attributes.content;
+    const selectedBlockData = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = selectedBlockData.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlockInternal.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlockData.clientId, { content: updatedContent });
   }
 
   const onClick = (text) => {
@@ -98,8 +100,22 @@ function BlockAIWand({ isActive, onChange, value }) {
                   <small>Readibility & Quality</small>
                 </div>
               </MenuItem>
+
+              <MenuItem onClick={() => doAction('longerText')}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <b>Longer Text</b>
+                  <small>Readibility</small>
+                </div>
+              </MenuItem>
+              <MenuItem onClick={() => doAction('shorterText')}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <b>Shorter Text</b>
+                  <small>Readibility</small>
+                </div>
+              </MenuItem>
+
               <MenuItem onClick={() => doAction('translateText')}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <b>Translate Text</b>
                   <small>To Post Language</small>
                 </div>
@@ -107,7 +123,10 @@ function BlockAIWand({ isActive, onChange, value }) {
             </MenuGroup>
             <MenuGroup>
               <MenuItem disabled={!selectedText} onClick={() => doAction('suggestSynonyms')}>
-                Suggest Synonyms
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <b>Suggest Synonyms</b>
+                  <small>For Selected Words</small>
+                </div>
               </MenuItem>
             </MenuGroup>
           </>)}
@@ -115,7 +134,7 @@ function BlockAIWand({ isActive, onChange, value }) {
       </ToolbarGroup>
     </BlockControls>
     <MagicWandModal
-        isOpen={results.length}
+        isOpen={results && results.length > 0}
         results={results}
         onClick={onClick}
         onClose={() => setResults([])}
@@ -132,13 +151,13 @@ const MWAI_Block_AI_Actions = () => (
       <PluginBlockSettingsMenuItem
         allowedBlocks={['core/paragraph']}
         icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-        label={<>{__('Enhance text')}</>}
+        label={<> {__('Enhance text')}</>}
         onClick={doOnClick}
       />
       <PluginBlockSettingsMenuItem
         allowedBlocks={['core/paragraph']}
         icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-        label={<>{__('Translate text')}</>}
+        label={<> {__('Translate text')}</>}
         onClick={doOnClick}
       />
   </>
@@ -188,8 +207,8 @@ const MWAI_DocumentSettings = () => {
 
         <NekoUI>
           <NekoWrapper>
-            <GenerateTitlesModal post={postForTitle} onTitleClick={onTitleClick} onClose={setPostForTitle} />
-            <GenerateExcerptsModal post={postForExcerpt} onExcerptClick={onExcerptClick} onClose={setPostForExcerpt} />
+            <GenerateTitlesModal post={postForTitle} onTitleClick={onTitleClick} onClose={() => setPostForTitle(null)} />
+            <GenerateExcerptsModal post={postForExcerpt} onExcerptClick={onExcerptClick} onClose={() => setPostForExcerpt(null)} />
           </NekoWrapper>
         </NekoUI>
       </PluginDocumentSettingPanel>
@@ -201,9 +220,6 @@ const MWAI_DocumentSettings = () => {
 const BlockFeatures = () => {
   registerPlugin('ai-engine-document-settings', {
     render: MWAI_DocumentSettings
-  });
-  registerPlugin('ai-engine-ai-wand', {
-    render: MWAI_Block_AI_Actions
   });
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',

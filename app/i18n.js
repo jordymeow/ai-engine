@@ -44,11 +44,9 @@ i18n.COMMON = {
   BACK_SECONDARY_COLOR: __( 'Back 2nd Color', 'ai-engine' ),
   HEADER_BUTTONS_COLOR: __( 'Header Buttons Color', 'ai-engine' ),
   HEADER_BACKGROUND_COLOR: __( 'Header Back Color', 'ai-engine' ),
-
   BACK_USER_COLOR: __( 'Back User Color', 'ai-engine' ),
   BACK_AI_COLOR: __( 'Back AI Color', 'ai-engine' ),
   BACK_AI_SECONDARY_COLOR: __( 'Back AI 2nd Color', 'ai-engine' ),
-
   AVATAR_MESSAGE_BACKGROUND_COLOR: __( 'Message Background', 'ai-engine' ),
   AVATAR_MESSAGE_FONT_COLOR: __( 'Message Color', 'ai-engine' ),
   POPUP_ICON: __( 'Popup Icon', 'ai-engine' ),
@@ -98,6 +96,7 @@ i18n.COMMON = {
   EXCERPT: __( 'Excerpt', 'ai-engine' ),
   GENERATE: __( 'Generate', 'ai-engine' ),
   MODEL_PARAMS: __( 'Model Params', 'ai-engine' ),
+  CONTEXT_PARAMS: __( 'Context Params', 'ai-engine' ),
   PROMPT: __( 'Prompt', 'ai-engine' ),
   PROMPTS: __( 'Prompts', 'ai-engine' ),
   LABEL: __( 'Label', 'ai-engine' ),
