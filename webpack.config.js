@@ -12,7 +12,7 @@ module.exports = function (env, options) {
 	const cleanPlugin = new CleanWebpackPlugin({
 		protectWebpackAssets: false,
 		cleanOnceBeforeBuildPatterns: ["!app/"],
-		cleanAfterEveryBuildPatterns: ['!app', '!chatbot.js', '*.LICENSE.txt', '*.map'],
+		cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js', '*.LICENSE.txt', '*.map'],
 	});
 	
 	const plugins = [];

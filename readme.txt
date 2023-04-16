@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.4.9
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,7 +74,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.4.9 (2023/04/16) =
+= 1.5.0 (2023/04/16) =
 * Add: Gutenberg Block for Chatbot.
 * Add: Embeddings in Forms.
 * Update: Enhance the AI Copilot and Blocks Tooks.
