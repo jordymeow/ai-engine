@@ -18,6 +18,7 @@ i18n.COMMON = {
   MODEL: __( 'Model', 'ai-engine' ),
   TEMPERATURE: __( 'Temperature', 'ai-engine' ),
   MAX_TOKENS: __( 'Max Tokens', 'ai-engine' ),
+  CONTEXT_MAX_TOKENS: __( 'Context Max Tokens', 'ai-engine' ),
   STOP_SEQUENCE: __( 'Stop Sequence', 'ai-engine' ),
   MODE: __( 'Mode', 'ai-engine' ),
   CONTEXT: __( 'Context', 'ai-engine' ),
@@ -155,7 +156,8 @@ i18n.COMMON = {
   OPENAI_SERVICE: __( 'Service', 'ai-engine' ),
   OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
   OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
-  OPENAI_AZURE_DEPLOYMENT: __( 'Deploy Name', 'ai-engine' ),
+  OPENAI_AZURE_DEPLOYMENT_NAME: __( 'Deployment Name', 'ai-engine' ),
+  OPENAI_AZURE_DEPLOYMENTS: __( 'Deployments', 'ai-engine' ),
   THEME: __( 'Theme', 'ai-engine' ),
   THEMES: __( 'Themes', 'ai-engine' ),
   BANNED_WORDS: __( 'Banned Words', 'ai-engine' ),
@@ -185,10 +187,11 @@ i18n.HELP = {
   FINETUNES: __( 'Train your own AI models.', 'ai-engine' ),
   DISCUSSIONS: __( 'Keep the conversations and enable browsing them via the Conversations tab.', 'ai-engine' ),
   OPENAI_SERVICE: __( 'Open AI can be used through Open AI directly, but also through Azure.', 'ai-engine' ),
-  OPENAI_AZURE_DEPLOYMENT: __( 'The name of the deployment you created for the model. It will be used by default.', 'ai-engine' ),
+  AZURE_DEPLOYMENTS: __( 'Add your deployments below and define what kind of model they are.', 'ai-engine' ),
   BANNED_WORDS: __( 'Reject queries containing these words; separate with commas.', 'ai-engine' ),
   BANNED_IPS: __( 'Block access from specified IP addresses or ranges using CIDR notation; separate with commas.', 'ai-engine' ),
   POST_TYPES: __( 'Enable for these post types; separate with commas.', 'ai-engine' ),
+  CONTEXT_MAX_TOKENS: __( 'Automatically truncate the content (Content-Aware, Embeddings, etc) to make sure it does not reach this maximum number of tokens.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

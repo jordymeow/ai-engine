@@ -95,8 +95,9 @@ class Meow_MWAI_Core
   }
 
   // Make sure there are no duplicate sentences, and keep the length under a maximum length.
-  function cleanSentences( $text, $maxTokens = 512 ) {
+  function cleanSentences( $text, $maxTokens = null ) {
     //$sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
+		$maxTokens = $maxTokens ? $maxTokens : $this->get_option( 'context_max_tokens', 1024 );
 		$sentences = preg_split('/(?<=[.?!。．！？])+/u', $text);
     $hashes = array();
     $uniqueSentences = array();
@@ -406,6 +407,10 @@ class Meow_MWAI_Core
 		$chatbots = $this->getChatbots();
 		foreach ( $chatbots as $chatbot ) {
 			if ( $chatbot['chatId'] === $chatId ) {
+				// Somehow, the default was set to "openai" when creating a new chatbot, but that overrided
+				// the default value in the Settings. It should be always empty here (except if we add this
+				// into the Settings of the chatbot).
+				$chatbot['service'] = null;
 				return $chatbot;
 			}
 		}

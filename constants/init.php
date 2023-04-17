@@ -150,9 +150,12 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_styles' => [],
 	'limits' => MWAI_LIMITS,
 	'openai_apikey' => false,
-	'openai_service' => 'openai',
+	'openai_service' => '', // 'openai', 'azure' (if not set here, it will use the Settings)
 	'openai_usage' => [],
 	'openai_models' => MWAI_OPENAI_MODELS,
+	'openai_azure_endpoint' => '',
+	'openai_azure_apikey' => '',
+	'openai_azure_deployments' => [],
 	'openai_finetunes' => [], // Used by AI Engine
 	'openai_finetunes_all' => [], // All finetunes listed by OpenAI
 	'openai_finetunes_deleted' => [], // The finetunes that have been deleted
@@ -176,6 +179,7 @@ define( 'MWAI_OPTIONS', [
 	'debug_mode' => true,
 	'resolve_shortcodes' => false,
 	'dynamic_max_tokens' => true,
+	'context_max_tokens' => 1024,
 	'banned_words' => [],
 	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES

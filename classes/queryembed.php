@@ -14,6 +14,7 @@ class Meow_MWAI_QueryEmbed extends Meow_MWAI_Query {
 			$this->session = $promptOrQuery->session;
 			$this->env = $promptOrQuery->env;
 			$this->apiKey = $promptOrQuery->apiKey;
+			$this->service = $promptOrQuery->service;
 		}
 		else {
 			parent::__construct( $promptOrQuery ? $promptOrQuery : '' );
@@ -34,6 +35,15 @@ class Meow_MWAI_QueryEmbed extends Meow_MWAI_Query {
 		}
 		if ( isset( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
+		}
+		if ( isset( $params['service'] ) ) {
+			$this->setService( $params['service'] );
+		}
+    if ( isset( $params['api_key'] ) ) {
+			$this->setApiKey( $params['apiKey'] );
+		}
+    if ( isset( $params['apiKey'] ) ) {
+			$this->setApiKey( $params['apiKey'] );
 		}
   }
 }

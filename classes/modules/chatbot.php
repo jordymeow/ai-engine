@@ -8,7 +8,6 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'aiName', 'userName', 'guestName', 'textS
 class Meow_MWAI_Modules_Chatbot {
 	private $core = null;
 	private $namespace = 'mwai-bot/v1';
-	private $isEnqueued = false;
 	private $siteWideChatId = null;
 
 	public function __construct() {
@@ -17,23 +16,13 @@ class Meow_MWAI_Modules_Chatbot {
 		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'chatId' );
-		if ( !empty( $this->siteWideChatId ) && $this->siteWideChatId !== 'none' ) {
-			$this->registerChatbotScripts();
-			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
-		}
-	}
-
-	public function registerChatbotScripts() {
-		if ( $this->isEnqueued ) { 
-			return;
-		}
-		$this->isEnqueued = true;
-		// $physical_file = MWAI_PATH . '/app/chatbot-vendor.js';
-		// $cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-		// wp_register_script( 'mwai_chatbot_vendor', MWAI_URL . '/app/chatbot-vendor.js', [ 'wp-element' ], $cache_buster, false );
 		$physical_file = MWAI_PATH . '/app/chatbot.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-		wp_enqueue_script( 'mwai_chatbot', MWAI_URL . '/app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
+		wp_register_script( 'mwai_chatbot', MWAI_URL . '/app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
+		if ( !empty( $this->siteWideChatId ) && $this->siteWideChatId !== 'none' ) {
+			wp_enqueue_script( "mwai_chatbot" );
+			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+		}
 	}
 
 	public function rest_api_init() {
@@ -119,7 +108,8 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
 				$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
 				if ( !empty( $context ) ) {
-					$query->injectContext( $context['content'] );
+					$content = $this->core->cleanSentences( $context['content'] );
+					$query->injectContext( $content );
 				}
 			}
 
@@ -176,6 +166,7 @@ class Meow_MWAI_Modules_Chatbot {
 		if ( !$chatbot ) {
 			return "Chatbot not found.";
 		}
+		unset( $atts['id'] );
 		
 		$frontParams = [];
 		foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {
@@ -203,9 +194,10 @@ class Meow_MWAI_Modules_Chatbot {
 		$jsonFrontParams = htmlspecialchars(json_encode($frontParams), ENT_QUOTES, 'UTF-8');
 		$jsonFrontSystem = htmlspecialchars(json_encode($frontSystem), ENT_QUOTES, 'UTF-8');
 		$jsonFrontTheme = htmlspecialchars(json_encode($theme), ENT_QUOTES, 'UTF-8');
+		$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
 
-		$this->registerChatbotScripts();
-		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
+		wp_enqueue_script( "mwai_chatbot" );
+		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}' data-atts='{$jsonAttributes}'></div>";
 	}
 	
 }

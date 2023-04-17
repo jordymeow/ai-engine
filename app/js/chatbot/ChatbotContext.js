@@ -1,10 +1,8 @@
-// Previous: none
-// Current: 1.4.7
+// Previous: 1.4.7
+// Current: 1.5.2
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
-// AI Engine
 import { useModClasses, isUrl, randomStr, handlePlaceholders, useChrono } from '@app/chatbot/helpers';
 
 const rawAiName = 'AI: ';
@@ -20,18 +18,17 @@ export const useChatbotContext = () => {
 };
 
 export const ChatbotContextProvider = ({ children, ...rest }) => {
-  const { params, system } = rest;
+  const { params, system, atts } = rest;
   const [ messages, setMessages ] = useState([]);
   const [ clientId, setClientId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  // System Parameters
   const chatId = params.chatId || system.chatId || params.id || system.id;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
+  const contextId = system.contextId; 
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -39,12 +36,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const typewriter = system?.typewriter ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  const saveMessages = useCallback(messages => {
+  const saveMessages = useCallback((messagesToSave) => {
     localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
       clientId: clientId,
-      messages: messages
+      messages: messagesToSave
     }));
-  }, [clientId, messages]);
+  }, [clientId, chatId]);
 
   const resetMessages = () => {
     if (startSentence) {
@@ -64,11 +61,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    var chatHistory = [];
-    chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
-    if (chatHistory) {
-      chatHistory = JSON.parse(chatHistory);
-      setMessages(chatHistory.messages);
+    let chatHistoryStr = localStorage.getItem(`mwai-chat-${chatId}`);
+    if (chatHistoryStr) {
+      let chatHistory = JSON.parse(chatHistoryStr);
+      setMessages(chatHistory.messages || []);
       return;
     }
     resetMessages();
@@ -84,19 +80,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setBusy(false);
     let freshMessages = [...messages];
+
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
     
-    if (!lastMessage) return;
-
-    // Failure
     if (!serverRes.success) {
-      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      // Remove the user message.
-      let userMsgIndex = freshMessages.findIndex(msg => msg.role === 'user');
-      if (userMsgIndex !== -1) {
-        freshMessages.splice(userMsgIndex, 1);
+      if (lastMessage && lastMessage.role === 'user') {
+        freshMessages.pop();
       }
       freshMessages.push({
         id: randomStr(),
@@ -111,11 +103,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    // Success
     let html = serverRes.images ? serverRes.images : serverRes.html;
-    if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = serverRes.answer;
-      // Deliberately not updating html to simulate bug.
+      lastMessage.html = html;
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
     } else {
@@ -168,6 +159,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       contextId: contextId,
       messages: messages,
       newMessage: inputText,
+      ...atts
     };
     try {
       if (debugMode) { console.log('[BOT] Sent: ', body); }

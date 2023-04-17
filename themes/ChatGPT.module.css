@@ -113,6 +113,10 @@
   opacity: 1;
 }
 
+.mwai-chat .mwai-user {
+  background: var(--mwai-backgroundSecondaryColor);
+}
+
 .mwai-chat .mwai-ai, .mwai-chat .mwai-system {
   background: var(--mwai-backgroundPrimaryColor);
 }

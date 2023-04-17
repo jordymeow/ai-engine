@@ -1,5 +1,5 @@
-// Previous: 1.4.7
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.5.2
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -36,7 +36,7 @@ const useModClasses = (theme) => {
           return `${className} ${cssTheme[className]}`;
         }
         else {
-          console.warn(`The class name "${className}" is not defined in the CSS theme.`);
+          console.warn(`The class name "${className}" is not defined in the "${theme?.themeId ?? "N/A"}" theme.`);
           return className;
         }
       }).join(' ');
@@ -118,7 +118,6 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, mo
     userName = <div className={modCss(['mwai-avatar'])}>
       <img src={userName} />
     </div>;
-    userName = handlePlaceholders(userName, guestName, userData);
   }
   else {
     userName = handlePlaceholders(userName, guestName, userData);

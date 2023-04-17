@@ -1,5 +1,5 @@
-// Previous: 1.4.7
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.5.2
 
 // React & Vendor Libs
 const { useState, useEffect } = wp.element;
@@ -7,12 +7,11 @@ const { useState, useEffect } = wp.element;
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 
 const ChatbotReply = ({ message, aiName, userName, copyButton, modCss }) => {
-  const [ showQuerying, setShowQuerying ] = useState(message.isQuerying);
   const [ fadeOut, setFadeOut ] = useState(false);
+  const [ copyAnimation, setCopyAnimation ] = useState(false);
 
   useEffect(() => {
     if (fadeOut && !message.isQuerying) {
-      //setShowQuerying(false);
       setTimeout(() => {
         setFadeOut(false);
       }, 100);
@@ -24,6 +23,19 @@ const ChatbotReply = ({ message, aiName, userName, copyButton, modCss }) => {
     'mwai-user': message.role === 'user',
     'mwai-fade-out': fadeOut,
   });
+
+  const onCopy = () => {
+    try {
+      navigator.clipboard.writeText(message.content);
+      setCopyAnimation(true);
+      setTimeout(function () {
+        setCopyAnimation(false);
+      }, 1000);
+    }
+    catch (err) {
+      console.warn('Not allowed to copy to clipboard. Make sure your website uses HTTPS.');
+    }
+  }
 
   return (
     <div className={classes}>
@@ -39,7 +51,7 @@ const ChatbotReply = ({ message, aiName, userName, copyButton, modCss }) => {
           />}
         </>
         {copyButton && (
-          <div className={modCss('mwai-copy-button')}>
+          <div className={modCss('mwai-copy-button', { 'mwai-animate': copyAnimation })} onClick={onCopy}>
             <div className={modCss('mwai-copy-button-one')}></div>
             <div className={modCss('mwai-copy-button-two')}></div>
           </div>

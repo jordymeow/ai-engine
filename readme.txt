@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,13 +74,19 @@ Languages: English.
 
 == Changelog ==
 
+= 1.5.2 (2023/04/17) =
+* Fix: The Chatbot V2 wasn't getting initialized with some themes.
+* Add: Context Max Tokens allows truncating the context dynamically (for content-aware, embeddings, etc).
+* Add: Better support for Azure (can link instances with models), and a big refactoring or the querying system.
+* Fix: The copy button for the new chatbot was not implemented.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.5.1 (2023/04/16) =
 * Add: Gutenberg Block for Chatbot.
 * Add: Embeddings in Forms.
 * Update: Enhance the AI Copilot and Blocks Tooks.
 * Fix: Forms were a bit difficult to use (useful indications were hidden by mistake).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.4.8 (2023/04/15) =
 * Add: Messages Theme.
