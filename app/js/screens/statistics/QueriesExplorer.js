@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.81
+// Previous: 1.3.81
+// Current: 1.5.3
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -8,18 +8,15 @@ import { apiUrl, restNonce, options } from '@app/settings';
 import { NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoButton } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useModels } from '../../helpers';
+import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers';
 
 const logsColumns = [
-  { accessor: 'id', title: 'ID', width: '50px' },
-  { accessor: 'env',  title: 'Env', width: '80px' },
-  { accessor: 'ip', title: 'IP', width: '85px' },
-  { accessor: 'userId', title: 'User', width: '45px' },
+  { accessor: 'time', title: 'Time', width: '80px', sortable: true },
+  { accessor: 'env',  title: 'Env', width: '90px' },
+  { accessor: 'user', title: 'User', width: '85px' },
   { accessor: 'model', title: 'Model' },
   { accessor: 'units', title: 'Units', width: '65px', align: 'right', sortable: true },
-  { accessor: 'type', title: 'Type', width: '50px' },
-  { accessor: 'price', title: 'Price', width: '85px', align: 'right', sortable: true },
-  { accessor: 'time', title: 'Time', width: '140px', sortable: true }
+  { accessor: 'price', title: 'Price', width: '85px', align: 'right', sortable: true }
 ];
 
 const retrieveLogs = async (logsQueryParams) => {
@@ -46,7 +43,7 @@ const QueriesExplorer = () => {
     } else {
       setLogsQueryParams({ ...logsQueryParams, filters: { env: currentTab } });
     }
-  }, [currentTab]);
+  }, [currentTab, logsQueryParams]);
 
   const logsTotal = useMemo(() => {
     return logsData?.total || 0;
@@ -55,32 +52,37 @@ const QueriesExplorer = () => {
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
     return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
-      let time = new Date(x.time);
-      time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
-      let formattedTime = time.toLocaleDateString('ja-JP', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
+      let time = tableDateTimeFormatter(x.time);
+      let user = tableUserIPFormatter(x.user, x.ip);
+
+      const simplifiedPrice = Math.round(x.price * 1000) / 1000;
+      let jsxSimplifiedPrice = <>{`∞`}</>;
+      if (x.price >= 0.001) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
+      }
+      if (x.price >= 0.01) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
+      }
+      if (x.price >= 0.10) {
+        jsxSimplifiedPrice = <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>;
+      }
+
       return {
-        id: x.id,
-        env: x.env,
-        ip: x.ip,
-        userId: x.userId ? <a target="_blank" href={`/wp-admin/user-edit.php?user_id=${x.userId}`}>{x.userId}</a> : '-',
-        model: <span title={x.model}>{getModelName(x.model)}</span>,
-        units: x.units,
-        type: x.type,
-        price: <>${x.price}</>,
-        time: formattedTime,
+        env: <div>{x.env}<br /><small>{x.session}</small></div>,
+        user: user,
+        model: <div><span title={x.model}>{getModelName(x.model)}</span><br /><small>{x.apiSrv} (key: {x.apiOwn})</small></div>,
+        units: <div style={{ textAlign: 'right' }}>{x.units}<br /><small>{x.type}</small></div>,
+        price: <>{jsxSimplifiedPrice}<br /><small>${x.price}</small></>,
+        time: time,
       }
     })
-  }, [logsData, getModelName]);
+  }, [logsData]);
 
   return (<>
-
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
       <NekoQuickLinks value={currentTab} onChange={value => {
           setCurrentTab(value);
-          setLogsQueryParams({ ...logsQueryParams, page: 1 });
+          setLogsQueryParams(prev => ({ ...prev, page: 1 }));
         }}>
         <NekoLink title="All" value='all' />
         <NekoLink title="Chatbot" value='chatbot' />
@@ -91,7 +93,7 @@ const QueriesExplorer = () => {
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
             total={logsTotal} onClick={page => { 
-              setLogsQueryParams({ ...logsQueryParams, page });
+              setLogsQueryParams(prev => ({ ...prev, page }));
             }}
           />
           <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={isFetchingLogs}
@@ -104,7 +106,7 @@ const QueriesExplorer = () => {
 
     <NekoTable alternateRowColor busy={isFetchingLogs}
       sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-        setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
+        setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
       }}
       data={logsRows} columns={logsColumns} 
     />

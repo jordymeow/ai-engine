@@ -1,5 +1,5 @@
-// Previous: 1.4.5
-// Current: 1.5.2
+// Previous: 1.5.2
+// Current: 1.5.3
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -34,7 +34,7 @@ const DEFAULT_INDEX = {
 const OptionsCheck = ({ options }) => {
   const { openai_apikey, pinecone } = options;
   const openAiKey = openai_apikey && openai_apikey.length > 0;
-  const pineconeIsOK = !options?.module_embeddings || (pinecone.apikey && pinecone.apikey.length > 0);
+  const pineconeIsOK = !options?.module_embeddings || (pinecone?.apikey && pinecone?.apikey.length > 0);
 
   return (
     <>
@@ -88,18 +88,21 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom, startLanguage]);
+  }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
   }, [startLanguage]);
 
   useEffect(() => {
+    // Use the language stored in the local storage if it exists
     let preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
 
+    // Otherwise, try to detect the language from the browser
     let detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -117,14 +120,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom, languages]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   }
 
@@ -145,7 +148,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, customLanguage, isCustom, languages, disabled]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -156,12 +159,12 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models;
+    let modelsList = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
       options?.openai_finetunes.filter(x => x.model) : [];
     if (fineTunes.length) {
-      allModels = [ ...allModels, ...fineTunes.map(x => {
+      modelsList = [ ...modelsList, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
         const family = splitted[0];
         return { 
@@ -179,9 +182,9 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     }
     extraModels = extraModels?.split(',').filter(x => x);
     if (extraModels.length) {
-      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+      modelsList = [ ...modelsList, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return allModels;
+    return modelsList;
   }, [options]);
 
   const models = useMemo(() => {
@@ -200,7 +203,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
       model = 'gpt-3.5-turbo';
-    } else if (model === 'gpt-4-0314') {
+    }
+    else if (model === 'gpt-4-0314') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -229,7 +233,6 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getPrice = (model, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
-    if (!modelObj) return null;
     if (modelObj?.type === 'image') {
       if (modelObj?.options) {
         const opt = modelObj.options.find(x => x.option === option);
@@ -241,10 +244,9 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const calculatePrice = (model, units, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
-    if (!modelObj) return 0;
     const price = getPrice(model, option);
     if (price) {
-      return price * units * (modelObj['unit'] || 1);
+      return price * units * modelObj?.unit;
     }
     return 0;
   }
@@ -310,7 +312,38 @@ function reduceContent(content, tokens = 2048) {
   return reduced;
 }
 
+function tableDateTimeFormatter(value) {
+  let time = new Date(value);
+  time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
+  let formattedDate = time.toLocaleDateString('ja-JP', {
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  let formattedTime = time.toLocaleTimeString('ja-JP', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  return <div style={{ textAlign: 'right' }}>{formattedDate}<br /><small>{formattedTime}</small></div>;
+}
+
+function tableUserIPFormatter(userId, ip) {
+  const formattedIP = ip ? (() => {
+    const maxLength = 12;
+    let substr = ip.substring(0, maxLength);
+    if (substr.length < ip.length) {
+      if (substr.endsWith('.')) {
+        substr = substr.slice(0, -1);
+      }
+      return substr + "~";
+    }
+    return substr;
+  })() : '';
+  return <>
+    {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`}>ID {userId}</a><br /></>}
+    <small>{formattedIP}</small>
+  </>;
+}
+
 export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages,
   searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,
+  tableDateTimeFormatter, tableUserIPFormatter,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
 };

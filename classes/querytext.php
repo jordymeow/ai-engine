@@ -3,6 +3,7 @@
 class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   public $maxTokens = 1024;
   public $temperature = 0.8;
+  public $maxSentences = 15;
   public $isChat = false;
   public $stop = null;
   public $messages = [];
@@ -49,8 +50,10 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   /**
    * Make sure the maxTokens is not greater than the model's context length.
    */
-  public function checkFix() {
+  public function finalChecks() {
     if ( empty( $this->model )  ) { return; }
+
+    // Make sure the max tokens are respected.
     $realMax = 4096;
     $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
     $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
@@ -64,11 +67,25 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     }
     $estimatedTokens = $this->estimateTokens( $this->messages );
     if ( $estimatedTokens > $realMax ) {
-      throw new Exception( "The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
+      throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
     }
     $realMax = (int)($realMax - $estimatedTokens) - 16;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
+    }
+
+    // Make sure the number of messages is not too great
+    if ( !empty( $this->maxSentences ) ) {
+      $context = array_shift( $this->messages );
+      if ( !empty( $this->messages ) ) {
+        $this->messages = array_slice( $this->messages, -$this->maxSentences * 2 );
+      }
+      else {
+        $this->messages = [];
+      }
+      if ( !empty( $context ) ) {
+        array_unshift( $this->messages, $context );
+      }
     }
   }
 
@@ -257,15 +274,15 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->temperature = round( $temperature, 2 );
   }
 
-  /**
-   * Up to 4 sequences where the API will stop generating further tokens.
-   * The returned text will not contain the stop sequence.
-   * @param float $stop The stop.
-   */
-  public function setStop( $stop ) {
-    if ( !empty( $stop ) ) {
-      $this->stop = $stop;
+  public function setMaxSentences( $maxSentences ) {
+    if ( !empty( $maxSentences ) ) {
+      $this->maxSentences = intval( $maxSentences );
+      $this->validateMessages();
     }
+  }
+
+  public function setStop( $stop ) {
+    $this->stop = $stop;
   }
 
   // Based on the params of the query, update the attributes
@@ -304,6 +321,12 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     if ( isset( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
 			$this->setMaxTokens( intval( $params['maxTokens'] ) );
 		}
+    if ( isset( $params['max_sentences'] ) && intval( $params['max_sentences'] ) > 0 ) {
+      $this->setMaxSentences( intval( $params['max_sentences'] ) );
+    }
+    if ( isset( $params['maxSentences'] ) && intval( $params['maxSentences'] ) > 0 ) {
+      $this->setMaxSentences( intval( $params['maxSentences'] ) );
+    }
 		if ( isset( $params['temperature'] ) ) {
 			$this->setTemperature( $params['temperature'] );
 		}

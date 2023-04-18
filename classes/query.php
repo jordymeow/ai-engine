@@ -132,6 +132,6 @@ class Meow_MWAI_Query {
   // **
   //  * Check if everything is correct, otherwise fix it (like the max number of tokens).
   //  */
-  public function checkFix() {
+  public function finalChecks() {
   }
 }

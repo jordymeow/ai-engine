@@ -1,34 +1,35 @@
-// Previous: 1.3.81
-// Current: 1.3.85
+// Previous: 1.3.85
+// Current: 1.5.3
 
 // React & Vendor Libs
-const { useState, useEffect, useMemo } = wp.element;
+const { useMemo } = wp.element;
 import Styled from "styled-components";
 
 // NekoUI
-import { NekoIcon, NekoTypo } from '@neko-ui';
+import { NekoTypo } from '@neko-ui';
 
 const StyledIncidents = Styled.div`
   display: flex;
   flex-direction: column;
-  color: white;
   width: 100%;
-  margin-top: -20px;
+  max-height: 290px;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 15px;
 
   h3 {
-    font-size: 15px;
-    color: white;
-    padding-bottom: 10px;
-    border-bottom: 1px solid white;
+    margin-top: 20px;
+    padding-bottom: 5px;
+    font-size: 14px;
+    border-bottom: 1px solid black;
   }
 
   .description {
-    color: white;
     border-radius: 5px;
 
     p {
       small {
-        color: var(--neko-yellow);
+        color: var(--neko-blue);
         font-size: 12px;
       }
     }
@@ -52,32 +53,20 @@ function getPSTLocalTimeDifference() {
 
 const OpenAIStatus = ({ incidents, isLoading }) => {
   const timeDiff = getPSTLocalTimeDifference();
-  const accidentsPastDay = useMemo(() => incidents?.filter(x => {
-    const incidentDate = new Date(x.date);
-    return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
-  }).length, [incidents]);
   
   return (
-    <div style={{ padding: "0px 10px 10px 10px" }}>
-      <h2 style={{ color: 'white', fontFamily: '-apple-system,BlinkMacSystemFont, "Segoe UI", sans-serif', fontSize: 18, fontWeight: 'normal', display: 'flex' }}>
-        <NekoIcon style={{ marginTop: -3, marginLeft: -2, marginRight: 5, float: 'left' }}
-          width="24" icon={accidentsPastDay > 0 ? 'alert' : 'info-outline'}
-          variant={accidentsPastDay > 0 ? 'warning' : ''} />
-        Incidents (Open AI)
-      </h2>
-      <NekoTypo p style={{ color: 'white' }}>
+    <StyledIncidents>
+      <NekoTypo>
         Only the incidents which occured <b>less than a week ago</b> are displayed. The time difference between the PST time used by OpenAI and your local time is {timeDiff} hours.
       </NekoTypo>
-      <StyledIncidents>
-        {isLoading && <div>Loading...</div>}
+        {!isLoading && !incidents.length && <p><i>Currently no incidents.</i></p>}
         {incidents && incidents.map(incident => (
           <div key={incident.guid}>
             <h3>{incident.date}: {incident.title}</h3>
             <div className="description" dangerouslySetInnerHTML={{ __html: incident.description }}></div>
           </div>
         ))}
-      </StyledIncidents>
-    </div>
+    </StyledIncidents>
   );
 };
 

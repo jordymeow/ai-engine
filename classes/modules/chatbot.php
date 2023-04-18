@@ -16,6 +16,10 @@ class Meow_MWAI_Modules_Chatbot {
 		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'chatId' );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+	}
+
+	public function enqueue_scripts() {
 		$physical_file = MWAI_PATH . '/app/chatbot.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
 		wp_register_script( 'mwai_chatbot', MWAI_URL . '/app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
@@ -69,11 +73,11 @@ class Meow_MWAI_Modules_Chatbot {
 				);
 			}
 			
-			// Create the QueryText
+			// Create QueryText
 			$query = new Meow_MWAI_QueryText( $params['newMessage'], 1024 );
 			$query->setIsChat( true );
 
-			// Take care of the parameters
+			// Handle Params
 			$newParams = [];
 			foreach ( $chatbot as $key => $value ) {
 				$newParams[$key] = $value;
@@ -84,6 +88,7 @@ class Meow_MWAI_Modules_Chatbot {
 			$params = apply_filters( 'mwai_chatbot_params', $newParams );
 			$query->injectParams( $params );
 
+			// Takeover
 			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 			if ( !empty( $takeoverAnswer ) ) {
 				return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,

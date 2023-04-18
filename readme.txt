@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,13 +74,21 @@ Languages: English.
 
 == Changelog ==
 
+= 1.5.3 (2023/04/18) =
+* Fix: Removed a few annoying PHP notices.
+* Add: Max Sentences for the new chatbot (now the new chatbot has everything and more).
+* Add: Statistics tab displays more information, such as the service used (generally, it's OpenAI, but it could be Azure), and if the API Key used was the one set in the admin or if it was a custom one (added by the user for example).
+* Update: Enhanced how everything is displayed in Statistics to spot potential issues more easily.
+* Update: Reviewed the Settings tab for more clarity.
+* Info: Moved the legacy chatbot tab on the very right end to encourage legacy users to switch to the new one.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.5.2 (2023/04/17) =
 * Fix: The Chatbot V2 wasn't getting initialized with some themes.
 * Add: Context Max Tokens allows truncating the context dynamically (for content-aware, embeddings, etc).
 * Add: Better support for Azure (can link instances with models), and a big refactoring or the querying system.
 * Fix: The copy button for the new chatbot was not implemented.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.5.1 (2023/04/16) =
 * Add: Gutenberg Block for Chatbot.
