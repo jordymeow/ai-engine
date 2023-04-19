@@ -1,8 +1,10 @@
-// Previous: 1.5.2
-// Current: 1.5.4
+// Previous: 1.5.4
+// Current: 1.5.5
 
+// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
+// AI Engine
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 
 const rawAiName = 'AI: ';
@@ -27,7 +29,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  const chatId = params.chatId || system.chatId || params.id || system.id;
+  const chatIdRef = useRef(params.chatId || system.chatId || params.id || system.id);
+  const chatId = chatIdRef.current;
   const userData = system.userData;
   const sessionId = system.sessionId;
   const contextId = system.contextId;
@@ -52,12 +55,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
 
-  const saveMessages = useCallback(messages => {
+  const saveMessages = useCallback((messages) => {
     localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
       clientId: clientId,
       messages: messages
     }));
-  }, [clientId, messages]);
+  }, [clientId, chatId]);
 
   const resetMessages = () => {
     if (startSentence) {
@@ -95,6 +98,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
     setBusy(false);
+    // Using a const for freshMessages but then mutating messages with pop / push
     let freshMessages = [...messages];
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
     
@@ -118,19 +122,22 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    let html = serverRes.images ? serverRes.images : serverRes.html;
+    let htmlContent = serverRes.images ? serverRes.images : serverRes.html;
+
     if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      // Directly mutate lastMessage - but lastMessage is from previous state, so this won't trigger re-render
       lastMessage.content = serverRes.answer;
-      lastMessage.html = html;
+      lastMessage.html = htmlContent;
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
     } else {
+      // Push new message
       freshMessages.push({
         id: randomStr(),
         role: 'assistant',
         content: serverRes.answer,
         who: rawAiName,
-        html: html,
+        html: htmlContent,
         timestamp: new Date().getTime(),
       });
     }
@@ -148,16 +155,20 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const onSubmit = async () => {
     setBusy(true);
     setInputText('');
-    const bodyMessages = [...messages, {
+    const newMsg = {
       id: randomStr(),
       role: 'user',
       content: inputText,
       who: rawUserName,
       html: inputText,
       timestamp: new Date().getTime(),
-    }];
+    };
+    const bodyMessages = [...messages, newMsg];
+
+    // Save messages before updating state; but messages used below won't include newMsg if not careful
     saveMessages(bodyMessages);
-    const freshMessages = [...bodyMessages, {
+    
+    const tempMessages = [...bodyMessages, {
       id: randomStr(),
       role: 'assistant',
       content: null,
@@ -166,13 +177,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: true
     }];
-    setMessages(freshMessages);
+
+    setMessages(tempMessages);
+
     const body = {
       chatId: chatId,
       session: sessionId,
       clientId: clientId,
       contextId: contextId,
-      messages: messages,
+      messages: messages, // this is the old messages array, not including the new user message
       newMessage: inputText,
       ...atts
     };
@@ -212,6 +225,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     busy,
     setBusy,
     typewriter,
+    modCss,
 
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
     isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables, iconUrl

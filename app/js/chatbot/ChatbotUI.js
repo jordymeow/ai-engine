@@ -1,5 +1,5 @@
-// Previous: 1.4.8
-// Current: 1.5.4
+// Previous: 1.5.4
+// Current: 1.5.5
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -20,9 +20,8 @@ const ChatbotUI = (props) => {
   const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
-  const { messages, busy, inputText, textInputMaxLength,
-    aiName, userName, textSend, textClear, textInputPlaceholder, textCompliance, 
-    isWindow, copyButton, fullscreen, iconText, iconAlt, iconPosition,cssVariables, iconUrl } = state;
+  const { messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, textCompliance, 
+    isWindow, fullscreen, iconText, iconAlt, iconPosition,cssVariables, iconUrl, busy } = state;
   const { onClear, onSubmit, setInputText } = actions;
 
   useEffect(() => {
@@ -31,15 +30,13 @@ const ChatbotUI = (props) => {
       return;
     }
     stopChrono();
-    if (!isMobile) {
+    if (isMobile) {
       inputRef.current.focus(); 
     }
   }, [busy]);
 
   useLayoutEffect(() => {
-    if (messages) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [messages]);
 
   const onSubmitAction = () => {
@@ -58,7 +55,7 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText.length < 1 && messages && messages.length > 1;
+  const clearMode = inputText.length < 1 && messages?.length > 1;
 
   return (<>
     <div className={baseClasses} style={{ ...cssVariables, ...style }}>
@@ -89,9 +86,7 @@ const ChatbotUI = (props) => {
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
           {!!messages && messages.map(message => 
-            <ChatbotReply key={message.id} modCss={modCss}
-              message={message} aiName={aiName} userName={userName} params={{ copyButton }}
-            />
+            <ChatbotReply key={message.id} conversationRef={conversationRef} message={message} />
           )}
         </div>
         <div className={modCss('mwai-input')}>

@@ -594,91 +594,78 @@
   opacity: 1;
 }
 
-pre code.hljs {
+.mwai-chat pre code.hljs {
   display: block;
   overflow-x: auto;
   padding: 1em;
 }
 
-code.hljs {
+.mwai-chat code.hljs {
   padding: 3px 5px;
 }
 
-/*!
-Theme: StackOverflow Dark
-Description: Dark theme as used on stackoverflow.com
-Author: stackoverflow.com
-Maintainer: @Hirse
-Website: https://github.com/StackExchange/Stacks
-License: MIT
-Updated: 2021-05-15
-
-Updated for @stackoverflow/stacks v0.64.0
-Code Blocks: /blob/v0.64.0/lib/css/components/_stacks-code-blocks.less
-Colors: /blob/v0.64.0/lib/css/exports/_stacks-constants-colors.less
-*/
-.hljs {
-  color: #fff;
-  background: #1c1b1b;
+.mwai-chat .hljs {
+  color: #333;
+  background: #f0f0f0;
 }
 
-.hljs-subst {
-  color: #fff;
+.mwai-chat .hljs-subst {
+  color: #333;
 }
 
-.hljs-comment {
-  color: #999;
+.mwai-chat .hljs-comment {
+  color: #888;
 }
 
-.hljs-attr, .hljs-doctag, .hljs-keyword, .hljs-meta .hljs-keyword, .hljs-section, .hljs-selector-tag {
-  color: #88aece;
+.mwai-chat .hljs-attr, .mwai-chat .hljs-doctag, .mwai-chat .hljs-keyword, .mwai-chat .hljs-meta .hljs-keyword, .mwai-chat .hljs-section, .mwai-chat .hljs-selector-tag {
+  color: #0077cc;
 }
 
-.hljs-attribute {
-  color: #c59bc1;
+.mwai-chat .hljs-attribute {
+  color: #aa3377;
 }
 
-.hljs-name, .hljs-number, .hljs-quote, .hljs-selector-id, .hljs-template-tag, .hljs-type {
-  color: #f08d49;
+.mwai-chat .hljs-name, .mwai-chat .hljs-number, .mwai-chat .hljs-quote, .mwai-chat .hljs-selector-id, .mwai-chat .hljs-template-tag, .mwai-chat .hljs-type {
+  color: #c18401;
 }
 
-.hljs-selector-class {
-  color: #88aece;
+.mwai-chat .hljs-selector-class {
+  color: #0077cc;
 }
 
-.hljs-link, .hljs-regexp, .hljs-selector-attr, .hljs-string, .hljs-symbol, .hljs-template-variable, .hljs-variable {
-  color: #b5bd68;
+.mwai-chat .hljs-link, .mwai-chat .hljs-regexp, .mwai-chat .hljs-selector-attr, .mwai-chat .hljs-string, .mwai-chat .hljs-symbol, .mwai-chat .hljs-template-variable, .mwai-chat .hljs-variable {
+  color: #689700;
 }
 
-.hljs-meta, .hljs-selector-pseudo {
-  color: #88aece;
+.mwai-chat .hljs-meta, .mwai-chat .hljs-selector-pseudo {
+  color: #0077cc;
 }
 
-.hljs-built_in, .hljs-literal, .hljs-title {
-  color: #f08d49;
+.mwai-chat .hljs-built_in, .mwai-chat .hljs-literal, .mwai-chat .hljs-title {
+  color: #c18401;
 }
 
-.hljs-bullet, .hljs-code {
-  color: #ccc;
+.mwai-chat .hljs-bullet, .mwai-chat .hljs-code {
+  color: #555;
 }
 
-.hljs-meta .hljs-string {
-  color: #b5bd68;
+.mwai-chat .hljs-meta .hljs-string {
+  color: #689700;
 }
 
-.hljs-deletion {
-  color: #de7176;
+.mwai-chat .hljs-deletion {
+  color: #b71c1c;
 }
 
-.hljs-addition {
-  color: #76c490;
+.mwai-chat .hljs-addition {
+  color: #1b5e20;
 }
 
-.hljs-emphasis {
+.mwai-chat .hljs-emphasis {
   font-style: italic;
 }
 
-.hljs-strong {
+.mwai-chat .hljs-strong {
   font-weight: 700;
 }
 

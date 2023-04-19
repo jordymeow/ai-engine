@@ -1,13 +1,17 @@
-// Previous: 1.5.2
-// Current: 1.5.4
+// Previous: 1.5.4
+// Current: 1.5.5
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
 
+// AI Engine
+import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 
-const CopyButton = ({ message, modCss }) => {
+const CopyButton = ({ message }) => {
+  const { state } = useChatbotContext();
+  const { modCss } = state;
   const [ copyAnimation, setCopyAnimation ] = useState(false);
 
   const onCopy = () => {
@@ -31,9 +35,10 @@ const CopyButton = ({ message, modCss }) => {
   );
 };
 
-const RawMessage = ({ message, userName, modCss, onRendered = () => {} }) => {
+const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
-  const { copyButton } = state;
+  const { copyButton, userName, aiName, modCss } = state;
+  const name = message.role === 'user' ? userName : aiName;
 
   useEffect(() => { onRendered(); });
   if (message.isQuerying) {
@@ -41,73 +46,75 @@ const RawMessage = ({ message, userName, modCss, onRendered = () => {} }) => {
   }
   return (
     <>
-      <span className={modCss('mwai-name')}>{userName}</span>
+      <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: message.html }} />
-      {copyButton && <CopyButton message={message.content} modCss={modCss} />}
+      {copyButton && <CopyButton message={message.content} />}
     </>
   );
 };
 
-const TypedMessage = ({ message, aiName, modCss, onRendered = () => {} }) => {
+const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
-  const { copyButton } = state;
+  const { copyButton, userName, aiName, modCss } = state;
   const typedElement = useRef(null);
   const [ dynamic ] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
-  const hasTypedRef = useRef(false);
+  const name = message.role === 'user' ? userName : aiName;
+
+  useInterval(200, () => {
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+  }, !ready);
 
   useEffect(() => {
     if (!dynamic) { 
       onRendered();
       return;
     }
+
+    if (!typedElement.current) {
+      return;
+    }
     
     const options = {
-      strings: message.isQuerying ? ['<i>Thinking...</i>'] : [message.html],
+      strings: [message.html],
       typeSpeed: 20,
-      showCursor: true,
-    };
-
-    if (!message.isQuerying) {
-      options.preStringTyped = (pos, self) => {
-        self.strings = [message.html];
-        self.backspace(pos, 0);
-      };
-      options.onBegin = (self) => {
-        setReady(() => true);
-        self.start();
-      };
-      options.onComplete = (self) => {
-        self.cursor.remove();
+      showCursor: false,
+      onComplete: (self) => {
+        if (self.cursor) {
+          self.cursor.remove();
+        }
         onRendered();
-      }
-    }
+        setReady(() => true);
+      },
+    };
 
     const typed = new Typed(typedElement.current, options);
     return () => { typed.destroy(); };
   }, [message, message.isQuerying]);
 
-  useEffect(() => {
-    if (hasTypedRef.current) return;
-    if (typedElement.current && message.html && !message.isQuerying) {
-      hasTypedRef.current = true;
-    }
-  }, [message]);
-
   return (
     <>
-      <span className={modCss("mwai-name")}>{aiName}</span>
-      {dynamic && <div><span className={modCss("mwai-text")} ref={typedElement} /></div>}
-      {!dynamic && <span className={modCss("mwai-text")} dangerouslySetInnerHTML={{ __html: message.html }} />}
-      {ready && copyButton && <CopyButton message={message.content} modCss={modCss} />}
+      {message.isQuerying && <BouncingDots />}
+      {!message.isQuerying && dynamic && <>
+        <span className={modCss("mwai-name")}>{name}</span>
+        <span className={modCss("mwai-text")} ref={typedElement} />
+      </>}
+      {!message.isQuerying && !dynamic && <>
+        <span className={modCss("mwai-name")}>{name}</span>
+        <span className={modCss("mwai-text")} dangerouslySetInnerHTML={{ __html: message.html }} />
+      </>}
+      {ready && copyButton && <CopyButton message={message.content} />}
     </>
   );
 };
 
 
-const ChatbotReply = ({ message, aiName, userName, modCss }) => {
+
+const ChatbotReply = ({ message, conversationRef }) => {
   const { state } = useChatbotContext();
-  const { typewriter } = state;
+  const { typewriter, modCss } = state;
   const mainElement = useRef();
   const classes = modCss('mwai-reply', { 'mwai-ai': message.role === 'assistant', 'mwai-user': message.role === 'user' });
 
@@ -127,18 +134,18 @@ const ChatbotReply = ({ message, aiName, userName, modCss }) => {
 
   if (message.role === 'user') {
     return <div ref={mainElement} className={classes}>
-      <RawMessage message={message} userName={userName} modCss={modCss} />
+      <RawMessage message={message} />
     </div>;
   }
 
   if (message.role === 'assistant') {
     if (typewriter) {
       return <div ref={mainElement} className={classes}>
-        <TypedMessage message={message} aiName={aiName} modCss={modCss} onRendered={onRendered} />
+        <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
     return <div ref={mainElement} className={classes}>
-      <RawMessage message={message} userName={userName} modCss={modCss} onRendered={onRendered} />
+      <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
     </div>;
   }
 

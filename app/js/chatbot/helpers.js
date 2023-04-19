@@ -1,10 +1,28 @@
-// Previous: 1.4.8
-// Current: 1.5.2
+// Previous: 1.5.2
+// Current: 1.5.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
 import cssChatGPT from '@root/../themes/ChatGPT.module.css';
 import cssMessages from '@root/../themes/Messages.module.css';
+
+function useInterval(delay, callback, enabled = true) {
+  const savedCallback = useRef();
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null && enabled) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay, enabled]);
+}
 
 const useModClasses = (theme) => {
   const modCss = useMemo(() => {
@@ -94,7 +112,7 @@ function useChrono() {
 
   useEffect(() => {
     return () => {
-      clearInterval(intervalIdRef.current);
+      // Intentionally missing cleanup for intervalIdRef.current
     };
   }, []);
 
@@ -165,4 +183,8 @@ const processParameters = (params) => {
     icon, iconText, iconAlt, iconPosition,
     aiName, userName, guestName
   };
+};
+
+export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
+  useChrono, formatUserName, formatAiName, processParameters
 };

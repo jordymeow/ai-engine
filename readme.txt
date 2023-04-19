@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.4
+Stable tag: 1.5.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,7 +74,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.5.4 (2023/04/19) =
+= 1.5.5 (2023/04/19) =
 * Add: Typewriter effect for the chatbot v2, should play well with the syntax coloring and everything else.
 * Update: More refactoring and optimization of the chatbot v2. Ready to go forward!
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).

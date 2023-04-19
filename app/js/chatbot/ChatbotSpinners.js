@@ -1,5 +1,5 @@
-// Previous: 1.4.7
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.5.5
 
 const BouncingDots = (props) => {
   const bouncingLoaderStyles = {
@@ -17,7 +17,7 @@ const BouncingDots = (props) => {
     borderRadius: '50%',
     backgroundColor: '#a3a1a1',
     opacity: 1,
-    animation: 'bouncing-loader 0.6s infinite alternate',
+    animation: 'bouncing-loader 0.4s infinite alternate',
   };
 
   const animationDelays = ['0.1s', '0.2s', '0.3s'];

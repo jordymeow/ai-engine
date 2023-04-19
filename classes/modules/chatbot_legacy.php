@@ -25,10 +25,10 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 	}
 
 	public function enqueue_scripts() {
-		if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
-			wp_enqueue_script( 'mwai_chatbot', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
-			wp_enqueue_style( 'mwai_chatbot', MWAI_URL . '/vendor/highlightjs/stackoverflow-dark.min.css', [], '11.7' );
-		}
+		// if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
+		// 	wp_enqueue_script( 'mwai_chatbot', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
+		// 	wp_enqueue_style( 'mwai_chatbot', MWAI_URL . '/vendor/highlightjs/stackoverflow-dark.min.css', [], '11.7' );
+		// }
 		if ( $this->core->get_option( 'shortcode_chat_typewriter' ) ) {
 			wp_enqueue_script( 'mwai_chatbot_typewriter', MWAI_URL . 'vendor/typewriterjs/typewriter.min.js', [], '2.0', true );
 		}
