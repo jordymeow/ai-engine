@@ -1,32 +1,18 @@
-// Previous: 1.4.8
-// Current: 1.5.2
+// Previous: 1.5.2
+// Current: 1.5.4
 
-// React & Vendor Libs
-const { useState, useEffect } = wp.element;
+import React, { useState, useEffect, useRef } from 'react';
+import Typed from 'typed.js';
 
+import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 
-const ChatbotReply = ({ message, aiName, userName, copyButton, modCss }) => {
-  const [ fadeOut, setFadeOut ] = useState(false);
+const CopyButton = ({ message, modCss }) => {
   const [ copyAnimation, setCopyAnimation ] = useState(false);
-
-  useEffect(() => {
-    if (fadeOut && !message.isQuerying) {
-      setTimeout(() => {
-        setFadeOut(false);
-      }, 100);
-    }
-  }, [message.isQuerying]);
-
-  const classes = modCss('mwai-reply', {
-    'mwai-ai': message.role === 'assistant',
-    'mwai-user': message.role === 'user',
-    'mwai-fade-out': fadeOut,
-  });
 
   const onCopy = () => {
     try {
-      navigator.clipboard.writeText(message.content);
+      navigator.clipboard.writeText(message);
       setCopyAnimation(true);
       setTimeout(function () {
         setCopyAnimation(false);
@@ -38,26 +24,126 @@ const ChatbotReply = ({ message, aiName, userName, copyButton, modCss }) => {
   }
 
   return (
-    <div className={classes}>
-      {message.isQuerying && <BouncingDots />}
-      {!message.isQuerying && <>
-        <span className={modCss('mwai-name')}>
-          {message.role === 'assistant' && aiName}
-          {message.role === 'user' && userName}
-        </span>
-        <>
-          {message?.html && <span className={modCss('mwai-text')}
-            dangerouslySetInnerHTML={{ __html: message.html }}
-          />}
-        </>
-        {copyButton && (
-          <div className={modCss('mwai-copy-button', { 'mwai-animate': copyAnimation })} onClick={onCopy}>
-            <div className={modCss('mwai-copy-button-one')}></div>
-            <div className={modCss('mwai-copy-button-two')}></div>
-          </div>
-        )}
-      </>}
+    <div className={modCss('mwai-copy-button', { 'mwai-animate': copyAnimation })} onClick={onCopy}>
+      <div className={modCss('mwai-copy-button-one')}></div>
+      <div className={modCss('mwai-copy-button-two')}></div>
     </div>
+  );
+};
+
+const RawMessage = ({ message, userName, modCss, onRendered = () => {} }) => {
+  const { state } = useChatbotContext();
+  const { copyButton } = state;
+
+  useEffect(() => { onRendered(); });
+  if (message.isQuerying) {
+    return (<BouncingDots />);
+  }
+  return (
+    <>
+      <span className={modCss('mwai-name')}>{userName}</span>
+      <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: message.html }} />
+      {copyButton && <CopyButton message={message.content} modCss={modCss} />}
+    </>
+  );
+};
+
+const TypedMessage = ({ message, aiName, modCss, onRendered = () => {} }) => {
+  const { state } = useChatbotContext();
+  const { copyButton } = state;
+  const typedElement = useRef(null);
+  const [ dynamic ] = useState(message.isQuerying);
+  const [ ready, setReady ] = useState(!message.isQuerying);
+  const hasTypedRef = useRef(false);
+
+  useEffect(() => {
+    if (!dynamic) { 
+      onRendered();
+      return;
+    }
+    
+    const options = {
+      strings: message.isQuerying ? ['<i>Thinking...</i>'] : [message.html],
+      typeSpeed: 20,
+      showCursor: true,
+    };
+
+    if (!message.isQuerying) {
+      options.preStringTyped = (pos, self) => {
+        self.strings = [message.html];
+        self.backspace(pos, 0);
+      };
+      options.onBegin = (self) => {
+        setReady(() => true);
+        self.start();
+      };
+      options.onComplete = (self) => {
+        self.cursor.remove();
+        onRendered();
+      }
+    }
+
+    const typed = new Typed(typedElement.current, options);
+    return () => { typed.destroy(); };
+  }, [message, message.isQuerying]);
+
+  useEffect(() => {
+    if (hasTypedRef.current) return;
+    if (typedElement.current && message.html && !message.isQuerying) {
+      hasTypedRef.current = true;
+    }
+  }, [message]);
+
+  return (
+    <>
+      <span className={modCss("mwai-name")}>{aiName}</span>
+      {dynamic && <div><span className={modCss("mwai-text")} ref={typedElement} /></div>}
+      {!dynamic && <span className={modCss("mwai-text")} dangerouslySetInnerHTML={{ __html: message.html }} />}
+      {ready && copyButton && <CopyButton message={message.content} modCss={modCss} />}
+    </>
+  );
+};
+
+
+const ChatbotReply = ({ message, aiName, userName, modCss }) => {
+  const { state } = useChatbotContext();
+  const { typewriter } = state;
+  const mainElement = useRef();
+  const classes = modCss('mwai-reply', { 'mwai-ai': message.role === 'assistant', 'mwai-user': message.role === 'user' });
+
+  const onRendered = () => {
+    if (!mainElement.current) { return; }
+    if (mainElement.current.classList.contains('mwai-rendered')) { 
+      return;
+    }
+    if (typeof hljs !== 'undefined') {
+      mainElement.current.classList.add('mwai-rendered');
+      const selector = mainElement.current.querySelectorAll('pre code');
+      selector.forEach((el) => {
+        hljs.highlightElement(el);
+      });
+    }
+  }
+
+  if (message.role === 'user') {
+    return <div ref={mainElement} className={classes}>
+      <RawMessage message={message} userName={userName} modCss={modCss} />
+    </div>;
+  }
+
+  if (message.role === 'assistant') {
+    if (typewriter) {
+      return <div ref={mainElement} className={classes}>
+        <TypedMessage message={message} aiName={aiName} modCss={modCss} onRendered={onRendered} />
+      </div>;
+    }
+    return <div ref={mainElement} className={classes}>
+      <RawMessage message={message} userName={userName} modCss={modCss} onRendered={onRendered} />
+    </div>;
+  }
+
+  return (
+    <div><i>Unhandled role.</i></div>
   );
 };
 

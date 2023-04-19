@@ -1,0 +1,96 @@
+.mwai-chat {
+  pre code.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 1em;
+  }
+
+  code.hljs {
+    padding: 3px 5px;
+  }
+
+  .hljs {
+    color: #fff;
+    background: #1c1b1b;
+
+    &-subst {
+      color: #fff;
+    }
+
+    &-comment {
+      color: #999;
+    }
+
+    &-attr,
+    &-doctag,
+    &-keyword,
+    &-meta .hljs-keyword,
+    &-section,
+    &-selector-tag {
+      color: #88aece;
+    }
+
+    &-attribute {
+      color: #c59bc1;
+    }
+
+    &-name,
+    &-number,
+    &-quote,
+    &-selector-id,
+    &-template-tag,
+    &-type {
+      color: #f08d49;
+    }
+
+    &-selector-class {
+      color: #88aece;
+    }
+
+    &-link,
+    &-regexp,
+    &-selector-attr,
+    &-string,
+    &-symbol,
+    &-template-variable,
+    &-variable {
+      color: #b5bd68;
+    }
+
+    &-meta,
+    &-selector-pseudo {
+      color: #88aece;
+    }
+
+    &-built_in,
+    &-literal,
+    &-title {
+      color: #f08d49;
+    }
+
+    &-bullet,
+    &-code {
+      color: #ccc;
+    }
+
+    &-meta .hljs-string {
+      color: #b5bd68;
+    }
+
+    &-deletion {
+      color: #de7176;
+    }
+
+    &-addition {
+      color: #76c490;
+    }
+
+    &-emphasis {
+      font-style: italic;
+    }
+
+    &-strong {
+      font-weight: 700;
+    }
+  }
+}

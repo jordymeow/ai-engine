@@ -1,0 +1,74 @@
+.mwai-chat pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+.mwai-chat code.hljs {
+  padding: 3px 5px;
+}
+
+.mwai-chat .hljs {
+  color: #fff;
+  background: #1c1b1b;
+}
+
+.mwai-chat .hljs-subst {
+  color: #fff;
+}
+
+.mwai-chat .hljs-comment {
+  color: #999;
+}
+
+.mwai-chat .hljs-attr, .mwai-chat .hljs-doctag, .mwai-chat .hljs-keyword, .mwai-chat .hljs-meta .hljs-keyword, .mwai-chat .hljs-section, .mwai-chat .hljs-selector-tag {
+  color: #88aece;
+}
+
+.mwai-chat .hljs-attribute {
+  color: #c59bc1;
+}
+
+.mwai-chat .hljs-name, .mwai-chat .hljs-number, .mwai-chat .hljs-quote, .mwai-chat .hljs-selector-id, .mwai-chat .hljs-template-tag, .mwai-chat .hljs-type {
+  color: #f08d49;
+}
+
+.mwai-chat .hljs-selector-class {
+  color: #88aece;
+}
+
+.mwai-chat .hljs-link, .mwai-chat .hljs-regexp, .mwai-chat .hljs-selector-attr, .mwai-chat .hljs-string, .mwai-chat .hljs-symbol, .mwai-chat .hljs-template-variable, .mwai-chat .hljs-variable {
+  color: #b5bd68;
+}
+
+.mwai-chat .hljs-meta, .mwai-chat .hljs-selector-pseudo {
+  color: #88aece;
+}
+
+.mwai-chat .hljs-built_in, .mwai-chat .hljs-literal, .mwai-chat .hljs-title {
+  color: #f08d49;
+}
+
+.mwai-chat .hljs-bullet, .mwai-chat .hljs-code {
+  color: #ccc;
+}
+
+.mwai-chat .hljs-meta .hljs-string {
+  color: #b5bd68;
+}
+
+.mwai-chat .hljs-deletion {
+  color: #de7176;
+}
+
+.mwai-chat .hljs-addition {
+  color: #76c490;
+}
+
+.mwai-chat .hljs-emphasis {
+  font-style: italic;
+}
+
+.mwai-chat .hljs-strong {
+  font-weight: 700;
+}

@@ -1,9 +1,9 @@
-// Previous: 1.4.7
-// Current: 1.5.2
+// Previous: 1.5.2
+// Current: 1.5.4
 
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
-import { useModClasses, isUrl, randomStr, handlePlaceholders, useChrono } from '@app/chatbot/helpers';
+import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 
 const rawAiName = 'AI: ';
 const rawUserName = 'User: ';
@@ -18,7 +18,9 @@ export const useChatbotContext = () => {
 };
 
 export const ChatbotContextProvider = ({ children, ...rest }) => {
-  const { params, system, atts } = rest;
+  const { params, system, theme, atts } = rest;
+  const { modCss } = useModClasses(theme);
+  const shortcodeStyles = theme?.settings || {};
   const [ messages, setMessages ] = useState([]);
   const [ clientId, setClientId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
@@ -28,7 +30,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const chatId = params.chatId || system.chatId || params.id || system.id;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; 
+  const contextId = system.contextId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -36,12 +38,26 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const typewriter = system?.typewriter ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  const saveMessages = useCallback((messagesToSave) => {
+  let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
+    window: isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition } = processParameters(params);
+
+  const { cssVariables, iconUrl } = useMemo(() => {
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
+      acc[`--mwai-${key}`] = shortcodeStyles[key];
+      return acc;
+    }, {});
+    return { cssVariables, iconUrl };
+  }, [icon, pluginUrl, shortcodeStyles]);
+  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
+  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+
+  const saveMessages = useCallback(messages => {
     localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
       clientId: clientId,
-      messages: messagesToSave
+      messages: messages
     }));
-  }, [clientId, chatId]);
+  }, [clientId, messages]);
 
   const resetMessages = () => {
     if (startSentence) {
@@ -61,10 +77,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistoryStr = localStorage.getItem(`mwai-chat-${chatId}`);
-    if (chatHistoryStr) {
-      let chatHistory = JSON.parse(chatHistoryStr);
-      setMessages(chatHistory.messages || []);
+    let chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
+    if (chatHistory) {
+      chatHistory = JSON.parse(chatHistory);
+      setMessages(chatHistory.messages);
       return;
     }
     resetMessages();
@@ -80,14 +96,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setBusy(false);
     let freshMessages = [...messages];
-
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
     
     if (!serverRes.success) {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage && lastMessage.role === 'user') {
+      if (lastMessage) {
         freshMessages.pop();
       }
       freshMessages.push({
@@ -195,7 +210,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     messages,
     setMessages,
     busy,
-    setBusy
+    setBusy,
+    typewriter,
+
+    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
+    isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables, iconUrl
   };
 
   return (

@@ -1,5 +1,5 @@
-// Previous: 1.4.7
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.5.4
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -9,19 +9,20 @@ import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
 
 const ChatbotUI = (props) => {
-  const { system, params, theme, style } = props;
+  const { theme, style } = props;
   const { modCss } = useModClasses(theme);
+  const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const inputRef = useRef();
   const conversationRef = useRef();
   const [ open, setOpen ] = useState(false);
   const [ minimized, setMinimized ] = useState(true);
-  const shortcodeStyles = theme?.settings || {};
-  
   const isMobile = document.innerWidth <= 768;
 
-  const { state, actions } = useChatbotContext({ system, params, theme, style });
-  const { messages, busy, inputText, userData, pluginUrl  } = state;
+  const { state, actions } = useChatbotContext();
+  const { messages, busy, inputText, textInputMaxLength,
+    aiName, userName, textSend, textClear, textInputPlaceholder, textCompliance, 
+    isWindow, copyButton, fullscreen, iconText, iconAlt, iconPosition,cssVariables, iconUrl } = state;
   const { onClear, onSubmit, setInputText } = actions;
 
   useEffect(() => {
@@ -35,22 +36,8 @@ const ChatbotUI = (props) => {
     }
   }, [busy]);
 
-  let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
-    window: isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition } = processParameters(params);
-  const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
-  const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
-    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
-      acc[`--mwai-${key}`] = shortcodeStyles[key];
-      return acc;
-    }, {});
-    return { cssVariables, iconUrl };
-  }, [icon, pluginUrl, shortcodeStyles]);
-  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
-  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
-
   useLayoutEffect(() => {
-    if (messages.length > 0 && conversationRef.current) {
+    if (messages) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [messages]);
@@ -71,7 +58,7 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText.length < 1 && messages?.length > 1;
+  const clearMode = inputText.length < 1 && messages && messages.length > 1;
 
   return (<>
     <div className={baseClasses} style={{ ...cssVariables, ...style }}>
@@ -102,8 +89,8 @@ const ChatbotUI = (props) => {
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
           {!!messages && messages.map(message => 
-            <ChatbotReply key={message.id} copyButton={copyButton} modCss={modCss}
-              message={message} aiName={aiName} userName={userName}
+            <ChatbotReply key={message.id} modCss={modCss}
+              message={message} aiName={aiName} userName={userName} params={{ copyButton }}
             />
           )}
         </div>

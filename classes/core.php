@@ -183,8 +183,10 @@ class Meow_MWAI_Core
 		$placeholders = array(
 			'FIRST_NAME' => get_user_meta( $user->ID, 'first_name', true ),
 			'LAST_NAME' => get_user_meta( $user->ID, 'last_name', true ),
-			'USER_LOGIN' => $user && $user->data ? $user->data->user_login : null,
-			'DISPLAY_NAME' => $user && $user->data ? $user->data->display_name : null,
+			'USER_LOGIN' => isset( $user ) && isset($user->data) && isset( $user->data->user_login ) ? 
+				$user->data->user_login : null,
+			'DISPLAY_NAME' => isset( $user ) && isset( $user->data ) && isset( $user->data->display_name ) ?
+				$user->data->display_name : null,
 			'AVATAR_URL' => get_avatar_url( get_current_user_id() ),
 		);
 		return $placeholders;

@@ -296,6 +296,7 @@
 
 @import '_common.scss';
 @import '_copybutton.scss';
+@import '_codeLight.scss';
 
 .mwai-copy-button {
 	position: absolute;
@@ -310,5 +311,3 @@
 	left: inherit;
 	filter: brightness(0.4);
 }
-
-

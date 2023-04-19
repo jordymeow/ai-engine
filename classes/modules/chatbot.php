@@ -16,16 +16,24 @@ class Meow_MWAI_Modules_Chatbot {
 		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'chatId' );
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
 	}
 
-	public function enqueue_scripts() {
+	public function register_scripts() {
+		wp_register_script( 'mwai_highlight', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
 		$physical_file = MWAI_PATH . '/app/chatbot.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
 		wp_register_script( 'mwai_chatbot', MWAI_URL . '/app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
 		if ( !empty( $this->siteWideChatId ) && $this->siteWideChatId !== 'none' ) {
-			wp_enqueue_script( "mwai_chatbot" );
+			$this->enqueue_scripts();
 			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+		}
+	}
+
+	public function enqueue_scripts() {
+		wp_enqueue_script( "mwai_chatbot" );
+		if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
+			wp_enqueue_script( "mwai_highlight" );
 		}
 	}
 
@@ -201,7 +209,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$jsonFrontTheme = htmlspecialchars(json_encode($theme), ENT_QUOTES, 'UTF-8');
 		$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
 
-		wp_enqueue_script( "mwai_chatbot" );
+		$this->enqueue_scripts();
 		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}' data-atts='{$jsonAttributes}'></div>";
 	}
 	

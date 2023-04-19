@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.3
+Stable tag: 1.5.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,6 +74,12 @@ Languages: English.
 
 == Changelog ==
 
+= 1.5.4 (2023/04/19) =
+* Add: Typewriter effect for the chatbot v2, should play well with the syntax coloring and everything else.
+* Update: More refactoring and optimization of the chatbot v2. Ready to go forward!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.5.3 (2023/04/18) =
 * Fix: Removed a few annoying PHP notices.
 * Add: Max Sentences for the new chatbot (now the new chatbot has everything and more).
@@ -81,8 +87,6 @@ Languages: English.
 * Update: Enhanced how everything is displayed in Statistics to spot potential issues more easily.
 * Update: Reviewed the Settings tab for more clarity.
 * Info: Moved the legacy chatbot tab on the very right end to encourage legacy users to switch to the new one.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.5.2 (2023/04/17) =
 * Fix: The Chatbot V2 wasn't getting initialized with some themes.

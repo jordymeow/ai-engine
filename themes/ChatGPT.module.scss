@@ -32,10 +32,6 @@
 		overflow: auto;
 	}
 
-	* {
-		box-sizing: border-box;
-	}
-
 	.mwai-reply {
 		display: flex;
 		padding: var(--mwai-spacing);
@@ -121,6 +117,10 @@
 		}
 	}
 
+	.mwai-user {
+		background: var(--mwai-backgroundSecondaryColor);
+	}
+
 	.mwai-ai, .mwai-system {
 		background: var(--mwai-backgroundPrimaryColor);
 	}
@@ -159,6 +159,14 @@
 
 	.mwai-text {
 		flex: auto;
+		font-size: var(--mwai-fontSize);
+		line-height: var(--mwai-lineHeight);
+		color: var(--mwai-fontColor);
+		font-size: var(--mwai-fontSize);
+
+		* {
+			font-size: var(--mwai-fontSize);
+		}
 
 		*:first-child {
 			margin-top: 0;
@@ -189,9 +197,8 @@
 		}
 	
 		p {
-			font-size: var(--mwai-fontSize);
-			line-height: var(--mwai-lineHeight);
-	
+			display: contents;
+
 			code {
 				background: var(--mwai-backgroundSecondaryColor);
 				padding: 2px 6px;
@@ -363,6 +370,7 @@
 
 @import '_common.scss';
 @import '_copybutton.scss';
+@import '_codeLight.scss';
 
 // Mobile
 
