@@ -1,5 +1,5 @@
-// Previous: 1.5.4
-// Current: 1.5.5
+// Previous: 1.5.5
+// Current: 1.5.6
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -40,7 +40,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const { copyButton, userName, aiName, modCss } = state;
   const name = message.role === 'user' ? userName : aiName;
 
-  useEffect(() => { onRendered(); });
+  useEffect(() => { onRendered(); }, []);
   if (message.isQuerying) {
     return (<BouncingDots />);
   }
@@ -128,6 +128,20 @@ const ChatbotReply = ({ message, conversationRef }) => {
       const selector = mainElement.current.querySelectorAll('pre code');
       selector.forEach((el) => {
         hljs.highlightElement(el);
+        const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
+        classesToReplace.forEach((oldClass) => {
+          const elementsWithOldClass = el.querySelectorAll('.' + oldClass);
+          elementsWithOldClass.forEach((element) => {
+            element.classList.remove(oldClass);
+            let classes = (modCss(oldClass)).split(' ');
+            if (classes && classes.length > 1) {
+              element.classList.add(classes[1]);
+            }
+            else {
+              console.warn('Could not find class for ' + oldClass);
+            }
+          });
+        });
       });
     }
   }
