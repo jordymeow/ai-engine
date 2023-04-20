@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.5.7
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -18,7 +18,7 @@ const saveFormField = (props) => {
 	const { attributes: { id, label, type, name, options = [],
 		placeholder, rows, defaultValue, maxlength } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
-	// Build shortcode
+
 	let shortcode = '[mwai-form-field';
 	if (id) {
 		shortcode += ` id="${id}"`;
@@ -32,7 +32,7 @@ const saveFormField = (props) => {
 	if (name) {
 		shortcode += ` name="${name}"`;
 	}
-	if (encodedOptions && options.length > 0) {
+	if (encodedOptions) {
 		shortcode += ` options="${encodedOptions}"`;
 	}
 	if (placeholder) {

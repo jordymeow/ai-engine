@@ -395,7 +395,7 @@ class Meow_MWAI_Core
 		if ( empty( $chatbots ) ) {
 			$chatbots = [ array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'chatId' => 'default' ] ) ];
 		}
-		foreach ( $chatbots as $chatbot ) {
+		foreach ( $chatbots as &$chatbot ) {
 			foreach ( MWAI_CHATBOT_DEFAULT_PARAMS as $key => $value ) {
 				if ( !isset( $chatbot[$key] ) ) {
 					$chatbot[$key] = $value;

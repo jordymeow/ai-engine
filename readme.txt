@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.6
+Stable tag: 1.5.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ GPT for WordPress! Chatbot (ChatGPT), content and images generator, copilot, mod
 == Description ==
 Create your own chatbot like ChatGPT, generate content or images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track OpenAI usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, WooCommerce product fields, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
 
-Official website: [AI Engine](https://meowapps.com/ai-engine/).
+Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more tutorial and information, check the official website: [AI Engine](https://meowapps.com/ai-engine/). Thank you!
 
 == Features ==
 
@@ -63,6 +63,10 @@ I will always advocate this, and I hope you do too 💕
 
 The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plugin does not gather any information from your OpenAI account except for the number of tokens utilized. The data transmitted to the OpenAI servers primarily consists of the content of your article and the context you specify. The usage shown in the plugin's settings is just for reference. It is important to check your usage on the [OpenAI website](https://beta.openai.com/account/usage) for accurate information. Please also review their [Privacy Policy](https://openai.com/privacy/) and [Terms of Service](https://openai.com/terms/) for further information.
 
+== Disclaimer ==
+
+AI Engine is a plugin that helps users connect their websites to AI services like OpenAI's ChatGPT or Microsoft Azure. Users need their own API key and must follow the rules set by the AI service they choose. By using AI Engine, users agree to watch and manage the content made by the AI and handle any problems or misuse. The developer of AI Engine and related parties are not responsible for any issues or losses caused by using the plugin or AI-generated content. Users should talk to a legal expert and follow the laws in their area. The full disclaimer is [here](https://meowapps.com/ai-engine/disclaimer/).
+
 == Usage ==
 
 1. Create an account at OpenAI.
@@ -74,11 +78,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.5.7 (2023/04/20) =
+* Fix: There were issues with the Audio Transcription.
+* Fix: Unhandled role (which was a system role when an error is thrown).
+* Fix: Pinecone servers could not been seen easily.
+* Add: Possibility to disable local memory.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.5.6 (2023/04/19) =
 * Add: Typewriter effect for the chatbot v2, should play well with the syntax coloring and everything else.
 * Update: More refactoring and optimization of the chatbot v2. Ready to go forward!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.5.3 (2023/04/18) =
 * Fix: Removed a few annoying PHP notices.

@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.81
+// Previous: 1.3.81
+// Current: 1.5.7
 
 // React & Vendor Libs
 const { useState } = wp.element;
@@ -15,25 +15,30 @@ const Audio = () => {
   const [mode, setMode] = useState('transcription');
   const [content, setContent] = useState('');
   const [prompt, setPrompt] = useState('');
-  const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const onModerateClick = async () => {
+  const onTranscribeClick = async () => {
     setBusy(true);
-    const res = await nekoFetch(`${apiUrl}/transcribe`, { 
-      method: 'POST',
-      nonce: restNonce,
-      json: { url, prompt, mode}
-    });
-    if (!res.success) {
-      setError(res.message);
-    }
-    else {
+    try {
+      const res = await nekoFetch(`${apiUrl}/transcribe`, { 
+        method: 'POST',
+        nonce: restNonce,
+        json: { url, prompt, mode}
+      });
       let data = res.data;
-      console.log(data);
-      setContent(data);
+      if (data?.error?.message) {
+        alert(data.error.message);
+      }
+      else {
+        setContent(data);
+      }
     }
-    setBusy(false);
+    catch (err) {
+      alert(err.message);
+    }
+    finally {
+      setBusy(false);
+    }
   };
 
   return (<>
@@ -58,7 +63,7 @@ const Audio = () => {
             <NekoOption value='translation' label="Transcription (Any Language) + Translation into English" />
           </NekoSelect>
           <NekoSpacer height={65} />
-          <NekoButton fullWidth style={{ height: 40 }} onClick={onModerateClick}>Transcribe</NekoButton>
+          <NekoButton fullWidth style={{ height: 40 }} onClick={onTranscribeClick}>Transcribe</NekoButton>
         </NekoBlock>
       </NekoColumn>
       <NekoColumn minimal>

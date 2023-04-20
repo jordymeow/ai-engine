@@ -1,7 +1,7 @@
 <?php
 
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'aiName', 'userName', 'guestName', 'textSend', 'textClear', 
-	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence',
+	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
 
@@ -180,11 +180,27 @@ class Meow_MWAI_Modules_Chatbot {
 			return "Chatbot not found.";
 		}
 		unset( $atts['id'] );
-		
+
+		// Rename the keys of the atts into camelCase to match the internal params system.
+		$atts = array_map( function( $key, $value ) {
+			$key = str_replace( '_', ' ', $key );
+			$key = ucwords( $key );
+			$key = str_replace( ' ', '', $key );
+			$key = lcfirst( $key );
+			return [ $key => $value ];
+		}, array_keys( $atts ), $atts );
+		$atts = array_merge( ...$atts );
+
 		$frontParams = [];
 		foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {
 			if ( isset( $atts[$param] ) ) {
-				$frontParams[$param] = $atts[$param];
+				if ( $param === 'localMemory' ) {
+					// It's a boolean
+					$frontParams[$param] = $atts[$param] === 'true';
+				}
+				else {
+					$frontParams[$param] = $atts[$param];
+				}
 			}
 			else if ( isset( $chatbot[$param] ) ) {
 				$frontParams[$param] = $chatbot[$param];

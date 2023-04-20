@@ -1,5 +1,5 @@
-// Previous: 1.5.2
-// Current: 1.5.5
+// Previous: 1.5.5
+// Current: 1.5.7
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -112,7 +112,7 @@ function useChrono() {
 
   useEffect(() => {
     return () => {
-      // Intentionally missing cleanup for intervalIdRef.current
+      clearInterval(intervalIdRef.current);
     };
   }, []);
 
@@ -176,15 +176,12 @@ const processParameters = (params) => {
   const iconPosition = params.iconPosition?.trim() ?? "";
   const aiName = params.aiName?.trim() ?? "";
   const userName = params.userName?.trim() ?? "";
+  const localMemory = Boolean(params.localMemory);
 
   return { 
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    window, copyButton, fullscreen,
+    window, copyButton, fullscreen, localMemory,
     icon, iconText, iconAlt, iconPosition,
     aiName, userName, guestName
   };
-};
-
-export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
-  useChrono, formatUserName, formatAiName, processParameters
 };

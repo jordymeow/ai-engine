@@ -1,5 +1,5 @@
-// Previous: 1.5.5
-// Current: 1.5.6
+// Previous: 1.5.6
+// Current: 1.5.7
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -38,9 +38,11 @@ const CopyButton = ({ message }) => {
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
-  const name = message.role === 'user' ? userName : aiName;
+  const isUser = message.role === 'user';
+  const isAI = message.role === 'assistant';
+  const name = isUser ? userName : (isAI ? aiName : null);
 
-  useEffect(() => { onRendered(); }, []);
+  useEffect(() => { onRendered(); });
   if (message.isQuerying) {
     return (<BouncingDots />);
   }
@@ -68,7 +70,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, !ready);
 
   useEffect(() => {
-    if (!dynamic) { 
+    if (dynamic) { 
       onRendered();
       return;
     }
@@ -86,7 +88,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           self.cursor.remove();
         }
         onRendered();
-        setReady(() => true);
+        setReady(() => false);
       },
     };
 
@@ -158,6 +160,12 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
+    return <div ref={mainElement} className={classes}>
+      <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+    </div>;
+  }
+
+  if (message.role === 'system') {
     return <div ref={mainElement} className={classes}>
       <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
     </div>;
