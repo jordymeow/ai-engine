@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.7
+Stable tag: 1.5.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.5.7 (2023/04/20) =
+= 1.5.8 (2023/04/20) =
 * Fix: There were issues with the Audio Transcription.
 * Fix: Unhandled role (which was a system role when an error is thrown).
 * Fix: Pinecone servers could not been seen easily.

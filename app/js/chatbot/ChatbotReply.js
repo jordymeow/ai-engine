@@ -1,22 +1,21 @@
-// Previous: 1.5.6
-// Current: 1.5.7
+// Previous: 1.5.7
+// Current: 1.5.8
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
 
-// AI Engine
 import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 
-const CopyButton = ({ message }) => {
+const CopyButton = ({ content }) => {
   const { state } = useChatbotContext();
   const { modCss } = state;
   const [ copyAnimation, setCopyAnimation ] = useState(false);
 
   const onCopy = () => {
     try {
-      navigator.clipboard.writeText(message);
+      navigator.clipboard.writeText(content);
       setCopyAnimation(true);
       setTimeout(function () {
         setCopyAnimation(false);
@@ -50,7 +49,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     <>
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: message.html }} />
-      {copyButton && <CopyButton message={message.content} />}
+      {copyButton && <CopyButton content={message.content} />}
     </>
   );
 };
@@ -70,7 +69,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, !ready);
 
   useEffect(() => {
-    if (dynamic) { 
+    if (!dynamic) { 
       onRendered();
       return;
     }
@@ -88,7 +87,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           self.cursor.remove();
         }
         onRendered();
-        setReady(() => false);
+        setReady(() => true);
       },
     };
 
