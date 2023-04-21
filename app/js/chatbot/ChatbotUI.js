@@ -1,10 +1,10 @@
-// Previous: 1.5.4
-// Current: 1.5.5
+// Previous: 1.5.5
+// Current: 1.5.9
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
 
-import { useModClasses, isUrl, useChrono, formatAiName, formatUserName, processParameters } from '@app/chatbot/helpers';
+import { useModClasses, useChrono } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
 
@@ -27,20 +27,23 @@ const ChatbotUI = (props) => {
   useEffect(() => {
     if (busy) {
       startChrono();
-      return;
+    } else {
+      stopChrono();
     }
-    stopChrono();
-    if (isMobile) {
+
+    if (!isMobile) {
       inputRef.current.focus(); 
     }
-  }, [busy]);
+  }, [busy, isMobile, startChrono, stopChrono]);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const onSubmitAction = () => {
-    if (inputText.length > 0) {
+    if (inputText?.length > 0) {
       onSubmit(inputText);
       setInputText('');
     }
@@ -49,13 +52,13 @@ const ChatbotUI = (props) => {
   const baseClasses = modCss('mwai-chat', { 
     'mwai-window': isWindow,
     'mwai-open': open,
-    'mwai-fullscreen': !minimized,
+    'mwai-fullscreen': !minimized || (!isWindow && fullscreen),
     'mwai-bottom-left': iconPosition === 'bottom-left',
     'mwai-top-right': iconPosition === 'top-right',
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText.length < 1 && messages?.length > 1;
+  const clearMode = inputText?.length < 1 && messages?.length > 1;
 
   return (<>
     <div className={baseClasses} style={{ ...cssVariables, ...style }}>

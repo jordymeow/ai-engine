@@ -1,12 +1,10 @@
-// Previous: 1.4.7
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.5.9
 
-// React & Vendor Libs
 import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
-// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
@@ -48,7 +46,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000); // clear message after 2 seconds
+    }, 1000);
   };
 
   if (!currentChatbot) {
@@ -113,15 +111,15 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   const onChangeTab = (botIndex) => {
     setBotIndex(botIndex);
-  }
+  };
 
   const onSwitchTheme = (themeId) => {
     //updateChatbotParams(themeId, 'themeId');
-  }
+  };
 
   const addNewChatbot = async () => {
     setBusyAction(true);
@@ -132,7 +130,7 @@ const Chatbots = (props) => {
     }]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   const deleteCurrentChatbot = async () => {
     setBusyAction(true);
@@ -141,7 +139,7 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   return (<>
     <NekoWrapper>
@@ -211,7 +209,7 @@ const Chatbots = (props) => {
             }}
             params={currentChatbot}
             theme={currentTheme}
-            style={currentChatbot.window ? { position: 'absolute' } : {}}
+            style={(currentChatbot.window || currentChatbot.fullscreen) ? { position: 'absolute' } : {}}
           />}
         </div>
         <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
