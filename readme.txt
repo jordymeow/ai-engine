@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.5.9
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,7 +37,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Chatbot: Your own ChatGPT ==
 
-Are you interested in integrating AI-powered chat functionality to your website? Our chatbot can assist you with that! It's a lightweight and user-friendly tool that utilizes vanilla JS on the frontend, and can be easily added to your site with this shortcode: [mwai_chat]. Although it appears simple, the possibilities are limitless, with a variety of parameters and concepts to explore. Visit our [official documentation](https://meowapps.com/ai-engine/) for more information.
+Are you interested in integrating AI-powered chat functionality to your website? Our chatbot can assist you with that! Although it appears simple, the possibilities are limitless, with a variety of parameters and concepts to explore. Visit our [official documentation](https://meowapps.com/ai-engine/) for more information.
 
 Take your AI capabilities to the next level with finetuning and embeddings. By reusing your website's content and other pertinent information, you can train your AI to better cater to your target audience. AI Engine makes this process simple and straightforward with its user-friendly interface. If you'd like to learn more about finetuning, check out our article: [How to Train an AI Model](https://meowapps.com/wordpress-chatbot-finetuned-model-ai/).
 
@@ -78,19 +78,25 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.0 (2023/04/22) =
+* Add: You can choose a different model for the AI Tools (Magic Wand, AI Copilot and Suggestions). It uses to be only Turbo, but you can now pick another one like GPT-4. Look in Settings > Admin Tools.
+* Fix: Timeout for Images Generator was too short.
+* Fix: Copy issue when typewriter was enabled.
+* Update: Optimized the API behind the API Wand and AI Copilot.
+* Update: Pinecone servers.
+* Update: Improved the errors handling in Content Generator, Playground and Images Generator.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.5.9 (2023/04/21) =
 * Update: Errors are handled better.
 * Fix: Fullwidth for non-popup chatbot.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.5.8 (2023/04/20) =
 * Fix: There were issues with the Audio Transcription.
 * Fix: Unhandled role (which was a system role when an error is thrown).
 * Fix: Pinecone servers could not been seen easily.
 * Add: Possibility to disable local memory.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.5.6 (2023/04/19) =
 * Add: Typewriter effect for the chatbot v2, should play well with the syntax coloring and everything else.

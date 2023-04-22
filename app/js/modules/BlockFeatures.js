@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.6.0
 
 const { useState } = wp.element;
 const { __ } = wp.i18n;
@@ -34,12 +34,12 @@ function BlockAIWand({ isActive, onChange, value }) {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const selectedBlockData = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = selectedBlockData.attributes.content;
+    const currentSelectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = currentSelectedBlock.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlockData.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(currentSelectedBlock.clientId, { content: updatedContent });
   }
 
   const onClick = (text) => {
@@ -55,7 +55,7 @@ function BlockAIWand({ isActive, onChange, value }) {
   const text = selectedBlock.attributes.content;
   const selectedText = window.getSelection().toString();
 
- const doAction = async (action) => {
+  const doAction = async (action) => {
     const { getCurrentPost } = wp.data.select("core/editor");
     const { id: postId } = getCurrentPost();
     setBusy(true);
@@ -78,7 +78,7 @@ function BlockAIWand({ isActive, onChange, value }) {
         setResults(results);
       }
     }
- }
+  }
 
   return (<>
     <BlockControls>
@@ -134,7 +134,7 @@ function BlockAIWand({ isActive, onChange, value }) {
       </ToolbarGroup>
     </BlockControls>
     <MagicWandModal
-        isOpen={results && results.length > 0}
+        isOpen={results?.length}
         results={results}
         onClick={onClick}
         onClose={() => setResults([])}
@@ -207,8 +207,8 @@ const MWAI_DocumentSettings = () => {
 
         <NekoUI>
           <NekoWrapper>
-            <GenerateTitlesModal post={postForTitle} onTitleClick={onTitleClick} onClose={() => setPostForTitle(null)} />
-            <GenerateExcerptsModal post={postForExcerpt} onExcerptClick={onExcerptClick} onClose={() => setPostForExcerpt(null)} />
+            <GenerateTitlesModal post={postForTitle} onTitleClick={onTitleClick} onClose={setPostForTitle} />
+            <GenerateExcerptsModal post={postForExcerpt} onExcerptClick={onExcerptClick} onClose={setPostForExcerpt} />
           </NekoWrapper>
         </NekoUI>
       </PluginDocumentSettingPanel>
@@ -216,11 +216,18 @@ const MWAI_DocumentSettings = () => {
   );
 };
 
-
 const BlockFeatures = () => {
+  // This goes into the sidebar
   registerPlugin('ai-engine-document-settings', {
     render: MWAI_DocumentSettings
   });
+
+  // This goes in the context menu of the block toolbar
+  // registerPlugin('ai-engine-ai-wand', {
+  //   render: MWAI_Block_AI_Actions
+  // });
+
+  // This goes in the block toolbar directly
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',
     tagName: 'mwai',

@@ -1,39 +1,39 @@
-// Previous: 1.3.68
+// Previous: 0.1.0
 // Current: 1.6.0
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
 // NekoUI
-import { NekoUI, NekoWrapper, NekoModal, NekoSpinner } from '@neko-ui';
+import { NekoWrapper, NekoModal, NekoSpinner } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
 // AI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import { Result, ResultsContainer } from '../../styles/ModalStyles';
 
-const GenerateTitlesModal = (props) => {
-  const { post, onTitleClick = {}, onClose = {} } = props;
-  const [titles, setTitles] = useState([]);
+const GenerateExcerptsModal = (props) => {
+  const { post, onExcerptClick = {}, onClose = {} } = props;
+  const [excerpts, setExcerpts] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (post) {
-      fetchTitles(post);
+      fetchExcerpts(post);
     }
   }, [post])
 
 
-  const fetchTitles = async ({ postId, postTitle }) => {
+  const fetchExcerpts = async ({ postId }) => {
     setBusy(true);
     try {
       const res = await nekoFetch(`${apiUrl}/magic_wand`, { 
         method: 'POST',
         nonce: restNonce,
-        json: { action: 'suggestTitles', data: { postId } }
+        json: { action: 'suggestExcerpts', data: { postId } }
       });
-      setTitles(res.data?.results);
+      setExcerpts(res.data?.results);
     }
     catch (err) {
       console.error(err);
@@ -45,7 +45,7 @@ const GenerateTitlesModal = (props) => {
   const onClick = async (title) => {
     setBusy(true);
     try {
-      await onTitleClick(title);
+      await onExcerptClick(title);
       cleanClose();
     }
     catch (e) {
@@ -56,7 +56,7 @@ const GenerateTitlesModal = (props) => {
 
   const cleanClose = async () => {
     onClose();
-    setTitles([]);
+    setExcerpts([]);
     setError();
     setBusy(false);
   }
@@ -68,11 +68,11 @@ const GenerateTitlesModal = (props) => {
     else if (error) {
       return (<>Error: {error}</>);
     }
-    else if (titles?.length > 0) {
+    else if (excerpts?.length > 0) {
       return (<>
-        Pick a new title by clicking on it.
+        Pick a new excerpt by clicking on it.
         <ResultsContainer>
-          {titles.map(x => 
+          {excerpts.map(x => 
             <Result key={x} onClick={() => { onClick(x) }}>{x}</Result>
           )}
         </ResultsContainer>
@@ -81,18 +81,18 @@ const GenerateTitlesModal = (props) => {
     else {
       return (<>Nothing to display.</>);
     }
-  }, [busy, titles, error]);
+  }, [busy, excerpts, error]);
 
   return (
-      <NekoWrapper>
-        <NekoModal isOpen={post} onRequestClose={cleanClose}
-          title={`New title for "${post?.postTitle}"`}
-          content={content}
-          ok="Close"
-          onOkClick={cleanClose}
-        />
-      </NekoWrapper>
+    <NekoWrapper>
+      <NekoModal isOpen={post} onRequestClose={cleanClose}
+        title={`New excerpt for "${post?.postTitle}"`}
+        content={content}
+        ok="Close"
+        onOkClick={cleanClose}
+      />
+    </NekoWrapper>
   );
 };
 
-export default GenerateTitlesModal;
+export default GenerateExcerptsModal;

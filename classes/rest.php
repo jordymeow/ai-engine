@@ -32,16 +32,6 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_features' ),
 				'callback' => array( $this, 'make_images' ),
 			) );
-			register_rest_route( $this->namespace, '/make_titles', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'make_titles' ),
-			) );
-			register_rest_route( $this->namespace, '/make_excerpts', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'make_excerpts' ),
-			) );
 			register_rest_route( $this->namespace, '/update_post_title', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
@@ -283,6 +273,10 @@ class Meow_MWAI_Rest
 			// let's refactor this into a nice and extensible UI/API.
 			$query = new Meow_MWAI_QueryText( "", 1024 );
 			$query->setEnv( 'admin-tools' );
+			$model = $this->core->get_option( 'assistants_model' );
+			if ( !empty( $model ) ) {
+				$query->setModel( $model );
+			}
 			$mode = 'replace';
 			if ( $action === 'correctText' ) {
 				$query->setPrompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.\n\n" . $text );
@@ -307,54 +301,26 @@ class Meow_MWAI_Rest
 				$language = $this->core->get_post_language( $postId );
 				$query->replace( '{LANGUAGE}', $language );
 			}
+			else if ( $action === 'suggestExcerpts' ) {
+				$text = $this->core->getCleanPostContent( $postId );
+				$query->setPrompt( "Craft a clear, SEO-optimized introduction for the following text in its original language ({LANGUAGE}), using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.\n\n" . $text );
+				$language = $this->core->get_post_language( $postId );
+				$query->replace( '{LANGUAGE}', $language );
+				$query->setMaxResults( 5 );
+			}
+			else if ( $action === 'suggestTitles' ) {
+				$text = $this->core->getCleanPostContent( $postId );
+				$query->setPrompt( "Generate a concise, SEO-optimized title for the following text in its original language ({LANGUAGE}), without using quotes or any other formatting. Focus on clarity and relevance to the content.\n\n" . $text );
+				$language = $this->core->get_post_language( $postId );
+				$query->replace( '{LANGUAGE}', $language );
+				$query->setMaxResults( 5 );
+			}
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => [
 				'mode' => $mode,
 				'result' => $answer->result,
 				'results' => $answer->results
 			] ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	function make_titles( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$postId = intval( $params['postId'] );
-			$text = $this->core->getCleanPostContent( $postId );
-			if ( empty( $text ) ) {
-				return new WP_REST_Response([ 'success' => false, 'message' => "No text found for this post." ], 500 );
-			}
-			$language = $this->core->get_post_language( $postId );
-			$prompt = "Using the same original language ($language), create a short but SEO-friendly title for this text: " . $text;
-			$query = new Meow_MWAI_QueryText( $prompt, 128 );
-			$query->setMaxResults( 5 );
-			$query->setEnv( 'admin-tools' );
-			$answer = $this->core->ai->run( $query );
-			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	function make_excerpts( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$postId = intval( $params['postId'] );
-			$text = $this->core->getCleanPostContent( $postId );
-			if ( empty( $text ) ) {
-				return new WP_REST_Response([ 'success' => false, 'message' => "No text found for this post." ], 500 );
-			}
-			$language = $this->core->get_post_language( $postId );
-			$prompt = "Using the same original language ($language), create a SEO-friendly introduction to this text, 120 to 170 characters max, no URLs: " . $text;
-			$query = new Meow_MWAI_QueryText( $prompt, 512 );
-			$query->setMaxResults( 5 );
-			$query->setEnv( 'admin-tools' );
-			$answer = $this->core->ai->run( $query );
-			return new WP_REST_Response([ 'success' => true, 'data' => $answer->results ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -371,6 +337,10 @@ class Meow_MWAI_Rest
 			}
 			$query = new Meow_MWAI_QueryText( $prompt, 2048 );
 			$query->setEnv( 'admin-tools' );
+			$model = $this->core->get_option( 'assistants_model' );
+			if ( !empty( $model ) ) {
+				$query->setModel( $model );
+			}
 			$answer = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $answer->result ], 200 );
 		}
@@ -439,8 +409,15 @@ class Meow_MWAI_Rest
 	}
 
 	function image_download( $url ) {
-		$response = wp_remote_get( $url );
+		$args = array( 'timeout' => 60, );
+		$response = wp_remote_get( $url, $args );
+		if ( is_wp_error( $response ) ) {
+			throw new Exception( $response->get_error_message() );
+		}
 		$output = wp_remote_retrieve_body( $response );
+		if ( is_wp_error( $output ) ) {
+			throw new Exception( $output->get_error_message() );
+		}
 		return $output;
 	}
 

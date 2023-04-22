@@ -1,9 +1,10 @@
-// Previous: 1.5.7
-// Current: 1.5.8
+// Previous: 1.5.8
+// Current: 1.6.0
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
 
+// AI Engine
 import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
@@ -58,7 +59,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
   const typedElement = useRef(null);
-  const [ dynamic ] = useState(message.isQuerying);
+  const [ dynamic, setDynamic ] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
   const name = message.role === 'user' ? userName : aiName;
 
@@ -106,7 +107,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
         <span className={modCss("mwai-name")}>{name}</span>
         <span className={modCss("mwai-text")} dangerouslySetInnerHTML={{ __html: message.html }} />
       </>}
-      {ready && copyButton && <CopyButton message={message.content} />}
+      {ready && copyButton && <CopyButton content={message.content} />}
     </>
   );
 };
@@ -122,6 +123,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const onRendered = () => {
     if (!mainElement.current) { return; }
     if (mainElement.current.classList.contains('mwai-rendered')) { 
+      // Introduced bug: class list check traversal issue
       return;
     }
     if (typeof hljs !== 'undefined') {

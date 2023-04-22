@@ -182,6 +182,7 @@ define( 'MWAI_OPTIONS', [
 	'resolve_shortcodes' => false,
 	'dynamic_max_tokens' => true,
 	'context_max_tokens' => 1024,
+	'assistants_model' => 'gpt-3.5-turbo',
 	'banned_words' => [],
 	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES

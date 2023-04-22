@@ -149,6 +149,7 @@ i18n.COMMON = {
   GENERATE_CONTENT: __( 'Generate Content', 'ai-engine' ),
   GENERATE_IMAGES: __( 'Generate Images', 'ai-engine' ),
   ADMIN_BAR: __( 'Admin Bar', 'ai-engine' ),
+  ADMIN_TOOLS: __( 'Admin Tools', 'ai-engine' ),
   REFRESH: __( 'Refresh', 'ai-engine' ),
   DELETE: __( 'Delete', 'ai-engine' ),
   DELETE_ALL: __( 'Delete All', 'ai-engine' ),
@@ -168,6 +169,7 @@ i18n.COMMON = {
   POPUP_SETTINGS: __( 'Popup Settings', 'ai-engine' ),
   AI_AVATAR: __( 'Avatar', 'ai-engine' ),
   SITE_WIDE_CHAT: __( 'Site-Wide Chat', 'ai-engine' ),
+  DEFAULT_MODEL: __( 'Default Model', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -197,7 +199,7 @@ i18n.HELP = {
 i18n.SETTINGS = {
   OPENAI_SETUP: __( 'To use the features of AI Engine, you need an OpenAI account and an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website to create an account, then insert your OpenAI API Key in the <b>Settings</b> tab.', 'ai-engine' ),
   PINECONE_SETUP: __( 'You choose to use Embeddings. To use them, you need to a Pinecone account. Visit the <a href="https://app.pinecone.io" target="_blank">Pinecone</a> website to create an account, then insert your Pinecone API Key in the <b>Settings</b> tab.', 'ai-engine' ),
-  INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit the <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine website</a> for more information. Have fun! 🎵', 'ai-engine' ),
+  INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit AI Engine\'s <a href="https://meowapps.com/ai-engine/" target="_blank">website</a> for more information. Also make sure you read the <a href="https://meowapps.com/ai-engine/disclaimer/" target="_blank">disclaimer</a>. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
   ALERT_INJECT_BUT_NO_POPUP: __( 'You choose to inject the chatbot in your website. You probably also want to use the chatbot in a Popup.', 'ai-engine' ),
   ALERT_FINETUNE_BUT_NO_CASUALLY: __( 'You choose a fine-tuned model. However, you didn\'t check the Casually Fine Tuned option. Make sure that\'s what you want.', 'ai-engine' ),
@@ -215,8 +217,6 @@ i18n.SETTINGS = {
 }
 
 i18n.CHATBOT = {
-  INTRO: __( 'If you only need one chatbot, set your parameters in the Chatbot Builder, and click on <b>Set as Default Parameters</b>. You can then use the shortcode <b>[mwai_chat]</b> anywhere on your website. You can also add the chatbot everywhere automatically by using <b>Inject Default Chatbot</b>.', 'ai-engine' ),
-  INTRO_2: __( 'You can have multiple chatbots on your website (or same page), each with different parameters. Setting an ID will memorize the conversation in the browser, Content Aware will make the content of your page available to the context (<a href="https://meowapps.com/ai-engine/tutorial/#content-aware-bot" target="_blank">read this</a>), and removing the AI Name and User Name will switch to avatars (similar to ChatGPT). Enjoy! 😎', 'ai-engine' ), 
   CHATBOT_BUILDER: __( 'Chatbot Builder', 'ai-engine' ),
   RESET_PARAMS: __( 'Reset Parameters', 'ai-engine' ),
 }

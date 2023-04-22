@@ -1,8 +1,8 @@
-// Previous: 1.4.1
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.6.0
 
 // NekoUI
-import { NekoInput } from '@neko-ui';
+import { NekoInput, NekoCollapsableCategory, NekoSpacer } from '@neko-ui';
 
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers';
@@ -49,11 +49,7 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="fontColor" name="fontColor"
               value={settings?.fontColor ?? '#FFFFFF'}
-              onChange={(value) => {
-                // bug: directly mutating settings instead of proper callback
-                settings.fontColor = value;
-                onUpdateSettings(settings);
-              }}
+              onChange={onUpdateSettings}
             />
           </div>
         </div>
@@ -71,11 +67,7 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="backgroundPrimaryColor" name="backgroundPrimaryColor"
               value={settings?.backgroundPrimaryColor ?? '#454654'}
-              onChange={(value) => {
-                // bug: neglecting to update state properly, will cause stale value
-                settings.backgroundPrimaryColor = value;
-                onUpdateSettings(settings);
-              }}
+              onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
           </div>
@@ -91,19 +83,16 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="backgroundSecondaryColor" name="backgroundSecondaryColor"
               value={settings?.backgroundSecondaryColor ?? '#343541'}
-              onChange={(value) => {
-                // bug: passing a different object reference to onUpdateSettings
-                const newSettings = { ...settings };
-                newSettings.backgroundSecondaryColor = value;
-                onUpdateSettings(newSettings);
-              }}
+              onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
           </div>
         </div>
       </div>
 
-      <h4 className="mwai-category">{i18n.COMMON.POPUP}</h4>
+      <NekoSpacer />
+
+      <NekoCollapsableCategory title={i18n.COMMON.POPUP} isCollapsed={false} />
 
       <div className="mwai-builder-row">
         <div className="mwai-builder-col" style={{ flex: 0.75 }}>
@@ -133,11 +122,7 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="iconTextBackgroundColor" name="iconTextBackgroundColor"
               value={settings?.iconTextBackgroundColor ?? '#343541'}
-              onChange={(value) => {
-                // bug: missing debounce, could cause rapid re-renders
-                settings.iconTextBackgroundColor = value;
-                onUpdateSettings(settings);
-              }}
+              onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
           </div>                          
@@ -152,11 +137,7 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="iconTextColor" name="iconTextColor"
               value={settings?.iconTextColor ?? '#FFFFFF'}
-              onChange={(value) => {
-                // bug: same as above, direct mutation
-                settings.iconTextColor = value;
-                onUpdateSettings(settings);
-              }}
+              onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
           </div>                          
@@ -174,11 +155,7 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="backgroundHeaderColor" name="backgroundHeaderColor"
               value={settings?.backgroundHeaderColor ?? '#343541'}
-              onChange={(value) => {
-                // bug: no validation, could set invalid color
-                settings.backgroundHeaderColor = value;
-                onUpdateSettings(settings);
-              }}
+              onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
           </div>                          
@@ -193,11 +170,7 @@ const ChatGPTTheme = (props) => {
             />
             <NekoColorPicker id="headerButtonsColor" name="headerButtonsColor"
               value={settings?.headerButtonsColor ?? '#FFFFFF'}
-              onChange={(value) => {
-                // bug: setting value without validation
-                settings.headerButtonsColor = value;
-                onUpdateSettings(settings);
-              }}
+              onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
           </div>                          

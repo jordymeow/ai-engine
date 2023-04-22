@@ -1,5 +1,5 @@
-// Previous: 1.1.9
-// Current: 1.3.79
+// Previous: 1.3.79
+// Current: 1.6.0
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -53,7 +53,6 @@ const ImageGenerator = () => {
   const [continuousMode, setContinuousMode] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  // Results
   const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
@@ -64,7 +63,6 @@ const ImageGenerator = () => {
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
 
-  // Variables
   const prompt = template?.prompt;
   const maxResults = template?.maxResults;
 
@@ -85,7 +83,7 @@ const ImageGenerator = () => {
       setCaption(prompt);
       setAlt(prompt);
     }
-  }, [selectedUrl])
+  }, [selectedUrl]);
 
   const onGoBack = () => {
     if (urlIndex > 0) {
@@ -101,53 +99,61 @@ const ImageGenerator = () => {
 
   const onSubmit = async () => {
     setBusy(true);
-    const res = await nekoFetch(`${apiUrl}/make_images`, {
-      method: 'POST',
-      nonce: restNonce,
-      json: { 
-        env: 'admin-tools',
-        session: session,
-        prompt,
-        maxResults,
-    }});
-    setBusy(false);
-    if (res.success) {
+    try {
+      const res = await nekoFetch(`${apiUrl}/make_images`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: { 
+          env: 'admin-tools',
+          session: session,
+          prompt,
+          maxResults,
+      }});
       if (continuousMode) {
-        setUrls([...urls, ...res.data]);
-        // BUG: Forgot to update urls when continuousMode is true, but it's actually handled
-      } else {
+        setUrls(prevUrls => [...prevUrls, ...res.data]);
+      }
+      else {
         setUrls(res.data);
       }
     }
-    setError(res.message);
-    return null;
+    catch (err) {
+      console.error(err);
+      setError(err.message);
+    }
+    finally {
+      setBusy(false);
+    }
   };
 
   const onAdd = async () => {
     setBusy(true);
-    const res = await nekoFetch(`${apiUrl}/create_image`, {
-      method: 'POST',
-      nonce: restNonce,
-      json: { 
-        url: selectedUrl, title, description,
-        caption, alt, filename,
-    }});
-    setBusy(false);
-    if (res.success) {
-      setCreatedMediaIds(prev => [...prev, {
+    try {
+      const res = await nekoFetch(`${apiUrl}/create_image`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: { 
+          url: selectedUrl, title, description,
+          caption, alt, filename,
+      }});
+      setCreatedMediaIds(prevIds => [...prevIds, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
     }
-    setError(res.message);
-    return null;
+    catch (err) {
+      console.error(err);
+      setError(err.message);
+    }
+    finally {
+      setBusy(false);
+    }
   }
 
   const onDownload = () => {
     const link = document.createElement('a');
     link.href = selectedUrl;
     link.target = '_blank';
-    link.download = filename;
+    link.download = filename || '';
     link.click();
   }
 
@@ -188,7 +194,7 @@ const ImageGenerator = () => {
                   <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
                     &lt;
                   </NekoButton>
-                  <NekoButton disabled={busy} onClick={() => setSelectedUrl()}>
+                  <NekoButton disabled={busy} onClick={() => setSelectedUrl(undefined)}>
                     Back to results
                   </NekoButton>
                   <NekoButton disabled={urlIndex >= urls.length - 1 || busy} onClick={() => onGoNext()}>
@@ -204,23 +210,23 @@ const ImageGenerator = () => {
                 <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                   <StyledInputWrapper>
                     <label>Title:</label>
-                    <NekoTextArea value={title} onBlur={setTitle} rows={2} />
+                    <NekoTextArea value={title} onBlur={e => setTitle(e.target.value)} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Caption:</label>
-                    <NekoTextArea value={caption} onBlur={setCaption} rows={2} />
+                    <NekoTextArea value={caption} onBlur={e => setCaption(e.target.value)} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Description:</label>
-                    <NekoTextArea value={description} onBlur={setDescription} rows={2} />
+                    <NekoTextArea value={description} onBlur={e => setDescription(e.target.value)} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Alternative Text:</label>
-                    <NekoTextArea value={alt} onBlur={setAlt} rows={2} />
+                    <NekoTextArea value={alt} onBlur={e => setAlt(e.target.value)} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Filename:</label>
-                    <NekoInput value={filename} onChange={(e) => setFilename(e.target.value)} />
+                    <NekoInput value={filename} onChange={e => setFilename(e.target.value)} />
                   </StyledInputWrapper>
                   <NekoButton fullWidth style={{ marginTop: 7 }} isBusy={busy} onClick={() => onAdd()}>
                     Add to Media Library
@@ -248,7 +254,7 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(value) => setMaxResults(value)}>
+                    value={maxResults} description="" onChange={e => setMaxResults(e.target.value)}>
                     {ImagesCount.map((count) => {
                       return <NekoOption key={count} id={count} value={count} label={count} />
                     })}
@@ -258,11 +264,11 @@ const ImageGenerator = () => {
                   </NekoButton>
                 </div>
               </StyledTitleWithButton>
-              <NekoTextArea value={prompt} onChange={(e) => setPrompt(e.target.value)}
+              <NekoTextArea value={prompt} onChange={e => setPrompt(e.target.value)}
                 style={{ marginTop: 20 }} />
               <StyledGallery>
-                {urls.map((url, index) => <img key={index} src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
+                {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div className="empty-image" key={x} />)}
               </StyledGallery>
             </NekoContainer>
           </>}
@@ -280,9 +286,9 @@ const ImageGenerator = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+      <NekoModal isOpen={error}
+        onRequestClose={() => { setError(undefined) }}
+        onOkClick={() => { setError(undefined) }}
         title="Error"
         content={<p>{error}</p>}
       />
