@@ -1,5 +1,5 @@
-// Previous: 1.3.85
-// Current: 1.5.3
+// Previous: 1.5.3
+// Current: 1.6.1
 
 // React & Vendor Libs
 const { useMemo } = wp.element;
@@ -53,13 +53,14 @@ function getPSTLocalTimeDifference() {
 
 const OpenAIStatus = ({ incidents, isLoading }) => {
   const timeDiff = getPSTLocalTimeDifference();
-  
+
   return (
     <StyledIncidents>
       <NekoTypo>
         Only the incidents which occured <b>less than a week ago</b> are displayed. The time difference between the PST time used by OpenAI and your local time is {timeDiff} hours.
       </NekoTypo>
-        {!isLoading && !incidents.length && <p><i>Currently no incidents.</i></p>}
+        {!isLoading && (incidents === null || incidents === undefined) && <p><i>Could not load the incidents.</i></p>}
+        {!isLoading && incidents?.length === 0 && <p><i>Currently no incidents.</i></p>}
         {incidents && incidents.map(incident => (
           <div key={incident.guid}>
             <h3>{incident.date}: {incident.title}</h3>

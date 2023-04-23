@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -61,7 +61,7 @@ I will always advocate this, and I hope you do too 💕
 
 == Open AI ==
 
-The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plugin does not gather any information from your OpenAI account except for the number of tokens utilized. The data transmitted to the OpenAI servers primarily consists of the content of your article and the context you specify. The usage shown in the plugin's settings is just for reference. It is important to check your usage on the [OpenAI website](https://beta.openai.com/account/usage) for accurate information. Please also review their [Privacy Policy](https://openai.com/privacy/) and [Terms of Service](https://openai.com/terms/) for further information.
+The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plugin does not gather any information from your OpenAI account except for the number of tokens utilized. The data transmitted to the OpenAI servers primarily consists of the content of your article and the context you specify. The usage shown in the plugin's settings is just for reference. It is important to check your usage on the [OpenAI website](https://platform.openai.com/account/usage) for accurate information. Please also review their [Privacy Policy](https://openai.com/privacy/) and [Terms of Service](https://openai.com/terms/) for further information.
 
 == Disclaimer ==
 
@@ -72,11 +72,18 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 1. Create an account at OpenAI.
 2. Create an API key and insert in the plugin settings (Meow Apps -> AI Engine).
 3. Enjoy the features of AI Engine!
-5. ... and always keep an eye on [your OpenAI usage](https://beta.openai.com/account/usage)!
+5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/account/usage)!
 
 Languages: English.
 
 == Changelog ==
+
+= 1.6.1 (2023/04/23) =
+* Fix: Scrolldown issue.
+* Fix: The admin could crash if OpenAI incidents were not available.
+* Add: Added the chatbotId as the ID for the chatbot in the HTML.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.0 (2023/04/22) =
 * Add: You can choose a different model for the AI Tools (Magic Wand, AI Copilot and Suggestions). It uses to be only Turbo, but you can now pick another one like GPT-4. Look in Settings > Admin Tools.
@@ -85,8 +92,6 @@ Languages: English.
 * Update: Optimized the API behind the API Wand and AI Copilot.
 * Update: Pinecone servers.
 * Update: Improved the errors handling in Content Generator, Playground and Images Generator.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.5.9 (2023/04/21) =
 * Update: Errors are handled better.

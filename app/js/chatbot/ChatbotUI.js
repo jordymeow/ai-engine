@@ -1,5 +1,5 @@
-// Previous: 1.5.5
-// Current: 1.5.9
+// Previous: 1.5.9
+// Current: 1.6.1
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -11,7 +11,7 @@ import ChatbotReply from '@app/chatbot/ChatbotReply';
 const ChatbotUI = (props) => {
   const { theme, style } = props;
   const { modCss } = useModClasses(theme);
-  const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
+  const themeStyle = useMemo(() => (theme?.type === 'css' ? theme?.style : null), [theme]);
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const inputRef = useRef();
   const conversationRef = useRef();
@@ -20,21 +20,20 @@ const ChatbotUI = (props) => {
   const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
-  const { messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, textCompliance, 
+  const { chatId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, textCompliance, 
     isWindow, fullscreen, iconText, iconAlt, iconPosition,cssVariables, iconUrl, busy } = state;
   const { onClear, onSubmit, setInputText } = actions;
 
   useEffect(() => {
     if (busy) {
       startChrono();
-    } else {
-      stopChrono();
+      return;
     }
-
+    stopChrono();
     if (!isMobile) {
       inputRef.current.focus(); 
     }
-  }, [busy, isMobile, startChrono, stopChrono]);
+  }, [busy]);
 
   useLayoutEffect(() => {
     if (conversationRef.current) {
@@ -43,7 +42,7 @@ const ChatbotUI = (props) => {
   }, [messages]);
 
   const onSubmitAction = () => {
-    if (inputText?.length > 0) {
+    if (inputText.length > 0) {
       onSubmit(inputText);
       setInputText('');
     }
@@ -58,10 +57,10 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText?.length < 1 && messages?.length > 1;
+  const clearMode = inputText.length < 1 && messages?.length > 1;
 
   return (<>
-    <div className={baseClasses} style={{ ...cssVariables, ...style }}>
+    <div id={`mwai-chatbot-${chatId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
 
       {themeStyle && <style>{themeStyle}</style>}
 
