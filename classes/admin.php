@@ -97,15 +97,16 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			) );
 		}
 
-		// If it's WP_DEBUG then let's add a menu
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			$wp_admin_bar->add_node( array(
-				'id' => 'mwai-debug',
-				'title' => MWAI_IMG_WAND_HTML . __( 'Magic Wand', 'ai-engine' ),
-				//'href' => admin_url( 'tools.php?page=mwai_debug' ),
-				'meta' => array( 'class' => 'mwai-debug' ),
-			) );
-		}
+		// The Global Magic Wand
+		// if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		// 	$wp_admin_bar->add_node( array(
+		// 		'id' => 'mwai-debug',
+		// 		'title' => MWAI_IMG_WAND_HTML . __( 'Magic Wand', 'ai-engine' ),
+		// 		//'href' => admin_url( 'tools.php?page=mwai_debug' ),
+		// 		'meta' => array( 'class' => 'mwai-debug' ),
+		// 	) );
+		// }
+		
 		if ( $playground ) {
 			$wp_admin_bar->add_node(  array(
 				'id' => 'mwai-playground',

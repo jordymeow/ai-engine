@@ -180,6 +180,9 @@ class Meow_MWAI_Core
 
 	function getUserData() {
 		$user = wp_get_current_user();
+		if ( empty( $user ) || empty( $user->ID ) ) {
+			return null;
+		}
 		$placeholders = array(
 			'FIRST_NAME' => get_user_meta( $user->ID, 'first_name', true ),
 			'LAST_NAME' => get_user_meta( $user->ID, 'last_name', true ),

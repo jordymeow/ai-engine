@@ -1,5 +1,5 @@
-// Previous: 1.5.5
-// Current: 1.5.7
+// Previous: 1.5.7
+// Current: 1.6.2
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -72,16 +72,17 @@ function randomStr() {
   return Math.random().toString(36).substring(2);
 }
 
-function handlePlaceholders(data, guestName = 'Guest: ', userData) {
+function handlePlaceholders(template, guestName = 'Guest: ', userData) {
   if (!userData || Object.keys(userData).length === 0) {
-    return data;
+    return guestName;
   }
+
   for (const [placeholder, value] of Object.entries(userData)) {
     let realPlaceHolder = `{${placeholder}}`;
-    if (!data.includes(realPlaceHolder)) continue;
-    data = data.replace(realPlaceHolder, value);
+    if (!template.includes(realPlaceHolder)) continue;
+    template = template.replace(realPlaceHolder, value);
   }
-  return data || guestName;
+  return template || guestName || "Guest: ";
 }
 
 function useChrono() {
@@ -112,7 +113,10 @@ function useChrono() {
 
   useEffect(() => {
     return () => {
-      clearInterval(intervalIdRef.current);
+      if (intervalIdRef.current !== null) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
     };
   }, []);
 
@@ -184,4 +188,8 @@ const processParameters = (params) => {
     icon, iconText, iconAlt, iconPosition,
     aiName, userName, guestName
   };
+};
+
+export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
+  useChrono, formatUserName, formatAiName, processParameters
 };

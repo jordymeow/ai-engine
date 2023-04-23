@@ -193,6 +193,7 @@ i18n.HELP = {
   BANNED_WORDS: __( 'Reject queries containing these words; separate with commas.', 'ai-engine' ),
   BANNED_IPS: __( 'Block access from specified IP addresses or ranges using CIDR notation; separate with commas.', 'ai-engine' ),
   POST_TYPES: __( 'Enable for these post types; separate with commas.', 'ai-engine' ),
+  POST_STATUS: __( 'Enable for these post statuses (publish, draft, future, private, etc); separate with commas.', 'ai-engine' ),
   CONTEXT_MAX_TOKENS: __( 'Automatically truncate the content (Content-Aware, Embeddings, etc) to make sure it does not reach this maximum number of tokens.', 'ai-engine' ),
 }
 

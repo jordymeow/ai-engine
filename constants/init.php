@@ -176,6 +176,7 @@ define( 'MWAI_OPTIONS', [
 		'minScore' => 75,
 		'syncPosts' => false,
 		'syncPostTypes' => ['post', 'page', 'product'],
+		'syncPostStatus' => ['publish'],
 	],
 	'extra_models' => "",
 	'debug_mode' => true,

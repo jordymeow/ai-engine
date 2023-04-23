@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,8 +78,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.1 (2023/04/23) =
+= 1.6.2 (2023/04/23) =
+* Add: Status for Posts Syncing for Embeddings.
 * Fix: Scrolldown issue.
+* Fix: Issue when placeholders for User Name (in chatbot) didn't have any data. Will now display Guest Name.
 * Fix: The admin could crash if OpenAI incidents were not available.
 * Add: Added the chatbotId as the ID for the chatbot in the HTML.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).

@@ -615,7 +615,10 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_query_params();
 			$postType = $params['postType'];
+			$postStatus = $params['postStatus'];
+			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $postStatus ) : [ 'publish' ];
 			$count = wp_count_posts( $postType );
+			$count = array_sum( array_intersect_key( (array)$count, array_flip( $postStatus ) ) );
 			return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -628,7 +631,10 @@ class Meow_MWAI_Rest
 			$params = $request->get_query_params();
 			$offset = (int)$params['offset'];
 			$postType = $params['postType'];
+			$postStatus = $params['postStatus'];
+			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $postStatus ) : [ 'publish' ];
 			$postId = (int)$params['postId'];
+
 			$post = null;
 			if ( !empty( $postId ) ) {
 				$post = get_post( $postId );
@@ -641,7 +647,7 @@ class Meow_MWAI_Rest
 					'posts_per_page' => 1,
 					'post_type' => $postType,
 					'offset' => $offset,
-					'post_status' => 'publish'
+					'post_status' => $postStatus,
 				] );
 				$post = count( $posts ) === 0 ? null : $posts[0];
 			}
