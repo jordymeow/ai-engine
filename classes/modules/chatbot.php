@@ -43,11 +43,6 @@ class Meow_MWAI_Modules_Chatbot {
 			'callback' => array( $this, 'rest_chat' ),
 			'permission_callback' => '__return_true'
 		) );
-		register_rest_route( $this->namespace, '/images', array(
-			'methods' => 'POST',
-			'callback' => array( $this, 'rest_images' ),
-			'permission_callback' => '__return_true'
-		) );
 	}
 
 	public function basics_security_check( $params ) {
@@ -82,47 +77,63 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 			
 			// Create QueryText
-			$query = new Meow_MWAI_QueryText( $params['newMessage'], 1024 );
-			$query->setIsChat( true );
-
-			// Handle Params
-			$newParams = [];
-			foreach ( $chatbot as $key => $value ) {
-				$newParams[$key] = $value;
-			}
-			foreach ( $params as $key => $value ) {
-				$newParams[$key] = $value;
-			}
-			$params = apply_filters( 'mwai_chatbot_params', $newParams );
-			$query->injectParams( $params );
-
-			// Takeover
-			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
-			if ( !empty( $takeoverAnswer ) ) {
-				return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,
-					'html' => $takeoverAnswer, 'usage' => null ], 200 );
-			}
-
-			// Moderation
-			if ( $this->core->get_option( 'shortcode_chat_moderation' ) ) {
-				global $mwai;
-				$isFlagged = $mwai->moderationCheck( $query->prompt );
-				if ( $isFlagged ) {
-					return new WP_REST_Response( [ 
-						'success' => false, 
-						'message' => 'Sorry, your message has been rejected by moderation.' ], 403
-					);
-				}
-			}
-
-			// Awareness & Embeddings
 			$context = null;
-			$embeddingsIndex = $params['embeddingsIndex'];
-			if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
-				$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
-				if ( !empty( $context ) ) {
-					$content = $this->core->cleanSentences( $context['content'] );
-					$query->injectContext( $content );
+			if ( $chatbot['mode'] === 'images' ) {
+				$query = new Meow_MWAI_QueryImage( $params['newMessage'] );
+
+				// Handle Params
+				$newParams = [];
+				foreach ( $chatbot as $key => $value ) {
+					$newParams[$key] = $value;
+				}
+				foreach ( $params as $key => $value ) {
+					$newParams[$key] = $value;
+				}
+				$params = apply_filters( 'mwai_chatbot_params', $newParams );
+				$query->injectParams( $params );
+			}
+			else {
+				$query = new Meow_MWAI_QueryText( $params['newMessage'], 1024 );
+				$query->setIsChat( true );
+
+				// Handle Params
+				$newParams = [];
+				foreach ( $chatbot as $key => $value ) {
+					$newParams[$key] = $value;
+				}
+				foreach ( $params as $key => $value ) {
+					$newParams[$key] = $value;
+				}
+				$params = apply_filters( 'mwai_chatbot_params', $newParams );
+				$query->injectParams( $params );
+
+				// Takeover
+				$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
+				if ( !empty( $takeoverAnswer ) ) {
+					return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,
+						'html' => $takeoverAnswer, 'usage' => null ], 200 );
+				}
+
+				// Moderation
+				if ( $this->core->get_option( 'shortcode_chat_moderation' ) ) {
+					global $mwai;
+					$isFlagged = $mwai->moderationCheck( $query->prompt );
+					if ( $isFlagged ) {
+						return new WP_REST_Response( [ 
+							'success' => false, 
+							'message' => 'Sorry, your message has been rejected by moderation.' ], 403
+						);
+					}
+				}
+
+				// Awareness & Embeddings
+				$embeddingsIndex = $params['embeddingsIndex'];
+				if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
+					$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
+					if ( !empty( $context ) ) {
+						$content = $this->core->cleanSentences( $context['content'] );
+						$query->injectContext( $content );
+					}
 				}
 			}
 
@@ -137,21 +148,13 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
 			}
-			return new WP_REST_Response( [ 'success' => true, 'answer' => $rawText,
-				'html' => $html, 'usage' => $answer->usage ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	public function rest_images( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$query = new Meow_MWAI_QueryImage( $params['prompt'] );
-			$query->injectParams( $params );
-			$answer = $this->core->ai->run( $query );
-			return new WP_REST_Response( [ 'success' => true, 'images' => $answer->results, 'usage' => $answer->usage ], 200 );
+			return new WP_REST_Response( [
+				'success' => true,
+				'answer' => $rawText,
+				'images' => $chatbot['mode'] === 'images' ? $answer->results : null,
+				'html' => $html,
+				'usage' => $answer->usage
+			], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -160,17 +163,13 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function inject_chat() {
 		$params = $this->core->getChatbot( $this->siteWideChatId );
+		$cleanParams = [];
 		if ( !empty( $params ) ) {
-			$params['window'] = true;
-			$params['id'] = $this->siteWideChatId;
-			echo $this->chat( $params );
+			$cleanParams['window'] = true;
+			$cleanParams['id'] = $this->siteWideChatId;
+			echo $this->chat( $cleanParams );
 		}
 		return null;
-	}
-
-	public function imageschat( $atts ) {
-		$atts['mode'] = 'images';
-		return $this->chat( $atts );
 	}
 
 	public function chat( $atts ) {

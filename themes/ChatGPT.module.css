@@ -324,7 +324,7 @@
   display: none;
 }
 
-.mwai-chat button[disabled]::before {
+.mwai-chat button[disabled]:before {
   content: '';
   width: 18px;
   height: 18px;

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.6.2
+Stable tag: 1.6.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,14 +78,22 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.3 (2023/04/24) =
+* Add: The JS MwaiAPI. Allows more control over the chatbot (to open it, to modify the typewriter speed, etc). You can find a few examples [here](https://meowapps.com/ai-engine/faq/#control-the-chatbot).
+* Add: AI Forms support Speech-to-Text (through whisper).
+* Update: A few enhancements on the AI Forms, for more clarity.
+* Fix: The new chatbot was not working with images yet. Now works with DALL-E.
+* Fix: Issue with Safari (the loading animation was staying - looks like a bug in Safari however)
+* Fix: Too many parameters were injected in the front chatbot in the case of site-wide.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.2 (2023/04/23) =
 * Add: Status for Posts Syncing for Embeddings.
 * Fix: Scrolldown issue.
 * Fix: Issue when placeholders for User Name (in chatbot) didn't have any data. Will now display Guest Name.
 * Fix: The admin could crash if OpenAI incidents were not available.
 * Add: Added the chatbotId as the ID for the chatbot in the HTML.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.0 (2023/04/22) =
 * Add: You can choose a different model for the AI Tools (Magic Wand, AI Copilot and Suggestions). It uses to be only Turbo, but you can now pick another one like GPT-4. Look in Settings > Admin Tools.

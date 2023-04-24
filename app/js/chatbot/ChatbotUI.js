@@ -1,5 +1,5 @@
-// Previous: 1.5.9
-// Current: 1.6.1
+// Previous: 1.6.1
+// Current: 1.6.3
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -7,11 +7,12 @@ import TextAreaAutosize from 'react-textarea-autosize';
 import { useModClasses, useChrono } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
+import { mwaiAPI } from '@app/chatbot/MwaiAPI';
 
 const ChatbotUI = (props) => {
   const { theme, style } = props;
   const { modCss } = useModClasses(theme);
-  const themeStyle = useMemo(() => (theme?.type === 'css' ? theme?.style : null), [theme]);
+  const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const inputRef = useRef();
   const conversationRef = useRef();
@@ -25,6 +26,12 @@ const ChatbotUI = (props) => {
   const { onClear, onSubmit, setInputText } = actions;
 
   useEffect(() => {
+    mwaiAPI.open = () => setOpen(true);
+    mwaiAPI.close = () => setOpen(false);
+    mwaiAPI.toggle = () => setOpen(prev => !prev);
+  }, []);
+
+  useEffect(() => {
     if (busy) {
       startChrono();
       return;
@@ -33,7 +40,7 @@ const ChatbotUI = (props) => {
     if (!isMobile) {
       inputRef.current.focus(); 
     }
-  }, [busy]);
+  }, [busy, isMobile, startChrono, stopChrono]);
 
   useLayoutEffect(() => {
     if (conversationRef.current) {
@@ -41,10 +48,11 @@ const ChatbotUI = (props) => {
     }
   }, [messages]);
 
-  const onSubmitAction = () => {
-    if (inputText.length > 0) {
+  const onSubmitAction = (forcedText = null) => {
+    if (forcedText !== null) {
+      onSubmit(forcedText);
+    } else if (inputText.length >= 0) {
       onSubmit(inputText);
-      setInputText('');
     }
   };
 
@@ -57,7 +65,7 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText.length < 1 && messages?.length > 1;
+  const clearMode = inputText.length === 0 && messages?.length > 1;
 
   return (<>
     <div id={`mwai-chatbot-${chatId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
@@ -75,11 +83,11 @@ const ChatbotUI = (props) => {
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(!minimized)}
+                onClick={() => setMinimized(prev => !prev)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(!open)}
+              onClick={() => setOpen(prev => !prev)}
             />
           </div>
         </div>
@@ -103,10 +111,12 @@ const ChatbotUI = (props) => {
             }}
             onChange={e => setInputText(e.target.value)}>
           </TextAreaAutosize>
-          <button disabled={busy} onClick={clearMode ? onClear : onSubmitAction}>
-            <span>{clearMode ? textClear : textSend}</span>
+          {busy && <button disabled>
             {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
-          </button>
+          </button>}
+          {!busy && <button disabled={busy} onClick={clearMode ? onClear : onSubmitAction}>
+            <span>{clearMode ? textClear : textSend}</span>
+          </button>}
         </div>
         {textCompliance && <div className={modCss('mwai-compliance')}
           dangerouslySetInnerHTML={{ __html: textCompliance }}>
