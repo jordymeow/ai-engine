@@ -1,5 +1,5 @@
-// Previous: 1.6.0
-// Current: 1.6.3
+// Previous: 1.6.3
+// Current: 1.6.51
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -96,7 +96,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, !ready);
 
   useEffect(() => {
-    if (dynamic) { 
+    if (!dynamic) { 
       onRendered();
       return;
     }
@@ -110,7 +110,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
       typeSpeed: applyFilters('typewriter_speed', 25),
       showCursor: false,
       onComplete: (self) => {
-        if (self.cursor && typeof self.cursor.remove === 'function') {
+        if (self.cursor) {
           self.cursor.remove();
         }
         onRendered();
@@ -149,31 +149,30 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   const onRendered = () => {
     if (!mainElement.current) { return; }
+    if (message.isQuerying) { return; }
     if (mainElement.current.classList.contains('mwai-rendered')) { 
       return;
     }
     if (typeof hljs !== 'undefined') {
-      try {
-        mainElement.current.classList.add('mwai-rendered');
-        const selector = mainElement.current.querySelectorAll('pre code');
-        selector.forEach((el) => {
-          hljs.highlightElement(el);
-          const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
-          classesToReplace.forEach((oldClass) => {
-            const elementsWithOldClass = el.querySelectorAll('.' + oldClass);
-            elementsWithOldClass.forEach((element) => {
-              element.classList.remove(oldClass);
-              let classes = (modCss(oldClass)).split(' ');
-              if (classes && classes.length > 1) {
-                element.classList.add(classes[1]);
-              }
-              // Else, do nothing to keep potential class issues subtle
-            });
+      mainElement.current.classList.add('mwai-rendered');
+      const selector = mainElement.current.querySelectorAll('pre code');
+      selector.forEach((el) => {
+        hljs.highlightElement(el);
+        const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
+        classesToReplace.forEach((oldClass) => {
+          const elementsWithOldClass = el.querySelectorAll('.' + oldClass);
+          elementsWithOldClass.forEach((element) => {
+            element.classList.remove(oldClass);
+            let classes = (modCss(oldClass)).split(' ');
+            if (classes && classes.length > 1) {
+              element.classList.add(classes[0]);
+            }
+            else {
+              console.warn('Could not find class for ' + oldClass);
+            }
           });
         });
-      } catch (e) {
-        // fails silently
-      }
+      });
     }
   }
 
@@ -182,6 +181,8 @@ const ChatbotReply = ({ message, conversationRef }) => {
       <RawMessage message={message} />
     </div>;
   }
+
+  //console.log({ message, isImages });
 
   if (message.role === 'assistant') {
 
