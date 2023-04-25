@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.6.51
+Stable tag: 1.6.52
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.51 (2023/04/25) =
+= 1.6.52 (2023/04/25) =
 * Add: Ability to see the content of the query and answer objects, for any request that goes through AI Engine. This is in the Statistics Tab. API Keys are not logged however, for security reason.
 * Fix: Code highlighting was not always working.
 * Fix: The Send button which was sending circular data to the stringifyer.

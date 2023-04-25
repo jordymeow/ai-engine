@@ -1,13 +1,11 @@
-// Previous: 1.4.3
-// Current: 1.5.3
+// Previous: 1.5.3
+// Current: 1.6.52
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import styled from 'styled-components';
 
 import { apiUrl, restNonce } from '@app/settings';
 
-// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
@@ -45,7 +43,7 @@ const Message = ({ message }) => {
         <StyledType>{message.type}</StyledType>
       </StyledContext>
       {embeddings && <StyledEmbedding>
-        {embeddings.map(embedding => <div>
+        {embeddings.map(embedding => <div key={embedding.title + Math.random()}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -165,12 +163,13 @@ const Discussions = () => {
       }
       await deleteDiscussions();
       queryClient.invalidateQueries('chats');
+    } else {
+      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+      const selectedChatIds = selectedChats ? selectedChats.map(x => x.chatId) : [];
+      await deleteDiscussions(selectedChatIds);
+      setSelectedIds([]);
+      queryClient.invalidateQueries('chats');
     }
-    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-    const selectedChatIds = selectedChats.map(x => x.chatId);
-    await deleteDiscussions(selectedChatIds);
-    setSelectedIds([]);
-    queryClient.invalidateQueries('chats');
     setBusyAction(false);
   }
 
@@ -203,7 +202,7 @@ const Discussions = () => {
             }}
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
-            onSelectRow={id => { setSelectedIds(id) }}
+            onSelectRow={id => { setSelectedIds([id]) }}
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
