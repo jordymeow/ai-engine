@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.6.3
+Stable tag: 1.6.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,10 +78,17 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.3 (2023/04/24) =
-* Add: The JS MwaiAPI. Allows more control over the chatbot (to open it, to modify the typewriter speed, etc). You can find a few examples [here](https://meowapps.com/ai-engine/faq/#control-the-chatbot).
+= 1.6.5 (2023/04/25) =
+* Add: Ability to see the content of the query and answer objects, for any request that goes through AI Engine. This is in the Statistics Tab. API Keys are not logged however, for security reason.
+* Fix: The Send button which was sending circular data to the stringifyer.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 1.6.4 (2023/04/24) =
+* Add: The JS API. Allows more control over the chatbot (to open it, to modify the typewriter speed, etc). You can find a few examples [here](https://meowapps.com/ai-engine/faq/#control-the-chatbot).
 * Add: AI Forms support Speech-to-Text (through whisper).
 * Update: A few enhancements on the AI Forms, for more clarity.
+* Fix: Japanese keyboard was not supported in the chat textfield.
 * Fix: The new chatbot was not working with images yet. Now works with DALL-E.
 * Fix: Issue with Safari (the loading animation was staying - looks like a bug in Safari however)
 * Fix: Too many parameters were injected in the front chatbot in the case of site-wide.

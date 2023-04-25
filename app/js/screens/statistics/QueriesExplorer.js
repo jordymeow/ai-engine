@@ -1,16 +1,17 @@
-// Previous: 1.3.81
-// Current: 1.5.3
+// Previous: 1.5.3
+// Current: 1.6.5
 
 const { useMemo, useState, useEffect } = wp.element;
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { nekoFetch } from '@neko-ui';
+import { NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoButton } from '@neko-ui';
+import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers';
 
 import { apiUrl, restNonce, options } from '@app/settings';
 
-import { NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoButton } from '@neko-ui';
-import { nekoFetch } from '@neko-ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers';
-
 const logsColumns = [
+  { accessor: 'id', visible: false },
   { accessor: 'time', title: 'Time', width: '80px', sortable: true },
   { accessor: 'env',  title: 'Env', width: '90px' },
   { accessor: 'user', title: 'User', width: '85px' },
@@ -25,7 +26,7 @@ const retrieveLogs = async (logsQueryParams) => {
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
 }
 
-const QueriesExplorer = () => {
+const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
   const queryClient = useQueryClient();
   const [ logsQueryParams, setLogsQueryParams ] = useState({
     filters: null, sort: { accessor: 'time', by: 'desc' }, page: 1, limit: 20
@@ -43,7 +44,7 @@ const QueriesExplorer = () => {
     } else {
       setLogsQueryParams({ ...logsQueryParams, filters: { env: currentTab } });
     }
-  }, [currentTab, logsQueryParams]);
+  }, [currentTab]);
 
   const logsTotal = useMemo(() => {
     return logsData?.total || 0;
@@ -51,7 +52,7 @@ const QueriesExplorer = () => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = tableDateTimeFormatter(x.time);
       let user = tableUserIPFormatter(x.user, x.ip);
 
@@ -68,6 +69,7 @@ const QueriesExplorer = () => {
       }
 
       return {
+        id: x.id,
         env: <div>{x.env}<br /><small>{x.session}</small></div>,
         user: user,
         model: <div><span title={x.model}>{getModelName(x.model)}</span><br /><small>{x.apiSrv} (key: {x.apiOwn})</small></div>,
@@ -79,6 +81,7 @@ const QueriesExplorer = () => {
   }, [logsData]);
 
   return (<>
+
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
       <NekoQuickLinks value={currentTab} onChange={value => {
           setCurrentTab(value);
@@ -104,7 +107,11 @@ const QueriesExplorer = () => {
       </div>
     </div>
 
-    <NekoTable alternateRowColor busy={isFetchingLogs}
+    <NekoTable busy={isFetchingLogs}
+      onSelectRow={id => { setSelectedLogIds([id]) }}
+      onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids  ]) }}
+      onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]) }}
+      selectedItems={selectedLogIds}
       sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
         setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
       }}

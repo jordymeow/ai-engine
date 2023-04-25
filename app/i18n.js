@@ -170,6 +170,7 @@ i18n.COMMON = {
   AI_AVATAR: __( 'Avatar', 'ai-engine' ),
   SITE_WIDE_CHAT: __( 'Site-Wide Chat', 'ai-engine' ),
   DEFAULT_MODEL: __( 'Default Model', 'ai-engine' ),
+  STATISTICS_DATA: __( 'Statistics Data', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -195,6 +196,7 @@ i18n.HELP = {
   POST_TYPES: __( 'Enable for these post types; separate with commas.', 'ai-engine' ),
   POST_STATUS: __( 'Enable for these post statuses (publish, draft, future, private, etc); separate with commas.', 'ai-engine' ),
   CONTEXT_MAX_TOKENS: __( 'Automatically truncate the content (Content-Aware, Embeddings, etc) to make sure it does not reach this maximum number of tokens.', 'ai-engine' ),
+  STATISTICS_DATA: __( 'Record all data. It is then viewable in the Statistics tab.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Answer {
+class Meow_MWAI_Answer implements JsonSerializable {
 
   public $result = '';
   public $results = [];
@@ -9,6 +9,15 @@ class Meow_MWAI_Answer {
 
   public function __construct( $query = null ) {
     $this->query = $query;
+  }
+
+  public function jsonSerialize() {
+    return [
+      'class' => get_class( $this ),
+      'result' => $this->result,
+      'results' => $this->results,
+      'usage' => $this->usage
+    ];
   }
 
   public function setQuery( $query ) {
@@ -93,5 +102,9 @@ class Meow_MWAI_Answer {
       $this->result = $choices;
       $this->results[] = $choices;
     }
+  }
+
+  public function toJson() {
+    return json_encode( $this );
   }
 }

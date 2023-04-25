@@ -1,5 +1,5 @@
-// Previous: 1.5.1
-// Current: 1.6.3
+// Previous: 1.6.3
+// Current: 1.6.5
 
 // AI Engine
 import { useModels } from "../helpers";
@@ -10,7 +10,7 @@ import i18n from '@root/i18n';
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { PanelBody, TextControl, TextareaControl, SelectControl, UnitControl } = wp.components;
+const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 const saveFormField = (props) => {
@@ -32,7 +32,7 @@ const saveFormField = (props) => {
 
 	// Create the shortcode
   const shortcode = Object.entries(shortcodeAttributes)
-    .filter(([key, { value, insertIfNull }]) => !!value || insertIfNull)
+    .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-submit");
 
   return `${shortcode}]`;

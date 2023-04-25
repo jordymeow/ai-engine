@@ -1,13 +1,13 @@
-// Previous: 0.9.92
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.6.5
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
-const { useMemo, useEffect } = wp.element;
-const { Button, PanelBody, TextControl, SelectControl } = wp.components;
+const { useEffect } = wp.element;
+const { PanelBody, SelectControl } = wp.components;
 const { InspectorControls, InnerBlocks, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {

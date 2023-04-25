@@ -1,7 +1,7 @@
 <?php
 
 class Meow_MWAI_QueryTranscribe extends Meow_MWAI_Query {
-	public $url = "";
+	public string $url = "";
   
   public function __construct( $prompt = '', $model = 'whisper-1' ) {
 		parent::__construct( $prompt );

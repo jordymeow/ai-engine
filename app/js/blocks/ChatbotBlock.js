@@ -1,5 +1,5 @@
-// Previous: 1.4.9
-// Current: 1.5.1
+// Previous: 1.5.1
+// Current: 1.6.5
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -8,7 +8,7 @@ import { chatbots } from '@app/settings';
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo } = wp.element;
-const { PanelBody, TextControl, TextareaControl, SelectControl, UnitControl } = wp.components;
+const { PanelBody, SelectControl } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 const saveChatbot = (props) => {
@@ -22,7 +22,7 @@ const saveChatbot = (props) => {
 
 	// Create the shortcode
   const shortcode = Object.entries(shortcodeAttributes)
-    .filter(([key, { value, insertIfNull }]) => !!value || insertIfNull)
+    .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai_chatbot_v2");
   return `${shortcode}]`;
 };

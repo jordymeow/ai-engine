@@ -2,7 +2,7 @@
 
 class Meow_MWAI_QueryEmbed extends Meow_MWAI_Query {
   
-  public function __construct( $promptOrQuery = null, $model = 'text-embedding-ada-002' ) {
+  public function __construct( mixed $promptOrQuery = null, ?string $model = 'text-embedding-ada-002' ) {
 		
 		if ( is_a( $promptOrQuery, 'Meow_MWAI_QueryText' ) ) {
 			$lastMessage = $promptOrQuery->getLastMessage();

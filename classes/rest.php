@@ -152,6 +152,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'get_logs' ),
 			) );
+			register_rest_route( $this->namespace, '/logs_meta', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'get_logs_meta' ),
+			) );
 			register_rest_route( $this->namespace, '/moderate', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -719,6 +724,19 @@ class Meow_MWAI_Rest
 			$sort = $params['sort'];
 			$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
 			return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function get_logs_meta( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$logId = $params['logId'];
+			$metaKeys = $params['metaKeys'];
+			$data = apply_filters( 'mwai_stats_logs_meta', [], $logId, $metaKeys );
+			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );

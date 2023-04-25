@@ -1,24 +1,46 @@
 <?php
 
-class Meow_MWAI_QueryText extends Meow_MWAI_Query {
-  public $maxTokens = 1024;
-  public $temperature = 0.8;
-  public $maxSentences = 15;
-  public $isChat = false;
-  public $stop = null;
-  public $messages = [];
-  public $context = null;
-  public $newMessage = null;
-  public $promptEnding = null;
-  public $casuallyFineTuned = false;
+class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
+  public int $maxTokens = 1024;
+  public float $temperature = 0.8;
+  public int $maxSentences = 15;
+  public bool $isChat = false;
+  public ?string $stop = null;
+  public array $messages = [];
+  public ?string $context = null;
+  public ?string $newMessage = null;
+  public ?string $promptEnding = null;
+  public bool $casuallyFineTuned = false;
   
-  public function __construct( $prompt = '', $maxTokens = 1024, $model = 'gpt-3.5-turbo' ) {
+  public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = 'gpt-3.5-turbo' ) {
     parent::__construct( $prompt );
     $this->setModel( $model );
     $this->setMaxTokens( $maxTokens );
   }
 
-  public function getLastPrompt() {
+  public function jsonSerialize() {
+    return [
+      'class' => get_class( $this ),
+      'prompt' => $this->prompt,
+      'messages' => $this->messages,
+      'maxTokens' => $this->maxTokens,
+      'temperature' => $this->temperature,
+      'maxSentences' => $this->maxSentences,
+      'isChat' => $this->isChat,
+      'stop' => $this->stop,
+      'context' => $this->context,
+      'newMessage' => $this->newMessage,
+      'promptEnding' => $this->promptEnding,
+      'casuallyFineTuned' => $this->casuallyFineTuned,
+      'model' => $this->model,
+      'mode' => $this->mode,
+      'session' => $this->session,
+      'env' => $this->env,
+      'service' => $this->service,
+    ];
+  }
+
+  public function getLastPrompt(): string {
     if ( empty( $this->messages ) ) {
       return $this->prompt;
     }
@@ -28,13 +50,12 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
 
   // Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
-  function estimateTokens( $content )
+  function estimateTokens( mixed $content ): int
   {
     $text = "";
     // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     if ( is_array( $content ) ) {
       foreach ( $content as $message ) {
-        $name = "";
         $role = $message['role'];
         $content = $message['content'];
         $text .= "=#=$role\n$content=#=\n";
@@ -93,7 +114,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * ID of the model to use.
    * @param string $model ID of the model to use.
    */
-  public function setModel( $model ) {
+  public function setModel( string $model ) {
     $this->model = $model;
     $this->mode = 'completion';
     foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
@@ -121,7 +142,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * This returns the prompt if it's not a chat, otherwise it will build a prompt with
    * all the messages nicely formatted.
    */
-  public function getPrompt() {
+  public function getPrompt(): ?string {
     if ( !$this->isChat ) {
       return $this->prompt;
     }
@@ -164,7 +185,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * Only used when the model has a chat mode (and only used in messages).
    * @param string $prompt The messages to generate completions.
    */
-  public function setNewMessage( $newMessage ) {
+  public function setNewMessage( string $newMessage ): void {
     $this->newMessage = $newMessage;
     $this->validateMessages();
   }
@@ -182,7 +203,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * Similar to the prompt, but use an array of messages instead.
    * @param string $prompt The messages to generate completions.
    */
-  public function setMessages( $messages ) {
+  public function setMessages( array $messages ) {
     $messages = array_map( function( $message ) {
       return [ 'role' => $message['role'], 'content' => $message['content'] ];
     }, $messages );
@@ -190,7 +211,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->validateMessages();
   }
 
-  public function getLastMessage() {
+  public function getLastMessage(): ?string {
     if ( !empty( $this->messages ) ) {
       $lastMessageIndex = count( $this->messages ) - 1;
       $lastMessage = $this->messages[$lastMessageIndex];
@@ -200,7 +221,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
   }
 
   // Function that adds a message just before the last message
-  public function injectContext( $content ) {
+  public function injectContext( string $content ): void {
     if ( !empty( $this->messages ) ) {
       $lastMessageIndex = count( $this->messages ) - 1;
       $lastMessage = $this->messages[$lastMessageIndex];
@@ -214,12 +235,12 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * The context that is used for the chat completion (mode === 'chat').
    * @param string $context The context to use.
    */
-  public function setContext( $context ) {
+  public function setContext( string $context ): void {
     $this->context = apply_filters( 'mwai_ai_context', $context, $this );
     $this->validateMessages();
   }
 
-  private function validateMessages() {
+  private function validateMessages(): void {
     // Messages should end with either the prompt or, if exists, the newMessage.
     $message = empty( $this->newMessage ) ? $this->prompt : $this->newMessage;
     if ( empty( $this->messages ) ) {
@@ -254,8 +275,8 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * Most models have a context length of 2048 tokens (except for the newest models, which support 4096).
    * @param float $prompt The maximum number of tokens.
    */
-  public function setMaxTokens( $maxTokens ) {
-    $this->maxTokens = intval( $maxTokens );
+  public function setMaxTokens( int $maxTokens ): void {
+    $this->maxTokens = $maxTokens;
   }
 
   /**
@@ -263,7 +284,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
    * Try 0.9 for more creative applications, and 0 for ones with a well-defined answer.
    * @param float $temperature The temperature.
    */
-  public function setTemperature( $temperature ) {
+  public function setTemperature( float $temperature ): void {
     $temperature = floatval( $temperature );
     if ( $temperature > 1 ) {
       $temperature = 1;
@@ -274,19 +295,19 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query {
     $this->temperature = round( $temperature, 2 );
   }
 
-  public function setMaxSentences( $maxSentences ) {
+  public function setMaxSentences( int $maxSentences ): void {
     if ( !empty( $maxSentences ) ) {
       $this->maxSentences = intval( $maxSentences );
       $this->validateMessages();
     }
   }
 
-  public function setStop( $stop ) {
+  public function setStop( string $stop ): void {
     $this->stop = $stop;
   }
 
   // Based on the params of the query, update the attributes
-  public function injectParams( $params ) {
+  public function injectParams( array $params ): void {
     if ( isset( $params['model'] ) ) {
 			$this->setModel( $params['model'] );
 		}

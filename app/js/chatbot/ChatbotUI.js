@@ -1,5 +1,5 @@
-// Previous: 1.6.1
-// Current: 1.6.3
+// Previous: 1.6.3
+// Current: 1.6.5
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -14,6 +14,7 @@ const ChatbotUI = (props) => {
   const { modCss } = useModClasses(theme);
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
   const { timeElapsed, startChrono, stopChrono } = useChrono();
+  const [ composing, setComposing ] = useState(false);
   const inputRef = useRef();
   const conversationRef = useRef();
   const [ open, setOpen ] = useState(false);
@@ -28,7 +29,7 @@ const ChatbotUI = (props) => {
   useEffect(() => {
     mwaiAPI.open = () => setOpen(true);
     mwaiAPI.close = () => setOpen(false);
-    mwaiAPI.toggle = () => setOpen(prev => !prev);
+    mwaiAPI.toggle = () => setOpen(!open);
   }, []);
 
   useEffect(() => {
@@ -40,18 +41,18 @@ const ChatbotUI = (props) => {
     if (!isMobile) {
       inputRef.current.focus(); 
     }
-  }, [busy, isMobile, startChrono, stopChrono]);
+  }, [busy, isMobile]);
 
   useLayoutEffect(() => {
     if (conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, conversationRef]);
 
   const onSubmitAction = (forcedText = null) => {
-    if (forcedText !== null) {
+    if (forcedText !== null && forcedText !== undefined) {
       onSubmit(forcedText);
-    } else if (inputText.length >= 0) {
+    } else if (inputText && inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -65,7 +66,7 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText.length === 0 && messages?.length > 1;
+  const clearMode = inputText.length < 1 && messages && messages.length > 1;
 
   return (<>
     <div id={`mwai-chatbot-${chatId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
@@ -83,11 +84,11 @@ const ChatbotUI = (props) => {
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(prev => !prev)}
+                onClick={() => setMinimized(!minimized)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(prev => !prev)}
+              onClick={() => setOpen(!open)}
             />
           </div>
         </div>
@@ -102,7 +103,12 @@ const ChatbotUI = (props) => {
         <div className={modCss('mwai-input')}>
           <TextAreaAutosize ref={inputRef} disabled={busy} placeholder={textInputPlaceholder}
             value={inputText} maxLength={textInputMaxLength}
+            onCompositionStart={() => setComposing(true)}
+            onCompositionEnd={() => setComposing(false)}
             onKeyDown={event => {
+              if (composing) {
+                return;
+              }
               if (event.code === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 event.stopPropagation();

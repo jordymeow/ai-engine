@@ -2,7 +2,7 @@
 
 class Meow_MWAI_QueryImage extends Meow_MWAI_Query {
 
-  public function __construct( $prompt = "", $model = "dall-e" ) {
+  public function __construct( ?string $prompt = "", ?string $model = "dall-e" ) {
 		parent::__construct( $prompt );
     $this->model = $model;
     $this->mode = "generation"; // could be generation, edit, variation

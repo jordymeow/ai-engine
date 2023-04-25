@@ -1,5 +1,5 @@
-// Previous: 1.5.7
-// Current: 1.6.2
+// Previous: 1.6.2
+// Current: 1.6.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -113,10 +113,7 @@ function useChrono() {
 
   useEffect(() => {
     return () => {
-      if (intervalIdRef.current !== null) {
-        clearInterval(intervalIdRef.current);
-        intervalIdRef.current = null;
-      }
+      clearInterval(intervalIdRef.current);
     };
   }, []);
 
@@ -190,6 +187,20 @@ const processParameters = (params) => {
   };
 };
 
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        throw new Error('Circular reference found. Cancelled.', { key, value });
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
 export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
-  useChrono, formatUserName, formatAiName, processParameters
+  useChrono, formatUserName, formatAiName, processParameters, getCircularReplacer
 };

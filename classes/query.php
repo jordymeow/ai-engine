@@ -1,19 +1,21 @@
 <?php
 
-class Meow_MWAI_Query {
-  public $env = '';
-  public $prompt = '';
-  public $model = '';
-  public $mode = '';
-  public $session = null;
-  public $maxResults = 1;
+class Meow_MWAI_Query implements JsonSerializable {
+  public string $env = '';
+  public string $prompt = '';
+  public string $model = '';
+  public string $mode = '';
+  public ?string $session = null;
+  public int $maxResults = 1;
+  public ?string $service = null;
 
   // OpenAI
-  public $apiKey = null;
-  public $service = null;
-  public $azureEndpoint = null;
-  public $azureApiKey = null;
-  public $azureDeployment = null;
+  public ?string $apiKey = null;
+
+  // Azure
+  public ?string $azureEndpoint = null;
+  public ?string $azureApiKey = null;
+  public ?string $azureDeployment = null;
 
   public function __construct( $prompt = '' ) {
     global $mwai_core;
@@ -21,11 +23,23 @@ class Meow_MWAI_Query {
     $this->session = $mwai_core->get_session_id();
   }
 
+  public function jsonSerialize() {
+    return [
+      'class' => get_class( $this ),
+      'env' => $this->env,
+      'prompt' => $this->prompt,
+      'model' => $this->model,
+      'mode' => $this->mode,
+      'session' => $this->session,
+      'maxResults' => $this->maxResults
+    ];
+  }
+
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
   }
 
-  public function getLastPrompt() {
+  public function getLastPrompt(): string {
     return $this->prompt; 
   }
 
@@ -34,7 +48,7 @@ class Meow_MWAI_Query {
    * Used for statistics, mainly.
    * @param string $env The environment.
    */
-  public function setEnv( $env ) {
+  public function setEnv( string $env ): void {
     $this->env = $env;
   }
 
@@ -42,7 +56,7 @@ class Meow_MWAI_Query {
    * ID of the model to use.
    * @param string $model ID of the model to use.
    */
-  public function setModel( $model ) {
+  public function setModel( string $model ) {
     $this->model = $model;
   }
 
@@ -50,7 +64,7 @@ class Meow_MWAI_Query {
    * The mode
    * @param string $mode.
    */
-  public function setMode( $mode ) {
+  public function setMode( string $mode ) {
     $this->mode = $mode;
   }
 
@@ -59,7 +73,7 @@ class Meow_MWAI_Query {
    * It can also return the probabilities of alternative tokens at each position.
    * @param string $prompt The prompt to generate completions.
    */
-  public function setPrompt( $prompt ) {
+  public function setPrompt( string $prompt ) {
     $this->prompt = $prompt;
   }
 
@@ -75,7 +89,7 @@ class Meow_MWAI_Query {
    * The API key to use.
    * @param string $apiKey The API key.
    */
-  public function setApiKey( $apiKey ) {
+  public function setApiKey( string $apiKey ) {
     $this->apiKey = $apiKey;
   }
 
@@ -83,7 +97,7 @@ class Meow_MWAI_Query {
    * The service to use.
    * @param string $service The service.
    */
-  public function setService( $service ) {
+  public function setService( string $service ) {
     $this->service = $service;
   }
 
@@ -91,7 +105,7 @@ class Meow_MWAI_Query {
    * The Azure endpoint to use.
    * @param string $endpoint The endpoint.
    */
-  public function setAzureEndpoint( $endpoint ) {
+  public function setAzureEndpoint( string $endpoint ) {
     $this->azureEndpoint = $endpoint;
   }
 
@@ -99,7 +113,7 @@ class Meow_MWAI_Query {
    * The Azure API key to use.
    * @param string $apiKey The API key.
    */
-  public function setAzureApiKey( $apiKey ) {
+  public function setAzureApiKey( string $apiKey ) {
     $this->azureApiKey = $apiKey;
   }
 
@@ -107,7 +121,7 @@ class Meow_MWAI_Query {
    * The Azure deployment to use.
    * @param string $deployment The deployment.
    */
-  public function setAzureDeployment( $deployment ) {
+  public function setAzureDeployment( string $deployment ) {
     $this->azureDeployment = $deployment;
   }
 
@@ -115,7 +129,7 @@ class Meow_MWAI_Query {
    * The session ID to use.
    * @param string $session The session ID.
    */
-  public function setSession( $session ) {
+  public function setSession( string $session ) {
     $this->session = $session;
   }
 
@@ -125,13 +139,20 @@ class Meow_MWAI_Query {
    * Use carefully and ensure that you have reasonable settings for max_tokens and stop.
    * @param float $maxResults Number of completions.
    */
-  public function setMaxResults( $maxResults ) {
-    $this->maxResults = intval( $maxResults );
+  public function setMaxResults( int $maxResults ) {
+    $this->maxResults = $maxResults;
   }
 
   // **
   //  * Check if everything is correct, otherwise fix it (like the max number of tokens).
   //  */
   public function finalChecks() {
+  }
+
+  /*
+    * Get the JSON representation of the query.
+  */
+  public function toJson() {
+    return json_encode( $this );
   }
 }
