@@ -1,5 +1,5 @@
-// Previous: 1.6.3
-// Current: 1.6.5
+// Previous: 1.6.5
+// Current: 1.6.53
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -28,8 +28,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  const chatIdRef = useRef(params.chatId || system.chatId || params.id || system.id);
-  const chatId = chatIdRef.current;
+  // System Parameters
+  const chatId = params.chatId || system.chatId || params.id || system.id;
   const userData = system.userData;
   const sessionId = system.sessionId;
   const contextId = system.contextId;
@@ -40,12 +40,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const typewriter = system?.typewriter ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
+  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory,
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
 
-  const memoizedValues = useMemo(() => {
+  const { cssVariables, iconUrl } = useMemo(() => {
     const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
@@ -53,9 +54,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }, {});
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
-  
-  aiName = formatAiName(aiName, pluginUrl, memoizedValues.iconUrl, modCss);
+  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+
+  useEffect(() => {
+    resetMessages();
+  }, [startSentence]);
 
   const saveMessages = (messages) => {
     if (!localMemory) {
@@ -78,8 +82,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         timestamp: new Date().getTime(),
       }];
       setMessages(freshMessages);
-    }
-    else {
+    } else {
       setMessages([]);
     }
   };
@@ -90,10 +93,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
-        // Bug: assign to state asynchronously without useEffect dependency properly handling updates
         setMessages(chatHistory.messages);
         setClientId(chatHistory.clientId);
-        return;
       }
     }
     resetMessages();
@@ -104,7 +105,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [chatId]);
   
   useEffect(() => {
-    if (serverRes === undefined || serverRes === null) {
+    if (!serverRes) {
       return;
     }
     setBusy(false);
@@ -166,7 +167,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onSubmit = async (textQuery) => {
     if (typeof textQuery !== 'string') {
-      // This should probably be: textQuery = inputText; to prevent sending non-string
       textQuery = inputText;
     }
 
@@ -240,7 +240,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     modCss,
     localMemory,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
-    isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables: memoizedValues.cssVariables, iconUrl: memoizedValues.iconUrl
+    isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables, iconUrl
   };
 
   return (

@@ -50,7 +50,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
 
   // Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
-  function estimateTokens( mixed $content ): int
+  function estimateTokens( $content ): int
   {
     $text = "";
     // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb

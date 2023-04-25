@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.3
-Stable tag: 1.6.52
+Stable tag: 1.6.53
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,9 +78,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.52 (2023/04/25) =
+= 1.6.53 (2023/04/25) =
 * Add: Ability to see the content of the query and answer objects, for any request that goes through AI Engine. This is in the Statistics Tab. API Keys are not logged however, for security reason.
 * Fix: Code highlighting was not always working.
+* Fix: Issues with Embeddings and PHP 7.3.
+* Fix: Show a nicer placeholder than broken images with expired DALL-E images.
 * Fix: The Send button which was sending circular data to the stringifyer.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

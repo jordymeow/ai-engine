@@ -1,5 +1,5 @@
-// Previous: 1.6.3
-// Current: 1.6.51
+// Previous: 1.6.51
+// Current: 1.6.53
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -63,7 +63,16 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
 
+  const [images, setImages] = useState(message?.images);
+
   useEffect(() => { onRendered(); });
+
+  const handleImageError = (index) => {
+    const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
+    // bug: no dependency on prevImages, possible stale state
+    setImages(prevImages => prevImages.map((img, i) => i === index ? placeholderImage : img));
+  };
+
   if (message.isQuerying) {
     return (<BouncingDots />);
   }
@@ -72,8 +81,10 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
         <div className={modCss('mwai-gallery')}>
-          {message?.images?.map((image, index) => (
-            <a href={image} target="_blank" rel="noopener noreferrer"><img key={index} src={image} alt={message.content} /></a>
+          {images?.map((image, index) => (
+            <a href={image} target="_blank" rel="noopener noreferrer" key={index}>
+              <img src={image} onError={() => handleImageError(index)} />
+            </a>
           ))}
         </div>
       </span>
@@ -165,7 +176,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
             element.classList.remove(oldClass);
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
-              element.classList.add(classes[0]);
+              element.classList.add(classes[1]);
             }
             else {
               console.warn('Could not find class for ' + oldClass);
@@ -182,10 +193,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
     </div>;
   }
 
-  //console.log({ message, isImages });
-
   if (message.role === 'assistant') {
-
     if (isImages) {
       return <div ref={mainElement} className={classes}>
         <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
