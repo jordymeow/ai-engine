@@ -274,7 +274,7 @@ class Meow_MWAI_Rest
 			$text = isset( $data['text'] ) ? $data['text'] : null;
 			$selectedText = isset( $data['selectedText'] ) ? $data['selectedText'] : null;
 
-			// TODO: As soon as we have a wide range of usages and possibilities,
+			// NOTE: As soon as we have a wide range of usages and possibilities,
 			// let's refactor this into a nice and extensible UI/API.
 			$query = new Meow_MWAI_QueryText( "", 1024 );
 			$query->setEnv( 'admin-tools' );

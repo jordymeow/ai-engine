@@ -444,7 +444,7 @@ class Meow_MWAI_Core
 				$options[$key] = $value;
 			}
 			if ( $key === 'languages' ) {
-				// TODO: If we decide to make a set of options for languages, we can keep it in the settings
+				// NOTE: If we decide to make a set of options for languages, we can keep it in the settings
 				$options[$key] = MWAI_LANGUAGES;
 				$options[$key] = apply_filters( 'mwai_languages', $options[$key] );
 			}

@@ -104,7 +104,7 @@ class Meow_MWAI_AI {
   public function runEmbedding( $query ) {
     $this->applyQueryParameters( $query );
 
-    // TODO: Let's follow closely the changes at Azure.
+    // NOTE: Let's follow closely the changes at Azure.
     // Seems we need to specify an API version, otherwise it breaks.
     if ( $query->service === 'azure' ) {
       $url = trailingslashit( $query->azureEndpoint ) . 'openai/deployments/' .

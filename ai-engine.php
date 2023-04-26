@@ -3,7 +3,7 @@
 Plugin Name: AI Engine: ChatGPT Chatbot, Content Generator, GPT 3 & 4, Ultra-Customizable
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: GPT for WordPress! Chatbot (ChatGPT), content and images generator, copilot, model training and much more! Highly customizable, sleek UI. You will love it!
-Version: 1.6.53
+Version: 1.6.54
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '1.6.53' );
+define( 'MWAI_VERSION', '1.6.54' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -22,7 +22,7 @@ define( 'MWAI_URL', plugin_dir_url( __FILE__ ) );
 
 require_once( MWAI_PATH . '/classes/init.php' );
 
-// TODO: Avoid AI Engine JS to load on Rank Math.
+// HACK: Avoid AI Engine JS to load on Rank Math.
 // https://wordpress.org/support/topic/conflict-with-another-plugin-rank-math-seo-breaks-image-uploads/
 // When used together, it breaks on Rank Math. Not idea where, their JS is compiled and they didn't 
 // look into the matter more and repeatedly asked to disable AI Engine on their page. 
@@ -35,8 +35,7 @@ add_action( 'admin_enqueue_scripts', function() {
   }
 }, 20 );
 
-// TODO: This should be removed when GPT-4 is released to everyone.
-
+// NOTE: This should be removed when GPT-4 is released to everyone.
 add_filter( 'mwai_ai_exception', function ( $exception ) {
   try {
     if ( substr( $exception, 0, 60 ) === "Error while calling OpenAI: The model `gpt-4` does not exist" ) {

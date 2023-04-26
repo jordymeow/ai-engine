@@ -1,5 +1,5 @@
-// Previous: 1.3.97
-// Current: 1.4.0
+// Previous: 1.4.0
+// Current: 1.6.54
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -13,15 +13,11 @@ const retrievePostTypes = async () => {
   return res.postTypes;
 }
 
-// TODO: We should do error handling here, with throw when success is false
-// The error should be then caught in the component and displayed to the user
 const retrievePostsCount = async (postType) => {
   const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}`, { nonce: restNonce });
   return res?.count?.publish ? parseInt(res?.count?.publish) : null;
 }
 
-// TODO: We should do error handling here, with throw when success is false
-// The error should be then caught in the component and displayed to the user
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   const res = await nekoFetch(`${apiUrl}/post_content?postType=${postType}&offset=${offset}&postId=${postId}`, 
     { nonce: restNonce });
