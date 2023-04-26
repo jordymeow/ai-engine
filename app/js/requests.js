@@ -1,5 +1,5 @@
-// Previous: 1.4.0
-// Current: 1.6.54
+// Previous: 1.6.54
+// Current: 1.6.55
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -57,7 +57,7 @@ const retrieveChatbots = async () => {
 }
 
 const updateChatbots = async (chatbots) => {
-  const res = await nekoFetch(`${apiUrl}/chatbots`, { method: 'PUT', nonce: restNonce, json: { chatbots } });
+  const res = await nekoFetch(`${apiUrl}/chatbots`, { method: 'POST', nonce: restNonce, json: { chatbots } });
   if (!res.success) {
     throw new Error(res?.message);
   }
@@ -71,7 +71,7 @@ const retrieveThemes = async () => {
 
 const updateThemes = async (themes) => {
   try {
-    const res = await nekoFetch(`${apiUrl}/themes`, { method: 'PUT', nonce: restNonce, json: { themes } });
+    const res = await nekoFetch(`${apiUrl}/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
     return res?.themes;
   }
   catch (err) {

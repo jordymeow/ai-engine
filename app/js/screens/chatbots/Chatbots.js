@@ -1,10 +1,12 @@
-// Previous: 1.4.8
-// Current: 1.5.9
+// Previous: 1.5.9
+// Current: 1.6.55
 
-import { useState, useMemo } from '@wordpress/element';
+// React & Vendor Libs
+import { useState, useMemo, useEffect } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
+// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
@@ -46,7 +48,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 1000); // clear message after 2 seconds
   };
 
   if (!currentChatbot) {
@@ -104,6 +106,14 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
+    if ( id === 'chatId' && value === 'default' ) {
+      alert("You cannot name a chatbot 'default'. Please choose another name.");
+      return;
+    }
+    if ( id === 'chatId' && value === '' ) {
+      alert("Your chatbot must have an ID.");
+      return;
+    }
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -111,15 +121,15 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  };
+  }
 
   const onChangeTab = (botIndex) => {
     setBotIndex(botIndex);
-  };
+  }
 
   const onSwitchTheme = (themeId) => {
     //updateChatbotParams(themeId, 'themeId');
-  };
+  }
 
   const addNewChatbot = async () => {
     setBusyAction(true);
@@ -130,7 +140,7 @@ const Chatbots = (props) => {
     }]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  };
+  }
 
   const deleteCurrentChatbot = async () => {
     setBusyAction(true);
@@ -139,7 +149,13 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  };
+  }
+
+  useEffect(() => {
+    if (chatbots && chatbots.length > 0 && botIndex >= chatbots.length) {
+      setBotIndex(chatbots.length - 1);
+    }
+  }, [chatbots, botIndex]);
 
   return (<>
     <NekoWrapper>
@@ -175,7 +191,7 @@ const Chatbots = (props) => {
           <NekoTabs inversed onChange={onChangeTab}
             action={<>
               <NekoButton className="primary-block" icon='plus' onClick={addNewChatbot} />
-              {currentChatbot && currentChatbot.chatId !== 'default' &&
+              {currentChatbot && currentChatbot.name !== 'Default' &&
                 <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
               }
             </>}>

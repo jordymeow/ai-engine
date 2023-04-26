@@ -108,12 +108,12 @@ class Meow_MWAI_Rest
 				'callback' => array( $this, 'openai_incidents' ),
 			) );
 			register_rest_route( $this->namespace, '/chatbots', array(
-				'methods' => ['GET', 'PUT'],
+				'methods' => ['GET', 'POST'],
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'rest_chatbots' ),
 			) );
 			register_rest_route( $this->namespace, '/themes', array(
-				'methods' => ['GET', 'PUT'],
+				'methods' => ['GET', 'POST'],
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'rest_themes' ),
 			) );
@@ -178,7 +178,7 @@ class Meow_MWAI_Rest
 				'callback' => array( $this, 'get_vectors_ref' ),
 			) );
 			register_rest_route( $this->namespace, '/vector', array(
-				'methods' => 'PUT',
+				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'modify_vector' ),
 			) );
@@ -854,7 +854,7 @@ class Meow_MWAI_Rest
 				$themes = $this->core->getThemes();
 				return new WP_REST_Response([ 'success' => true, 'themes' => $themes ], 200 );
 			}
-			else if ( $method === 'PUT' ) {
+			else if ( $method === 'POST' ) {
 				$params = $request->get_json_params();
 				$themes = $params['themes'];
 				$themes = $this->core->updateThemes( $themes );
@@ -873,7 +873,7 @@ class Meow_MWAI_Rest
 				$chatbots = $this->core->getChatbots();
 				return new WP_REST_Response([ 'success' => true, 'chatbots' => $chatbots ], 200 );
 			}
-			else if ( $method === 'PUT' ) {
+			else if ( $method === 'POST' ) {
 				$params = $request->get_json_params();
 				$chatbots = $params['chatbots'];
 				$chatbots = $this->core->updateChatbots( $chatbots );

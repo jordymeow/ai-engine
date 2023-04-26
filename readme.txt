@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.54
+Stable tag: 1.6.55
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,8 +78,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.54 (2023/04/26) =
+= 1.6.55 (2023/04/26) =
+* Update: Using POST instead of PUT for the API calls (that avoid issues with with ModSecurity and other security plugins; though it was gramatically correct to use PUT to update data rather than POST).
+* Update: Better error handling for templates.
 * Update: Optimized the speed of retrieving logs data.
+* Fix: Avoid issue with naming new chatbots 'default'.
 * Fix: Issue with models not appearing in the dropdown for finetuning.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
