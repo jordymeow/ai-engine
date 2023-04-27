@@ -1,5 +1,5 @@
-// Previous: 1.4.7
-// Current: 1.5.2
+// Previous: 1.5.2
+// Current: 1.6.56
 
 const { render } = wp.element;
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
@@ -16,11 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let params = JSON.parse(decodeHtmlEntities(mwaiChatbot.getAttribute('data-params')));
     let system = JSON.parse(decodeHtmlEntities(mwaiChatbot.getAttribute('data-system')));
     let theme = JSON.parse(decodeHtmlEntities(mwaiChatbot.getAttribute('data-theme')));
-    let atts = JSON.parse(decodeHtmlEntities(mwaiChatbot.getAttribute('data-atts')));
+    //let atts = JSON.parse(decodeHtmlEntities(mwaiChatbot.getAttribute('data-atts')));
     mwaiChatbot.removeAttribute('data-params');
     mwaiChatbot.removeAttribute('data-system');
     mwaiChatbot.removeAttribute('data-theme');
-    mwaiChatbot.removeAttribute('data-atts');
-    render(<ChatbotSystem system={system} params={params} theme={theme} atts={atts} />, mwaiChatbot);
+    //mwaiChatbot.removeAttribute('data-atts');
+    render(<ChatbotSystem system={system} params={params} theme={theme} />, mwaiChatbot);
   });
 });

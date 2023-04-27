@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.6.56
 
 const { render } = wp.element;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import { NekoUI } from '@neko-ui';
 import { Dashboard } from '@common';
 
 // Components
+import { options } from './settings';
 import Settings from '@app/screens/Settings';
 import Playground from '@app/screens/Playground';
 import PostsListTools from './modules/PostsListTools';
@@ -28,62 +29,63 @@ import BlockFeatures from './modules/BlockFeatures';
 import BlockCopilot from './modules/BlockCopilot';
 
 // Gutenberg Blocks
-import initBlocks from './blocks/index';
+import { initChatbotBlocks, initFormsBlocks } from './blocks/index';
 import WooCommerceAssistant from './modules/WooCommerce';
 
-initBlocks();
-BlockFeatures();
-BlockCopilot();
+const chatbotsEnabled = options.module_chatbots;
+const assistantsEnabled = options.module_suggestions;
+const formsEnabled = options.module_forms;
+const woocommerceEnabled = options.module_woocommerce;
+
+if (chatbotsEnabled) {
+	initChatbotBlocks();
+}
+
+if (formsEnabled) {
+	initFormsBlocks();
+	initChatbotBlocks();
+}
+
+if (assistantsEnabled) {
+	BlockFeatures();
+	BlockCopilot();
+}
 
 document.addEventListener('DOMContentLoaded', function() {
 
-	// Settings
-	const settings = document.getElementById('mwai-admin-settings');
-	if (settings) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><Settings /></NekoUI>
-		</QueryClientProvider>, settings);
+	const initializeComponent = (id, Component) => {
+		const element = document.getElementById(id);
+		if (element) {
+			render(
+				<QueryClientProvider client={queryClient}>
+					<NekoUI><Component /></NekoUI>
+				</QueryClientProvider>,
+				element
+			);
+		}
+	};
+
+	initializeComponent('mwai-admin-settings', Settings);
+	initializeComponent('mwai-content-generator', ContentGenerator);
+	initializeComponent('mwai-image-generator', ImageGenerator);
+	initializeComponent('mwai-playground', Playground);
+
+	if (assistantsEnabled) {
+		const postsList = document.getElementById('mwai-admin-postsList');
+		if (postsList) {
+			render(<NekoUI><PostsListTools /></NekoUI>, postsList);
+		}
 	}
 
-	// Content Generator
-	const generator = document.getElementById('mwai-content-generator');
-	if (generator) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><ContentGenerator /></NekoUI>
-		</QueryClientProvider>, generator);
+	if (woocommerceEnabled) {
+		const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
+		if (wcAssistant) {
+			render(<NekoUI><WooCommerceAssistant /></NekoUI>, wcAssistant);
+		}
 	}
 
-	// Image Generator
-	const imgGen = document.getElementById('mwai-image-generator');
-	if (imgGen) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><ImageGenerator /></NekoUI>
-		</QueryClientProvider>, imgGen);
-	}
-
-	// Dashboard
-	const dashboard = document.getElementById('mwai-playground');
+	const dashboard = document.getElementById('meow-common-dashboard');
 	if (dashboard) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><Playground /></NekoUI>
-		</QueryClientProvider>, dashboard);
-	}
-
-	// Admin Tools
-	const postsListTools = document.getElementById('mwai-admin-postsList');
-	if (postsListTools) {
-		render(<NekoUI><PostsListTools /></NekoUI>, postsListTools);
-	}
-
-	// Admin Tools
-	const wcAssistant = document.getElementById('mwai-admin-wcAssistant');
-	if (wcAssistant) {
-		render(<NekoUI><WooCommerceAssistant /></NekoUI>, wcAssistant);
-	}
-
-	// Common
-	const meowDashboard = document.getElementById('meow-common-dashboard');
-	if (meowDashboard) {
-		render(<NekoUI><Dashboard /></NekoUI>, meowDashboard);
+		render(<NekoUI><Dashboard /></NekoUI>, dashboard);
 	}
 });

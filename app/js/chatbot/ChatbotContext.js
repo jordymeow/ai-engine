@@ -1,7 +1,7 @@
-// Previous: 1.6.5
-// Current: 1.6.53
+// Previous: 1.6.53
+// Current: 1.6.56
 
-const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
+const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 import { getCircularReplacer } from './helpers';
@@ -28,8 +28,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  // System Parameters
-  const chatId = params.chatId || system.chatId || params.id || system.id;
+  const id = system.id;
+  const chatId = system.chatId;
   const userData = system.userData;
   const sessionId = system.sessionId;
   const contextId = system.contextId;
@@ -40,7 +40,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const typewriter = system?.typewriter ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory,
@@ -82,23 +81,25 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         timestamp: new Date().getTime(),
       }];
       setMessages(freshMessages);
-    } else {
+    }
+    else {
       setMessages([]);
     }
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    var chatHistory = [];
     if (localMemory) {
       chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
         setMessages(chatHistory.messages);
         setClientId(chatHistory.clientId);
+        return;
       }
     }
     resetMessages();
-  }, [chatId, localMemory]);
+  }, [chatId]);
 
   useEffect(() => {
     initChatbot();
@@ -113,12 +114,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverRes.success) {
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.pop();
-      }
+      // Remove the user message.
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -132,7 +132,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = serverRes.answer;
       lastMessage.html = serverRes.html;
       if (serverRes.images) {
@@ -156,7 +156,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes, messages ]);
+  }, [ serverRes ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -192,6 +192,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }];
     setMessages(freshMessages);
     const body = {
+      id: id,
       chatId: chatId,
       session: sessionId,
       clientId: clientId,
@@ -213,7 +214,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setServerRes(data);
     }
     catch (e) {
-      console.error(e);
+      console.error(error);
       setBusy(false);
     }
   };

@@ -5,7 +5,6 @@ require_once( MWAI_PATH . '/constants/models.php' );
 // Thisi
 define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	// UI Parameters
-	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
 	'aiName' => "AI: ",
 	'userName' => "User: ",
 	'guestName' => "Guest: ",
@@ -27,6 +26,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'localMemory' => true,
 	// Chatbot System Parameters
 	'chatId' => null,
+	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
 	'env' => 'chatbot',
 	'mode' => 'chat',
 	'contentAware' => false,

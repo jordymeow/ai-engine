@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.55
+Stable tag: 1.6.56
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,14 +78,20 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.56 (2023/04/27) =
+* Update: The chatbot and its shortcode are much more powerful in the way they manage their settings and parameters. If you are still using the old shortcode, switch to the new one. Make sure to test all your chatbots, there are major changes, and let me know if there are issues.
+* Update: Chatbot settings are now perfectly opaque (except when related to UI).
+* Fix: The assistants could not be disabled.
+* Fix: Japanese, Chinese (and other languages) typing issues in AI Copilot.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.55 (2023/04/26) =
 * Update: Using POST instead of PUT for the API calls (that avoid issues with with ModSecurity and other security plugins; though it was gramatically correct to use PUT to update data rather than POST).
 * Update: Better error handling for templates.
 * Update: Optimized the speed of retrieving logs data.
 * Fix: Avoid issue with naming new chatbots 'default'.
 * Fix: Issue with models not appearing in the dropdown for finetuning.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.53 (2023/04/25) =
 * Add: Ability to see the content of the query and answer objects, for any request that goes through AI Engine. This is in the Statistics Tab. API Keys are not logged however, for security reason.

@@ -5,6 +5,11 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'aiName', 'userName', 'guestName', 'textS
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
 
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'embeddingsIndex', 'context',
+	'casuallyFineTuned', 'promptEnding', 'completionEnding', 'model', 'temperature', 'maxTokens',
+	'maxResults', 'apiKey', 'service'
+] );
+
 class Meow_MWAI_Modules_Chatbot {
 	private $core = null;
 	private $namespace = 'mwai-bot/v1';
@@ -13,7 +18,7 @@ class Meow_MWAI_Modules_Chatbot {
 	public function __construct() {
 		global $mwai_core;
 		$this->core = $mwai_core;
-		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat' ) );
+		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'chatId' );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
@@ -49,7 +54,7 @@ class Meow_MWAI_Modules_Chatbot {
 		if ( empty( $params['newMessage'] ) ) {
 			return false;
 		}
-		if ( empty( $params['chatId'] ) ) {
+		if ( empty( $params['chatId'] ) && empty( $params['id'] ) ) {
 			return false;
 		}
 		$length = strlen( trim( $params['newMessage'] ) );
@@ -68,7 +73,16 @@ class Meow_MWAI_Modules_Chatbot {
 					'message' => 'Sorry, your query has been rejected.' ], 403
 				);
 			}
-			$chatbot = $this->core->getChatbot( $params['chatId'] );
+
+			// Custom Chatbot
+			if ( $params['id']  ) {
+				$chatbot = get_transient( 'mwai_custom_chatbot_' . $params['id'] );
+			}
+			// Registered Chatbot
+			else if ( $params['chatId'] ) {
+				$chatbot = $this->core->getChatbot( $params['chatId'] );
+			}
+
 			if ( !$chatbot ) {
 				return new WP_REST_Response( [ 
 					'success' => false, 
@@ -90,6 +104,7 @@ class Meow_MWAI_Modules_Chatbot {
 					$newParams[$key] = $value;
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
+				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
 				$query->injectParams( $params );
 			}
 			else {
@@ -105,6 +120,7 @@ class Meow_MWAI_Modules_Chatbot {
 					$newParams[$key] = $value;
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
+				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
 				$query->injectParams( $params );
 
 				// Takeover
@@ -167,18 +183,52 @@ class Meow_MWAI_Modules_Chatbot {
 		if ( !empty( $params ) ) {
 			$cleanParams['window'] = true;
 			$cleanParams['id'] = $this->siteWideChatId;
-			echo $this->chat( $cleanParams );
+			echo $this->chat_shortcode( $cleanParams );
 		}
 		return null;
 	}
 
-	public function chat( $atts ) {
-		$chatId = isset( $atts['id'] ) ? $atts['id'] : 'default';
-		$chatbot = $this->core->getChatbot( $chatId );
-		if ( !$chatbot ) {
-			return "Chatbot not found.";
+	public function chat_shortcode( $atts ) {
+		$chatbot = null;
+		$isCustom = false;
+		$chatId = null; // ID of a registered chatbot.
+		$id = null; // ID of a custom chatbot.
+		$atts = empty( $atts ) ? [] : $atts;
+
+		// If a ChatID is defined, we load it.
+		if ( isset( $atts['chat_id'] ) ) {
+			$chatId = $atts['chat_id'];
+			unset( $atts['chat_id'] );
+			$chatbot = $this->core->getChatbot( $chatId );
+			if ( !$chatbot ) {
+				return "AI Engine: Chatbot not found.";
+			}
 		}
-		unset( $atts['id'] );
+
+		// If no ChatID, but a ID, let's check it's actually a ChatID.
+		// If there is no ChatID for it, it means it's a custom shortcode.
+		$id = isset( $atts['id'] ) ? $atts['id'] : null;
+		if ( !empty( $id ) ) {
+			unset( $atts['id'] );
+			if ( !$chatbot ) {
+				$chatbot = $this->core->getChatbot( $id );
+				if ( $chatbot ) {
+					$isCustom = false;
+					$chatId = $id;
+					$id = null;
+				}
+				else {
+					$isCustom = true;
+					$chatId = 'default';
+				}
+			}
+		}
+
+		// We need a base chatbot anyway.
+		if ( !$chatbot ) {
+			$chatbot = $this->core->getChatbot( 'default' );
+			$chatId = 'default';
+		}
 
 		// Rename the keys of the atts into camelCase to match the internal params system.
 		$atts = array_map( function( $key, $value ) {
@@ -194,19 +244,34 @@ class Meow_MWAI_Modules_Chatbot {
 		foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {
 			if ( isset( $atts[$param] ) ) {
 				if ( $param === 'localMemory' ) {
-					// It's a boolean
 					$frontParams[$param] = $atts[$param] === 'true';
+					continue;
 				}
-				else {
-					$frontParams[$param] = $atts[$param];
-				}
+				$frontParams[$param] = $atts[$param];
 			}
 			else if ( isset( $chatbot[$param] ) ) {
 				$frontParams[$param] = $chatbot[$param];
 			}
 		}
 
+		// Server Params
+		$serverParams = [];
+		foreach ( MWAI_CHATBOT_SERVER_PARAMS as $param ) {
+			if ( isset( $atts[$param] ) ) {
+				$serverParams[$param] = $atts[$param];
+			}
+		}
+		if ( count( $serverParams ) > 0 ) {
+			if ( !$isCustom ) {
+				$id = md5( json_encode( $serverParams ) );
+				$chatId = null;
+			}
+			set_transient( 'mwai_custom_chatbot_' . $id, $serverParams, 60 * 60 * 24 );
+		}
+
+		// Front Params
 		$frontSystem = [
+			'id' => $id,
 			'chatId' => $chatId,
 			'userData' => $this->core->getUserData(),
 			'sessionId' => $this->core->get_session_id(),
@@ -222,10 +287,10 @@ class Meow_MWAI_Modules_Chatbot {
 		$jsonFrontParams = htmlspecialchars(json_encode($frontParams), ENT_QUOTES, 'UTF-8');
 		$jsonFrontSystem = htmlspecialchars(json_encode($frontSystem), ENT_QUOTES, 'UTF-8');
 		$jsonFrontTheme = htmlspecialchars(json_encode($theme), ENT_QUOTES, 'UTF-8');
-		$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
+		//$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
 
 		$this->enqueue_scripts();
-		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}' data-atts='{$jsonAttributes}'></div>";
+		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
 	}
 	
 }

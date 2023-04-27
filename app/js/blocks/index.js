@@ -1,5 +1,5 @@
-// Previous: 0.7.5
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.6.56
 
 import createChatbotBlock from './ChatbotBlock';
 import createContainerBlock from './FormContainerBlock';
@@ -10,16 +10,15 @@ import createSubmitBlock from './FormSubmitBlock';
 // The Storybook for Gutenberg
 // https://wordpress.github.io/gutenberg
 
-const initBlocks = () => {
-
-  // AI Forms
+const initFormsBlocks = () => {
   createFormFieldBlock();
   createOutputBlock();
   createSubmitBlock();
   createContainerBlock();
+}
 
-  // Chatbot
+const initChatbotBlocks = () => {
   createChatbotBlock();
 }
 
-export default initBlocks;
+export { initFormsBlocks, initChatbotBlocks };

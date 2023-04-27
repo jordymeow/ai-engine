@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.6.56
 
 const { createHigherOrderComponent } = wp.compose;
 const { addFilter } = wp.hooks;
@@ -8,10 +8,8 @@ const { RichText } = wp.blockEditor;
 const { InspectorControls } = wp.blockEditor;
 const { PanelBody, TextControl, Spinner } = wp.components;
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 
-// AI Engine
 import AiIcon from "../styles/AiIcon";
 import { apiUrl, restNonce } from '@app/settings';
 
@@ -23,9 +21,15 @@ const BlockCopilot = () => {
       const [ display, setDisplay ] = useState(false);
       const [ query, setQuery ] = useState('');
       const [ busy, setBusy ] = useState(false);
+      const [ composing, setComposing ] = useState(false);
       const { content } = props.attributes;
 
+      console.log({ composing });
+
       const handleKeyPress = (e) => {
+        if (composing) {
+          return;
+        }
         if (e.code === 'Space' && !content) {
           e.preventDefault();
           setDisplay(true);
@@ -40,7 +44,6 @@ const BlockCopilot = () => {
             nonce: restNonce,
             json: { action: 'write', prompt: query }
           });
-          console.log("GOT IT", res.data);
           props.setAttributes({ content: res.data })
         }
         catch (e) {
@@ -54,6 +57,10 @@ const BlockCopilot = () => {
       }
 
       const onAiTextKeyDown = async (e) => {
+
+        if (composing) {
+          return;
+        }
         if (e.code === 'Enter') {
           e.preventDefault();
           executeQuery(query);
@@ -80,11 +87,18 @@ const BlockCopilot = () => {
               placeholder="Write about..."
               onChange={(value) => setQuery(value)}
               onKeyDown={onAiTextKeyDown}
+              onCompositionStart={() => setComposing(true)}
+              onCompositionEnd={() => setComposing(false)}
             />
             {busy && <Spinner style={{ position: 'absolute', top: 30, right: 0 }} />}
           </div>);
         }
-        return (<div onKeyDown={handleKeyPress}><BlockEdit {...props} /></div>);
+        return (<div
+          onCompositionStart={() => setComposing(true)}
+          onCompositionEnd={() => setComposing(false)}
+          onKeyDown={handleKeyPress}>
+            <BlockEdit {...props} />
+        </div>);
       }
       return (<BlockEdit {...props} />);
     };
@@ -109,10 +123,6 @@ const BlockCopilot = () => {
   };
 
   addFilter("blocks.registerBlockType", "mwai-copilot/placeholder", modifyPlaceholder);
-  
-  setTimeout(() => {
-    console.log("Extra setup call");
-  }, 2000); 
 }
 
 export default BlockCopilot;
