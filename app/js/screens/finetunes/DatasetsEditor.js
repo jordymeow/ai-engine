@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.81
+// Previous: 1.3.81
+// Current: 1.6.57
 
 const { useState, useEffect } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -46,12 +46,12 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId !== undefined ? postId : undefined);
+    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let error = null;
     let rawData = null;
-    let content = resContent?.content;
-    let url = resContent?.url;
-    let title = resContent?.title;
+    let content = resContent?.content || '';
+    let url = resContent?.url || '';
+    let title = resContent?.title || '';
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
@@ -82,10 +82,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
         if (res.error?.cancelledByUser) {
           return null;
         }
-        console.error(res.message ?? "Unknown error, check your console logs.");
+        console.error(res);
         throw new Error(res.message ?? "Unknown error, check your console logs.");
       }
-      rawData = res?.data;
+      rawData = res?.data || '';
       if (res?.usage?.total_tokens) {
         tokens = res.usage.total_tokens;
         setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
@@ -109,12 +109,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr);
-    const validStartOffset = isNaN(startOffset) ? 0 : startOffset;
+    const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetStr !== null && offset < validStartOffset) {
+      if (startOffset && offset < parseInt(startOffset, 10)) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
@@ -135,14 +133,13 @@ const DatasetBuilder = ({ setBuilderData }) => {
     if (postIdInput === null) {
       return;
     }
-    const postId = postIdInput.trim() === "" ? undefined : postIdInput.trim();
+    const postId = postIdInput.trim() ? postIdInput.trim() : null;
     setQuickBusy(true);
     const result = await runProcess(0, postId);
     setQuickBusy(false);
-    if (!(result?.entries?.length)) {
+    if (!result.entries || result.entries.length === 0) {
       alert("No entries were generated. Check the console for more information.");
-    }
-    else {
+    } else {
       const confirmAdd = confirm(`Got ${result.entries.length} entries! Do you want to add them to your data? If not, they will be displayed in your console.`);
       if (confirmAdd) {
         setBuilderData(builderData => [...builderData, ...result.entries]);
@@ -163,7 +160,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
           Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
           {postTypes?.map(postType => 
             <NekoOption key={postType.type} value={postType.type} label={postType.name} />
           )}

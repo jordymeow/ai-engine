@@ -130,7 +130,7 @@ class Meow_MWAI_Rest
 			register_rest_route( $this->namespace, '/post_content', array(
 				'methods' => 'GET',
 				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'post_content' ),
+				'callback' => array( $this, 'rest_post_content' ),
 			) );
 			register_rest_route( $this->namespace, '/templates', array(
 				'methods' => 'GET',
@@ -167,7 +167,7 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'get_vectors' ),
 			) );
-			register_rest_route( $this->namespace, '/vector', array(
+			register_rest_route( $this->namespace, '/vector_add', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'add_vector' ),
@@ -177,7 +177,7 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'get_vectors_ref' ),
 			) );
-			register_rest_route( $this->namespace, '/vector', array(
+			register_rest_route( $this->namespace, '/vector_update', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'modify_vector' ),
@@ -631,7 +631,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function post_content( $request ) {
+	function rest_post_content( $request ) {
 		try {
 			$params = $request->get_query_params();
 			$offset = (int)$params['offset'];
@@ -643,7 +643,8 @@ class Meow_MWAI_Rest
 			$post = null;
 			if ( !empty( $postId ) ) {
 				$post = get_post( $postId );
-				if ( $post->post_status !== 'publish' && $post->post_status !== 'future' && $post->post_status !== 'draft' ) {
+				if ( $post->post_status !== 'publish' && $post->post_status !== 'future'
+					&& $post->post_status !== 'draft' && $post->post_status !== 'private' ) {
 					$post = null;
 				}
 			}

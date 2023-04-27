@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.56
+Stable tag: 1.6.57
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,9 +78,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.56 (2023/04/27) =
+= 1.6.57 (2023/04/27) =
 * Update: The chatbot and its shortcode are much more powerful in the way they manage their settings and parameters. If you are still using the old shortcode, switch to the new one. Make sure to test all your chatbots, there are major changes, and let me know if there are issues.
 * Update: Chatbot settings are now perfectly opaque (except when related to UI).
+* Fix: Some issues with embeddings management.
 * Fix: The assistants could not be disabled.
 * Fix: Japanese, Chinese (and other languages) typing issues in AI Copilot.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
