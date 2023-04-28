@@ -1,8 +1,10 @@
-// Previous: 1.6.53
-// Current: 1.6.56
+// Previous: 1.6.56
+// Current: 1.6.58
 
+// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
+// AI Engine
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 import { getCircularReplacer } from './helpers';
 
@@ -28,18 +30,22 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
+  // System Parameters
   const id = system.id;
   const chatId = system.chatId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId;
+  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
   const typewriter = system?.typewriter ?? false;
+  const speechRecognition = system?.speech_recognition ?? false;
+  const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
+  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory,
@@ -99,7 +105,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [chatId]);
+  }, [chatId, localMemory]);
 
   useEffect(() => {
     initChatbot();
@@ -113,7 +119,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     let freshMessages = [...messages];
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
+    // Failure
     if (!serverRes.success) {
+      // Remove the isQuerying placeholder for the assistant.
       if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
@@ -132,6 +140,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
+    // Success
+    // If there is a isQuerying placeholder for the assistant, let's update it.
     if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = serverRes.answer;
       lastMessage.html = serverRes.html;
@@ -140,7 +150,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
-    } else {
+    }
+    // Otherwise, let's add a new message
+    else {
       const newMessage = {
         id: randomStr(),
         role: 'assistant',
@@ -156,7 +168,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes ]);
+  }, [ serverRes, messages ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -167,6 +179,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onSubmit = async (textQuery) => {
     if (typeof textQuery !== 'string') {
+      // This avoid the onSubmit to send an event.
       textQuery = inputText;
     }
 
@@ -214,7 +227,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setServerRes(data);
     }
     catch (e) {
-      console.error(error);
+      console.error(e);
       setBusy(false);
     }
   };
@@ -238,6 +251,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     busy,
     setBusy,
     typewriter,
+    speechRecognition,
+    speechSynthesis,
     modCss,
     localMemory,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,

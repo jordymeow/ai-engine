@@ -280,7 +280,9 @@ class Meow_MWAI_Modules_Chatbot {
 			'pluginUrl' => MWAI_URL,
 			'restUrl' => untrailingslashit( rest_url() ),
 			'debugMode' => $this->core->get_option( 'debug_mode' ),
-			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' )
+			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' ),
+			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
+			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
 		];
 
 		$theme = isset( $frontParams['themeId'] ) ? $this->core->getTheme( $frontParams['themeId'] ) : null;

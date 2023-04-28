@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.57
+Stable tag: 1.6.58
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,14 +78,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.58 (2023/04/28) =
+* Fix: The input fields were not always focuses in the best way, should be much better now!
+* Add: The Speech Recognition of the Web Speech API, just for fun (it's fast and free).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.57 (2023/04/27) =
 * Update: The chatbot and its shortcode are much more powerful in the way they manage their settings and parameters. If you are still using the old shortcode, switch to the new one. Make sure to test all your chatbots, there are major changes, and let me know if there are issues.
 * Update: Chatbot settings are now perfectly opaque (except when related to UI).
 * Fix: Some issues with embeddings management.
 * Fix: The assistants could not be disabled.
 * Fix: Japanese, Chinese (and other languages) typing issues in AI Copilot.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.55 (2023/04/26) =
 * Update: Using POST instead of PUT for the API calls (that avoid issues with with ModSecurity and other security plugins; though it was gramatically correct to use PUT to update data rather than POST).

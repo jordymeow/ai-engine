@@ -1,10 +1,50 @@
-// Previous: 1.6.2
-// Current: 1.6.5
+// Previous: 1.6.5
+// Current: 1.6.58
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
 import cssChatGPT from '@root/../themes/ChatGPT.module.css';
 import cssMessages from '@root/../themes/Messages.module.css';
+
+const Microphone = ({ active, disabled, style, ...rest }) => {
+
+  const svgPath = `<path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM64 216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 89.1 66.2 162.7 152 174.4V464H120c-13.3 0-24 10.7-24 24s10.7 24 24 24h72 72c13.3 0 24-10.7 24-24s-10.7-24-24-24H216V430.4c85.8-11.7 152-85.3 152-174.4V216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 70.7-57.3 128-128 128s-128-57.3-128-128V216z"/>`;
+
+  const pulsarAnimation = `
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.5;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+  `;
+
+  const iconStyle = {
+    display: "inline-block",
+    width: "16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    animation: active ? "pulse 2s infinite" : "",
+    WebkitAnimation: active ? "pulse 2s infinite" : ""
+  };
+
+  return (
+    <div style={{ display: 'none' }} active={active ? "true" : "false"} disabled={disabled} {...rest}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"
+        dangerouslySetInnerHTML={{ __html: svgPath }}
+      />
+    </div>
+  );
+};
 
 function useInterval(delay, callback, enabled = true) {
   const savedCallback = useRef();
@@ -193,7 +233,6 @@ const getCircularReplacer = () => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         throw new Error('Circular reference found. Cancelled.', { key, value });
-        return;
       }
       seen.add(value);
     }
@@ -201,6 +240,46 @@ const getCircularReplacer = () => {
   };
 };
 
-export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
-  useChrono, formatUserName, formatAiName, processParameters, getCircularReplacer
+const useSpeechRecognition = (onResult) => {
+  const [isListening, setIsListening] = useState(false);
+  const [speechRecognitionAvailable, setSpeechRecognitionAvailable] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      setSpeechRecognitionAvailable(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!speechRecognitionAvailable) {
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    const handleResult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('');
+      onResult(transcript);
+    };
+
+    if (isListening) {
+      recognition.addEventListener('result', handleResult);
+      recognition.start();
+    } else {
+      recognition.removeEventListener('result', handleResult);
+      recognition.abort();
+    }
+
+    return () => {
+      recognition.abort();
+    };
+  }, [isListening, speechRecognitionAvailable]);
+
+  return { isListening, setIsListening, speechRecognitionAvailable };
 };

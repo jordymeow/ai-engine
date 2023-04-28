@@ -269,7 +269,13 @@
   border-top: 1px solid var(--mwai-backgroundPrimaryColor);
 }
 
-.mwai-chat .mwai-input textarea {
+.mwai-chat .mwai-input .mwai-input-text {
+  flex: auto;
+  position: relative;
+  display: flex;
+}
+
+.mwai-chat .mwai-input .mwai-input-text textarea {
   background: var(--mwai-backgroundPrimaryColor);
   color: var(--mwai-fontColor);
   flex: auto;
@@ -283,14 +289,42 @@
   overflow: hidden;
 }
 
-.mwai-chat .mwai-input textarea:focus {
+.mwai-chat .mwai-input .mwai-input-text textarea:focus {
   outline: none;
   box-shadow: none;
 }
 
-.mwai-chat .mwai-input textarea::placeholder {
+.mwai-chat .mwai-input .mwai-input-text textarea::placeholder {
   color: var(--mwai-fontColor);
   opacity: 0.5;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  right: 0px;
+  height: 100%;
+  cursor: pointer;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg {
+  fill: var(--mwai-fontColor);
+  width: 34px;
+  height: 34px;
+  padding: 5px 10px;
+  fill: var(--mwai-fontColor);
+  opacity: 0.5;
+  transition: opacity 0.3s ease-out;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg {
+  opacity: 1;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg {
+  opacity: 0;
 }
 
 .mwai-chat button {

@@ -171,6 +171,10 @@ i18n.COMMON = {
   SITE_WIDE_CHAT: __( 'Site-Wide Chat', 'ai-engine' ),
   DEFAULT_MODEL: __( 'Default Model', 'ai-engine' ),
   STATISTICS_DATA: __( 'Statistics Data', 'ai-engine' ),
+  WEBSPEECH_API: __( 'Web Speech API', 'ai-engine' ),
+  SPEECH_RECOGNITION: __( 'Speech Recognition', 'ai-engine' ),
+  SPEECH_SYNTHESIS: __( 'Speech Synthesis', 'ai-engine' ),
+  DYNAMIC_MAX_MESSAGES: __( 'Dynamic Max Messages', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -197,6 +201,9 @@ i18n.HELP = {
   POST_STATUS: __( 'Enable for these post statuses (publish, draft, future, private, etc); separate with commas.', 'ai-engine' ),
   CONTEXT_MAX_TOKENS: __( 'Automatically truncate the content (Content-Aware, Embeddings, etc) to make sure it does not reach this maximum number of tokens.', 'ai-engine' ),
   STATISTICS_DATA: __( 'Record all data. It is then viewable in the Statistics tab.', 'ai-engine' ),
+  SPEECH_RECOGNITION: __( 'Enable speech-to-text. Depends on the browser and OS used by the user.', 'ai-engine' ),
+  SPEECH_SYNTHESIS: __( 'Enable text-to-speech.', 'ai-engine' ),
+  DYNAMIC_MAX_MESSAGES: __( 'Max Messages will be dynamically decreased based on the max tokens.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

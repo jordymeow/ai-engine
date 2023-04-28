@@ -1,8 +1,8 @@
-// Previous: 1.5.9
-// Current: 1.6.55
+// Previous: 1.6.55
+// Current: 1.6.58
 
 // React & Vendor Libs
-import { useState, useMemo, useEffect } from '@wordpress/element';
+import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
@@ -106,14 +106,17 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
+
     if ( id === 'chatId' && value === 'default' ) {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
+
     if ( id === 'chatId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
+
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -123,8 +126,8 @@ const Chatbots = (props) => {
     setBusyAction(false);
   }
 
-  const onChangeTab = (botIndex) => {
-    setBotIndex(botIndex);
+  const onChangeTab = (index) => {
+    setBotIndex(index);
   }
 
   const onSwitchTheme = (themeId) => {
@@ -150,12 +153,6 @@ const Chatbots = (props) => {
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   }
-
-  useEffect(() => {
-    if (chatbots && chatbots.length > 0 && botIndex >= chatbots.length) {
-      setBotIndex(chatbots.length - 1);
-    }
-  }, [chatbots, botIndex]);
 
   return (<>
     <NekoWrapper>
@@ -195,7 +192,7 @@ const Chatbots = (props) => {
                 <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
               }
             </>}>
-            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
+            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
               <ChatbotParams options={options} themes={themes}
                 shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
               />
@@ -222,6 +219,8 @@ const Chatbots = (props) => {
               restUrl: restUrl,
               debugMode: options?.debug_mode,
               typewriter: options?.shortcode_chat_typewriter,
+              speech_recognition: options?.shortcode_chat_speech_recognition,
+              speech_synthesis: options?.shortcode_chat_speech_synthesis,
             }}
             params={currentChatbot}
             theme={currentTheme}

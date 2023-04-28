@@ -278,27 +278,65 @@
 		padding: var(--mwai-spacing);
 		border-top: 1px solid var(--mwai-backgroundPrimaryColor);
 
-		textarea {
-			background: var(--mwai-backgroundPrimaryColor);
-			color: var(--mwai-fontColor);
+		.mwai-input-text {
 			flex: auto;
-			padding: var(--mwai-spacing);
-			border: none;
-			border-radius: var(--mwai-borderRadius);
-			font-size: var(--mwai-fontSize);
-			resize: none;
-			font-family: inherit;
-			margin: 0;
-			overflow: hidden;
+			position: relative;
+			display: flex;
 
-			&:focus {
-				outline: none;
-				box-shadow: none;
+			textarea {
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
+				flex: auto;
+				padding: var(--mwai-spacing);
+				border: none;
+				border-radius: var(--mwai-borderRadius);
+				font-size: var(--mwai-fontSize);
+				resize: none;
+				font-family: inherit;
+				margin: 0;
+				overflow: hidden;
+	
+				&:focus {
+					outline: none;
+					box-shadow: none;
+				}
+	
+				&::placeholder {
+					color: var(--mwai-fontColor);
+					opacity: 0.5;
+				}
 			}
 
-			&::placeholder {
-				color: var(--mwai-fontColor);
-				opacity: 0.5;
+			.mwai-microphone {
+				display: flex !important;
+				align-items: center;
+				justify-content: center;
+				position: absolute;
+				right: 0px;
+				height: 100%;
+				cursor: pointer;
+
+				svg {
+					fill: var(--mwai-fontColor);
+					width: 34px;
+					height: 34px;
+					padding: 5px 10px;
+					fill: var(--mwai-fontColor);
+					opacity: 0.5;
+					transition: opacity 0.3s ease-out;
+				}
+
+				&[active=true] {
+					svg {
+						opacity: 1;
+					}
+				}
+	
+				&[disabled] {
+					svg {
+						opacity: 0;
+					}
+				}
 			}
 		}
 	}
