@@ -1,5 +1,5 @@
-// Previous: 1.4.8
-// Current: 1.6.0
+// Previous: 1.6.0
+// Current: 1.6.59
 
 // NekoUI
 import { NekoInput, NekoCollapsableCategory, NekoSpacer } from '@neko-ui';
@@ -56,17 +56,16 @@ const MessagesTheme = (props) => {
       </div>
 
       <div className="mwai-builder-row">
-        
         <div className="mwai-builder-col">
           <label>{i18n.COMMON.BACK_PRIMARY_COLOR}:</label>
           <div style={{ display: 'flex' }}>
             <NekoInput id="backgroundPrimaryColor" name="backgroundPrimaryColor" style={{ flex: 1 }}
-              value={settings?.backgroundPrimaryColor ?? '#FFFFFF'} 
+              value={settings?.backgroundPrimaryColor ?? '#fafafa'} 
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
             <NekoColorPicker id="backgroundPrimaryColor" name="backgroundPrimaryColor"
-              value={settings?.backgroundPrimaryColor ?? '#FFFFFF'}
+              value={settings?.backgroundPrimaryColor ?? '#fafafa'}
               onChange={onUpdateSettings}
               onEnter={onUpdateSettings}
             />
@@ -120,7 +119,6 @@ const MessagesTheme = (props) => {
             />
           </div>
         </div>
-
       </div>
 
       <NekoSpacer />

@@ -283,41 +283,43 @@ class Meow_MWAI_Rest
 				$query->setModel( $model );
 			}
 			$mode = 'replace';
+
+			$language = "";
+			$keepLanguage = "";
+			if ( !empty( $postId ) ) {
+				$language = $this->core->get_post_language( $postId );
+				$keepLanguage = " Ensure the answer is in the same language as the original text ({$language}).";
+			}
+
 			if ( $action === 'correctText' ) {
-				$query->setPrompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.\n\n" . $text );
+				$query->setPrompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'enhanceText' ) {
-				$query->setPrompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.\n\n" . $text );
+				$query->setPrompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'longerText' ) {
-				$query->setPrompt( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.\n\n" . $text );
+				$query->setPrompt( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'shorterText' ) {
-				$query->setPrompt( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.\n\n" . $text );
+				$query->setPrompt( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'suggestSynonyms' ) {
 				$mode = 'suggest';
-				$query->setPrompt( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.\n\n" . $selectedText );
+				$query->setPrompt( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.{$keepLanguage}\n\n" . $selectedText );
 				$query->setTemperature( 1 );
 				$query->setMaxResults( 5 );
 			}
 			else if ( $action === 'translateText' ) {
-				$query->setPrompt( "Translate the text into {LANGUAGE}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
-				$language = $this->core->get_post_language( $postId );
-				$query->replace( '{LANGUAGE}', $language );
+				$query->setPrompt( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
 			}
 			else if ( $action === 'suggestExcerpts' ) {
 				$text = $this->core->getCleanPostContent( $postId );
-				$query->setPrompt( "Craft a clear, SEO-optimized introduction for the following text in its original language ({LANGUAGE}), using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.\n\n" . $text );
-				$language = $this->core->get_post_language( $postId );
-				$query->replace( '{LANGUAGE}', $language );
+				$query->setPrompt( "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.{$keepLanguage}\n\n" . $text );
 				$query->setMaxResults( 5 );
 			}
 			else if ( $action === 'suggestTitles' ) {
 				$text = $this->core->getCleanPostContent( $postId );
-				$query->setPrompt( "Generate a concise, SEO-optimized title for the following text in its original language ({LANGUAGE}), without using quotes or any other formatting. Focus on clarity and relevance to the content.\n\n" . $text );
-				$language = $this->core->get_post_language( $postId );
-				$query->replace( '{LANGUAGE}', $language );
+				$query->setPrompt( "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.{$keepLanguage}\n\n" . $text );
 				$query->setMaxResults( 5 );
 			}
 			$answer = $this->core->ai->run( $query );

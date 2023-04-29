@@ -8,7 +8,7 @@
 	--mwai-iconTextColor: black;
 	--mwai-iconTextBackgroundColor: white;
   --mwai-fontColor: black;
-  --mwai-backgroundPrimaryColor: white;
+  --mwai-backgroundPrimaryColor: #fafafa;
 	--mwai-backgroundHeaderColor: #0084ff;
 	--mwai-headerButtonsColor: white;
 
@@ -231,20 +231,59 @@
 		align-items: center;
 		padding: var(--mwai-spacing);
 
-		textarea {
+		.mwai-input-text {
 			flex: auto;
-			padding: 5px 10px;
-			height: 32px;
-			font-family: inherit;
+			position: relative;
+			display: flex;
 
-			&:focus {
-				outline: none;
-				box-shadow: none;
+			textarea {
+				flex: auto;
+				padding: 5px 10px;
+				font-family: inherit;
+				border-radius: var(--mwai-borderRadius);
+				border: 1px solid var(--mwai-backgroundAiSecondaryColor);
+
+				&:focus {
+					outline: none;
+					box-shadow: none;
+				}
+
+				&::placeholder {
+					color: var(--mwai-fontColor);
+					opacity: 0.5;
+				}
+			}
+		}
+
+		.mwai-microphone {
+			display: flex !important;
+			align-items: center;
+			justify-content: center;
+			position: absolute;
+			right: 0px;
+			height: 100%;
+			cursor: pointer;
+
+			svg {
+				fill: var(--mwai-fontColor);
+				width: 34px;
+				height: 34px;
+				padding: 5px 10px;
+				fill: var(--mwai-fontColor);
+				opacity: 0.5;
+				transition: opacity 0.3s ease-out;
 			}
 
-			&::placeholder {
-				color: var(--mwai-fontColor);
-				opacity: 0.5;
+			&[active=true] {
+				svg {
+					opacity: 1;
+				}
+			}
+
+			&[disabled] {
+				svg {
+					opacity: 0;
+				}
 			}
 		}
 
@@ -271,6 +310,24 @@
 			&:hover {
 				filter: brightness(1.2);
 			}
+		}
+	}
+
+	button[disabled] {
+
+		span {
+			display: none;
+		}
+
+		&:before {
+			content: '';
+			width: 14px;
+			height: 14px;
+			margin: auto;
+			border: 2px solid transparent;
+			border-top-color: white;
+			border-radius: 50%;
+			animation: mwai-button-spinner 1s ease infinite;
 		}
 	}
 

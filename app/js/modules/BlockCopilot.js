@@ -1,5 +1,5 @@
-// Previous: 1.4.9
-// Current: 1.6.56
+// Previous: 1.6.56
+// Current: 1.6.59
 
 const { createHigherOrderComponent } = wp.compose;
 const { addFilter } = wp.hooks;
@@ -24,8 +24,6 @@ const BlockCopilot = () => {
       const [ composing, setComposing ] = useState(false);
       const { content } = props.attributes;
 
-      console.log({ composing });
-
       const handleKeyPress = (e) => {
         if (composing) {
           return;
@@ -44,7 +42,7 @@ const BlockCopilot = () => {
             nonce: restNonce,
             json: { action: 'write', prompt: query }
           });
-          props.setAttributes({ content: res.data })
+          props.setAttributes({ content: res.data });
         }
         catch (e) {
           console.log("ERROR", e);

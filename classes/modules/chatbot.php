@@ -52,13 +52,16 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function basics_security_check( $params ) {
 		if ( empty( $params['newMessage'] ) ) {
+			error_log("AI Engine: The query was rejected - message was empty.");
 			return false;
 		}
 		if ( empty( $params['chatId'] ) && empty( $params['id'] ) ) {
+			error_log("AI Engine: The query was rejected - no chatId nor id was specified.");
 			return false;
 		}
 		$length = strlen( trim( $params['newMessage'] ) );
 		if ( $length < 1 || $length > ( 4096 - 512 ) ) {
+			error_log("AI Engine: The query was rejected - message was too short or too long.");
 			return false;
 		}
 		return true;
@@ -84,6 +87,7 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			if ( !$chatbot ) {
+				error_log("AI Engine: No chatbot was found for this query.");
 				return new WP_REST_Response( [ 
 					'success' => false, 
 					'message' => 'Sorry, your query has been rejected.' ], 403
