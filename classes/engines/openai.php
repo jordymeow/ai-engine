@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_OpenAI
+class Meow_MWAI_Engines_OpenAI
 {
   private $core = null;
   private $apiKey = null;
@@ -264,7 +264,7 @@ class Meow_MWAI_OpenAI
     return null;
   }
 
-  public function getPrice( Meow_MWAI_Query $query, Meow_MWAI_Answer $answer )
+  public function getPrice( Meow_MWAI_Query $query, Meow_MWAI_Reply $reply )
   {
     $model = $query->model;
     $family = null;
@@ -296,8 +296,8 @@ class Meow_MWAI_OpenAI
       }
       if ( !empty( $priceRules ) ) {
         if ( $priceRules === "completion_x2" ) {
-          $units = $answer->getPromptTokens();
-          $units += $answer->getCompletionTokens() * 2;
+          $units = $reply->getPromptTokens();
+          $units += $reply->getCompletionTokens() * 2;
           return $this->calculatePrice( $family, $units, $option, $finetune );
         }
         else {
@@ -306,7 +306,7 @@ class Meow_MWAI_OpenAI
         }
       }
       else {
-        $units = $answer->getTotalTokens();
+        $units = $reply->getTotalTokens();
         return $this->calculatePrice( $family, $units, $option, $finetune );
       }
     }
@@ -323,7 +323,7 @@ class Meow_MWAI_OpenAI
           break;
         }
       }
-      $units = $answer->getTotalTokens();
+      $units = $reply->getTotalTokens();
       return $this->calculatePrice( $family, $units, $option, $finetune );
     }
     error_log("AI Engine: Cannot calculate price for $model.");

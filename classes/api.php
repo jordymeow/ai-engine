@@ -26,8 +26,8 @@ class Meow_MWAI_API {
 			$params = $request->get_params();
 			$prompt = $params['prompt'];
 			$options = isset( $params['options'] ) ? $params['options'] : [];
-			$answer = $this->simpleTextQuery( $prompt, $options );
-			return new WP_REST_Response([ 'success' => true, 'data' => $answer ], 200 );
+			$reply = $this->simpleTextQuery( $prompt, $options );
+			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -38,8 +38,8 @@ class Meow_MWAI_API {
 		try {
 			$params = $request->get_params();
 			$text = $params['text'];
-			$answer = $this->moderationCheck( $text );
-			return new WP_REST_Response([ 'success' => true, 'data' => $answer ], 200 );
+			$reply = $this->moderationCheck( $text );
+			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -50,13 +50,13 @@ class Meow_MWAI_API {
     global $mwai_core;
 		$query = new Meow_MWAI_QueryText( $prompt );
 		$query->injectParams( $options );
-		$answer = $mwai_core->ai->run( $query );
-		return $answer->result;
+		$reply = $mwai_core->ai->run( $query );
+		return $reply->result;
 	}
 
 	public function moderationCheck( $text ) {
 		global $mwai_core;
-		$openai = new Meow_MWAI_OpenAI( $mwai_core );
+		$openai = new Meow_MWAI_Engines_OpenAI( $mwai_core );
 		$res = $openai->moderate( $text );
 		if ( !empty( $res ) && !empty( $res['results'] ) ) {
 			return (bool)$res['results'][0]['flagged'];

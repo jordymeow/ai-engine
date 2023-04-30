@@ -1,9 +1,8 @@
-// Previous: 1.5.3
-// Current: 1.6.5
+// Previous: 1.6.5
+// Current: 1.6.59
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { nekoFetch } from '@neko-ui';
 import { NekoQuickLinks, NekoLink, NekoTable, NekoPaging, NekoButton } from '@neko-ui';
 import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers';
@@ -40,9 +39,9 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   useEffect(() => {
     if (currentTab === 'all') {
-      setLogsQueryParams({ ...logsQueryParams, filters: null });
+      setLogsQueryParams(prev => ({ ...prev, filters: null }));
     } else {
-      setLogsQueryParams({ ...logsQueryParams, filters: { env: currentTab } });
+      setLogsQueryParams(prev => ({ ...prev, filters: { env: currentTab } }));
     }
   }, [currentTab]);
 
@@ -52,9 +51,9 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = tableDateTimeFormatter(x.time);
-      let user = tableUserIPFormatter(x.user, x.ip);
+      let user = tableUserIPFormatter(x.userId, x.ip);
 
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;

@@ -130,7 +130,7 @@ class Meow_MWAI_Modules_Chatbot {
 				// Takeover
 				$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 				if ( !empty( $takeoverAnswer ) ) {
-					return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,
+					return new WP_REST_Response( [ 'success' => true, 'reply' => $takeoverAnswer,
 						'html' => $takeoverAnswer, 'usage' => null ], 200 );
 				}
 
@@ -158,8 +158,8 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			// Query the AI
-			$answer = $this->core->ai->run( $query );
-			$rawText = $answer->result;
+			$reply = $this->core->ai->run( $query );
+			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {
 				$extra = [ 'embeddings' => $context['embeddings'] ];
@@ -170,10 +170,10 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 			return new WP_REST_Response( [
 				'success' => true,
-				'answer' => $rawText,
-				'images' => $chatbot['mode'] === 'images' ? $answer->results : null,
+				'reply' => $rawText,
+				'images' => $chatbot['mode'] === 'images' ? $reply->results : null,
 				'html' => $html,
-				'usage' => $answer->usage
+				'usage' => $reply->usage
 			], 200 );
 		}
 		catch ( Exception $e ) {

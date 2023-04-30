@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Security {
+class Meow_MWAI_Modules_Security {
   public $core = null;
   public $banned_ips = [];
   public $banned_words = [];

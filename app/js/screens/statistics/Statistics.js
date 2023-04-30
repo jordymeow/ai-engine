@@ -1,10 +1,11 @@
-// Previous: 1.6.5
-// Current: 1.6.54
+// Previous: 1.6.54
+// Current: 1.6.59
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { JsonViewer } from '@textea/json-viewer'
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoInput, NekoBlock, NekoSpacer, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, 
   NekoQuickLinks, NekoLink, NekoColumn, NekoTabs, NekoTab, NekoSpinner } from '@neko-ui';
@@ -18,7 +19,7 @@ import QueriesExplorer from '@app/screens/statistics/QueriesExplorer';
 const retrieveLogsMeta = async (logId) => {
   if (!logId) { return null; }
   const res = await nekoFetch(`${apiUrl}/logs_meta`, { nonce: restNonce, method: 'POST',
-    json: { logId, metaKeys: [ 'query', 'answer' ] }
+    json: { logId, metaKeys: [ 'query', 'reply' ] }
   });
   return res.data;
 }
@@ -35,6 +36,7 @@ const Statistics = ({ options, updateOption, busy }) => {
     staleTime: 1000 * 60 * 60 * 24,
     keepPreviousData: true
   });
+
 
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
@@ -89,10 +91,10 @@ const Statistics = ({ options, updateOption, busy }) => {
                   style={{ fontSize: 12 }} />}
               </div>
             </NekoTab>
-            <NekoTab title="Answer">
+            <NekoTab title="Reply">
               <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                 {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
-                {!isFetchingMeta && metaData && <JsonViewer value={metaData['answer']} 
+                {!isFetchingMeta && metaData && <JsonViewer value={metaData['reply']} 
                   indentWidth={2}
                   displayDataTypes={false}
                   displayObjectSize={false}

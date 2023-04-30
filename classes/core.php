@@ -26,14 +26,14 @@ class Meow_MWAI_Core
 		$this->site_url = get_site_url();
 		$this->is_rest = MeowCommon_Helpers::is_rest();
 		$this->is_cli = defined( 'WP_CLI' );
-		$this->ai = new Meow_MWAI_AI( $this );
+		$this->ai = new Meow_MWAI_Engines_Core( $this );
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
 	}
 
 	function init() {
 		global $mwai;
 		$mwai = new Meow_MWAI_API();
-		new Meow_MWAI_Security( $this );
+		new Meow_MWAI_Modules_Security( $this );
 		if ( $this->is_rest ) {
 			new Meow_MWAI_Rest( $this );
 		}

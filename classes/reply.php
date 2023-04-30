@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Answer implements JsonSerializable {
+class Meow_MWAI_Reply implements JsonSerializable {
 
   public $result = '';
   public $results = [];

@@ -1,5 +1,5 @@
-// Previous: 1.3.79
-// Current: 1.6.0
+// Previous: 1.6.0
+// Current: 1.6.59
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -45,12 +45,12 @@ const Dashboard = () => {
   const [startTime, setStartTime] = useState();
   const [error, setError] = useState();
 
-  const prompt = useMemo(() => template?.prompt ?? "", [template]);
-  const model = useMemo(() => template?.model ?? "gpt-3.5-turbo", [template]);
-  const mode = useMemo(() => template?.mode ?? "query", [template]);
-  const temperature = useMemo(() => template?.temperature ?? 1, [template]);
-  const stopSequence = useMemo(() => template?.stopSequence ?? "", [template]);
-  const maxTokens = useMemo(() => template?.maxTokens ?? 2048, [template]);
+  const prompt = template?.prompt ?? "";
+  const model = template?.model ?? "gpt-3.5-turbo";
+  const mode = template?.mode ?? "query";
+  const temperature = template?.temperature ?? 1;
+  const stopSequence = template?.stopSequence ?? "";
+  const maxTokens = template?.maxTokens ?? 2048;
 
   const setTemplateProperty = (value, property) => {
     setTemplate({ ...template, [property]: value });
@@ -131,7 +131,7 @@ const Dashboard = () => {
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
             <NekoSelect scrolldown name="mode" disabled={true || busy} 
-              value={mode} description="" onChange={setTemplateProperty}>
+              value={mode} description="" onChange={(value) => setTemplate({ ...template, mode: value })}>
               <NekoOption key='query' value='query' label="Query" />
               <NekoOption key='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
@@ -142,21 +142,19 @@ const Dashboard = () => {
 
           <StyledSidebar>
 
-            {/* FORM FOOTER FOR "QUERY" MODE */}
             {mode !== 'continuous' && <>
               <label style={{ marginTop: 0, marginBottom: 10 }}>{i18n.PLAYGROUND.PROMPT}:</label>
-              <StyledTextArea style={{ marginBottom: 5 }} rows={12} onChange={setPrompt} value={prompt} />
-              <label style={{ marginTop: 0, marginBottom: 10 }}>{i18n.PLAYGROUND.ANSWER}:</label>
-              <StyledTextArea countable="words" rows={14} onChange={setCompletion} value={completion} />
+              <StyledTextArea style={{ marginBottom: 5 }} rows={12} onChange={(e) => setPrompt(e.target.value)} value={prompt} />
+              <label style={{ marginTop: 0, marginBottom: 10 }}>{i18n.PLAYGROUND.REPLY}:</label>
+              <StyledTextArea countable="words" rows={14} onChange={(e) => setCompletion(e.target.value)} value={completion} />
             </>}
 
-            {/* FORM FOOTER FOR "CHAT" MODE */}
             {mode === 'continuous' && <>
-              <StyledTextArea rows={18} onChange={setPrompt} value={prompt} />
+              <StyledTextArea rows={18} onChange={(e) => setPrompt(e.target.value)} value={prompt} />
               <div style={{ display: 'flex' }}>
                 <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
+                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={(e) => setContinuousEntry(e.target.value)}
                   onEnter={onPushContinuousEntry} disabled={busy} />
               </div>
             </>}
@@ -179,28 +177,28 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>{i18n.COMMON.SETTINGS}</h3>
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={(value) => setTemplate({ ...template, model: value })}>
               {completionModels.map((x) => (
                 <NekoOption value={x.model} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>{i18n.COMMON.TEMPERATURE}:</label>
             <NekoInput name="temperature" value={temperature} type="number"
-              onChange={value => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
+              onChange={(value) => setTemplate({ ...template, temperature: parseFloat(value) })} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   {i18n.HELP.TEMPERATURE}
                 </span>
               </>} />
             <label>{i18n.COMMON.MAX_TOKENS}:</label>
             <NekoInput name="maxTokens" value={maxTokens} type="number"
-              onChange={value => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
+              onChange={(value) => setTemplate({ ...template, maxTokens: parseInt(value) })} description={<>
               <span>
               {i18n.HELP.MAX_TOKENS}
               </span>
             </>} />
             <label>{i18n.COMMON.STOP_SEQUENCE}:</label>
             <NekoInput name="stopSequence" value={stopSequence} type="text"
-              onChange={setTemplateProperty} description={<>
+              onChange={(value) => setTemplate({ ...template, stopSequence: value })} description={<>
               <span>
               {i18n.HELP.STOP_SEQUENCE}
               </span>

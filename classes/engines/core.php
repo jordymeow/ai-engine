@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_AI {
+class Meow_MWAI_Engines_Core {
   private $core = null;
   private $localApiKey = null;
   private $localService = null;
@@ -80,7 +80,7 @@ class Meow_MWAI_AI {
 
   public function runTranscribe( $query ) {
     $this->applyQueryParameters( $query );
-    $openai = new Meow_MWAI_OpenAI( $this->core );
+    $openai = new Meow_MWAI_Engines_OpenAI( $this->core );
     $fields = array( 
       'prompt' => $query->prompt,
       'model' => $query->model,
@@ -95,10 +95,10 @@ class Meow_MWAI_AI {
     }
     //$usage = $data['usage'];
     //$this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
-    $answer = new Meow_MWAI_Answer( $query );
-    //$answer->setUsage( $usage );
-    $answer->setChoices( $data );
-    return $answer;
+    $reply = new Meow_MWAI_Reply( $query );
+    //$reply->setUsage( $usage );
+    $reply->setChoices( $data );
+    return $reply;
   }
 
   public function runEmbedding( $query ) {
@@ -121,7 +121,7 @@ class Meow_MWAI_AI {
       $data = $this->runQuery( $url, $options );
     }
     else {
-      $openai = new Meow_MWAI_OpenAI( $this->core );
+      $openai = new Meow_MWAI_Engines_OpenAI( $this->core );
       $body = array( 'input' => $query->prompt, 'model' => $query->model );
       $data = $openai->run( 'POST', '/embeddings', $body );
     }
@@ -130,10 +130,10 @@ class Meow_MWAI_AI {
     }
     $usage = $data['usage'];
     $this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
-    $answer = new Meow_MWAI_Answer( $query );
-    $answer->setUsage( $usage );
-    $answer->setChoices( $data['data'] );
-    return $answer;
+    $reply = new Meow_MWAI_Reply( $query );
+    $reply->setUsage( $usage );
+    $reply->setChoices( $data['data'] );
+    return $reply;
   }
 
   public function runCompletion( $query ) {
@@ -199,7 +199,7 @@ class Meow_MWAI_AI {
         error_log( print_r( $data, 1 ) );
         throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
       }
-      $answer = new Meow_MWAI_Answer( $query );
+      $reply = new Meow_MWAI_Reply( $query );
       try {
         $usage = $this->core->record_tokens_usage( 
           $data['model'], 
@@ -210,9 +210,9 @@ class Meow_MWAI_AI {
       catch ( Exception $e ) {
         error_log( $e->getMessage() );
       }
-      $answer->setUsage( $usage );
-      $answer->setChoices( $data['choices'] );
-      return $answer;
+      $reply->setUsage( $usage );
+      $reply->setChoices( $data['choices'] );
+      return $reply;
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
@@ -238,11 +238,11 @@ class Meow_MWAI_AI {
 
     try {
       $data = $this->runQuery( $url, $options );
-      $answer = new Meow_MWAI_Answer( $query );
+      $reply = new Meow_MWAI_Reply( $query );
       $usage = $this->core->record_images_usage( "dall-e", "1024x1024", $query->maxResults );
-      $answer->setUsage( $usage );
-      $answer->setChoices( $data['data'] );
-      return $answer;
+      $reply->setUsage( $usage );
+      $reply->setChoices( $data['data'] );
+      return $reply;
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
@@ -269,19 +269,19 @@ class Meow_MWAI_AI {
     $query->finalChecks();
 
     // Run the query
-    $answer = null;
+    $reply = null;
     try {
       if ( $query instanceof Meow_MWAI_QueryText ) {
-        $answer = $this->runCompletion( $query );
+        $reply = $this->runCompletion( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryEmbed ) {
-        $answer = $this->runEmbedding( $query );
+        $reply = $this->runEmbedding( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryImage ) {
-        $answer = $this->runCreateImages( $query );
+        $reply = $this->runCreateImages( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryTranscribe ) {
-        $answer = $this->runTranscribe( $query );
+        $reply = $this->runTranscribe( $query );
       }
       else {
         $this->throwException( 'Invalid query.' );
@@ -291,8 +291,8 @@ class Meow_MWAI_AI {
       $this->throwException( $e->getMessage() );
     }
 
-    // Let's allow some modififications of the answer
-    $answer = apply_filters( 'mwai_ai_reply', $answer, $query );
-    return $answer;
+    // Let's allow some modififications of the reply
+    $reply = apply_filters( 'mwai_ai_reply', $reply, $query );
+    return $reply;
   }
 }

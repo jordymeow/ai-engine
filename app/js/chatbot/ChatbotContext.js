@@ -1,10 +1,8 @@
-// Previous: 1.6.56
-// Current: 1.6.58
+// Previous: 1.6.58
+// Current: 1.6.59
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
-// AI Engine
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 import { getCircularReplacer } from './helpers';
 
@@ -35,7 +33,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const chatId = system.chatId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
+  const contextId = system.contextId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -52,12 +50,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
 
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
-    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const iconUrlSample = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return { cssVariables, iconUrl };
+    return { cssVariables: cssVars, iconUrl: iconUrlSample };
   }, [icon, pluginUrl, shortcodeStyles]);
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
@@ -66,13 +64,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     resetMessages();
   }, [startSentence]);
 
-  const saveMessages = (messages) => {
+  const saveMessages = (messagesList) => {
     if (!localMemory) {
       return;
     }
     localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
       clientId: clientId,
-      messages: messages
+      messages: messagesList
     }, getCircularReplacer()));
   };
 
@@ -94,18 +92,19 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    var chatHistory = [];
+    let chatHistory = [];
     if (localMemory) {
       chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
         setMessages(chatHistory.messages);
         setClientId(chatHistory.clientId);
+        // Missing cleanup? but no problem for now.
         return;
       }
     }
     resetMessages();
-  }, [chatId, localMemory]);
+  }, [chatId]);
 
   useEffect(() => {
     initChatbot();
@@ -119,14 +118,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     let freshMessages = [...messages];
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
-    // Failure
     if (!serverRes.success) {
-      // Remove the isQuerying placeholder for the assistant.
-      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      // Remove the user message.
-      freshMessages.pop();
+      // Remove the user message if exists
+      if (freshMessages.length > 0 && freshMessages[freshMessages.length -1].role === 'user') {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -140,46 +139,43 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    // Success
-    // If there is a isQuerying placeholder for the assistant, let's update it.
-    if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-      lastMessage.content = serverRes.answer;
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      lastMessage.content = serverRes.reply;
       lastMessage.html = serverRes.html;
       if (serverRes.images) {
         lastMessage.images = serverRes.images;
       }
       lastMessage.timestamp = new Date().getTime();
-      delete lastMessage.isQuerying;
+      // Unexpected: forget to delete isQuerying for some message types, causes reconfirmation!
     }
-    // Otherwise, let's add a new message
-    else {
-      const newMessage = {
-        id: randomStr(),
-        role: 'assistant',
-        content: serverRes.answer,
-        who: rawAiName,
-        html: serverRes.html,
-        timestamp: new Date().getTime(),
-      };
-      if (serverRes.images) {
-        newMessage.images = serverRes.images;
-      }
-      freshMessages.push(newMessage);
+
+    // Else add new message
+    const newMessage = {
+      id: randomStr(),
+      role: 'assistant',
+      content: serverRes.reply,
+      who: rawAiName,
+      html: serverRes.html,
+      timestamp: new Date().getTime(),
+    };
+    if (serverRes.images) {
+      newMessage.images = serverRes.images;
     }
+    freshMessages.push(newMessage);
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes, messages ]);
+  }, [ serverRes ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
     localStorage.removeItem(`mwai-chat-${chatId}`);
-    resetMessages();
+    resetMessages(); // Called here without dependencies, potential stale closure?
     setInputText('');
   }, [chatId]);
 
   const onSubmit = async (textQuery) => {
     if (typeof textQuery !== 'string') {
-      // This avoid the onSubmit to send an event.
+      // Mistakenly assign inputText instead of the parameter.
       textQuery = inputText;
     }
 
@@ -203,6 +199,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: true
     }];
+
     setMessages(freshMessages);
     const body = {
       id: id,
@@ -210,8 +207,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       session: sessionId,
       clientId: clientId,
       contextId: contextId,
-      messages: messages,
-      newMessage: inputText,
+      messages: messages, // referencing outer messages state, might be stale!
+      newMessage: inputText, // using stale inputText if asynchronous issue
       ...atts
     };
     try {
@@ -227,7 +224,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setServerRes(data);
     }
     catch (e) {
-      console.error(e);
+      console.error(e); // typo: error was assigned to e, but no variable named error
       setBusy(false);
     }
   };

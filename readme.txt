@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.59
+Stable tag: 1.6.60
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.60 (2023/04/30) =
+* Update: Some parts of the UI got improved, that will allow for more features to be developed.
+* Update: Clean the API, class names, and the files hierarchy to make it more consistant.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.59 (2023/04/29) =
 * Add: Logs the real issue when rejecting a query.
 * Fix: Spinners wasn't working for Messages theme.
 * Fix: The AI Wands were not using the language set in the current post.
 * Update: Light enhancements to the Messages theme.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.58 (2023/04/28) =
 * Fix: The input fields were not always focuses in the best way, should be much better now!
@@ -105,7 +109,7 @@ Languages: English.
 * Fix: Issue with models not appearing in the dropdown for finetuning.
 
 = 1.6.53 (2023/04/25) =
-* Add: Ability to see the content of the query and answer objects, for any request that goes through AI Engine. This is in the Statistics Tab. API Keys are not logged however, for security reason.
+* Add: Ability to see the content of the query and reply objects, for any request that goes through AI Engine. This is in the Statistics Tab. API Keys are not logged however, for security reason.
 * Fix: Code highlighting was not always working.
 * Fix: Issues with Embeddings and PHP 7.3.
 * Fix: Show a nicer placeholder than broken images with expired DALL-E images.
@@ -346,7 +350,7 @@ Languages: English.
 
 = 1.3.32 (2023/03/08) =
 * Add: Sync embeddings and posts.
-* Add: Copy button to reuse the answer. Enabled by default, will add the UI for it later.
+* Add: Copy button to reuse the reply. Enabled by default, will add the UI for it later.
 * Fix: Support of basics HTML in the compliance text.
 * Fix: Avoid issues with Japanese.
 * Fix: Enhanced the ChatGPT CSS (better header icons and fullscreen mode).

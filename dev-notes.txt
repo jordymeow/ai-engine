@@ -4,7 +4,7 @@
 
 - mwai_ai_query( $query ) => Allow to modify a query before it's made
 - mwai_ai_allowed( $allowed, $query, $limits ) => Allow or not a query to be made
-- mwai_ai_reply( $answer, $query ) => Allow to modify the answer before it's sent
+- mwai_ai_reply( $reply, $query ) => Allow to modify the reply before it's sent
 - mwai_ai_exception( $message ) => Modify the error message
 
 ## Chatbot
@@ -14,10 +14,10 @@
 - mwai_chatbot_style( $style, $id ) => Allow to modify the style of the chatbot
 - mwai_chatbot( $output, $atts ) => Allow to modify the chatbot itself (HTML, JS, CSS)
 - mwai_contentaware_content( $content ) => To support more ways to look into the content
-- mwai_chatbot_reply( $rawText, $query, $params ) => Allow to modify the answer before it's sent
+- mwai_chatbot_reply( $rawText, $query, $params ) => Allow to modify the reply before it's sent
 
 ## Forms
-- mwai_form_answer( $rawText ) => Allow to modify the answer before it's sent
+- mwai_form_reply( $rawText ) => Allow to modify the reply before it's sent
 
 ## Limits
 - mwai_stats_credits( $credits, $userId ) => Allow to modify the number of credits

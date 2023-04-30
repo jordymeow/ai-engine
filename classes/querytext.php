@@ -281,7 +281,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
 
   /**
    * Set the sampling temperature to use. Higher values means the model will take more risks.
-   * Try 0.9 for more creative applications, and 0 for ones with a well-defined answer.
+   * Try 0.9 for more creative applications, and 0 for ones with a well-defined reply.
    * @param float $temperature The temperature.
    */
   public function setTemperature( float $temperature ): void {

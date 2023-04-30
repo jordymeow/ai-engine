@@ -1,5 +1,5 @@
-// Previous: 1.5.3
-// Current: 1.6.2
+// Previous: 1.6.2
+// Current: 1.6.59
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -15,7 +15,7 @@ const ENTRY_TYPES = {
 
 const ENTRY_BEHAVIORS = {
   CONTEXT: 'context',
-  ANSWER: 'answer',
+  REPLY: 'reply',
 }
 
 const DEFAULT_VECTOR = {
@@ -118,7 +118,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom]); // Added isCustom here
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -157,7 +157,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models || [];
+    let allModels = options.openai_models ? [...options.openai_models] : [];
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
       options?.openai_finetunes.filter(x => x.model) : [];
@@ -189,6 +189,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
+
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
@@ -200,7 +201,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
       model = 'gpt-3.5-turbo';
-    } else if (model === 'gpt-4-0314') {
+    }
+    else if (model === 'gpt-4-0314') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -242,7 +244,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
     if (price) {
-      return price * units * modelObj['unit'];
+      return price * units * (modelObj?.unit || 1);
     }
     return 0;
   }
@@ -278,6 +280,8 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 }
 
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -285,7 +289,8 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    } else {
+    }
+    else {
       nonAsciiCount++;
     }
   }
@@ -301,7 +306,6 @@ function reduceContent(content, tokens = 2048) {
   while (reducedTokens > tokens) {
     reduced = reduced.slice(0, -32);
     reducedTokens = estimateTokens(reduced);
-    if (reduced.length === 0) break;
   }
   return reduced;
 }

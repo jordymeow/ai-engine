@@ -83,7 +83,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 
 			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 			if ( !empty( $takeoverAnswer ) ) {
-				return new WP_REST_Response( [ 'success' => true, 'answer' => $takeoverAnswer,
+				return new WP_REST_Response( [ 'success' => true, 'reply' => $takeoverAnswer,
 					'html' => $takeoverAnswer, 'usage' => null ], 200 );
 			}
 
@@ -109,8 +109,8 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 				}
 			}
 
-			$answer = $this->core->ai->run( $query );
-			$rawText = $answer->result;
+			$reply = $this->core->ai->run( $query );
+			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {
 				$extra = [ 'embeddings' => $context['embeddings'] ];
@@ -119,8 +119,8 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
 			}
-			return new WP_REST_Response( [ 'success' => true, 'answer' => $rawText,
-				'html' => $html, 'usage' => $answer->usage ], 200 );
+			return new WP_REST_Response( [ 'success' => true, 'reply' => $rawText,
+				'html' => $html, 'usage' => $reply->usage ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -132,8 +132,8 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_QueryImage( $params['prompt'] );
 			$query->injectParams( $params );
-			$answer = $this->core->ai->run( $query );
-			return new WP_REST_Response( [ 'success' => true, 'images' => $answer->results, 'usage' => $answer->usage ], 200 );
+			$reply = $this->core->ai->run( $query );
+			return new WP_REST_Response( [ 'success' => true, 'images' => $reply->results, 'usage' => $reply->usage ], 200 );
 		}
 		catch ( Exception $e ) {
 			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -694,7 +694,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 							memorizedChat.messages.push({
 								id: randomStr(),
 								role: 'assistant',
-								content: data.answer,
+								content: data.reply,
 								who: rawAiName,
 								html: html
 							});

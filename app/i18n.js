@@ -288,7 +288,7 @@ i18n.TEMPLATES = {
 i18n.PLAYGROUND = {
   INTRO: __( 'Welcome to the AI Playground! Here, you can play with different AI models and ask the UI to perform various tasks for you. You can ask it to write, rewrite, or translate an article, categorize words or elements into groups, write an email, etc. <b>Let me know if there are any new features you would like to see!</b> Have fun 🥳', 'ai-engine' ),
   PROMPT: __( 'Query / Prompt', 'ai-engine' ),
-  ANSWER: __( 'Answer', 'ai-engine' ),
+  REPLY: __( 'Reply', 'ai-engine' ),
 }
 
 i18n.ALERTS = {
