@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.60
+Stable tag: 1.6.61
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.60 (2023/04/30) =
+= 1.6.61 (2023/04/30) =
 * Update: Some parts of the UI got improved, that will allow for more features to be developed.
 * Update: Clean the API, class names, and the files hierarchy to make it more consistant.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
