@@ -161,6 +161,11 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			return $file;
 		}, 10, 3 );
 
+		// This is useless for AI Engine, but it avoids issues when themes and plugin calls
+		// wp_enqueue_media too late (usually, they call it in the footer). Until someone
+		// figures out what the issue is, let's load it here.
+		wp_enqueue_media();
+
 		wp_set_script_translations( 'mwai', 'ai-engine' );
 		wp_localize_script( 'mwai', 'mwai', [
 			'api_url' => rest_url( 'ai-engine/v1' ),

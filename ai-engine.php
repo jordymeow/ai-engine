@@ -3,7 +3,7 @@
 Plugin Name: AI Engine: ChatGPT Chatbot, Content Generator, GPT 3 & 4, Ultra-Customizable
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: GPT for WordPress! Chatbot (ChatGPT), content and images generator, copilot, model training and much more! Highly customizable, sleek UI. You will love it!
-Version: 1.6.62
+Version: 1.6.63
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '1.6.62' );
+define( 'MWAI_VERSION', '1.6.63' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -28,12 +28,12 @@ require_once( MWAI_PATH . '/classes/init.php' );
 // look into the matter more and repeatedly asked to disable AI Engine on their page. 
 // I don't have the force to push them to look where and why it breaks and no time to debug their plugin.
 
-add_action( 'admin_enqueue_scripts', function() { 
-  if ( is_admin() && isset( $_GET['page'] ) && strpos( $_GET['page'], 'rank-math' ) !== false ) { 
-    wp_dequeue_script( 'mwai_meow_plugin' );
-    wp_dequeue_script( 'mwai_meow_plugin-vendor' );
-  }
-}, 20 );
+// add_action( 'admin_enqueue_scripts', function() { 
+//   if ( is_admin() && isset( $_GET['page'] ) && strpos( $_GET['page'], 'rank-math' ) !== false ) { 
+//     wp_dequeue_script( 'mwai_meow_plugin' );
+//     wp_dequeue_script( 'mwai_meow_plugin-vendor' );
+//   }
+// }, 20 );
 
 // NOTE: This should be removed when GPT-4 is released to everyone.
 add_filter( 'mwai_ai_exception', function ( $exception ) {

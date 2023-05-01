@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.62
+Stable tag: 1.6.63
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,8 +78,10 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.62 (2023/05/01) =
+= 1.6.63 (2023/05/01) =
+* Fix: Removed a notice.
 * Update: Refactoring of the code to make it more consistent.
+* Update: Attempt to avoid an issue with old plugins loading the JS media library in the footer.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
