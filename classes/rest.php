@@ -162,31 +162,6 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'moderate' ),
 			) );
-			register_rest_route( $this->namespace, '/vectors', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'get_vectors' ),
-			) );
-			register_rest_route( $this->namespace, '/vector_add', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'add_vector' ),
-			) );
-			register_rest_route( $this->namespace, '/vectors_ref', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'get_vectors_ref' ),
-			) );
-			register_rest_route( $this->namespace, '/vector_update', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'modify_vector' ),
-			) );
-			register_rest_route( $this->namespace, '/vectors', array(
-				'methods' => 'DELETE',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'delete_vectors' ),
-			) );
 			register_rest_route( $this->namespace, '/transcribe', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -761,69 +736,6 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
 
-	}
-
-	function get_vectors( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$offset = $params['offset'];
-			$limit = $params['limit'];
-			$filters = $params['filters'];
-			$sort = $params['sort'];
-			$vectors = apply_filters( 'mwai_embeddings_vectors', [], $offset, $limit, $filters, $sort );
-			return new WP_REST_Response([ 'success' => true, 'total' => $vectors['total'], 'vectors' => $vectors['rows'] ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	function add_vector( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$vector = $params['vector'];
-			$success = apply_filters( 'mwai_embeddings_vectors_add', false, $vector );
-			return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	function get_vectors_ref( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$refId = $params['refId'];
-			$vectors = apply_filters( 'mwai_embeddings_vectors_ref', false, $refId );
-			return new WP_REST_Response([ 'success' => true, 'vectors' => $vectors ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	function modify_vector( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$vector = $params['vector'];
-			$success = apply_filters( 'mwai_embeddings_vectors_update', false, $vector );
-			return new WP_REST_Response([ 'success' => $success, 'vector' => $vector ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
-	}
-
-	function delete_vectors( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$ids = $params['ids'];
-			$success = apply_filters( 'mwai_embeddings_vectors_delete', false, $ids );
-			return new WP_REST_Response([ 'success' => $success ], 200 );
-		}
-		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-		}
 	}
 	
 	function transcribe( $request ) {

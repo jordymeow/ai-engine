@@ -26,6 +26,10 @@ spl_autoload_register(function ( $class ) {
   else if ( strpos( $class, 'MeowCommonPro_' ) !== false ) {
     $file = MWAI_PATH . '/common/premium/' . str_replace( 'meowcommonpro_', '', strtolower( $class ) ) . '.php';
   }
+  else if ( strpos( $class, 'MeowPro_MWAI_Addons' ) !== false ) {
+    $necessary = false;
+    $file = MWAI_PATH . '/premium/addons/' . str_replace( 'meowpro_mwai_addons_', '', strtolower( $class ) ) . '.php';
+  }
   else if ( strpos( $class, 'MeowPro_MWAI' ) !== false ) {
     $necessary = false;
     $file = MWAI_PATH . '/premium/' . str_replace( 'meowpro_mwai_', '', strtolower( $class ) ) . '.php';
