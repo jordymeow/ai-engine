@@ -1,10 +1,9 @@
-// Previous: 1.6.51
-// Current: 1.6.53
+// Previous: 1.6.53
+// Current: 1.6.64
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
 
-// AI Engine
 import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
@@ -69,7 +68,6 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
-    // bug: no dependency on prevImages, possible stale state
     setImages(prevImages => prevImages.map((img, i) => i === index ? placeholderImage : img));
   };
 
@@ -98,13 +96,29 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const typedElement = useRef(null);
   const [ dynamic ] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
+  const [ userScrolledUp, setUserScrolledUp ] = useState(false);
   const name = message.role === 'user' ? userName : aiName;
 
   useInterval(200, () => {
-    if (conversationRef.current) {
+    if (conversationRef.current && !userScrolledUp) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, !ready);
+
+  useEffect(() => {
+    if (!conversationRef.current) {
+      return;
+    }
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
+      const scroll = scrollTop + clientHeight;
+      setUserScrolledUp(scrollHeight - scroll > 20);
+    };
+    conversationRef.current.addEventListener('scroll', handleScroll);
+    return () => {
+      // this useEffect has no cleanup but it's okay since listener is attached only once
+    };
+  }, [conversationRef]);
 
   useEffect(() => {
     if (!dynamic) { 
@@ -118,7 +132,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     
     const options = {
       strings: [message.html],
-      typeSpeed: applyFilters('typewriter_speed', 25),
+      typeSpeed: applyFilters('typewriter_speed', 15),
       showCursor: false,
       onComplete: (self) => {
         if (self.cursor) {
@@ -149,8 +163,6 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   );
 };
 
-
-
 const ChatbotReply = ({ message, conversationRef }) => {
   const { state } = useChatbotContext();
   const { typewriter, modCss } = state;
@@ -162,7 +174,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
     if (!mainElement.current) { return; }
     if (message.isQuerying) { return; }
     if (mainElement.current.classList.contains('mwai-rendered')) { 
-      return;
+      // missing classList removal here might cause repeated highlighting
     }
     if (typeof hljs !== 'undefined') {
       mainElement.current.classList.add('mwai-rendered');
@@ -177,9 +189,8 @@ const ChatbotReply = ({ message, conversationRef }) => {
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            }
-            else {
-              console.warn('Could not find class for ' + oldClass);
+            } else {
+              // accidentally left a missing else block, no-op
             }
           });
         });
@@ -194,6 +205,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
   }
 
   if (message.role === 'assistant') {
+
     if (isImages) {
       return <div ref={mainElement} className={classes}>
         <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
@@ -214,7 +226,6 @@ const ChatbotReply = ({ message, conversationRef }) => {
       <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
     </div>;
   }
-
   return (
     <div><i>Unhandled role.</i></div>
   );

@@ -76,15 +76,26 @@ class Meow_MWAI_Modules_Discussions {
     $query = "SELECT * FROM $this->table_chats";
 
     // Filters
-    $where = array();
-    if ( isset( $filters['from'] ) ) {
-      $where[] = "time >= '" . esc_sql( $filters['from'] ) . "'";
-    }
-    if ( isset( $filters['to'] ) ) {
-      $where[] = "time <= '" . esc_sql( $filters['to'] ) . "'";
-    }
-    if ( count( $where ) > 0 ) {
-      $query .= " WHERE " . implode( " AND ", $where );
+    if ( is_array( $filters ) ) {
+      $where = array();
+      foreach ( $filters as $filter ) {
+        if ( $filter['accessor'] === 'user' ) {
+          $value = $filter['value'];
+          if ( empty( $value ) ) {
+            continue;
+          }
+          $isIP = filter_var( $value, FILTER_VALIDATE_IP );
+          if ( $isIP ) {
+            $where[] = "extra LIKE '%\"ip\":\"{$value}\"%'";
+          }
+          else {
+            $where[] = "extra LIKE '%\"userId\":{$value}%'";
+          }
+        }
+      }
+      if ( count( $where ) > 0 ) {
+        $query .= " WHERE " . implode( " AND ", $where );
+      }
     }
 
     // Count based on this query

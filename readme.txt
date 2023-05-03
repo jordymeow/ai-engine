@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.63
+Stable tag: 1.6.64
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,18 +78,21 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.64 (2023/05/03) =
+* Add: User/IP filter for the Discussions tab.
+* Add: User/IP and Env filter for the Queries tab.
+* Update: Optimized the way the scrolling is handled when typewriter is used.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.63 (2023/05/01) =
 * Fix: Removed a notice.
 * Update: Refactoring of the code to make it more consistent.
 * Update: Attempt to avoid an issue with old plugins loading the JS media library in the footer.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.61 (2023/04/30) =
 * Update: Some parts of the UI got improved, that will allow for more features to be developed.
 * Update: Clean the API, class names, and the files hierarchy to make it more consistant.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.59 (2023/04/29) =
 * Add: Logs the real issue when rejecting a query.

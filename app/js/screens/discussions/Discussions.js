@@ -1,5 +1,5 @@
-// Previous: 1.5.3
-// Current: 1.6.52
+// Previous: 1.6.52
+// Current: 1.6.64
 
 const { useMemo, useState, useEffect } = wp.element;
 import styled from 'styled-components';
@@ -43,7 +43,7 @@ const Message = ({ message }) => {
         <StyledType>{message.type}</StyledType>
       </StyledContext>
       {embeddings && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embedding.title + Math.random()}>
+        {embeddings.map(embedding => <div key={embedding.id ?? Math.random()}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -53,14 +53,15 @@ const Message = ({ message }) => {
 }
 
 const chatsColumns = [
-  //{ accessor: 'id', title: 'ID', width: '50px' },
-  //{ accessor: 'chatId',  title: 'ChatID', width: '80px' },
   { accessor: 'updated', title: 'Time', width: '80px', sortable: true },
-  { accessor: 'user', title: 'User', width: '85px' },
+  { accessor: 'user', title: 'User', width: '85px', 
+    filters: {
+      type: 'text',
+      description: "Type an User ID, or an IP."
+    },
+  },
   { accessor: 'glance', title: 'Preview (First & Last Message)' },
   { accessor: 'messages', title: '#', width: '45px' },
-  //{ accessor: 'extra', title: 'Info', width: '45px' },
-  //{ accessor: 'created', title: 'Started', width: '140px', sortable: true }
 ];
 
 const retrieveDiscussions = async (chatsQueryParams) => {
@@ -76,25 +77,26 @@ const deleteDiscussions = async (chatIds = []) => {
 
 const Discussions = () => {
   const queryClient = useQueryClient();
-  const [ chatsQueryParams, setChatsQueryParams ] = useState({
-    filters: null, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
-  });
   const [ busyAction, setBusyAction ] = useState(false);
   const [ autoRefresh, setAutoRefresh ] = useState(false);
+  const [ filters, setFilters ] = useState(() => {
+    return chatsColumns.filter(v => v.filters).map(v => {
+      return { accessor: v.accessor, value: null}
+    });
+  });
+  const [ selectedIds, setSelectedIds ] = useState([]);
+
+  const [ chatsQueryParams, setChatsQueryParams ] = useState({
+    filters: filters, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
+  });
   const { isFetching: isFetchingChats, data: chatsData } = useQuery({
     queryKey: ['chats', chatsQueryParams], queryFn: () => retrieveDiscussions(chatsQueryParams),
     keepPreviousData: true, refetchInterval: autoRefresh ? 1000 * 5 : null
   });
-  const [ currentTab, setCurrentTab ] = useState('all');
-  const [ selectedIds, setSelectedIds ] = useState([]);
 
   useEffect(() => {
-    if (currentTab === 'all') {
-      setChatsQueryParams({ ...chatsQueryParams, filters: null });
-    } else {
-      setChatsQueryParams({ ...chatsQueryParams, filters: { env: currentTab } });
-    }
-  }, [currentTab]);
+    setChatsQueryParams(prev => ({ ...prev, filters: filters }));
+  }, [filters]);
 
   const chatsTotal = useMemo(() => {
     return chatsData?.total || 0;
@@ -107,14 +109,12 @@ const Discussions = () => {
       created = new Date(created.getTime() - created.getTimezoneOffset() * 60 * 1000);
       let messages = JSON.parse(x.messages);
       let extra = JSON.parse(x.extra);
-
       let formattedCreated = tableDateTimeFormatter(x.created);
       let formattedUpdated = tableDateTimeFormatter(x.updated);
       let user = tableUserIPFormatter(extra?.userId, extra?.ip);
       let userMessages = messages?.filter(x => x.type === 'user');
       let firstExchange = userMessages?.length ? userMessages[0].text : '';
       let lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].text : '';
-
       return {
         id: x.id,
         chatId: x.chatId,
@@ -162,16 +162,27 @@ const Discussions = () => {
         return;
       }
       await deleteDiscussions();
-      queryClient.invalidateQueries('chats');
-    } else {
-      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats ? selectedChats.map(x => x.chatId) : [];
-      await deleteDiscussions(selectedChatIds);
-      setSelectedIds([]);
-      queryClient.invalidateQueries('chats');
+      queryClient.invalidateQueries(['chats']);
     }
+    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+    const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
+    await deleteDiscussions(selectedChatIds);
+    setSelectedIds([]);
+    queryClient.invalidateQueries(['chats']);
     setBusyAction(false);
   }
+
+  const jsxPaging = useMemo(() => {
+    return (<div>
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
+          total={chatsTotal} onClick={page => { 
+            setChatsQueryParams(prev => ({ ...prev, page }));
+          }}
+        />
+      </div>
+    </div>);
+  }, [ chatsQueryParams, chatsTotal ]);
 
   return (<>
 
@@ -180,50 +191,51 @@ const Discussions = () => {
       <NekoColumn minimal style={{ flex: 2 }}>
 
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
-          {/* Actions for Selected Discussions */}
-          {selectedIds.length > 0 && <>
-            <NekoButton className="danger" disabled={false}
-              onClick={onDeleteSelectedChats}>
-              {selectedIds.length > 1 ? i18n.COMMON.DELETE_SELECTED : i18n.COMMON.DELETE}
-            </NekoButton>
-          </>}
-          {!selectedIds.length && <>
-            <NekoButton className="danger" disabled={false}
-              onClick={onDeleteSelectedChats}>
-              {i18n.COMMON.DELETE_ALL}
-            </NekoButton>
-          </>}
+          <div>
+            {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
+              disabled={isFetchingChats}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['chats'] });
+            }}>{i18n.COMMON.REFRESH}</NekoButton>}
+            {selectedIds.length > 0 && <>
+              <NekoButton className="danger" disabled={false}
+                onClick={onDeleteSelectedChats}>
+                {selectedIds.length > 1 ? i18n.COMMON.DELETE_SELECTED : i18n.COMMON.DELETE}
+              </NekoButton>
+            </>}
+            {!selectedIds.length && <>
+              <NekoButton className="danger" disabled={false}
+                onClick={onDeleteSelectedChats}>
+                {i18n.COMMON.DELETE_ALL}
+              </NekoButton>
+            </>}
+          </div>
         </>}>
 
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
-              setChatsQueryParams({ ...chatsQueryParams, sort: { accessor, by } });
+              setChatsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+            }}
+            filters={filters}
+            onFilterChange={(accessor, value) => {
+              const freshFilters = [
+                ...filters.filter(x => x.accessor !== accessor),
+                { accessor, value }
+              ];
+              setFilters(freshFilters);
             }}
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { setSelectedIds([id]) }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
+            onSelect={ids => { setSelectedIds([...selectedIds, ...ids]) }}
+            onUnselect={ids => { setSelectedIds([...selectedIds.filter(x => !ids.includes(x))]) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
             onChange={() => setAutoRefresh(!autoRefresh)} />
-            <div>
-              <div style={{ display: 'flex', flexDirection: 'row' }}>
-                <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
-                  total={chatsTotal} onClick={page => { 
-                    setChatsQueryParams({ ...chatsQueryParams, page });
-                  }}
-                />
-                {!autoRefresh && <NekoButton className="primary" style={{ marginLeft: 5 }}
-                  disabled={isFetchingChats}
-                  onClick={() => {
-                    queryClient.invalidateQueries({ queryKey: ['chats'] });
-                }}>{i18n.COMMON.REFRESH}</NekoButton>}
-              </div>
-            </div>
+            {jsxPaging}
           </div>
 
         </NekoBlock>

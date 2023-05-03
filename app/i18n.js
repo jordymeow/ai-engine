@@ -175,6 +175,8 @@ i18n.COMMON = {
   SPEECH_RECOGNITION: __( 'Speech Recognition', 'ai-engine' ),
   SPEECH_SYNTHESIS: __( 'Speech Synthesis', 'ai-engine' ),
   DYNAMIC_MAX_MESSAGES: __( 'Dynamic Max Messages', 'ai-engine' ),
+  QUERY: __( 'Query', 'ai-engine' ),
+  QUERIES: __( 'Queries', 'ai-engine' ),
 }
 
 i18n.FORMS = {

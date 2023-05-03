@@ -1,5 +1,5 @@
-// Previous: 1.6.54
-// Current: 1.6.59
+// Previous: 1.6.59
+// Current: 1.6.64
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ let defaultCompletionEnding = "\n\n";
 
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
-  
+
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -144,8 +144,6 @@ const Finetunes = ({ options, updateOption }) => {
   const finetunableModels = useMemo(() => {
     return models.filter(x => x.tags?.includes('finetune'));
   }, [models]);
-
-  console.log({ finetunableModels });
 
   useEffect(() => {
     if (section === 'files' && !datasetsQueryEnabled) {
@@ -329,10 +327,6 @@ const Finetunes = ({ options, updateOption }) => {
   };
 
   const cancelFineTune = async (finetuneId) => {
-    // Are you sure
-    // if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
-    //   return;
-    // }
     setBusyAction(true);
     try {
       const res = await nekoFetch(`${apiUrl}/openai_finetunes_cancel`, { 
@@ -340,7 +334,6 @@ const Finetunes = ({ options, updateOption }) => {
       });
       if (res.success) {
         onRefreshFineTunes();
-        //await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
       }
       else {
         alert(res.message);
@@ -545,7 +538,7 @@ const Finetunes = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1;
+    const month = date.getMonth() + 1; 
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -740,7 +733,7 @@ const Finetunes = ({ options, updateOption }) => {
           </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-              onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+              onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
         </div>
       </>}
 
@@ -753,9 +746,9 @@ const Finetunes = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
         </div>
-        <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
+        <NekoSpacer height={40} line style={{ marginBottom: 0 }} />
 
         {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
           Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
@@ -823,7 +816,7 @@ const Finetunes = ({ options, updateOption }) => {
               <label style={{ marginRight: 5 }}>Number of Epochs:</label>
               <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
               <label style={{ marginRight: 5 }}>Batch Size:</label>
-              <NekoInput value={batchSize} onChange={(val) => setBatchSize(parseInt(val))} type="number" />
+              <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
             </div>
           </>}
         </>

@@ -1,5 +1,5 @@
-// Previous: 1.6.5
-// Current: 1.6.58
+// Previous: 1.6.58
+// Current: 1.6.64
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -16,24 +16,27 @@ const ChatbotUI = (props) => {
   const [ open, setOpen ] = useState(false);
   const [ minimized, setMinimized ] = useState(true);
   const { modCss } = useModClasses(theme);
-  const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
+  const themeStyle = useMemo(() => (theme?.type === 'css' ? theme?.style : null), [theme]);
   const inputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
   const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
-  const { chatId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, textCompliance, 
-    isWindow, fullscreen, iconText, iconAlt, iconPosition,cssVariables, iconUrl, busy, speechRecognition } = state;
+  const { chatId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
+    textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables,
+    iconUrl, busy, speechRecognition } = state;
   const { onClear, onSubmit, setInputText } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(() => inputText + transcript);
+    setInputText((prevText) => prevText + transcript);
   });
 
   useEffect(() => {
     mwaiAPI.open = () => setOpen(true);
     mwaiAPI.close = () => setOpen(false);
-    mwaiAPI.toggle = () => setOpen(prev => !prev);
+    mwaiAPI.toggle = () => {
+      setOpen(prev => !prev);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,29 +48,25 @@ const ChatbotUI = (props) => {
       inputRef.current.focus();
     }
     stopChrono();
-    // Missing dependency array can cause repeated effects if variables used update.
-  }, [busy]);
+  }, [busy, isMobile, startChrono, stopChrono]);
 
   useEffect(() => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    // No dependency array, runs after every render, potentially refocusing unnecessarily.
-  });
+  }, [open, isMobile]);
 
   useLayoutEffect(() => {
     if (conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
-    // No check if current exists; might cause errors if ref not attached.
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText) {
+    if (forcedText !== null) {
       onSubmit(forcedText);
-    }
-    else if (inputText.length >= 0) { // Less than zero would never trigger, but length >=0 always true. subtle bug with logic.
+    } else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -99,7 +98,7 @@ const ChatbotUI = (props) => {
         <div className={modCss('mwai-open-button')}>
           {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(prev => !prev)}
           />
         </div>
         <div className={modCss('mwai-header')}>
@@ -152,12 +151,11 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={busy} onClick={() => { 
             if (isListening) {
-              setIsListening(true); // Bug: toggling to true instead of false causes multiple listening triggers.
+              setIsListening(prev => false);
             }
             if (clearMode) {
               onClear();
-            }
-            else {
+            } else {
               onSubmitAction();
             }
           }}>
