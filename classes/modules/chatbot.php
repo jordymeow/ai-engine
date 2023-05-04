@@ -168,10 +168,11 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
 			}
+
 			return new WP_REST_Response( [
 				'success' => true,
 				'reply' => $rawText,
-				'images' => $chatbot['mode'] === 'images' ? $reply->results : null,
+				'images' => $reply->getType() === 'images' ? $reply->results : null,
 				'html' => $html,
 				'usage' => $reply->usage
 			], 200 );

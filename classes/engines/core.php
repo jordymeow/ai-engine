@@ -242,6 +242,7 @@ class Meow_MWAI_Engines_Core {
       $usage = $this->core->record_images_usage( "dall-e", "1024x1024", $query->maxResults );
       $reply->setUsage( $usage );
       $reply->setChoices( $data['data'] );
+      $reply->setType( 'images' );
       return $reply;
     }
     catch ( Exception $e ) {

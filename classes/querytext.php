@@ -87,7 +87,7 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
       }
     }
     $estimatedTokens = $this->estimateTokens( $this->messages );
-    if ( $estimatedTokens > $realMax ) {
+    if ( !empty( $realMax ) && $estimatedTokens > $realMax ) {
       throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
     }
     $realMax = (int)($realMax - $estimatedTokens) - 16;

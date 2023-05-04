@@ -1,9 +1,10 @@
-// Previous: 1.6.53
-// Current: 1.6.64
+// Previous: 1.6.64
+// Current: 1.6.65
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
 
+// AI Engine
 import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
@@ -80,7 +81,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-text')}>
         <div className={modCss('mwai-gallery')}>
           {images?.map((image, index) => (
-            <a href={image} target="_blank" rel="noopener noreferrer" key={index}>
+            <a key={index} href={image} target="_blank" rel="noopener noreferrer">
               <img src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
@@ -116,7 +117,9 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     };
     conversationRef.current.addEventListener('scroll', handleScroll);
     return () => {
-      // this useEffect has no cleanup but it's okay since listener is attached only once
+      if (conversationRef.current) {
+        conversationRef.current.removeEventListener('scroll', handleScroll);
+      }
     };
   }, [conversationRef]);
 
@@ -163,6 +166,8 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   );
 };
 
+
+
 const ChatbotReply = ({ message, conversationRef }) => {
   const { state } = useChatbotContext();
   const { typewriter, modCss } = state;
@@ -174,7 +179,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
     if (!mainElement.current) { return; }
     if (message.isQuerying) { return; }
     if (mainElement.current.classList.contains('mwai-rendered')) { 
-      // missing classList removal here might cause repeated highlighting
+      return;
     }
     if (typeof hljs !== 'undefined') {
       mainElement.current.classList.add('mwai-rendered');
@@ -189,8 +194,9 @@ const ChatbotReply = ({ message, conversationRef }) => {
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            } else {
-              // accidentally left a missing else block, no-op
+            }
+            else {
+              console.warn('Could not find class for ' + oldClass);
             }
           });
         });
@@ -226,6 +232,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
       <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
     </div>;
   }
+
   return (
     <div><i>Unhandled role.</i></div>
   );

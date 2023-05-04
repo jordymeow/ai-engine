@@ -6,6 +6,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $results = [];
   public $usage = [ 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 ];
   public $query = null;
+  public $type = 'text';
 
   public function __construct( $query = null ) {
     $this->query = $query;
@@ -26,6 +27,10 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   public function setUsage( $usage ) {
     $this->usage = $usage;
+  }
+
+  public function setType( $type ) {
+    $this->type = $type;
   }
 
   public function getTotalTokens() {
@@ -50,6 +55,10 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   public function getResult() {
     return $this->result;
+  }
+
+  public function getType() {
+    return $this->type;
   }
 
   public function replace( $search, $replace ) {

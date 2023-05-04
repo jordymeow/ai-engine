@@ -21,6 +21,7 @@
 	}
 
 	.mwai-content {
+		display: flex;
 		background: var(--mwai-backgroundPrimaryColor);
 		font-size: var(--mwai-fontSize);
 		color: var(--mwai-fontColor);

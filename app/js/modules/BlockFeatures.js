@@ -1,7 +1,7 @@
-// Previous: 1.4.9
-// Current: 1.6.0
+// Previous: 1.6.0
+// Current: 1.6.65
 
-const { useState } = wp.element;
+const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
 const { registerPlugin } = wp.plugins;
 const { Button, ToolbarDropdownMenu, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
@@ -22,24 +22,70 @@ import GenerateExcerptsModal from './modals/GenerateExcerpts';
 import AiIcon from '../styles/AiIcon';
 import MagicWandModal from './modals/MagicWandModal';
 
-function BlockAIWand({ isActive, onChange, value }) {
+const fadeOutStyle = `
+  opacity: 0.15;
+  pointer-events: none;
+  user-select: none;
+  animation: neko-fade-animation 0.85s infinite linear;
+`;
+
+const normalStyle = `
+  opacity: 1;
+  pointer-events: auto;
+  user-select: auto;
+  animation: none;
+`;
+
+function BlockAIWand({ isActive, onChange, value, ...rest }) {
   const [ busy, setBusy ] = useState(false);
   const [ results, setResults ] = useState([]);
   const selectedBlock = useSelect((select) => select('core/block-editor').getSelectedBlock(), []);
-  if (!selectedBlock) { return null; }
 
+  if (!selectedBlock) { return null; }
   if (selectedBlock.name !== 'core/paragraph') {
     return null;
   }
 
+  useEffect(() => {
+    if (!selectedBlock?.clientId) { return; }  
+    const blockElement = document.getElementById('block-' + selectedBlock.clientId);
+    if (!blockElement) {
+      console.warn("AI Engine: Could not find block element.");
+      return;
+    }
+    blockElement.style.cssText = busy ? fadeOutStyle : normalStyle;
+  }, [busy, selectedBlock]);
+
+  const setBlockStyle = () => {
+    const blockElement = document.getElementById('block-' + selectedBlock.clientId);
+    if (!blockElement) {
+      console.warn("AI Engine: Could not find block element.");
+      return;
+    }
+    blockElement.style.cssText = fadeOutStyle;
+  }
+
+  const resetBlockStyle = () => {
+    const blockElement = document.getElementById('block-' + selectedBlock.clientId);
+    if (!blockElement) {
+      console.warn("AI Engine: Could not find block element.");
+      return;
+    }
+    blockElement.style.cssText = normalStyle;
+  }
+
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const currentSelectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = currentSelectedBlock.attributes.content;
+    const selectedBlockData = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = selectedBlockData.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(currentSelectedBlock.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: updatedContent });
+  }
+
+  const updateText = (text) => {
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: text });
   }
 
   const onClick = (text) => {
@@ -48,23 +94,21 @@ function BlockAIWand({ isActive, onChange, value }) {
     replaceText(text);
   }
 
-  const updateText = (text) => {
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: text });
-  }
-
-  const text = selectedBlock.attributes.content;
+  const blockContent = selectedBlock.attributes.content;
   const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
     const { getCurrentPost } = wp.data.select("core/editor");
     const { id: postId } = getCurrentPost();
     setBusy(true);
+    setBlockStyle();
     document.activeElement.blur();
     const res = await nekoFetch(`${apiUrl}/magic_wand`, { 
       method: 'POST',
       nonce: restNonce,
-      json: { action, data: { postId, text, selectedText } }
+      json: { action, data: { postId, text: blockContent, selectedText } }
     });
+    resetBlockStyle();
     setBusy(false);
     if (!res.success) {
       throw new Error(res.message);
@@ -81,6 +125,15 @@ function BlockAIWand({ isActive, onChange, value }) {
   }
 
   return (<>
+    <style>
+      {`
+        @keyframes neko-fade-animation {
+          0% { opacity: 0.15; }
+          50% { opacity: 0.3; }
+          100% { opacity: 0.15; }
+        }
+    `}
+    </style>
     <BlockControls>
       <ToolbarGroup>
         <ToolbarDropdownMenu
@@ -216,24 +269,20 @@ const MWAI_DocumentSettings = () => {
   );
 };
 
+
 const BlockFeatures = () => {
-  // This goes into the sidebar
+
   registerPlugin('ai-engine-document-settings', {
     render: MWAI_DocumentSettings
   });
 
-  // This goes in the context menu of the block toolbar
-  // registerPlugin('ai-engine-ai-wand', {
-  //   render: MWAI_Block_AI_Actions
-  // });
-
-  // This goes in the block toolbar directly
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',
     tagName: 'mwai',
     className: null,
     edit: BlockAIWand,
   });
+  
 };
 
 export default BlockFeatures;
