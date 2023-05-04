@@ -1,5 +1,5 @@
-// Previous: 1.6.58
-// Current: 1.6.64
+// Previous: 1.6.64
+// Current: 1.6.66
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -16,7 +16,7 @@ const ChatbotUI = (props) => {
   const [ open, setOpen ] = useState(false);
   const [ minimized, setMinimized ] = useState(true);
   const { modCss } = useModClasses(theme);
-  const themeStyle = useMemo(() => (theme?.type === 'css' ? theme?.style : null), [theme]);
+  const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
   const inputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
@@ -28,15 +28,13 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition } = state;
   const { onClear, onSubmit, setInputText } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText((prevText) => prevText + transcript);
+    setInputText(prev => prev + transcript);
   });
 
   useEffect(() => {
     mwaiAPI.open = () => setOpen(true);
     mwaiAPI.close = () => setOpen(false);
-    mwaiAPI.toggle = () => {
-      setOpen(prev => !prev);
-    };
+    mwaiAPI.toggle = () => setOpen(prev => !prev);
   }, []);
 
   useEffect(() => {
@@ -48,25 +46,25 @@ const ChatbotUI = (props) => {
       inputRef.current.focus();
     }
     stopChrono();
-  }, [busy, isMobile, startChrono, stopChrono]);
+  }, [busy]);
 
   useEffect(() => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-  }, [open, isMobile]);
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+  }, [open]);
 
   useLayoutEffect(() => {
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText !== null) {
+    if (forcedText) {
       onSubmit(forcedText);
-    } else if (inputText.length > 0) {
+    }
+    else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -98,7 +96,7 @@ const ChatbotUI = (props) => {
         <div className={modCss('mwai-open-button')}>
           {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(prev => !prev)}
+            onClick={() => setOpen(!open)}
           />
         </div>
         <div className={modCss('mwai-header')}>
@@ -109,7 +107,7 @@ const ChatbotUI = (props) => {
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(prev => !prev)}
+              onClick={() => setOpen(!open)}
             />
           </div>
         </div>
@@ -155,7 +153,8 @@ const ChatbotUI = (props) => {
             }
             if (clearMode) {
               onClear();
-            } else {
+            }
+            else {
               onSubmitAction();
             }
           }}>

@@ -159,6 +159,7 @@
 
 .mwai-chat .mwai-text * {
   font-size: var(--mwai-fontSize);
+  color: var(--mwai-fontColor);
 }
 
 .mwai-chat .mwai-text *:first-child {
@@ -187,10 +188,6 @@
 
 .mwai-chat .mwai-text h4 {
   font-size: 120%;
-}
-
-.mwai-chat .mwai-text p {
-  display: contents;
 }
 
 .mwai-chat .mwai-text p code {

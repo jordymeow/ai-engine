@@ -1,5 +1,5 @@
-// Previous: 1.6.54
-// Current: 1.6.55
+// Previous: 1.6.55
+// Current: 1.6.66
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -15,7 +15,7 @@ const retrievePostTypes = async () => {
 
 const retrievePostsCount = async (postType) => {
   const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}`, { nonce: restNonce });
-  return res?.count?.publish ? parseInt(res?.count?.publish) : null;
+  return res?.count ? parseInt(res?.count) : null;
 }
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {

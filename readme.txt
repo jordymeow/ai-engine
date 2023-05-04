@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.65
+Stable tag: 1.6.66
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,8 +78,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.65 (2023/05/04) =
+= 1.6.66 (2023/05/04) =
+* Fix: Entries Generator was not getting the right counts.
 * Fix: Messages theme had little visual glitches.
+* Update: The chatbot scrolls to the bottom of the content when re-opened.
+* Update: The paragraphs are back for the ChatGPT Theme.
 * Update: The AI Wands is nicer to use, with better busy states.
 * Update: More adaptability for the AI Engine API.
 * Add: Shortcode "builder" for new chatbots.

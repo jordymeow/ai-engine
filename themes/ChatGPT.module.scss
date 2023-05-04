@@ -166,6 +166,7 @@
 
 		* {
 			font-size: var(--mwai-fontSize);
+			color: var(--mwai-fontColor);
 		}
 
 		*:first-child {
@@ -197,7 +198,6 @@
 		}
 	
 		p {
-			display: contents;
 
 			code {
 				background: var(--mwai-backgroundSecondaryColor);
