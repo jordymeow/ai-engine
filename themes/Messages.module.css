@@ -257,7 +257,7 @@
 }
 
 .mwai-chat .mwai-input .mwai-microphone {
-  display: flex !important;
+  display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;

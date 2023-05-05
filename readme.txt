@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.67
+Stable tag: 1.6.68
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,8 +78,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.67 (2023/05/05) =
+= 1.6.68 (2023/05/05) =
 * Fix: Tokens estimation was happening too early.
+* Fix: Issue with chatbot names using only non-ASCII characters.
 * Update & Fix: Custom Shortcodes (for Chatbot v2) got much simpler and better.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
