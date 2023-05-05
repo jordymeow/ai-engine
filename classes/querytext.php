@@ -342,8 +342,8 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
     if ( isset( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
 			$this->setMaxTokens( intval( $params['maxTokens'] ) );
 		}
-    if ( isset( $params['max_sentences'] ) && intval( $params['max_sentences'] ) > 0 ) {
-      $this->setMaxSentences( intval( $params['max_sentences'] ) );
+    if ( isset( $params['max_messages'] ) && intval( $params['max_messages'] ) > 0 ) {
+      $this->setMaxSentences( intval( $params['max_messages'] ) );
     }
     if ( isset( $params['maxSentences'] ) && intval( $params['maxSentences'] ) > 0 ) {
       $this->setMaxSentences( intval( $params['maxSentences'] ) );

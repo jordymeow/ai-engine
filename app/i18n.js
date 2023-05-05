@@ -105,7 +105,7 @@ i18n.COMMON = {
   SHORTCODE: __( 'Shortcode', 'ai-engine' ),
   SHORTCODES: __( 'Shortcodes', 'ai-engine' ),
   RESOLVE: __( 'Resolve', 'ai-engine' ),
-  MAX_SENTENCES: __( 'Max Sentences', 'ai-engine' ),
+  MAX_MESSAGES: __( 'Max Messages', 'ai-engine' ),
   INPUT_MAXLENGTH: __( 'Input Max Length', 'ai-engine' ),
   COMPLIANCE_TEXT: __( 'Compliance Text', 'ai-engine' ),
   MODERATION: __( 'Moderation', 'ai-engine' ),

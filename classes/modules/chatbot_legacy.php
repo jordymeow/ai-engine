@@ -301,7 +301,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 		$env = $atts['env'];
 		$mode = $atts['mode'];
 		$maxResults = $mode === 'chat' ? 1 : $atts['max_results'];
-		$maxSentences = !empty( $atts['max_sentences'] ) ? intval( $atts['max_sentences'] ) : 1;
+		$maxSentences = !empty( $atts['max_messages'] ) ? intval( $atts['max_messages'] ) : 1;
 		$sessionId = $this->core->get_session_id();
 		$rest_nonce = wp_create_nonce( 'wp_rest' );
 		$casuallyFineTuned = boolval( $atts['casually_fine_tuned'] );

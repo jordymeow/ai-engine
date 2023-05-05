@@ -60,7 +60,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'text_input_placeholder' => 'Type your message...',
 	'text_input_maxlength' => '512',
 	'text_compliance' => '',
-	'max_sentences' => 15,
+	'max_messages' => 15,
 	'style' => 'chatgpt', // This is only used in the old version of Chatbot
 	'themeId' => 'chatgpt',
 	'window' => false,

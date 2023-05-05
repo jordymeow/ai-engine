@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.68
+Stable tag: 1.6.69
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.68 (2023/05/05) =
+= 1.6.69 (2023/05/05) =
 * Fix: Tokens estimation was happening too early.
 * Fix: Issue with chatbot names using only non-ASCII characters.
 * Update & Fix: Custom Shortcodes (for Chatbot v2) got much simpler and better.
@@ -179,7 +179,7 @@ Languages: English.
 
 = 1.5.3 (2023/04/18) =
 * Fix: Removed a few annoying PHP notices.
-* Add: Max Sentences for the new chatbot (now the new chatbot has everything and more).
+* Add: Max Messages for the new chatbot (now the new chatbot has everything and more).
 * Add: Statistics tab displays more information, such as the service used (generally, it's OpenAI, but it could be Azure), and if the API Key used was the one set in the admin or if it was a custom one (added by the user for example).
 * Update: Enhanced how everything is displayed in Statistics to spot potential issues more easily.
 * Update: Reviewed the Settings tab for more clarity.
@@ -430,7 +430,7 @@ Languages: English.
 
 = 1.0.8 (2023/02/25) =
 * Add: Filter to takeover the conversation programmatically.
-* Add: Compliance Text and Max Sentences.
+* Add: Compliance Text and Max Messages.
 * Add: Hyperparams for finetuning.
 * Add: Queries viewer.
 
@@ -463,7 +463,7 @@ Languages: English.
 = 0.9.98 (2023/02/18) =
 * Fix: There was an exit applied if WP_DEBUG was used.
 * Update: Default max_tokens for forms is now 2048.
-* Add: New 'max_sentences' parameter to limit the number of sentences in the prompt for the chatbot.
+* Add: New 'max_messages' parameter to limit the number of sentences in the prompt for the chatbot.
 * Add: AI Submit now handles using element based on their ID. Use it like this: {#myid}.
 * Update: Enhance the internal API with better helpers.
 
