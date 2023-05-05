@@ -1,12 +1,10 @@
-// Previous: 1.6.55
-// Current: 1.6.58
+// Previous: 1.6.58
+// Current: 1.6.67
 
-// React & Vendor Libs
-import { useState, useMemo } from '@wordpress/element';
+import { useState, useMemo, useEffect } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
-// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
@@ -92,6 +90,14 @@ const Chatbots = (props) => {
     }
   }, [chatbots, botIndex]);
 
+  const defaultChatbot = useMemo(() => {
+    if (chatbots) {
+      const chatbot = chatbots.find(chatbot => chatbot.chatId === 'default');
+      if (!chatbot) return null;
+      return chatbot;
+    }
+  }, [chatbots]);
+
   const currentTheme = useMemo(() => {
     if (currentChatbot && currentChatbot.themeId === 'none') {
       return null;
@@ -126,8 +132,8 @@ const Chatbots = (props) => {
     setBusyAction(false);
   }
 
-  const onChangeTab = (index) => {
-    setBotIndex(index);
+  const onChangeTab = (botIndex) => {
+    setBotIndex(botIndex);
   }
 
   const onSwitchTheme = (themeId) => {
@@ -153,6 +159,12 @@ const Chatbots = (props) => {
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   }
+
+  useEffect(() => {
+    if (chatbots && chatbots.length && botIndex >= chatbots.length) {
+      setBotIndex(0);
+    }
+  }, [chatbots, botIndex]);
 
   return (<>
     <NekoWrapper>
@@ -192,8 +204,8 @@ const Chatbots = (props) => {
                 <NekoButton className="danger" icon='delete' onClick={deleteCurrentChatbot} />
               }
             </>}>
-            {chatbots?.map((chatbotParams, index) => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
-              <ChatbotParams options={options} themes={themes}
+            {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
+              <ChatbotParams options={options} themes={themes} defaultChatbot={defaultChatbot}
                 shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
               />
             </NekoTab>)}

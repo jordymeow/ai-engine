@@ -1,11 +1,11 @@
 === AI Engine: ChatGPT Chatbot, Content Generator, GPT 3 & 4, Ultra-Customizable ===
 Contributors: TigrouMeow
-Tags: chatgpt, gpt, gpt-3, openai, ai, chatbot, content generator, finetuning, copilot
+Tags: ai, chatgpt, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.66
+Stable tag: 1.6.67
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,12 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.67 (2023/05/05) =
+* Fix: Tokens estimation was happening too early.
+* Update & Fix: Custom Shortcodes (for Chatbot v2) got much simpler and better.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.66 (2023/05/04) =
 * Fix: Entries Generator was not getting the right counts.
 * Fix: Messages theme had little visual glitches.
@@ -86,8 +92,6 @@ Languages: English.
 * Update: The AI Wands is nicer to use, with better busy states.
 * Update: More adaptability for the AI Engine API.
 * Add: Shortcode "builder" for new chatbots.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you
 
 = 1.6.64 (2023/05/03) =
 * Add: User/IP filter for the Discussions tab.

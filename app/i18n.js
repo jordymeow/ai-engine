@@ -206,7 +206,7 @@ i18n.HELP = {
   SPEECH_RECOGNITION: __( 'Enable speech-to-text. Depends on the browser and OS used by the user.', 'ai-engine' ),
   SPEECH_SYNTHESIS: __( 'Enable text-to-speech.', 'ai-engine' ),
   DYNAMIC_MAX_MESSAGES: __( 'Max Messages will be dynamically decreased based on the max tokens.', 'ai-engine' ),
-  CUSTOM_SHORTCODE: __( 'Prefer the standard version of the shortcode (referring only to the id of the chatbot). If you need many chatbots, you can use custom shortcodes.', 'ai-engine' ),
+  CUSTOM_SHORTCODE: __( 'Prefer the standard version of the shortcode (referring only to the id of the chatbot). If you need many chatbots, you can use custom shortcodes. Custom shortcodes are based on the default chatbot; every attributes in it are basically overrides.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

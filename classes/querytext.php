@@ -74,6 +74,20 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
   public function finalChecks() {
     if ( empty( $this->model )  ) { return; }
 
+    // Make sure the number of messages is not too great
+    if ( !empty( $this->maxSentences ) ) {
+      $context = array_shift( $this->messages );
+      if ( !empty( $this->messages ) ) {
+        $this->messages = array_slice( $this->messages, -$this->maxSentences * 2 );
+      }
+      else {
+        $this->messages = [];
+      }
+      if ( !empty( $context ) ) {
+        array_unshift( $this->messages, $context );
+      }
+    }
+
     // Make sure the max tokens are respected.
     $realMax = 4096;
     $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
@@ -88,25 +102,11 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
     }
     $estimatedTokens = $this->estimateTokens( $this->messages );
     if ( !empty( $realMax ) && $estimatedTokens > $realMax ) {
-      throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The model $foundModel only accepts a maximum of $realMax tokens. " );
+      throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The $foundModel model only accepts a maximum of $realMax tokens. " );
     }
     $realMax = (int)($realMax - $estimatedTokens) - 16;
     if ( $this->maxTokens > $realMax ) {
       $this->maxTokens = $realMax;
-    }
-
-    // Make sure the number of messages is not too great
-    if ( !empty( $this->maxSentences ) ) {
-      $context = array_shift( $this->messages );
-      if ( !empty( $this->messages ) ) {
-        $this->messages = array_slice( $this->messages, -$this->maxSentences * 2 );
-      }
-      else {
-        $this->messages = [];
-      }
-      if ( !empty( $context ) ) {
-        array_unshift( $this->messages, $context );
-      }
     }
   }
 

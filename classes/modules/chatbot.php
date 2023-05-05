@@ -250,9 +250,10 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( isset( $atts[$param] ) ) {
 				if ( $param === 'localMemory' ) {
 					$frontParams[$param] = $atts[$param] === 'true';
-					continue;
 				}
-				$frontParams[$param] = $atts[$param];
+				else {
+					$frontParams[$param] = $atts[$param];
+				}
 			}
 			else if ( isset( $chatbot[$param] ) ) {
 				$frontParams[$param] = $chatbot[$param];
@@ -265,13 +266,6 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( isset( $atts[$param] ) ) {
 				$serverParams[$param] = $atts[$param];
 			}
-		}
-		if ( count( $serverParams ) > 0 ) {
-			if ( !$isCustom ) {
-				$id = md5( json_encode( $serverParams ) );
-				$chatId = null;
-			}
-			set_transient( 'mwai_custom_chatbot_' . $id, $serverParams, 60 * 60 * 24 );
 		}
 
 		// Front Params
@@ -290,6 +284,21 @@ class Meow_MWAI_Modules_Chatbot {
 			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
 		];
 
+		// Clean Params
+		$frontParams = $this->cleanParams( $frontParams );
+		$frontSystem = $this->cleanParams( $frontSystem );
+		$serverParams = $this->cleanParams( $serverParams );
+
+		// Server-side: Keep the System Params
+		if ( count( $serverParams ) > 0 ) {
+			if ( !$isCustom ) {
+				$id = md5( json_encode( $serverParams ) );
+				$chatId = null;
+			}
+			set_transient( 'mwai_custom_chatbot_' . $id, $serverParams, 60 * 60 * 24 );
+		}
+
+		// Client-side: Prepare JSON for Front Params and System Params
 		$theme = isset( $frontParams['themeId'] ) ? $this->core->getTheme( $frontParams['themeId'] ) : null;
 		$jsonFrontParams = htmlspecialchars(json_encode($frontParams), ENT_QUOTES, 'UTF-8');
 		$jsonFrontSystem = htmlspecialchars(json_encode($frontSystem), ENT_QUOTES, 'UTF-8');
@@ -298,6 +307,22 @@ class Meow_MWAI_Modules_Chatbot {
 
 		$this->enqueue_scripts();
 		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
+	}
+
+	function cleanParams( &$params ) {
+		foreach ( $params as $param => $value ) {
+			if ( empty( $value ) || is_array( $value ) ) {
+				continue;
+			}
+			$lowerCaseValue = strtolower( $value );
+			if ( $lowerCaseValue === 'true' || $lowerCaseValue === 'false' || is_bool( $value ) ) {
+				$params[$param] = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
+			}
+			else if ( is_numeric( $value ) ) {
+				$params[$param] = filter_var( $value, FILTER_VALIDATE_FLOAT );
+			}
+		}
+		return $params;
 	}
 	
 }
