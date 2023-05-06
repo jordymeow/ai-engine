@@ -1,5 +1,5 @@
-// Previous: 1.6.64
-// Current: 1.6.66
+// Previous: 1.6.66
+// Current: 1.6.70
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -28,14 +28,14 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition } = state;
   const { onClear, onSubmit, setInputText } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(prev => prev + transcript);
+    setInputText(() => inputText + transcript);
   });
 
   useEffect(() => {
     mwaiAPI.open = () => setOpen(true);
     mwaiAPI.close = () => setOpen(false);
-    mwaiAPI.toggle = () => setOpen(prev => !prev);
-  }, []);
+    mwaiAPI.toggle = () => setOpen(!open);
+  });
 
   useEffect(() => {
     if (busy) {
@@ -52,11 +52,15 @@ const ChatbotUI = (props) => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [open]);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
@@ -103,7 +107,7 @@ const ChatbotUI = (props) => {
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(prev => !prev)}
+                onClick={() => setMinimized(!minimized)}
               />
             }
             <div className={modCss('mwai-close-button')}
@@ -137,10 +141,10 @@ const ChatbotUI = (props) => {
               }}
               onChange={e => onTypeText(e.target.value)}>
             </TextAreaAutosize>
-            {speechRecognition && (<div>
+            {speechRecognition && !isMobile && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(prev => !prev)}
+                onClick={() => setIsListening(!isListening)}
               />
             </div>)}
           </div>
@@ -149,7 +153,7 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={busy} onClick={() => { 
             if (isListening) {
-              setIsListening(prev => false);
+              setIsListening(false);
             }
             if (clearMode) {
               onClear();

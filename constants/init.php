@@ -70,7 +70,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'icon_position' => 'bottom-right',
 	'fullscreen' => false,
 	'copy_button' => false,
-	'localMemory' => true,
+	'local_memory' => true,
 	// Chatbot System Parameters
 	'casually_fine_tuned' => false,
 	'content_aware' => false,

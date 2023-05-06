@@ -1,10 +1,12 @@
-// Previous: 1.6.58
-// Current: 1.6.67
+// Previous: 1.6.67
+// Current: 1.6.70
 
-import { useState, useMemo, useEffect } from '@wordpress/element';
+// React & Vendor Libs
+import { useState, useMemo } from '@wordpress/element';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from "styled-components";
 
+// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
@@ -18,7 +20,7 @@ import Themes from '@app/screens/chatbots/Themes';
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
 
 const StyledShortcode = Styled.div`
-  
+
   pre {
     display: flex;
     align-items: center;
@@ -46,7 +48,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000); // clear message after 2 seconds
+    }, 2000);
   };
 
   if (!currentChatbot) {
@@ -73,6 +75,7 @@ const Chatbots = (props) => {
   const [ busyAction, setBusyAction ] = useState(false);
   const [ botIndex, setBotIndex ] = useState(0);
   const chatbotDefaults = options?.chatbot_defaults;
+
   const { data: chatbots } = useQuery({
     queryKey: ['chatbots'], queryFn: retrieveChatbots, initialData: initChatbots
   });
@@ -88,6 +91,7 @@ const Chatbots = (props) => {
       if (!chatbot) return null;
       return chatbot;
     }
+    return null;
   }, [chatbots, botIndex]);
 
   const defaultChatbot = useMemo(() => {
@@ -96,6 +100,7 @@ const Chatbots = (props) => {
       if (!chatbot) return null;
       return chatbot;
     }
+    return null;
   }, [chatbots]);
 
   const currentTheme = useMemo(() => {
@@ -132,12 +137,12 @@ const Chatbots = (props) => {
     setBusyAction(false);
   }
 
-  const onChangeTab = (botIndex) => {
-    setBotIndex(botIndex);
+  const onChangeTab = (index) => {
+    setBotIndex(index);
   }
 
   const onSwitchTheme = (themeId) => {
-    //updateChatbotParams(themeId, 'themeId');
+    // updateChatbotParams(themeId, 'themeId');
   }
 
   const addNewChatbot = async () => {
@@ -159,12 +164,6 @@ const Chatbots = (props) => {
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   }
-
-  useEffect(() => {
-    if (chatbots && chatbots.length && botIndex >= chatbots.length) {
-      setBotIndex(0);
-    }
-  }, [chatbots, botIndex]);
 
   return (<>
     <NekoWrapper>
@@ -211,9 +210,7 @@ const Chatbots = (props) => {
             </NekoTab>)}
           </NekoTabs>
         </div>
-        <div style={{ display: mode === 'themes' ? 'block' : 'none' }}>
-          <Themes themes={themes} options={options} updateOption={updateOption} onSwitchTheme={onSwitchTheme} />
-        </div>
+        <div style={{ display: 'block' }}></div>
       </NekoColumn>
       <NekoColumn minimal>
         <small style={{ marginLeft: 15, marginBottom: -20 }}>

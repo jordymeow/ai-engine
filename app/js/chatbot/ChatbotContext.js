@@ -1,5 +1,5 @@
-// Previous: 1.6.58
-// Current: 1.6.59
+// Previous: 1.6.59
+// Current: 1.6.70
 
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
@@ -28,7 +28,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  // System Parameters
   const id = system.id;
   const chatId = system.chatId;
   const userData = system.userData;
@@ -43,19 +42,19 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
-    window: isWindow, copyButton, fullscreen, localMemory,
+    window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
 
+  const localMemory = localMemoryParam && !!id;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrlSample = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
-    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return { cssVariables: cssVars, iconUrl: iconUrlSample };
+    return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
@@ -64,13 +63,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     resetMessages();
   }, [startSentence]);
 
-  const saveMessages = (messagesList) => {
+  const saveMessages = (messages) => {
     if (!localMemory) {
       return;
     }
-    localStorage.setItem(`mwai-chat-${chatId}`, JSON.stringify({
+    localStorage.setItem(`mwai-chat-${id}`, JSON.stringify({
       clientId: clientId,
-      messages: messagesList
+      messages: messages
     }, getCircularReplacer()));
   };
 
@@ -92,14 +91,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    var chatHistory = [];
     if (localMemory) {
-      chatHistory = localStorage.getItem(`mwai-chat-${chatId}`);
+      chatHistory = localStorage.getItem(`mwai-chat-${id}`);
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
         setMessages(chatHistory.messages);
         setClientId(chatHistory.clientId);
-        // Missing cleanup? but no problem for now.
         return;
       }
     }
@@ -122,8 +120,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      // Remove the user message if exists
-      if (freshMessages.length > 0 && freshMessages[freshMessages.length -1].role === 'user') {
+      if (lastMessage) {
         freshMessages.pop();
       }
       freshMessages.push({
@@ -146,36 +143,35 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         lastMessage.images = serverRes.images;
       }
       lastMessage.timestamp = new Date().getTime();
-      // Unexpected: forget to delete isQuerying for some message types, causes reconfirmation!
+      delete lastMessage.isQuerying;
     }
-
-    // Else add new message
-    const newMessage = {
-      id: randomStr(),
-      role: 'assistant',
-      content: serverRes.reply,
-      who: rawAiName,
-      html: serverRes.html,
-      timestamp: new Date().getTime(),
-    };
-    if (serverRes.images) {
-      newMessage.images = serverRes.images;
+    else {
+      const newMessage = {
+        id: randomStr(),
+        role: 'assistant',
+        content: serverRes.reply,
+        who: rawAiName,
+        html: serverRes.html,
+        timestamp: new Date().getTime(),
+      };
+      if (serverRes.images) {
+        newMessage.images = serverRes.images;
+      }
+      freshMessages.push(newMessage);
     }
-    freshMessages.push(newMessage);
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes ]);
+  }, [ serverRes, messages ]);
 
   const onClear = useCallback(async () => {
-    await setClientId(randomStr());
-    localStorage.removeItem(`mwai-chat-${chatId}`);
-    resetMessages(); // Called here without dependencies, potential stale closure?
+    setClientId(randomStr());
+    localStorage.removeItem(`mwai-chat-${id}`);
+    resetMessages();
     setInputText('');
   }, [chatId]);
 
   const onSubmit = async (textQuery) => {
     if (typeof textQuery !== 'string') {
-      // Mistakenly assign inputText instead of the parameter.
       textQuery = inputText;
     }
 
@@ -199,7 +195,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: true
     }];
-
     setMessages(freshMessages);
     const body = {
       id: id,
@@ -207,8 +202,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       session: sessionId,
       clientId: clientId,
       contextId: contextId,
-      messages: messages, // referencing outer messages state, might be stale!
-      newMessage: inputText, // using stale inputText if asynchronous issue
+      messages: messages,
+      newMessage: inputText,
       ...atts
     };
     try {
@@ -224,7 +219,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setServerRes(data);
     }
     catch (e) {
-      console.error(e); // typo: error was assigned to e, but no variable named error
+      console.error(e);
       setBusy(false);
     }
   };
