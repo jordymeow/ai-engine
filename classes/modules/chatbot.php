@@ -294,6 +294,8 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( !$isCustom ) {
 				$id = md5( json_encode( $serverParams ) );
 				$chatId = null;
+				$frontSystem['id'] = $id;
+				$frontSystem['chatId'] = $chatId;
 			}
 			set_transient( 'mwai_custom_chatbot_' . $id, $serverParams, 60 * 60 * 24 );
 		}

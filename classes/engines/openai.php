@@ -203,7 +203,7 @@ class Meow_MWAI_Engines_OpenAI
     $options = [
       "headers" => $headers,
       "method" => $method,
-      "timeout" => 120,
+      "timeout" => MWAI_TIMEOUT,
       "body" => $body,
       "sslverify" => false
     ];

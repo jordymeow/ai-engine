@@ -38,7 +38,7 @@ class Meow_MWAI_Engines_Core {
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      throw new Exception( 'Error while calling OpenAI: ' . $e->getMessage() );
+      throw $e;
     }
   }
 
@@ -114,7 +114,7 @@ class Meow_MWAI_Engines_Core {
       $options = array(
         "headers" => $headers,
         "method" => "POST",
-        "timeout" => 120,
+        "timeout" => MWAI_TIMEOUT,
         "body" => json_encode( $body ),
         "sslverify" => false
       );
@@ -188,7 +188,7 @@ class Meow_MWAI_Engines_Core {
     $options = array(
       "headers" => $headers,
       "method" => "POST",
-      "timeout" => 120,
+      "timeout" => MWAI_TIMEOUT,
       "body" => json_encode( $body ),
       "sslverify" => false
     );
@@ -227,7 +227,7 @@ class Meow_MWAI_Engines_Core {
     $options = array(
       "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
       "method" => "POST",
-      "timeout" => 120,
+      "timeout" => MWAI_TIMEOUT,
       "body" => json_encode( array(
         "prompt" => $query->prompt,
         "n" => $query->maxResults,
