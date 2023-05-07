@@ -45,6 +45,19 @@ class Meow_MWAI_Reply implements JsonSerializable {
     return $this->usage['completion_tokens'];
   }
 
+  public function getUnits() {
+    if ( isset( $this->usage['total_tokens'] ) ) {
+      return $this->usage['total_tokens'];
+    }
+    else if ( isset( $this->usage['images'] ) ) {
+      return $this->usage['images'];
+    }
+    else if ( isset( $this->usage['seconds'] ) ) {
+      return $this->usage['seconds'];
+    }
+    return null;
+  }
+
   public function getResults() {
     return $this->results;
   }

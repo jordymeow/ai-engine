@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.2.2
+// Previous: 1.2.2
+// Current: 1.6.72
 
 import { NekoTypo } from '@neko-ui';
 import { useModels } from "../helpers";
@@ -21,11 +21,11 @@ const UsageDetails = ({ month, usageData }) => {
     </strong>
     <ul>
       {isExpanded && usageData[month].data.map((data, index) => {
+        let dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
         return (
           <li key={index} style={{ marginTop: 5, marginLeft: 18 }}>
             <strong>• {data.name}</strong>
-            {data.isImage && `: ${data.usage} images`}
-            {!data.isImage && `: ${data.usage} tokens`}
+            {`: ${data.usage} ${dataType}`}
             {data.price > 0 && ` (${data.price.toFixed(4)}$)`}
           </li>
         );
@@ -49,14 +49,23 @@ const MonthlyUsage = ({ options }) => {
           const modelUsage = monthUsage[model];
           const modelObj = getModel(model);
           if (modelObj) {
-            let price = calculatePrice(model, modelUsage?.total_tokens || modelUsage?.images || 0);
+            let usage = null;
+            let isAudio = false;
+            let isImage = false;
+            if (modelObj.type === 'image') {
+              usage = modelUsage?.images || 0;
+              isImage = true;
+            }
+            else if (modelObj.type === 'second') {
+              usage = modelUsage?.seconds || 0;
+              isAudio = true;
+            }
+            else {
+              usage = modelUsage?.total_tokens || 0;
+            }
+            let price = calculatePrice(model, usage);
             usageData[month].totalPrice += price;
-            usageData[month].data.push({ 
-              name: getModelName(model),
-              isImage: modelObj.type === 'image',
-              usage: modelObj.type === 'image' ? modelUsage.images : modelUsage.total_tokens,
-              price: price
-            });
+            usageData[month].data.push({ name: getModelName(model), isImage, isAudio, usage, price });
           }
           else if (month === currentMonth) {
             // Only show this error for the current month.

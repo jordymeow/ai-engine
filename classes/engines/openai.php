@@ -11,6 +11,17 @@ class Meow_MWAI_Engines_OpenAI
     $this->apiKey = $this->core->get_option( 'openai_apikey' );
   }
 
+  // Check if there are errors in the response from OpenAI, and throw an exception if so.
+  public function handleResponseErrors( $data ) {
+    if ( isset( $data['error'] ) ) {
+      $message = $data['error']['message'];
+      if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
+        $message = str_replace( $matches[1], '', $message );
+      }
+      throw new Exception( $message );
+    }
+  }
+
   public function listFiles()
   {
     return $this->run( 'GET', '/files' );
@@ -215,17 +226,7 @@ class Meow_MWAI_Engines_OpenAI
       }
       $response = wp_remote_retrieve_body( $response );
       $data = $json ? json_decode( $response, true ) : $response;
-
-      // Error handling
-      if ( isset( $data['error'] ) ) {
-        $message = $data['error']['message'];
-        // If the message contains "Incorrect API key provided: THE_KEY.", replace the key by "----".
-        if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
-          $message = str_replace( $matches[1], '', $message );
-        }
-        throw new Exception( $message );
-      }
-
+      $this->handleResponseErrors( $data );
       return $data;
     }
     catch ( Exception $e ) {
@@ -314,6 +315,11 @@ class Meow_MWAI_Engines_OpenAI
       $family = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
+      return $this->calculatePrice( $family, $units, $option, $finetune );
+    }
+    else if ( is_a( $query, 'Meow_MWAI_QueryTranscribe' ) ) {
+      $family = 'whisper';
+      $units = $reply->getUnits();
       return $this->calculatePrice( $family, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_QueryEmbed' ) ) {

@@ -2,19 +2,59 @@
 
 class Meow_MWAI_Engines_Core {
   private $core = null;
+  private $openai = null;
   private $localApiKey = null;
   private $localService = null;
   private $localAzureEndpoint = null;
   private $localAzureApiKey = null;
   private $localAzureDeployments = null;
+  private $openaiEndpoint = 'https://api.openai.com/v1';
+  private $azureApiVersion = '?api-version=2023-03-15-preview';
 
   public function __construct( $core ) {
     $this->core = $core;
+    $this->openai = new Meow_MWAI_Engines_OpenAI( $this->core );
     $this->localService = $this->core->get_option( 'openai_service' );
     $this->localApiKey = $this->core->get_option( 'openai_apikey' );
     $this->localAzureEndpoint = $this->core->get_option( 'openai_azure_endpoint' );
     $this->localAzureApiKey = $this->core->get_option( 'openai_azure_apikey' );
     $this->localAzureDeployments = $this->core->get_option( 'openai_azure_deployments' );
+  }
+
+  private function buildHeaders( $query ) {
+    $headers = array(
+      'Content-Type' => 'application/json',
+      'Authorization' => 'Bearer ' . $query->apiKey,
+    );
+    if ( $query->service === 'azure' ) {
+      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $query->azureApiKey );
+    }
+    return $headers;
+  }
+
+  private function buildOptions( $headers, $json = null, $forms = null ) {
+
+    // Build body
+    $body = null;
+    if ( !empty( $forms ) ) {
+      $boundary = wp_generate_password ( 24, false );
+      $headers['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
+      $body = $this->openai->buildFormBody( $forms, $boundary );
+    }
+    else if ( !empty( $json ) ) {
+      $body = json_encode( $json );
+    }
+
+    // Build options
+    $options = array(
+      'headers' => $headers,
+      'method' => 'POST',
+      'timeout' => MWAI_TIMEOUT,
+      'body' => $body,
+      'sslverify' => false
+    );
+
+    return $options;
   }
 
   private function runQuery( $url, $options ) {
@@ -24,16 +64,14 @@ class Meow_MWAI_Engines_Core {
         throw new Exception( $response->get_error_message() );
       }
       $response = wp_remote_retrieve_body( $response );
-      $data = json_decode( $response, true );
 
-      if ( isset( $data['error'] ) ) {
-        $message = $data['error']['message'];
-        if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
-          $message = str_replace( $matches[1], '', $message );
-        }
-        throw new Exception( $message );
+      // If Headers contains multipart/form-data then we don't need to decode the response
+      if ( strpos( $options['headers']['Content-Type'], 'multipart/form-data' ) !== false ) {
+        return $response;
       }
 
+      $data = json_decode( $response, true );
+      $this->openai->handleResponseErrors( $data );
       return $data;
     }
     catch ( Exception $e ) {
@@ -42,20 +80,18 @@ class Meow_MWAI_Engines_Core {
     }
   }
 
-  public function applyQueryParameters( $query ) {
-    // OpenAI will be used by default for everything
-    // But if the service is set to Azure and the deployments/models are available,
-    // then we will use Azure instead.
+  private function applyQueryParameters( $query ) {
     if ( empty( $query->service ) ) {
       $query->service = $this->localService;
     }
 
-    // OpenAI
+    // OpenAI will be used by default for everything
     if ( empty( $query->apiKey ) ) {
       $query->apiKey = $this->localApiKey;
     }
 
-    // Azure
+    // But if the service is set to Azure and the deployments/models are available,
+    // then we will use Azure instead.
     if ( $query->service === 'azure' && !empty( $this->localAzureDeployments ) ) {
       $found = false;
       foreach ( $this->localAzureDeployments as $deployment ) {
@@ -78,76 +114,95 @@ class Meow_MWAI_Engines_Core {
     }
   }
 
-  public function runTranscribe( $query ) {
+  private function getAudio( $url ) {
+    require_once( ABSPATH . 'wp-admin/includes/media.php' );
+    $tmpFile = tempnam( sys_get_temp_dir(), 'audio_' );
+    file_put_contents( $tmpFile, file_get_contents( $url ) );
+    $length = null;
+    $metadata = wp_read_audio_metadata( $tmpFile );
+    if ( isset( $metadata['length'] ) ) {
+      $length = $metadata['length'];
+    }
+    $data = file_get_contents( $tmpFile );
+    unlink( $tmpFile );
+    return [ 'data' => $data, 'length' => $length ];
+  }
+
+  private function runTranscribeQuery( $query ) {
     $this->applyQueryParameters( $query );
-    $openai = new Meow_MWAI_Engines_OpenAI( $this->core );
-    $fields = array( 
+
+    // Prepare the request
+    $modeEndpoint = $query->mode === 'translation' ? 'translations' : 'transcriptions';
+    $url = 'https://api.openai.com/v1/audio/' . $modeEndpoint;
+    $audioData = $this->getAudio( $query->url );
+    $body = array( 
       'prompt' => $query->prompt,
       'model' => $query->model,
       'response_format' => 'text',
       'file' => basename( $query->url ),
-      'data' => file_get_contents( $query->url )
+      'data' => $audioData['data']
     );
-    $modeEndpoint = $query->mode === 'translation' ? 'translations' : 'transcriptions';
-    $data = $openai->run( 'POST', '/audio/' . $modeEndpoint, null, $fields, false );
-    if ( empty( $data ) ) {
-      throw new Exception( 'Invalid data for transcription.' );
+    $headers = $this->buildHeaders( $query );
+    $options = $this->buildOptions( $headers, null, $body );
+
+    // Perform the request
+    try { 
+      $data = $this->runQuery( $url, $options );
+      if ( empty( $data ) ) {
+        throw new Exception( 'Invalid data for transcription.' );
+      }
+      $usage = $this->core->recordAudioUsage( $query->model, $audioData['length'] );
+      $reply = new Meow_MWAI_Reply( $query );
+      $reply->setUsage( $usage );
+      $reply->setChoices( $data );
+      return $reply;
     }
-    //$usage = $data['usage'];
-    //$this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
-    $reply = new Meow_MWAI_Reply( $query );
-    //$reply->setUsage( $usage );
-    $reply->setChoices( $data );
-    return $reply;
+    catch ( Exception $e ) {
+      error_log( $e->getMessage() );
+      throw new Exception( 'Error while calling OpenAI: ' . $e->getMessage() );
+    }
   }
 
-  public function runEmbedding( $query ) {
+  private function runEmbeddingQuery( $query ) {
     $this->applyQueryParameters( $query );
 
-    // NOTE: Let's follow closely the changes at Azure.
-    // Seems we need to specify an API version, otherwise it breaks.
+    // Prepare the request
+    $url = 'https://api.openai.com/v1/embeddings';
+    $body = array( 'input' => $query->prompt, 'model' => $query->model );
     if ( $query->service === 'azure' ) {
       $url = trailingslashit( $query->azureEndpoint ) . 'openai/deployments/' .
         $query->azureDeployment . '/embeddings?api-version=2023-03-15-preview';
-      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $query->azureApiKey );
       $body = array( "input" => $query->prompt );
-      $options = array(
-        "headers" => $headers,
-        "method" => "POST",
-        "timeout" => MWAI_TIMEOUT,
-        "body" => json_encode( $body ),
-        "sslverify" => false
-      );
+    }
+    $headers = $this->buildHeaders( $query );
+    $options = $this->buildOptions( $headers, $body );
+
+    // Perform the request
+    try {
       $data = $this->runQuery( $url, $options );
+      if ( empty( $data ) || !isset( $data['data'] ) ) {
+        throw new Exception( 'Invalid data for embedding.' );
+      }
+      $usage = $data['usage'];
+      $this->core->recordTokensUsage( $query->model, $usage['prompt_tokens'] );
+      $reply = new Meow_MWAI_Reply( $query );
+      $reply->setUsage( $usage );
+      $reply->setChoices( $data['data'] );
+      return $reply;
     }
-    else {
-      $openai = new Meow_MWAI_Engines_OpenAI( $this->core );
-      $body = array( 'input' => $query->prompt, 'model' => $query->model );
-      $data = $openai->run( 'POST', '/embeddings', $body );
+    catch ( Exception $e ) {
+      error_log( $e->getMessage() );
+      throw new Exception( 'Error while calling OpenAI: ' . $e->getMessage() );
     }
-    if ( empty( $data ) || !isset( $data['data'] ) ) {
-      throw new Exception( 'Invalid data for embedding.' );
-    }
-    $usage = $data['usage'];
-    $this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
-    $reply = new Meow_MWAI_Reply( $query );
-    $reply->setUsage( $usage );
-    $reply->setChoices( $data['data'] );
-    return $reply;
   }
 
-  public function runCompletion( $query ) {
+  private function runCompletionQuery( $query ) {
     $this->applyQueryParameters( $query );
     if ( $query->mode !== 'chat' && $query->mode !== 'completion' ) {
       throw new Exception( 'Unknown mode for query: ' . $query->mode );
     }
-    $url = "";
-    $headers = array(
-      'Content-Type' => 'application/json',
-      'Authorization' => 'Bearer ' . $query->apiKey,
-    );
 
-    // Body
+    // Prepare the request
     $body = array(
       "model" => $query->model,
       "stop" => $query->stop,
@@ -161,37 +216,16 @@ class Meow_MWAI_Engines_Core {
     else if ( $query->mode === 'completion' ) {
       $body['prompt'] = $query->getPrompt();
     }
-
-    // Azure
-    if ( $query->service === 'azure' ) {
-      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $query->azureApiKey );
-      if ( $query->mode === 'chat' ) {
-        $url = trailingslashit( $query->azureEndpoint ) . 'openai/deployments/' .
-          $query->azureDeployment . '/chat/completions?api-version=2023-03-15-preview';
-        
-      }
-      else if ( $query->mode === 'completion' ) {
-        $url = trailingslashit( $query->azureEndpoint ) . 'openai/deployments/' .
-          $query->azureDeployment . '/completions?api-version=2023-03-15-preview';
-      }
+    $url = $query->service === 'azure' ? trailingslashit( $query->azureEndpoint ) . 
+      'openai/deployments/' . $query->azureDeployment : $this->openaiEndpoint;
+    if ( $query->mode === 'chat' ) {
+      $url .= $query->service === 'azure' ? '/chat/completions' . $this->azureApiVersion : '/chat/completions';
     }
-    // OpenAI
-    else {
-      if ( $query->mode === 'chat' ) {
-        $url = 'https://api.openai.com/v1/chat/completions';
-      }
-      else if ( $query->mode === 'completion' ) {
-        $url = 'https://api.openai.com/v1/completions';
-      }
+    else if ($query->mode === 'completion') {
+      $url .= $query->service === 'azure' ? '/completions' . $this->azureApiVersion : '/completions';
     }
-
-    $options = array(
-      "headers" => $headers,
-      "method" => "POST",
-      "timeout" => MWAI_TIMEOUT,
-      "body" => json_encode( $body ),
-      "sslverify" => false
-    );
+    $headers = $this->buildHeaders( $query );
+    $options = $this->buildOptions( $headers, $body );
 
     try {
       $data = $this->runQuery( $url, $options );
@@ -201,7 +235,7 @@ class Meow_MWAI_Engines_Core {
       }
       $reply = new Meow_MWAI_Reply( $query );
       try {
-        $usage = $this->core->record_tokens_usage( 
+        $usage = $this->core->recordTokensUsage( 
           $data['model'], 
           $data['usage']['prompt_tokens'],
           $data['usage']['completion_tokens']
@@ -221,25 +255,24 @@ class Meow_MWAI_Engines_Core {
   }
 
   // Request to DALL-E API
-  public function runCreateImages( $query ) {
+  private function runImagesQuery( $query ) {
     $this->applyQueryParameters( $query );
-    $url = 'https://api.openai.com/v1/images/generations';
-    $options = array(
-      "headers" => "Content-Type: application/json\r\n" . "Authorization: Bearer " . $query->apiKey . "\r\n",
-      "method" => "POST",
-      "timeout" => MWAI_TIMEOUT,
-      "body" => json_encode( array(
-        "prompt" => $query->prompt,
-        "n" => $query->maxResults,
-        "size" => '1024x1024',
-      ) ),
-      "sslverify" => false
-    );
 
+    // Prepare the request
+    $url = 'https://api.openai.com/v1/images/generations';
+    $body = array(
+      "prompt" => $query->prompt,
+      "n" => $query->maxResults,
+      "size" => '1024x1024',
+    );
+    $headers = $this->buildHeaders( $query );
+    $options = $this->buildOptions( $headers, $body );
+
+    // Perform the request
     try {
       $data = $this->runQuery( $url, $options );
       $reply = new Meow_MWAI_Reply( $query );
-      $usage = $this->core->record_images_usage( "dall-e", "1024x1024", $query->maxResults );
+      $usage = $this->core->recordImagesUsage( "dall-e", "1024x1024", $query->maxResults );
       $reply->setUsage( $usage );
       $reply->setChoices( $data['data'] );
       $reply->setType( 'images' );
@@ -273,16 +306,16 @@ class Meow_MWAI_Engines_Core {
     $reply = null;
     try {
       if ( $query instanceof Meow_MWAI_QueryText ) {
-        $reply = $this->runCompletion( $query );
+        $reply = $this->runCompletionQuery( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryEmbed ) {
-        $reply = $this->runEmbedding( $query );
+        $reply = $this->runEmbeddingQuery( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryImage ) {
-        $reply = $this->runCreateImages( $query );
+        $reply = $this->runImagesQuery( $query );
       }
       else if ( $query instanceof Meow_MWAI_QueryTranscribe ) {
-        $reply = $this->runTranscribe( $query );
+        $reply = $this->runTranscribeQuery( $query );
       }
       else {
         $this->throwException( 'Invalid query.' );

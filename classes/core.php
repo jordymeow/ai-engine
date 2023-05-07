@@ -299,7 +299,7 @@ class Meow_MWAI_Core
 		return (int)$tokens;
 	}
 
-  public function record_tokens_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
+  public function recordTokensUsage( $model, $prompt_tokens, $completion_tokens = 0 ) {
     if ( !is_numeric( $prompt_tokens ) ) {
       throw new Exception( 'Record usage: prompt_tokens is not a number.' );
     }
@@ -332,7 +332,31 @@ class Meow_MWAI_Core
     ];
   }
 
-  public function record_images_usage( $model, $resolution, $images ) {
+	public function recordAudioUsage( $model, $seconds ) {
+		if ( !is_numeric( $seconds ) ) {
+			throw new Exception( 'Record usage: seconds is not a number.' );
+		}
+		if ( !$model ) {
+			throw new Exception( 'Record usage: model is missing.' );
+		}
+		$usage = $this->get_option( 'openai_usage' );
+		$month = date( 'Y-m' );
+		if ( !isset( $usage[$month] ) ) {
+			$usage[$month] = array();
+		}
+		if ( !isset( $usage[$month][$model] ) ) {
+			$usage[$month][$model] = array(
+				'seconds' => 0
+			);
+		}
+		$usage[$month][$model]['seconds'] += $seconds;
+		$this->update_option( 'openai_usage', $usage );
+		return [
+			'seconds' => $seconds
+		];
+	}
+
+  public function recordImagesUsage( $model, $resolution, $images ) {
     if ( !$model || !$resolution || !$images ) {
       throw new Exception( 'Missing parameters for record_image_usage.' );
     }

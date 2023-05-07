@@ -1,5 +1,5 @@
-// Previous: 1.6.58
-// Current: 1.6.68
+// Previous: 1.6.68
+// Current: 1.6.72
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -108,7 +108,7 @@ function isUrl(url) {
 }
 
 function randomStr() {
-  return Math.random().toString(36).substring(2, 15);
+  return Math.random().toString(36).substring(2);
 }
 
 function handlePlaceholders(template, guestName = 'Guest: ', userData) {
