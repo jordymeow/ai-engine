@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.72
+Stable tag: 1.6.73
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.73 (2023/05/08) =
+* Fix: Issue wih the chatbot's timer.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.72 (2023/05/07) =
 * Update: Refactoring of the code to handle new features later.
 * Add: Usage costs of audio models are now handled and accounted.
 * Fix: Issue with custom chatbots that were not truly custom.
 * Update: Enhancing how exceptions are being handled for a better error management.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.70 (2023/05/06) =
 * Fix: Added 'Local Memory' to the parameters.

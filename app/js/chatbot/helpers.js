@@ -1,5 +1,5 @@
-// Previous: 1.6.68
-// Current: 1.6.72
+// Previous: 1.6.72
+// Current: 1.6.73
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -232,6 +232,7 @@ const getCircularReplacer = () => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         throw new Error('Circular reference found. Cancelled.', { key, value });
+        return;
       }
       seen.add(value);
     }
