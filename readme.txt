@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.73
+Stable tag: 1.6.74
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,11 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 Languages: English.
 
 == Changelog ==
+
+= 1.6.74 (2023/05/08) =
+* Fix: Issue with non-string parameters in AI Forms.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.73 (2023/05/08) =
 * Fix: Issue wih the chatbot's timer.
