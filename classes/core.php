@@ -435,7 +435,7 @@ class Meow_MWAI_Core
 	function getChatbot( $chatId ) {
 		$chatbots = $this->getChatbots();
 		foreach ( $chatbots as $chatbot ) {
-			if ( $chatbot['chatId'] === $chatId ) {
+			if ( $chatbot['chatId'] === (string)$chatId ) {
 				// Somehow, the default was set to "openai" when creating a new chatbot, but that overrided
 				// the default value in the Settings. It should be always empty here (except if we add this
 				// into the Settings of the chatbot).

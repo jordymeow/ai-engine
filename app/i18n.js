@@ -178,6 +178,8 @@ i18n.COMMON = {
   QUERY: __( 'Query', 'ai-engine' ),
   QUERIES: __( 'Queries', 'ai-engine' ),
   LOCAL_MEMORY: __( 'Local Memory', 'ai-engine' ),
+  ACTIONS: __( 'Actions', 'ai-engine' ),
+  RESET: __( 'Reset', 'ai-engine' ),
 }
 
 i18n.FORMS = {
