@@ -180,10 +180,12 @@ i18n.COMMON = {
   LOCAL_MEMORY: __( 'Local Memory', 'ai-engine' ),
   ACTIONS: __( 'Actions', 'ai-engine' ),
   RESET: __( 'Reset', 'ai-engine' ),
+  INCIDENTS_OPENAI: __( 'Incidents (OpenAI)', 'ai-engine' ),
+  PREVIEW: __( 'Preview', 'ai-engine' ),
 }
 
 i18n.FORMS = {
-  PROMPT_INFO: __( 'The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: Recommend me {MUSIC_TYPE} artists. You can also use an ID as an input, like this: ${#myfield}. Finally, if you wish the output to be formatted, add: Use Markdown format."', 'ai-engine' ),
+  PROMPT_INFO: __( 'The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: Recommend me {MUSIC_TYPE} artists. You can also use an ID as an input, like this: ${#myfield}. Finally, if you wish the output to be formatted, add: \'Use Markdown.\'."', 'ai-engine' ),
   OUTPUT: __( 'Output', 'ai-engine' ),
   OUTPUT_ELEMENT: __( 'Output Element', 'ai-engine' ),
   OUTPUT_ELEMENT_INFO: __( 'The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use \'#mwai-666\'.', 'ai-engine' ),
@@ -210,6 +212,7 @@ i18n.HELP = {
   SPEECH_SYNTHESIS: __( 'Enable text-to-speech.', 'ai-engine' ),
   DYNAMIC_MAX_MESSAGES: __( 'Max Messages will be dynamically decreased based on the max tokens.', 'ai-engine' ),
   CUSTOM_SHORTCODE: __( 'Prefer the standard version of the shortcode (referring only to the id of the chatbot). If you need many chatbots, you can use custom shortcodes. Custom shortcodes are based on the default chatbot; every attributes in it are basically overrides.', 'ai-engine' ),
+  USER_FILTER: __( 'Type an User ID, or an IP.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

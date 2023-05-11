@@ -12,7 +12,7 @@ define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'em
 
 class Meow_MWAI_Modules_Chatbot {
 	private $core = null;
-	private $namespace = 'mwai-bot/v1';
+	private $namespace = 'mwai-ui/v1';
 	private $siteWideChatId = null;
 
 	public function __construct() {
@@ -43,7 +43,7 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function rest_api_init() {
-		register_rest_route( $this->namespace, '/chat', array(
+		register_rest_route( $this->namespace, '/chats/submit', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_chat' ),
 			'permission_callback' => '__return_true'

@@ -1,13 +1,15 @@
-// Previous: 1.6.0
-// Current: 1.6.59
+// Previous: 1.6.59
+// Current: 1.6.76
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput, NekoTextArea,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo, NekoSpacer } from '@neko-ui';
 
+// AI Engine
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { OptionsCheck, toHTML, useModels } from "../helpers";
 import { AiNekoHeader } from "../styles/CommonStyles";
@@ -78,7 +80,7 @@ const Dashboard = () => {
     setStartTime(new Date());
     try {
       const stop = stopSequence.replace(/\\n/g, '\n');
-      const res = await nekoFetch(`${apiUrl}/make_completions`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/completions`, { 
         method: 'POST',
         nonce: restNonce,
         json: {
@@ -95,7 +97,7 @@ const Dashboard = () => {
         setPrompt(promptToUse + '\n' + res.data + '\n');
       }
       else {
-        setCompletion(res.data);
+        setCompletion(res?.data || "");
       }
       addUsage(model, res?.usage?.total_tokens || 0);
     }
@@ -131,7 +133,7 @@ const Dashboard = () => {
           <StyledSidebar style={{ marginTop: 20 }}>
             <h3 style={{ marginTop: 0 }}>Mode</h3>
             <NekoSelect scrolldown name="mode" disabled={true || busy} 
-              value={mode} description="" onChange={(value) => setTemplate({ ...template, mode: value })}>
+              value={mode} description="" onChange={setTemplateProperty}>
               <NekoOption key='query' value='query' label="Query" />
               <NekoOption key='continuous' value='continuous' label="Continuous" />
             </NekoSelect>
@@ -152,7 +154,7 @@ const Dashboard = () => {
             {mode === 'continuous' && <>
               <StyledTextArea rows={18} onChange={(e) => setPrompt(e.target.value)} value={prompt} />
               <div style={{ display: 'flex' }}>
-                <span class="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
+                <span className="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
                 <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={(e) => setContinuousEntry(e.target.value)}
                   onEnter={onPushContinuousEntry} disabled={busy} />
@@ -177,28 +179,28 @@ const Dashboard = () => {
           <StyledSidebar>
             <h3>{i18n.COMMON.SETTINGS}</h3>
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect name="model" value={model} scrolldown={true} onChange={(value) => setTemplate({ ...template, model: value })}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
               {completionModels.map((x) => (
                 <NekoOption value={x.model} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
             <label>{i18n.COMMON.TEMPERATURE}:</label>
             <NekoInput name="temperature" value={temperature} type="number"
-              onChange={(value) => setTemplate({ ...template, temperature: parseFloat(value) })} description={<>
+              onChange={(value) => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
                 <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   {i18n.HELP.TEMPERATURE}
                 </span>
               </>} />
             <label>{i18n.COMMON.MAX_TOKENS}:</label>
             <NekoInput name="maxTokens" value={maxTokens} type="number"
-              onChange={(value) => setTemplate({ ...template, maxTokens: parseInt(value) })} description={<>
+              onChange={(value) => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
               <span>
               {i18n.HELP.MAX_TOKENS}
               </span>
             </>} />
             <label>{i18n.COMMON.STOP_SEQUENCE}:</label>
             <NekoInput name="stopSequence" value={stopSequence} type="text"
-              onChange={(value) => setTemplate({ ...template, stopSequence: value })} description={<>
+              onChange={(e) => setTemplateProperty(e.target.value, 'stopSequence')} description={<>
               <span>
               {i18n.HELP.STOP_SEQUENCE}
               </span>

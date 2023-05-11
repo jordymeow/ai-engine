@@ -1,5 +1,5 @@
-// Previous: 1.3.68
-// Current: 1.6.0
+// Previous: 1.6.0
+// Current: 1.6.76
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -28,7 +28,7 @@ const GenerateTitlesModal = (props) => {
   const fetchTitles = async ({ postId, postTitle }) => {
     setBusy(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/magic_wand`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, { 
         method: 'POST',
         nonce: restNonce,
         json: { action: 'suggestTitles', data: { postId } }

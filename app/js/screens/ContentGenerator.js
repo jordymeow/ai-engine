@@ -1,8 +1,10 @@
-// Previous: 1.3.73
-// Current: 1.6.0
+// Previous: 1.6.0
+// Current: 1.6.76
 
+// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
+// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -64,6 +66,11 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
+  const { addUsage, jsxUsageCosts } = UsageCosts(options);
+  const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
+    queryKey: ['postTypes'], queryFn: retrievePostTypes
+  });
+  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
 
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
@@ -91,9 +98,6 @@ const ContentGenerator = () => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
 
-  const title = template?.title ?? "";
-  const sections = template?.sections ?? "";
-
   useEffect(() => {
     const freshTopicsArray = topics.split('\n').map(x => x.trim()).filter(x => !!x);
     setTopicsArray(freshTopicsArray);
@@ -115,13 +119,13 @@ const ContentGenerator = () => {
     if (!template) {
       return;
     }
-    if (!isCustom && template?.customLanguage) {
+    if (!isCustom && template.customLanguage) {
       setTemplateProperty(null, 'customLanguage');
     }
-    if (isCustom && template?.customLanguage !== currentHumanLanguage) {
+    if (isCustom && template.customLanguage !== currentHumanLanguage) {
       setTemplateProperty(currentHumanLanguage, 'customLanguage');
     }
-    if (template?.language !== currentLanguage) {
+    if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
   }, [isCustom, currentLanguage, currentHumanLanguage]);
@@ -148,9 +152,9 @@ const ContentGenerator = () => {
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = '', maxTokens = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = prompt, maxTokens = 2048, isBulk = false) => {
     try {
-      const res = await nekoFetch(`${apiUrl}/make_completions`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/completions`, { 
         method: 'POST',
         nonce: restNonce,
         json: { 
@@ -249,7 +253,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(prev => ({ ...prev, all: new Date() }));
+    setRunTimes(() => ({ ...runTimes, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -265,19 +269,19 @@ const ContentGenerator = () => {
         setTemplateProperty(freshTitle, 'title');
 
         if (!noSections) {
-          setRunTimes(prev => ({ ...prev, sections: new Date() }));
+          setRunTimes(x => ({ ...x, sections: new Date() }));
           freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          setRunTimes(prev => ({ ...prev, sections: null }));
+          setRunTimes(x => ({ ...x, sections: null }));
         }
 
         if (freshSections || noSections) {
-          await setRunTimes(prev => ({ ...prev, content: new Date() }));
+          setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          setRunTimes(prev => ({ ...prev, content: null }));
+          setRunTimes(x => ({ ...x, content: null }));
           if (freshContent) {
-            await setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
+            setRunTimes(x => ({ ...x, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            setRunTimes(prev => ({ ...prev, excerpt: null }));
+            setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
@@ -294,7 +298,7 @@ const ContentGenerator = () => {
     inExcerpt = excerpt, isBulk = false) => {
     setBusy(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/create_post`, {
+      const res = await nekoFetch(`${apiUrl}/helpers/create_post`, {
         method: 'POST',
         nonce: restNonce,
         json: { title: inTitle, content: inContent, excerpt: inExcerpt, postType }
@@ -406,8 +410,8 @@ const ContentGenerator = () => {
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
-                <li key={x.postId}>
-                  {x.title} <a target="_blank" rel="noopener noreferrer" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" rel="noopener noreferrer" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
+                <li>
+                  {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
             </ul>}
@@ -430,13 +434,13 @@ const ContentGenerator = () => {
                     <NekoSelect scrolldown name="sectionsCount" disabled={isBusy}
                       style={{ marginRight: 10 }}
                       value={sectionsCount} description="" onChange={setTemplateProperty}>
-                        <NekoOption key={2} value={2} label="2" />
-                        <NekoOption key={3} value={3} label="3" />
-                        <NekoOption key={4} value={4} label="4" />
-                        <NekoOption key={6} value={6} label="6" />
-                        <NekoOption key={8} value={8} label="8" />
-                        <NekoOption key={10} value={10} label="10" />
-                        <NekoOption key={12} value={12} label="12" />
+                        <NekoOption key={2} value={2} label={2} />
+                        <NekoOption key={3} value={3} label={3} />
+                        <NekoOption key={4} value={4} label={4} />
+                        <NekoOption key={6} value={6} label={6} />
+                        <NekoOption key={8} value={8} label={8} />
+                        <NekoOption key={10} value={10} label={10} />
+                        <NekoOption key={12} value={12} label={12} />
                     </NekoSelect>
                   </>}
 
@@ -468,13 +472,13 @@ const ContentGenerator = () => {
                   <NekoSelect scrolldown name="paragraphsCount" disabled={isBusy}
                     style={{ marginRight: 10 }}
                     value={paragraphsCount} description="" onChange={setTemplateProperty}>
-                      <NekoOption key={1} value={1} label="1" />
-                      <NekoOption key={2} value={2} label="2" />
-                      <NekoOption key={3} value={3} label="3" />
-                      <NekoOption key={4} value={4} label="4" />
-                      <NekoOption key={6} value={6} label="6" />
-                      <NekoOption key={8} value={8} label="8" />
-                      <NekoOption key={10} value={10} label="10" />
+                      <NekoOption key={1} value={1} label={1} />
+                      <NekoOption key={2} value={2} label={2} />
+                      <NekoOption key={3} value={3} label={3} />
+                      <NekoOption key={4} value={4} label={4} />
+                      <NekoOption key={6} value={6} label={6} />
+                      <NekoOption key={8} value={8} label={8} />
+                      <NekoOption key={10} value={10} label={10} />
                   </NekoSelect>
                 </>}
 
@@ -605,7 +609,7 @@ const ContentGenerator = () => {
               <NekoSelect name="model" value={model}
                 description={i18n.CONTENT_GENERATOR.MODEL_HELP}
                 scrolldown={true} onChange={setTemplateProperty}>
-                {completionModels.map(x => <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>)}
+                {completionModels.map(x => <NekoOption value={x.model} label={x.name}></NekoOption>)}
               </NekoSelect>
             </>}
 
@@ -665,7 +669,6 @@ const ContentGenerator = () => {
         title="Error"
         content={<p>{error}</p>}
       />
-      
     </NekoPage> 
   );
 };

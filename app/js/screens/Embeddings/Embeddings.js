@@ -1,12 +1,14 @@
-// Previous: 1.6.59
-// Current: 1.6.62
+// Previous: 1.6.62
+// Current: 1.6.76
 
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoModal, NekoTextArea, NekoInput,
   NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock, NekoCheckbox,
   NekoTabs, NekoTab, NekoWrapper, NekoColumn, NekoContainer, NekoIcon } from '@neko-ui';
 import { nekoFetch, useNekoTasks, useNekoColors } from '@neko-ui';
+
 import i18n from '@root/i18n';
 import { apiUrl, restNonce, session } from '@app/settings';
 import { searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent,
@@ -67,8 +69,8 @@ const Embeddings = ({ options, updateOption }) => {
   const [ busy, setBusy ] = useState(false);
   const [ mode, setMode ] = useState('edit');
   const [ search, setSearch ] = useState('');
-  const [ embeddingModal, setEmbeddingModal ] = useState(false);
-  const [ indexModal, setIndexModal ] = useState(false);
+  const [ embeddingModal, setEmbeddingModal ] = useState(null);
+  const [ indexModal, setIndexModal ] = useState(null);
   const [ selectedIds, setSelectedIds ] = useState([]);
   const embeddingsSettings = options.embeddings || {};
   const pinecone = options.pinecone || {};
@@ -83,12 +85,11 @@ const Embeddings = ({ options, updateOption }) => {
       indexIsReady: !!realIndex?.ready
     }
   }, [pinecone, indexes]);
-
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
-    queryKey: ['postsCount-' + postType + '-' + (embeddingsSettings?.syncPostStatus ?? 'publish')],
+    queryKey: ['postsCount-' + postType + '-' + embeddingsSettings?.syncPostStatus ?? 'publish'],
     queryFn: () => retrievePostsCount(postType, embeddingsSettings?.syncPostStatus ?? 'publish'),
   });
 
@@ -104,13 +105,13 @@ const Embeddings = ({ options, updateOption }) => {
   const [ foundVectorsData, setFoundVectorsData ] = useState({ total: 0, vectors: [] });
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(false); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(null);
+    setBusy(false);
   }
 
   useEffect(() => {
@@ -122,7 +123,7 @@ const Embeddings = ({ options, updateOption }) => {
       onSelectIndex('');
     }
     else if (!index) {
-      onSelectIndex(indexes[0].name);
+      onSelectIndex(indexes[0]?.name ?? '');
     }
   }, [indexes]);
 
@@ -145,12 +146,12 @@ const Embeddings = ({ options, updateOption }) => {
   const onAddIndex = async () => {
     setBusy('addIndex');
     try {
-      const res = await nekoFetch(`${apiUrl}/add_index`, { nonce: restNonce, method: 'POST',
-        json: { name: indexModal.name, podType: indexModal.podType }
+      const res = await nekoFetch(`${apiUrl}/indexes/add`, { nonce: restNonce, method: 'POST',
+        json: { name: indexModal?.name, podType: indexModal?.podType }
       });
       const freshPinecone = { ...pinecone, indexes: res.indexes };
       await updateOption(freshPinecone, 'pinecone');
-      setIndexModal(false);
+      setIndexModal(null);
     }
     catch (err) {
       console.error(err);
@@ -170,8 +171,8 @@ const Embeddings = ({ options, updateOption }) => {
     }
     setBusy('deleteIndex');
     try {
-      const res = await nekoFetch(`${apiUrl}/delete_index`, { 
-        nonce: restNonce, method: 'DELETE', json: { name: index }
+      const res = await nekoFetch(`${apiUrl}/indexes/delete`, { 
+        nonce: restNonce, method: 'POST', json: { name: index }
       });
       const freshPinecone = { ...pinecone, indexes: res.indexes };
       await updateOption(freshPinecone, 'pinecone');
@@ -186,7 +187,7 @@ const Embeddings = ({ options, updateOption }) => {
   const onRefreshIndexes = async () => {
     setBusy('refreshIndexes');
     try {
-      const res = await nekoFetch(`${apiUrl}/list_indexes`, { nonce: restNonce, method: 'GET' });
+      const res = await nekoFetch(`${apiUrl}/indexes/list`, { nonce: restNonce, method: 'GET' });
       const freshPinecone = { ...pinecone, indexes: res.indexes };
       await updateOption(freshPinecone, 'pinecone');
     }
@@ -209,10 +210,10 @@ const Embeddings = ({ options, updateOption }) => {
       setBusy('addEmbedding');
     }
     try {
-      await nekoFetch(`${apiUrl}/vector_add`, { nonce: restNonce, method: 'POST',
+      await nekoFetch(`${apiUrl}/vectors/add`, { nonce: restNonce, method: 'POST',
         json: { vector: { ...inEmbedding, dbIndex: index } }
       });
-      setEmbeddingModal(false);
+      setEmbeddingModal(null);
       console.log("Embedding Added", inEmbedding);
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
       if (!skipBusy) {
@@ -231,7 +232,7 @@ const Embeddings = ({ options, updateOption }) => {
       setBusy('addEmbedding');
     }
     try {
-      await nekoFetch(`${apiUrl}/vector_update`, { nonce: restNonce, method: 'POST',
+      await nekoFetch(`${apiUrl}/vectors/update`, { nonce: restNonce, method: 'POST',
         json: { vector: { ...inEmbedding, dbIndex: index } }
       });
     }
@@ -240,7 +241,7 @@ const Embeddings = ({ options, updateOption }) => {
       throw new Error(err.message ?? "Unknown error, check your console logs.");
     }
     let embedding = {...inEmbedding};
-    setEmbeddingModal(false);
+    setEmbeddingModal(null);
     console.log("Embeddings updated.", inEmbedding);
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
@@ -261,7 +262,7 @@ const Embeddings = ({ options, updateOption }) => {
       setBusy('getEmbedding');
     }
     try {
-      const res = await nekoFetch(`${apiUrl}/vectors_ref`, { nonce: restNonce, method: 'POST', json: { refId } });
+      const res = await nekoFetch(`${apiUrl}/vectors/ref`, { nonce: restNonce, method: 'POST', json: { refId } });
       if (!skipBusy) {
         setBusy(false);
       }
@@ -278,7 +279,7 @@ const Embeddings = ({ options, updateOption }) => {
       setBusy('deleteEmbedding');
     }
     try {
-      await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'DELETE', json: { ids } });
+      await nekoFetch(`${apiUrl}/vectors/delete`, { nonce: restNonce, method: 'POST', json: { ids } });
     }
     catch (err) {
       console.error(err);
@@ -318,7 +319,7 @@ const Embeddings = ({ options, updateOption }) => {
     prompt = prompt.replace('{LANGUAGE}', language);
     let rewrittenContent = null;
     try {
-      const res = await nekoFetch(`${apiUrl}/make_completions`, {
+      const res = await nekoFetch(`${apiUrl}/ai/completions`, {
         method: 'POST',
         json: { env: 'admin-tools', session, prompt: prompt,
           temperature: 0.4, model: 'gpt-3.5-turbo', maxTokens: 4096, stop: ''
@@ -345,7 +346,7 @@ const Embeddings = ({ options, updateOption }) => {
     if (!data?.vectors) { return []; }
 
     if (mode === 'search') {
-      data.vectors = data.vectors.slice().sort((a, b) => {
+      data.vectors = [...data.vectors].sort((a, b) => {
         if (foundVectorsSort.by === 'asc') {
           return a[foundVectorsSort.accessor] > b[foundVectorsSort.accessor] ? 1 : -1;
         }
@@ -392,7 +393,7 @@ const Embeddings = ({ options, updateOption }) => {
           </NekoButton>
         </>
       }
-    });
+    })
   }, [mode, vectorsData, foundVectorsData, foundVectorsSort, isBusy]);
 
   const cancelledByUser = () => {
@@ -410,7 +411,7 @@ const Embeddings = ({ options, updateOption }) => {
     const excerpt = resContent?.excerpt ?? null;
     const checksum = resContent?.checksum ?? null;
     const language = resContent?.language ?? "english";
-    postId = resContent?.postId !== undefined ? parseInt(resContent?.postId) : null;
+    postId = resContent?.postId ? parseInt(resContent?.postId) : null;
     if (!resContent.success) {
       throw new Error(resContent.message);
     }
@@ -448,14 +449,14 @@ const Embeddings = ({ options, updateOption }) => {
         console.log(`Embedding exists with same content.`, { embedding });
       }
       else {
-        if (embedding.refChecksum !== checksum) {
+        if (embedding.refChecksum === checksum) {
+          console.log(`Embedding exists with same content (but force re-create).`);
+        }
+        else {
           console.log(`Embedding exists with different content.`, { 
             current: embedding.content,
             new: content
           });
-        }
-        else {
-          console.log(`Embedding exists with same content (but force re-create).`);
         }
         const post = { postId, content, title, url, excerpt, checksum, language };
         let embeddingContent = await rewriteContent(post, language, signal);
@@ -498,13 +499,13 @@ const Embeddings = ({ options, updateOption }) => {
     if (all || selectedIds.length === 0) {
       const offsets = Array.from(Array(postsCount).keys());
       tasks = offsets.map(offset => async (signal) => {
-        await runProcess(offset, undefined, signal);
+        await runProcess(offset, null, signal);
         return { success: true };
       });
     }
     else {
-      const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id))
-        .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null);
+      const postIds = vectorsData?.vectors?.filter(x => selectedIds.includes(x.id))
+        .map(x => x?.type === 'postId' ? x.refId : null).filter(x => x !== null) ?? [];
       tasks = postIds.map(postId => async (signal) => {
         await runProcess(0, postId, signal);
         return { success: true };
@@ -517,13 +518,13 @@ const Embeddings = ({ options, updateOption }) => {
   }
 
   const OnSingleRunClick = async () => {
-    const postIdInput = prompt("Enter the Post ID to synchronize with:");
-    if (!postIdInput) {
+    const postId = prompt("Enter the Post ID to synchronize with:");
+    if (!postId) {
       return;
     }
     setBusy('singleRun');
     try {
-      await runProcess(0, postIdInput);
+      await runProcess(0, postId);
     }
     catch (error) {
       console.error(error);
@@ -549,7 +550,7 @@ const Embeddings = ({ options, updateOption }) => {
               />
               {mode === 'edit' && <>
                 <NekoButton className="primary" disabled={isBusy || !index || !indexIsReady}
-                  onClick={() => setEmbeddingModal(DEFAULT_VECTOR)} >
+                  onClick={() => setEmbeddingModal({ ...DEFAULT_VECTOR })} >
                   Add
                 </NekoButton>
               </>}
@@ -597,7 +598,8 @@ const Embeddings = ({ options, updateOption }) => {
         <NekoBlock className="primary">
 
           <NekoTable busy={isBusy}
-            sort={mode === 'edit' ? queryParams.sort : foundVectorsSort} onSortChange={(accessor, by) => {
+            sort={mode === 'edit' ? queryParams.sort : foundVectorsSort}
+            onSortChange={(accessor, by) => {
               if (mode === 'edit') {
                 setQueryParams({ ...queryParams, sort: { accessor, by } });
               }
@@ -730,6 +732,7 @@ const Embeddings = ({ options, updateOption }) => {
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
 
+              {/* Total Posts + Post Type Select */}
               <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                 style={{ width: 100 }} onChange={setPostType} value={postType}>
                 {postTypes?.map(postType => 
@@ -737,6 +740,7 @@ const Embeddings = ({ options, updateOption }) => {
                 )}
               </NekoSelect>
 
+              {/* Actions for All Posts */}
               <NekoButton fullWidth className="primary" style={{ marginLeft: 10 }}
                 disabled={isBusy || !index} isBusy={busy === 'bulkRun'}
                 onClick={() => onBulkRunClick(true)}>
@@ -803,11 +807,11 @@ const Embeddings = ({ options, updateOption }) => {
 
     </NekoWrapper>
 
-    <NekoModal isOpen={embeddingModal}
+    <NekoModal isOpen={embeddingModal !== null}
       title={embeddingModal?.id ? "Modify Embedding" : "Add Embedding"}
       onOkClick={() => { embeddingModal?.id ? onModifyEmbedding() : onAddEmbedding() }}
-      onRequestClose={() => setEmbeddingModal(false)}
-      onCancelClick={() => setEmbeddingModal(false)}
+      onRequestClose={() => setEmbeddingModal(null)}
+      onCancelClick={() => setEmbeddingModal(null)}
       ok={embeddingModal?.id ? "Modify" : "Add"}
       disabled={busy === 'addEmbedding'}
       content={<>
@@ -856,11 +860,11 @@ const Embeddings = ({ options, updateOption }) => {
       </>}
     />
 
-    <NekoModal isOpen={indexModal}
+    <NekoModal isOpen={indexModal !== null}
       title="Add Index"
       onOkClick={onAddIndex}
-      onRequestClose={() => setIndexModal(false)}
-      onCancelClick={() => setIndexModal(false)}
+      onRequestClose={() => setIndexModal(null)}
+      onCancelClick={() => setIndexModal(null)}
       ok="Add Index"
       disabled={busy === 'addIndex'}
       content={<>
@@ -887,6 +891,7 @@ const Embeddings = ({ options, updateOption }) => {
     />
 
     {bulkTasks.TasksErrorModal}
+
   </>);
 }
 

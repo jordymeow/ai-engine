@@ -1,5 +1,5 @@
-// Previous: 1.6.59
-// Current: 1.6.64
+// Previous: 1.6.64
+// Current: 1.6.76
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { NekoTable, NekoPaging, NekoBlock, NekoButton } from '@neko-ui';
 import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers';
 
 import { apiUrl, restNonce, options } from '@app/settings';
-import i18n from '../../../i18n';
+import i18n from '@root/i18n';
 
 const logsColumns = [
   { accessor: 'id', visible: false },
@@ -37,12 +37,18 @@ const logsColumns = [
 
 const retrieveLogs = async (logsQueryParams) => {
   logsQueryParams.offset = (logsQueryParams.page - 1) * logsQueryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/logs`, { nonce: restNonce, method: 'POST', json: logsQueryParams });
+  const res = await nekoFetch(`${apiUrl}/system/logs/list`, { nonce: restNonce, method: 'POST', json: logsQueryParams });
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
+}
+
+const deleteLogs = async (logIds = []) => {
+  const res = await nekoFetch(`${apiUrl}/system/logs/delete`, { nonce: restNonce, method: 'POST', json: { logIds } });
+  return res;
 }
 
 const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
   const queryClient = useQueryClient();
+  const [ busyAction, setBusyAction ] = useState(false);
   const { getModelName } = useModels(options);
   const [ filters, setFilters ] = useState(() => {
     return logsColumns.filter(v => v.filters).map(v => {
@@ -67,7 +73,7 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData?.logs.sort((a, b) => a.created_at - b.created_at).map(x => {
       let time = tableDateTimeFormatter(x.time);
       let user = tableUserIPFormatter(x.userId, x.ip);
 
@@ -95,15 +101,45 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
     })
   }, [logsData]);
 
-  return (<>
-    <NekoBlock className="primary" title={i18n.COMMON.QUERIES} action={
-      <NekoButton className="secondary" style={{ marginLeft: 5 }} disabled={isFetchingLogs}
-        onClick={() => {
-          queryClient.invalidateQueries({ queryKey: ['logs'] });
-      }}>Refresh</NekoButton>
-    }>
+  const onDeleteSelectedLogs = async () => {
+    setBusyAction(true);
+    if (!selectedLogIds.length) {
+      if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) { 
+        setBusyAction(false);
+        return;
+      }
+      await deleteLogs();
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
+    }
+    await deleteLogs(selectedLogIds);
+    setSelectedLogIds([]);
+    queryClient.invalidateQueries({ queryKey: ['logs'] });
+    setBusyAction(false);
+  }
 
-      <NekoTable busy={isFetchingLogs}
+  return (<>
+    <NekoBlock className="primary" title={i18n.COMMON.QUERIES} action={<>
+      <div>
+        <NekoButton className="secondary" style={{ marginLeft: 5 }} disabled={isFetchingLogs}
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['logs'] });
+        }}>{i18n.COMMON.REFRESH}</NekoButton>
+        {selectedLogIds.length > 0 && <>
+          <NekoButton className="danger" disabled={false}
+            onClick={onDeleteSelectedLogs}>
+            {selectedLogIds.length > 1 ? i18n.COMMON.DELETE_SELECTED : i18n.COMMON.DELETE}
+          </NekoButton>
+        </>}
+        {!selectedLogIds.length && <>
+          <NekoButton className="danger" disabled={false}
+            onClick={onDeleteSelectedLogs}>
+            {i18n.COMMON.DELETE_ALL}
+          </NekoButton>
+        </>}
+      </div>
+    </>}>
+
+      <NekoTable busy={isFetchingLogs || busyAction}
         onSelectRow={id => { setSelectedLogIds([id]) }}
         onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids  ]) }}
         onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]) }}

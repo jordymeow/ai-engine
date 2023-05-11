@@ -1,5 +1,5 @@
-// Previous: 1.6.56
-// Current: 1.6.59
+// Previous: 1.6.59
+// Current: 1.6.76
 
 const { createHigherOrderComponent } = wp.compose;
 const { addFilter } = wp.hooks;
@@ -37,12 +37,12 @@ const BlockCopilot = () => {
       const executeQuery = async (query) => {
         try {
           setBusy(true);
-          const res = await nekoFetch(`${apiUrl}/copilot`, {
+          const res = await nekoFetch(`${apiUrl}/ai/copilot`, {
             method: 'POST',
             nonce: restNonce,
             json: { action: 'write', prompt: query }
           });
-          props.setAttributes({ content: res.data });
+          props.setAttributes({ content: res.data })
         }
         catch (e) {
           console.log("ERROR", e);

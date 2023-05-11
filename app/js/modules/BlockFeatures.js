@@ -1,5 +1,5 @@
-// Previous: 1.6.0
-// Current: 1.6.65
+// Previous: 1.6.65
+// Current: 1.6.76
 
 const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
@@ -76,8 +76,8 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const selectedBlockData = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = selectedBlockData.attributes.content;
+    const selectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = selectedBlock.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
@@ -94,7 +94,7 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
     replaceText(text);
   }
 
-  const blockContent = selectedBlock.attributes.content;
+  const text = selectedBlock.attributes.content;
   const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
@@ -103,10 +103,10 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
     setBusy(true);
     setBlockStyle();
     document.activeElement.blur();
-    const res = await nekoFetch(`${apiUrl}/magic_wand`, { 
+    const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, { 
       method: 'POST',
       nonce: restNonce,
-      json: { action, data: { postId, text: blockContent, selectedText } }
+      json: { action, data: { postId, text, selectedText } }
     });
     resetBlockStyle();
     setBusy(false);

@@ -1,5 +1,5 @@
-// Previous: 1.3.81
-// Current: 1.5.7
+// Previous: 1.5.7
+// Current: 1.6.76
 
 // React & Vendor Libs
 const { useState } = wp.element;
@@ -20,7 +20,7 @@ const Audio = () => {
   const onTranscribeClick = async () => {
     setBusy(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/transcribe`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/transcribe`, { 
         method: 'POST',
         nonce: restNonce,
         json: { url, prompt, mode}

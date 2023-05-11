@@ -1,5 +1,5 @@
-// Previous: 0.1.0
-// Current: 1.3.66
+// Previous: 1.3.66
+// Current: 1.6.76
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -49,6 +49,7 @@ const GenerateWcFields = (props) => {
         productInfo.keywords = line.replace("TAGS:", "").trim().split(", ");
       }
     });
+  
     return productInfo;
   }
 
@@ -56,7 +57,7 @@ const GenerateWcFields = (props) => {
     setBusy(true);
     let prompt = promptBase.replace("{USER_ENTRY}", userEntry);
     prompt = prompt.replace("{LANGUAGE}", currentHumanLanguage);
-    const res = await nekoFetch(`${apiUrl}/make_completions`, {
+    const res = await nekoFetch(`${apiUrl}/ai/completions`, {
       method: 'POST',
       nonce: restNonce,
       json: { maxTokens: 512, temperature: 0.8, env: 'admin-tools', session, prompt }
@@ -69,6 +70,8 @@ const GenerateWcFields = (props) => {
       setShortDesc(info.shortDescription);
       setSeoTitle(info.seoTitle);
       setTags(info.keywords.join(", "));
+    } else {
+      setError(true);
     }
   }
 
@@ -76,8 +79,7 @@ const GenerateWcFields = (props) => {
     const titleField = document.getElementById('title');
     if (titleField) {
       titleField.value = seoTitle;
-    }
-    else {
+    } else {
       alert("The title cannot be written (the field could not be found).");
     }
   }
@@ -86,8 +88,7 @@ const GenerateWcFields = (props) => {
     const contentField = tinyMCE.get('content');
     if (contentField) {
       contentField.setContent(desc);
-    }
-    else {
+    } else {
       alert("The content cannot be written (the field could not be found).");
     }
   }
@@ -96,8 +97,7 @@ const GenerateWcFields = (props) => {
     const contentField = tinyMCE.get('excerpt');
     if (contentField) {
       contentField.setContent(shortDesc);
-    }
-    else {
+    } else {
       alert("The content cannot be written (the field could not be found).");
     }
   }
@@ -106,8 +106,7 @@ const GenerateWcFields = (props) => {
     const tagsField = document.getElementById('new-tag-product_tag');
     if (tagsField) {
       tagsField.value = tags;
-    }
-    else {
+    } else {
       alert("The tags cannot be written (the field could not be found).");
     }
   }
@@ -122,8 +121,23 @@ const GenerateWcFields = (props) => {
 
   const cleanClose = async () => {
     onClose();
-    setError(null);
+    setError(false);
     setBusy(false);
+  }
+
+  if (error) {
+    return (
+      <NekoWrapper>
+        <NekoModal isOpen={isOpen} onRequestClose={cleanClose}
+          title={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR}
+          content={<StyledForm>
+            <div style={{ color: 'red' }}>An error occurred during generation. Please try again.</div>
+          </StyledForm>}
+          ok="Close"
+          onOkClick={cleanClose}
+        />
+      </NekoWrapper>
+    );
   }
 
   return (

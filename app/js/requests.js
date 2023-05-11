@@ -1,12 +1,12 @@
-// Previous: 1.6.55
-// Current: 1.6.66
+// Previous: 1.6.66
+// Current: 1.6.76
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
 
 const retrievePostTypes = async () => {
-  const res = await nekoFetch(`${apiUrl}/post_types`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/helpers/post_types`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -14,18 +14,18 @@ const retrievePostTypes = async () => {
 }
 
 const retrievePostsCount = async (postType) => {
-  const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`, { nonce: restNonce });
   return res?.count ? parseInt(res?.count) : null;
 }
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
-  const res = await nekoFetch(`${apiUrl}/post_content?postType=${postType}&offset=${offset}&postId=${postId}`, 
+  const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&offset=${offset}&postId=${postId}`, 
     { nonce: restNonce });
   return res;
 }
 
 const retrieveFiles = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai_files`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/openai/files/list`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -33,7 +33,7 @@ const retrieveFiles = async () => {
 }
 
 const retrieveDeletedFineTunes = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai_deleted_finetunes`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list_deleted`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -41,7 +41,7 @@ const retrieveDeletedFineTunes = async () => {
 }
 
 const retrieveFineTunes = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -49,7 +49,7 @@ const retrieveFineTunes = async () => {
 }
 
 const retrieveChatbots = async () => {
-  const res = await nekoFetch(`${apiUrl}/chatbots`, { method: 'GET', nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/settings/chatbots`, { method: 'GET', nonce: restNonce });
   if (!res.success) {
     throw new Error(res?.message);
   }
@@ -57,7 +57,7 @@ const retrieveChatbots = async () => {
 }
 
 const updateChatbots = async (chatbots) => {
-  const res = await nekoFetch(`${apiUrl}/chatbots`, { method: 'POST', nonce: restNonce, json: { chatbots } });
+  const res = await nekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', nonce: restNonce, json: { chatbots } });
   if (!res.success) {
     throw new Error(res?.message);
   }
@@ -65,13 +65,13 @@ const updateChatbots = async (chatbots) => {
 }
 
 const retrieveThemes = async () => {
-  const res = await nekoFetch(`${apiUrl}/themes`, { method: 'GET', nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'GET', nonce: restNonce });
   return res?.themes;
 }
 
 const updateThemes = async (themes) => {
   try {
-    const res = await nekoFetch(`${apiUrl}/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
+    const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
     return res?.themes;
   }
   catch (err) {

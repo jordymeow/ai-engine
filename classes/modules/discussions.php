@@ -5,7 +5,7 @@ class Meow_MWAI_Modules_Discussions {
   private $core = null;
   private $table_chats = null;
   private $db_check = false;
-  private $namespace = 'ai-engine/v1';
+  private $namespace = 'mwai/v1';
 
   public function __construct() {
     global $wpdb;
@@ -21,19 +21,19 @@ class Meow_MWAI_Modules_Discussions {
   }
 
   public function rest_api_init() {
-		register_rest_route( $this->namespace, '/chats', array(
+		register_rest_route( $this->namespace, '/discussions/list', array(
 			'methods' => 'POST',
-			'callback' => array( $this, 'rest_chats' ),
+			'callback' => [ $this, 'rest_discussions_list' ],
 			'permission_callback' => '__return_true'
 		) );
-    register_rest_route( $this->namespace, '/chats_delete', array(
+    register_rest_route( $this->namespace, '/discussions/delete', array(
       'methods' => 'POST',
-      'callback' => array( $this, 'rest_chats_delete' ),
+      'callback' => [ $this, 'rest_discussions_delete' ],
       'permission_callback' => '__return_true'
     ) );
 	}
 
-  function rest_chats( $request ) {
+  function rest_discussions_list( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$offset = $params['offset'];
@@ -48,7 +48,7 @@ class Meow_MWAI_Modules_Discussions {
 		}
 	}
 
-  function rest_chats_delete( $request ) {
+  function rest_discussions_delete( $request ) {
     try {
       $params = $request->get_json_params();
       $chatsIds = $params['chatIds'];
@@ -72,7 +72,7 @@ class Meow_MWAI_Modules_Discussions {
     $offset = !empty( $offset ) ? intval( $offset ) : 0;
     $limit = !empty( $limit ) ? intval( $limit ) : 5;
     $filters = !empty( $filters ) ? $filters : [];
-    $sort = !empty( $sort ) ? $sort : [ "accessor" => "time", "by" => "desc" ];
+    $sort = !empty( $sort ) ? $sort : [ 'accessor' => 'time', 'by' => 'desc' ];
     $query = "SELECT * FROM $this->table_chats";
 
     // Filters
@@ -80,7 +80,7 @@ class Meow_MWAI_Modules_Discussions {
       $where = array();
       foreach ( $filters as $filter ) {
         if ( $filter['accessor'] === 'user' ) {
-          $value = $filter['value'];
+          $value = esc_sql( $filter['value'] );
           if ( empty( $value ) ) {
             continue;
           }
@@ -91,6 +91,13 @@ class Meow_MWAI_Modules_Discussions {
           else {
             $where[] = "extra LIKE '%\"userId\":{$value}%'";
           }
+        }
+        if ( $filter['accessor'] === 'preview' ) {
+          $value = $filter['value'];
+          if ( empty( $value ) ) {
+            continue;
+          }
+          $where[] = "messages LIKE '%{$value}%'";
         }
       }
       if ( count( $where ) > 0 ) {

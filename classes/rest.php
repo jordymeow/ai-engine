@@ -3,184 +3,199 @@
 class Meow_MWAI_Rest
 {
 	private $core = null;
-	private $namespace = 'ai-engine/v1';
+	private $namespace = 'mwai/v1';
 
 	public function __construct( $core ) {
 		$this->core = $core;
-		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+		add_action( 'rest_api_init', array( $this, 'rest_init' ) );
 	}
 
-	function rest_api_init() {
+	function rest_init() {
 		try {
+			// Settings Endpoints
 			register_rest_route( $this->namespace, '/update_option', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'rest_update_option' )
+				'callback' => array( $this, 'rest_settings_update' )
 			) );
 			register_rest_route( $this->namespace, '/all_settings', array(
 				'methods' => 'GET',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'rest_all_settings' ),
+				'callback' => array( $this, 'rest_settings_list' ),
 			) );
-			register_rest_route( $this->namespace, '/make_completions', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'make_completions' ),
-			) );
-			register_rest_route( $this->namespace, '/make_images', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'make_images' ),
-			) );
-			register_rest_route( $this->namespace, '/update_post_title', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'update_post_title' ),
-			) );
-			register_rest_route( $this->namespace, '/update_post_excerpt', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'update_post_excerpt' ),
-			) );
-			register_rest_route( $this->namespace, '/copilot', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'copilot' ),
-			) );
-			register_rest_route( $this->namespace, '/create_post', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'create_post' ),
-			) );
-			register_rest_route( $this->namespace, '/create_image', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'create_image' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_files', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_files_get' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_files', array(
-				'methods' => 'DELETE',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_files_delete' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_files', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_files_upload' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_files_download', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_files_download' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_files_finetune', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_files_finetune' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_deleted_finetunes', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_deleted_finetunes_get' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_finetunes', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_finetunes_get' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_finetunes', array(
-				'methods' => 'DELETE',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_finetunes_delete' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_finetunes_cancel', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_finetunes_cancel' ),
-			) );
-			register_rest_route( $this->namespace, '/openai_incidents', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'openai_incidents' ),
-			) );
-			register_rest_route( $this->namespace, '/chatbots', array(
+			register_rest_route( $this->namespace, '/settings/chatbots', array(
 				'methods' => ['GET', 'POST'],
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'rest_chatbots' ),
+				'callback' => array( $this, 'rest_settings_chatbots' ),
 			) );
-			register_rest_route( $this->namespace, '/themes', array(
+			register_rest_route( $this->namespace, '/settings/themes', array(
 				'methods' => ['GET', 'POST'],
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'rest_themes' ),
+				'callback' => array( $this, 'rest_settings_themes' ),
 			) );
-			register_rest_route( $this->namespace, '/count_posts', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'count_posts' ),
-			) );
-			register_rest_route( $this->namespace, '/post_types', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'post_types' ),
-			) );
-			register_rest_route( $this->namespace, '/post_content', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'rest_post_content' ),
-			) );
-			register_rest_route( $this->namespace, '/templates', array(
-				'methods' => 'GET',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'templates_get' ),
-			) );
-			register_rest_route( $this->namespace, '/templates', array(
-				'methods' => 'POST',
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-				'callback' => array( $this, 'templates_save' ),
-			) );
-			register_rest_route( $this->namespace, '/magic_wand', array(
-				'methods' => 'POST',
-				'callback' => array( $this, 'magic_wand' ),
-				'permission_callback' => array( $this->core, 'can_access_features' ),
-			) );
-			register_rest_route( $this->namespace, '/logs', array(
+
+			// System Endpoints
+			register_rest_route( $this->namespace, '/system/logs/list', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'get_logs' ),
+				'callback' => array( $this, 'rest_system_logs_list' ),
 			) );
-			register_rest_route( $this->namespace, '/logs_meta', array(
+			register_rest_route( $this->namespace, '/system/logs/delete', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'get_logs_meta' ),
+				'callback' => array( $this, 'rest_system_logs_delete' ),
 			) );
-			register_rest_route( $this->namespace, '/moderate', array(
+			register_rest_route( $this->namespace, '/system/logs/meta', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'moderate' ),
+				'callback' => array( $this, 'rest_system_logs_meta_get' ),
 			) );
-			register_rest_route( $this->namespace, '/transcribe', array(
+			register_rest_route( $this->namespace, '/system/templates', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_system_templates_save' ),
+			) );
+			register_rest_route( $this->namespace, '/system/templates', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_system_templates_get' ),
+			) );
+
+			// AI Endpoints
+			register_rest_route( $this->namespace, '/ai/completions', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_ai_completions' ),
+			) );
+			register_rest_route( $this->namespace, '/ai/images', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_ai_images' ),
+			) );
+			register_rest_route( $this->namespace, '/ai/copilot', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_ai_copilot' ),
+			) );
+
+			register_rest_route( $this->namespace, '/ai/magic_wand', array(
+				'methods' => 'POST',
+				'callback' => array( $this, 'rest_ai_magic_wand' ),
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+			) );
+			register_rest_route( $this->namespace, '/ai/moderate', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'transcribe' ),
+				'callback' => array( $this, 'rest_ai_moderate' ),
 			) );
+			register_rest_route( $this->namespace, '/ai/transcribe', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_ai_transcribe' ),
+			) );
+
+			// Helpers Endpoints
+			register_rest_route( $this->namespace, '/helpers/update_post_title', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_update_title' ),
+			) );
+			register_rest_route( $this->namespace, '/helpers/update_post_excerpt', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_update_excerpt' ),
+			) );
+			register_rest_route( $this->namespace, '/helpers/create_post', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_create_post' ),
+			) );
+			register_rest_route( $this->namespace, '/helpers/create_image', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_create_images' ),
+			) );
+			register_rest_route( $this->namespace, '/helpers/count_posts', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_count_posts' ),
+			) );
+			register_rest_route( $this->namespace, '/helpers/post_types', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_post_types' ),
+			) );
+			register_rest_route( $this->namespace, '/helpers/post_content', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_helpers_post_content' ),
+			) );
+
+			// OpenAI Endpoints
+			register_rest_route( $this->namespace, '/openai/files/list', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_files_get' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/files/upload', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_files_upload' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/files/delete', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_files_delete' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/files/download', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_files_download' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/files/finetune', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_files_finetune' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/finetunes/list_deleted', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_deleted_finetunes_get' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/finetunes/list', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_finetunes_get' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/finetunes/delete', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_finetunes_delete' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/finetunes/cancel', array(
+				'methods' => 'POST',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_finetunes_cancel' ),
+			) );
+			register_rest_route( $this->namespace, '/openai/incidents', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_incidents' ),
+			) );	
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
 		}
 	}
 
-	function rest_all_settings() {
+	function rest_settings_list() {
 		return new WP_REST_Response( [
 			'success' => true,
 			'data' => $this->core->get_all_options()
 		], 200 );
 	}
 
-	function rest_update_option( $request ) {
+	function rest_settings_update( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$value = $params['options'];
@@ -209,7 +224,7 @@ class Meow_MWAI_Rest
 		return $this->createValidationResult();
 	}
 
-	function make_completions( $request ) {
+	function rest_ai_completions( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
@@ -223,7 +238,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function make_images( $request ) {
+	function rest_ai_images( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
@@ -237,7 +252,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function magic_wand( $request ) {
+	function rest_ai_magic_wand( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$action = isset( $params['action'] ) ? $params['action'] : null;
@@ -309,7 +324,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function copilot( $request ) {
+	function rest_ai_copilot( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$action = sanitize_text_field( $params['action'] );
@@ -331,7 +346,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function update_post_title( $request ) {
+	function rest_helpers_update_title( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$title = sanitize_text_field( $params['title'] );
@@ -350,7 +365,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function update_post_excerpt( $request ) {
+	function rest_helpers_update_excerpt( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$excerpt = sanitize_text_field( $params['excerpt'] );
@@ -368,7 +383,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function create_post( $request ) {
+	function rest_helpers_create_post( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$title = sanitize_text_field( $params['title'] );
@@ -403,7 +418,7 @@ class Meow_MWAI_Rest
 		return $output;
 	}
 
-	function create_image( $request ) {
+	function rest_helpers_create_images( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$title = sanitize_text_field( $params['title'] );
@@ -458,7 +473,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_files_get() {
+	function rest_openai_files_get() {
 		try {
 			//$params = $request->get_json_params();
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
@@ -470,7 +485,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_deleted_finetunes_get() {
+	function rest_openai_deleted_finetunes_get() {
 		try {
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
 			$finetunes = $openai->listDeletedFineTunes();
@@ -481,7 +496,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_finetunes_get() {
+	function rest_openai_finetunes_get() {
 		try {
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
 			$finetunes = $openai->listFineTunes();
@@ -492,7 +507,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_files_upload( $request ) {
+	function rest_openai_files_upload( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$filename = sanitize_text_field( $params['filename'] );
@@ -506,7 +521,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_files_delete( $request ) {
+	function rest_openai_files_delete( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$fileId = $params['fileId'];
@@ -519,7 +534,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_finetunes_cancel( $request ) {
+	function rest_openai_finetunes_cancel( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$finetuneId = $params['finetuneId'];
@@ -532,7 +547,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_finetunes_delete( $request ) {
+	function rest_openai_finetunes_delete( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$modelId = $params['modelId'];
@@ -545,7 +560,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_files_download( $request ) {
+	function rest_openai_files_download( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$fileId = $params['fileId'];
@@ -558,7 +573,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_files_finetune( $request ) {
+	function rest_openai_files_finetune( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$fileId = $params['fileId'];
@@ -577,7 +592,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function openai_incidents() {
+	function rest_openai_incidents() {
 		try {
 			$transient = get_transient( 'mwai_openai_incidents' );
 			if ( $transient ) {
@@ -593,7 +608,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function count_posts( $request ) {
+	function rest_helpers_count_posts( $request ) {
 		try {
 			$params = $request->get_query_params();
 			$postType = $params['postType'];
@@ -608,7 +623,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function rest_post_content( $request ) {
+	function rest_helpers_post_content( $request ) {
 		try {
 			$params = $request->get_query_params();
 			$offset = (int)$params['offset'];
@@ -647,7 +662,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function templates_get( $request ) {
+	function rest_system_templates_get( $request ) {
 		try {
 			$params = $request->get_query_params();
 			$category = $params['category'];
@@ -669,7 +684,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function templates_save( $request ) {
+	function rest_system_templates_save( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$category = $params['category'];
@@ -693,7 +708,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function get_logs( $request ) {
+	function rest_system_logs_list( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$offset = $params['offset'];
@@ -708,7 +723,19 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function get_logs_meta( $request ) {
+	function rest_system_logs_delete( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$logIds = $params['logIds'];
+			$success = apply_filters( 'mwai_stats_logs_delete', true, $logIds );
+			return new WP_REST_Response([ 'success' => $success ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function rest_system_logs_meta_get( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$logId = $params['logId'];
@@ -721,7 +748,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function moderate( $request ) {
+	function rest_ai_moderate( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$text = $params['text'];
@@ -738,7 +765,7 @@ class Meow_MWAI_Rest
 
 	}
 	
-	function transcribe( $request ) {
+	function rest_ai_transcribe( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_QueryTranscribe();
@@ -752,7 +779,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function post_types() {
+	function rest_helpers_post_types() {
 		try {
 			$postTypes = $this->core->getPostTypes();
 			return new WP_REST_Response([ 'success' => true, 'postTypes' => $postTypes ], 200 );
@@ -762,7 +789,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function rest_themes( $request ) {
+	function rest_settings_themes( $request ) {
 		try {
 			$method = $request->get_method();
 			if ( $method === 'GET' ) {
@@ -781,7 +808,7 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function rest_chatbots( $request ) {
+	function rest_settings_chatbots( $request ) {
 		try {
 			$method = $request->get_method();
 			if ( $method === 'GET' ) {

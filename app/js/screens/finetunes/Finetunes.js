@@ -1,5 +1,5 @@
-// Previous: 1.6.59
-// Current: 1.6.64
+// Previous: 1.6.64
+// Current: 1.6.76
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ let defaultCompletionEnding = "\n\n";
 
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
-
+  
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -108,7 +108,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%' }}
         onEnter={onSave}
         onBlur={onSave} value={data} />
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 5, height: 35 }}>Save</NekoButton>
     </div>
   }
 
@@ -121,7 +121,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
 const Finetunes = ({ options, updateOption }) => {
   const { colors } = useNekoColors();
   const queryClient = useQueryClient();
-  const [ fileForFineTune, setFileForFineTune ] = useState();
+  const [ fileForFineTune, setFileForFineTune ] = useState(null);
   const [ busyAction, setBusyAction ] = useState(false);
   const [ section, setSection ] = useState('finetunes');
   const [ dataSection, setDataSection ] = useState('editor');
@@ -138,7 +138,7 @@ const Finetunes = ({ options, updateOption }) => {
     queryFn: retrieveFiles
   });
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
-  const [ errorModal, setErrorModal ] = useState(false);
+  const [ errorModal, setErrorModal ] = useState(null);
   const allFineTunes = options?.openai_finetunes_all || [];
 
   const finetunableModels = useMemo(() => {
@@ -169,7 +169,7 @@ const Finetunes = ({ options, updateOption }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries(['datasets']);
+    await queryClient.invalidateQueries({ queryKey: ['datasets'] });
   }
 
   const onRefreshFiles = async () => {
@@ -185,7 +185,7 @@ const Finetunes = ({ options, updateOption }) => {
     const rawModel = getModel(model);
     setBusyAction(true);
     const isFineTuned = isFineTunedModel(model);
-    const res = await nekoFetch(`${apiUrl}/openai_files_finetune`, {
+    const res = await nekoFetch(`${apiUrl}/openai/files/finetune`, {
       method: 'POST',
       nonce: restNonce,
       json: {
@@ -200,7 +200,7 @@ const Finetunes = ({ options, updateOption }) => {
       await onRefreshFineTunes();
       alert(i18n.ALERTS.FINETUNING_STARTED);
       setSection('finetunes');
-      setFileForFineTune();
+      setFileForFineTune(null);
     }
     else {
       alert(res.message);
@@ -209,7 +209,7 @@ const Finetunes = ({ options, updateOption }) => {
   }
 
   const onRefreshFineTunes = async () => {
-    onRefreshFineTunesAll();
+    await onRefreshFineTunesAll();
   }
 
   const onCleanFineTunes = async () => {
@@ -252,7 +252,12 @@ const Finetunes = ({ options, updateOption }) => {
     if (!builderData || builderData.length === 0) {
       const data = localStorage.getItem('mwai_builder_data');
       if (data) {
-        setBuilderData(JSON.parse(data));
+        try {
+          setBuilderData(JSON.parse(data));
+        } catch (e) {
+          // corrupt data, clear
+          localStorage.removeItem('mwai_builder_data');
+        }
       }
     }
   }, []);
@@ -270,7 +275,7 @@ const Finetunes = ({ options, updateOption }) => {
     }
     catch (err) {
       localStorage.removeItem('mwai_builder_data');
-      setHasStorageBackup(false);
+      // intentionally missing setHasStorageBackup(false);
     }
   }
 
@@ -282,7 +287,7 @@ const Finetunes = ({ options, updateOption }) => {
 
   const builderRows = useMemo(() => {
     let line = (currentPage - 1) * rowsPerPage;
-    let chunkOfBuilderData = builderData?.slice((currentPage - 1) * rowsPerPage,
+    let chunkOfBuilderData = builderData.slice((currentPage - 1) * rowsPerPage,
       ((currentPage - 1) * rowsPerPage) + rowsPerPage);
 
     return chunkOfBuilderData?.map(x => {
@@ -311,7 +316,7 @@ const Finetunes = ({ options, updateOption }) => {
   const deleteFile = async (fileId) => {
     setBusyAction(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'DELETE', nonce: restNonce, json: { fileId } });
+      const res = await nekoFetch(`${apiUrl}/openai/files/delete`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
         await refreshFiles();
       }
@@ -329,11 +334,13 @@ const Finetunes = ({ options, updateOption }) => {
   const cancelFineTune = async (finetuneId) => {
     setBusyAction(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/openai_finetunes_cancel`, { 
+      const res = await nekoFetch(`${apiUrl}/openai/finetunes/cancel`, { 
         method: 'POST', nonce: restNonce, json: { finetuneId }
       });
       if (res.success) {
-        onRefreshFineTunes();
+        await onRefreshFineTunes();
+        // commenting out line that updates deleted list
+        // await updateOption([...deletedFineTunes, finetuneId], 'openai_finetunes_deleted');
       }
       else {
         alert(res.message);
@@ -367,7 +374,7 @@ const Finetunes = ({ options, updateOption }) => {
     }
     setBusyAction(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/openai_finetunes`, { method: 'DELETE', nonce: restNonce, json: { modelId } });
+      const res = await nekoFetch(`${apiUrl}/openai/finetunes/delete`, { method: 'POST', nonce: restNonce, json: { modelId } });
       if (res.success) {
         await updateOption([...deletedFineTunes, modelId], 'openai_finetunes_deleted');
       }
@@ -391,10 +398,8 @@ const Finetunes = ({ options, updateOption }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
-      console.log({ fileId, filename });
-      const res = await nekoFetch(`${apiUrl}/openai_files_download`, { method: 'POST', nonce: restNonce, json: { fileId } });
+      const res = await nekoFetch(`${apiUrl}/openai/files/download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
-        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -416,7 +421,7 @@ const Finetunes = ({ options, updateOption }) => {
   }
 
   const fileRows = useMemo(() => {
-    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFiles?.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
@@ -443,7 +448,7 @@ const Finetunes = ({ options, updateOption }) => {
   }, [dataFiles]);
 
   const onRefreshFineTunesAll = async () => {
-    setBusyAction('finetunes');
+    setBusyAction(true);
     let data = await retrieveFineTunes();
     data = data.sort((a, b) => b.created_at - a.created_at).map(x => {
       const createdOn = new Date(x.created_at * 1000);
@@ -477,10 +482,7 @@ const Finetunes = ({ options, updateOption }) => {
           {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => deleteFineTune(x.model)}>
           </NekoButton>}
-          {x.status === 'cancelled' && <NekoButton className="danger" rounded icon="trash"
-            onClick={() => removeFineTune(x.id)}>
-          </NekoButton>}
-          {x.status === 'failed' && <NekoButton className="danger" rounded icon="trash"
+          {(x.status === 'cancelled' || x.status === 'failed') && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
           {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
@@ -500,7 +502,6 @@ const Finetunes = ({ options, updateOption }) => {
     const link = document.createElement('a');
     link.href = url;
     const date = new Date();
-
     const filename = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-WP.csv`;
     link.download = filename;
     document.body.appendChild(link);
@@ -511,12 +512,8 @@ const Finetunes = ({ options, updateOption }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = builderData.map(x => {
-        let json = JSON.stringify(x);
-        return json;
-      }).join("\n");
-      console.log(data);
-      const res = await nekoFetch(`${apiUrl}/openai_files`, { method: 'POST', nonce: restNonce, json: { filename, data } });
+      const dataStr = builderData.map(x => JSON.stringify(x)).join("\n");
+      const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce, json: { filename, data: dataStr } });
       await refreshFiles();
       if (res.success) {
         onResetBuilder(false);
@@ -538,7 +535,7 @@ const Finetunes = ({ options, updateOption }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; 
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -556,14 +553,18 @@ const Finetunes = ({ options, updateOption }) => {
       const isCsv = file.name.endsWith('.csv');
       if (!isJson && !isJsonl && !isCsv) {
         alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
-        console.log(file);
         continue;
       }
       reader.onload = async (e) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try {
+            data = JSON.parse(fileContent);
+          } catch(e) {
+            console.log(e);
+            data = [];
+          }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -576,13 +577,11 @@ const Finetunes = ({ options, updateOption }) => {
               console.log(e, x);
               return null
             }
-            
           });
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
-          console.log('The CSV was loaded.', data);
         }
         const formattedData = data.map(x => {
           const values = Object.keys(x).reduce((acc, key) => {
@@ -604,8 +603,6 @@ const Finetunes = ({ options, updateOption }) => {
         const hadEmptyLines = formattedData.length !== cleanData.length;
         if (hadEmptyLines) {
           alert(i18n.ALERTS.EMPTY_LINES);
-          const findEmpty = formattedData.find(x => !x.prompt || !x.completion);
-          console.log('Empty line: ', findEmpty);
         }
         setBuilderData(cleanData);
       }
@@ -614,8 +611,7 @@ const Finetunes = ({ options, updateOption }) => {
   }
 
   const addRow = (prompt = 'Text...\n\n###\n\n', completion = 'Text...\n\n') => {
-    console.log(prompt, completion);
-    setBuilderData([...builderData, { prompt, completion }]);
+    setBuilderData(prev => [...prev, { prompt, completion }]);
   }
 
   const onFormatWithDefaults = () => {
@@ -697,7 +693,6 @@ const Finetunes = ({ options, updateOption }) => {
           </NekoButton>
           <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
         </div>
-        
       </>}
 
       {isModeTrain && section === 'files' && <>
@@ -733,7 +728,7 @@ const Finetunes = ({ options, updateOption }) => {
           </NekoButton>
           <div style={{ flex: 'auto' }} />
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-              onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
+              onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
       </>}
 
@@ -746,9 +741,9 @@ const Finetunes = ({ options, updateOption }) => {
         <NekoSpacer height={20} />
         <div style={{ display: 'flex', justifyContent: 'end' }}>
           <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
+            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
         </div>
-        <NekoSpacer height={40} line style={{ marginBottom: 0 }} />
+        <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 
         {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
           Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
@@ -770,8 +765,8 @@ const Finetunes = ({ options, updateOption }) => {
 
       <NekoModal isOpen={errorModal}
         title="Error"
-        onOkClick={() => setErrorModal()}
-        onRequestClose={() => setErrorModal()}
+        onOkClick={() => setErrorModal(null)}
+        onRequestClose={() => setErrorModal(null)}
         ok="Ok"
         content={<>
           <p>{errorModal?.message}</p>
@@ -781,8 +776,8 @@ const Finetunes = ({ options, updateOption }) => {
       <NekoModal isOpen={fileForFineTune}
         title="Train a new model"
         onOkClick={onStartFineTune}
-        onRequestClose={() => setFileForFineTune()}
-        onCancelClick={() => setFileForFineTune()}
+        onRequestClose={() => setFileForFineTune(null)}
+        onCancelClick={() => setFileForFineTune(null)}
         ok="Start"
         disabled={busyAction}
         content={<>
@@ -797,7 +792,7 @@ const Finetunes = ({ options, updateOption }) => {
           <NekoSpacer height={5} />
           <NekoSelect value={model} scrolldown={true} onChange={setModel}>
             {finetunableModels.map((x) => (
-              <NekoOption value={x.model} label={x.name}></NekoOption>
+              <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
             ))}
           </NekoSelect>
           <NekoSpacer height={5} />
@@ -825,3 +820,5 @@ const Finetunes = ({ options, updateOption }) => {
     </NekoContainer>
   </>);
 };
+
+export default Finetunes;

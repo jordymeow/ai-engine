@@ -1,5 +1,5 @@
-// Previous: 1.6.2
-// Current: 1.6.59
+// Previous: 1.6.59
+// Current: 1.6.76
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -100,7 +100,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCurrentLanguage(preferredLanguage);
       return;
     }
-
     let detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -118,7 +117,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]); // Added isCustom here
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -146,7 +145,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, isCustom, customLanguage, languages, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -157,7 +156,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models ? [...options.openai_models] : [];
+    let allModels = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
       options?.openai_finetunes.filter(x => x.model) : [];
@@ -189,7 +188,6 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
-
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
@@ -201,8 +199,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model === 'gpt-4-0314') {
+    } else if (model === 'gpt-4-0314') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -244,7 +241,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
     if (price) {
-      return price * units * (modelObj?.unit || 1);
+      return price * units * modelObj['unit'];
     }
     return 0;
   }
@@ -259,23 +256,23 @@ const searchVectors = async (queryParams) => {
     return [];
   }
   queryParams.offset = (queryParams.page - 1) * queryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
+  const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
 const retrieveVectors = async (queryParams) => {
   queryParams.offset = (queryParams.page - 1) * queryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/vectors`, { nonce: restNonce, method: 'POST', json: queryParams });
+  const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
 const retrievePostsCount = async (postType, postStatus = 'publish') => {
-  const res = await nekoFetch(`${apiUrl}/count_posts?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
   return res?.count ? parseInt(res?.count) : null;
 }
 
 const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus = 'publish') => {
-  const res = await nekoFetch(`${apiUrl}/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`, 
+  const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`, 
     { nonce: restNonce });
   return res;
 }
@@ -289,15 +286,14 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    }
-    else {
+    } else {
       nonAsciiCount++;
     }
   }
   const asciiTokens = asciiCount / 3.5;
   const nonAsciiTokens = nonAsciiCount * 2.5;
   const tokens = asciiTokens + nonAsciiTokens;
-  return tokens;
+  return Math.ceil(tokens);
 }
 
 function reduceContent(content, tokens = 2048) {

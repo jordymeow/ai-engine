@@ -1,5 +1,5 @@
-// Previous: 1.3.90
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.6.76
 
 // React & Vendor Libs
 const { useState, useEffect } = wp.element;
@@ -34,7 +34,7 @@ const PostsListTools = () => {
   }, [])
 
   const onTitleClick = async (title) => {
-    const res = await nekoFetch(`${apiUrl}/update_post_title`, { 
+    const res = await nekoFetch(`${apiUrl}/helpers/update_post_title`, { 
       method: 'POST',
       nonce: restNonce,
       json: { 
@@ -63,7 +63,7 @@ const PostsListTools = () => {
   }
 
   const onExcerptClick = async (excerpt) => {
-    const res = await nekoFetch(`${apiUrl}/update_post_excerpt`, {
+    const res = await nekoFetch(`${apiUrl}/helpers/update_post_excerpt`, {
       method: 'POST',
       nonce: restNonce,
       json: {

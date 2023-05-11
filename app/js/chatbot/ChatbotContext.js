@@ -1,5 +1,5 @@
-// Previous: 1.6.70
-// Current: 1.6.75
+// Previous: 1.6.75
+// Current: 1.6.76
 
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
@@ -28,9 +28,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  const idRef = useRef(system.id);
-  const chatIdRef = useRef(system.chatId);
-
+  const id = system.id;
+  const chatId = system.chatId;
   const userData = system.userData;
   const sessionId = system.sessionId;
   const contextId = system.contextId;
@@ -47,17 +46,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
-  const localMemory = localMemoryParam && (!!system.id || !!system.chatId);
-  const localStorageKey = localMemory ? `mwai-chat-${system.id || system.chatId}` : null;
-  console.log(localStorageKey);
-
+  const localMemory = localMemoryParam && (!!id || !!chatId);
+  const localStorageKey = localMemory ? `mwai-chat-${id || chatId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrlComputed = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
-    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return { cssVariables: cssVars, iconUrl: iconUrlComputed };
+    return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
@@ -66,13 +63,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     resetMessages();
   }, [startSentence]);
 
-  const saveMessages = (messagesToSave) => {
+  const saveMessages = (messages) => {
     if (!localStorageKey) {
       return;
     }
     localStorage.setItem(localStorageKey, JSON.stringify({
       clientId: clientId,
-      messages: messagesToSave
+      messages: messages
     }, getCircularReplacer()));
   };
 
@@ -94,7 +91,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    var chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -105,12 +102,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [system.chatId]);
+  }, [chatId]);
 
   useEffect(() => {
     initChatbot();
-  }, [system.chatId]);
-  
+  }, [chatId]);
+
   useEffect(() => {
     if (!serverRes) {
       return;
@@ -120,10 +117,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverRes.success) {
-      if (lastMessage?.role === 'assistant' && lastMessage?.isQuerying) {
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      if (lastMessage) {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -137,7 +136,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    if (lastMessage?.role === 'assistant' && lastMessage?.isQuerying) {
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = serverRes.reply;
       lastMessage.html = serverRes.html;
       if (serverRes.images) {
@@ -147,7 +146,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       delete lastMessage.isQuerying;
     }
     else {
-      const newMessageObj = {
+      const newMessage = {
         id: randomStr(),
         role: 'assistant',
         content: serverRes.reply,
@@ -156,9 +155,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         timestamp: new Date().getTime(),
       };
       if (serverRes.images) {
-        newMessageObj.images = serverRes.images;
+        newMessage.images = serverRes.images;
       }
-      freshMessages.push(newMessageObj);
+      freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
@@ -171,7 +170,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [system.chatId]);
+  }, [chatId]);
 
   const onSubmit = async (textQuery) => {
     if (typeof textQuery !== 'string') {
@@ -189,7 +188,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: new Date().getTime(),
     }];
     saveMessages(bodyMessages);
-    const freshMessagesArray = [...bodyMessages, {
+    const freshMessages = [...bodyMessages, {
       id: randomStr(),
       role: 'assistant',
       content: null,
@@ -198,10 +197,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: true
     }];
-    setMessages(freshMessagesArray);
+    setMessages(freshMessages);
     const body = {
-      id: idRef.current,
-      chatId: chatIdRef.current,
+      id: id,
+      chatId: chatId,
       session: sessionId,
       clientId: clientId,
       contextId: contextId,
@@ -211,7 +210,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     };
     try {
       if (debugMode) { console.log('[BOT] Sent: ', body); }
-      const response = await fetch(`${restUrl}/mwai-bot/v1/chat`, { method: 'POST', headers: {
+      const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers: {
           'Content-Type': 'application/json',
           'X-WP-Nonce': restNonce,
         },
@@ -237,9 +236,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const state = {
-    chatId: system.chatId,
+    chatId,
     userData,
-    pluginUrl: system.pluginUrl,
+    pluginUrl,
     inputText,
     messages,
     setMessages,

@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.81
+// Previous: 1.3.81
+// Current: 1.6.76
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -21,7 +21,7 @@ const Moderation = ({ options, updateOption, busy: busyParent }) => {
 
   const onModerateClick = async () => {
     setBusy(true);
-    const res = await nekoFetch(`${apiUrl}/moderate`, { 
+    const res = await nekoFetch(`${apiUrl}/ai/moderate`, { 
       method: 'POST',
       nonce: restNonce,
       json: { 

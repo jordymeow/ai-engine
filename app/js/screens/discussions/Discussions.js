@@ -1,5 +1,5 @@
-// Previous: 1.6.52
-// Current: 1.6.64
+// Previous: 1.6.64
+// Current: 1.6.76
 
 const { useMemo, useState, useEffect } = wp.element;
 import styled from 'styled-components';
@@ -42,8 +42,8 @@ const Message = ({ message }) => {
       <StyledContext>
         <StyledType>{message.type}</StyledType>
       </StyledContext>
-      {embeddings && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embedding.id ?? Math.random()}>
+      {embeddings && embeddings.length > 0 && <StyledEmbedding>
+        {embeddings.map((embedding, index) => <div key={index}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -57,21 +57,25 @@ const chatsColumns = [
   { accessor: 'user', title: 'User', width: '85px', 
     filters: {
       type: 'text',
-      description: "Type an User ID, or an IP."
+      description: i18n.HELP.USER_FILTER
     },
   },
-  { accessor: 'glance', title: 'Preview (First & Last Message)' },
+  { accessor: 'preview', title: i18n.COMMON.PREVIEW,
+    filters: {
+      type: 'text'
+    },
+  },
   { accessor: 'messages', title: '#', width: '45px' },
 ];
 
 const retrieveDiscussions = async (chatsQueryParams) => {
   chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/chats`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
+  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
   return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
 }
 
 const deleteDiscussions = async (chatIds = []) => {
-  const res = await nekoFetch(`${apiUrl}/chats_delete`, { nonce: restNonce, method: 'POST', json: { chatIds } });
+  const res = await nekoFetch(`${apiUrl}/discussions/delete`, { nonce: restNonce, method: 'POST', json: { chatIds } });
   return res;
 }
 
@@ -104,23 +108,33 @@ const Discussions = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.slice().sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()).map(x => {
       let created = new Date(x.created);
       created = new Date(created.getTime() - created.getTimezoneOffset() * 60 * 1000);
-      let messages = JSON.parse(x.messages);
-      let extra = JSON.parse(x.extra);
+      let messages;
+      try {
+        messages = JSON.parse(x.messages);
+      } catch (e) {
+        messages = [];
+      }
+      let extra;
+      try {
+        extra = JSON.parse(x.extra);
+      } catch (e) {
+        extra = {};
+      }
       let formattedCreated = tableDateTimeFormatter(x.created);
       let formattedUpdated = tableDateTimeFormatter(x.updated);
       let user = tableUserIPFormatter(extra?.userId, extra?.ip);
-      let userMessages = messages?.filter(x => x.type === 'user');
-      let firstExchange = userMessages?.length ? userMessages[0].text : '';
-      let lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].text : '';
+      let userMessages = messages?.filter(x => x.type === 'user') || [];
+      let firstExchange = userMessages.length ? userMessages[0].text : '';
+      let lastExchange = userMessages.length ? userMessages[userMessages.length - 1].text : '';
       return {
         id: x.id,
         chatId: x.chatId,
         user: user,
         messages: messages?.length ?? 0,
-        glance: <>
+        preview: <>
           <div>{firstExchange}</div>
           <small>{lastExchange}</small>
         </>,
@@ -132,17 +146,20 @@ const Discussions = () => {
   }, [chatsData]);
 
   const discussion = useMemo(() => {
-    if (selectedIds?.length !== 1) { return null; }
+    if (selectedIds.length !== 1) { return null; }
     let currentDiscussion = chatsData?.chats.find(x => x.id === selectedIds[0]);
     if (!currentDiscussion) { return null; }
     let messages = [];
     let extra = {};
     try {
       messages = JSON.parse(currentDiscussion.messages);
-      extra = JSON.parse(currentDiscussion.extra);
+    } catch (e) {
+      messages = [{ text: 'Invalid message data' }];
     }
-    catch (e) {
-      console.log(e);
+    try {
+      extra = JSON.parse(currentDiscussion.extra);
+    } catch (e) {
+      extra = { model: 'unknown', ip: '0.0.0.0', userId: 'unknown' };
     }
     return {
       id: currentDiscussion.id,
@@ -164,8 +181,8 @@ const Discussions = () => {
       await deleteDiscussions();
       queryClient.invalidateQueries(['chats']);
     }
-    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-    const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
+    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id)) || [];
+    const selectedChatIds = selectedChats.map(x => x.chatId);
     await deleteDiscussions(selectedChatIds);
     setSelectedIds([]);
     queryClient.invalidateQueries(['chats']);
@@ -185,11 +202,8 @@ const Discussions = () => {
   }, [ chatsQueryParams, chatsTotal ]);
 
   return (<>
-
     <NekoWrapper>
-
       <NekoColumn minimal style={{ flex: 2 }}>
-
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
@@ -228,8 +242,8 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { setSelectedIds([id]) }}
-            onSelect={ids => { setSelectedIds([...selectedIds, ...ids]) }}
-            onUnselect={ids => { setSelectedIds([...selectedIds.filter(x => !ids.includes(x))]) }}
+            onSelect={ids => { setSelectedIds(prev => Array.from(new Set([...prev, ...ids]))) }}
+            onUnselect={ids => { setSelectedIds(prev => prev.filter(x => !ids.includes(x))) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -239,24 +253,15 @@ const Discussions = () => {
           </div>
 
         </NekoBlock>
-
       </NekoColumn>
-
       <NekoColumn minimal style={{ flex: 1 }}>
-
-        <NekoBlock className="primary" title="Selected Discussion" action={<>
-        </>}>
-
+        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
-
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
-
         </NekoBlock>
-
-        {!!discussion && <NekoBlock className="primary" title="Information" action={<>
-        </>}>
+        {!!discussion && <NekoBlock className="primary" title="Information" action={<></>}>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ width: 100, fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -277,11 +282,8 @@ const Discussions = () => {
             <div style={{ width: 100, fontWeight: 'bold' }}>UserID</div>
             <div>{discussion?.extra?.userId}</div>
           </div>
-
         </NekoBlock>}
-
       </NekoColumn>
-
     </NekoWrapper>
   </>);
 }
