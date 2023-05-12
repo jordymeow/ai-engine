@@ -182,6 +182,8 @@ i18n.COMMON = {
   RESET: __( 'Reset', 'ai-engine' ),
   INCIDENTS_OPENAI: __( 'Incidents (OpenAI)', 'ai-engine' ),
   PREVIEW: __( 'Preview', 'ai-engine' ),
+  LEGACY_CHATBOT: __( 'Legacy Chatbot', 'ai-engine' ),
+  DUPLICATE: __( 'Duplicate', 'ai-engine' ),
 }
 
 i18n.FORMS = {

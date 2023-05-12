@@ -512,6 +512,10 @@ class Meow_MWAI_Core
 		$options = $this->get_all_options();
 		return $options[$option] ?? $default;
 	}
+
+	function reset_options() {
+		return $this->update_options( MWAI_OPTIONS );
+	}
 	#endregion
 }
 

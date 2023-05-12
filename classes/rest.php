@@ -13,15 +13,20 @@ class Meow_MWAI_Rest
 	function rest_init() {
 		try {
 			// Settings Endpoints
-			register_rest_route( $this->namespace, '/update_option', array(
+			register_rest_route( $this->namespace, '/settings/update', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'rest_settings_update' )
 			) );
-			register_rest_route( $this->namespace, '/all_settings', array(
-				'methods' => 'GET',
+			// register_rest_route( $this->namespace, '/settings/list', array(
+			// 	'methods' => 'GET',
+			// 	'permission_callback' => array( $this->core, 'can_access_settings' ),
+			// 	'callback' => array( $this, 'rest_settings_list' ),
+			// ) );
+			register_rest_route( $this->namespace, '/settings/reset', array(
+				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
-				'callback' => array( $this, 'rest_settings_list' ),
+				'callback' => array( $this, 'rest_settings_reset' ),
 			) );
 			register_rest_route( $this->namespace, '/settings/chatbots', array(
 				'methods' => ['GET', 'POST'],
@@ -202,6 +207,18 @@ class Meow_MWAI_Rest
 			$options = $this->core->update_options( $value );
 			$success = !!$options;
 			$message = __( $success ? 'OK' : "Could not update options.", 'ai-engine' );
+			return new WP_REST_Response([ 'success' => $success, 'message' => $message, 'options' => $options ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	function rest_settings_reset() {
+		try {
+			$options = $this->core->reset_options();
+			$success = !!$options;
+			$message = __( $success ? 'OK' : "Could not reset options.", 'ai-engine' );
 			return new WP_REST_Response([ 'success' => $success, 'message' => $message, 'options' => $options ], 200 );
 		}
 		catch ( Exception $e ) {
