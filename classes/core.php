@@ -462,7 +462,7 @@ class Meow_MWAI_Core
 	}
 
 	function get_all_options() {
-		$options = get_option( $this->option_name, null );
+		$options = get_option( $this->option_name, [] );
 		foreach ( MWAI_OPTIONS as $key => $value ) {
 			if ( !isset( $options[$key] ) ) {
 				$options[$key] = $value;

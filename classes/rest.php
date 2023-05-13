@@ -210,7 +210,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => $success, 'message' => $message, 'options' => $options ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -222,7 +223,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => $success, 'message' => $message, 'options' => $options ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -251,7 +253,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result, 'usage' => $reply->usage ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -265,7 +268,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->results, 'usage' => $reply->usage ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -337,7 +341,8 @@ class Meow_MWAI_Rest
 			] ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -359,7 +364,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -378,7 +384,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'message' => "Title updated." ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -396,7 +403,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'message' => "Excerpt updated." ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -418,7 +426,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'postId' => $postId ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -486,7 +495,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'attachmentId' => $attachmentId ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -498,7 +508,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'files' => $files ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -509,7 +520,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -520,7 +532,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -534,7 +547,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'file' => $file ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -547,7 +561,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -560,7 +575,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -573,7 +589,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -586,7 +603,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -605,7 +623,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -621,7 +640,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'incidents' => $incidents ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -636,7 +656,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -675,7 +696,8 @@ class Meow_MWAI_Rest
 				'postId' => $cleanPost['postId'], 'title' => $cleanPost['title'], 'url' => $cleanPost['url'] ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -697,7 +719,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'templates' => $templates ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -721,7 +744,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -736,7 +760,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -748,7 +773,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => $success ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -761,7 +787,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -777,7 +804,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 
 	}
@@ -792,7 +820,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -802,7 +831,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'postTypes' => $postTypes ], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -821,7 +851,8 @@ class Meow_MWAI_Rest
 			}
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 
@@ -841,7 +872,8 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => false, 'message' => 'Method not allowed' ], 405 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 }

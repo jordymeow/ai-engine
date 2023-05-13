@@ -284,18 +284,13 @@ class Meow_MWAI_Engines_Core {
     }
   }
 
-  public function throwException( $message ) {
-    $message = apply_filters( 'mwai_ai_exception', $message );
-    throw new Exception( $message );
-  }
-
   public function run( $query ) {
     // Check if the query is allowed
     $limits = $this->core->get_option( 'limits' );
     $ok = apply_filters( 'mwai_ai_allowed', true, $query, $limits );
     if ( $ok !== true ) {
       $message = is_string( $ok ) ? $ok : 'Unauthorized query.';
-      $this->throwException( $message );
+      throw new Exception( $message );
     }
 
     // Allow to modify the query
@@ -304,25 +299,20 @@ class Meow_MWAI_Engines_Core {
 
     // Run the query
     $reply = null;
-    try {
-      if ( $query instanceof Meow_MWAI_QueryText ) {
-        $reply = $this->runCompletionQuery( $query );
-      }
-      else if ( $query instanceof Meow_MWAI_QueryEmbed ) {
-        $reply = $this->runEmbeddingQuery( $query );
-      }
-      else if ( $query instanceof Meow_MWAI_QueryImage ) {
-        $reply = $this->runImagesQuery( $query );
-      }
-      else if ( $query instanceof Meow_MWAI_QueryTranscribe ) {
-        $reply = $this->runTranscribeQuery( $query );
-      }
-      else {
-        $this->throwException( 'Invalid query.' );
-      }
+    if ( $query instanceof Meow_MWAI_QueryText ) {
+      $reply = $this->runCompletionQuery( $query );
     }
-    catch ( Exception $e ) {
-      $this->throwException( $e->getMessage() );
+    else if ( $query instanceof Meow_MWAI_QueryEmbed ) {
+      $reply = $this->runEmbeddingQuery( $query );
+    }
+    else if ( $query instanceof Meow_MWAI_QueryImage ) {
+      $reply = $this->runImagesQuery( $query );
+    }
+    else if ( $query instanceof Meow_MWAI_QueryTranscribe ) {
+      $reply = $this->runTranscribeQuery( $query );
+    }
+    else {
+      throw new Exception( 'Unknown query type.' );
     }
 
     // Let's allow some modififications of the reply

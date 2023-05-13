@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.77
+Stable tag: 1.6.78
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,12 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.78 (2023/05/13) =
+* Add: The messages coming through the API are now all overridable.
+* Fix: Rounding issue for price calculation.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.77 (2023/05/12) =
 * Add: Display of the Post Type for embeddings related to local content.
 * Add: Button to duplicate a chatbot.
@@ -85,8 +91,6 @@ Languages: English.
 * Fix: The default service is set to OpenAI (it wasn't set to anything at first).
 * Update: Cleaned a bit more the REST API.
 * Update: Move the Legacy Chatbot in the Chatbot Settings (it will be hidden to new users).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.76 (2023/05/11) =
 * Add: Search for Discussions (it's done through the filter in the Preview column).
