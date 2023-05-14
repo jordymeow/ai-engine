@@ -50,16 +50,16 @@ class Meow_MWAI_Modules_Chatbot {
 		) );
 	}
 
-	public function basics_security_check( $params ) {
-		if ( empty( $params['newMessage'] ) ) {
+	public function basics_security_check( $id, $chatId, $newMessage ) {
+		if ( empty( $newMessage ) ) {
 			error_log("AI Engine: The query was rejected - message was empty.");
 			return false;
 		}
-		if ( empty( $params['chatId'] ) && empty( $params['id'] ) ) {
+		if ( !$chatId && !$id ) {
 			error_log("AI Engine: The query was rejected - no chatId nor id was specified.");
 			return false;
 		}
-		$length = strlen( trim( $params['newMessage'] ) );
+		$length = strlen( $newMessage );
 		if ( $length < 1 || $length > ( 4096 - 512 ) ) {
 			error_log("AI Engine: The query was rejected - message was too short or too long.");
 			return false;
@@ -70,7 +70,11 @@ class Meow_MWAI_Modules_Chatbot {
 	public function rest_chat( $request ) {
 		try {
 			$params = $request->get_json_params();
-			if ( !$this->basics_security_check( $params )) {
+			$id = $params['id'] ?? null;
+			$chatId = $params['chatId'] ?? null;
+			$newMessage = trim( $params['newMessage'] ?? '' );
+
+			if ( !$this->basics_security_check( $id, $chatId, $newMessage )) {
 				return new WP_REST_Response( [ 
 					'success' => false, 
 					'message' => 'Sorry, your query has been rejected.' ], 403
@@ -78,12 +82,12 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			// Custom Chatbot
-			if ( $params['id']  ) {
-				$chatbot = get_transient( 'mwai_custom_chatbot_' . $params['id'] );
+			if ( $id ) {
+				$chatbot = get_transient( 'mwai_custom_chatbot_' . $id );
 			}
 			// Registered Chatbot
-			else if ( $params['chatId'] ) {
-				$chatbot = $this->core->getChatbot( $params['chatId'] );
+			if ( !$chatbot && $chatId ) {
+				$chatbot = $this->core->getChatbot( $chatId );
 			}
 
 			if ( !$chatbot ) {
@@ -96,8 +100,10 @@ class Meow_MWAI_Modules_Chatbot {
 			
 			// Create QueryText
 			$context = null;
-			if ( $chatbot['mode'] === 'images' ) {
-				$query = new Meow_MWAI_QueryImage( $params['newMessage'] );
+			$mode = $chatbot['mode'] ?? 'chat';
+
+			if ( $mode === 'images' ) {
+				$query = new Meow_MWAI_QueryImage( $newMessage );
 
 				// Handle Params
 				$newParams = [];
@@ -112,7 +118,7 @@ class Meow_MWAI_Modules_Chatbot {
 				$query->injectParams( $params );
 			}
 			else {
-				$query = new Meow_MWAI_QueryText( $params['newMessage'], 1024 );
+				$query = new Meow_MWAI_QueryText( $newMessage, 1024 );
 				$query->setIsChat( true );
 
 				// Handle Params
@@ -147,7 +153,7 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 
 				// Awareness & Embeddings
-				$embeddingsIndex = $params['embeddingsIndex'];
+				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
 				if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
 					$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
 					if ( !empty( $context ) ) {
@@ -194,46 +200,27 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function chat_shortcode( $atts ) {
-		$chatbot = null;
-		$isCustom = false;
-		$chatId = null; // ID of a registered chatbot.
-		$id = null; // ID of a custom chatbot.
-		$atts = empty( $atts ) ? [] : $atts;
+		$atts = empty($atts) ? [] : $atts;
 
-		// If a ChatID is defined, we load it.
-		if ( isset( $atts['chat_id'] ) ) {
-			$chatId = $atts['chat_id'];
-			unset( $atts['chat_id'] );
+		// Properly handle the id, chatId, and chatbot
+		// We have the same in discussions.php
+		$chatbot = null;
+		$chatId = $atts['chat_id'] ?? null;
+		$id = $atts['id'] ?? null;
+		unset( $atts['chat_id'], $atts['id'] );
+		if ( $chatId ) {
 			$chatbot = $this->core->getChatbot( $chatId );
 			if ( !$chatbot ) {
 				return "AI Engine: Chatbot not found.";
 			}
 		}
-
-		// If no ChatID, but a ID, let's check it's actually a ChatID.
-		// If there is no ChatID for it, it means it's a custom shortcode.
-		$id = isset( $atts['id'] ) ? $atts['id'] : null;
-		if ( !empty( $id ) ) {
-			unset( $atts['id'] );
-			if ( !$chatbot ) {
-				$chatbot = $this->core->getChatbot( $id );
-				if ( $chatbot ) {
-					$isCustom = false;
-					$chatId = $id;
-					$id = null;
-				}
-				else {
-					$isCustom = true;
-					$chatId = 'default';
-				}
-			}
+		if ( $id && !$chatbot ) {
+			$chatbot = $this->core->getChatbot( $id );
+			$chatId = $chatbot ? $id : 'default';
 		}
-
-		// We need a base chatbot anyway.
-		if ( !$chatbot ) {
-			$chatbot = $this->core->getChatbot( 'default' );
-			$chatId = 'default';
-		}
+		$chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
+		$chatId = $chatId ?: 'default';
+		$isCustom = $chatId == 'default' && isset( $atts['id'] );
 
 		// Rename the keys of the atts into camelCase to match the internal params system.
 		$atts = array_map( function( $key, $value ) {

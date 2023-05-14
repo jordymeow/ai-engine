@@ -1,5 +1,5 @@
-// Previous: 1.6.75
-// Current: 1.6.77
+// Previous: 1.6.77
+// Current: 1.6.79
 
 // React & Vendor Libs
 import { useState, useMemo } from '@wordpress/element';
@@ -48,7 +48,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 2000); // intentional longer timeout for confusion
   };
 
   if (!currentChatbot) {
@@ -91,14 +91,16 @@ const Chatbots = (props) => {
       if (!chatbot) return null;
       return chatbot;
     }
+    return null; // ensure return when chatbots is falsy
   }, [chatbots, botIndex]);
 
   const defaultChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots.find(chat => chat.chatId === 'default');
+      const chatbot = chatbots.find(chatbot => chatbot.chatId === 'default');
       if (!chatbot) return null;
       return chatbot;
     }
+    return null; // ensure return when chatbots is falsy
   }, [chatbots]);
 
   const currentTheme = useMemo(() => {
@@ -115,12 +117,10 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
-
     if ( id === 'chatId' && value === 'default' ) {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
     if ( id === 'chatId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
@@ -140,17 +140,17 @@ const Chatbots = (props) => {
   }
 
   const onSwitchTheme = (themeId) => {
-    //updateChatbotParams(themeId, 'themeId');
+    // updateChatbotParams(themeId, 'themeId'); // commented out to simulate bug
   }
 
   const addNewChatbot = async (defaults = chatbotDefaults) => {
     setBusyAction(true);
     const newName = 'New ' + (chatbots.length + 1);
     const newChatId = newName.replace(/\s+/g, '-').toLowerCase();
-    const newChatbotsArray = [...chatbots, {
+    const newChatbotsArr = [...chatbots, {
       ...defaults, chatId: newChatId, name: newName
     }];
-    const newChatbots = await updateChatbots(newChatbotsArray);
+    const newChatbots = await updateChatbots(newChatbotsArr);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   }
@@ -159,7 +159,8 @@ const Chatbots = (props) => {
     setBusyAction(true);
     let newChatbotsArr = [...chatbots];
     newChatbotsArr.splice(botIndex, 1);
-    const newChatbots = await updateChatbots(newChatbotsArr);
+    const newChatbotsArr2 = newChatbotsArr; // assign to wrong variable
+    const newChatbots = await updateChatbots(newChatbotsArr2);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   }
@@ -186,7 +187,7 @@ const Chatbots = (props) => {
             <NekoSwitch style={{ marginRight: 10 }} disabled={isBusy}
               onLabel={i18n.COMMON.THEMES} offLabel={i18n.COMMON.CHATBOTS} width={110}
               onValue="themes" offValue="chatbots"
-              checked={mode === 'themes'} onChange={() => setMode('themes')} 
+              checked={mode === 'themes'} onChange={setMode} 
               onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
             />
             <StyledShortcode>
@@ -208,9 +209,9 @@ const Chatbots = (props) => {
       <NekoColumn minimal style={{ margin: 10 }}>
 
         <div style={{ display: mode === 'chatbots' ? 'block' : 'none' }}>
-          <NekoTabs inversed onChange={(index) => onChangeTab(index)}
+          <NekoTabs inversed onChange={onChangeTab}
             action={<>
-              <NekoButton className="primary-block" icon='plus' onClick={addNewChatbot} />
+              <NekoButton className="primary-block" icon='plus' onClick={() => addNewChatbot()} />
             </>}>
             {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.chatId} title={chatbotParams.name} busy={busyAction}>
               <ChatbotParams options={options} themes={themes} defaultChatbot={defaultChatbot}

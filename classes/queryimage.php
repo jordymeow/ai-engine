@@ -8,6 +8,10 @@ class Meow_MWAI_QueryImage extends Meow_MWAI_Query {
     $this->mode = "generation"; // could be generation, edit, variation
   }
 
+	public function setModel( string $model ) {
+		// Can't be changed to another model for now.
+	}
+
   // Based on the params of the query, update the attributes
   public function injectParams( $params ) {
     if ( isset( $params['model'] ) ) {

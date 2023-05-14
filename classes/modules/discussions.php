@@ -5,7 +5,8 @@ class Meow_MWAI_Modules_Discussions {
   private $core = null;
   private $table_chats = null;
   private $db_check = false;
-  private $namespace = 'mwai/v1';
+  private $namespace_admin = 'mwai/v1';
+  private $namespace_ui = 'mwai-ui/v1';
 
   public function __construct() {
     global $wpdb;
@@ -16,21 +17,31 @@ class Meow_MWAI_Modules_Discussions {
 
     if ( $this->core->get_option( 'shortcode_chat_discussions' ) ) {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
-      add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+      add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
+      add_shortcode( 'mwai_discussions', [ $this, 'shortcode_chat_discussions' ] );
     }
   }
 
   public function rest_api_init() {
-		register_rest_route( $this->namespace, '/discussions/list', array(
+
+    // Admin
+		register_rest_route( $this->namespace_admin, '/discussions/list', [
 			'methods' => 'POST',
 			'callback' => [ $this, 'rest_discussions_list' ],
-			'permission_callback' => '__return_true'
-		) );
-    register_rest_route( $this->namespace, '/discussions/delete', array(
+			'permission_callback' => [ $this->core, 'can_access_settings' ],
+		] );
+    register_rest_route( $this->namespace_admin, '/discussions/delete', [
       'methods' => 'POST',
       'callback' => [ $this, 'rest_discussions_delete' ],
-      'permission_callback' => '__return_true'
-    ) );
+      'permission_callback' => [ $this->core, 'can_access_settings' ],
+    ] );
+
+    // UI
+    register_rest_route( $this->namespace_ui, '/discussions/list', [
+			'methods' => 'POST',
+			'callback' => [ $this, 'rest_discussions_ui_list' ],
+			'permission_callback' => __return_true(),
+		] );
 	}
 
   function rest_discussions_list( $request ) {
@@ -38,9 +49,23 @@ class Meow_MWAI_Modules_Discussions {
 			$params = $request->get_json_params();
 			$offset = $params['offset'];
 			$limit = $params['limit'];
-			$filters = $params['filters'];
+      $filters = $params['filters'];
 			$sort = $params['sort'];
 			$chats = $this->chats_query( [], $offset, $limit, $filters, $sort );
+			return new WP_REST_Response([ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
+		}
+		catch ( Exception $e ) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+  function rest_discussions_ui_list( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$offset = $params['offset'];
+			$limit = $params['limit'];
+			$filters = [ [ 'accessor' => 'user', 'value' => get_current_user_id() ] ];
+			$chats = $this->chats_query( [], $offset, $limit, $filters );
 			return new WP_REST_Response([ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -66,13 +91,39 @@ class Meow_MWAI_Modules_Discussions {
       return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
+
+  function shortcode_chat_discussions( $atts ) {
+    $atts = empty($atts) ? [] : $atts;
+
+    // Properly handle the id, chatId, and chatbot
+		// We have the same in chatbot.php
+		$chatbot = null;
+		$chatId = $atts['chat_id'] ?? null;
+		$id = $atts['id'] ?? null;
+		unset( $atts['chat_id'], $atts['id'] );
+		if ( $chatId ) {
+			$chatbot = $this->core->getChatbot( $chatId );
+			if ( !$chatbot ) {
+				return "AI Engine: Chatbot not found.";
+			}
+		}
+		if ( $id && !$chatbot ) {
+			$chatbot = $this->core->getChatbot( $id );
+			$chatId = $chatbot ? $id : 'default';
+		}
+		$chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
+		$chatId = $chatId ?: 'default';
+		$isCustom = $chatId == 'default' && isset( $atts['id'] );
+
+    return "Discussions for chatbot <i>$chatId</i>, id <i>$id</i>.";
+  }
   
   function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
     $this->check_db();
     $offset = !empty( $offset ) ? intval( $offset ) : 0;
     $limit = !empty( $limit ) ? intval( $limit ) : 5;
     $filters = !empty( $filters ) ? $filters : [];
-    $sort = !empty( $sort ) ? $sort : [ 'accessor' => 'time', 'by' => 'desc' ];
+    $sort = !empty( $sort ) ? $sort : [ 'accessor' => 'updated', 'by' => 'desc' ];
     $query = "SELECT * FROM $this->table_chats";
 
     // Filters
