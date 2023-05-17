@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.6.3
+// Previous: 1.6.3
+// Current: 1.6.81
 
 class MwaiAPI {
 
@@ -8,12 +8,20 @@ class MwaiAPI {
       return MwaiAPI.instance;
     }
 
+    this.chatbots = [];
+    this.discussions = [];
+
     this.filters = {};
     this.actions = {};
+
     MwaiAPI.instance = this;
     if (typeof window !== 'undefined') {
       window.MwaiAPI = MwaiAPI.instance;
     }
+  }
+
+  getChatbot(chatId) {
+    return this.chatbots.find(x => x.chatId === chatId);
   }
 
   addFilter(tag, callback, priority = 10) {

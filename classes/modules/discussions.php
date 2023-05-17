@@ -18,7 +18,6 @@ class Meow_MWAI_Modules_Discussions {
     if ( $this->core->get_option( 'shortcode_chat_discussions' ) ) {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
-      add_shortcode( 'mwai_discussions', [ $this, 'shortcode_chat_discussions' ] );
     }
   }
 
@@ -40,7 +39,7 @@ class Meow_MWAI_Modules_Discussions {
     register_rest_route( $this->namespace_ui, '/discussions/list', [
 			'methods' => 'POST',
 			'callback' => [ $this, 'rest_discussions_ui_list' ],
-			'permission_callback' => __return_true(),
+			'permission_callback' => '__return_true'
 		] );
 	}
 
@@ -90,32 +89,6 @@ class Meow_MWAI_Modules_Discussions {
     catch ( Exception $e ) {
       return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
-  }
-
-  function shortcode_chat_discussions( $atts ) {
-    $atts = empty($atts) ? [] : $atts;
-
-    // Properly handle the id, chatId, and chatbot
-		// We have the same in chatbot.php
-		$chatbot = null;
-		$chatId = $atts['chat_id'] ?? null;
-		$id = $atts['id'] ?? null;
-		unset( $atts['chat_id'], $atts['id'] );
-		if ( $chatId ) {
-			$chatbot = $this->core->getChatbot( $chatId );
-			if ( !$chatbot ) {
-				return "AI Engine: Chatbot not found.";
-			}
-		}
-		if ( $id && !$chatbot ) {
-			$chatbot = $this->core->getChatbot( $id );
-			$chatId = $chatbot ? $id : 'default';
-		}
-		$chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
-		$chatId = $chatId ?: 'default';
-		$isCustom = $chatId == 'default' && isset( $atts['id'] );
-
-    return "Discussions for chatbot <i>$chatId</i>, id <i>$id</i>.";
   }
   
   function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {

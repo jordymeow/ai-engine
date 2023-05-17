@@ -20,6 +20,7 @@ class Meow_MWAI_Core
 	private $option_name = 'mwai_options';
 	private $themes_option_name = 'mwai_themes';
 	private $chatbots_option_name = 'mwai_chatbots';
+	private $nonce = null;
 	public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
 
 	public function __construct() {
@@ -156,6 +157,14 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Users/Sessions Helpers
+
+	function get_nonce() {
+		if ( isset( $this->nonce ) ) {
+			return $this->nonce;
+		}
+		$this->nonce = wp_create_nonce( 'wp_rest' );
+		return $this->nonce;
+	}
 
 	function get_session_id() {
 		if ( isset( $_COOKIE['mwai_session_id'] ) ) {

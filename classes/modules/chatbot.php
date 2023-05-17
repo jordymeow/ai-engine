@@ -1,14 +1,20 @@
 <?php
 
+// Params for the chatbot (front and server)
+
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'aiName', 'userName', 'guestName', 'textSend', 'textClear', 
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
-
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'embeddingsIndex', 'context',
 	'casuallyFineTuned', 'promptEnding', 'completionEnding', 'model', 'temperature', 'maxTokens',
 	'maxResults', 'apiKey', 'service'
 ] );
+
+// Params for the discussions (front and server)
+
+define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId' ] );
+define( 'MWAI_DISCUSSIONS_SERVER_PARAMS', [] );
 
 class Meow_MWAI_Modules_Chatbot {
 	private $core = null;
@@ -22,6 +28,10 @@ class Meow_MWAI_Modules_Chatbot {
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'chatId' );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
+
+		if ( $this->core->get_option( 'shortcode_chat_discussions' ) ) {
+      add_shortcode( 'mwai_discussions', [ $this, 'shortcode_chat_discussions' ] );
+    }
 	}
 
 	public function register_scripts() {
@@ -199,6 +209,24 @@ class Meow_MWAI_Modules_Chatbot {
 		return null;
 	}
 
+	public function build_front_params( $id, $chatId ) {
+		$frontSystem = [
+			'id' => $id,
+			'chatId' => $chatId,
+			'userData' => $this->core->getUserData(),
+			'sessionId' => $this->core->get_session_id(),
+			'restNonce' => $this->core->get_nonce(),
+			'contextId' => get_the_ID(),
+			'pluginUrl' => MWAI_URL,
+			'restUrl' => untrailingslashit( rest_url() ),
+			'debugMode' => $this->core->get_option( 'debug_mode' ),
+			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' ),
+			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
+			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
+		];
+		return $frontSystem;
+	}
+
 	public function chat_shortcode( $atts ) {
 		$atts = empty($atts) ? [] : $atts;
 
@@ -256,20 +284,7 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 
 		// Front Params
-		$frontSystem = [
-			'id' => $id,
-			'chatId' => $chatId,
-			'userData' => $this->core->getUserData(),
-			'sessionId' => $this->core->get_session_id(),
-			'restNonce' => wp_create_nonce( 'wp_rest' ),
-			'contextId' => get_the_ID(),
-			'pluginUrl' => MWAI_URL,
-			'restUrl' => untrailingslashit( rest_url() ),
-			'debugMode' => $this->core->get_option( 'debug_mode' ),
-			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' ),
-			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
-			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
-		];
+		$frontSystem = $this->build_front_params( $id, $chatId );
 
 		// Clean Params
 		$frontParams = $this->cleanParams( $frontParams );
@@ -289,14 +304,83 @@ class Meow_MWAI_Modules_Chatbot {
 
 		// Client-side: Prepare JSON for Front Params and System Params
 		$theme = isset( $frontParams['themeId'] ) ? $this->core->getTheme( $frontParams['themeId'] ) : null;
-		$jsonFrontParams = htmlspecialchars(json_encode($frontParams), ENT_QUOTES, 'UTF-8');
-		$jsonFrontSystem = htmlspecialchars(json_encode($frontSystem), ENT_QUOTES, 'UTF-8');
-		$jsonFrontTheme = htmlspecialchars(json_encode($theme), ENT_QUOTES, 'UTF-8');
+		$jsonFrontParams = htmlspecialchars( json_encode( $frontParams ), ENT_QUOTES, 'UTF-8' );
+		$jsonFrontSystem = htmlspecialchars( json_encode( $frontSystem ), ENT_QUOTES, 'UTF-8' );
+		$jsonFrontTheme = htmlspecialchars( json_encode( $theme ), ENT_QUOTES, 'UTF-8' );
 		//$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
 
 		$this->enqueue_scripts();
 		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
 	}
+
+	function shortcode_chat_discussions( $atts ) {
+    $atts = empty($atts) ? [] : $atts;
+
+    // Properly handle the id, chatId, and chatbot
+		// We have the same in chatbot.php
+		$chatbot = null;
+		$chatId = $atts['chat_id'] ?? null;
+		$id = $atts['id'] ?? null;
+		unset( $atts['chat_id'], $atts['id'] );
+		if ( $chatId ) {
+			$chatbot = $this->core->getChatbot( $chatId );
+			if ( !$chatbot ) {
+				return "AI Engine: Chatbot not found.";
+			}
+		}
+		if ( $id && !$chatbot ) {
+			$chatbot = $this->core->getChatbot( $id );
+			$chatId = $chatbot ? $id : 'default';
+		}
+		$chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
+		$chatId = $chatId ?: 'default';
+		$isCustom = $chatId == 'default' && isset( $atts['id'] );
+
+		// Rename the keys of the atts into camelCase to match the internal params system.
+		$atts = array_map( function( $key, $value ) {
+			$key = str_replace( '_', ' ', $key );
+			$key = ucwords( $key );
+			$key = str_replace( ' ', '', $key );
+			$key = lcfirst( $key );
+			return [ $key => $value ];
+		}, array_keys( $atts ), $atts );
+		$atts = array_merge( ...$atts );
+
+		// Front Params
+		$frontParams = [];
+		foreach ( MWAI_DISCUSSIONS_FRONT_PARAMS as $param ) {
+			if ( isset( $atts[$param] ) ) {
+				$frontParams[$param] = $atts[$param];
+			}
+			else if ( isset( $chatbot[$param] ) ) {
+				$frontParams[$param] = $chatbot[$param];
+			}
+		}
+
+		// Server Params
+		$serverParams = [];
+		foreach ( MWAI_DISCUSSIONS_SERVER_PARAMS as $param ) {
+			if ( isset( $atts[$param] ) ) {
+				$serverParams[$param] = $atts[$param];
+			}
+		}
+
+		
+		// Front System
+		$frontSystem = $this->build_front_params( $id, $chatId );
+
+    // Clean Params
+		$frontParams = $this->cleanParams( $frontParams );
+		$frontSystem = $this->cleanParams( $frontSystem );
+		$serverParams = $this->cleanParams( $serverParams );
+
+    $theme = isset( $frontParams['themeId'] ) ? $this->core->getTheme( $frontParams['themeId'] ) : null;
+		$jsonFrontParams = htmlspecialchars( json_encode( $frontParams ), ENT_QUOTES, 'UTF-8' );
+		$jsonFrontSystem = htmlspecialchars( json_encode( $frontSystem ), ENT_QUOTES, 'UTF-8' );
+		$jsonFrontTheme = htmlspecialchars( json_encode( $theme ), ENT_QUOTES, 'UTF-8' );
+
+    return "<div class='mwai-discussions-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
+  }
 
 	function cleanParams( &$params ) {
 		foreach ( $params as $param => $value ) {
