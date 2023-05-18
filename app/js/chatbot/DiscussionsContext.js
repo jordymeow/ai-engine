@@ -1,8 +1,10 @@
-// Previous: none
-// Current: 1.6.81
+// Previous: 1.6.81
+// Current: 1.6.82
 
+// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
+// AI Engine
 import { useModClasses, getCircularReplacer } from '@app/chatbot/helpers';
 
 const DiscussionsContext = createContext();
@@ -22,13 +24,15 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const [ discussions, setDiscussions ] = useState([]);
   const [ busy, setBusy ] = useState(false);
 
+  // System Parameters
   const id = system.id;
-  const chatId = system.chatId;
+  const botId = system.botId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
 
+  // UI Parameters
   const cssVariables = useMemo(() => {
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
@@ -39,7 +43,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
   const refresh = useCallback(async () => {
     try {
-      const body = {};
+      const body = { botId };
       if (debugMode) { console.log('[DISCUSSIONS] OUT: ', body); }
       const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/list`, { method: 'POST', headers: {
           'Content-Type': 'application/json',
@@ -62,34 +66,28 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     }
   }, []);
 
+
   useEffect(() => {
     refresh();
   }, []);
 
-  const onDiscussionClick = async (discussionId) => {
-    const discussion = discussions.find(x => x.chatId === discussionId);
+  const onDiscussionClick = async (chatId) => {
+    const discussion = discussions.find(x => x.chatId === chatId);
     if (!discussion) {
-      console.error(`Discussion not found.`, { discussionId, discussions });
+      console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
-    const chatbot = MwaiAPI.getChatbot(chatId);
+    const chatbot = MwaiAPI.getChatbot(botId);
     if (!chatbot) {
-      console.error(`Chatbot not found.`, { chatId, chatbots: MwaiAPI.chatbots });
+      console.error(`Chatbot not found.`, { botId, chatbots: MwaiAPI.chatbots });
       return;
     }
-
-    const freshMessages = discussion.messages.map(x => ({ 
-      role: x.type === 'ai' ? 'assistant' : 'user',
-      text: x.text,
-      html: x.text
-    }));
-    chatbot.setMessages(freshMessages);
-    console.log(freshMessages);
+    chatbot.setContext({ chatId, messages: discussion.messages });
   };
 
   const actions = { onDiscussionClick };
 
-  const state = { chatId, pluginUrl, busy, setBusy, modCss, cssVariables, discussions, theme };
+  const state = { botId, pluginUrl, busy, setBusy, modCss, cssVariables, discussions, theme };
 
   return (
     <DiscussionsContext.Provider value={{ state, actions }}>

@@ -1,3 +1,9 @@
+
+ChatId = Represents a conversation.
+BotId = Represents a chatbot.
+Id =
+
+
 # FILTERS
 
 ## AI

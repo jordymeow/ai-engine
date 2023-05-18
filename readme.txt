@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.81
+Stable tag: 1.6.82
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,11 +78,14 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.82 (2023/05/19) =
+* Update: Architectural changes. Moving towards the discussions (almost work).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.81 (2023/05/17) =
 * Fix: Display SQL errors related to logging.
 * Update: The MwaiAPI (for developers) is evolving a lot - discussions will be handled by it soon.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.79 (2023/05/14) =
 * Update: Refactoring and cleaning.

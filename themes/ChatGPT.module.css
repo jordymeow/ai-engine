@@ -1,4 +1,4 @@
-.mwai-discussions {
+.mwai-discussions, .mwai-chat {
   --mwai-spacing: 15px;
   --mwai-fontSize: 15px;
   --mwai-lineHeight: 1.5;
@@ -13,6 +13,48 @@
   --mwai-headerButtonsColor: #FFFFFF;
   --mwai-conversationsBackgroundColor: #202123;
   --mwai-conversationsTextColor: #FFFFFF;
+  --mwai-backgroundSecondaryColor: #343541;
+}
+
+.mwai-discussions button, .mwai-chat button {
+  color: var(--mwai-fontColor);
+  background: var(--mwai-backgroundSecondaryColor);
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+  margin-left: var(--mwai-spacing);
+  min-width: 90px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 90%;
+  position: relative;
+}
+
+.mwai-discussions button .mwai-timer, .mwai-chat button .mwai-timer {
+  margin-left: 5px;
+  margin-right: 5px;
+  font-size: 11px;
+}
+
+.mwai-discussions button:hover, .mwai-chat button:hover {
+  background: var(--mwai-backgroundPrimaryColor);
+}
+
+.mwai-discussions button[disabled] span, .mwai-chat button[disabled] span {
+  display: none;
+}
+
+.mwai-discussions button[disabled]:before, .mwai-chat button[disabled]:before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  border: 3px solid transparent;
+  border-top-color: var(--mwai-fontColor);
+  border-radius: 50%;
+  animation: mwai-button-spinner 1s ease infinite;
 }
 
 .mwai-discussions * {
@@ -24,6 +66,7 @@
   background: var(--mwai-conversationsBackgroundColor);
   padding: calc(var(--mwai-spacing) / 2);
   border-radius: var(--mwai-borderRadius);
+  margin: 0;
 }
 
 .mwai-discussions li {
@@ -36,22 +79,6 @@
   background: var(--mwai-backgroundPrimaryColor);
   border-radius: var(--mwai-borderRadius);
   cursor: pointer;
-}
-
-.mwai-chat {
-  --mwai-spacing: 15px;
-  --mwai-fontSize: 15px;
-  --mwai-lineHeight: 1.5;
-  --mwai-borderRadius: 10px;
-  --mwai-width: 460px;
-  --mwai-maxHeight: 40vh;
-  --mwai-iconTextColor: white;
-  --mwai-iconTextBackgroundColor: #343541;
-  --mwai-fontColor: #FFFFFF;
-  --mwai-backgroundPrimaryColor: #454654;
-  --mwai-backgroundHeaderColor: #343541;
-  --mwai-headerButtonsColor: #FFFFFF;
-  --mwai-backgroundSecondaryColor: #343541;
 }
 
 .mwai-chat * {
@@ -362,48 +389,6 @@
 
 .mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg {
   opacity: 0;
-}
-
-.mwai-chat button {
-  background: none;
-  color: var(--mwai-fontColor);
-  background-color: var(--mwai-backgroundSecondaryColor);
-  border: 1px solid var(--mwai-backgroundPrimaryColor);
-  margin-left: var(--mwai-spacing);
-  width: 90px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.2s ease-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 90%;
-  position: relative;
-}
-
-.mwai-chat button .mwai-timer {
-  margin-left: 5px;
-  margin-right: 5px;
-  font-size: 11px;
-}
-
-.mwai-chat button:hover {
-  background: var(--mwai-backgroundPrimaryColor);
-}
-
-.mwai-chat button[disabled] span {
-  display: none;
-}
-
-.mwai-chat button[disabled]:before {
-  content: '';
-  width: 18px;
-  height: 18px;
-  margin: auto;
-  border: 3px solid transparent;
-  border-top-color: var(--mwai-fontColor);
-  border-radius: 50%;
-  animation: mwai-button-spinner 1s ease infinite;
 }
 
 .mwai-chat .mwai-compliance {

@@ -1,5 +1,5 @@
-// Previous: 1.5.1
-// Current: 1.6.5
+// Previous: 1.6.5
+// Current: 1.6.82
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -31,13 +31,13 @@ const ChatbotBlock = props => {
 	const { attributes: { chatbotId }, setAttributes } = props;
 
 	const chatbotsOptions = useMemo(() => {
-		let freshChatbots = chatbots.map(chatbot => ({ label: chatbot.name, value: chatbot.chatId }));
+		let freshChatbots = chatbots.map(chatbot => ({ label: chatbot.name, value: chatbot.botId }));
 		freshChatbots.unshift({ label: 'None', value: null });
 		return freshChatbots;
 	}, [chatbots]);
 
 	const currentChatbot = useMemo(() => {
-		return chatbots.find(chatbot => chatbot.chatId === chatbotId);
+		return chatbots.find(chatbot => chatbot.botId === chatbotId);
 	}, [chatbotId]);
 
 	const title = useMemo(() => {

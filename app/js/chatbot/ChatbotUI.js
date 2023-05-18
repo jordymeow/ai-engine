@@ -1,5 +1,5 @@
-// Previous: 1.6.70
-// Current: 1.6.81
+// Previous: 1.6.81
+// Current: 1.6.82
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -20,25 +20,28 @@ const ChatbotUI = (props) => {
   const inputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = useMemo(() => document.documentElement.clientWidth <= 768, [/* dependencies */]);
+  const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
-  const { chatId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
+  const { botId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
     textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables,
     iconUrl, busy, speechRecognition } = state;
-  const { onClear, onSubmit, setInputText, setMessages } = actions;
+  const { onClear, onSubmit, setInputText, setMessages, setClientId } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(prev => prev + transcript);
+    setInputText(() => inputText + transcript);
   });
 
   useEffect(() => {
-    if (chatId) {
+    if (botId) {
       mwaiAPI.chatbots.push({
-        chatId: chatId,
+        botId: botId,
         open: () => setOpen(true),
         close: () => setOpen(false),
         toggle: () => setOpen(!open),
-        setMessages: (messages) => setMessages(messages),
+        setContext: ({ chatId, messages }) => {
+          setClientId(chatId);
+          setMessages(messages);
+        },
       });
     }
   }, []);
@@ -52,25 +55,26 @@ const ChatbotUI = (props) => {
       inputRef.current.focus();
     }
     stopChrono();
-  }, [busy, isMobile]); // bug: missing dependency, might cause stale value of isMobile
+  }, [busy]);
 
   useEffect(() => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
     conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-  }, [open]); // bug: no dependency on messages, so scroll may not happen when messages change
+  }, [open]);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-  }, [messages]); // okay
+    if (messages) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText) {
+    if (forcedText !== null) {
       onSubmit(forcedText);
-    }
-    else if (inputText.length > 0) {
+    } else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -94,7 +98,7 @@ const ChatbotUI = (props) => {
   };
 
   return (<>
-    <div id={`mwai-chatbot-${chatId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
+    <div id={`mwai-chatbot-${botId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
 
       {themeStyle && <style>{themeStyle}</style>}
 
@@ -121,7 +125,7 @@ const ChatbotUI = (props) => {
 
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
-          {!!messages && messages.map(message => 
+          {messages && messages.map(message => 
             <ChatbotReply key={message.id} conversationRef={conversationRef} message={message} />
           )}
         </div>
@@ -146,7 +150,7 @@ const ChatbotUI = (props) => {
             {speechRecognition && !isMobile && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(prev => !prev)}
+                onClick={() => setIsListening(!isListening)}
               />
             </div>)}
           </div>
@@ -155,7 +159,7 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={busy} onClick={() => { 
             if (isListening) {
-              setIsListening(prev => false);
+              setIsListening(false);
             }
             if (clearMode) {
               onClear();
@@ -174,3 +178,5 @@ const ChatbotUI = (props) => {
     </div>
   </>);
 };
+
+export default ChatbotUI;

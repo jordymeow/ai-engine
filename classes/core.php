@@ -428,8 +428,9 @@ class Meow_MWAI_Core
 
 	function getChatbots() {
 		$chatbots = get_option( $this->chatbots_option_name, [] );
+		$hasChanges = false;
 		if ( empty( $chatbots ) ) {
-			$chatbots = [ array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'chatId' => 'default' ] ) ];
+			$chatbots = [ array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'botId' => 'default' ] ) ];
 		}
 		foreach ( $chatbots as &$chatbot ) {
 			foreach ( MWAI_CHATBOT_DEFAULT_PARAMS as $key => $value ) {
@@ -437,14 +438,28 @@ class Meow_MWAI_Core
 					$chatbot[$key] = $value;
 				}
 			}
+			// After September 2023, let's remove this if statement.
+			if ( isset( $chatbot['chatId'] ) ) {
+				$chatbot['botId'] = $chatbot['chatId'];
+				unset( $chatbot['chatId'] );
+				$hasChanges = true;
+			}
+			// After September 2023, let's remove this if statement.
+			if ( empty( $chatbot['botId'] && $chatbot['name'] === 'default' ) ) {
+				$chatbot['botId'] = sanitize_title( $chatbot['name'] );
+				$hasChanges = true;
+			}
+		}
+		if ( $hasChanges ) {
+			update_option( $this->chatbots_option_name, $chatbots );
 		}
 		return $chatbots;
 	}
 
-	function getChatbot( $chatId ) {
+	function getChatbot( $botId ) {
 		$chatbots = $this->getChatbots();
 		foreach ( $chatbots as $chatbot ) {
-			if ( $chatbot['chatId'] === (string)$chatId ) {
+			if ( $chatbot['botId'] === (string)$botId ) {
 				// Somehow, the default was set to "openai" when creating a new chatbot, but that overrided
 				// the default value in the Settings. It should be always empty here (except if we add this
 				// into the Settings of the chatbot).

@@ -1,5 +1,5 @@
-// Previous: 1.6.64
-// Current: 1.6.65
+// Previous: 1.6.65
+// Current: 1.6.82
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -50,7 +50,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   return (
     <>
       <span className={modCss('mwai-name')}>{name}</span>
-      <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: message.html }} />
+      <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: message.html ?? message.content }} />
       {copyButton && <CopyButton content={message.content} />}
     </>
   );

@@ -63,7 +63,15 @@ class Meow_MWAI_Modules_Discussions {
 			$params = $request->get_json_params();
 			$offset = $params['offset'];
 			$limit = $params['limit'];
-			$filters = [ [ 'accessor' => 'user', 'value' => get_current_user_id() ] ];
+      $botId = $params['botId'];
+      $userId = get_current_user_id();
+      if ( !$userId ) {
+        return new WP_REST_Response([ 'success' => false, 'message' => "You need to be connected." ], 200 );
+      }
+			$filters = [ 
+        [ 'accessor' => 'user', 'value' => $userId ],
+        [ 'accessor' => 'botId', 'value' => $botId ],
+      ];
 			$chats = $this->chats_query( [], $offset, $limit, $filters );
 			return new WP_REST_Response([ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
 		}
@@ -105,16 +113,23 @@ class Meow_MWAI_Modules_Discussions {
       foreach ( $filters as $filter ) {
         if ( $filter['accessor'] === 'user' ) {
           $value = esc_sql( $filter['value'] );
-          if ( empty( $value ) ) {
+          if ( is_null( $value ) || $value === '' ) {
             continue;
           }
           $isIP = filter_var( $value, FILTER_VALIDATE_IP );
           if ( $isIP ) {
-            $where[] = "extra LIKE '%\"ip\":\"{$value}\"%'";
+            $where[] = "ip = '{$value}'";
           }
           else {
-            $where[] = "extra LIKE '%\"userId\":{$value}%'";
+            $where[] = "userId = '{$value}'";
           }
+        }
+        if ( $filter['accessor'] === 'botId' ) {
+          $value = esc_sql( $filter['value'] );
+          if ( is_null( $value ) || $value === '' ) {
+            continue;
+          }
+          $where[] = "botId = '{$value}'";
         }
         if ( $filter['accessor'] === 'preview' ) {
           $value = $filter['value'];
@@ -148,22 +163,23 @@ class Meow_MWAI_Modules_Discussions {
     global $mwai_core;
     $userIp = $mwai_core->get_ip_address();
     $userId = $mwai_core->get_user_id();
-    $chatClientId = isset( $params['clientId'] ) ? $params['clientId'] : $query->session;
-    $ssChatId = hash( 'sha256', $userIp . $userId . $chatClientId );
+    $botId = isset( $params['botId'] ) ? $params['botId'] : null;
+    $chatId = isset( $params['clientId'] ) ? $params['clientId'] : $query->session;
+    //$chatId = hash( 'sha256', $userIp . $userId . $clientChatId );
     $this->check_db();
-    $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $ssChatId ) );
+    $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $chatId ) );
     $extra = [
       'embeddings' => isset( $extra['embeddings'] ) ? $extra['embeddings'] : null
     ];
     if ( $chat ) {
       $chat->messages = json_decode( $chat->messages );
       $chat->messages[] = [
-        'type' => 'user',
-        'text' => $params['newMessage']
+        'role' => 'user',
+        'content' => $params['newMessage']
       ];
       $chat->messages[] = [
-        'type' => 'ai',
-        'text' => $rawText,
+        'role' => 'assistant',
+        'content' => $rawText,
         'extra' => $extra
       ];
       $chat->messages = json_encode( $chat->messages );
@@ -174,25 +190,27 @@ class Meow_MWAI_Modules_Discussions {
     }
     else {
       $chat = [
-        'chatId' => $ssChatId,
+        'userId' => $userId,
+        'ip' => $userIp,
         'messages' => json_encode( [
           [
-            'type' => 'user',
-            'text' => $params['newMessage']
+            'role' => 'user',
+            'content' => $params['newMessage']
           ],
           [
-            'type' => 'ai',
-            'text' => $rawText,
+            'role' => 'assistant',
+            'content' => $rawText,
             'extra' => $extra
           ]
         ] ),
         'extra' => json_encode( [
-          'ip' => $userIp,
-          'userId' => $userId,
           'session' => $query->session,
           'model' => $query->model,
-          'temperature' => $query->temperature
+          'temperature' => $query->temperature,
+          'context' => $query->context,
         ] ),
+        'botId' => $botId,
+        'chatId' => $chatId,
         'created' => date( 'Y-m-d H:i:s' ),
         'updated' => date( 'Y-m-d H:i:s' )
       ];
@@ -214,6 +232,17 @@ class Meow_MWAI_Modules_Discussions {
         $this->wpdb->get_var( "SHOW TABLES LIKE '$this->table_chats'" ) ) != strtolower( $this->table_chats )
       );
     }
+
+    // LATER: REMOVE THIS AFTER SEPTEMBER 2023
+    // Make sure the column "userId" and "ip "exist in the $this->table_chats table
+    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'userId'" );
+    if ( !$this->db_check ) {
+      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN userId BIGINT(20) NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN ip VARCHAR(64) NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN botId VARCHAR(64) NULL" );
+      $this->db_check = true;
+    }
+
     return $this->db_check;
   }
 
@@ -221,9 +250,12 @@ class Meow_MWAI_Modules_Discussions {
     $charset_collate = $this->wpdb->get_charset_collate();
     $sqlLogs = "CREATE TABLE $this->table_chats (
       id BIGINT(20) NOT NULL AUTO_INCREMENT,
-      chatId VARCHAR(64) NOT NULL NULL,
+      userId BIGINT(20) NULL,
+      ip VARCHAR(64) NULL,
       messages TEXT NOT NULL NULL,
       extra TEXT NOT NULL NULL,
+      botId VARCHAR(64) NULL,
+      chatId VARCHAR(64) NOT NULL,
       created DATETIME NOT NULL,
       updated DATETIME NOT NULL,
       PRIMARY KEY  (id),

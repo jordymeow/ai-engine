@@ -25,7 +25,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'copyButton' => false,
 	'localMemory' => true,
 	// Chatbot System Parameters
-	'chatId' => null,
+	'botId' => null,
 	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
 	'env' => 'chatbot',
 	'mode' => 'chat',

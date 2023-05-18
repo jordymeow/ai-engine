@@ -1,5 +1,5 @@
-// Previous: 1.6.78
-// Current: 1.6.81
+// Previous: 1.6.81
+// Current: 1.6.82
 
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
@@ -28,8 +28,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
+  const initRef = useRef(false);
+
   const id = system.id;
-  const chatId = system.chatId;
+  const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
   const contextId = system.contextId; 
@@ -46,8 +48,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
-  const localMemory = localMemoryParam && (!!id || !!chatId);
-  const localStorageKey = localMemory ? `mwai-chat-${id || chatId}` : null;
+  const localMemory = localMemoryParam && (!!id || !!botId);
+  const localStorageKey = localMemory ? `mwai-chat-${id || botId}` : null;
+
   const { cssVariables, iconUrl } = useMemo(() => {
     const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
@@ -56,11 +59,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }, {});
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
+
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
 
   useEffect(() => {
+    if (initRef.current) return;
     resetMessages();
+    initRef.current = true;
   }, [startSentence]);
 
   const saveMessages = (messages) => {
@@ -91,7 +97,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    var chatHistory = [];
+    let chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -102,11 +108,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [chatId]);
+  }, [botId]);
 
   useEffect(() => {
     initChatbot();
-  }, [chatId]);
+  }, [botId]);
   
   useEffect(() => {
     if (!serverRes) {
@@ -116,14 +122,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     let freshMessages = [...messages];
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
-    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-      freshMessages.pop();
-    }
-    if (lastMessage && lastMessage.role === 'user') {
-      freshMessages.pop();
-    }
-
     if (!serverRes.success) {
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+        freshMessages.pop();
+      }
+      if (lastMessage) {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -145,8 +150,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
-    }
-    else {
+    } else {
       const newMessage = {
         id: randomStr(),
         role: 'assistant',
@@ -158,12 +162,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (serverRes.images) {
         newMessage.images = serverRes.images;
       }
-      // Mistakenly push to the same array but be cautious
       freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes ]);
+  }, [ serverRes, messages ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -172,7 +175,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [chatId]);
+  }, [botId]);
 
   const onSubmit = async (textQuery) => {
     if (typeof textQuery !== 'string') {
@@ -189,6 +192,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       html: textQuery,
       timestamp: new Date().getTime(),
     }];
+
     saveMessages(bodyMessages);
     const freshMessages = [...bodyMessages, {
       id: randomStr(),
@@ -199,14 +203,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: true
     }];
+
     setMessages(freshMessages);
     const body = {
       id: id,
-      chatId: chatId,
+      botId: botId,
       session: sessionId,
       clientId: clientId,
       contextId: contextId,
-      messages: messages, // <-- referencing current state variable; may cause stale data
+      messages: messages,
       newMessage: inputText,
       ...atts
     };
@@ -233,13 +238,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     saveMessages,
     initChatbot,
     setMessages,
+    setClientId,
     resetMessages,
     onClear,
     onSubmit
   };
 
   const state = {
-    chatId,
+    botId,
     userData,
     pluginUrl,
     inputText,
