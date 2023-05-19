@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.82
+Stable tag: 1.6.83
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,11 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.82 (2023/05/19) =
+= 1.6.83 (2023/05/19) =
+* Fix: Secured the plugin against potential XSS attacks (thanks to WPScan).
+* Fix: Line return support for users input.
+* Fix: The filter related to rewriting errors was not always kicking in.
+* Update: Enhancements in the discussions UI module. It's very alpha, but you can try it by adding [mwai_discussions id="default"] to a page where the chatbot is.
 * Update: Architectural changes. Moving towards the discussions (almost work).
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

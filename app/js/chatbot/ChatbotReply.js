@@ -1,5 +1,5 @@
-// Previous: 1.6.65
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.83
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -9,6 +9,7 @@ import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
+import { sanitizeToHTML } from './helpers';
 
 const CopyButton = ({ content }) => {
   const { state } = useChatbotContext();
@@ -42,6 +43,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
+  const html = message.html ?? sanitizeToHTML(message.content);
 
   useEffect(() => { onRendered(); });
   if (message.isQuerying) {
@@ -50,7 +52,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   return (
     <>
       <span className={modCss('mwai-name')}>{name}</span>
-      <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: message.html ?? message.content }} />
+      <span className={modCss('mwai-text')} dangerouslySetInnerHTML={{ __html: html }} />
       {copyButton && <CopyButton content={message.content} />}
     </>
   );
@@ -63,7 +65,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
 
-  const [images, setImages] = useState(message?.images);
+  const [images, setImages] = useState(message?.images ?? []);
 
   useEffect(() => { onRendered(); });
 

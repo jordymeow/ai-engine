@@ -1,5 +1,5 @@
-// Previous: 1.6.81
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.83
 
 // React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
@@ -24,7 +24,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const [ discussions, setDiscussions ] = useState([]);
   const [ busy, setBusy ] = useState(false);
 
-  // System Parameters
   const id = system.id;
   const botId = system.botId;
   const restNonce = system.restNonce;
@@ -32,13 +31,12 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
 
-  // UI Parameters
   const cssVariables = useMemo(() => {
-    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return cssVariables;
+    return cssVars;
   }, [pluginUrl, shortcodeStyles]);
 
   const refresh = useCallback(async () => {
@@ -51,7 +49,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         },
         body: JSON.stringify(body, getCircularReplacer())
       });
-      const data = await response.json()
+      const data = await response.json();
       if (debugMode) { console.log('[DISCUSSIONS] IN: ', data); }
       const conversations = data.chats.map((conversation) => {
         const messages = JSON.parse(conversation.messages);
@@ -66,10 +64,17 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     }
   }, []);
 
-
   useEffect(() => {
     refresh();
   }, []);
+
+  const getChatbot = (botId) => {
+    const chatbot = MwaiAPI.getChatbot(botId);
+    if (!chatbot) {
+      throw new Error(`Chatbot not found.`, { botId, chatbots: MwaiAPI.chatbots });
+    }
+    return chatbot;
+  };
 
   const onDiscussionClick = async (chatId) => {
     const discussion = discussions.find(x => x.chatId === chatId);
@@ -77,15 +82,16 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
-    const chatbot = MwaiAPI.getChatbot(botId);
-    if (!chatbot) {
-      console.error(`Chatbot not found.`, { botId, chatbots: MwaiAPI.chatbots });
-      return;
-    }
+    const chatbot = getChatbot(botId);
     chatbot.setContext({ chatId, messages: discussion.messages });
   };
 
-  const actions = { onDiscussionClick };
+  const onNewChatClick = async () => {
+    const chatbot = getChatbot(botId);
+    chatbot.clear();
+  };
+
+  const actions = { onDiscussionClick, onNewChatClick };
 
   const state = { botId, pluginUrl, busy, setBusy, modCss, cssVariables, discussions, theme };
 

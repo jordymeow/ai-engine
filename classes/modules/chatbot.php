@@ -194,7 +194,8 @@ class Meow_MWAI_Modules_Chatbot {
 			], 200 );
 		}
 		catch ( Exception $e ) {
-			return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 

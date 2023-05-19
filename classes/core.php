@@ -426,6 +426,10 @@ class Meow_MWAI_Core
 		return $themes;
 	}
 
+	function sanitizeOption( $option ) {
+		$option = wp_kses_post( $option );
+	}
+
 	function getChatbots() {
 		$chatbots = get_option( $this->chatbots_option_name, [] );
 		$hasChanges = false;
@@ -434,6 +438,7 @@ class Meow_MWAI_Core
 		}
 		foreach ( $chatbots as &$chatbot ) {
 			foreach ( MWAI_CHATBOT_DEFAULT_PARAMS as $key => $value ) {
+				// Use default value if not set.
 				if ( !isset( $chatbot[$key] ) ) {
 					$chatbot[$key] = $value;
 				}
@@ -481,6 +486,18 @@ class Meow_MWAI_Core
 	}
 
 	function updateChatbots( $chatbots ) {
+		$htmlFields = [ 'complianceText', 'aiName', 'userName', 'startSentence' ];
+		foreach ( $chatbots as &$chatbot ) {
+			foreach ( $chatbot as $key => &$value ) {
+				if ( in_array( $key, $htmlFields ) ) {
+					$value = wp_kses_post( $value );
+				}
+				else {
+					$value = sanitize_text_field( $value );
+				}
+			}
+		}
+
 		update_option( $this->chatbots_option_name, $chatbots );
 		return $chatbots;
 	}

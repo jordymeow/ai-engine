@@ -1,5 +1,5 @@
-// Previous: 1.6.81
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.83
 
 // React & Vendor Libs
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
@@ -23,7 +23,7 @@ const DiscussionsUI = (props) => {
 
   const { state, actions } = useDiscussionsContext();
   const { botId, cssVariables, discussions, busy } = state;
-  const { onDiscussionClick } = actions;
+  const { onDiscussionClick, onNewChatClick } = actions;
 
   useEffect(() => {
     // Prepare the API
@@ -38,8 +38,12 @@ const DiscussionsUI = (props) => {
   return (<>
     <div id={`mwai-discussions-${botId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
       {themeStyle && <style>{themeStyle}</style>}
-      <ul>
-        <button disabled={discussions.length === 0}>+ New chat</button>
+
+      <div className={modCss('mwai-header')}>
+        <button onClick={() => onNewChatClick()} disabled={discussions.length === 0}>+ New chat</button>
+      </div>
+
+      <ul className={modCss('mwai-content')}>
         {discussions.map(x => <Discussion key={x.id} discussion={x}
           onClick={() => onDiscussionClick(x.chatId)}
         />)}

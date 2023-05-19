@@ -1,5 +1,5 @@
-// Previous: 1.6.81
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.83
 
 class MwaiAPI {
 
@@ -8,6 +8,7 @@ class MwaiAPI {
       return MwaiAPI.instance;
     }
 
+    // Chatbot API: open(), close(), toggle(), clear(), setContext(chatId, messages)
     this.chatbots = [];
     this.discussions = [];
 

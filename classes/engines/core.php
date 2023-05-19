@@ -192,7 +192,8 @@ class Meow_MWAI_Engines_Core {
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      throw new Exception( 'Error while calling OpenAI: ' . $e->getMessage() );
+      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      throw new Exception( "Error while calling {$service}: " . $e->getMessage() );
     }
   }
 
@@ -250,7 +251,8 @@ class Meow_MWAI_Engines_Core {
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      throw new Exception( 'Error while calling OpenAI: ' . $e->getMessage() );
+      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      throw new Exception( "Error while calling {$service}: " . $e->getMessage() );
     }
   }
 

@@ -1,10 +1,10 @@
-// Previous: 1.6.81
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.83
 
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
-import { getCircularReplacer } from './helpers';
+import { getCircularReplacer, sanitizeToHTML } from './helpers';
 
 const rawAiName = 'AI: ';
 const rawUserName = 'User: ';
@@ -28,46 +28,40 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  const initRef = useRef(false);
-
-  const id = system.id;
-  const botId = system.botId;
-  const userData = system.userData;
-  const sessionId = system.sessionId;
-  const contextId = system.contextId; 
-  const restNonce = system.restNonce;
-  const pluginUrl = system.pluginUrl;
-  const restUrl = system.restUrl;
-  const debugMode = system.debugMode; 
-  const typewriter = system?.typewriter ?? false;
-  const speechRecognition = system?.speech_recognition ?? false;
-  const speechSynthesis = system?.speech_synthesis ?? false;
-  const startSentence = params.startSentence?.trim() ?? "";
+  const idRef = useRef(system.id);
+  const botIdRef = useRef(system.botId);
+  const userDataRef = useRef(system.userData);
+  const sessionIdRef = useRef(system.sessionId);
+  const contextIdRef = useRef(system.contextId);
+  const restNonceRef = useRef(system.restNonce);
+  const pluginUrlRef = useRef(system.pluginUrl);
+  const restUrlRef = useRef(system.restUrl);
+  const debugModeRef = useRef(system.debugMode);
+  const typewriterRef = useRef(system?.typewriter ?? false);
+  const speechRecognitionRef = useRef(system?.speech_recognition ?? false);
+  const speechSynthesisRef = useRef(system?.speech_synthesis ?? false);
+  const startSentenceRef = useRef(params.startSentence?.trim() ?? "");
 
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
-  const localMemory = localMemoryParam && (!!id || !!botId);
-  const localStorageKey = localMemory ? `mwai-chat-${id || botId}` : null;
-
+  const localMemory = localMemoryParam && (!!system.id || !!system.botId);
+  const localStorageKey = localMemory ? `mwai-chat-${system.id || system.botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrlRef.current + '/images/' + icon) : pluginUrlRef.current + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
     return { cssVariables, iconUrl };
-  }, [icon, pluginUrl, shortcodeStyles]);
-
-  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
-  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+  }, [icon, pluginUrlRef.current, shortcodeStyles]);
+  aiName = formatAiName(aiName, pluginUrlRef.current, iconUrl, modCss);
+  userName = formatUserName(userName, guestName, userDataRef.current, pluginUrlRef.current, modCss);
 
   useEffect(() => {
-    if (initRef.current) return;
     resetMessages();
-    initRef.current = true;
-  }, [startSentence]);
+  }, [startSentenceRef.current]);
 
   const saveMessages = (messages) => {
     if (!localStorageKey) {
@@ -80,13 +74,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const resetMessages = () => {
-    if (startSentence) {
+    if (startSentenceRef.current) {
       const freshMessages = [{
         id: randomStr(),
         role: 'assistant',
-        content: startSentence,
+        content: startSentenceRef.current,
         who: rawAiName,
-        html: startSentence,
+        html: startSentenceRef.current,
         timestamp: new Date().getTime(),
       }];
       setMessages(freshMessages);
@@ -108,11 +102,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [botId]);
+  }, [system.botId]);
 
   useEffect(() => {
     initChatbot();
-  }, [botId]);
+  }, [system.botId]);
   
   useEffect(() => {
     if (!serverRes) {
@@ -150,7 +144,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
-    } else {
+    }
+    else {
       const newMessage = {
         id: randomStr(),
         role: 'assistant',
@@ -166,7 +161,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes, messages ]);
+  }, [ serverRes ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -175,9 +170,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId]);
+  }, [system.botId]);
 
   const onSubmit = async (textQuery) => {
+
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
@@ -189,10 +185,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       role: 'user',
       content: textQuery,
       who: rawUserName,
-      html: textQuery,
+      html: sanitizeToHTML(textQuery),
       timestamp: new Date().getTime(),
     }];
-
     saveMessages(bodyMessages);
     const freshMessages = [...bodyMessages, {
       id: randomStr(),
@@ -203,28 +198,27 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: true
     }];
-
     setMessages(freshMessages);
     const body = {
-      id: id,
-      botId: botId,
-      session: sessionId,
+      id: system.id,
+      botId: system.botId,
+      session: system.sessionId,
       clientId: clientId,
-      contextId: contextId,
+      contextId: system.contextId,
       messages: messages,
       newMessage: inputText,
       ...atts
     };
     try {
-      if (debugMode) { console.log('[CHATBOT] OUT: ', body); }
-      const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers: {
+      if (debugModeRef.current) { console.log('[CHATBOT] OUT: ', body); }
+      const response = await fetch(`${system.restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': restNonce,
+          'X-WP-Nonce': system.restNonce,
         },
         body: JSON.stringify(body, getCircularReplacer())
       });
       const data = await response.json()
-      if (debugMode) { console.log('[CHATBOT] IN: ', data); }
+      if (debugModeRef.current) { console.log('[CHATBOT] IN: ', data); }
       setServerRes(data);
     }
     catch (err) {
@@ -245,16 +239,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const state = {
-    botId,
-    userData,
-    pluginUrl,
+    botId: system.botId,
+    userData: system.userData,
+    pluginUrl: system.pluginUrl,
     inputText,
     messages,
     busy,
     setBusy,
-    typewriter,
-    speechRecognition,
-    speechSynthesis,
+    typewriter: system?.typewriter ?? false,
+    speechRecognition: system?.speech_recognition ?? false,
+    speechSynthesis: system?.speech_synthesis ?? false,
     modCss,
     localMemory,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,

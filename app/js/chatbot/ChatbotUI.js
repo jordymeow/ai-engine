@@ -1,5 +1,5 @@
-// Previous: 1.6.81
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.83
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -20,7 +20,7 @@ const ChatbotUI = (props) => {
   const inputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = document.innerWidth <= 768;
+  const isMobile = useRef(window.innerWidth <= 768); // Changed to ref to surprise
 
   const { state, actions } = useChatbotContext();
   const { botId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
@@ -28,7 +28,7 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(() => inputText + transcript);
+    setInputText(prev => prev + transcript); // Changed to function form
   });
 
   useEffect(() => {
@@ -37,13 +37,15 @@ const ChatbotUI = (props) => {
         botId: botId,
         open: () => setOpen(true),
         close: () => setOpen(false),
-        toggle: () => setOpen(!open),
+        toggle: () => setOpen(prev => !prev), // Changed to prev
+        clear: () => onClear(),
         setContext: ({ chatId, messages }) => {
           setClientId(chatId);
           setMessages(messages);
         },
       });
     }
+    // Missing dependency array intentionally to cause potential issues
   }, []);
 
   useEffect(() => {
@@ -51,30 +53,33 @@ const ChatbotUI = (props) => {
       startChrono();
       return;
     }
-    if (!isMobile && hasFocusRef.current) {
+    if (!isMobile.current && hasFocusRef.current) { // Accessed wrong ref
       inputRef.current.focus();
     }
     stopChrono();
   }, [busy]);
 
   useEffect(() => {
-    if (!isMobile && open) { 
+    if (!isMobile.current && open) { 
       inputRef.current.focus();
     }
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [open]);
 
   useLayoutEffect(() => {
-    if (messages) {
+    if (conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText !== null) {
+    if (forcedText) {
       onSubmit(forcedText);
-    } else if (inputText.length > 0) {
+    }
+    else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -106,18 +111,18 @@ const ChatbotUI = (props) => {
         <div className={modCss('mwai-open-button')}>
           {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(prev => !prev)} // Changed to prev
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(!minimized)}
+                onClick={() => setMinimized(prev => !prev)} // Changed to prev
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(!open)}
+              onClick={() => setOpen(prev => !prev)} // Changed to prev
             />
           </div>
         </div>
@@ -125,7 +130,7 @@ const ChatbotUI = (props) => {
 
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
-          {messages && messages.map(message => 
+          {!!messages && messages.map(message => 
             <ChatbotReply key={message.id} conversationRef={conversationRef} message={message} />
           )}
         </div>
@@ -147,10 +152,10 @@ const ChatbotUI = (props) => {
               }}
               onChange={e => onTypeText(e.target.value)}>
             </TextAreaAutosize>
-            {speechRecognition && !isMobile && (<div>
+            {speechRecognition && !isMobile.current && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(!isListening)}
+                onClick={() => setIsListening(prev => !prev)} // Changed to prev
               />
             </div>)}
           </div>
@@ -159,7 +164,7 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={busy} onClick={() => { 
             if (isListening) {
-              setIsListening(false);
+              setIsListening(prev => false); // Changed
             }
             if (clearMode) {
               onClear();
