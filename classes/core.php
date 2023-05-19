@@ -159,6 +159,9 @@ class Meow_MWAI_Core
 	#region Users/Sessions Helpers
 
 	function get_nonce() {
+		if ( !is_user_logged_in() ) {
+			return null;
+		}
 		if ( isset( $this->nonce ) ) {
 			return $this->nonce;
 		}

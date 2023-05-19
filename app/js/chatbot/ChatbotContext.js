@@ -1,8 +1,10 @@
-// Previous: 1.6.82
-// Current: 1.6.83
+// Previous: 1.6.83
+// Current: 1.6.84
 
-const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
+// React & Vendor Libs
+const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
+// AI Engine
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 import { getCircularReplacer, sanitizeToHTML } from './helpers';
 
@@ -28,40 +30,40 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  const idRef = useRef(system.id);
-  const botIdRef = useRef(system.botId);
-  const userDataRef = useRef(system.userData);
-  const sessionIdRef = useRef(system.sessionId);
-  const contextIdRef = useRef(system.contextId);
-  const restNonceRef = useRef(system.restNonce);
-  const pluginUrlRef = useRef(system.pluginUrl);
-  const restUrlRef = useRef(system.restUrl);
-  const debugModeRef = useRef(system.debugMode);
-  const typewriterRef = useRef(system?.typewriter ?? false);
-  const speechRecognitionRef = useRef(system?.speech_recognition ?? false);
-  const speechSynthesisRef = useRef(system?.speech_synthesis ?? false);
-  const startSentenceRef = useRef(params.startSentence?.trim() ?? "");
+  const id = system.id;
+  const botId = system.botId;
+  const userData = system.userData;
+  const sessionId = system.sessionId;
+  const contextId = system.contextId;
+  const restNonce = system.restNonce;
+  const pluginUrl = system.pluginUrl;
+  const restUrl = system.restUrl;
+  const debugMode = system.debugMode; 
+  const typewriter = system?.typewriter ?? false;
+  const speechRecognition = system?.speech_recognition ?? false;
+  const speechSynthesis = system?.speech_synthesis ?? false;
+  const startSentence = params.startSentence?.trim() ?? "";
 
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
     icon, iconText, iconAlt, iconPosition } = processParameters(params);
-  const localMemory = localMemoryParam && (!!system.id || !!system.botId);
-  const localStorageKey = localMemory ? `mwai-chat-${system.id || system.botId}` : null;
+  const localMemory = localMemoryParam && (!!id || !!botId);
+  const localStorageKey = localMemory ? `mwai-chat-${id || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrlRef.current + '/images/' + icon) : pluginUrlRef.current + '/images/chat-green.svg';
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
     return { cssVariables, iconUrl };
-  }, [icon, pluginUrlRef.current, shortcodeStyles]);
-  aiName = formatAiName(aiName, pluginUrlRef.current, iconUrl, modCss);
-  userName = formatUserName(userName, guestName, userDataRef.current, pluginUrlRef.current, modCss);
+  }, [icon, pluginUrl, shortcodeStyles]);
+  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
+  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
 
   useEffect(() => {
     resetMessages();
-  }, [startSentenceRef.current]);
+  }, [startSentence]);
 
   const saveMessages = (messages) => {
     if (!localStorageKey) {
@@ -74,13 +76,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const resetMessages = () => {
-    if (startSentenceRef.current) {
+    if (startSentence) {
       const freshMessages = [{
         id: randomStr(),
         role: 'assistant',
-        content: startSentenceRef.current,
+        content: startSentence,
         who: rawAiName,
-        html: startSentenceRef.current,
+        html: startSentence,
         timestamp: new Date().getTime(),
       }];
       setMessages(freshMessages);
@@ -91,7 +93,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    var chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -102,11 +104,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [system.botId]);
+  }, [botId]);
 
   useEffect(() => {
     initChatbot();
-  }, [system.botId]);
+  }, [botId]);
   
   useEffect(() => {
     if (!serverRes) {
@@ -120,9 +122,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -161,7 +161,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes ]);
+  }, [ serverRes, messages ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -170,10 +170,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [system.botId]);
+  }, [botId]);
 
   const onSubmit = async (textQuery) => {
-
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
@@ -200,25 +199,28 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }];
     setMessages(freshMessages);
     const body = {
-      id: system.id,
-      botId: system.botId,
-      session: system.sessionId,
+      id: id,
+      botId: botId,
+      session: sessionId,
       clientId: clientId,
-      contextId: system.contextId,
+      contextId: contextId,
       messages: messages,
       newMessage: inputText,
       ...atts
     };
     try {
-      if (debugModeRef.current) { console.log('[CHATBOT] OUT: ', body); }
-      const response = await fetch(`${system.restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': system.restNonce,
-        },
+      if (debugMode) { console.log('[CHATBOT] OUT: ', body); }
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (restNonce) {
+        headers['X-WP-Nonce'] = restNonce;
+      }
+      const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
         body: JSON.stringify(body, getCircularReplacer())
       });
       const data = await response.json()
-      if (debugModeRef.current) { console.log('[CHATBOT] IN: ', data); }
+      if (debugMode) { console.log('[CHATBOT] IN: ', data); }
       setServerRes(data);
     }
     catch (err) {
@@ -239,16 +241,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const state = {
-    botId: system.botId,
-    userData: system.userData,
-    pluginUrl: system.pluginUrl,
+    botId,
+    userData,
+    pluginUrl,
     inputText,
     messages,
     busy,
     setBusy,
-    typewriter: system?.typewriter ?? false,
-    speechRecognition: system?.speech_recognition ?? false,
-    speechSynthesis: system?.speech_synthesis ?? false,
+    typewriter,
+    speechRecognition,
+    speechSynthesis,
     modCss,
     localMemory,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
