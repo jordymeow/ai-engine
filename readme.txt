@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.85
+Stable tag: 1.6.86
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,12 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.86 (2023/05/21) =
+* Fix: Crash when embeddings' subtype is set to something else than null or a string.
+* Fix: Sanitization of the context shouldn't removed the line returns.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.85 (2023/05/20) =
 * Update: Pinecone servers.
 * Fix: Make it simpler for caching system to work with the plugin (nonce / cookie issue).
@@ -86,8 +92,6 @@ Languages: English.
 * Fix: The filter related to rewriting errors was not always kicking in.
 * Update: Enhancements in the discussions UI module. It's very alpha, but you can try it by adding [mwai_discussions id="default"] to a page where the chatbot is.
 * Update: Architectural changes. Moving towards the discussions (almost work).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.81 (2023/05/17) =
 * Fix: Display SQL errors related to logging.

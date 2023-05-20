@@ -61,9 +61,14 @@ class Meow_MWAI_Modules_Discussions {
   function rest_discussions_ui_list( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$offset = $params['offset'];
-			$limit = $params['limit'];
-      $botId = $params['botId'];
+			$offset = isset( $params['offset'] ) ? $params['offset'] : 0;
+			$limit = isset( $params['limit'] ) ? $params['limit'] : 10;
+      $botId = isset( $params['botId'] ) ? $params['botId'] : null;
+
+      if ( is_null( $botId ) ) {
+        return new WP_REST_Response([ 'success' => false, 'message' => "Bot ID is required." ], 200 );
+      }
+
       $userId = get_current_user_id();
       if ( !$userId ) {
         return new WP_REST_Response([ 'success' => false, 'message' => "You need to be connected." ], 200 );
