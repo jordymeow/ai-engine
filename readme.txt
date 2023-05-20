@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.84
+Stable tag: 1.6.85
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.84 (2023/05/19) =
+= 1.6.85 (2023/05/20) =
+* Update: Pinecone servers.
 * Fix: Make it simpler for caching system to work with the plugin (nonce / cookie issue).
 * Fix: Secured the plugin against potential XSS attacks (thanks to WPScan).
 * Fix: Line return support for users input.

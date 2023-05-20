@@ -1,5 +1,5 @@
-// Previous: 1.6.77
-// Current: 1.6.79
+// Previous: 1.6.79
+// Current: 1.6.85
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -156,8 +156,8 @@ const Settings = () => {
   const admin_bar = options?.admin_bar ?? ['settings'];
   const resolve_shortcodes = options?.resolve_shortcodes;
 
-  const isChat = (shortcut => shortcut?.mode === 'chat')(shortcodeParams);
-  const isImagesChat = (shortcode => shortcode?.mode === 'images')(shortcodeParams);
+  const isChat = (shortcodeParams?.mode ?? 'chat') === 'chat';
+  const isImagesChat = shortcodeParams?.mode === 'images';
   const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
@@ -170,10 +170,12 @@ const Settings = () => {
   const isContentAware = shortcodeParams?.content_aware;
   const contextHasContent = shortcodeParams?.context && shortcodeParams?.context.includes('{CONTENT}');
 
-  const accidentsPastDay = useMemo(() => incidents?.filter(x => {
-    const incidentDate = new Date(x.date);
-    return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
-  }).length, [incidents]);
+  const accidentsPastDay = useMemo(() => {
+    return incidents?.filter(x => {
+      const incidentDate = new Date(x.date);
+      return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
+    }).length || 0;
+  }, [incidents]);
 
   const busy = busyAction;
 
@@ -192,7 +194,6 @@ const Settings = () => {
       delete diff.max_results;
     }
     if (isImagesChat) {
-      delete diff.context;
       delete diff.content_aware;
       delete diff.casually_fine_tuned;
       delete diff.model;
@@ -205,9 +206,7 @@ const Settings = () => {
   const builtShortcode = useMemo(() => {
     const params = [];
     for (const key in shortcodeParamsDiff) {
-      if (shortcodeParams[key] === undefined) {
-        continue;
-      }
+      if (shortcodeParams[key] === undefined) continue;
       let value = shortcodeParams[key];
       if (value && typeof value === 'string' && value.includes('"')) {
         value = value.replace(/"/g, '\'');
@@ -225,7 +224,7 @@ const Settings = () => {
     }
     const joinedParams = params.join(' ');
     return '[mwai_chat' + (joinedParams ? ` ${joinedParams}` : '') + ']';
-  }, [shortcodeParamsDiff, shortcodeParams]);
+  }, [shortcodeParamsDiff]);
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
@@ -237,51 +236,43 @@ const Settings = () => {
       const response = await nekoFetch(`${apiUrl}/settings/update`, { 
         method: 'POST',
         nonce: restNonce,
-        json: { 
-          options: newOptions
-        }
+        json: { options: newOptions }
       });
       setOptions(response.options);
-    }
-    catch (err) {
+    } catch (err) {
       console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ? { message: err.message } : { err });
-      if (err.message) {
+      if (err?.message) {
         setError(<>
           <div>{i18n.ERROR.UPDATING_OPTIONS}</div>
           <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
         </>);
       }
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
-  }
+  };
 
   const onResetSettings = async () => {
-    if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) {
-      return;
-    }
+    if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) return;
     setBusyAction(true);
     try {
       const response = await nekoFetch(`${apiUrl}/settings/reset`, { method: 'POST', nonce: restNonce });
       setOptions(response.options);
-    }
-    catch (err) {
+    } catch (err) {
       console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ? { message: err.message } : { err });
-      if (err.message) {
+      if (err?.message) {
         setError(<>
           <div>{i18n.ERROR.UPDATING_OPTIONS}</div>
           <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
         </>);
       }
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
-  }
+  };
 
   useEffect(() => {
-    if (currentModel?.mode !== 'chat' && !!shortcodeParams?.embeddings_index) {
+    if (getModel(shortcodeParams?.model)?.mode !== 'chat' && shortcodeParams?.embeddings_index) {
       updateShortcodeParams('', 'embeddings_index');
     }
   }, [shortcodeParams]);
@@ -289,32 +280,31 @@ const Settings = () => {
   const updateShortcodeParams = async (value, id) => {
     const newParams = { ...shortcodeParams, [id]: value };
     await updateOption(newParams, 'shortcode_chat_params');
-  }
+  };
 
   const updateShortcodeStyles = async (value, id) => {
     if (value) {
       const newStyles = { ...shortcodeStyles, [id]: value };
       await updateOption(newStyles, 'shortcode_chat_styles');
     }
-  }
+  };
 
   const updateIcon = async (value) => {
     if (value.startsWith('http://') || value.startsWith('https://')) {
       const newStyles = { ...shortcodeStyles, icon: value };
       await updateOption(newStyles, 'shortcode_chat_styles');
-    }
-    else {
+    } else {
       alert('Please enter a valid URL.');
     }
-  }
+  };
 
   const onResetShortcodeParams = async () => {
     await updateOption(shortcodeDefaultParams, 'shortcode_chat_params');
-  }
+  };
 
   const onResetShortcodeStyles = async () => {
     await updateOption({}, 'shortcode_chat_styles');
-  }
+  };
 
   const jsxAssistants =
     <NekoSettings title={i18n.COMMON.ASSISTANTS}>
@@ -366,32 +356,30 @@ const Settings = () => {
 
   const jsxStatistics = 
     <NekoSettings title={<>{i18n.COMMON.STATISTICS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_statistics} requirePro={true} isPro={isRegistered}
+      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1" checked={module_statistics}
+        requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.STATISTICS_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxModeration = 
     <NekoSettings title={<>{i18n.COMMON.MODERATION}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox name="module_moderation" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_moderation}
+      <NekoCheckbox name="module_moderation" label={i18n.COMMON.ENABLE} value="1" checked={module_moderation}
         description={i18n.COMMON.MODERATION_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxAudioTranscribe = 
     <NekoSettings title={<>{i18n.COMMON.AUDIO_TRANSCRIPTION}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox name="module_audio" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_audio}
+      <NekoCheckbox name="module_audio" label={i18n.COMMON.ENABLE} value="1" checked={module_audio}
         description={i18n.COMMON.AUDIO_TRANSCRIPTION_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxEmbeddings = 
     <NekoSettings title={<>{i18n.COMMON.EMBEDDINGS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-    <NekoCheckbox name="module_embeddings" label={i18n.COMMON.ENABLE} value="1"
-      checked={module_embeddings} requirePro={true} isPro={isRegistered}
+    <NekoCheckbox name="module_embeddings" label={i18n.COMMON.ENABLE} value="1" checked={module_embeddings}
+      requirePro={true} isPro={isRegistered}
       description={i18n.COMMON.EMBEDDINGS_HELP}
       onChange={updateOption} />
   </NekoSettings>;
@@ -445,8 +433,7 @@ const Settings = () => {
   const jsxLegacyChatbot =
     <NekoSettings title={i18n.COMMON.LEGACY_CHATBOT}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_legacy" label={`${i18n.COMMON.ENABLE}`} value="1"
-          checked={shortcode_chat_legacy}
+        <NekoCheckbox name="shortcode_chat_legacy" label={`${i18n.COMMON.ENABLE}`} value="1" checked={shortcode_chat_legacy}
           description="Don't use the Legacy Chabot - it's deprecated and will be removed in the future."
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -455,8 +442,7 @@ const Settings = () => {
   const jsxShortcodeTypewriter =
     <NekoSettings title={i18n.SETTINGS.TYPEWRITER_EFFECT}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_typewriter" label={i18n.COMMON.ENABLE} value="1"
-          checked={shortcode_chat_typewriter}
+        <NekoCheckbox name="shortcode_chat_typewriter" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_typewriter}
           description={i18n.SETTINGS.TYPEWRITER_EFFECT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -465,8 +451,7 @@ const Settings = () => {
   const jsxShortcodeDiscussions = 
     <NekoSettings title={i18n.COMMON.DISCUSSIONS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_discussions" label={i18n.COMMON.ENABLE} value="1"
-          checked={shortcode_chat_discussions}
+        <NekoCheckbox name="shortcode_chat_discussions" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_discussions}
           description={i18n.HELP.DISCUSSIONS}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -635,6 +620,7 @@ const Settings = () => {
         <NekoOption value="us-west1-gcp" label="us-west1-gcp" />
         <NekoOption value="us-west1-gcp-free" label="us-west1-gcp-free" />
         <NekoOption value="us-west4-gcp" label="us-west4-gcp" />
+        <NekoOption value="us-west4-gcp-free" label="us-west4-gcp-free" />
         <NekoOption value="us-east-1-aws" label="us-east-1-aws" />
         <NekoOption value="us-west-1-aws" label="us-west-1-aws" />
         <NekoOption value="us-central1-gcp" label="us-central1-gcp" />
@@ -848,7 +834,7 @@ const Settings = () => {
 
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col"
-                          style={{ height: (shortcodeParams.mode === 'chat' && 76) || 'inherit' }}>
+                          style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
                             <label>{i18n.COMMON.MODE}:</label>
                             <NekoSelect scrolldown id="mode" name="mode"
                               value={shortcodeParams.mode} onChange={updateShortcodeParams}>
@@ -861,7 +847,7 @@ const Settings = () => {
                           <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={4}
                             value={shortcodeParams.context} onBlur={updateShortcodeParams} />
-                        </NekoTextArea>}
+                        </div>}
 
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.IMAGES_NUMBER}:</label>
@@ -979,7 +965,7 @@ const Settings = () => {
 
                       <b>{i18n.COMMON.TECHNICAL_SETTINGS}</b>
 
-                      {isChat && <div className="mwai-builder-row">
+                      {isContentAware && <div className="mwai-builder-row">
                         <div className="mwai-builder-col" style={{ flex: 3 }}>
                           <label>{i18n.COMMON.MODEL}:</label>
                           <NekoSelect scrolldown id="model" name="model"
@@ -1035,7 +1021,7 @@ const Settings = () => {
                           <label>{i18n.COMMON.EMBEDDINGS_INDEX}:</label>
                           <NekoSelect scrolldown id="embeddings_index" name="embeddings_index"
                             requirePro={true} isPro={isRegistered}
-                            disabled={!indexes?.length || currentModel?.mode !== 'chat'}
+                            disabled={!indexes?.length || getModel(shortcodeParams?.model)?.mode !== 'chat'}
                             value={shortcodeParams.embeddings_index} onChange={updateShortcodeParams}>
                             {indexes.map((x) => (
                               <NekoOption key={x.name} value={x.name} label={x.name}></NekoOption>
@@ -1071,7 +1057,7 @@ const Settings = () => {
                         </NekoMessage>
                       }
 
-                      {isContentAware && !contentHasContent && 
+                      {isContentAware && !contextHasContent && 
                         <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
                         </NekoMessage>
@@ -1087,7 +1073,7 @@ const Settings = () => {
 
                     <NekoCheckbox name="shortcode_chat_params_override"
                       label={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS}
-                      disabled={Object.keys(shortcodeParamsDiff).length < 1 || shortcodeParamsOverride}
+                      disabled={Object.keys(shortcodeParamsDiff).length < 1 || !shortcodeParamsOverride}
                       value="1" checked={shortcodeParamsOverride}
                       description={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS_HELP}
                       onChange={updateOption} />
@@ -1105,7 +1091,7 @@ const Settings = () => {
 
                   <NekoBlock busy={busy} title="ChatGPT Style" className="primary" action={
                     <NekoButton className="danger" onClick={onResetShortcodeStyles}>
-                      Reset Styles
+                      {i18n.SETTINGS.CUSTOM_URL}
                     </NekoButton>}>
                     <StyledBuilderForm>
                       <p>{toHTML(i18n.SETTINGS.CHATGPT_STYLE_INTRO)}</p>
