@@ -70,6 +70,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 	public function rest_chat( $request ) {
 		try {
 			$params = $request->get_json_params();
+			$context = null;
 			if ( !$this->basics_security_check( $params )) {
 				return new WP_REST_Response( [ 
 					'success' => false, 
@@ -100,14 +101,20 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 			}
 
 			// Awareness & Embeddings
-			$context = null;
-			$embeddingsIndex = $params['embeddingsIndex'];
-			if ( $query->mode === 'chat' && !empty( $embeddingsIndex ) ) {
-				$context = apply_filters( 'mwai_context_search', $query, $embeddingsIndex );
-				if ( !empty( $context ) ) {
-					$query->injectContext( $context['content'] );
+				// TODO: This is same in Chatbot Legacy and Forms, maybe we should move it to the core?
+				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
+				if ( $query->mode === 'chat' ) {
+					$context = apply_filters( 'mwai_context_search', $context, $query, [ 'embeddingsIndex' => $embeddingsIndex ] );
+					if ( !empty( $context ) ) {
+						if ( isset( $context['content'] ) ) {
+							$content = $this->core->cleanSentences( $context['content'] );
+							$query->injectContext( $content );
+						}
+						else {
+							error_log("AI Engine: A context without content was returned.");
+						}
+					}
 				}
-			}
 
 			$reply = $this->core->ai->run( $query );
 			$rawText = $reply->result;
