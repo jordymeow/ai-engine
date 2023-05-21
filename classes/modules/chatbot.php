@@ -36,9 +36,10 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function register_scripts() {
 		wp_register_script( 'mwai_highlight', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
-		$physical_file = MWAI_PATH . '/app/chatbot.js';	
+		$physical_file = trailingslashit( MWAI_PATH ) . 'app/chatbot.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-		wp_register_script( 'mwai_chatbot', MWAI_URL . '/app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
+		wp_register_script( 'mwai_chatbot', trailingslashit( MWAI_URL ) . 'app/chatbot.js',
+			[ 'wp-element' ], $cache_buster, false );
 		if ( !empty( $this->siteWideChatId ) && $this->siteWideChatId !== 'none' ) {
 			$this->enqueue_scripts();
 			add_action( 'wp_footer', array( $this, 'inject_chat' ) );

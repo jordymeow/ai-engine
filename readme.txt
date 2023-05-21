@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.86
+Stable tag: 1.6.87
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.86 (2023/05/21) =
+= 1.6.87 (2023/05/21) =
+* Fix: Avoid the double slash when loading the script.
 * Fix: Crash when embeddings' subtype is set to something else than null or a string.
 * Fix: Sanitization of the context shouldn't removed the line returns.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
