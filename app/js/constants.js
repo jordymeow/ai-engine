@@ -1,5 +1,5 @@
-// Previous: 1.1.9
-// Current: 1.2.1
+// Previous: 1.2.1
+// Current: 1.6.89
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -24,7 +24,7 @@ const WritingTones = [
   { value: 'informal', label: 'Informal' },
   { value: 'inspirational', label: 'Inspirational' },
   { value: 'professional', label: 'Professional' },
-  { value: 'confident', label: 'Confident' },
+  { value: 'confluent', label: 'Confluent' },
   { value: 'emotional', label: 'Emotional' },
   { value: 'persuasive', label: 'Persuasive' },
   { value: 'supportive', label: 'Supportive' },

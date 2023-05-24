@@ -1,5 +1,5 @@
-// Previous: 1.6.82
-// Current: 1.6.83
+// Previous: 1.6.83
+// Current: 1.6.89
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -20,7 +20,7 @@ const ChatbotUI = (props) => {
   const inputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = useRef(window.innerWidth <= 768); // Changed to ref to surprise
+  const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
   const { botId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
@@ -28,7 +28,7 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(prev => prev + transcript); // Changed to function form
+    setInputText(() => inputText + transcript);
   });
 
   useEffect(() => {
@@ -37,15 +37,22 @@ const ChatbotUI = (props) => {
         botId: botId,
         open: () => setOpen(true),
         close: () => setOpen(false),
-        toggle: () => setOpen(prev => !prev), // Changed to prev
+        toggle: () => setOpen(!open),
         clear: () => onClear(),
+        ask: (text, submit = false) => {
+          if (submit) {
+            onSubmit(text);
+          }
+          else {
+            setInputText(text);
+          }
+        },
         setContext: ({ chatId, messages }) => {
           setClientId(chatId);
           setMessages(messages);
         },
       });
     }
-    // Missing dependency array intentionally to cause potential issues
   }, []);
 
   useEffect(() => {
@@ -53,14 +60,14 @@ const ChatbotUI = (props) => {
       startChrono();
       return;
     }
-    if (!isMobile.current && hasFocusRef.current) { // Accessed wrong ref
+    if (!isMobile && hasFocusRef.current) {
       inputRef.current.focus();
     }
     stopChrono();
   }, [busy]);
 
   useEffect(() => {
-    if (!isMobile.current && open) { 
+    if (!isMobile && open) { 
       inputRef.current.focus();
     }
     if (conversationRef.current) {
@@ -111,18 +118,18 @@ const ChatbotUI = (props) => {
         <div className={modCss('mwai-open-button')}>
           {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(prev => !prev)} // Changed to prev
+            onClick={() => setOpen(!open)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(prev => !prev)} // Changed to prev
+                onClick={() => setMinimized(!minimized)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(prev => !prev)} // Changed to prev
+              onClick={() => setOpen(!open)}
             />
           </div>
         </div>
@@ -152,10 +159,10 @@ const ChatbotUI = (props) => {
               }}
               onChange={e => onTypeText(e.target.value)}>
             </TextAreaAutosize>
-            {speechRecognition && !isMobile.current && (<div>
+            {speechRecognition && !isMobile && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(prev => !prev)} // Changed to prev
+                onClick={() => setIsListening(!isListening)}
               />
             </div>)}
           </div>
@@ -164,7 +171,7 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={busy} onClick={() => { 
             if (isListening) {
-              setIsListening(prev => false); // Changed
+              setIsListening(false);
             }
             if (clearMode) {
               onClear();

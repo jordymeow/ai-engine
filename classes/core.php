@@ -485,7 +485,7 @@ class Meow_MWAI_Core
 	}
 
 	function updateChatbots( $chatbots ) {
-		$htmlFields = [ 'complianceText', 'aiName', 'userName', 'startSentence' ];
+		$htmlFields = [ 'textCompliance', 'aiName', 'userName', 'startSentence' ];
 		$whiteSpacedFields = [ 'context' ];
 		foreach ( $chatbots as &$chatbot ) {
 			foreach ( $chatbot as $key => &$value ) {

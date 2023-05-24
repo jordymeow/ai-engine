@@ -14,6 +14,8 @@
 	--mwai-conversationsBackgroundColor: #202123;
 	--mwai-conversationsTextColor: #FFFFFF;
 	--mwai-backgroundSecondaryColor: #343541;
+	--mwai-errorBackgroundColor: #6d2f2a;
+	--mwai-errorTextColor: #FFFFFF;
 
 	button {
 		color: var(--mwai-fontColor);
@@ -86,8 +88,15 @@
 
 		li {
 			color: var(--mwai-conversationsTextColor);
-			font-size: 80%;
+			font-size: 75%;
 			padding: calc(var(--mwai-spacing) / 2);
+			opacity: 0.65;
+
+			&.mwai-active {
+				background: var(--mwai-backgroundPrimaryColor);
+				border-radius: var(--mwai-borderRadius);
+				opacity: 1;
+			}
 
 			&:hover {
 				background: var(--mwai-backgroundPrimaryColor);
@@ -95,13 +104,10 @@
 				cursor: pointer;
 			}
 		}
-
 	}
-
 }
 
 .mwai-chat {
-	
 	
 	* {
 		box-sizing: border-box;
@@ -119,7 +125,6 @@
 
 	.mwai-conversation {
 		overflow: auto;
-		
 	}
 
 	.mwai-reply {
@@ -127,7 +132,6 @@
 		padding: var(--mwai-spacing);
 		position: relative;
 		line-height: var(--mwai-lineHeight);
-		border-bottom: 1px solid var(--mwai-backgroundPrimaryColor);
 
 		.mwai-copy-button {
 			opacity: 0;
@@ -205,162 +209,167 @@
 				opacity: 1;
 			}
 		}
-	}
 
-	.mwai-user {
-		background: var(--mwai-backgroundSecondaryColor);
-	}
-
-	.mwai-ai, .mwai-system {
-		background: var(--mwai-backgroundPrimaryColor);
-	}
-
-	.mwai-name {
-		color: var(--mwai-fontColor);
-		margin-right: 5px;
-
-		.mwai-name-text {
-			opacity: 0.50;
-			white-space: nowrap;
+		&.mwai-user {
+			background: var(--mwai-backgroundSecondaryColor);
 		}
-
-		.mwai-avatar {
-			margin-right: 10px;
-			width: 40px;
-			height: 40px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 5px;
-			overflow: hidden;
 	
-			img {
-				max-width: 100%;
-				max-height: 100%;
+		&.mwai-ai {
+			background: var(--mwai-backgroundPrimaryColor);
+		}
+	
+		.mwai-name {
+			color: var(--mwai-fontColor);
+			margin-right: 5px;
+	
+			.mwai-name-text {
+				opacity: 0.50;
+				white-space: nowrap;
 			}
-
-			&.mwai-svg img {
-				width: 28px;
-				height: 28px;
-				filter: brightness(0) invert(1);
+	
+			.mwai-avatar {
+				margin-right: 10px;
+				width: 40px;
+				height: 40px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border-radius: 5px;
+				overflow: hidden;
+		
+				img {
+					max-width: 100%;
+					max-height: 100%;
+				}
+	
+				&.mwai-svg img {
+					width: 28px;
+					height: 28px;
+					filter: brightness(0) invert(1);
+				}
 			}
 		}
-	}
 
-	.mwai-text {
-		flex: auto;
-		font-size: var(--mwai-fontSize);
-		line-height: var(--mwai-lineHeight);
-		color: var(--mwai-fontColor);
-		font-size: var(--mwai-fontSize);
-
-		* {
+		.mwai-text {
+			flex: auto;
 			font-size: var(--mwai-fontSize);
+			line-height: var(--mwai-lineHeight);
 			color: var(--mwai-fontColor);
-		}
-
-		*:first-child {
-			margin-top: 0;
-		}
-
-		*:last-child {
-			margin-bottom: 0;
-		}
-
-		a {
-			color: #2196f3;
-		}
+			font-size: var(--mwai-fontSize);
 	
-		h1 {
-			font-size: 200%;
-		}
-	
-		h2 {
-			font-size: 160%;
-		}
-	
-		h3 {
-			font-size: 140%;
-		}
-	
-		h4 {
-			font-size: 120%;
-		}
-	
-		p {
-
-			code {
-				background: var(--mwai-backgroundSecondaryColor);
-				padding: 2px 6px;
-				border-radius: 8px;
-				font-size: 90%;
-				font-family: system-ui;
+			* {
+				font-size: var(--mwai-fontSize);
+				color: var(--mwai-fontColor);
 			}
-		}
 	
-		pre {
-			color: var(--mwai-fontColor);
-			border-radius: var(--mwai-borderRadius);
-			padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
-			break-after: auto;
-			white-space: pre-wrap;
-			font-size: 95%;
-			max-width: 100%;
-			width: 100%;
-			font-family: system-ui;
-			background: #343541;
-	
-			code {
-				padding: 0 !important;
-				font-family: system-ui;
-				background: #343541;
-			}
-		}
-	
-		ol {
-			padding: 0;
-			margin: 0 0 0 20px;
-		}
-
-		table {
-			width: 100%;
-			border: 2px solid var(--mwai-backgroundSecondaryColor);
-			border-collapse: collapse
-		}
-		
-		thead {
-				background: var(--mwai-backgroundSecondaryColor);
-		}
-		
-		tr, td {
-				padding: 2px 5px;
-		}
-		
-		td {
-				border: 2px solid var(--mwai-backgroundSecondaryColor);
-		}
-
-		.mwai-typewriter {
-			display: inline-block;
-
-			> :first-child {
+			*:first-child {
 				margin-top: 0;
 			}
-		}
-
-		>* {
-			&:first-child {
-				margin-top: 0;
-
-			}
-			&:last-child {
+	
+			*:last-child {
 				margin-bottom: 0;
 			}
+	
+			a {
+				color: #2196f3;
+			}
+		
+			h1 {
+				font-size: 200%;
+			}
+		
+			h2 {
+				font-size: 160%;
+			}
+		
+			h3 {
+				font-size: 140%;
+			}
+		
+			h4 {
+				font-size: 120%;
+			}
+		
+			p {
+	
+				code {
+					background: var(--mwai-backgroundSecondaryColor);
+					padding: 2px 6px;
+					border-radius: 8px;
+					font-size: 90%;
+					font-family: system-ui;
+				}
+			}
+		
+			pre {
+				color: var(--mwai-fontColor);
+				border-radius: var(--mwai-borderRadius);
+				padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+				break-after: auto;
+				white-space: pre-wrap;
+				font-size: 95%;
+				max-width: 100%;
+				width: 100%;
+				font-family: system-ui;
+				background: #343541;
+		
+				code {
+					padding: 0 !important;
+					font-family: system-ui;
+					background: #343541;
+				}
+			}
+		
+			ol {
+				padding: 0;
+				margin: 0 0 0 20px;
+			}
+	
+			table {
+				width: 100%;
+				border: 2px solid var(--mwai-backgroundSecondaryColor);
+				border-collapse: collapse
+			}
+			
+			thead {
+					background: var(--mwai-backgroundSecondaryColor);
+			}
+			
+			tr, td {
+					padding: 2px 5px;
+			}
+			
+			td {
+					border: 2px solid var(--mwai-backgroundSecondaryColor);
+			}
+	
+			.mwai-typewriter {
+				display: inline-block;
+	
+				> :first-child {
+					margin-top: 0;
+				}
+			}
+	
+			>* {
+				&:first-child {
+					margin-top: 0;
+	
+				}
+				&:last-child {
+					margin-bottom: 0;
+				}
+			}
 		}
-	}
 
-	.mwai-system .mwai-name {
-		display: none;
+		&.mwai-system {
+			background: var(--mwai-errorBackgroundColor);
+			color: var(--mwai-errorFontColor);
+
+			.mwai-name {
+				display: none;
+			}
+		}
 	}
 
 	.mwai-input {

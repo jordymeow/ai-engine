@@ -1,5 +1,5 @@
-// Previous: 1.6.82
-// Current: 1.6.83
+// Previous: 1.6.83
+// Current: 1.6.89
 
 import React, { useState, useEffect, useRef } from 'react';
 import Typed from 'typed.js';
@@ -65,7 +65,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
 
-  const [images, setImages] = useState(message?.images ?? []);
+  const [images, setImages] = useState(message?.images);
 
   useEffect(() => { onRendered(); });
 
@@ -83,7 +83,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-text')}>
         <div className={modCss('mwai-gallery')}>
           {images?.map((image, index) => (
-            <a key={index} href={image} target="_blank" rel="noopener noreferrer">
+            <a href={image} target="_blank" rel="noopener noreferrer" key={index}>
               <img src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
@@ -101,6 +101,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const [ ready, setReady ] = useState(!message.isQuerying);
   const [ userScrolledUp, setUserScrolledUp ] = useState(false);
   const name = message.role === 'user' ? userName : aiName;
+  const html = message.html ?? sanitizeToHTML(message.content);
 
   useInterval(200, () => {
     if (conversationRef.current && !userScrolledUp) {
@@ -123,7 +124,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
         conversationRef.current.removeEventListener('scroll', handleScroll);
       }
     };
-  }, [conversationRef]);
+  }, [conversationRef.current]);
 
   useEffect(() => {
     if (!dynamic) { 
@@ -136,7 +137,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     }
     
     const options = {
-      strings: [message.html],
+      strings: [html],
       typeSpeed: applyFilters('typewriter_speed', 15),
       showCursor: false,
       onComplete: (self) => {
@@ -161,20 +162,22 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
       </>}
       {!message.isQuerying && !dynamic && <>
         <span className={modCss("mwai-name")}>{name}</span>
-        <span className={modCss("mwai-text")} dangerouslySetInnerHTML={{ __html: message.html }} />
+        <span className={modCss("mwai-text")} dangerouslySetInnerHTML={{ __html: html }} />
       </>}
       {ready && copyButton && <CopyButton content={message.content} />}
     </>
   );
 };
 
-
-
 const ChatbotReply = ({ message, conversationRef }) => {
   const { state } = useChatbotContext();
   const { typewriter, modCss } = state;
   const mainElement = useRef();
-  const classes = modCss('mwai-reply', { 'mwai-ai': message.role === 'assistant', 'mwai-user': message.role === 'user' });
+  const classes = modCss('mwai-reply', { 
+    'mwai-ai': message.role === 'assistant',
+    'mwai-user': message.role === 'user',
+    'mwai-system': message.role === 'system'
+  });
   const isImages = message?.images?.length > 0;
 
   const onRendered = () => {
@@ -195,7 +198,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
             element.classList.remove(oldClass);
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
-              element.classList.add(classes[1]);
+              element.classList.add(classes[0]);
             }
             else {
               console.warn('Could not find class for ' + oldClass);

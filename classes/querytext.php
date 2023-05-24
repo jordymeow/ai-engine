@@ -306,17 +306,37 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
     $this->stop = $stop;
   }
 
+  private function convertKeys( $params )
+  {
+    $newParams = [];
+    foreach ( $params as $key => $value ) {
+      $newKey = '';
+      $capitalizeNextChar = false;
+      for ( $i = 0; $i < strlen( $key ); $i++ ) {
+        if ( $key[$i] == '_' ) {
+          $capitalizeNextChar = true;
+        }
+        else {
+          $newKey .= $capitalizeNextChar ? strtoupper($key[$i]) : $key[$i];
+          $capitalizeNextChar = false;
+        }
+      }
+      $newParams[$newKey] = $value;
+    }
+    return $newParams;
+  }
+
   // Based on the params of the query, update the attributes
-  public function injectParams( array $params ): void {
+  public function injectParams( array $params ): void
+  {
+    // Those are for the keys passed directly by the shortcode.
+    $params = $this->convertKeys( $params );
+
+    $acceptedValues = [ true, 1, '1' ];
     if ( isset( $params['model'] ) ) {
 			$this->setModel( $params['model'] );
 		}
-    if ( isset( $params['casually_fine_tuned'] ) && $params['casually_fine_tuned'] === true ) {
-      $this->promptEnding = "\\n\\n###\\n\\n";
-      $this->stop = "\\n\\n";
-      $this->casuallyFineTuned = true;
-		}
-    if ( isset( $params['casuallyFineTuned'] ) && $params['casuallyFineTuned'] === true ) {
+    if ( isset( $params['casuallyFineTuned'] ) && in_array( $params['casuallyFineTuned'], $acceptedValues, true ) ) {
       $this->promptEnding = "\\n\\n###\\n\\n";
       $this->stop = "\\n\\n";
       $this->casuallyFineTuned = true;
@@ -330,20 +350,14 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
     if ( isset( $params['messages'] ) ) {
       $this->setMessages( $params['messages'] );
     }
-    if ( isset( $params['new_message'] ) ) {
-      $this->setNewMessage( $params['newMessage'] );
-    }
     if ( isset( $params['newMessage'] ) ) {
       $this->setNewMessage( $params['newMessage'] );
     }
-		if ( isset( $params['max_tokens'] ) && intval( $params['max_tokens'] ) > 0 ) {
-			$this->setMaxTokens( intval( $params['max_tokens'] ) );
-		}
     if ( isset( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
 			$this->setMaxTokens( intval( $params['maxTokens'] ) );
 		}
-    if ( isset( $params['max_messages'] ) && intval( $params['max_messages'] ) > 0 ) {
-      $this->setMaxSentences( intval( $params['max_messages'] ) );
+    if ( isset( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
+      $this->setMaxSentences( intval( $params['maxMessages'] ) );
     }
     if ( isset( $params['maxSentences'] ) && intval( $params['maxSentences'] ) > 0 ) {
       $this->setMaxSentences( intval( $params['maxSentences'] ) );
@@ -353,9 +367,6 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
 		}
 		if ( isset( $params['stop'] ) ) {
 			$this->setStop( $params['stop'] );
-		}
-		if ( isset( $params['max_results'] ) ) {
-			$this->setMaxResults( $params['max_results'] );
 		}
     if ( isset( $params['maxResults'] ) ) {
 			$this->setMaxResults( $params['maxResults'] );
@@ -369,9 +380,6 @@ class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
     // Should add the params related to Open AI and Azure
     if ( isset( $params['service'] ) ) {
 			$this->setService( $params['service'] );
-		}
-    if ( isset( $params['api_key'] ) ) {
-			$this->setApiKey( $params['apiKey'] );
 		}
     if ( isset( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );

@@ -1,5 +1,5 @@
-// Previous: 1.6.82
-// Current: 1.6.83
+// Previous: 1.6.83
+// Current: 1.6.89
 
 // React & Vendor Libs
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
@@ -7,12 +7,14 @@ const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import { useModClasses } from '@app/chatbot/helpers';
 import { useDiscussionsContext } from '@app/chatbot/DiscussionsContext';
 
-const Discussion = ({ discussion, onClick = () => {} }) => {
+const Discussion = ({ discussion, onClick = () => {}, selected = false, modCss }) => {
   const messages = discussion.messages;
   const message = messages[messages.length - 1];
   const messageText = message.content.length > 64 ? message.content.substring(0, 64) + '...' : message.content;
+  const baseClasses = modCss('', { 'mwai-active': selected });
+
   return (
-    <li onClick={onClick}>{messageText}</li>
+    <li className={baseClasses} onClick={onClick}>{messageText}</li>
   );
 }
 
@@ -22,7 +24,7 @@ const DiscussionsUI = (props) => {
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
 
   const { state, actions } = useDiscussionsContext();
-  const { botId, cssVariables, discussions, busy } = state;
+  const { botId, cssVariables, discussions, discussion, busy } = state;
   const { onDiscussionClick, onNewChatClick } = actions;
 
   useEffect(() => {
@@ -32,19 +34,20 @@ const DiscussionsUI = (props) => {
     // mwaiAPI.toggle = () => setOpen(!open);
   });
 
-  const baseClasses = modCss('mwai-discussions', { 
-  });
+  const baseClasses = modCss('mwai-discussions', {});
 
   return (<>
     <div id={`mwai-discussions-${botId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
       {themeStyle && <style>{themeStyle}</style>}
 
       <div className={modCss('mwai-header')}>
-        <button onClick={() => onNewChatClick()} disabled={discussions.length === 0}>+ New chat</button>
+        <button onClick={() => onNewChatClick()} disabled={busy}>
+          <span>+ New chat</span>
+        </button>
       </div>
 
       <ul className={modCss('mwai-content')}>
-        {discussions.map(x => <Discussion key={x.id} discussion={x}
+        {discussions.map(x => <Discussion key={x.id} discussion={x} selected={discussion?.id === x.id} modCss={modCss}
           onClick={() => onDiscussionClick(x.chatId)}
         />)}
       </ul>

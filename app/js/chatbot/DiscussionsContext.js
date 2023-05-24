@@ -1,10 +1,8 @@
-// Previous: 1.6.82
-// Current: 1.6.83
+// Previous: 1.6.83
+// Current: 1.6.89
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
 
-// AI Engine
 import { useModClasses, getCircularReplacer } from '@app/chatbot/helpers';
 
 const DiscussionsContext = createContext();
@@ -22,6 +20,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const { modCss } = useModClasses(theme);
   const shortcodeStyles = theme?.settings || {};
   const [ discussions, setDiscussions ] = useState([]);
+  const [ discussion, setDiscussion ] = useState(null);
   const [ busy, setBusy ] = useState(false);
 
   const id = system.id;
@@ -39,8 +38,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     return cssVars;
   }, [pluginUrl, shortcodeStyles]);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (silentRefresh = false) => {
     try {
+      if (!silentRefresh) {
+        setBusy(true);
+      }
       const body = { botId };
       if (debugMode) { console.log('[DISCUSSIONS] OUT: ', body); }
       const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/list`, { method: 'POST', headers: {
@@ -49,7 +51,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         },
         body: JSON.stringify(body, getCircularReplacer())
       });
-      const data = await response.json();
+      const data = await response.json()
       if (debugMode) { console.log('[DISCUSSIONS] IN: ', data); }
       const conversations = data.chats.map((conversation) => {
         const messages = JSON.parse(conversation.messages);
@@ -60,12 +62,20 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     }
     catch (err) {
       console.error(err);
-      setBusy(false);
+    }
+    finally {
+      if (!silentRefresh) {
+        setBusy(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     refresh();
+    const interval = setInterval(() => {
+      refresh(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const getChatbot = (botId) => {
@@ -77,23 +87,25 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   };
 
   const onDiscussionClick = async (chatId) => {
-    const discussion = discussions.find(x => x.chatId === chatId);
-    if (!discussion) {
+    const discussionItem = discussions.find(x => x.chatId === chatId);
+    if (!discussionItem) {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
     const chatbot = getChatbot(botId);
-    chatbot.setContext({ chatId, messages: discussion.messages });
+    chatbot.setContext({ chatId, messages: discussionItem.messages });
+    setDiscussion(discussionItem);
   };
 
   const onNewChatClick = async () => {
     const chatbot = getChatbot(botId);
     chatbot.clear();
+    // Potential bug: Not resetting current discussion, leading to stale data
+    // or reusing previous discussion context unintentionally
   };
 
   const actions = { onDiscussionClick, onNewChatClick };
-
-  const state = { botId, pluginUrl, busy, setBusy, modCss, cssVariables, discussions, theme };
+  const state = { botId, pluginUrl, busy, setBusy, modCss, cssVariables, discussions, discussion, theme };
 
   return (
     <DiscussionsContext.Provider value={{ state, actions }}>

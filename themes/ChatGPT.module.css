@@ -14,6 +14,8 @@
   --mwai-conversationsBackgroundColor: #202123;
   --mwai-conversationsTextColor: #FFFFFF;
   --mwai-backgroundSecondaryColor: #343541;
+  --mwai-errorBackgroundColor: #6d2f2a;
+  --mwai-errorTextColor: #FFFFFF;
 }
 
 .mwai-discussions button, .mwai-chat button {
@@ -84,8 +86,15 @@
 
 .mwai-discussions .mwai-content li {
   color: var(--mwai-conversationsTextColor);
-  font-size: 80%;
+  font-size: 75%;
   padding: calc(var(--mwai-spacing) / 2);
+  opacity: 0.65;
+}
+
+.mwai-discussions .mwai-content li.mwai-active {
+  background: var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  opacity: 1;
 }
 
 .mwai-discussions .mwai-content li:hover {
@@ -117,7 +126,6 @@
   padding: var(--mwai-spacing);
   position: relative;
   line-height: var(--mwai-lineHeight);
-  border-bottom: 1px solid var(--mwai-backgroundPrimaryColor);
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -189,25 +197,25 @@
   opacity: 1;
 }
 
-.mwai-chat .mwai-user {
+.mwai-chat .mwai-reply.mwai-user {
   background: var(--mwai-backgroundSecondaryColor);
 }
 
-.mwai-chat .mwai-ai, .mwai-chat .mwai-system {
+.mwai-chat .mwai-reply.mwai-ai {
   background: var(--mwai-backgroundPrimaryColor);
 }
 
-.mwai-chat .mwai-name {
+.mwai-chat .mwai-reply .mwai-name {
   color: var(--mwai-fontColor);
   margin-right: 5px;
 }
 
-.mwai-chat .mwai-name .mwai-name-text {
+.mwai-chat .mwai-reply .mwai-name .mwai-name-text {
   opacity: 0.50;
   white-space: nowrap;
 }
 
-.mwai-chat .mwai-name .mwai-avatar {
+.mwai-chat .mwai-reply .mwai-name .mwai-avatar {
   margin-right: 10px;
   width: 40px;
   height: 40px;
@@ -218,18 +226,18 @@
   overflow: hidden;
 }
 
-.mwai-chat .mwai-name .mwai-avatar img {
+.mwai-chat .mwai-reply .mwai-name .mwai-avatar img {
   max-width: 100%;
   max-height: 100%;
 }
 
-.mwai-chat .mwai-name .mwai-avatar.mwai-svg img {
+.mwai-chat .mwai-reply .mwai-name .mwai-avatar.mwai-svg img {
   width: 28px;
   height: 28px;
   filter: brightness(0) invert(1);
 }
 
-.mwai-chat .mwai-text {
+.mwai-chat .mwai-reply .mwai-text {
   flex: auto;
   font-size: var(--mwai-fontSize);
   line-height: var(--mwai-lineHeight);
@@ -237,40 +245,40 @@
   font-size: var(--mwai-fontSize);
 }
 
-.mwai-chat .mwai-text * {
+.mwai-chat .mwai-reply .mwai-text * {
   font-size: var(--mwai-fontSize);
   color: var(--mwai-fontColor);
 }
 
-.mwai-chat .mwai-text *:first-child {
+.mwai-chat .mwai-reply .mwai-text *:first-child {
   margin-top: 0;
 }
 
-.mwai-chat .mwai-text *:last-child {
+.mwai-chat .mwai-reply .mwai-text *:last-child {
   margin-bottom: 0;
 }
 
-.mwai-chat .mwai-text a {
+.mwai-chat .mwai-reply .mwai-text a {
   color: #2196f3;
 }
 
-.mwai-chat .mwai-text h1 {
+.mwai-chat .mwai-reply .mwai-text h1 {
   font-size: 200%;
 }
 
-.mwai-chat .mwai-text h2 {
+.mwai-chat .mwai-reply .mwai-text h2 {
   font-size: 160%;
 }
 
-.mwai-chat .mwai-text h3 {
+.mwai-chat .mwai-reply .mwai-text h3 {
   font-size: 140%;
 }
 
-.mwai-chat .mwai-text h4 {
+.mwai-chat .mwai-reply .mwai-text h4 {
   font-size: 120%;
 }
 
-.mwai-chat .mwai-text p code {
+.mwai-chat .mwai-reply .mwai-text p code {
   background: var(--mwai-backgroundSecondaryColor);
   padding: 2px 6px;
   border-radius: 8px;
@@ -278,7 +286,7 @@
   font-family: system-ui;
 }
 
-.mwai-chat .mwai-text pre {
+.mwai-chat .mwai-reply .mwai-text pre {
   color: var(--mwai-fontColor);
   border-radius: var(--mwai-borderRadius);
   padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
@@ -291,52 +299,57 @@
   background: #343541;
 }
 
-.mwai-chat .mwai-text pre code {
+.mwai-chat .mwai-reply .mwai-text pre code {
   padding: 0 !important;
   font-family: system-ui;
   background: #343541;
 }
 
-.mwai-chat .mwai-text ol {
+.mwai-chat .mwai-reply .mwai-text ol {
   padding: 0;
   margin: 0 0 0 20px;
 }
 
-.mwai-chat .mwai-text table {
+.mwai-chat .mwai-reply .mwai-text table {
   width: 100%;
   border: 2px solid var(--mwai-backgroundSecondaryColor);
   border-collapse: collapse;
 }
 
-.mwai-chat .mwai-text thead {
+.mwai-chat .mwai-reply .mwai-text thead {
   background: var(--mwai-backgroundSecondaryColor);
 }
 
-.mwai-chat .mwai-text tr, .mwai-chat .mwai-text td {
+.mwai-chat .mwai-reply .mwai-text tr, .mwai-chat .mwai-reply .mwai-text td {
   padding: 2px 5px;
 }
 
-.mwai-chat .mwai-text td {
+.mwai-chat .mwai-reply .mwai-text td {
   border: 2px solid var(--mwai-backgroundSecondaryColor);
 }
 
-.mwai-chat .mwai-text .mwai-typewriter {
+.mwai-chat .mwai-reply .mwai-text .mwai-typewriter {
   display: inline-block;
 }
 
-.mwai-chat .mwai-text .mwai-typewriter > :first-child {
+.mwai-chat .mwai-reply .mwai-text .mwai-typewriter > :first-child {
   margin-top: 0;
 }
 
-.mwai-chat .mwai-text > *:first-child {
+.mwai-chat .mwai-reply .mwai-text > *:first-child {
   margin-top: 0;
 }
 
-.mwai-chat .mwai-text > *:last-child {
+.mwai-chat .mwai-reply .mwai-text > *:last-child {
   margin-bottom: 0;
 }
 
-.mwai-chat .mwai-system .mwai-name {
+.mwai-chat .mwai-reply.mwai-system {
+  background: var(--mwai-errorBackgroundColor);
+  color: var(--mwai-errorFontColor);
+}
+
+.mwai-chat .mwai-reply.mwai-system .mwai-name {
   display: none;
 }
 

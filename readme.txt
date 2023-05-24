@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.88
+Stable tag: 1.6.89
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,21 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.89 (2023/05/24) =
+* Fix: Issues related to finetuned models with the new chatbot v2.
+* Update: The client-side discussions module got a bit better.
+* Update: The system messages (usually, errors) are now displayed with a red background in the chatbot.
+* Update: Improved the [JS API](https://meowapps.com/ai-engine/api/#simple-server-side-api-js).
+* Update: Optimized the CSS of the ChatGPT theme.
+* Fix: Sanitization for Text Compliance.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.88 (2023/05/21) =
 * Update: Slighlty cleaner API for context. If you want to implement you own web search for AI Engine, have a look at this: https://gist.github.com/jordymeow/c570826db8f72502f5f46a95cda30be5.
 * Fix: Avoid the double slash when loading the script.
 * Fix: Crash when embeddings' subtype is set to something else than null or a string.
 * Fix: Sanitization of the context shouldn't removed the line returns.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.85 (2023/05/20) =
 * Update: Pinecone servers.
