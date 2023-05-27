@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_QueryImage extends Meow_MWAI_Query {
+class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
   public function __construct( ?string $prompt = "", ?string $model = "dall-e" ) {
 		parent::__construct( $prompt );

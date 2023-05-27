@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_QueryText extends Meow_MWAI_Query implements JsonSerializable {
+class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializable {
   public int $maxTokens = 1024;
   public float $temperature = 0.8;
   public int $maxSentences = 15;

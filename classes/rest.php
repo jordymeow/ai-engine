@@ -18,11 +18,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'rest_settings_update' )
 			) );
-			// register_rest_route( $this->namespace, '/settings/list', array(
-			// 	'methods' => 'GET',
-			// 	'permission_callback' => array( $this->core, 'can_access_settings' ),
-			// 	'callback' => array( $this, 'rest_settings_list' ),
-			// ) );
+			register_rest_route( $this->namespace, '/settings/list', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_settings_list' ),
+			) );
 			register_rest_route( $this->namespace, '/settings/reset', array(
 				'methods' => 'POST',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -196,7 +196,7 @@ class Meow_MWAI_Rest
 	function rest_settings_list() {
 		return new WP_REST_Response( [
 			'success' => true,
-			'data' => $this->core->get_all_options()
+			'options' => $this->core->get_all_options()
 		], 200 );
 	}
 
@@ -247,7 +247,7 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
-			$query = new Meow_MWAI_QueryText( $prompt );
+			$query = new Meow_MWAI_Query_Text( $prompt );
 			$query->injectParams( $params );
 			$reply = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result, 'usage' => $reply->usage ], 200 );
@@ -262,7 +262,7 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
-			$query = new Meow_MWAI_QueryImage( $prompt );
+			$query = new Meow_MWAI_Query_Image( $prompt );
 			$query->injectParams( $params );
 			$reply = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->results, 'usage' => $reply->usage ], 200 );
@@ -287,7 +287,7 @@ class Meow_MWAI_Rest
 
 			// NOTE: As soon as we have a wide range of usages and possibilities,
 			// let's refactor this into a nice and extensible UI/API.
-			$query = new Meow_MWAI_QueryText( "", 1024 );
+			$query = new Meow_MWAI_Query_Text( "", 1024 );
 			$query->setEnv( 'admin-tools' );
 			$model = $this->core->get_option( 'assistants_model' );
 			if ( !empty( $model ) ) {
@@ -354,7 +354,7 @@ class Meow_MWAI_Rest
 			if ( empty( $action ) || empty( $prompt ) ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
 			}
-			$query = new Meow_MWAI_QueryText( $prompt, 2048 );
+			$query = new Meow_MWAI_Query_Text( $prompt, 2048 );
 			$query->setEnv( 'admin-tools' );
 			$model = $this->core->get_option( 'assistants_model' );
 			if ( !empty( $model ) ) {
@@ -813,7 +813,7 @@ class Meow_MWAI_Rest
 	function rest_ai_transcribe( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$query = new Meow_MWAI_QueryTranscribe();
+			$query = new Meow_MWAI_Query_Transcribe();
 			$query->injectParams( $params );
 			$query->setEnv('admin-tools');
 			$reply = $this->core->ai->run( $query );

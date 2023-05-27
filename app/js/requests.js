@@ -1,5 +1,5 @@
-// Previous: 1.6.66
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.6.91
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -45,7 +45,7 @@ const retrieveFineTunes = async () => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.finetunes?.data;
+  return res?.finetunes;
 }
 
 const retrieveChatbots = async () => {

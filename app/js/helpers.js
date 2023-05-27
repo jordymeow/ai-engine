@@ -1,5 +1,5 @@
-// Previous: 1.6.59
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.6.91
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -95,11 +95,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   }, [startLanguage]);
 
   useEffect(() => {
+    // Use the language stored in the local storage if it exists
     let preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
       return;
     }
+
+    // Otherwise, try to detect the language from the browser
     let detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -117,7 +120,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -145,7 +148,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, isCustom, customLanguage, languages, disabled]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -158,8 +161,9 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const allModels = useMemo(() => {
     let allModels = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
-    let fineTunes = (options?.openai_finetunes && options?.openai_finetunes.length > 0) ?
-      options?.openai_finetunes.filter(x => x.model) : [];
+    let fineTunes = options?.openai_finetunes ?? [];
+    fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
+
     if (fineTunes.length) {
       allModels = [ ...allModels, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
@@ -188,6 +192,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
+
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
@@ -199,7 +204,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
       model = 'gpt-3.5-turbo';
-    } else if (model === 'gpt-4-0314') {
+    }
+    else if (model === 'gpt-4-0314') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -286,14 +292,15 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    } else {
+    }
+    else {
       nonAsciiCount++;
     }
   }
   const asciiTokens = asciiCount / 3.5;
   const nonAsciiTokens = nonAsciiCount * 2.5;
   const tokens = asciiTokens + nonAsciiTokens;
-  return Math.ceil(tokens);
+  return tokens;
 }
 
 function reduceContent(content, tokens = 2048) {

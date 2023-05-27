@@ -48,7 +48,7 @@ class Meow_MWAI_API {
 
   public function simpleTextQuery( $prompt, $options = [] ) {
     global $mwai_core;
-		$query = new Meow_MWAI_QueryText( $prompt );
+		$query = new Meow_MWAI_Query_Text( $prompt );
 		$query->injectParams( $options );
 		$reply = $mwai_core->ai->run( $query );
 		return $reply->result;

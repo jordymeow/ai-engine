@@ -84,6 +84,7 @@ class Meow_MWAI_Modules_Chatbot {
 			$id = $params['id'] ?? null;
 			$botId = $params['botId'] ?? null;
 			$newMessage = trim( $params['newMessage'] ?? '' );
+			$chatbot = null;
 
 			if ( !$this->basics_security_check( $id, $botId, $newMessage )) {
 				return new WP_REST_Response( [ 
@@ -114,7 +115,7 @@ class Meow_MWAI_Modules_Chatbot {
 			$mode = $chatbot['mode'] ?? 'chat';
 
 			if ( $mode === 'images' ) {
-				$query = new Meow_MWAI_QueryImage( $newMessage );
+				$query = new Meow_MWAI_Query_Image( $newMessage );
 
 				// Handle Params
 				$newParams = [];
@@ -129,8 +130,9 @@ class Meow_MWAI_Modules_Chatbot {
 				$query->injectParams( $params );
 			}
 			else {
-				$query = new Meow_MWAI_QueryText( $newMessage, 1024 );
+				$query = new Meow_MWAI_Query_Text( $newMessage, 1024 );
 				$query->setIsChat( true );
+				$streamCallback = null;
 
 				// Handle Params
 				$newParams = [];
@@ -180,8 +182,19 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 			}
 
-			// Query the AI
-			$reply = $this->core->ai->run( $query );
+			// Process Query
+			if ( MWAI_STREAM ) { 
+				$streamCallback = function( $reply ) {
+					$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
+					$this->stream_push( [ 'type' => 'stream', 'data' => $raw ] );
+				};
+				ob_implicit_flush( true );
+				ob_end_flush();
+				header( 'Content-Type: text/event-stream' );
+        header( 'Cache-Control: no-cache' );
+			}
+
+			$reply = $this->core->ai->run( $query, $streamCallback );
 			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {
@@ -191,19 +204,43 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 				$html = $this->core->markdown_to_html( $html );
 			}
-
-			return new WP_REST_Response( [
+			$restRes = [
 				'success' => true,
 				'reply' => $rawText,
 				'images' => $reply->getType() === 'images' ? $reply->results : null,
 				'html' => $html,
 				'usage' => $reply->usage
-			], 200 );
+			];
+
+			// Process Reply
+			if ( MWAI_STREAM ) {
+				$this->stream_push( [ 'type' => 'reply', 'data' => $restRes['html'] ] );
+				die();
+			}
+			else {
+				return new WP_REST_Response( $restRes, 200 );
+			}
+
 		}
 		catch ( Exception $e ) {
-			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+			if ( MWAI_STREAM ) { 
+				$this->stream_push( [ 'type' => 'error', 'data' => $e->getMessage() ] );
+			}
+			else {
+				$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+				return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+			}
 		}
+	}
+
+	public function stream_push( $data ) {
+		$out = "data: " . json_encode( $data );
+		error_log( $out );
+		echo $out;
+		//echo "data: ok";
+		echo "\n\n";
+		ob_end_flush();
+		flush();
 	}
 
 	public function inject_chat() {

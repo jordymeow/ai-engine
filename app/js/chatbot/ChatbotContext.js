@@ -1,10 +1,8 @@
-// Previous: 1.6.83
-// Current: 1.6.84
+// Previous: 1.6.84
+// Current: 1.6.91
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
-// AI Engine
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
 import { getCircularReplacer, sanitizeToHTML } from './helpers';
 
@@ -122,7 +120,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      if (lastMessage && lastMessage.role === 'user') {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -216,12 +216,33 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (restNonce) {
         headers['X-WP-Nonce'] = restNonce;
       }
-      const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
-        body: JSON.stringify(body, getCircularReplacer())
-      });
-      const data = await response.json()
-      if (debugMode) { console.log('[CHATBOT] IN: ', data); }
-      setServerRes(data);
+
+      const stream = false;
+      if (stream) {
+        const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
+          body: JSON.stringify(body, getCircularReplacer())
+        });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          for (let i = 0; i < lines.length - 1; i++) {
+            if (debugMode) { console.log('[CHATBOT STREAM] IN: ', lines[i]); }
+          }
+        }
+      }
+      else {
+        const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
+          body: JSON.stringify(body, getCircularReplacer())
+        });
+        const data = await response.json()
+        if (debugMode) { console.log('[CHATBOT] IN: ', data); }
+        setServerRes(data);
+      }      
     }
     catch (err) {
       console.error(err);

@@ -334,6 +334,7 @@ i18n.EMBEDDINGS = {
 
 i18n.ERROR = {
   UPDATING_OPTIONS: __( 'An error occured while updating the options.' ),
+  GETTING_OPTIONS: __( 'An error occured while getting the options.' ),
   CHECK_YOUR_CONSOLE: __( 'For more information, check <a target="_blank" href="https://meowapps.com/tutorial-network-activity-dev-tools/">your console</a>. You might also want to check your <a target="_blank" href="https://meowapps.com/tutorial-php-error-logs/">PHP Error Logs</a>.', 'ai-engine' ),
 }
 

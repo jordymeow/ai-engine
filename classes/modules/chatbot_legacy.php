@@ -78,7 +78,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 				);
 			}
 
-			$query = new Meow_MWAI_QueryText( $params['newMessage'], 1024 );
+			$query = new Meow_MWAI_Query_Text( $params['newMessage'], 1024 );
 			//$query->setIsChat( true );
 			$query->injectParams( $params );
 
@@ -137,7 +137,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 	public function rest_imagesbot( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$query = new Meow_MWAI_QueryImage( $params['prompt'] );
+			$query = new Meow_MWAI_Query_Image( $params['prompt'] );
 			$query->injectParams( $params );
 			$reply = $this->core->ai->run( $query );
 			return new WP_REST_Response( [ 'success' => true, 'images' => $reply->results, 'usage' => $reply->usage ], 200 );

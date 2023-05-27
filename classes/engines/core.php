@@ -9,7 +9,7 @@ class Meow_MWAI_Engines_Core {
     $this->openai = new Meow_MWAI_Engines_OpenAI( $this->core );
   }
 
-  public function run( $query ) {
+  public function run( $query, $streamCallback = null ) {
 
     // Check if the query is allowed.
     $limits = $this->core->get_option( 'limits' );
@@ -28,16 +28,16 @@ class Meow_MWAI_Engines_Core {
     // Run the query
     // Only OpenAI is handled for now, so we send all the queries there.
     $reply = null;
-    if ( $query instanceof Meow_MWAI_QueryText ) {
-      $reply = $this->openai->runCompletionQuery( $query );
+    if ( $query instanceof Meow_MWAI_Query_Text ) {
+      $reply = $this->openai->runCompletionQuery( $query, $streamCallback );
     }
-    else if ( $query instanceof Meow_MWAI_QueryEmbed ) {
+    else if ( $query instanceof Meow_MWAI_Query_Embed ) {
       $reply = $this->openai->runEmbeddingQuery( $query );
     }
-    else if ( $query instanceof Meow_MWAI_QueryImage ) {
+    else if ( $query instanceof Meow_MWAI_Query_Image ) {
       $reply = $this->openai->runImagesQuery( $query );
     }
-    else if ( $query instanceof Meow_MWAI_QueryTranscribe ) {
+    else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
       $reply = $this->openai->runTranscribeQuery( $query );
     }
     else {

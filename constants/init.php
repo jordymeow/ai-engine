@@ -160,8 +160,7 @@ define( 'MWAI_OPTIONS', [
 	'openai_azure_endpoint' => '',
 	'openai_azure_apikey' => '',
 	'openai_azure_deployments' => [],
-	'openai_finetunes' => [], // Used by AI Engine
-	'openai_finetunes_all' => [], // All finetunes listed by OpenAI
+	'openai_finetunes' => [], // All finetunes listed by OpenAI
 	'openai_finetunes_deleted' => [], // The finetunes that have been deleted
 	'pinecone' => [
 		'apikey' => false,

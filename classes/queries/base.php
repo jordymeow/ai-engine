@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Query implements JsonSerializable {
+class Meow_MWAI_Query_Base implements JsonSerializable {
   public string $env = '';
   public string $prompt = '';
   public string $model = '';

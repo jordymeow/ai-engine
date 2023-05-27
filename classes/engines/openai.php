@@ -15,6 +15,12 @@ class Meow_MWAI_Engines_OpenAI
   private $localAzureDeployments = null;
   private $azureApiVersion = 'api-version=2023-03-15-preview';
 
+  // Streaming
+  private $streamTemporaryBuffer = "";
+  private $streamBuffer = "";
+  private $streamCallback = null;
+  private $streamedTokens = 0;
+
   public function __construct($core)
   {
     $this->core = $core;
@@ -29,6 +35,45 @@ class Meow_MWAI_Engines_OpenAI
   /*
     This used to be in the core.php, but since it's relative to OpenAI, it's better to have it here.
   */
+
+  public function stream_handler( $handle, $args, $url ) {
+    curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, false );
+    curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, false );
+
+    // Maybe we could get some info from headers, as for now, there is only the model.
+    curl_setopt( $handle, CURLOPT_HEADERFUNCTION, function( $curl, $headerLine ) {
+      $line = trim( $headerLine );
+      return strlen( $headerLine );
+    });
+
+    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) use ( $args, $url ) {
+      $length = strlen( $data );
+
+      // If data ends by two new lines, it means it's the end of the stream.
+      $this->streamTemporaryBuffer .= $data;
+      $end = substr( $data, -2 );
+      if ( $end === "\n\n" ) {
+        $lines = explode( "\n", $this->streamTemporaryBuffer );
+        foreach ( $lines as $line ) {
+          if ( $line === "" ) { continue; }
+          if ( strpos( $line, 'data: ' ) === 0 ) {
+            $line = substr( $line, 6 );
+            $jsonArray[] = json_decode( $line, true );
+          }
+        }
+        $this->streamTemporaryBuffer = "";        
+        foreach ( $jsonArray as $json ) {
+          if ( isset( $json['choices'][0]['delta']['content'] ) ) {
+            $this->streamedTokens++;
+            $content = $json['choices'][0]['delta']['content'];
+            $this->streamBuffer .= $content;
+            call_user_func( $this->streamCallback, $content );
+          }
+        }
+      }
+      return $length;
+    });
+  }
 
   private function buildHeaders( $query ) {
     $headers = array(
@@ -66,12 +111,19 @@ class Meow_MWAI_Engines_OpenAI
     return $options;
   }
 
-  public function runQuery( $url, $options ) {
+  public function runQuery( $url, $options, $isStream = false ) {
     try {
+      $options['stream'] = $isStream;
       $res = wp_remote_get( $url, $options );
+
+      if ( $isStream ) {
+        return [ 'stream' => true ]; 
+      }
+
       if ( is_wp_error( $res ) ) {
         throw new Exception( $res->get_error_message() );
       }
+
       $response = wp_remote_retrieve_body( $res );
       $headersRes = wp_remote_retrieve_headers( $res );
       $headers = $headersRes->getAll();
@@ -79,6 +131,7 @@ class Meow_MWAI_Engines_OpenAI
       // If Headers contains multipart/form-data then we don't need to decode the response
       if ( strpos( $options['headers']['Content-Type'], 'multipart/form-data' ) !== false ) {
         return [
+          'stream' => false,
           'headers' => $headers,
           'data' => $response
         ];
@@ -217,8 +270,12 @@ class Meow_MWAI_Engines_OpenAI
     }
   }
 
-  public function runCompletionQuery( $query ) {
+  public function runCompletionQuery( $query, $streamCallback = null ) {
     $this->applyQueryParameters( $query );
+    if ( !is_null( $streamCallback ) ) {
+      $this->streamCallback = $streamCallback;
+      add_action( 'http_api_curl', array( $this, 'stream_handler' ), 10, 3 );
+    }
     if ( $query->mode !== 'chat' && $query->mode !== 'completion' ) {
       throw new Exception( 'Unknown mode for query: ' . $query->mode );
     }
@@ -230,6 +287,7 @@ class Meow_MWAI_Engines_OpenAI
       "n" => $query->maxResults,
       "max_tokens" => $query->maxTokens,
       "temperature" => $query->temperature,
+      "stream" => !is_null( $streamCallback ),
     );
     if ( $query->mode === 'chat' ) {
       $body['messages'] = $query->messages;
@@ -249,13 +307,29 @@ class Meow_MWAI_Engines_OpenAI
     $options = $this->buildOptions( $headers, $body );
 
     try {
-      $res = $this->runQuery( $url, $options );
-      $data = $res['data'];
-      if ( !$data['model'] ) {
-        error_log( print_r( $data, 1 ) );
-        throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
-      }
+      $res = $this->runQuery( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
+
+      // Streamed data
+      if ( !is_null( $streamCallback ) ) {
+        $data = [
+          'model' => $query->model,
+          'usage' => [
+            'prompt_tokens' => 666,
+            'completion_tokens' => $this->streamedTokens
+          ],
+          'choices' => [ [ 'message' => [ 'content' => $this->streamBuffer ] ] ]
+        ];
+      }
+      // Regular data
+      else {
+        $data = $res['data'];
+        if ( !$data['model'] ) {
+          error_log( print_r( $data, 1 ) );
+          throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
+        }
+      }
+      
       try {
         $usage = $this->core->recordTokensUsage( 
           $data['model'], 
@@ -385,51 +459,54 @@ class Meow_MWAI_Engines_OpenAI
 
   public function listDeletedFineTunes()
   {
-    $finetunes = $this->run('GET', '/fine-tunes');
+    $finetunes = $this->listFineTunes();
     $deleted = [];
-    $finetunes['data'] = array_filter( $finetunes['data'], function ( $finetune ) use ( &$deleted ) {
-      $name = $finetune['fine_tuned_model'];
+
+    foreach ( $finetunes as $finetune ) {
+      $name = $finetune['model'];
       $isSucceeded = $finetune['status'] === 'succeeded';
-      $exist = true;
-      if ($isSucceeded) {
+      if ( $isSucceeded ) {
         try {
           $finetune = $this->getModel( $name );
         }
         catch ( Exception $e ) {
-          $exist = false;
           $deleted[] = $name;
         }
       }
-      return $exist;
-    });
-    //$this->core->update_option( 'openai_finetunes_deleted', $deleted );
+    }
+
+    $this->core->update_option( 'openai_finetunes_deleted', $deleted );
     return $deleted;
   }
 
   public function listFineTunes()
   {
-    $finetunes = $this->run('GET', '/fine-tunes');
-    $finetunes['data'] = array_map( function ( $finetune ) {
-      $finetune['suffix'] = $this->getSuffixForModel( $finetune['fine_tuned_model'] );
-      return $finetune;
-    }, $finetunes['data']);
+    $res = $this->run( 'GET', '/fine-tunes' );
+    $finetunes = $res['data'];
 
-    //$finetunes_option = $this->core->get_option('openai_finetunes');
-    $fresh_finetunes_options = array_map(function ($finetune) {
-      $entry = [];
-      $model = $finetune['fine_tuned_model'];
-      $entry['suffix'] = $finetune['suffix'];
-      $entry['model'] = $model;
-      //$entry['enabled'] = true;
-      // for ($i = 0; $i < count($finetunes_option); $i++) {
-      //   if ($finetunes_option[$i]['model'] === $model) {
-      //     $entry['enabled'] = $finetunes_option[$i]['enabled'];
-      //     break;
-      //   }
-      // }
-      return $entry;
-    }, $finetunes['data']);
-    $this->core->update_option('openai_finetunes', $fresh_finetunes_options);
+    // Add suffix
+    $finetunes = array_map( function ( $finetune ) {
+      $finetune['suffix'] = $this->getSuffixForModel( $finetune['fine_tuned_model'] );
+      $finetune['createdOn'] = date( 'Y-m-d H:i:s', $finetune['created_at'] );
+      $finetune['updatedOn'] = date( 'Y-m-d H:i:s', $finetune['updated_at'] );
+      $finetune['base_model'] = $finetune['model'];
+      $finetune['model'] = $finetune['fine_tuned_model'];
+      unset( $finetune['object'] );
+      unset( $finetune['hyperparams'] );
+      unset( $finetune['result_files'] );
+      unset( $finetune['training_files'] );
+      unset( $finetune['validation_files'] );
+      unset( $finetune['created_at'] );
+      unset( $finetune['updated_at'] );
+      unset( $finetune['fine_tuned_model'] );
+      return $finetune;
+    }, $finetunes);
+
+    usort( $finetunes, function ( $a, $b ) {
+      return strtotime( $b['createdOn'] ) - strtotime( $a['createdOn'] );
+    });
+
+    $this->core->update_option( 'openai_finetunes', $finetunes );
     return $finetunes;
   }
 
@@ -603,7 +680,7 @@ class Meow_MWAI_Engines_OpenAI
     return null;
   }
 
-  public function getPrice( Meow_MWAI_Query $query, Meow_MWAI_Reply $reply )
+  public function getPrice( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply )
   {
     $model = $query->model;
     $family = null;
@@ -613,7 +690,7 @@ class Meow_MWAI_Engines_OpenAI
     $priceRules = null;
 
     $finetune = false;
-    if ( is_a( $query, 'Meow_MWAI_QueryText' ) ) {
+    if ( is_a( $query, 'Meow_MWAI_Query_Text' ) ) {
       // Finetuned models
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
         $family = $matches[1];
@@ -649,18 +726,18 @@ class Meow_MWAI_Engines_OpenAI
         return $this->calculatePrice( $family, $units, $option, $finetune );
       }
     }
-    else if ( is_a( $query, 'Meow_MWAI_QueryImage' ) ) {
+    else if ( is_a( $query, 'Meow_MWAI_Query_Image' ) ) {
       $family = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
       return $this->calculatePrice( $family, $units, $option, $finetune );
     }
-    else if ( is_a( $query, 'Meow_MWAI_QueryTranscribe' ) ) {
+    else if ( is_a( $query, 'Meow_MWAI_Query_Transcribe' ) ) {
       $family = 'whisper';
       $units = $reply->getUnits();
       return $this->calculatePrice( $family, $units, $option, $finetune );
     }
-    else if ( is_a( $query, 'Meow_MWAI_QueryEmbed' ) ) {
+    else if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
       foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
         if ( $currentModel['model'] == $model ) {
           $family = $currentModel['family'];

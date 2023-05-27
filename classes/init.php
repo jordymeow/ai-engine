@@ -17,6 +17,9 @@ spl_autoload_register(function ( $class ) {
   if ( strpos( $class, 'Meow_MWAI_Modules' ) !== false ) {
     $file = MWAI_PATH . '/classes/modules/' . str_replace( 'meow_mwai_modules_', '', strtolower( $class ) ) . '.php';
   }
+  else if ( strpos( $class, 'Meow_MWAI_Query' ) !== false ) {
+    $file = MWAI_PATH . '/classes/queries/' . str_replace( 'meow_mwai_query_', '', strtolower( $class ) ) . '.php';
+  }
   else if ( strpos( $class, 'Meow_MWAI_Engines' ) !== false ) {
     $file = MWAI_PATH . '/classes/engines/' . str_replace( 'meow_mwai_engines_', '', strtolower( $class ) ) . '.php';
   }
