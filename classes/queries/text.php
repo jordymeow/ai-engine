@@ -144,7 +144,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    */
   public function getPrompt(): ?string {
     if ( !$this->isChat ) {
-      return $this->prompt;
+      return $this->prompt . $this->promptEnding;
     }
     
     $first = reset( $this->messages );
@@ -337,8 +337,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 			$this->setModel( $params['model'] );
 		}
     if ( isset( $params['casuallyFineTuned'] ) && in_array( $params['casuallyFineTuned'], $acceptedValues, true ) ) {
-      $this->promptEnding = "\\n\\n###\\n\\n";
-      $this->stop = "\\n\\n";
+      $this->promptEnding = "\n\n###\n\n";
+      $this->stop = "\n\n";
       $this->casuallyFineTuned = true;
 		}
     if ( isset( $params['prompt'] ) ) {
