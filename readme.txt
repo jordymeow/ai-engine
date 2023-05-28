@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.93
+Stable tag: 1.6.94
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,9 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.93 (2023/05/28) =
+= 1.6.94 (2023/05/28) =
+* Add: Streaming for the chatbot (beta). Depending on the server configuration, it might not work.
+* Fix: The styles of the syntax highlighting were overriden.
 * Fix: Various issues with ID collisions (themes and chatbots).
 * Update: The chatbots tab got a little lifting. Might be easier to figure things out for new users.
 * Info: Please help me finding a solution to successfuly stream data in PHP 💕 Have a look at this [code](https://gist.github.com/jordymeow/4854992e7b4c510083c08ef8f5ca82c3). Test it on your server; does it work? Please come talk about it on my Discord, here(https://discord.com/channels/695088327866581022/1111820027159658616).

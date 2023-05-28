@@ -1,10 +1,12 @@
-// Previous: 1.6.84
-// Current: 1.6.91
+// Previous: 1.6.91
+// Current: 1.6.94
 
+// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
+// AI Engine
 import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
-import { getCircularReplacer, sanitizeToHTML } from './helpers';
+import { getCircularReplacer } from './helpers';
 
 const rawAiName = 'AI: ';
 const rawUserName = 'User: ';
@@ -28,11 +30,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
+  // System Parameters
   const id = system.id;
+  const stream = system.stream || false;
   const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId;
+  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -42,6 +46,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
+  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
@@ -80,7 +85,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         role: 'assistant',
         content: startSentence,
         who: rawAiName,
-        html: startSentence,
         timestamp: new Date().getTime(),
       }];
       setMessages(freshMessages);
@@ -120,15 +124,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage && lastMessage.role === 'user') {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
         content: serverRes.message,
         who: rawAiName,
-        html: serverRes.message,
         timestamp: new Date().getTime(),
       });
       setMessages(freshMessages);
@@ -138,12 +139,19 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
     if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = serverRes.reply;
-      lastMessage.html = serverRes.html;
       if (serverRes.images) {
         lastMessage.images = serverRes.images;
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
+    }
+    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+      lastMessage.content = serverRes.reply;
+      if (serverRes.images) {
+        lastMessage.images = serverRes.images;
+      }
+      lastMessage.timestamp = new Date().getTime();
+      delete lastMessage.isStreaming;
     }
     else {
       const newMessage = {
@@ -151,7 +159,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         role: 'assistant',
         content: serverRes.reply,
         who: rawAiName,
-        html: serverRes.html,
         timestamp: new Date().getTime(),
       };
       if (serverRes.images) {
@@ -161,7 +168,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverRes, messages ]);
+  }, [ serverRes ]);
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -176,7 +183,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
-
     setBusy(true);
     setInputText('');
     const bodyMessages = [...messages, {
@@ -184,18 +190,18 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       role: 'user',
       content: textQuery,
       who: rawUserName,
-      html: sanitizeToHTML(textQuery),
       timestamp: new Date().getTime(),
     }];
     saveMessages(bodyMessages);
+    const freshMessageId = randomStr();
     const freshMessages = [...bodyMessages, {
-      id: randomStr(),
+      id: freshMessageId,
       role: 'assistant',
       content: null,
       who: rawAiName,
-      html: null,
       timestamp: null,
-      isQuerying: true
+      isQuerying: stream ? false : true,
+      isStreaming: stream ? true : false,
     }];
     setMessages(freshMessages);
     const body = {
@@ -206,6 +212,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       contextId: contextId,
       messages: messages,
       newMessage: inputText,
+      stream,
       ...atts
     };
     try {
@@ -216,8 +223,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (restNonce) {
         headers['X-WP-Nonce'] = restNonce;
       }
+      if (stream) {
+        headers['Accept'] = 'text/event-stream';
+      }
 
-      const stream = false;
       if (stream) {
         const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
           body: JSON.stringify(body, getCircularReplacer())
@@ -225,17 +234,39 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
+        let decodedContent = '';
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           for (let i = 0; i < lines.length - 1; i++) {
-            if (debugMode) { console.log('[CHATBOT STREAM] IN: ', lines[i]); }
+            if (lines[i].indexOf('data: ') !== 0) {
+              continue;
+            }
+            const data = JSON.parse(lines[i].replace('data: ', ''));
+            if (debugMode) { console.log('[CHATBOT STREAM] IN: ', data); }
+        
+            if (data['type'] === 'live') {
+              decodedContent += data.data; 
+              setMessages(messages => {
+                const freshMessages = [...messages];
+                const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
+                if (lastMessage && lastMessage.id === freshMessageId) {
+                  lastMessage.content = decodedContent;
+                  lastMessage.timestamp = new Date().getTime();
+                }
+                return freshMessages;
+              });
+            }
+            if (data['type'] === 'end') {
+              const finalData = JSON.parse(data.data);
+              setServerRes(finalData);
+            }
           }
+          buffer = lines[lines.length - 1];
         }
-      }
-      else {
+      } else {
         const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
           body: JSON.stringify(body, getCircularReplacer())
         });

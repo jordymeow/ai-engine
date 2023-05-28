@@ -182,6 +182,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'pricing' => MWAI_OPENAI_MODELS,
 			'chatbots' => $this->core->getChatbots(),
 			'themes' => $this->core->getThemes(),
+			'stream' => $this->core->get_option( 'shortcode_chat_stream' ),
 		] );
 	}
 

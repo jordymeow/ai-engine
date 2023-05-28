@@ -11,6 +11,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public ?string $newMessage = null;
   public ?string $promptEnding = null;
   public bool $casuallyFineTuned = false;
+  public ?int $promptTokens = null;
   
   public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = 'gpt-3.5-turbo' ) {
     parent::__construct( $prompt );
@@ -38,6 +39,14 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       'env' => $this->env,
       'service' => $this->service,
     ];
+  }
+
+  public function getPromptTokens( $refresh = false ): int {
+    if ( $this->promptTokens && !$refresh ) {
+      return $this->promptTokens;
+    }
+    $this->promptTokens = $this->estimateTokens( $this->messages );
+    return $this->promptTokens;
   }
 
   public function getLastPrompt(): string {
@@ -100,7 +109,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
         break;
       }
     }
-    $estimatedTokens = $this->estimateTokens( $this->messages );
+    $estimatedTokens = $this->getPromptTokens();
     if ( !empty( $realMax ) && $estimatedTokens > $realMax ) {
       throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The $foundModel model only accepts a maximum of $realMax tokens. " );
     }

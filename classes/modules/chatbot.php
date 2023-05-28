@@ -83,6 +83,7 @@ class Meow_MWAI_Modules_Chatbot {
 			$params = $request->get_json_params();
 			$id = $params['id'] ?? null;
 			$botId = $params['botId'] ?? null;
+			$stream = $params['stream'] ?? false;
 			$newMessage = trim( $params['newMessage'] ?? '' );
 			$chatbot = null;
 
@@ -149,8 +150,12 @@ class Meow_MWAI_Modules_Chatbot {
 				// Takeover
 				$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 				if ( !empty( $takeoverAnswer ) ) {
-					return new WP_REST_Response( [ 'success' => true, 'reply' => $takeoverAnswer,
-						'html' => $takeoverAnswer, 'usage' => null ], 200 );
+					return new WP_REST_Response( [ 
+						'success' => true,
+						'reply' => $takeoverAnswer,
+						//'html' => $takeoverAnswer, 
+						'usage' => null
+					], 200 );
 				}
 
 				// Moderation
@@ -183,15 +188,21 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			// Process Query
-			if ( MWAI_STREAM ) { 
+			if ( $stream ) { 
 				$streamCallback = function( $reply ) {
-					$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
-					$this->stream_push( [ 'type' => 'stream', 'data' => $raw ] );
+					//$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
+					$raw = $reply;
+					$this->stream_push( [ 'type' => 'live', 'data' => $raw ] );
+					if (  ob_get_level() > 0 ) {
+						ob_flush();
+					}
+					flush();
 				};
+				header( 'Cache-Control: no-cache' );
+				header( 'Content-Type: text/event-stream' );
+				header( 'X-Accel-Buffering: no' ); // This is useful to disable buffering in nginx through headers.
 				ob_implicit_flush( true );
 				ob_end_flush();
-				header( 'Content-Type: text/event-stream' );
-        header( 'Cache-Control: no-cache' );
 			}
 
 			$reply = $this->core->ai->run( $query, $streamCallback );
@@ -200,21 +211,22 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $context ) {
 				$extra = [ 'embeddings' => $context['embeddings'] ];
 			}
-			$html = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
-			if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
-				$html = $this->core->markdown_to_html( $html );
-			}
+
+			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
+			// if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
+			// 	$html = $this->core->markdown_to_html( $rawText );
+			// }
+
 			$restRes = [
 				'success' => true,
 				'reply' => $rawText,
 				'images' => $reply->getType() === 'images' ? $reply->results : null,
-				'html' => $html,
 				'usage' => $reply->usage
 			];
 
 			// Process Reply
-			if ( MWAI_STREAM ) {
-				$this->stream_push( [ 'type' => 'reply', 'data' => $restRes['html'] ] );
+			if ( $stream ) {
+				$this->stream_push( [ 'type' => 'end', 'data' => json_encode( $restRes ) ] );
 				die();
 			}
 			else {
@@ -223,7 +235,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 		}
 		catch ( Exception $e ) {
-			if ( MWAI_STREAM ) { 
+			if ( $stream ) { 
 				$this->stream_push( [ 'type' => 'error', 'data' => $e->getMessage() ] );
 			}
 			else {
@@ -235,9 +247,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function stream_push( $data ) {
 		$out = "data: " . json_encode( $data );
-		error_log( $out );
 		echo $out;
-		//echo "data: ok";
 		echo "\n\n";
 		ob_end_flush();
 		flush();
@@ -268,6 +278,7 @@ class Meow_MWAI_Modules_Chatbot {
 			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' ),
 			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
 			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
+			'stream' => $this->core->get_option( 'shortcode_chat_stream' ),
 		];
 		return $frontSystem;
 	}

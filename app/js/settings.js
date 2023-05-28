@@ -1,5 +1,5 @@
-// Previous: 1.3.92
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.6.94
 
 const prefix = mwai.prefix;
 const domain = mwai.domain;
@@ -14,7 +14,8 @@ const options = mwai.options;
 const session = mwai.session;
 const pricing = mwai.pricing;
 const themes = mwai.themes;
+const stream = !!mwai.stream;
 const chatbots = mwai.chatbots;
 
-export { prefix, domain, apiUrl, restUrl, pluginUrl, userData, isPro,
+export { prefix, domain, apiUrl, restUrl, pluginUrl, userData, isPro, stream,
   isRegistered, restNonce, session, pricing, options, themes, chatbots };

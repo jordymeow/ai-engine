@@ -1,5 +1,5 @@
-// Previous: 1.6.83
-// Current: 1.6.84
+// Previous: 1.6.84
+// Current: 1.6.94
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -285,16 +285,7 @@ const useSpeechRecognition = (onResult) => {
   return { isListening, setIsListening, speechRecognitionAvailable };
 };
 
-const sanitizeToHTML = (html) => {
-  if (html) {
-    html = html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    html = html.replace(/\n/g, '<br />');
-    html = html.trim();
-  }
-  return html;
-};
-
 export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
-  useSpeechRecognition, Microphone, sanitizeToHTML,
+  useSpeechRecognition, Microphone,
   useChrono, formatUserName, formatAiName, processParameters, getCircularReplacer
 };

@@ -315,7 +315,7 @@ class Meow_MWAI_Engines_OpenAI
         $data = [
           'model' => $query->model,
           'usage' => [
-            'prompt_tokens' => 666,
+            'prompt_tokens' => $query->getPromptTokens(),
             'completion_tokens' => $this->streamedTokens
           ],
           'choices' => [ [ 'message' => [ 'content' => $this->streamBuffer ] ] ]

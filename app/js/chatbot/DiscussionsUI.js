@@ -1,8 +1,8 @@
-// Previous: 1.6.83
-// Current: 1.6.89
+// Previous: 1.6.89
+// Current: 1.6.94
 
 // React & Vendor Libs
-const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
+const { useMemo, useEffect } = wp.element;
 
 import { useModClasses } from '@app/chatbot/helpers';
 import { useDiscussionsContext } from '@app/chatbot/DiscussionsContext';

@@ -188,6 +188,7 @@ i18n.COMMON = {
   THEME_EDITOR: __( 'Theme Editor', 'ai-engine' ),
   PREVIEW: __( 'Preview', 'ai-engine' ),
   CUSTOM_SHORTCODE: __( 'Custom Shortcode', 'ai-engine' ),
+  STREAMING: __( 'Streaming', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -219,6 +220,7 @@ i18n.HELP = {
   DYNAMIC_MAX_MESSAGES: __( 'Max Messages will be dynamically decreased based on the max tokens.', 'ai-engine' ),
   CUSTOM_SHORTCODE: __( 'Prefer the standard version of the shortcode (referring only to the id of the chatbot). If you need many chatbots, you can use custom shortcodes. Custom shortcodes are based on the default chatbot; every attributes in it are basically overrides.', 'ai-engine' ),
   USER_FILTER: __( 'Type an User ID, or an IP.', 'ai-engine' ),
+  STREAMING: __( 'The AI\'s response will appear as it\'s being created. Be cautious: this feature\'s ability to manage statistics, limits, and filters is still in its beta phase.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

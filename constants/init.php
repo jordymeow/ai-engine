@@ -144,6 +144,7 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_html' => true,
 	'shortcode_chat_formatting' => true,
 	'shortcode_chat_legacy' => false,
+	'shortcode_chat_stream' => false,
 	'shortcode_chat_typewriter' => false,
 	'speech_recognition' => false,
 	'speech_synthesis' => false,
