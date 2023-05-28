@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.92
+Stable tag: 1.6.93
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.93 (2023/05/28) =
+* Fix: Various issues with ID collisions (themes and chatbots).
+* Update: The chatbots tab got a little lifting. Might be easier to figure things out for new users.
+* Info: Please help me finding a solution to successfuly stream data in PHP 💕 Have a look at this [code](https://gist.github.com/jordymeow/4854992e7b4c510083c08ef8f5ca82c3). Test it on your server; does it work? Please come talk about it on my Discord, here(https://discord.com/channels/695088327866581022/1111820027159658616).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.6.92 (2023/05/27) =
 * Fix: Issues with the new chatbot and finetunes.
 * Fix: Improved and fixed issues related to the finetuned models management (the way it was handled was not optimal). Please refresh your models in the Finetunes tab.
 * Fix: A variable in the chatbot might not be initialized, thus causing a warning.
-* Info: Please help me finding a solution to successfuly stream data in PHP 💕 Have a look at this [code](https://gist.github.com/jordymeow/4854992e7b4c510083c08ef8f5ca82c3). Test it on your server; does it work? Please come talk about it on my Discord, here(https://discord.com/channels/695088327866581022/1111820027159658616).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.90 (2023/05/25) =
 * Update: Support of Dall-E through Azure.

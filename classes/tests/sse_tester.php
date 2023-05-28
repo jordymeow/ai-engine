@@ -7,7 +7,10 @@
 // https://qiita.com/okumurakengo/items/cbe6b3717b95944083a1 (in Japanese)
 
 // If '?SSE' is set, send Server-Sent Events, otherwise we'll display the page.
-if ( isset( $_GET['SSE'] ) ) {
+if ( isset( $_GET['PHPINFO'] ) ) {
+  phpinfo();
+}
+else if ( isset( $_GET['SSE'] ) ) {
 
   // Set the headers for SSE.
   header( 'Cache-Control: no-cache' );

@@ -449,7 +449,7 @@ class Meow_MWAI_Core
 				$hasChanges = true;
 			}
 			// After September 2023, let's remove this if statement.
-			if ( empty( $chatbot['botId'] && $chatbot['name'] === 'default' ) ) {
+			if ( empty( $chatbot['botId'] ) && $chatbot['name'] === 'default' ) {
 				$chatbot['botId'] = sanitize_title( $chatbot['name'] );
 				$hasChanges = true;
 			}

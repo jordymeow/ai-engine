@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.6.91
+// Previous: 1.6.91
+// Current: 1.6.93
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -71,6 +71,22 @@ const retrieveThemes = async () => {
 
 const updateThemes = async (themes) => {
   try {
+
+    // Make sure all the themeId of each theme in themes are unique. Let's loop through them, and if one is identical to any other before, let's add a number to it.
+    const themeIds = [];
+    for (let i = 0; i < themes.length; i++) {
+      let themeId = themes[i].themeId;
+      if (themeIds.includes(themeId)) {
+        let j = 1;
+        while (themeIds.includes(themeId + '-' + j)) {
+          j++;
+        }
+        themeId = themeId + '-' + j;
+      }
+      themeIds.push(themeId);
+      themes[i].themeId = themeId;
+    }
+
     const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
     return res?.themes;
   }

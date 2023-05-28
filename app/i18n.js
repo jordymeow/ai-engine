@@ -184,6 +184,10 @@ i18n.COMMON = {
   PREVIEW: __( 'Preview', 'ai-engine' ),
   LEGACY_CHATBOT: __( 'Legacy Chatbot', 'ai-engine' ),
   DUPLICATE: __( 'Duplicate', 'ai-engine' ),
+  CHATBOT_EDITOR: __( 'Chatbot Editor', 'ai-engine' ),
+  THEME_EDITOR: __( 'Theme Editor', 'ai-engine' ),
+  PREVIEW: __( 'Preview', 'ai-engine' ),
+  CUSTOM_SHORTCODE: __( 'Custom Shortcode', 'ai-engine' ),
 }
 
 i18n.FORMS = {

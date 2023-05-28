@@ -1,7 +1,7 @@
-// Previous: 1.4.0
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.6.93
 
-const { useState, useMemo } = wp.element;
+const { useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
@@ -9,29 +9,21 @@ import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
 import { themes as initThemes } from '@app/settings';
 import { retrieveThemes, updateThemes } from '@app/requests';
 import Theme from './Theme';
+import { randomHash } from '@app/helpers';
 
 const Themes = (props) => {
   const queryClient = useQueryClient();
   const { onSwitchTheme = () => {} } = props;
   const [ busy, setBusy ] = useState(false);
-  const [ themeIndex, setThemeIndex ] = useState(0);
   const { data: themes } = useQuery({
     queryKey: ['themes'], queryFn: retrieveThemes, initialData: initThemes
   });
+  const currentTheme = props.currentTheme;
 
-  const currentTheme = useMemo(() => {
-    if (themes) {
-      const theme = themes[themeIndex];
-      if (!theme) return null;
-      return theme;
-    }
-    return null;
-  }, [themes, themeIndex]);
-
-  const onChangeTab = (index) => {
-    setThemeIndex(index);
-    if (themes[index]?.themeId) {
-      onSwitchTheme(themes[index].themeId);
+  const onChangeTab = (_themeIndex, attributes) => {
+    const theme = themes.find(x => x.themeId === attributes.key);
+    if (theme) {
+      onSwitchTheme(theme.themeId);
     }
   }
 
@@ -40,6 +32,7 @@ const Themes = (props) => {
       setBusy(true);
       const newParams = { ...currentTheme, [id]: value };
       let newThemes = [...themes];
+      const themeIndex = newThemes.findIndex(x => x.themeId === currentTheme.themeId);
       newThemes[themeIndex] = newParams;
       const updatedThemes = await updateThemes(newThemes);
       queryClient.setQueryData(['themes'], updatedThemes);
@@ -53,14 +46,13 @@ const Themes = (props) => {
   const addNewTheme = async () => {
     setBusy(true);
     try {
-      const newThemesArray = [...themes, {
+      const newThemes = await updateThemes([...themes, {
         type: 'css',
-        name: 'Theme ' + (themes.length + 1),
-        themeId: 'theme-' + (themes.length + 1),
+        name: 'New Theme',
+        themeId: 'theme-' + randomHash(),
         settings: [],
         style: ""
-      }];
-      const newThemes = await updateThemes(newThemesArray);
+      }]);
       queryClient.setQueryData(['themes'], newThemes);
     }
     catch (e) {
@@ -71,36 +63,35 @@ const Themes = (props) => {
 
   const deleteCurrentTheme = async () => {
     setBusy(true);
-    const newThemes = [...themes];
-    newThemes.splice(themeIndex, 1);
+    const newThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
+    const firstTheme = newThemes[0];
+    onSwitchTheme(firstTheme ? firstTheme.themeId : null);
     await updateThemes(newThemes);
     await queryClient.setQueryData(['themes'], newThemes);
-    setThemeIndex(prev => prev > 0 ? prev - 1 : 0);
     setBusy(false);
   }
 
   const resetTheme = async () => {
     setBusy(true);
-    const themeToReset = { ...themes[themeIndex] };
-    themeToReset.settings = [];
-    themeToReset.style = "";
     const newThemes = [...themes];
-    newThemes[themeIndex] = themeToReset;
+    const themeIndex = newThemes.findIndex(x => x.themeId === currentTheme.themeId);
+    newThemes[themeIndex] = {
+      type: newThemes[themeIndex].type,
+      name: newThemes[themeIndex].name,
+      themeId: newThemes[themeIndex].themeId,
+      settings: [],
+      style: ""
+    };
     await updateThemes(newThemes);
     await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
 
   return (<>
-    <NekoTabs inversed onChange={onChangeTab} currentTab={themeIndex}
-      action={<>
-        <NekoButton className="primary-block" icon='plus' onClick={addNewTheme} />
-        {themes && themes[themeIndex]?.type !== 'internal' &&
-          <NekoButton className="danger" icon='delete' onClick={deleteCurrentTheme} />
-        }
-      </>}>
+    <NekoTabs inversed onChange={onChangeTab} currentTab={currentTheme?.themeId}
+      action={<><NekoButton className="primary-block" icon='plus' onClick={addNewTheme} /></>}>
       {themes?.map(x => <NekoTab key={x.themeId} title={x.name} busy={busy}>
-        <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} />
+        <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} deleteTheme={deleteCurrentTheme} />
       </NekoTab>)}
     </NekoTabs>
   </>);

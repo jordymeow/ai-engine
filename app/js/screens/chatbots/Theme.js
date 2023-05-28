@@ -1,15 +1,18 @@
-// Previous: 1.4.1
-// Current: 1.4.8
+// Previous: 1.4.8
+// Current: 1.6.93
 
 // NekoUI
 import { NekoButton, NekoSpacer } from '@neko-ui';
+import { NekoCollapsableCategories, NekoCollapsableCategory } from '@neko-ui';
+
+import i18n from '@root/i18n';
 
 import ChatGPTTheme from './themes/ChatGPTTheme';
 import CustomTheme from './themes/CustomTheme';
 import MessagesTheme from './themes/MessagesTheme';
 
 const Theme = (props) => {
-  const { theme, updateTheme, resetTheme } = props;
+  const { theme, updateTheme, resetTheme, deleteTheme } = props;
 
   const onResetTheme = () => {
     resetTheme();
@@ -33,11 +36,23 @@ const Theme = (props) => {
       <CustomTheme theme={theme} onUpdateTheme={updateTheme} />
     )}
 
-    <NekoSpacer line={true} medium />
+    <NekoSpacer />
 
-    <NekoButton fullWidth className="danger" onClick={onResetTheme}>
-      Reset Theme
-    </NekoButton>
+    <NekoCollapsableCategory title={i18n.COMMON.ACTIONS} />
+
+    <div style={{ display: 'flex', marginTop: 10 }}>
+      {/* <NekoButton className="primary" onClick={duplicateCurrentTheme}>
+        {i18n.COMMON.DUPLICATE}
+      </NekoButton> */}
+      <NekoButton className="secondary" onClick={onResetTheme}>
+        {i18n.COMMON.RESET}
+      </NekoButton>
+      <div style={{ flex: 'auto' }} />
+      <NekoButton className="danger" disabled={theme.type === 'internal'}
+        onClick={deleteTheme}>
+        {i18n.COMMON.DELETE}
+      </NekoButton>
+    </div>
   </>);
 };
 
