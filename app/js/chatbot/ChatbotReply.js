@@ -1,5 +1,5 @@
-// Previous: 1.6.89
-// Current: 1.6.94
+// Previous: 1.6.94
+// Current: 1.6.95
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Typed from 'typed.js';
@@ -82,9 +82,9 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
 
-  const [images, setImages] = useState(message?.images || []);
+  const [images, setImages] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, []);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -99,9 +99,9 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
         <div className={modCss('mwai-gallery')}>
-          {images.length > 0 && images.map((image, index) => (
+          {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img key={index} src={image} onError={() => handleImageError(index)} />
+              <img src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -133,7 +133,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
       const scroll = scrollTop + clientHeight;
-      setUserScrolledUp(scrollHeight - scroll < 20);
+      setUserScrolledUp(scrollHeight - scroll > 20);
     };
     conversationRef.current.addEventListener('scroll', handleScroll);
     return () => {
@@ -210,7 +210,6 @@ const ChatbotReply = ({ message, conversationRef }) => {
       const selector = mainElement.current.querySelectorAll('pre code');
       selector.forEach((el) => {
         hljs.highlightElement(el);
-        console.log("RENDERED");
         const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
         classesToReplace.forEach((oldClass) => {
           const elementsWithOldClass = el.querySelectorAll('.' + oldClass);
@@ -243,7 +242,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
       }
-      else if (typewriter) {
+      else if (typewriter && !message.isStreaming) {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;

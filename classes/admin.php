@@ -2,9 +2,7 @@
 
 
 class Meow_MWAI_Admin extends MeowCommon_Admin {
-
 	public $core;
-
 	public $contentGeneratorEnabled;
 	public $imagesGeneratorEnabled;
 	public $playgroundEnabled;
@@ -14,16 +12,21 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 		$this->core = $core;
 		parent::__construct( MWAI_PREFIX, MWAI_ENTRY, MWAI_DOMAIN, class_exists( 'MeowPro_MWAI_Core' ) );
 		if ( is_admin() ) {
-
 			$this->contentGeneratorEnabled = $this->core->get_option( 'module_generator_content' );
 			$this->imagesGeneratorEnabled = $this->core->get_option( 'module_generator_images' );
 			$this->playgroundEnabled = $this->core->get_option( 'module_playground' );
-			if ( $this->core->can_access_settings() ) {
+			$can_access_settings = $this->core->can_access_settings();
+			$can_access_features = $this->core->can_access_features();
+
+			if ( $can_access_settings || $can_access_features ) {
+				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+			}
+			
+			if ( $can_access_settings ) {
 				add_action( 'admin_menu', array( $this, 'app_menu' ) );
 			}
 
-			if ( $this->core->can_access_features() ) {
-				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+			if ( $can_access_features ) {
 				add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 
 				// Only if the Suggestions are enabled.

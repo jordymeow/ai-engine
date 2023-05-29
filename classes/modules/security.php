@@ -19,8 +19,13 @@ class Meow_MWAI_Modules_Security {
   }
 
   function check_banned_ips( $ok, $query, $limits ) {
-    if ( $ok !== true ) {
+    if ( $ok !== true || empty( $this->banned_ips ) ) {
       return $ok;
+    }
+    if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
+      if ( $this->core->can_access_settings() ) {
+        return $ok;
+      }
     }
     $ip = $this->core->get_ip_address();
     if ( $this->is_blocked_ip( $ip, $this->banned_ips ) ) {
@@ -31,8 +36,13 @@ class Meow_MWAI_Modules_Security {
   }
 
   function check_banned_words( $ok, $query, $limits ) {
-    if ( $ok !== true ) {
+    if ( $ok !== true || empty( $this->banned_words ) ) {
       return $ok;
+    }
+    if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
+      if ( $this->core->can_access_settings() ) {
+        return $ok;
+      }
     }
     $text = $query->getLastPrompt();
     foreach ( $this->banned_words as $word ) {
