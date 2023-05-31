@@ -1,5 +1,5 @@
-// Previous: 1.6.91
-// Current: 1.6.94
+// Previous: 1.6.94
+// Current: 1.6.96
 
 // React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
@@ -36,7 +36,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
+  const contextId = system.contextId; 
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -122,9 +122,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
     if (!serverRes.success) {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-        freshMessages.pop();
+        freshMessages.splice(freshMessages.length - 1, 1);
       }
-      freshMessages.pop();
+      if (lastMessage) {
+        freshMessages.splice(freshMessages.indexOf(lastMessage), 1);
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -151,7 +153,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         lastMessage.images = serverRes.images;
       }
       lastMessage.timestamp = new Date().getTime();
-      delete lastMessage.isStreaming;
+      // No delete here!
     }
     else {
       const newMessage = {
@@ -180,9 +182,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [botId]);
 
   const onSubmit = async (textQuery) => {
+
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
+
     setBusy(true);
     setInputText('');
     const bodyMessages = [...messages, {
@@ -245,9 +249,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
               continue;
             }
             const data = JSON.parse(lines[i].replace('data: ', ''));
-            if (debugMode) { console.log('[CHATBOT STREAM] IN: ', data); }
         
             if (data['type'] === 'live') {
+              if (debugMode) { console.log('[CHATBOT STREAM] LIVE: ', data); }
               decodedContent += data.data; 
               setMessages(messages => {
                 const freshMessages = [...messages];
@@ -259,14 +263,20 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
                 return freshMessages;
               });
             }
-            if (data['type'] === 'end') {
+            else if (data['type'] === 'error') {
+              if (debugMode) { console.log('[CHATBOT STREAM] ERROR: ', data); }
+              setServerRes({ success: false, message: data['data'] });
+            }
+            else if (data['type'] === 'end') {
+              if (debugMode) { console.log('[CHATBOT STREAM] END: ', data); }
               const finalData = JSON.parse(data.data);
               setServerRes(finalData);
             }
           }
           buffer = lines[lines.length - 1];
         }
-      } else {
+      }
+      else {
         const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
           body: JSON.stringify(body, getCircularReplacer())
         });

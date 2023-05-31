@@ -153,7 +153,6 @@ class Meow_MWAI_Modules_Chatbot {
 					return new WP_REST_Response( [ 
 						'success' => true,
 						'reply' => $takeoverAnswer,
-						//'html' => $takeoverAnswer, 
 						'usage' => null
 					], 200 );
 				}
@@ -213,6 +212,7 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
+			// TODO: There is no need for the shortcode_chat_formatting sice Markdown is handled on the client side.
 			// if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
 			// 	$html = $this->core->markdown_to_html( $rawText );
 			// }
@@ -235,11 +235,11 @@ class Meow_MWAI_Modules_Chatbot {
 
 		}
 		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
 			if ( $stream ) { 
-				$this->stream_push( [ 'type' => 'error', 'data' => $e->getMessage() ] );
+				$this->stream_push( [ 'type' => 'error', 'data' => $message ] );
 			}
 			else {
-				$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
 				return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 			}
 		}

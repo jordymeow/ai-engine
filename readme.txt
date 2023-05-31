@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.95
+Stable tag: 1.6.96
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.6.96 (2023/05/31) =
+* Fix: Errors weren't sent correctly to the chatbot with stream.
+* Fix: Avoid limits override to affect the system limits.
+* Update: Removed the condition on apiRef (which was the API KEY used for the requests), as it's not clear how it will behave based on the usage of Azure.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* ⭐️ Would you like to help me with something? Using [Local](https://localwp.com/), streaming doesn't work with PHP. You can try it by using [this code](https://gist.github.com/jordymeow/4854992e7b4c510083c08ef8f5ca82c3). If you find a way to make it work (you'll need to modify the Nginx or Apache config - not the code), please let me know! Would be awesome.
+
 = 1.6.95 (2023/05/29) =
 * Fix: There were issues with custom roles.
 * Fix: Bypass security filters on words and IPs for embeddings for users with the right capability.
 * Fix: Avoid the typewriter and the streaming to collide.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* ⭐️ Would you like to help me with something? Using [Local](https://localwp.com/), streaming doesn't work with PHP. You can try it by using [this code](https://gist.github.com/jordymeow/4854992e7b4c510083c08ef8f5ca82c3). If you find a way to make it work (you'll need to modify the Nginx or Apache config - not the code), please let me know! Would be awesome.
 
 = 1.6.94 (2023/05/28) =
 * Add: Streaming for the chatbot (beta). Depending on the server configuration, it might not work.
