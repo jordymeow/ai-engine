@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.96
+Stable tag: 1.6.97
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.96 (2023/05/31) =
+= 1.6.97 (2023/05/31) =
+* Fix: Additional fix for limits for admins and editors.
 * Fix: Errors weren't sent correctly to the chatbot with stream.
 * Fix: Avoid limits override to affect the system limits.
 * Update: Removed the condition on apiRef (which was the API KEY used for the requests), as it's not clear how it will behave based on the usage of Azure.
