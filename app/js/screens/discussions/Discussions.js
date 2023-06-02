@@ -1,17 +1,19 @@
-// Previous: 1.6.76
-// Current: 1.6.82
+// Previous: 1.6.82
+// Current: 1.6.98
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import styled from 'styled-components';
 
 import { apiUrl, restNonce } from '@app/settings';
 
+// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import i18n from '@root/i18n';
-import { tableDateTimeFormatter, tableUserIPFormatter } from '../../helpers';
+import { tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
 
 const StyledContext = styled.div`
   font-size: 12px;
@@ -43,7 +45,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings && <StyledEmbedding>
-        {embeddings.map((embedding, index) => <div key={index}>
+        {embeddings.map(embedding => <div>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -94,8 +96,7 @@ const Discussions = () => {
     filters: filters, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
   });
   const { isFetching: isFetchingChats, data: chatsData } = useQuery({
-    queryKey: ['chats', chatsQueryParams], 
-    queryFn: () => retrieveDiscussions(chatsQueryParams),
+    queryKey: ['chats', chatsQueryParams], queryFn: () => retrieveDiscussions(chatsQueryParams),
     keepPreviousData: true, refetchInterval: autoRefresh ? 1000 * 5 : null
   });
 
@@ -117,9 +118,9 @@ const Discussions = () => {
       let formattedCreated = tableDateTimeFormatter(x.created);
       let formattedUpdated = tableDateTimeFormatter(x.updated);
       let user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
-      let userMessages = messages?.filter(y => y.role === 'user' || y.type === 'user');
+      let userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
       let firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
-      let lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length -1].text : '';
+      let lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
       return {
         id: x.id,
         chatId: x.chatId,
@@ -133,7 +134,7 @@ const Discussions = () => {
         created: formattedCreated,
         updated: formattedUpdated
       }
-    });
+    })
   }, [chatsData]);
 
   const discussion = useMemo(() => {
@@ -145,7 +146,8 @@ const Discussions = () => {
     try {
       messages = JSON.parse(currentDiscussion.messages);
       extra = JSON.parse(currentDiscussion.extra);
-    } catch (e) {
+    }
+    catch (e) {
       console.log(e);
     }
     return {
@@ -168,11 +170,12 @@ const Discussions = () => {
       }
       await deleteDiscussions();
       queryClient.invalidateQueries(['chats']);
+    } else {
+      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+      const selectedChatIds = selectedChats.map(x => x.chatId);
+      await deleteDiscussions(selectedChatIds);
+      setSelectedIds([]);
     }
-    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-    const selectedChatIds = selectedChats.map(x => x.chatId);
-    await deleteDiscussions(selectedChatIds);
-    setSelectedIds([]);
     queryClient.invalidateQueries(['chats']);
     setBusyAction(false);
   }
@@ -200,7 +203,7 @@ const Discussions = () => {
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
               disabled={isFetchingChats}
               onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ['chats'] });
+                queryClient.invalidateQueries(['chats']);
             }}>{i18n.COMMON.REFRESH}</NekoButton>}
             {selectedIds.length > 0 && <>
               <NekoButton className="danger" disabled={false}
@@ -249,7 +252,8 @@ const Discussions = () => {
 
       <NekoColumn minimal style={{ flex: 1 }}>
 
-        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
+        <NekoBlock className="primary" title="Selected Discussion" action={<>
+        </>}>
 
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
@@ -259,7 +263,8 @@ const Discussions = () => {
 
         </NekoBlock>
 
-        {!!discussion && <NekoBlock className="primary" title="Information" action={<></>}>
+        {!!discussion && <NekoBlock className="primary" title="Information" action={<>
+        </>}>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ width: 100, fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -280,6 +285,7 @@ const Discussions = () => {
             <div style={{ width: 100, fontWeight: 'bold' }}>UserID</div>
             <div>{discussion?.extra?.userId}</div>
           </div>
+
         </NekoBlock>}
 
       </NekoColumn>

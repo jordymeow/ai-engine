@@ -1,11 +1,11 @@
-// Previous: 1.6.0
-// Current: 1.6.59
+// Previous: 1.6.59
+// Current: 1.6.98
 
 // NekoUI
 import { NekoInput, NekoCollapsableCategory, NekoSpacer } from '@neko-ui';
 
 import i18n from '@root/i18n';
-import { toHTML } from '@app/helpers';
+import { toHTML } from '@app/helpers-admin';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
 import { NekoColorPicker } from "@app/components/NekoColorPicker";
 
@@ -56,6 +56,7 @@ const MessagesTheme = (props) => {
       </div>
 
       <div className="mwai-builder-row">
+        
         <div className="mwai-builder-col">
           <label>{i18n.COMMON.BACK_PRIMARY_COLOR}:</label>
           <div style={{ display: 'flex' }}>
@@ -119,6 +120,7 @@ const MessagesTheme = (props) => {
             />
           </div>
         </div>
+
       </div>
 
       <NekoSpacer />

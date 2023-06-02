@@ -1,5 +1,5 @@
-// Previous: 1.6.93
-// Current: 1.6.94
+// Previous: 1.6.94
+// Current: 1.6.98
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +15,7 @@ import { retrieveChatbots, retrieveThemes, updateChatbots } from '@app/requests'
 import ChatbotParams from '@app/screens/chatbots/ChatbotParams';
 import Themes from '@app/screens/chatbots/Themes';
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
-import { randomHash } from '@app/helpers';
+import { randomHash } from '@app/helpers-admin';
 
 const StyledShortcode = Styled.div`
   pre {
@@ -115,10 +115,12 @@ const Chatbots = (props) => {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
+
     if ( id === 'botId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
+
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -173,6 +175,7 @@ const Chatbots = (props) => {
 
   return (<>
     <NekoWrapper>
+
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
         <NekoContainer contentStyle={{ padding: 10, marginBottom: -20 }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -206,7 +209,9 @@ const Chatbots = (props) => {
           </div>
         </NekoContainer>
       </NekoColumn>
+
       {(chatbotEditor || themeEditor) && <NekoColumn minimal style={{ margin: 10 }}>
+
         {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
           action={<><NekoButton className="primary-block" icon='plus' onClick={() => addNewChatbot()} /></>}>
           {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
@@ -217,13 +222,17 @@ const Chatbots = (props) => {
             />
           </NekoTab>)}
         </NekoTabs>}
+
         {chatbotEditor && themeEditor && <NekoSpacer large />}
+    
         {themeEditor && <Themes themes={themes}
           options={options} updateOption={updateOption}
           currentTheme={currentTheme}
           onSwitchTheme={onSwitchTheme}
         />}
+
       </NekoColumn>}
+      
       {chatbotPreview && <NekoColumn minimal>
         <small style={{ marginLeft: 15, marginBottom: -20 }}>
           Chatbot: <b>{currentChatbot?.name}</b> - Theme: <b>{currentTheme?.name}</b>
@@ -251,6 +260,7 @@ const Chatbots = (props) => {
         </div>
         <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
       </NekoColumn>}
+
     </NekoWrapper>
   </>);
 };

@@ -1,8 +1,8 @@
-// Previous: 1.2.2
-// Current: 1.6.72
+// Previous: 1.6.72
+// Current: 1.6.98
 
 import { NekoTypo } from '@neko-ui';
-import { useModels } from "../helpers";
+import { useModels } from "@app/helpers-admin";
 
 // React & Vendor Libs
 const { __ } = wp.i18n;

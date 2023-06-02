@@ -1,5 +1,5 @@
-// Previous: 1.2.2
-// Current: 1.3.73
+// Previous: 1.3.73
+// Current: 1.6.98
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -9,7 +9,7 @@ import { NekoButton, NekoSpacer } from '@neko-ui';
 
 import i18n from "@root/i18n";
 import { isRegistered } from '@app/settings';
-import { toHTML, useModels } from '@app/helpers';
+import { toHTML, useModels } from '@app/helpers-admin';
 import { StyledSidebar } from "@app/styles/StyledSidebar";
 
 const UsageCosts = (options) => {

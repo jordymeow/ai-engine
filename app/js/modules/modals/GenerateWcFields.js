@@ -1,16 +1,19 @@
-// Previous: 1.3.66
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.6.98
 
+// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
+// NekoUI
 import { NekoWrapper, NekoModal, NekoInput, NekoButton, NekoTextArea,
   NekoSpacer } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
+// AI Engine
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { StyledForm } from '@app/styles/CommonStyles';
 import i18n from '@root/i18n';
-import { useLanguages } from '@app/helpers';
+import { useLanguages } from '@app/helpers-admin';
 
 const promptBase = "Here is the product: {USER_ENTRY}\n\nBased on the product, write a description of this product (between 120 and 240 words), a short description (between 20-49 words), a SEO-friendly title, and tags, separated by commas. Write it in {LANGUAGE}. Use this format:\nDESCRIPTION: \nSHORT_DESCRIPTION: \nSEO_TITLE: \nTAGS: \n\n";
 
@@ -70,8 +73,6 @@ const GenerateWcFields = (props) => {
       setShortDesc(info.shortDescription);
       setSeoTitle(info.seoTitle);
       setTags(info.keywords.join(", "));
-    } else {
-      setError(true);
     }
   }
 
@@ -79,7 +80,8 @@ const GenerateWcFields = (props) => {
     const titleField = document.getElementById('title');
     if (titleField) {
       titleField.value = seoTitle;
-    } else {
+    }
+    else {
       alert("The title cannot be written (the field could not be found).");
     }
   }
@@ -88,7 +90,8 @@ const GenerateWcFields = (props) => {
     const contentField = tinyMCE.get('content');
     if (contentField) {
       contentField.setContent(desc);
-    } else {
+    }
+    else {
       alert("The content cannot be written (the field could not be found).");
     }
   }
@@ -97,7 +100,8 @@ const GenerateWcFields = (props) => {
     const contentField = tinyMCE.get('excerpt');
     if (contentField) {
       contentField.setContent(shortDesc);
-    } else {
+    }
+    else {
       alert("The content cannot be written (the field could not be found).");
     }
   }
@@ -106,7 +110,8 @@ const GenerateWcFields = (props) => {
     const tagsField = document.getElementById('new-tag-product_tag');
     if (tagsField) {
       tagsField.value = tags;
-    } else {
+    }
+    else {
       alert("The tags cannot be written (the field could not be found).");
     }
   }
@@ -121,23 +126,8 @@ const GenerateWcFields = (props) => {
 
   const cleanClose = async () => {
     onClose();
-    setError(false);
+    setError(null);
     setBusy(false);
-  }
-
-  if (error) {
-    return (
-      <NekoWrapper>
-        <NekoModal isOpen={isOpen} onRequestClose={cleanClose}
-          title={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR}
-          content={<StyledForm>
-            <div style={{ color: 'red' }}>An error occurred during generation. Please try again.</div>
-          </StyledForm>}
-          ok="Close"
-          onOkClick={cleanClose}
-        />
-      </NekoWrapper>
-    );
   }
 
   return (
@@ -195,5 +185,3 @@ const GenerateWcFields = (props) => {
     </NekoWrapper>
   );
 };
-
-export default GenerateWcFields;

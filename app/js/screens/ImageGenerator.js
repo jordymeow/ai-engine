@@ -1,5 +1,5 @@
-// Previous: 1.6.0
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.6.98
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -9,7 +9,7 @@ import { NekoPage, NekoSelect, NekoOption, NekoModal, NekoButton, NekoCheckbox, 
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoInput, NekoMessage } from '@neko-ui';
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
-import { OptionsCheck } from "../helpers";
+import { OptionsCheck } from "@app/helpers-admin";
 import { AiNekoHeader, StyledGallery,
   StyledTitleWithButton } from "../styles/CommonStyles";
 import { StyledSidebar } from "../styles/StyledSidebar";
@@ -53,6 +53,7 @@ const ImageGenerator = () => {
   const [continuousMode, setContinuousMode] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // Results
   const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
@@ -63,6 +64,7 @@ const ImageGenerator = () => {
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
 
+  // Variables
   const prompt = template?.prompt;
   const maxResults = template?.maxResults;
 
@@ -83,7 +85,7 @@ const ImageGenerator = () => {
       setCaption(prompt);
       setAlt(prompt);
     }
-  }, [selectedUrl])
+  }, [selectedUrl, prompt]);
 
   const onGoBack = () => {
     if (urlIndex > 0) {
@@ -110,10 +112,7 @@ const ImageGenerator = () => {
           maxResults,
       }});
       if (continuousMode) {
-        // Introduced subtle bug: using concatenation with undefined to test fallback
-        if (res.data && Array.isArray(res.data)) {
-          setUrls(prev => [...prev || [], ...res.data]);
-        }
+        setUrls([...urls, ...res.data]);
       }
       else {
         setUrls(res.data);
@@ -138,9 +137,8 @@ const ImageGenerator = () => {
           url: selectedUrl, title, description,
           caption, alt, filename,
       }});
-      // Introduced bug: referencing res.attachmentId directly, which might be undefined
       setCreatedMediaIds(prev => [...prev, {
-        id: res.attachmentId || res.id,
+        id: res.attachmentId,
         url: selectedUrl
       }]);
     }
@@ -153,6 +151,7 @@ const ImageGenerator = () => {
     }
   }
 
+  // Download the file (selected URL) with the given filename
   const onDownload = () => {
     const link = document.createElement('a');
     link.href = selectedUrl;
@@ -214,19 +213,19 @@ const ImageGenerator = () => {
                 <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                   <StyledInputWrapper>
                     <label>Title:</label>
-                    <NekoTextArea value={title} onBlur={(e) => setTitle(e.target.value)} rows={2} />
+                    <NekoTextArea value={title} onBlur={setTitle} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Caption:</label>
-                    <NekoTextArea value={caption} onBlur={(e) => setCaption(e.target.value)} rows={2} />
+                    <NekoTextArea value={caption} onBlur={setCaption} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Description:</label>
-                    <NekoTextArea value={description} onBlur={(e) => setDescription(e.target.value)} rows={2} />
+                    <NekoTextArea value={description} onBlur={setDescription} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Alternative Text:</label>
-                    <NekoTextArea value={alt} onBlur={(e) => setAlt(e.target.value)} rows={2} />
+                    <NekoTextArea value={alt} onBlur={setAlt} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Filename:</label>
@@ -258,7 +257,7 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(e) => setMaxResults(e.target.value)}>
+                    value={maxResults} description="" onChange={(e) => setMaxResults(parseInt(e.target.value))}>
                     {ImagesCount.map((count) => {
                       return <NekoOption key={count} id={count} value={count} label={count} />
                     })}
@@ -271,7 +270,7 @@ const ImageGenerator = () => {
               <NekoTextArea value={prompt} onChange={(e) => setPrompt(e.target.value)}
                 style={{ marginTop: 20 }} />
               <StyledGallery>
-                {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} />)}
+                {urls.map(url => <img key={url} src={url} onClick={() => setSelectedUrl(url)} />)}
                 {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
               </StyledGallery>
             </NekoContainer>
@@ -284,7 +283,7 @@ const ImageGenerator = () => {
             <h2 style={{ marginTop: 0 }}>Settings</h2>
             <NekoCheckbox id="continuous_mode" label="Continuous" value="1" checked={continuousMode}
               description="New images will be added to the already generated images."
-              onChange={() => setContinuousMode(prev => !prev)} />
+              onChange={setContinuousMode} />
           </NekoContainer>
         </NekoColumn>
 
@@ -298,7 +297,6 @@ const ImageGenerator = () => {
       />
       
     </NekoPage>
-    
   );
 };
 

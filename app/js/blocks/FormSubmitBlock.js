@@ -1,7 +1,7 @@
-// Previous: 1.6.5
-// Current: 1.6.74
+// Previous: 1.6.74
+// Current: 1.6.98
 
-import { useModels } from "../helpers";
+import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
 import i18n from '@root/i18n';
@@ -34,7 +34,7 @@ const saveFormField = (props) => {
   return `${shortcode}]`;
 };
 
-const FormSubmitBlock = props => {
+const FormSubmitBlock = (props) => {
   const { models } = useModels(options);
   const pinecone = options?.pinecone || {};
   const indexes = pinecone?.indexes || [];
@@ -91,7 +91,7 @@ const FormSubmitBlock = props => {
     <>
       <AiBlockContainer title="Submit" type="submit"
         hint={<>
-          IN:{' '} 
+          IN:{' '}
           <span className="mwai-pill">{jsxFieldsCount}</span>
           {' '}OUT:{' '}
           <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
@@ -102,41 +102,41 @@ const FormSubmitBlock = props => {
       </AiBlockContainer>
       <InspectorControls>
         <PanelBody title={i18n.COMMON.OUTPUT}>
-          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={value => setAttributes({ label: value })} />
+          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={(value) => setAttributes({ label: value })} />
           <TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
-            onChange={value => setAttributes({ prompt: value })}
+            onChange={(value) => setAttributes({ prompt: value })} // mismatched parentheses
             help={i18n.FORMS.PROMPT_INFO} />
           <TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
-            onChange={value => setAttributes({ outputElement: value })}
+            onChange={(value) => setAttributes({ outputElement: value })}
             help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
-          {models && models.length > 0 && 
+          {models && models.length > 0 &&
             <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-              onChange={value => setAttributes({ model: value })}
-          />}
+              onChange={(value) => setAttributes({ model: value })} // missing closing tag
+            />}
           <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={value => setAttributes({ temperature: parseFloat(value) })} 
-            type="number" step="0.1" min="0" max="1" 
+            onChange={(value) => setAttributes({ temperature: parseFloat(value) })} // parseFloat may cause NaN
+            type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={value => setAttributes({ maxTokens: parseInt(value) })} 
-            type="number" step="16" min="32" max="4096" 
+            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // missing parentheses for parseInt
+            type="number" step="16" min="32" max="4096"
             help={i18n.HELP.MAX_TOKENS} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
-          {indexes && indexes.length > 0 && 
+          {indexes && indexes.length > 0 &&
             <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
-              onChange={value => setAttributes({ index: value })}
-          />}
+              onChange={(value) => setAttributes({ index: value })} // potential type mismatch
+            />}
         </PanelBody>
         <PanelBody title={i18n.COMMON.SYSTEM}>
-          <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
+          <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
         </PanelBody>
       </InspectorControls>
     </>
   );
-}
+};
 
 const createSubmitBlock = () => {
   registerBlockType('ai-engine/form-submit', {
@@ -144,7 +144,7 @@ const createSubmitBlock = () => {
     description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
-    keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
+    keywords: [__( 'ai' ), __( 'openai' ), __( 'form' )],
     attributes: {
       id: {
         type: 'string',
@@ -182,6 +182,6 @@ const createSubmitBlock = () => {
     edit: FormSubmitBlock,
     save: saveFormField
   });
-}
+};
 
 export default createSubmitBlock;

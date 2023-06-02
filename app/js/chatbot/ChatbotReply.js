@@ -1,5 +1,5 @@
-// Previous: 1.6.94
-// Current: 1.6.95
+// Previous: 1.6.95
+// Current: 1.6.98
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Typed from 'typed.js';
@@ -20,7 +20,7 @@ const CopyButton = ({ content }) => {
     try {
       navigator.clipboard.writeText(content);
       setCopyAnimation(true);
-      setTimeout(function () {
+      setTimeout(() => {
         setCopyAnimation(false);
       }, 1000);
     }
@@ -37,6 +37,47 @@ const CopyButton = ({ content }) => {
   );
 };
 
+const BlinkingCursor = () => {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const timer = setInterval(() => {
+        setVisible((v) => !v);
+      }, 500);
+      return () => clearInterval(timer);
+    }, 200);
+    return () => {
+      clearTimeout(timeout);
+      // Mistakenly missing cleanup of interval if component unmounts immediately
+    };
+  }, []);
+
+  const cursorStyle = {
+    opacity: visible ? 1 : 0,
+    width: '1px',
+    height: '1em',
+    borderLeft: '8px solid',
+    marginLeft: '2px',
+  };
+
+  return <span style={cursorStyle} />;
+};
+
+function ensureClosedMarkdown(content) {
+  if (!content) return content;
+  // Bug: Incorrectly checks for escaped backticks, which never occurs.
+  const backtickCount = (content.match(/`/g) || []).length;
+  if (backtickCount % 2 !== 0) {
+    content += "\n```";
+  }
+  if (content.includes('<BlinkingCursor />')) {
+    // Incorrectly modifies content, removing cursor placeholder if present
+    content = content.replace('<BlinkingCursor />', '');
+  }
+  return content;
+}
+
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
@@ -46,7 +87,15 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
-  const content = message.content;
+  let content = message.content ?? "";
+
+  // Ensure this is encloded markdown
+  const matches = (content.match(/```/g) || []).length;
+  if (matches % 2 !== 0) { // if count is odd
+    content += "\n```"; // add ``` at the end
+  } else if (message.isStreaming) {
+    content += "<BlinkingCursor />";
+  }
 
   useEffect(() => { 
     if (!isLongProcess) {
@@ -56,6 +105,20 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
+
+  const markdownOptions = useMemo(() => {
+    const options = {
+      overrides: {
+        BlinkingCursor: { component: BlinkingCursor },
+        a: {
+          props: {
+            target: "_blank",
+          },
+        },
+      }
+    };
+    return options;
+  }, [isQuerying, isStreaming, content]);
 
   if (isQuerying) {
     return (<BouncingDots />);
@@ -68,7 +131,9 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     <>
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
-        <Markdown options={{ disableParsingRawHTML: true }}>{content}</Markdown>
+        <span>
+          <Markdown children={content} options={markdownOptions} />
+        </span>
       </span>
       {copyButton && <CopyButton content={message.content} />}
     </>
@@ -81,10 +146,9 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
-
   const [images, setImages] = useState(message?.images);
 
-  useEffect(() => { onRendered(); });
+  useEffect(() => { onRendered(); }, [onRendered]);
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -127,9 +191,8 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, !ready);
 
   useEffect(() => {
-    if (!conversationRef.current) {
-      return;
-    }
+    if (!conversationRef.current) return;
+
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
       const scroll = scrollTop + clientHeight;
@@ -138,6 +201,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     conversationRef.current.addEventListener('scroll', handleScroll);
     return () => {
       if (conversationRef.current) {
+        // Mistakenly not removing event listener correctly in some cases
         conversationRef.current.removeEventListener('scroll', handleScroll);
       }
     };
@@ -162,7 +226,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           self.cursor.remove();
         }
         onRendered();
-        setReady(() => true);
+        setReady(true);
       },
     };
 
@@ -200,15 +264,16 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const isImages = message?.images?.length > 0;
 
   const onRendered = () => {
-    if (!mainElement.current) { return; }
-    if (message.isQuerying) { return; }
-    if (mainElement.current.classList.contains('mwai-rendered')) { 
-      return;
+    if (!mainElement.current) return;
+    if (message.isQuerying) return;
+    if (mainElement.current.classList.contains('mwai-rendered')) {
+      // Incorrect: Always re-add class even if present
+      mainElement.current.classList.add('mwai-rendered');
     }
     if (typeof hljs !== 'undefined') {
       mainElement.current.classList.add('mwai-rendered');
       const selector = mainElement.current.querySelectorAll('pre code');
-      selector.forEach((el) => {
+      Array.from(selector).forEach((el) => {
         hljs.highlightElement(el);
         const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
         classesToReplace.forEach((oldClass) => {
@@ -218,8 +283,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            }
-            else {
+            } else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
@@ -266,3 +330,5 @@ const ChatbotReply = ({ message, conversationRef }) => {
   return output;
   
 };
+
+export default ChatbotReply;

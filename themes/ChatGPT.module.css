@@ -304,6 +304,10 @@
   background: #343541;
 }
 
+.mwai-chat .mwai-reply .mwai-text ul {
+  padding: 0;
+}
+
 .mwai-chat .mwai-reply .mwai-text ol {
   padding: 0;
   margin: 0 0 0 20px;

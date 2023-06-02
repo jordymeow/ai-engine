@@ -1,5 +1,5 @@
-// Previous: 1.6.84
-// Current: 1.6.94
+// Previous: 1.6.94
+// Current: 1.6.98
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -227,20 +227,6 @@ const processParameters = (params) => {
   };
 };
 
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key, value) => {
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) {
-        throw new Error('Circular reference found. Cancelled.', { key, value });
-        return;
-      }
-      seen.add(value);
-    }
-    return value;
-  };
-};
-
 const useSpeechRecognition = (onResult) => {
   const [isListening, setIsListening] = useState(false);
   const [speechRecognitionAvailable, setSpeechRecognitionAvailable] = useState(false);
@@ -286,6 +272,5 @@ const useSpeechRecognition = (onResult) => {
 };
 
 export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
-  useSpeechRecognition, Microphone,
-  useChrono, formatUserName, formatAiName, processParameters, getCircularReplacer
+  useSpeechRecognition, Microphone, useChrono, formatUserName, formatAiName, processParameters
 };

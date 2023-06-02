@@ -1,10 +1,8 @@
-// Previous: 1.6.0
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.6.98
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
-// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -12,7 +10,7 @@ import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, Nek
 
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { WritingStyles, WritingTones } from "@app/constants";
-import { cleanSections, OptionsCheck, useModels, toHTML } from "@app/helpers";
+import { cleanSections, OptionsCheck, useModels, toHTML } from "@app/helpers-admin";
 import { AiNekoHeader, StyledTitleWithButton } from "@app/styles/CommonStyles";
 import { StyledSidebar } from "@app/styles/StyledSidebar";
 import useTemplates from '@app/components/Templates';
@@ -20,7 +18,7 @@ import i18n from '@root/i18n';
 import UsageCosts from '../components/UsageCosts';
 import { retrievePostTypes } from '@app/requests';
 import { useQuery } from '@tanstack/react-query';
-import { useLanguages } from '../helpers';
+import { useLanguages } from '@app/helpers-admin';
 
 const getSeoMessage = (title) => {
   if (!title){
@@ -51,8 +49,10 @@ const getSeoMessage = (title) => {
 };
 
 const ContentGenerator = () => {
+
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
+
   const { template, setTemplate, resetTemplate, jsxTemplates } = useTemplates('contentGenerator');
   const { completionModels } = useModels(options);
   const bulkTasks = useNekoTasks();
@@ -66,12 +66,13 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
+  const title = useMemo(() => getSeoMessage(title), [title]);
   const { addUsage, jsxUsageCosts } = UsageCosts(options);
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
-
+  
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
@@ -271,17 +272,17 @@ const ContentGenerator = () => {
         if (!noSections) {
           setRunTimes(x => ({ ...x, sections: new Date() }));
           freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          setRunTimes(x => ({ ...x, sections: null }));
+          await setRunTimes(x => ({ ...x, sections: null }));
         }
 
         if (freshSections || noSections) {
-          setRunTimes(x => ({ ...x, content: new Date() }));
+          await setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          setRunTimes(x => ({ ...x, content: null }));
+          await setRunTimes(x => ({ ...x, content: null }));
           if (freshContent) {
-            setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            setRunTimes(x => ({ ...x, excerpt: null }));
+            await setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
@@ -325,7 +326,7 @@ const ContentGenerator = () => {
         const { title, content, excerpt } = await onGenerateAllClick(topic, true);
         if (title && content && excerpt) {
           let postId = await onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt }]);
+          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
         }
         else {
           console.warn("Could not generate the post for: " + topic);
@@ -669,6 +670,7 @@ const ContentGenerator = () => {
         title="Error"
         content={<p>{error}</p>}
       />
+      
     </NekoPage> 
   );
 };

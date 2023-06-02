@@ -41,33 +41,66 @@ class Meow_MWAI_Engines_OpenAI
     curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, false );
 
     // Maybe we could get some info from headers, as for now, there is only the model.
-    curl_setopt( $handle, CURLOPT_HEADERFUNCTION, function( $curl, $headerLine ) {
-      $line = trim( $headerLine );
-      return strlen( $headerLine );
-    });
+    // curl_setopt( $handle, CURLOPT_HEADERFUNCTION, function( $curl, $headerLine ) {
+    //   $line = trim( $headerLine );
+    //   return strlen( $headerLine );
+    // });
 
-    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) use ( $args, $url ) {
+    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) {
       $length = strlen( $data );
 
-      // If data ends by two new lines, it means it's the end of the stream.
-      $this->streamTemporaryBuffer .= $data;
-      $end = substr( $data, -2 );
-      if ( $end === "\n\n" ) {
-        $lines = explode( "\n", $this->streamTemporaryBuffer );
-        foreach ( $lines as $line ) {
-          if ( $line === "" ) { continue; }
-          if ( strpos( $line, 'data: ' ) === 0 ) {
-            $line = substr( $line, 6 );
-            $jsonArray[] = json_decode( $line, true );
-          }
+      // FOR DEBUG:
+      // preg_match_all( '/"content":"(.*?)"/', $data, $matches );
+      // $contents = $matches[1];
+      // foreach ( $contents as $content ) {
+      //   error_log( "Content: $content" );
+      // }
+
+      // Error Management
+      if ( strpos( $data, '"error"' ) !== false ) {
+        $json = json_decode( $data, true );
+        if ( json_last_error() === JSON_ERROR_NONE ) {
+          $error = $json['error'];
+          $code = $error['code'];
+          $message = $error['message'];
+          throw new Exception( "Error $code: $message" );
         }
-        $this->streamTemporaryBuffer = "";        
-        foreach ( $jsonArray as $json ) {
-          if ( isset( $json['choices'][0]['delta']['content'] ) ) {
-            $this->streamedTokens++;
-            $content = $json['choices'][0]['delta']['content'];
-            $this->streamBuffer .= $content;
-            call_user_func( $this->streamCallback, $content );
+      }
+
+      // Bufferize the unfinished stream (if it's the case)
+      $this->streamTemporaryBuffer .= $data;
+      $lines = explode( "\n", $this->streamTemporaryBuffer );
+      if ( substr( $this->streamTemporaryBuffer, -1 ) !== "\n" ) {
+        $this->streamTemporaryBuffer = array_pop( $lines );
+      }
+      else {
+        $this->streamTemporaryBuffer = "";
+      }
+
+      foreach ( $lines as $line ) {
+        if ( $line === "" ) {
+          continue;
+        }
+        if ( strpos($line, 'data: ' ) === 0 ) {
+          $line = substr( $line, 6 );
+          $json = json_decode( $line, true );
+
+          if ( json_last_error() === JSON_ERROR_NONE ) {
+            $content = null;
+            if ( isset( $json['choices'][0]['text'] ) ) {
+              $content = $json['choices'][0]['text'];
+            }
+            else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
+              $content = $json['choices'][0]['delta']['content'];
+            }
+            if ( !empty( $content ) ) {
+              $this->streamedTokens += count( explode( " ", $content ) );
+              $this->streamBuffer .= $content;
+              call_user_func( $this->streamCallback, $content );
+            }
+          }
+          else {
+            $this->streamTemporaryBuffer .= $line . "\n";
           }
         }
       }

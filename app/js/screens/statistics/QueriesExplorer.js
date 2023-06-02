@@ -1,12 +1,12 @@
-// Previous: 1.6.64
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.6.98
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { nekoFetch } from '@neko-ui';
 import { NekoTable, NekoPaging, NekoBlock, NekoButton } from '@neko-ui';
-import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers';
+import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers-admin';
 
 import { apiUrl, restNonce, options } from '@app/settings';
 import i18n from '@root/i18n';
@@ -73,7 +73,7 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => a.created_at - b.created_at).map(x => {
+    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = tableDateTimeFormatter(x.time);
       let user = tableUserIPFormatter(x.userId, x.ip);
 
@@ -110,8 +110,9 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
       }
       await deleteLogs();
       queryClient.invalidateQueries({ queryKey: ['logs'] });
+    } else {
+      await deleteLogs(selectedLogIds);
     }
-    await deleteLogs(selectedLogIds);
     setSelectedLogIds([]);
     queryClient.invalidateQueries({ queryKey: ['logs'] });
     setBusyAction(false);

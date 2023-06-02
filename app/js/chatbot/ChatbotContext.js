@@ -1,12 +1,11 @@
-// Previous: 1.6.94
-// Current: 1.6.96
+// Previous: 1.6.96
+// Current: 1.6.98
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
-// AI Engine
-import { useModClasses, randomStr, formatAiName, formatUserName, processParameters, isUrl } from '@app/chatbot/helpers';
-import { getCircularReplacer } from './helpers';
+import { useModClasses, randomStr, formatAiName, formatUserName,
+  processParameters, isUrl } from '@app/chatbot/helpers';
+import { mwaiHandleRes, mwaiFetch, getCircularReplacer } from '@app/helpers';
 
 const rawAiName = 'AI: ';
 const rawUserName = 'User: ';
@@ -30,13 +29,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverRes, setServerRes ] = useState();
 
-  // System Parameters
   const id = system.id;
   const stream = system.stream || false;
   const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; 
+  const contextId = system.contextId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -46,7 +44,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
@@ -95,7 +92,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    var chatHistory = [];
+    let chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -122,11 +119,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
     if (!serverRes.success) {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-        freshMessages.splice(freshMessages.length - 1, 1);
+        freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.splice(freshMessages.indexOf(lastMessage), 1);
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -153,7 +148,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         lastMessage.images = serverRes.images;
       }
       lastMessage.timestamp = new Date().getTime();
-      // No delete here!
+      delete lastMessage.isStreaming;
     }
     else {
       const newMessage = {
@@ -182,7 +177,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [botId]);
 
   const onSubmit = async (textQuery) => {
-
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
@@ -214,79 +208,31 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       session: sessionId,
       clientId: clientId,
       contextId: contextId,
-      messages: messages,
+      messages: messages, // Note: using the old 'messages' here instead of 'freshMessages'
       newMessage: inputText,
       stream,
       ...atts
     };
     try {
       if (debugMode) { console.log('[CHATBOT] OUT: ', body); }
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      if (restNonce) {
-        headers['X-WP-Nonce'] = restNonce;
-      }
-      if (stream) {
-        headers['Accept'] = 'text/event-stream';
-      }
-
-      if (stream) {
-        const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
-          body: JSON.stringify(body, getCircularReplacer())
-        });
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let buffer = '';
-        let decodedContent = '';
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          for (let i = 0; i < lines.length - 1; i++) {
-            if (lines[i].indexOf('data: ') !== 0) {
-              continue;
-            }
-            const data = JSON.parse(lines[i].replace('data: ', ''));
-        
-            if (data['type'] === 'live') {
-              if (debugMode) { console.log('[CHATBOT STREAM] LIVE: ', data); }
-              decodedContent += data.data; 
-              setMessages(messages => {
-                const freshMessages = [...messages];
-                const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
-                if (lastMessage && lastMessage.id === freshMessageId) {
-                  lastMessage.content = decodedContent;
-                  lastMessage.timestamp = new Date().getTime();
-                }
-                return freshMessages;
-              });
-            }
-            else if (data['type'] === 'error') {
-              if (debugMode) { console.log('[CHATBOT STREAM] ERROR: ', data); }
-              setServerRes({ success: false, message: data['data'] });
-            }
-            else if (data['type'] === 'end') {
-              if (debugMode) { console.log('[CHATBOT STREAM] END: ', data); }
-              const finalData = JSON.parse(data.data);
-              setServerRes(finalData);
-            }
+      const streamCallback = !stream ? null : (content) => {
+        setMessages(messages => {
+          const freshMessages = [...messages];
+          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
+          if (lastMessage && lastMessage.id === freshMessageId) {
+            lastMessage.content = content;
+            lastMessage.timestamp = new Date().getTime();
           }
-          buffer = lines[lines.length - 1];
-        }
-      }
-      else {
-        const response = await fetch(`${restUrl}/mwai-ui/v1/chats/submit`, { method: 'POST', headers,
-          body: JSON.stringify(body, getCircularReplacer())
+          return freshMessages;
         });
-        const data = await response.json()
-        if (debugMode) { console.log('[CHATBOT] IN: ', data); }
-        setServerRes(data);
-      }      
+      };
+
+      const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
+      const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
+      setServerRes(data);
     }
     catch (err) {
-      console.error(err);
+      console.error("An error happened in the handling of the chatbot response.", { err });
       setBusy(false);
     }
   };
