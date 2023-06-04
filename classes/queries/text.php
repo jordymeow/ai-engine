@@ -13,7 +13,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public bool $casuallyFineTuned = false;
   public ?int $promptTokens = null;
   
-  public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = 'gpt-3.5-turbo' ) {
+  public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = MWAI_DEFAULT_MODEL ) {
     parent::__construct( $prompt );
     $this->setModel( $model );
     $this->setMaxTokens( $maxTokens );
@@ -342,55 +342,55 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $params = $this->convertKeys( $params );
 
     $acceptedValues = [ true, 1, '1' ];
-    if ( isset( $params['model'] ) ) {
+    if ( !empty( $params['model'] ) ) {
 			$this->setModel( $params['model'] );
 		}
-    if ( isset( $params['casuallyFineTuned'] ) && in_array( $params['casuallyFineTuned'], $acceptedValues, true ) ) {
+    if ( !empty( $params['casuallyFineTuned'] ) && in_array( $params['casuallyFineTuned'], $acceptedValues, true ) ) {
       $this->promptEnding = "\n\n###\n\n";
       $this->stop = "\n\n";
       $this->casuallyFineTuned = true;
 		}
-    if ( isset( $params['prompt'] ) ) {
+    if ( !empty( $params['prompt'] ) ) {
       $this->setPrompt( $params['prompt'] );
     }
-    if ( isset( $params['context'] ) ) {
+    if ( !empty( $params['context'] ) ) {
       $this->setContext( $params['context'] );
     }
-    if ( isset( $params['messages'] ) ) {
+    if ( !empty( $params['messages'] ) ) {
       $this->setMessages( $params['messages'] );
     }
-    if ( isset( $params['newMessage'] ) ) {
+    if ( !empty( $params['newMessage'] ) ) {
       $this->setNewMessage( $params['newMessage'] );
     }
-    if ( isset( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
+    if ( !empty( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
 			$this->setMaxTokens( intval( $params['maxTokens'] ) );
 		}
-    if ( isset( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
+    if ( !empty( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
       $this->setMaxSentences( intval( $params['maxMessages'] ) );
     }
-    if ( isset( $params['maxSentences'] ) && intval( $params['maxSentences'] ) > 0 ) {
+    if ( !empty( $params['maxSentences'] ) && intval( $params['maxSentences'] ) > 0 ) {
       $this->setMaxSentences( intval( $params['maxSentences'] ) );
     }
-		if ( isset( $params['temperature'] ) ) {
+		if ( !empty( $params['temperature'] ) ) {
 			$this->setTemperature( $params['temperature'] );
 		}
-		if ( isset( $params['stop'] ) ) {
+		if ( !empty( $params['stop'] ) ) {
 			$this->setStop( $params['stop'] );
 		}
-    if ( isset( $params['maxResults'] ) ) {
+    if ( !empty( $params['maxResults'] ) ) {
 			$this->setMaxResults( $params['maxResults'] );
 		}
-		if ( isset( $params['env'] ) ) {
+		if ( !empty( $params['env'] ) ) {
 			$this->setEnv( $params['env'] );
 		}
-		if ( isset( $params['session'] ) ) {
+		if ( !empty( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
 		}
     // Should add the params related to Open AI and Azure
-    if ( isset( $params['service'] ) ) {
+    if ( !empty( $params['service'] ) ) {
 			$this->setService( $params['service'] );
 		}
-    if ( isset( $params['apiKey'] ) ) {
+    if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
   }

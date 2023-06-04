@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.6.99
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.6.99 (2023/06/04) =
+= 1.7.0 (2023/06/04) =
 * Update: Forms have been rewritten to be more flexible, including streaming. Parameters are kept only on the server (your users can't see them). If any issue, you can switch back to the Legacy Forms (check the settings).
 * Fix: Params relative to UI were not being overriden by the filters.
 * Fix: Connection errors with OpenAI or Azure should be displayed.

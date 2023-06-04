@@ -24,25 +24,25 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
   }
 
   public function injectParams( $params ) {
-    if ( isset( $params['prompt'] ) ) {
+    if ( !empty( $params['prompt'] ) ) {
       $this->setPrompt( $params['prompt'] );
     }
-		if ( isset( $params['apiKey'] ) ) {
+		if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
-		if ( isset( $params['env'] ) ) {
+		if ( !empty( $params['env'] ) ) {
 			$this->setEnv( $params['env'] );
 		}
-		if ( isset( $params['session'] ) ) {
+		if ( !empty( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
 		}
-		if ( isset( $params['service'] ) ) {
+		if ( !empty( $params['service'] ) ) {
 			$this->setService( $params['service'] );
 		}
-    if ( isset( $params['api_key'] ) ) {
+    if ( !empty( $params['api_key'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
-    if ( isset( $params['apiKey'] ) ) {
+    if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
   }

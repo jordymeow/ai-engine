@@ -35,7 +35,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'promptEnding' => null,
 	'completionEnding' => null,
 	// AI Parameters
-	'model' => 'gpt-3.5-turbo',
+	'model' => MWAI_DEFAULT_MODEL,
 	'temperature' => 0.8,
 	'maxTokens' => 1024,
 	'maxResults' => 1,
@@ -78,7 +78,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'prompt_ending' => null,
 	'completion_ending' => null,
 	// AI Parameters
-	'model' => 'gpt-3.5-turbo',
+	'model' => MWAI_DEFAULT_MODEL,
 	'temperature' => 0.8,
 	'max_tokens' => 1024,
 	'max_results' => 1,
@@ -185,7 +185,7 @@ define( 'MWAI_OPTIONS', [
 	'resolve_shortcodes' => false,
 	'dynamic_max_tokens' => true,
 	'context_max_tokens' => 1024,
-	'assistants_model' => 'gpt-3.5-turbo',
+	'assistants_model' => MWAI_DEFAULT_MODEL,
 	'banned_words' => [],
 	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES

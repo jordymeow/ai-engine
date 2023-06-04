@@ -14,19 +14,19 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
   // Based on the params of the query, update the attributes
   public function injectParams( $params ) {
-    if ( isset( $params['model'] ) ) {
+    if ( !empty( $params['model'] ) ) {
 			$this->setModel( $params['model'] );
 		}
-		if ( isset( $params['apiKey'] ) ) {
+		if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
-		if ( isset( $params['maxResults'] ) ) {
+		if ( !empty( $params['maxResults'] ) ) {
 			$this->setMaxResults( $params['maxResults'] );
 		}
-		if ( isset( $params['env'] ) ) {
+		if ( !empty( $params['env'] ) ) {
 			$this->setEnv( $params['env'] );
 		}
-		if ( isset( $params['session'] ) ) {
+		if ( !empty( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
 		}
   }

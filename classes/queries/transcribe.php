@@ -14,22 +14,22 @@ class Meow_MWAI_Query_Transcribe extends Meow_MWAI_Query_Base {
 	}
 
   public function injectParams( $params ) {
-    if ( isset( $params['prompt'] ) ) {
+    if ( !empty( $params['prompt'] ) ) {
       $this->setPrompt( $params['prompt'] );
     }
-		if ( isset( $params['apiKey'] ) ) {
+		if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
-		if ( isset( $params['env'] ) ) {
+		if ( !empty( $params['env'] ) ) {
 			$this->setEnv( $params['env'] );
 		}
-		if ( isset( $params['session'] ) ) {
+		if ( !empty( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
 		}
-		if ( isset( $params['mode'] ) ) {
+		if ( !empty( $params['mode'] ) ) {
 			$this->setMode( $params['mode'] );
 		}
-		if ( isset( $params['url'] ) ) {
+		if ( !empty( $params['url'] ) ) {
 			$this->setURL( $params['url'] );
 		}
   }
