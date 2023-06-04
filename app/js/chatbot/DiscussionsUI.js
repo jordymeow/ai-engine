@@ -1,5 +1,5 @@
-// Previous: 1.6.89
-// Current: 1.6.94
+// Previous: 1.6.94
+// Current: 1.6.99
 
 // React & Vendor Libs
 const { useMemo, useEffect } = wp.element;
@@ -11,7 +11,7 @@ const Discussion = ({ discussion, onClick = () => {}, selected = false, modCss }
   const messages = discussion.messages;
   const message = messages[messages.length - 1];
   const messageText = message.content.length > 64 ? message.content.substring(0, 64) + '...' : message.content;
-  const baseClasses = modCss('', { 'mwai-active': selected });
+  const baseClasses = modCss('mwai-discussion', { 'mwai-active': selected });
 
   return (
     <li className={baseClasses} onClick={onClick}>{messageText}</li>
@@ -34,7 +34,7 @@ const DiscussionsUI = (props) => {
     // mwaiAPI.toggle = () => setOpen(!open);
   });
 
-  const baseClasses = modCss('mwai-discussions', {});
+  const baseClasses = modCss('mwai-discussions');
 
   return (<>
     <div id={`mwai-discussions-${botId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>

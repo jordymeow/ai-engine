@@ -12,7 +12,8 @@ module.exports = function (env, options) {
 	const cleanPlugin = new CleanWebpackPlugin({
 		protectWebpackAssets: false,
 		cleanOnceBeforeBuildPatterns: ["!app/"],
-		cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js', '*.LICENSE.txt', '*.map'],
+		cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
+			'!forms.js', '*.LICENSE.txt', '*.map'],
 	});
 	
 	const plugins = [];
@@ -42,6 +43,7 @@ module.exports = function (env, options) {
 			alias: {
 				'@root': path.resolve(__dirname, './app/'),
 				'@app': path.resolve(__dirname, './app/js/'),
+				'@premium': path.resolve(__dirname, './premium/js/'),
 				'@common': path.resolve(__dirname, './common/js/'),
 				'@neko-ui': path.resolve(__dirname, '../neko-ui/'),
 				'styled-components': path.resolve('./node_modules/styled-components'),
@@ -53,6 +55,7 @@ module.exports = function (env, options) {
 				include: [
 					path.resolve(__dirname, './app/js/'),
 					path.resolve(__dirname, './common/js/'),
+					path.resolve(__dirname, './premium/js/'),
 					path.resolve(__dirname, '../neko-ui/'),
 				],
 				exclude: [
@@ -99,7 +102,7 @@ module.exports = function (env, options) {
 		entry: {
 			chatbot: './app/js/chatbot.js'
 		},
-		cache: { type: "memory" },
+		//cache: { type: "memory" },
 		output: {
 			filename: '[name].js',
 			path: __dirname + '/app/',
@@ -107,5 +110,17 @@ module.exports = function (env, options) {
 		}
 	});
 
-	return [adminWebPack, chatbotWebPack];
+	const formsWebPack = Object.assign({}, baseConfig, {
+		entry: {
+			forms: './premium/js/forms.js'
+		},
+		//cache: { type: "memory" },
+		output: {
+			filename: '[name].js',
+			path: __dirname + '/premium/',
+			chunkLoadingGlobal: 'wpJsonMwaiForms'
+		}
+	});
+
+	return [adminWebPack, formsWebPack, chatbotWebPack];
 };

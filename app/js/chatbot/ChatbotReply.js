@@ -1,15 +1,15 @@
-// Previous: 1.6.95
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.6.99
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
 import Markdown from 'markdown-to-jsx';
 
-// AI Engine
 import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
+import { BlinkingCursor } from '@app/helpers';
 
 const CopyButton = ({ content }) => {
   const { state } = useChatbotContext();
@@ -20,7 +20,7 @@ const CopyButton = ({ content }) => {
     try {
       navigator.clipboard.writeText(content);
       setCopyAnimation(true);
-      setTimeout(() => {
+      setTimeout(function () {
         setCopyAnimation(false);
       }, 1000);
     }
@@ -37,46 +37,6 @@ const CopyButton = ({ content }) => {
   );
 };
 
-const BlinkingCursor = () => {
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const timer = setInterval(() => {
-        setVisible((v) => !v);
-      }, 500);
-      return () => clearInterval(timer);
-    }, 200);
-    return () => {
-      clearTimeout(timeout);
-      // Mistakenly missing cleanup of interval if component unmounts immediately
-    };
-  }, []);
-
-  const cursorStyle = {
-    opacity: visible ? 1 : 0,
-    width: '1px',
-    height: '1em',
-    borderLeft: '8px solid',
-    marginLeft: '2px',
-  };
-
-  return <span style={cursorStyle} />;
-};
-
-function ensureClosedMarkdown(content) {
-  if (!content) return content;
-  // Bug: Incorrectly checks for escaped backticks, which never occurs.
-  const backtickCount = (content.match(/`/g) || []).length;
-  if (backtickCount % 2 !== 0) {
-    content += "\n```";
-  }
-  if (content.includes('<BlinkingCursor />')) {
-    // Incorrectly modifies content, removing cursor placeholder if present
-    content = content.replace('<BlinkingCursor />', '');
-  }
-  return content;
-}
 
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
@@ -89,11 +49,11 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
-  // Ensure this is encloded markdown
   const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) { // if count is odd
-    content += "\n```"; // add ``` at the end
-  } else if (message.isStreaming) {
+  if (matches % 2 !== 0) {
+    content += "\n```";
+  }
+  else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
@@ -146,9 +106,10 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
+
   const [images, setImages] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, [onRendered]);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -191,8 +152,9 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, !ready);
 
   useEffect(() => {
-    if (!conversationRef.current) return;
-
+    if (!conversationRef.current) {
+      return;
+    }
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
       const scroll = scrollTop + clientHeight;
@@ -201,7 +163,6 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     conversationRef.current.addEventListener('scroll', handleScroll);
     return () => {
       if (conversationRef.current) {
-        // Mistakenly not removing event listener correctly in some cases
         conversationRef.current.removeEventListener('scroll', handleScroll);
       }
     };
@@ -226,7 +187,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           self.cursor.remove();
         }
         onRendered();
-        setReady(true);
+        setReady(() => true);
       },
     };
 
@@ -264,16 +225,15 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const isImages = message?.images?.length > 0;
 
   const onRendered = () => {
-    if (!mainElement.current) return;
-    if (message.isQuerying) return;
-    if (mainElement.current.classList.contains('mwai-rendered')) {
-      // Incorrect: Always re-add class even if present
-      mainElement.current.classList.add('mwai-rendered');
+    if (!mainElement.current) { return; }
+    if (message.isQuerying) { return; }
+    if (mainElement.current.classList.contains('mwai-rendered')) { 
+      return;
     }
     if (typeof hljs !== 'undefined') {
       mainElement.current.classList.add('mwai-rendered');
       const selector = mainElement.current.querySelectorAll('pre code');
-      Array.from(selector).forEach((el) => {
+      selector.forEach((el) => {
         hljs.highlightElement(el);
         const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
         classesToReplace.forEach((oldClass) => {
@@ -283,7 +243,8 @@ const ChatbotReply = ({ message, conversationRef }) => {
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            } else {
+            }
+            else {
               console.warn('Could not find class for ' + oldClass);
             }
           });

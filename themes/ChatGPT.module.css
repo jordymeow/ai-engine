@@ -84,6 +84,10 @@
   margin: 0;
 }
 
+.mwai-discussions .mwai-content .mwai-discussion {
+  margin: 0;
+}
+
 .mwai-discussions .mwai-content li {
   color: var(--mwai-conversationsTextColor);
   font-size: 75%;

@@ -86,6 +86,10 @@
 		padding: calc(var(--mwai-spacing) / 2);
 		margin: 0;
 
+		.mwai-discussion {
+			margin: 0;
+		}
+
 		li {
 			color: var(--mwai-conversationsTextColor);
 			font-size: 75%;

@@ -111,7 +111,7 @@ i18n.COMMON = {
   MODERATION: __( 'Moderation', 'ai-engine' ),
   MODERATION_HELP: __( 'Moderation features with AI.', 'ai-engine' ),
   FORMATTING: __( 'Formatting', 'ai-engine' ),
-  FORMATTING_HELP: __( 'Convert the reply from the AI into HTML. <b>Markdown is supported, so it is highly recommended to add \'Use Markdown.\' in your context.</b>', 'ai-engine' ),
+  FORMATTING_HELP: __( 'Format the reply from AI into HTML. This is already done automatically if Markdown is detected in the reply.', 'ai-engine' ),
   LOGS: __( 'Logs', 'ai-engine' ),
   CODE: __( 'Code', 'ai-engine' ),
   EMBEDDINGS: __( 'Embeddings', 'ai-engine' ),
@@ -183,12 +183,16 @@ i18n.COMMON = {
   INCIDENTS_OPENAI: __( 'Incidents (OpenAI)', 'ai-engine' ),
   PREVIEW: __( 'Preview', 'ai-engine' ),
   LEGACY_CHATBOT: __( 'Legacy Chatbot', 'ai-engine' ),
+  LEGACY_FORMS: __( 'Legacy Forms', 'ai-engine' ),
+  LEGACY_FEATURES: __( 'Legacy Features', 'ai-engine' ),
   DUPLICATE: __( 'Duplicate', 'ai-engine' ),
   CHATBOT_EDITOR: __( 'Chatbot Editor', 'ai-engine' ),
   THEME_EDITOR: __( 'Theme Editor', 'ai-engine' ),
   PREVIEW: __( 'Preview', 'ai-engine' ),
   CUSTOM_SHORTCODE: __( 'Custom Shortcode', 'ai-engine' ),
   STREAMING: __( 'Streaming', 'ai-engine' ),
+  SYNTAX_HIGHLIGHT: __( 'Syntax Highlight', 'ai-engine' ),
+  DATA_NOT_AVAILABLE: __( 'Data not available.', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -214,13 +218,14 @@ i18n.HELP = {
   POST_TYPES: __( 'Enable for these post types; separate with commas.', 'ai-engine' ),
   POST_STATUS: __( 'Enable for these post statuses (publish, draft, future, private, etc); separate with commas.', 'ai-engine' ),
   CONTEXT_MAX_TOKENS: __( 'Automatically truncate the content (Content-Aware, Embeddings, etc) to make sure it does not reach this maximum number of tokens.', 'ai-engine' ),
-  QUERIES_DATA: __( 'Record all data. It is then viewable in the Queries tab.', 'ai-engine' ),
+  QUERIES_DATA: __( 'Record the queries and replies. You can browse them in Queries tab. Make sure your users are aware of this.', 'ai-engine' ),
   SPEECH_RECOGNITION: __( 'Enable speech-to-text. Depends on the browser and OS used by the user.', 'ai-engine' ),
   SPEECH_SYNTHESIS: __( 'Enable text-to-speech.', 'ai-engine' ),
   DYNAMIC_MAX_MESSAGES: __( 'Max Messages will be dynamically decreased based on the max tokens.', 'ai-engine' ),
   CUSTOM_SHORTCODE: __( 'Prefer the standard version of the shortcode (referring only to the id of the chatbot). If you need many chatbots, you can use custom shortcodes. Custom shortcodes are based on the default chatbot; every attributes in it are basically overrides.', 'ai-engine' ),
   USER_FILTER: __( 'Type an User ID, or an IP.', 'ai-engine' ),
   STREAMING: __( 'The AI\'s response will appear as it\'s being created. Be cautious: this feature\'s ability to manage statistics, limits, and filters is still in its beta phase.', 'ai-engine' ),
+  SYNTAX_HIGHLIGHT: __( 'Enable syntax highlighting for the code blocks.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {
@@ -238,7 +243,7 @@ i18n.SETTINGS = {
   INJECT_DEFAULT_CHATBOT_HELP: __( 'Inject the chatbot [mwai_chat] in the entire website.', 'ai-engine' ),
   CHATGPT_STYLE_INTRO: __( 'Keep in mind that you can also style the chatbot (or a specific chatbot, if you use many) by injecting CSS. Have a look <a target="_blank" href="https://meowapps.com/ai-engine/tutorial/#apply-custom-style-to-the-chatbot">here</a>. More information in the <a target="_blank" href="https://meowapps.com/ai-engine/faq">FAQ</a>.', 'ai-engine' ),
   TYPEWRITER_EFFECT: __( 'Typewriter Effect', 'ai-engine' ),
-  TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. I actually do not recommend this feature.', 'ai-engine' ),
+  TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. This delays the final output! Absolutely not recommended. Please use <b>Streaming</b> instead.', 'ai-engine' ),
   CHATBOT_MODERATION_HELP: __( 'If the conversation seems offensive, the chatbot will reject it.', 'ai-engine' ),
   CUSTOM_URL: __( 'Custom URL', 'ai-engine' ),
 }

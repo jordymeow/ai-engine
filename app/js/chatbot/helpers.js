@@ -1,5 +1,5 @@
-// Previous: 1.6.94
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.6.99
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -106,10 +106,6 @@ const useModClasses = (theme) => {
 
 function isUrl(url) {
   return url.indexOf('http') === 0;
-}
-
-function randomStr() {
-  return Math.random().toString(36).substring(2);
 }
 
 function handlePlaceholders(template, guestName = 'Guest: ', userData) {
@@ -269,8 +265,4 @@ const useSpeechRecognition = (onResult) => {
   }, [isListening, speechRecognitionAvailable]);
 
   return { isListening, setIsListening, speechRecognitionAvailable };
-};
-
-export { useModClasses, isUrl, randomStr, handlePlaceholders, useInterval,
-  useSpeechRecognition, Microphone, useChrono, formatUserName, formatAiName, processParameters
 };

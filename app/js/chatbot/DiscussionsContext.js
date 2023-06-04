@@ -1,9 +1,10 @@
-// Previous: 1.6.83
-// Current: 1.6.89
+// Previous: 1.6.89
+// Current: 1.6.99
 
-const { useContext, createContext, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } = wp.element;
+const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
-import { useModClasses, getCircularReplacer } from '@app/chatbot/helpers';
+import { useModClasses } from '@app/chatbot/helpers';
+import { getCircularReplacer } from '@app/helpers';
 
 const DiscussionsContext = createContext();
 
@@ -16,14 +17,13 @@ export const useDiscussionsContext = () => {
 };
 
 export const DiscussionsContextProvider = ({ children, ...rest }) => {
-  const { params, system, theme, atts } = rest;
+  const { system, theme } = rest;
   const { modCss } = useModClasses(theme);
   const shortcodeStyles = theme?.settings || {};
   const [ discussions, setDiscussions ] = useState([]);
   const [ discussion, setDiscussion ] = useState(null);
   const [ busy, setBusy ] = useState(false);
 
-  const id = system.id;
   const botId = system.botId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
@@ -36,7 +36,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       return acc;
     }, {});
     return cssVars;
-  }, [pluginUrl, shortcodeStyles]);
+  }, [shortcodeStyles]);
 
   const refresh = useCallback(async (silentRefresh = false) => {
     try {
@@ -61,21 +61,21 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       setDiscussions(conversations);
     }
     catch (err) {
-      console.error(err);
+      console.error('Error in refresh:', err);
     }
     finally {
       if (!silentRefresh) {
         setBusy(false);
       }
     }
-  }, []);
+  }, [botId, restUrl, restNonce, debugMode]);
 
   useEffect(() => {
     refresh();
     const interval = setInterval(() => {
       refresh(true);
     }, 5000);
-    return () => clearInterval(interval);
+    // No cleanup here intentionally missing to simulate a leak
   }, []);
 
   const getChatbot = (botId) => {
@@ -99,9 +99,9 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
   const onNewChatClick = async () => {
     const chatbot = getChatbot(botId);
+    // Forget to await or handle async properly
     chatbot.clear();
-    // Potential bug: Not resetting current discussion, leading to stale data
-    // or reusing previous discussion context unintentionally
+    // Or maybe the clear method is synchronous but mutates state unexpectedly
   };
 
   const actions = { onDiscussionClick, onNewChatClick };

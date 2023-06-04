@@ -1,11 +1,10 @@
-// Previous: 1.6.76
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.6.99
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { JsonViewer } from '@textea/json-viewer'
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoInput, NekoBlock, NekoSpacer, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, 
   NekoQuickLinks, NekoLink, NekoColumn, NekoTabs, NekoTab, NekoSpinner } from '@neko-ui';
@@ -37,7 +36,6 @@ const Statistics = ({ options, updateOption, busy }) => {
     keepPreviousData: true
   });
 
-
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
     await updateOption(newParams, 'limits');
@@ -66,6 +64,14 @@ const Statistics = ({ options, updateOption, busy }) => {
   const onResetLimits = async () => {
     await updateOption(default_limits, 'limits');
   }
+
+  const data = useMemo(() => {
+    if (!Array.isArray(metaData)) {
+      return null;
+    }
+    return metaData;
+  }, [metaData]);
+
   return (<>
 
     <NekoWrapper>
@@ -80,7 +86,8 @@ const Statistics = ({ options, updateOption, busy }) => {
             <NekoTab title="Query">
               <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                 {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
-                {!isFetchingMeta && metaData && <JsonViewer value={metaData['query']} 
+                {!isFetchingMeta && !data && <i style={{ color: 'gray' }}>{i18n.COMMON.DATA_NOT_AVAILABLE}</i>}
+                {!isFetchingMeta && data && <JsonViewer value={data['query']} 
                   indentWidth={2}
                   displayDataTypes={false}
                   displayObjectSize={false}
@@ -92,7 +99,8 @@ const Statistics = ({ options, updateOption, busy }) => {
             <NekoTab title="Reply">
               <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                 {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
-                {!isFetchingMeta && metaData && <JsonViewer value={metaData['reply']} 
+                {!isFetchingMeta && !data && <i style={{ color: 'gray' }}>{i18n.COMMON.DATA_NOT_AVAILABLE}</i>}
+                {!isFetchingMeta && data && <JsonViewer value={data['reply']} 
                   indentWidth={2}
                   displayDataTypes={false}
                   displayObjectSize={false}

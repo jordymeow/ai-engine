@@ -306,6 +306,8 @@ class Meow_MWAI_Modules_Chatbot {
 		$botId = $botId ?: 'default';
 		$isCustom = $botId == 'default' && isset( $atts['id'] );
 
+		$atts = apply_filters( 'mwai_chatbot_params', $atts, $chatbot, $isCustom );
+
 		// Rename the keys of the atts into camelCase to match the internal params system.
 		$atts = array_map( function( $key, $value ) {
 			$key = str_replace( '_', ' ', $key );

@@ -1,7 +1,7 @@
-// Previous: 1.6.93
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.6.99
 
-import React, { useState, useEffect, useRef } from 'react';
+const { useEffect, useState } = wp.element;
 
 const getCircularReplacer = () => {
   const seen = new WeakSet();
@@ -9,6 +9,7 @@ const getCircularReplacer = () => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         throw new Error('Circular reference found. Cancelled.', { key, value });
+        return;
       }
       seen.add(value);
     }
@@ -42,28 +43,30 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       if (lines[i].indexOf('data: ') !== 0) {
         continue;
       }
-      const dataObj = JSON.parse(lines[i].replace('data: ', ''));
-      if (dataObj['type'] === 'live') {
-        if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, dataObj); }
-        decodedContent += dataObj.data;
-        onStream && onStream(decodedContent, dataObj.data);
-      } else if (dataObj['type'] === 'error') {
+      const data = JSON.parse(lines[i].replace('data: ', ''));
+      if (data['type'] === 'live') {
+        if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
+        decodedContent += data.data;
+        onStream && onStream(decodedContent, data.data);
+      }
+      else if (data['type'] === 'error') {
         try {
-          if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, dataObj.data); }
-          return { success: false, message: dataObj.data };
+          if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, data.data); }
+          return { success: false, message: data.data };
         }
         catch (err) {
-          console.error("Could not parse the 'error' stream.", { err, data: dataObj });
+          console.error("Could not parse the 'error' stream.", { err, data });
           return { success: false, message: "Could not parse the 'error' stream." };
         }
-      } else if (dataObj['type'] === 'end') {
+      }
+      else if (data['type'] === 'end') {
         try {
-          const finalData = JSON.parse(dataObj.data);
+          const finalData = JSON.parse(data.data);
           if (debugName) { console.log(`[${debugName} STREAM] END: `, finalData); }
           return finalData;
         }
         catch (err) {
-          console.error("Could not parse the 'end' stream.", { err, data: dataObj });
+          console.error("Could not parse the 'end' stream.", { err, data });
           return { success: false, message: "Could not parse the 'end' stream." };
         }
       }
@@ -91,70 +94,33 @@ async function mwaiFetch(url, body, restNonce, isStream) {
   });
 }
 
-export { mwaiHandleRes, mwaiFetch, getCircularReplacer };
+function randomStr() {
+  return Math.random().toString(36).substring(2);
+}
 
-// React component with subtle bugs
-function ChatComponent({ fetchUrl, restNonce }) {
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [input, setInput] = useState('');
-  const streamRef = useRef(null);
-  const isMountedRef = useRef(true);
+const BlinkingCursor = () => {
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      const timer = setInterval(() => {
+        setVisible((v) => !v);
+      }, 500);
+    }, 200);
     return () => {
-      isMountedRef.current = false;
-      if (streamRef.current) {
-        streamRef.current.cancel && streamRef.current.cancel();
-      }
+      clearTimeout(timeout);
     };
   }, []);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    setLoading(true);
-    setError(null);
-    const body = { message: input };
-    try {
-      const response = await mwaiFetch(fetchUrl, body, restNonce, true);
-      streamRef.current = response.body.getReader();
-      const result = await mwaiHandleRes(response, (content, chunk) => {
-        setMessages(prev => [...prev, { text: chunk, type: 'response' }]);
-      }, 'ChatStream');
-      if (!isMountedRef.current) return;
-      if (result.success === false) {
-        setError(result.message);
-      }
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      setError('Failed to fetch response.');
-    } finally {
-      if (isMountedRef.current) setLoading(false);
-    }
+  const cursorStyle = {
+    opacity: visible ? 1 : 0,
+    width: '1px',
+    height: '1em',
+    borderLeft: '8px solid',
+    marginLeft: '2px',
   };
 
-  const handleInputChange = (e) => {
-    setInput(e.target.value);
-  };
+  return <span style={cursorStyle} />;
+};
 
-  return (
-    <div>
-      <div style={{ minHeight: '200px', border: '1px solid #ccc', padding: '10px' }}>
-        {messages.map((msg, idx) => (
-          <div key={idx} style={{ color: msg.type === 'response' ? 'blue' : 'black' }}>
-            {msg.text}
-          </div>
-        ))}
-      </div>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      <input
-        value={input}
-        onChange={handleInputChange}
-        disabled={loading}
-        style={{ width: '80%', marginRight: '10px' }}
-      />
-      <button onClick={handleSend} disabled={loading}>Send</button>
-    </div>
-  );
-}
+export { mwaiHandleRes, mwaiFetch, getCircularReplacer, randomStr, BlinkingCursor };

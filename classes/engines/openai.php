@@ -32,6 +32,20 @@ class Meow_MWAI_Engines_OpenAI
     $this->localAzureDeployments[] = [ 'model' => 'dall-e', 'name' => 'dall-e' ];
   }
 
+
+  // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
+  function check_for_error( $data ) {
+    if ( strpos( $data, '"error"' ) !== false ) {
+      $json = json_decode( $data, true );
+      if ( json_last_error() === JSON_ERROR_NONE ) {
+        $error = $json['error'];
+        $code = $error['code'];
+        $message = $error['message'];
+        throw new Exception( "Error $code: $message" );
+      }
+    }
+  }
+
   /*
     This used to be in the core.php, but since it's relative to OpenAI, it's better to have it here.
   */
@@ -57,15 +71,7 @@ class Meow_MWAI_Engines_OpenAI
       // }
 
       // Error Management
-      if ( strpos( $data, '"error"' ) !== false ) {
-        $json = json_decode( $data, true );
-        if ( json_last_error() === JSON_ERROR_NONE ) {
-          $error = $json['error'];
-          $code = $error['code'];
-          $message = $error['message'];
-          throw new Exception( "Error $code: $message" );
-        }
-      }
+      $this->check_for_error( $data );
 
       // Bufferize the unfinished stream (if it's the case)
       $this->streamTemporaryBuffer .= $data;
@@ -149,12 +155,12 @@ class Meow_MWAI_Engines_OpenAI
       $options['stream'] = $isStream;
       $res = wp_remote_get( $url, $options );
 
-      if ( $isStream ) {
-        return [ 'stream' => true ]; 
-      }
-
       if ( is_wp_error( $res ) ) {
         throw new Exception( $res->get_error_message() );
+      }
+
+      if ( $isStream ) {
+        return [ 'stream' => true ]; 
       }
 
       $response = wp_remote_retrieve_body( $res );
@@ -235,9 +241,15 @@ class Meow_MWAI_Engines_OpenAI
   public function runTranscribeQuery( $query ) {
     $this->applyQueryParameters( $query );
 
-    // Prepare the request
+    // Prepare the request.
     $modeEndpoint = $query->mode === 'translation' ? 'translations' : 'transcriptions';
     $url = 'https://api.openai.com/v1/audio/' . $modeEndpoint;
+
+    // Check if the URL is valid.
+    if ( !filter_var( $query->url, FILTER_VALIDATE_URL ) ) {
+      throw new Exception( 'Invalid URL for transcription.' );
+    }
+
     $audioData = $this->getAudio( $query->url );
     $body = array( 
       'prompt' => $query->prompt,
@@ -256,6 +268,7 @@ class Meow_MWAI_Engines_OpenAI
       if ( empty( $data ) ) {
         throw new Exception( 'Invalid data for transcription.' );
       }
+      $this->check_for_error( $data );
       $usage = $this->core->recordAudioUsage( $query->model, $audioData['length'] );
       $reply = new Meow_MWAI_Reply( $query );
       $reply->setUsage( $usage );
