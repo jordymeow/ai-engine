@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.7.1 (2023/06/06) =
+* Fix: Limits work better.
+* Update: This is really alpha, but discussions work a little bit. Check [this](https://meowapps.com/ai-engine/tutorial/#discussions).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.7.0 (2023/06/04) =
 * Update: Forms have been rewritten to be more flexible, including streaming. Parameters are kept only on the server (your users can't see them). If any issue, you can switch back to the Legacy Forms (check the settings).
 * Fix: Params relative to UI were not being overriden by the filters.
 * Fix: Connection errors with OpenAI or Azure should be displayed.
 * Fix: Limits were overriden by a misplaced line of code. Sorry about that!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.6.98 (2023/06/01) =
 * Update: Huge improvements on streaming! When it's confirmed (by you dear users) that it works perfectly for the chatbot, I will add streaming to every other parts of AI Engine.

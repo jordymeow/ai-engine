@@ -1,5 +1,5 @@
-// Previous: 1.6.94
-// Current: 1.6.99
+// Previous: 1.6.99
+// Current: 1.7.1
 
 // React & Vendor Libs
 const { useMemo, useEffect } = wp.element;
@@ -19,13 +19,15 @@ const Discussion = ({ discussion, onClick = () => {}, selected = false, modCss }
 }
 
 const DiscussionsUI = (props) => {
-  const { theme, style } = props;
+  const { theme, style, params } = props;
   const { modCss } = useModClasses(theme);
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
 
   const { state, actions } = useDiscussionsContext();
   const { botId, cssVariables, discussions, discussion, busy } = state;
   const { onDiscussionClick, onNewChatClick } = actions;
+
+  const { textNewChat } = params;
 
   useEffect(() => {
     // Prepare the API
@@ -42,7 +44,7 @@ const DiscussionsUI = (props) => {
 
       <div className={modCss('mwai-header')}>
         <button onClick={() => onNewChatClick()} disabled={busy}>
-          <span>+ New chat</span>
+          <span>{textNewChat ?? '+ New chat'}</span>
         </button>
       </div>
 

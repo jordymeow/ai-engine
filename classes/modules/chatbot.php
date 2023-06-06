@@ -13,7 +13,7 @@ define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'em
 
 // Params for the discussions (front and server)
 
-define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId' ] );
+define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
 define( 'MWAI_DISCUSSIONS_SERVER_PARAMS', [] );
 
 class Meow_MWAI_Modules_Chatbot {
