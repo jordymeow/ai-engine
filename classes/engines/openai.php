@@ -153,6 +153,9 @@ class Meow_MWAI_Engines_OpenAI
   public function runQuery( $url, $options, $isStream = false ) {
     try {
       $options['stream'] = $isStream;
+      if ( $isStream ) {
+        $options['filename'] = tempnam( sys_get_temp_dir(), 'mwai-stream-' );
+      }
       $res = wp_remote_get( $url, $options );
 
       if ( is_wp_error( $res ) ) {

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.1
+Stable tag: 1.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,10 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 Languages: English.
 
 == Changelog ==
+
+= 1.7.2 (2023/06/07) =
+* Fix: Randomize the file used to record streams on the server.
+* Fix: New forms now works with selectors as inputs.
 
 = 1.7.1 (2023/06/06) =
 * Fix: Limits work better.
