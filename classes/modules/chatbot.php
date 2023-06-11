@@ -249,7 +249,9 @@ class Meow_MWAI_Modules_Chatbot {
 		$out = "data: " . json_encode( $data );
 		echo $out;
 		echo "\n\n";
-		ob_end_flush();
+		if (ob_get_level() > 0) {
+			ob_end_flush();
+		}
 		flush();
 	}
 

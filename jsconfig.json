@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["./app/js/*"],
+      "@premium/*": ["./premium/js/*"],
+      "@common/*": ["./common/js/*"],
+      "@neko-ui/*": ["../neko-ui/*"]
+    }
+  }
+}

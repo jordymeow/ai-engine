@@ -1,18 +1,16 @@
-// Previous: 1.6.82
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.7.3
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 
-import { apiUrl, restNonce } from '@app/settings';
-
-// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 import i18n from '@root/i18n';
+import { apiUrl, restNonce } from '@app/settings';
 import { tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
 
 const StyledContext = styled.div`
@@ -45,7 +43,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings && <StyledEmbedding>
-        {embeddings.map(embedding => <div>
+        {embeddings.map(embedding => <div key={embedding.title}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -71,8 +69,9 @@ const chatsColumns = [
 ];
 
 const retrieveDiscussions = async (chatsQueryParams) => {
-  chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
+  const params = { ...chatsQueryParams };
+  params.offset = (params.page - 1) * params.limit;
+  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: params });
   return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
 }
 
@@ -91,12 +90,12 @@ const Discussions = () => {
     });
   });
   const [ selectedIds, setSelectedIds ] = useState([]);
-
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
     filters: filters, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
   });
   const { isFetching: isFetchingChats, data: chatsData } = useQuery({
-    queryKey: ['chats', chatsQueryParams], queryFn: () => retrieveDiscussions(chatsQueryParams),
+    queryKey: ['chats', chatsQueryParams], 
+    queryFn: () => retrieveDiscussions(chatsQueryParams),
     keepPreviousData: true, refetchInterval: autoRefresh ? 1000 * 5 : null
   });
 
@@ -105,12 +104,12 @@ const Discussions = () => {
   }, [filters]);
 
   const chatsTotal = useMemo(() => {
-    return chatsData?.total || 0;
+    return chatsData?.total ?? 0;
   }, [chatsData]);
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData.chats.slice().sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()).map(x => {
       let created = new Date(x.created);
       created = new Date(created.getTime() - created.getTimezoneOffset() * 60 * 1000);
       let messages = JSON.parse(x.messages);
@@ -118,7 +117,7 @@ const Discussions = () => {
       let formattedCreated = tableDateTimeFormatter(x.created);
       let formattedUpdated = tableDateTimeFormatter(x.updated);
       let user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
-      let userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
+      let userMessages = messages?.filter(y => y.role === 'user' || y.type === 'user');
       let firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
       let lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
       return {
@@ -134,12 +133,12 @@ const Discussions = () => {
         created: formattedCreated,
         updated: formattedUpdated
       }
-    })
+    });
   }, [chatsData]);
 
   const discussion = useMemo(() => {
     if (selectedIds?.length !== 1) { return null; }
-    let currentDiscussion = chatsData?.chats.find(x => x.id === selectedIds[0]);
+    const currentDiscussion = chatsData?.chats.find(x => x.id === selectedIds[0]);
     if (!currentDiscussion) { return null; }
     let messages = [];
     let extra = {};
@@ -169,14 +168,15 @@ const Discussions = () => {
         return;
       }
       await deleteDiscussions();
-      queryClient.invalidateQueries(['chats']);
-    } else {
-      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
-      await deleteDiscussions(selectedChatIds);
-      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      setBusyAction(false);
+      return;
     }
-    queryClient.invalidateQueries(['chats']);
+    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+    const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
+    await deleteDiscussions(selectedChatIds);
+    setSelectedIds([]);
+    queryClient.invalidateQueries({ queryKey: ['chats'] });
     setBusyAction(false);
   }
 
@@ -193,18 +193,15 @@ const Discussions = () => {
   }, [ chatsQueryParams, chatsTotal ]);
 
   return (<>
-
     <NekoWrapper>
-
       <NekoColumn minimal style={{ flex: 2 }}>
-
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
               disabled={isFetchingChats}
               onClick={() => {
-                queryClient.invalidateQueries(['chats']);
-            }}>{i18n.COMMON.REFRESH}</NekoButton>}
+                queryClient.invalidateQueries({ queryKey: ['chats'] });
+              }}>{i18n.COMMON.REFRESH}</NekoButton>}
             {selectedIds.length > 0 && <>
               <NekoButton className="danger" disabled={false}
                 onClick={onDeleteSelectedChats}>
@@ -219,7 +216,6 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
-
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
@@ -239,32 +235,21 @@ const Discussions = () => {
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
-
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
             onChange={() => setAutoRefresh(!autoRefresh)} />
             {jsxPaging}
           </div>
-
         </NekoBlock>
-
       </NekoColumn>
-
       <NekoColumn minimal style={{ flex: 1 }}>
-
-        <NekoBlock className="primary" title="Selected Discussion" action={<>
-        </>}>
-
+        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
-
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
-
         </NekoBlock>
-
-        {!!discussion && <NekoBlock className="primary" title="Information" action={<>
-        </>}>
+        {!!discussion && <NekoBlock className="primary" title="Information" action={<></>}>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ width: 100, fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -285,11 +270,8 @@ const Discussions = () => {
             <div style={{ width: 100, fontWeight: 'bold' }}>UserID</div>
             <div>{discussion?.extra?.userId}</div>
           </div>
-
         </NekoBlock>}
-
       </NekoColumn>
-
     </NekoWrapper>
   </>);
 }

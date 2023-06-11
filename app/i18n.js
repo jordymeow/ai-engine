@@ -193,6 +193,10 @@ i18n.COMMON = {
   STREAMING: __( 'Streaming', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Syntax Highlight', 'ai-engine' ),
   DATA_NOT_AVAILABLE: __( 'Data not available.', 'ai-engine' ),
+  EXPORT: __( 'Export', 'ai-engine' ),
+  IMPORT: __( 'Import', 'ai-engine' ),
+  MODIFY_EMBEDDING: __( 'Modify Embedding', 'ai-engine' ),
+  ADD_EMBEDDING: __( 'Add Embedding', 'ai-engine' ),
 }
 
 i18n.FORMS = {

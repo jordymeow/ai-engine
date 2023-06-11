@@ -23,6 +23,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     $this->session = $mwai_core->get_session_id();
   }
 
+  #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     return [
       'class' => get_class( $this ),

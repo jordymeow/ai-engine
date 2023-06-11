@@ -79,7 +79,7 @@ if ( !class_exists( 'MeowCommon_News' ) ) {
 			$html .= sprintf( __( '<h2 style="margin: 0 0 10px 0" class="title">AI Engine by Meow Apps: The Power of AI into WordPress 💫</h2>' ) );
 
 			// Content
-			$html .= sprintf( __( '<p style="font-size: 14px;">Since the end of 2022, I worked a lot to craft <b>the perfect AI plugin for WordPress</b>. As of February 2023, it\'s perfectly stable and packed with features. You\'ll get chatbots, AI forms, easy model training, content and images generation, a template system that will allow you to create your personal assistants for various tasks and much more! Here it is: <a href="%s" target="_blank">AI Engine</a>. Believe me, you will enjoy this. Have fun, and let me know how it goes! 🥳</p>', $this->domain ), 'https://wordpress.org/plugins/ai-engine/' );
+			$html .= sprintf( __( '<p style="font-size: 14px;">Since the end of 2022, I worked a lot to craft <b>the perfect AI plugin for WordPress</b>. Since March 2023, it\'s perfectly stable and packed with features. You\'ll get chatbots, AI forms, easy model training, content and images generation, a template system that will allow you to create your personal assistants for various tasks and much more! Here it is: <a href="%s" target="_blank">AI Engine</a>. Believe me, you will enjoy this. Have fun, and let me know how it goes! 🥳</p>', $this->domain ), 'https://wordpress.org/plugins/ai-engine/' );
 
 			// Buttons
 			$html .= '<div style="padding: 10px 0 12px 0; display: flex; align-items: center;">';
