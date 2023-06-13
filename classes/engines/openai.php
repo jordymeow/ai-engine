@@ -99,7 +99,7 @@ class Meow_MWAI_Engines_OpenAI
             else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
               $content = $json['choices'][0]['delta']['content'];
             }
-            if ( !empty( $content ) ) {
+            if ( $content !== null && $content !== "" ) {
               $this->streamedTokens += count( explode( " ", $content ) );
               $this->streamBuffer .= $content;
               call_user_func( $this->streamCallback, $content );
