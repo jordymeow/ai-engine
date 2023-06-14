@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.4
+Stable tag: 1.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Features ==
 
-* ChatGPT, GPT-3, GPT-4, and GPT-4 32k models
+* Models: ChatGPT, GPT-3, GPT-3 16k, GPT-4, GPT-4 32k, DaVinci, Babbage, etc.
 * Add a ChatGPT chatbot (or an images creation bot) to your website easily
 * Generate fresh and engaging content for your site
 * Use the AI Copilot to help you brainstorm ideas and write faster

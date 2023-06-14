@@ -14,7 +14,22 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxTokens" => 4096,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat']
+		"tags" => ['core', 'chat', '4k']
+	],
+	[ 
+		"model" => "gpt-3.5-turbo-16k",
+		"description" => "Offers 4 times the context length of gpt-3.5-turbo at twice the price.",
+		"name" => "turbo-16k",
+		"family" => "turbo",
+		// TODO: Need to review this!
+		// The pricing is actually $0.003 per 1K input tokens and $0.004 per 1K output tokens.
+		"price" => 0.003,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096 * 4,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', '16k']
 	],
 	[ 
 		"model" => "gpt-4",
