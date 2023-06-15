@@ -272,7 +272,6 @@ class Meow_MWAI_Core
 			'checksum' => $checksum,
 		];
 	}
-
 	#endregion
 
 	#region Usage & Costs
@@ -395,6 +394,18 @@ class Meow_MWAI_Core
     ];
   }
 
+	#endregion
+
+	#region Streaming
+	public function stream_push( $data ) {
+		$out = "data: " . json_encode( $data );
+		echo $out;
+		echo "\n\n";
+		if ( ob_get_level() > 0 ) {
+			ob_end_flush();
+		}
+		flush();
+	}
 	#endregion
 
 	#region Options

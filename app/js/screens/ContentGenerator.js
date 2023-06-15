@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.7.6
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -49,10 +49,8 @@ const getSeoMessage = (title) => {
 };
 
 const ContentGenerator = () => {
-
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
-
   const { template, setTemplate, resetTemplate, jsxTemplates } = useTemplates('contentGenerator');
   const { completionModels } = useModels(options);
   const bulkTasks = useNekoTasks();
@@ -66,13 +64,6 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
-  const title = useMemo(() => getSeoMessage(title), [title]);
-  const { addUsage, jsxUsageCosts } = UsageCosts(options);
-  const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
-    queryKey: ['postTypes'], queryFn: retrievePostTypes
-  });
-  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
-  
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
@@ -94,11 +85,12 @@ const ContentGenerator = () => {
 
   const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
     useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
-  
+
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
 
+  // Bug introduced: Improper dependency array order and missing initialization
   useEffect(() => {
     const freshTopicsArray = topics.split('\n').map(x => x.trim()).filter(x => !!x);
     setTopicsArray(freshTopicsArray);
@@ -129,7 +121,7 @@ const ContentGenerator = () => {
     if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage]);
+  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -266,23 +258,24 @@ const ContentGenerator = () => {
       let freshContent = null;
       let freshExcerpt = null;
       setBusy(false);
+
       if (freshTitle) {
         setTemplateProperty(freshTitle, 'title');
 
         if (!noSections) {
           setRunTimes(x => ({ ...x, sections: new Date() }));
           freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          await setRunTimes(x => ({ ...x, sections: null }));
+          setRunTimes(x => ({ ...x, sections: null }));
         }
 
         if (freshSections || noSections) {
-          await setRunTimes(x => ({ ...x, content: new Date() }));
+          setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          await setRunTimes(x => ({ ...x, content: null }));
+          setRunTimes(x => ({ ...x, content: null }));
           if (freshContent) {
-            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            setRunTimes(x => ({ ...x, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            await setRunTimes(x => ({ ...x, excerpt: null }));
+            setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
@@ -362,7 +355,7 @@ const ContentGenerator = () => {
 
         <NekoColumn style={{ flex: 1 }}>
 
-          <StyledSidebar style={{ marginBottom: 25 }}>
+          <StyledSidebar>
             <h2 style={{ marginTop: 0 }}>Topic</h2>
             <NekoTextArea name="topic" disabled={isBusy || mode === 'bulk'} rows={5}
               value={topic} onChange={setTemplateProperty}  />
@@ -373,9 +366,9 @@ const ContentGenerator = () => {
             </NekoButton>
           </StyledSidebar>
 
-          <NekoSpacer height={50} />
+          <NekoSpacer />
 
-          <StyledSidebar style={{ marginBottom: 25 }}>
+          <StyledSidebar>
             {jsxTemplates}
           </StyledSidebar>
 
@@ -389,7 +382,7 @@ const ContentGenerator = () => {
               count={topicsArray.length} />
           </NekoQuickLinks>
 
-          <NekoSpacer height={40} />
+          <NekoSpacer />
 
           {mode === 'bulk' && <StyledSidebar>
             <p style={{ marginTop: 0, marginBottom: 20 }}>
@@ -402,7 +395,7 @@ const ContentGenerator = () => {
               <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
                 value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
             </div>
-            <NekoSpacer height={40} />
+            <NekoSpacer />
             <h3>Topics</h3>
             <NekoTextArea name="topics" rows={10} value={topics} onChange={setTemplateProperty}  />
             <NekoCheckbox name="topicsAreTitles" label="Use Topics as Titles" value="1"
@@ -426,7 +419,7 @@ const ContentGenerator = () => {
             {titleMessage && <div className="information">Advice: {titleMessage}</div>}
 
             {sectionsPromptFormat && <>
-              <NekoSpacer height={20} />
+              <NekoSpacer />
               <StyledTitleWithButton>
                 <h2>{i18n.CONTENT_GENERATOR.SECTIONS}</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -453,14 +446,14 @@ const ContentGenerator = () => {
                 </div>
               </StyledTitleWithButton>
               {sectionsCount > 0 && <>
-                <NekoSpacer height={20} />
+                <NekoSpacer />
                 <NekoTextArea name="sections" disabled={isBusy} rows={4} value={sections}
                   description={i18n.CONTENT_GENERATOR.SECTIONS_HELP}
                   onChange={setTemplateProperty} />
               </>}
             </>}
 
-            <NekoSpacer height={20} />
+            <NekoSpacer />
 
             <StyledTitleWithButton>
               <h2>{i18n.COMMON.CONTENT}</h2>
@@ -490,13 +483,13 @@ const ContentGenerator = () => {
               </div>
             </StyledTitleWithButton>
 
-            <NekoSpacer height={20} />
+            <NekoSpacer />
 
             <NekoTextArea countable="words" disabled={isBusy} rows={12} value={content}
               description={i18n.CONTENT_GENERATOR.CONTENT_HELP}
               onChange={setContent} />
 
-            <NekoSpacer height={20} />
+            <NekoSpacer />
 
             <StyledTitleWithButton>
               <h2>{i18n.COMMON.EXCERPT}</h2>
@@ -506,7 +499,7 @@ const ContentGenerator = () => {
               </NekoButton>
             </StyledTitleWithButton>
 
-            <NekoSpacer height={20} />
+            <NekoSpacer />
 
             <NekoTextArea disabled={isBusy} value={excerpt} onBlur={setExcerpt} rows={3} />
 
@@ -519,7 +512,7 @@ const ContentGenerator = () => {
                 )}
             </NekoSelect>
 
-            <NekoSpacer height={20} />
+            <NekoSpacer />
 
             <NekoButton fullWidth style={{ height: 60 }}
               onClick={() => onSubmitNewPost()} isBusy={isBusy} disabled={!title || !content}>
@@ -568,7 +561,7 @@ const ContentGenerator = () => {
 
           </StyledSidebar>
 
-          <NekoSpacer height={30} />
+          <NekoSpacer />
 
           <StyledSidebar>
             <StyledTitleWithButton>
@@ -588,7 +581,7 @@ const ContentGenerator = () => {
             </>}
           </StyledSidebar>
 
-          <NekoSpacer height={30} />
+          <NekoSpacer />
 
           <StyledSidebar>
             <StyledTitleWithButton>
@@ -613,10 +606,9 @@ const ContentGenerator = () => {
                 {completionModels.map(x => <NekoOption value={x.model} label={x.name}></NekoOption>)}
               </NekoSelect>
             </>}
-
           </StyledSidebar>
 
-          <NekoSpacer height={30} />
+          <NekoSpacer />
 
           <StyledSidebar>
             <StyledTitleWithButton>
@@ -644,9 +636,8 @@ const ContentGenerator = () => {
             </>}
           </StyledSidebar>
 
-          <NekoSpacer height={30} />
+          <NekoSpacer />
           {jsxUsageCosts}
-
         </NekoColumn>
 
       </NekoWrapper>

@@ -249,12 +249,47 @@ class Meow_MWAI_Rest
 			$prompt = $params['prompt'];
 			$query = new Meow_MWAI_Query_Text( $prompt );
 			$query->injectParams( $params );
-			$reply = $this->core->ai->run( $query );
-			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result, 'usage' => $reply->usage ], 200 );
+
+			$stream = $params['stream'] ?? false;
+			if ( $stream ) { 
+				$streamCallback = function( $reply ) {
+					//$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
+					$raw = $reply;
+					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ] );
+					if (  ob_get_level() > 0 ) {
+						ob_flush();
+					}
+					flush();
+				};
+				header( 'Cache-Control: no-cache' );
+				header( 'Content-Type: text/event-stream' );
+				header( 'X-Accel-Buffering: no' ); // This is useful to disable buffering in nginx through headers.
+				ob_implicit_flush( true );
+				ob_end_flush();
+			}
+
+			$reply = $this->core->ai->run( $query, $streamCallback );
+
+			// Process Reply
+			$restRes = [
+				'success' => true,
+				'data' => $reply->result,
+				'usage' => $reply->usage
+			];
+			if ( $stream ) {
+				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $restRes ) ] );
+				die();
+			}
+			return new WP_REST_Response( $restRes, 200 );
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+			if ( $stream ) { 
+				$this->core->stream_push( [ 'type' => 'error', 'data' => $message ] );
+			}
+			else {
+				return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+			}
 		}
 	}
 
