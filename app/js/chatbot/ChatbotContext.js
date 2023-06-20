@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 1.6.99
+// Previous: 1.6.99
+// Current: 1.7.7
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -29,13 +29,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  // System Parameters
   const id = system.id;
   const stream = system.stream || false;
   const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; 
+  const contextId = system.contextId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -45,7 +44,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
   let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
@@ -182,7 +180,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
-
     setBusy(true);
     setInputText('');
     const bodyMessages = [...messages, {
@@ -211,7 +208,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       clientId: clientId,
       contextId: contextId,
       messages: messages,
-      newMessage: inputText,
+      newMessage: textQuery,
       stream,
       ...atts
     };

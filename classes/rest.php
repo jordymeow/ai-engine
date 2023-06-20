@@ -250,13 +250,15 @@ class Meow_MWAI_Rest
 			$query = new Meow_MWAI_Query_Text( $prompt );
 			$query->injectParams( $params );
 
+			// Handle streaming
 			$stream = $params['stream'] ?? false;
+			$streamCallback = null;
 			if ( $stream ) { 
 				$streamCallback = function( $reply ) {
 					//$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
 					$raw = $reply;
 					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ] );
-					if (  ob_get_level() > 0 ) {
+					if ( ob_get_level() > 0 ) {
 						ob_flush();
 					}
 					flush();
@@ -268,9 +270,8 @@ class Meow_MWAI_Rest
 				ob_end_flush();
 			}
 
-			$reply = $this->core->ai->run( $query, $streamCallback );
-
 			// Process Reply
+			$reply = $this->core->ai->run( $query, $streamCallback );
 			$restRes = [
 				'success' => true,
 				'data' => $reply->result,

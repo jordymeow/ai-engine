@@ -1,5 +1,5 @@
-// Previous: 1.6.83
-// Current: 1.6.89
+// Previous: 1.6.89
+// Current: 1.7.7
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -35,21 +35,23 @@ const ChatbotUI = (props) => {
     if (botId) {
       mwaiAPI.chatbots.push({
         botId: botId,
-        open: () => setOpen(true),
-        close: () => setOpen(false),
-        toggle: () => setOpen(!open),
-        clear: () => onClear(),
+        open: () => { setOpen(true); return true; },
+        close: () => { setOpen(false); return true; },
+        clear: () => { onClear(); return true; },
         ask: (text, submit = false) => {
           if (submit) {
             onSubmit(text);
+            return true;
           }
           else {
             setInputText(text);
+            return true;
           }
         },
         setContext: ({ chatId, messages }) => {
           setClientId(chatId);
           setMessages(messages);
+          return true;
         },
       });
     }
@@ -70,15 +72,11 @@ const ChatbotUI = (props) => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
-  }, [open]);
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+  }, [open, messages]);
 
   useLayoutEffect(() => {
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {

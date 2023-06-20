@@ -126,7 +126,9 @@ i18n.COMMON = {
   AUDIO_TAB: __( 'Audio', 'ai-engine' ),
   EMBEDDINGS_INDEX: __( 'Embeddings Index', 'ai-engine' ),
   NAMESPACE: __( 'Namespace', 'ai-engine' ),
+  NAMESPACES: __( 'Namespaces', 'ai-engine' ),
   NAMESPACE_HELP: __( 'The namespace is used to separate the data from other data. This allows you to use the same index on more than one website.', 'ai-engine' ),
+  NAMESPACES_HELP: __( 'Enter the namespaces you would like to use on this site. The first namespace will be considered as default. Separate them by commas.', 'ai-engine' ),
   ERROR: __( 'Error', 'ai-engine' ),
   RETRY: __( 'Retry', 'ai-engine' ),
   AUTO_RETRY: __( 'Auto Retry', 'ai-engine' ),
@@ -345,6 +347,17 @@ i18n.FINETUNING = {
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
+  SYNC_SETTINGS_INTRO: __( 'Create embeddings (with the <i>pending</i> status) when posts are published. They will be removed accordingly. This works with the default namespace.', 'ai-engine' ),
+  SYNC_POSTS: __( 'Sync Posts', 'ai-engine' ),
+  REWRITE_CONTENT: __( 'Rewrite Content', 'ai-engine' ),
+  REWRITE_CONTENT_DESCRIPTION: __( 'Shorten and improve the content for your embedding using the default model.', 'ai-engine' ),
+  FORCE_RECREATE: __( 'Force Recreate', 'ai-engine' ),
+  FORCE_RECREATE_DESCRIPTION: __( 'Recreate embeddings on sync even if the content has not changed.', 'ai-engine' ),
+  REWRITE_PROMPT_DESCRIPTION: __( 'Prompt for the rewrite. Supports {CONTENT}, {TITLE}, {URL}, {EXCERPT}, {LANGUAGE}, {ID}.', 'ai-engine' ),
+  SYNC_ALL: __( 'Sync All', 'ai-engine' ),
+  SYNC_ONE: __( 'Sync One', 'ai-engine' ),
+  ADD_INDEX: __( 'Add Index', 'ai-engine' ),
+  ADD_INDEX_DESCRIPTION: __( 'An index is like a database, and contains embeddings. You can have many indexes and switch between them. The indexes are hosted on Pinecone.', 'ai-engine' ),
 }
 
 i18n.ERROR = {

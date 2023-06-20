@@ -10,6 +10,7 @@ define( 'MWAI_IMG_WAND_HTML', "<img style='height: 22px; margin-bottom: -5px; ma
   src='" . MWAI_IMG_WAND . "' alt='AI Wand' />" );
 define( 'MWAI_IMG_WAND_HTML_XS', "<img style='height: 16px; margin-bottom: -2px;'
   src='" . MWAI_IMG_WAND . "' alt='AI Wand' />" );
+	
 class Meow_MWAI_Core
 {
 	public $admin = null;
@@ -22,6 +23,9 @@ class Meow_MWAI_Core
 	private $chatbots_option_name = 'mwai_chatbots';
 	private $nonce = null;
 	public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
+
+	// Cached
+	private $options = null;
 
 	public function __construct() {
 		$this->site_url = get_site_url();
@@ -409,8 +413,7 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Options
-	function getThemes()
-	{
+	function getThemes() {
 		$themes = get_option( $this->themes_option_name, [] );
 		$themes = empty( $themes ) ? [] : $themes;
 
@@ -516,8 +519,12 @@ class Meow_MWAI_Core
 		return $chatbots;
 	}
 
-	function get_all_options() {
+	function get_all_options( $force = false ) {
+		if ( !$force && !is_null( $this->options ) ) {
+			return $this->options;
+		}
 		$options = get_option( $this->option_name, [] );
+		$options = $this->sanitize_options( $options );
 		foreach ( MWAI_OPTIONS as $key => $value ) {
 			if ( !isset( $options[$key] ) ) {
 				$options[$key] = $value;
@@ -532,20 +539,27 @@ class Meow_MWAI_Core
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
 		$options['openai_models'] = MWAI_OPENAI_MODELS;
+		$this->options = $options;
 		return $options;
 	}
 
-	// Validate and keep the options clean and logical.
-	function sanitize_options() {
-		$options = $this->get_all_options();
+	// Sanitize options when we update the plugi or perform some updates
+	// if we change the structure of the options.
+	function sanitize_options( $options ) {
 		$needs_update = false;
 
-		// We can sanitize our future options here, let's always remember it.
-		// Now, it is empty...
+		// This upgrades namespace to multi-namespaces (June 2023)
+		// After January 2024, let's remove this.
+		if ( isset( $options['pinecone'] ) && isset( $options['pinecone']['namespace'] ) ) {
+			$options['pinecone']['namespaces'] = [ $options['pinecone']['namespace'] ];
+			unset( $options['pinecone']['namespace'] );
+			$needs_update = true;
+		}
 
 		if ( $needs_update ) {
 			update_option( $this->option_name, $options, false );
 		}
+
 		return $options;
 	}
 
@@ -553,12 +567,12 @@ class Meow_MWAI_Core
 		if ( !update_option( $this->option_name, $options, false ) ) {
 			return false;
 		}
-		$options = $this->sanitize_options();
+		$options = $this->get_all_options( true );
 		return $options;
 	}
 
 	function update_option( $option, $value ) {
-		$options = $this->get_all_options();
+		$options = $this->get_all_options( true );
 		$options[$option] = $value;
 		return $this->update_options( $options );
 	}

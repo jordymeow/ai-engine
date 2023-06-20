@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.6
+Stable tag: 1.7.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,12 +78,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.7.7 (2023/06/18) =
+* Add: Many namespaces can now be used at the same time.
+* Fix: Issue with the ask() function for the Chatbot JS API.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.7.6 (2023/06/15) =
 * Add: Streaming in Playground.
 * Update: Enhanced the UI of the Playground.
 * Update: Better handling of the errors from OpenAI and Pinecone.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.7.5 (2023/06/14) =
 * Add: Added the Turbo 16k model. 

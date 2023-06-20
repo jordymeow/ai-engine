@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.7.3
+// Previous: 1.7.3
+// Current: 1.7.7
 
 // React & Vendor Libs
 const { useState, useEffect } = wp.element;
@@ -42,7 +42,7 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
         <p>
           A custom embedding can be a sentence, a paragraph or a whole article. When an user input is made, the AI will search for the best embedding that matches the user input and will be able to reply with more accuracy.
         </p>
-        <NekoSpacer height={30} />
+        <NekoSpacer />
         <label>Title:</label>
         <NekoSpacer />
         <NekoInput value={embedding?.title} 

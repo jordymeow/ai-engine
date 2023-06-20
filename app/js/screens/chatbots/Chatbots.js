@@ -1,5 +1,5 @@
-// Previous: 1.6.94
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.7.7
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 1000); // clear message after 1 second
   };
 
   if (!currentChatbot) {
@@ -69,6 +69,19 @@ const Shortcode = ({ currentChatbot }) => {
   );
 };
 
+const setCurrentChatbot = (chatbotId) => {
+  if (chatbotId) {
+    localStorage.setItem('mwai-admin-chatbotId', chatbotId);
+    return;
+  }
+  localStorage.removeItem('mwai-admin-chatbotId');
+};
+
+const getCurrentChatbot = () => {
+  const chatbotId = localStorage.getItem('mwai-admin-chatbotId');
+  return chatbotId ?? 'default';
+};
+
 const Chatbots = (props) => {
   const queryClient = useQueryClient();
   const { options, updateOption, busy } = props;
@@ -76,7 +89,7 @@ const Chatbots = (props) => {
   const [ themeEditor, setThemeEditor ] = useState(false);
   const [ chatbotPreview, setChatbotPreview ] = useState(true);
   const [ busyAction, setBusyAction ] = useState(false);
-  const [ currentBotId, setCurrentBotId ] = useState('default');
+  const [ currentBotId, setCurrentBotId ] = useState(getCurrentChatbot());
   const chatbotDefaults = options?.chatbot_defaults;
 
   const { data: chatbots } = useQuery({
@@ -93,11 +106,13 @@ const Chatbots = (props) => {
       const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
       return chatbot;
     }
+    return null;
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
     if (chatbots) {
       const chatbot = chatbots.find(chatbot => chatbot.botId === currentBotId);
+      setCurrentChatbot(chatbot?.botId);
       return chatbot;
     }
   }, [chatbots, currentBotId]);
@@ -107,20 +122,21 @@ const Chatbots = (props) => {
       let chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
       return chatTheme;
     }
-    return themes.find(theme => theme.themeId === 'chatgpt');
-  }, [currentChatbot, themes, chatbots]);
+    if (themes) {
+      return themes.find(theme => theme.themeId === 'chatgpt');
+    }
+    return null;
+  }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
     if ( id === 'botId' && value === 'default' ) {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
     if ( id === 'botId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];

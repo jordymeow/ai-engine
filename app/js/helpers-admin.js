@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.7.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -88,24 +88,27 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom, startLanguage]);
+  }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
   }, [startLanguage]);
 
   useEffect(() => {
+    // Use the language stored in the local storage if it exists
     let preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
       return;
     }
+
+    // Otherwise, try to detect the language from the browser
     let detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
-  }, [languages]);
+  }, []);
 
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
@@ -117,14 +120,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value);
+    setCurrentLanguage(value, field);
     localStorage.setItem('mwai_preferred_language', value);
   }
 
@@ -145,7 +148,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -156,13 +159,14 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models;
-    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let allModelsTemp = options.openai_models;
+    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let extraModels = extraModelsStr.split(',').filter(x => x);
     let fineTunes = options?.openai_finetunes ?? [];
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
 
     if (fineTunes.length) {
-      allModels = [ ...allModels, ...fineTunes.map(x => {
+      allModelsTemp = [ ...allModelsTemp, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
         const family = splitted[0];
         return { 
@@ -178,17 +182,16 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         }
       })];
     }
-    extraModels = extraModels?.split(',').filter(x => x);
+    // Potential bug: Duplicate code, but we intentionally mutate extraModels (which is okay)
     if (extraModels.length) {
-      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+      allModelsTemp = [ ...allModelsTemp, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return allModels;
+    return allModelsTemp;
   }, [options]);
 
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
-
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -201,8 +204,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model === 'gpt-4-0314') {
+    } else if (model === 'gpt-4-0314') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -220,12 +222,12 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getFamilyName = (model) => {
     const modelObj = getModel(model);
-    return modelObj?.family || null;
+    return modelObj?.family ?? null;
   }
 
   const getFamilyModel = (model) => {
     const modelObj = getModel(model);
-    const coreModel = coreModels.find(x => x.family === modelObj.family);
+    const coreModel = coreModels.find(x => x.family === modelObj?.family);
     return coreModel || null;
   }
 
@@ -243,7 +245,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const calculatePrice = (model, units, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    if (price) {
+    if (price && modelObj) {
       return price * units * modelObj['unit'];
     }
     return 0;
@@ -254,18 +256,24 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     getFamilyName, getPrice, getModel, calculatePrice };
 }
 
-const searchVectors = async (queryParams) => {
-  if (queryParams?.filters?.aiSearch === "") {
+const retrieveVectors = async (queryParams) => {
+  const isSearch = queryParams?.filters?.search !== null;
+  if (queryParams?.filters?.search === "") {
     return [];
   }
-  queryParams.offset = (queryParams.page - 1) * queryParams.limit;
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
-  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
-}
 
-const retrieveVectors = async (queryParams) => {
-  queryParams.offset = (queryParams.page - 1) * queryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
+  if (isSearch && res?.vectors?.length) {
+    const sortedVectors = res.vectors.slice(); // create a shallow copy to avoid mutating original
+    sortedVectors.sort((a, b) => {
+      if (queryParams?.sort?.by === 'asc') {
+        return a.score - b.score;
+      }
+      return b.score - a.score;
+    });
+    res.vectors = sortedVectors;
+  }
+
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
@@ -280,6 +288,8 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 }
 
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -287,8 +297,7 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    }
-    else {
+    } else {
       nonAsciiCount++;
     }
   }
@@ -304,6 +313,7 @@ function reduceContent(content, tokens = 2048) {
   while (reducedTokens > tokens) {
     reduced = reduced.slice(0, -32);
     reducedTokens = estimateTokens(reduced);
+    if (reduced.length === 0) break; // to prevent infinite loop if content can't be reduced
   }
   return reduced;
 }
@@ -348,7 +358,7 @@ const randomHash = (length = 6) => {
 }
 
 export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages,
-  searchVectors, retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,
+  retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
 };
