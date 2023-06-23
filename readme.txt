@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.7
+Stable tag: 1.7.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,11 +78,14 @@ Languages: English.
 
 == Changelog ==
 
+= 1.7.8 (2023/06/23) =
+* Update: The non-public post-types can now be 'Sync All' if they are mentioned in the settings of 'Sync Posts'.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.7.7 (2023/06/18) =
 * Add: Many namespaces can now be used at the same time.
 * Fix: Issue with the ask() function for the Chatbot JS API.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.7.6 (2023/06/15) =
 * Add: Streaming in Playground.

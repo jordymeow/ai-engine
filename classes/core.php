@@ -241,9 +241,20 @@ class Meow_MWAI_Core
 	function getPostTypes() {
 		$excluded = array( 'attachment', 'revision', 'nav_menu_item' );
 		$post_types = array();
-		$types = get_post_types( array( 'public' => true ), 'objects' );
+		$types = get_post_types( [], 'objects' );
+
+		// Let's get the Post Types that are enabled for Embeddings Sync
+		$embeddingsSettings = $this->get_option( 'embeddings' );
+    $syncPostTypes = isset( $embeddingsSettings['syncPostTypes'] ) ? $embeddingsSettings['syncPostTypes'] : [];
+		
 		foreach ( $types as $type ) {
-			if ( in_array( $type->name, $excluded ) ) {
+			$forced = in_array( $type->name, $syncPostTypes );
+			// Should not be excluded.
+			if ( !$forced && in_array( $type->name, $excluded ) ) {
+				continue;
+			}
+			// Should be public.
+			if ( !$forced && !$type->public ) {
 				continue;
 			}
 			$post_types[] = array(
@@ -251,6 +262,11 @@ class Meow_MWAI_Core
 				'type' => $type->name,
 			);
 		}
+
+		// Let's get the Post Types that are enabled for Embeddings Sync
+		$embeddingsSettings = $this->get_option( 'embeddings' );
+    $syncPostTypes = isset( $embeddingsSettings['syncPostTypes'] ) ? $embeddingsSettings['syncPostTypes'] : [];
+
 		return $post_types;
 	}
 
