@@ -199,6 +199,7 @@ i18n.COMMON = {
   IMPORT: __( 'Import', 'ai-engine' ),
   MODIFY_EMBEDDING: __( 'Modify Embedding', 'ai-engine' ),
   ADD_EMBEDDING: __( 'Add Embedding', 'ai-engine' ),
+  DEV_TOOLS: __( 'Dev Tools', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -232,6 +233,7 @@ i18n.HELP = {
   USER_FILTER: __( 'Type an User ID, or an IP.', 'ai-engine' ),
   STREAMING: __( 'The AI\'s response will appear as it\'s being created. Be cautious: this feature\'s ability to manage statistics, limits, and filters is still in its beta phase.', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Enable syntax highlighting for the code blocks.', 'ai-engine' ),
+  DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.8
+Stable tag: 1.7.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,10 +78,14 @@ Languages: English.
 
 == Changelog ==
 
-= 1.7.8 (2023/06/23) =
-* Update: The non-public post-types can now be 'Sync All' if they are mentioned in the settings of 'Sync Posts'.
+= 1.7.9 (2023/06/25) =
+* Add: DevTools tab for AI Engine. It will be used for advanced debugging and development by developers. I will add more and more little tools there.
+* Fix: Avoid some errors if the stats object (from statistics queries) is null.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 1.7.8 (2023/06/23) =
+* Update: The non-public post-types can now be 'Sync All' if they are mentioned in the settings of 'Sync Posts'.
 
 = 1.7.7 (2023/06/18) =
 * Add: Many namespaces can now be used at the same time.
