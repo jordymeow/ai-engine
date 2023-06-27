@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.7.9
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,11 +78,14 @@ Languages: English.
 
 == Changelog ==
 
+= 1.8.0 (2023/07/26) =
+* Fix: Issue with how the logs table was created (it was only working for MySQL 5.6.5+, now works for older MySQL as well).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.7.9 (2023/06/25) =
 * Add: DevTools tab for AI Engine. It will be used for advanced debugging and development by developers. I will add more and more little tools there.
 * Fix: Avoid some errors if the stats object (from statistics queries) is null.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.7.8 (2023/06/23) =
 * Update: The non-public post-types can now be 'Sync All' if they are mentioned in the settings of 'Sync Posts'.
