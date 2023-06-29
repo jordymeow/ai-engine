@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '1.8.0' );
+define( 'MWAI_VERSION', '1.8.1' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
