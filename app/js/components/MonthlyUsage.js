@@ -1,16 +1,14 @@
-// Previous: 1.6.72
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.8.2
 
 import { NekoTypo } from '@neko-ui';
 import { useModels } from "@app/helpers-admin";
-
-// React & Vendor Libs
 const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
 const UsageDetails = ({ month, usageData }) => {
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const [isExpanded, setIsExpanded] = useState(currentMonth == month);
+  const [isExpanded, setIsExpanded] = useState(currentMonth !== month);
   
   return <li>
     <strong style={{ marginLeft: 5, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>
@@ -22,10 +20,11 @@ const UsageDetails = ({ month, usageData }) => {
     <ul>
       {isExpanded && usageData[month].data.map((data, index) => {
         let dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
+        let units = data.isImage ? data.outUnits : data.inUnits + data.outUnits;
         return (
           <li key={index} style={{ marginTop: 5, marginLeft: 18 }}>
             <strong>• {data.name}</strong>
-            {`: ${data.usage} ${dataType}`}
+            {`: ${units} ${dataType}`}
             {data.price > 0 && ` (${data.price.toFixed(4)}$)`}
           </li>
         );
@@ -49,33 +48,34 @@ const MonthlyUsage = ({ options }) => {
           const modelUsage = monthUsage[model];
           const modelObj = getModel(model);
           if (modelObj) {
-            let usage = null;
+            let inUnits = null;
+            let outUnits = null;
             let isAudio = false;
             let isImage = false;
             if (modelObj.type === 'image') {
-              usage = modelUsage?.images || 0;
+              outUnits = modelUsage?.images || 0;
               isImage = true;
             }
             else if (modelObj.type === 'second') {
-              usage = modelUsage?.seconds || 0;
+              outUnits = modelUsage?.seconds || 0;
               isAudio = true;
             }
             else {
-              usage = modelUsage?.total_tokens || 0;
+              inUnits = modelUsage?.prompt_tokens || 0;
+              outUnits = modelUsage?.completion_tokens || 0;
             }
-            let price = calculatePrice(model, usage);
+            let price = calculatePrice(model, inUnits, outUnits);
             usageData[month].totalPrice += price;
-            usageData[month].data.push({ name: getModelName(model), isImage, isAudio, usage, price });
+            usageData[month].data.push({ name: getModelName(model), isImage, isAudio, inUnits, outUnits, price });
           }
           else if (month === currentMonth) {
-            // Only show this error for the current month.
             console.warn(`Cannot find price for model ${model}.`);
           }
         });
       });
       
       Object.keys(usageData).forEach((month) => {
-        usageData[month].data.sort((a, b) => b.price - a.price);
+        usageData[month].data.sort((a, b) => a.price - b.price);
       });
     }
     catch (e) {
@@ -92,10 +92,8 @@ const MonthlyUsage = ({ options }) => {
   }, [ openai_usage, models ]);
 
   return (<>
-    {!!openai_usage && !!Object.keys(openai_usage).length && jsxUsage}
+    {!!openai_usage && Object.keys(openai_usage).length && jsxUsage}
   </>);
 }
 
 export default MonthlyUsage;
-
-

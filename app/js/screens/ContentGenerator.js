@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 1.7.6
+// Previous: 1.7.6
+// Current: 1.8.2
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -85,12 +85,17 @@ const ContentGenerator = () => {
 
   const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
     useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
-
+  
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
 
-  // Bug introduced: Improper dependency array order and missing initialization
+  const title = template?.title ?? "";
+  const sections = template?.sections ?? "";
+  const mode = template?.mode ?? 'single';
+  const topic = template?.topic ?? "";
+  const topics = template?.topics ?? "";
+
   useEffect(() => {
     const freshTopicsArray = topics.split('\n').map(x => x.trim()).filter(x => !!x);
     setTopicsArray(freshTopicsArray);
@@ -121,7 +126,7 @@ const ContentGenerator = () => {
     if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
+  }, [isCustom, currentLanguage, currentHumanLanguage]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -145,7 +150,7 @@ const ContentGenerator = () => {
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = prompt, maxTokens = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse = '', maxTokensValue = 2048, isBulk = false) => {
     try {
       const res = await nekoFetch(`${apiUrl}/ai/completions`, { 
         method: 'POST',
@@ -155,10 +160,10 @@ const ContentGenerator = () => {
           session: session,
           prompt: promptToUse,
           temperature,
-          maxTokens,
+          maxTokens: maxTokensValue,
           model 
       } });
-      addUsage(model, res?.usage?.total_tokens || 0);
+      addUsage(model, res?.usage?.prompt_tokens || 0, res?.usage?.completion_tokens || 0);
       let data = res.data.trim();
       if (data.startsWith('"') && data.endsWith('"')) {
         data = data.substring(1, data.length - 1);
@@ -246,40 +251,39 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(() => ({ ...runTimes, all: new Date() }));
+    setRunTimes(x => ({ ...x, all: new Date() }));
     try {
-      let freshTitle = inTopic;
+      let freshTitleVal = inTopic;
       if (!topicsAreTitles || !isBulk) {
         const prompt = finalizePrompt(titlePromptFormat.replace('{TOPIC}', inTopic));
-        freshTitle = await onSubmitPrompt(prompt, 64, isBulk);
-        console.log("Title:", { prompt, title: freshTitle });
+        freshTitleVal = await onSubmitPrompt(prompt, 64, isBulk);
+        console.log("Title:", { prompt, title: freshTitleVal });
       }
-      let freshSections = null;
-      let freshContent = null;
-      let freshExcerpt = null;
+      let freshSectionsVal = null;
+      let freshContentVal = null;
+      let freshExcerptVal = null;
       setBusy(false);
-
-      if (freshTitle) {
-        setTemplateProperty(freshTitle, 'title');
+      if (freshTitleVal) {
+        setTemplateProperty(freshTitleVal, 'title');
 
         if (!noSections) {
           setRunTimes(x => ({ ...x, sections: new Date() }));
-          freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          setRunTimes(x => ({ ...x, sections: null }));
+          freshSectionsVal = await submitSectionsPrompt(inTopic, freshTitleVal, isBulk);
+          await setRunTimes(x => ({ ...x, sections: null }));
         }
 
-        if (freshSections || noSections) {
-          setRunTimes(x => ({ ...x, content: new Date() }));
-          freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          setRunTimes(x => ({ ...x, content: null }));
-          if (freshContent) {
-            setRunTimes(x => ({ ...x, excerpt: new Date() }));
-            freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            setRunTimes(x => ({ ...x, excerpt: null }));
+        if (freshSectionsVal || noSections) {
+          await setRunTimes(x => ({ ...x, content: new Date() }));
+          freshContentVal = await submitContentPrompt(inTopic, freshTitleVal, freshSectionsVal, isBulk);
+          await setRunTimes(x => ({ ...x, content: null }));
+          if (freshContentVal) {
+            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            freshExcerptVal = await onSubmitPromptForExcerpt(inTopic, freshTitleVal, isBulk);
+            await setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
-      return { title: freshTitle, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
+      return { title: freshTitleVal, heads: freshSectionsVal, content: freshContentVal, excerpt: freshExcerptVal };
     }
     catch (e) {
       setBusy(false);
@@ -316,10 +320,10 @@ const ContentGenerator = () => {
     let tasks = topicsArray.map((topic, offset) => async () => {
       console.log("Topic " + offset);
       try {
-        const { title, content, excerpt } = await onGenerateAllClick(topic, true);
-        if (title && content && excerpt) {
-          let postId = await onSubmitNewPost(title, content, excerpt, true);
-          setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
+        const { title: newTitle, content: newContent, excerpt: newExcerpt } = await onGenerateAllClick(topic, true);
+        if (newTitle && newContent && newExcerpt) {
+          let postId = await onSubmitNewPost(newTitle, newContent, newExcerpt, true);
+          setCreatedPosts(x => [...x, { postId, topic, title: newTitle, content: newContent, excerpt: newExcerpt }]);
         }
         else {
           console.warn("Could not generate the post for: " + topic);
@@ -404,7 +408,7 @@ const ContentGenerator = () => {
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
-                <li>
+                <li key={x.postId}>
                   {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
                 </li>
               ))}
@@ -507,8 +511,8 @@ const ContentGenerator = () => {
 
             <NekoSelect fullWidth scrolldown={true} disabled={isBusy} name="postType" 
               onChange={setPostType} value={postType}>
-                {postTypes?.map(postType => 
-                  <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+                {postTypes?.map(pt => 
+                  <NekoOption key={pt.type} value={pt.type} label={pt.name} />
                 )}
             </NekoSelect>
 
@@ -574,8 +578,8 @@ const ContentGenerator = () => {
               <label>{i18n.COMMON.POST_TYPE}:</label>
               <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
                 onChange={setPostType} value={postType}>
-                  {postTypes?.map(postType => 
-                    <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+                  {postTypes?.map(pt => 
+                    <NekoOption key={pt.type} value={pt.type} label={pt.name} />
                   )}
               </NekoSelect>
             </>}
@@ -603,7 +607,7 @@ const ContentGenerator = () => {
               <NekoSelect name="model" value={model}
                 description={i18n.CONTENT_GENERATOR.MODEL_HELP}
                 scrolldown={true} onChange={setTemplateProperty}>
-                {completionModels.map(x => <NekoOption value={x.model} label={x.name}></NekoOption>)}
+                {completionModels.map(x => <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>)}
               </NekoSelect>
             </>}
           </StyledSidebar>
@@ -639,7 +643,6 @@ const ContentGenerator = () => {
           <NekoSpacer />
           {jsxUsageCosts}
         </NekoColumn>
-
       </NekoWrapper>
 
       <NekoModal isOpen={createdPostId}

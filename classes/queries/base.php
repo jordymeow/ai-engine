@@ -82,6 +82,16 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     return $this->prompt;
   }
 
+  /**
+   * Similar to the prompt, but focus on the new/last message.
+   * Only used when the model has a chat mode (and only used in messages).
+   * With Meow_MWAI_Query_Base, this is the same as setPrompt.
+   * @param string $prompt The messages to generate completions.
+   */
+  public function setNewMessage( string $newMessage ): void {
+    $this->setPrompt( $newMessage );
+  }
+
   public function getLastMessage() {
     return $this->getPrompt();
   }

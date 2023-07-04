@@ -1,5 +1,5 @@
-// Previous: 1.3.73
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.8.2
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -22,8 +22,8 @@ const UsageCosts = (options) => {
     setLastCost(0);
   }
 
-  const addUsage = (model, units) => {
-    const cost = calculatePrice(model, units);
+  const addUsage = (model, inUnits, outUnits) => {
+    const cost = calculatePrice(model, inUnits, outUnits);
     setLastCost(cost);
     setSessionCost(sessionCost + cost);
   }

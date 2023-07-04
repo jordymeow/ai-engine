@@ -536,9 +536,11 @@ class Meow_MWAI_Core
 	}
 
 	function get_all_options( $force = false ) {
-		if ( !$force && !is_null( $this->options ) ) {
-			return $this->options;
-		}
+		// We could cache options this way, but if we do, the apply_filters seems to be called too early.
+		// That causes issues with the mwai_languages filter.
+		// if ( !$force && !is_null( $this->options ) ) {
+		// 	return $this->options;
+		// }
 		$options = get_option( $this->option_name, [] );
 		$options = $this->sanitize_options( $options );
 		foreach ( MWAI_OPTIONS as $key => $value ) {
@@ -547,8 +549,7 @@ class Meow_MWAI_Core
 			}
 			if ( $key === 'languages' ) {
 				// NOTE: If we decide to make a set of options for languages, we can keep it in the settings
-				$options[$key] = MWAI_LANGUAGES;
-				$options[$key] = apply_filters( 'mwai_languages', $options[$key] );
+				$options[$key] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
 			}
 		}
 		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;

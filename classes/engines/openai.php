@@ -699,7 +699,7 @@ class Meow_MWAI_Engines_OpenAI
     }
   }
 
-  private function calculatePrice( $modelFamily, $units, $option = null, $finetune = false )
+  private function calculatePrice( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
   {
     foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
       if ( $currentModel['family'] === $modelFamily ) {
@@ -711,7 +711,7 @@ class Meow_MWAI_Engines_OpenAI
           else {
             foreach ( $currentModel['options'] as $imageType ) {
               if ( $imageType['option'] == $option ) {
-                return $imageType['price'] * $units;
+                return $imageType['price'] * $outUnits;
               }
             }
           }
@@ -719,9 +719,19 @@ class Meow_MWAI_Engines_OpenAI
         else {
           if ( $finetune ) {
             // The price is doubled for finetuned models.
-            return $currentModel['finetune']['price'] * $currentModel['unit'] * $units * 2;
+            $units = ($inUnits + $outUnits) * 2;
+            return $currentModel['finetune']['price'] * $currentModel['unit'] * $units;
           }
-          return $currentModel['price'] * $currentModel['unit'] * $units;
+
+          $inPrice = $currentModel['price'];
+          $outPrice = $currentModel['price'];
+          if ( is_array( $currentModel['price'] ) ) {
+            $inPrice = $currentModel['price']['in'];
+            $outPrice = $currentModel['price']['out'];
+          }
+          $inTotalPrice = $inPrice * $currentModel['unit'] * $inUnits;
+          $outTotalPrice = $outPrice * $currentModel['unit'] * $outUnits;
+          return $inTotalPrice + $outTotalPrice;
         }
       }
     }
@@ -759,32 +769,20 @@ class Meow_MWAI_Engines_OpenAI
         error_log("AI Engine: Cannot find the base model for $model.");
         return null;
       }
-      if ( !empty( $priceRules ) ) {
-        if ( $priceRules === "completion_x2" ) {
-          $units = $reply->getPromptTokens();
-          $units += $reply->getCompletionTokens() * 2;
-          return $this->calculatePrice( $family, $units, $option, $finetune );
-        }
-        else {
-          error_log("AI Engine: Unknown price rules ($priceRules) for $model.");
-          return null;
-        }
-      }
-      else {
-        $units = $reply->getTotalTokens();
-        return $this->calculatePrice( $family, $units, $option, $finetune );
-      }
+      $inUnits = $reply->getPromptTokens();
+      $outUnits = $reply->getCompletionTokens();
+      return $this->calculatePrice( $family, $inUnits, $outUnits, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Image' ) ) {
       $family = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
-      return $this->calculatePrice( $family, $units, $option, $finetune );
+      return $this->calculatePrice( $family, 0, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Transcribe' ) ) {
       $family = 'whisper';
       $units = $reply->getUnits();
-      return $this->calculatePrice( $family, $units, $option, $finetune );
+      return $this->calculatePrice( $family, 0, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
       foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
@@ -794,7 +792,7 @@ class Meow_MWAI_Engines_OpenAI
         }
       }
       $units = $reply->getTotalTokens();
-      return $this->calculatePrice( $family, $units, $option, $finetune );
+      return $this->calculatePrice( $family, 0, $units, $option, $finetune );
     }
     error_log("AI Engine: Cannot calculate price for $model.");
     return null;

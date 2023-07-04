@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 1.7.7
+// Previous: 1.7.7
+// Current: 1.8.2
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -88,7 +88,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -120,14 +120,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   }
 
@@ -159,14 +159,13 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
-    let allModelsTemp = options.openai_models;
-    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
-    let extraModels = extraModelsStr.split(',').filter(x => x);
+    let allModels = options.openai_models;
+    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
 
     if (fineTunes.length) {
-      allModelsTemp = [ ...allModelsTemp, ...fineTunes.map(x => {
+      allModels = [ ...allModels, ...fineTunes.map(x => {
         const splitted = x.model.split(':');
         const family = splitted[0];
         return { 
@@ -182,16 +181,17 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         }
       })];
     }
-    // Potential bug: Duplicate code, but we intentionally mutate extraModels (which is okay)
-    if (extraModels.length) {
-      allModelsTemp = [ ...allModelsTemp, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+    extraModels = extraModels?.split(',').filter(x => x);
+    if (extraModels && extraModels.length) {
+      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return allModelsTemp;
+    return allModels;
   }, [options]);
 
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
+
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -203,9 +203,10 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
-      model = 'gpt-3.5-turbo';
-    } else if (model === 'gpt-4-0314') {
-      model = 'gpt-4';
+      return 'gpt-3.5-turbo';
+    }
+    else if (model === 'gpt-4-0314') {
+      return 'gpt-4';
     }
     return allModels.find(x => x.model === model);
   }
@@ -222,12 +223,12 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getFamilyName = (model) => {
     const modelObj = getModel(model);
-    return modelObj?.family ?? null;
+    return modelObj?.family || null;
   }
 
   const getFamilyModel = (model) => {
     const modelObj = getModel(model);
-    const coreModel = coreModels.find(x => x.family === modelObj?.family);
+    const coreModel = coreModels.find(x => x.family === modelObj.family);
     return coreModel || null;
   }
 
@@ -242,11 +243,18 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return modelObj?.price || null;
   }
 
-  const calculatePrice = (model, units, option = "1024x1024") => {
+  const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    if (price && modelObj) {
-      return price * units * modelObj['unit'];
+    
+    let priceIn = price;
+    let priceOut = price;
+    if (typeof price === 'object') {
+      priceIn = price['in'];
+      priceOut = price['out'];
+    }
+    if (priceIn && priceOut) {
+      return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
   }
@@ -257,15 +265,14 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 }
 
 const retrieveVectors = async (queryParams) => {
-  const isSearch = queryParams?.filters?.search !== null;
+  const isSearch = queryParams?.filters?.search !== undefined; // Changed from !== null
   if (queryParams?.filters?.search === "") {
     return [];
   }
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
   if (isSearch && res?.vectors?.length) {
-    const sortedVectors = res.vectors.slice(); // create a shallow copy to avoid mutating original
-    sortedVectors.sort((a, b) => {
+    const sortedVectors = res.vectors.sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
         return a.score - b.score;
       }
@@ -288,8 +295,6 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 }
 
-// Quick and dirty token estimation
-// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -297,7 +302,8 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    } else {
+    }
+    else {
       nonAsciiCount++;
     }
   }
@@ -313,7 +319,6 @@ function reduceContent(content, tokens = 2048) {
   while (reducedTokens > tokens) {
     reduced = reduced.slice(0, -32);
     reducedTokens = estimateTokens(reduced);
-    if (reduced.length === 0) break; // to prevent infinite loop if content can't be reduced
   }
   return reduced;
 }

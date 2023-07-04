@@ -8,7 +8,10 @@ define( 'MWAI_OPENAI_MODELS', [
 		"model" => "gpt-3.5-turbo",
 		"name" => "turbo",
 		"family" => "turbo",
-		"price" => 0.002,
+		"price" => [
+			"in" => 0.0015,
+			"out" => 0.002,
+		],
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 4096,
@@ -21,9 +24,10 @@ define( 'MWAI_OPENAI_MODELS', [
 		"description" => "Offers 4 times the context length of gpt-3.5-turbo at twice the price.",
 		"name" => "turbo-16k",
 		"family" => "turbo",
-		// TODO: Need to review this!
-		// The pricing is actually $0.003 per 1K input tokens and $0.004 per 1K output tokens.
-		"price" => 0.003,
+		"price" => [
+			"in" => 0.003,
+			"out" => 0.004,
+		],
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 4096 * 4,
@@ -36,7 +40,10 @@ define( 'MWAI_OPENAI_MODELS', [
 		"name" => "gpt-4",
 		"family" => "gpt4",
 		"price" => 0.03,
-		"priceRules" => "completion_x2",
+		"price" => [
+			"in" => 0.03,
+			"out" => 0.06,
+		],
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 8192,
@@ -49,7 +56,10 @@ define( 'MWAI_OPENAI_MODELS', [
 		"name" => "gpt-4-32k",
 		"family" => "gpt4-32k",
 		"price" => 0.06,
-		"priceRules" => "completion_x2",
+		"price" => [
+			"in" => 0.06,
+			"out" => 0.12,
+		],
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 32768,
@@ -65,7 +75,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "completion",
+		"mode" => "out",
 		"finetune" => [
 			"price" => 0.12
 		],
@@ -79,7 +89,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "completion",
+		"mode" => "out",
 		"finetune" => [
 			"price" => 0.012
 		],
@@ -93,7 +103,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "completion",
+		"mode" => "out",
 		"finetune" => [
 			"price" => 0.0024
 		],
@@ -107,7 +117,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "completion",
+		"mode" => "out",
 		"finetune" => [
 			"price" => 0.0016
 		],
