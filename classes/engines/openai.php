@@ -701,8 +701,14 @@ class Meow_MWAI_Engines_OpenAI
 
   private function calculatePrice( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
   {
+    // Finetuned models => We need to modify the model to the family of the model.
+    if ( $finetune && preg_match('/^([a-zA-Z]{0,32}):/', $modelFamily, $matches ) ) {
+      $modelFamily = $matches[1];
+      $finetune = true;
+    }
+
     foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
-      if ( $currentModel['family'] === $modelFamily ) {
+      if ( $currentModel['model'] === $modelFamily || ( $finetune && $currentModel['family'] === $modelFamily ) ) {
         if ( $currentModel['type'] === 'image' ) {
           if ( !$option ) {
             error_log( "AI Engine: Image models require an option." );
@@ -718,11 +724,8 @@ class Meow_MWAI_Engines_OpenAI
         }
         else {
           if ( $finetune ) {
-            // The price is doubled for finetuned models.
-            $units = ($inUnits + $outUnits) * 2;
-            return $currentModel['finetune']['price'] * $currentModel['unit'] * $units;
+            $currentModel['price'] = $currentModel['finetune']['price'];
           }
-
           $inPrice = $currentModel['price'];
           $outPrice = $currentModel['price'];
           if ( is_array( $currentModel['price'] ) ) {
@@ -735,64 +738,39 @@ class Meow_MWAI_Engines_OpenAI
         }
       }
     }
-    error_log( "AI Engine: Invalid family ($modelFamily)." );
+    error_log( "AI Engine: Invalid model ($modelFamily)." );
     return null;
   }
 
   public function getPrice( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply )
   {
     $model = $query->model;
-    $family = null;
     $units = 0;
     $option = null;
-    $currentModel = null;
-    $priceRules = null;
 
     $finetune = false;
     if ( is_a( $query, 'Meow_MWAI_Query_Text' ) ) {
-      // Finetuned models
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
-        $family = $matches[1];
         $finetune = true;
-      }
-      // Standard models
-      else {
-        foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
-          if ( $currentModel['model'] == $model ) {
-            $family = $currentModel['family'];
-            $priceRules = isset( $currentModel['priceRules'] ) ? $currentModel['priceRules'] : null;
-            break;
-          }
-        }
-      }
-      if ( empty( $family ) ) {
-        error_log("AI Engine: Cannot find the base model for $model.");
-        return null;
       }
       $inUnits = $reply->getPromptTokens();
       $outUnits = $reply->getCompletionTokens();
-      return $this->calculatePrice( $family, $inUnits, $outUnits, $option, $finetune );
+      return $this->calculatePrice( $model, $inUnits, $outUnits, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Image' ) ) {
-      $family = 'dall-e';
+      $model = 'dall-e';
       $units = $query->maxResults;
       $option = "1024x1024";
-      return $this->calculatePrice( $family, 0, $units, $option, $finetune );
+      return $this->calculatePrice( $model, 0, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Transcribe' ) ) {
-      $family = 'whisper';
+      $model = 'whisper';
       $units = $reply->getUnits();
-      return $this->calculatePrice( $family, 0, $units, $option, $finetune );
+      return $this->calculatePrice( $model, 0, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
-      foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
-        if ( $currentModel['model'] == $model ) {
-          $family = $currentModel['family'];
-          break;
-        }
-      }
       $units = $reply->getTotalTokens();
-      return $this->calculatePrice( $family, 0, $units, $option, $finetune );
+      return $this->calculatePrice( $model, 0, $units, $option, $finetune );
     }
     error_log("AI Engine: Cannot calculate price for $model.");
     return null;

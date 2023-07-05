@@ -1,5 +1,5 @@
-// Previous: 1.6.57
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.8.3
 
 const { useState, useEffect } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +23,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
 
   const createEntriesFromRaw = (rawData) => {
@@ -46,18 +46,18 @@ const DatasetBuilder = ({ setBuilderData }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId);
+    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let error = null;
     let rawData = null;
-    let content = resContent?.content ?? "";
-    let url = resContent?.url ?? "";
-    let title = resContent?.title ?? "";
+    let content = resContent?.content;
+    let url = resContent?.url;
+    let title = resContent?.title;
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content.length < 64) {
+    else if (content && content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
@@ -85,10 +85,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
         console.error(res);
         throw new Error(res.message ?? "Unknown error, check your console logs.");
       }
-      rawData = res?.data ?? null;
+      rawData = res?.data;
       if (res?.usage?.total_tokens) {
         tokens = res.usage.total_tokens;
-        setTotalTokens(prev => prev + res.usage.total_tokens);
+        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
       }
     }
     if (signal?.aborted) {
@@ -111,10 +111,9 @@ const DatasetBuilder = ({ setBuilderData }) => {
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
     const startOffset = parseInt(startOffsetStr, 10);
-    const handlingOffset = isNaN(startOffset) ? 0 : startOffset;
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (handlingOffset && offset < handlingOffset) {
+      if (startOffsetStr && offset < startOffset) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
@@ -129,40 +128,48 @@ const DatasetBuilder = ({ setBuilderData }) => {
     bulkTasks.reset();
   }
 
-  const onQuickTestClick = async () => {
-    setTotalTokens(0);
-    const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
-    if (postId === null || postId.trim() === "") {
-      return;
-    }
-    setQuickBusy(true);
-    const result = await runProcess(0, postId);
-    setQuickBusy(false);
-    if (!result.entries || result.entries.length === 0) {
-      alert("No entries were generated. Check the console for more information.");
-    }
-    else {
-      const confirmAdd = confirm(`Got ${result.entries.length} entries! Do you want to add them to your data? If not, they will be displayed in your console.`);
-      if (confirmAdd) {
-        setBuilderData(builderData => [...builderData, ...result.entries]);
+  const onSingleGenerateClick = async () => {
+    try {
+      setTotalTokens(0);
+      const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
+      if (postId === null) {
+        return;
       }
+      setQuickBusy('singleGenerate');
+      const result = await runProcess(0, postId);
+      if (!result.entries || result.entries.length === 0) {
+        alert("No entries were generated. Check the console for more information.");
+      }
+      else {
+        const confirmAdd = confirm(`Got ${result.entries.length} entries! Do you want to add them to your data? If not, they will be displayed in your console.`);
+        if (confirmAdd) {
+          setBuilderData(builderData => [...builderData, ...result.entries]);
+        }
+      }
+    }
+    catch (e) {
+      console.error(e);
+      alert(e.message);
+    }
+    finally {
+      setQuickBusy(false);
     }
   }
 
   return (
     <>
       <div style={{ display: 'flex' }}>
-        <NekoButton disabled={isBusy} onClick={onQuickTestClick}>
-          Single Generate (Test)
+        <NekoButton disabled={isBusy} onClick={onSingleGenerateClick} isBusy={quickBusy === 'singleGenerate'}>
+          {i18n.COMMON.SINGLE_GENERATE}
         </NekoButton>
         <NekoButton disabled={isBusy} onClick={() => onRunClick()}>
           Run Bulk Generate
         </NekoButton>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
-          Tokens: {totalTokens}
+          Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
           {postTypes?.map(pt => 
             <NekoOption key={pt.type} value={pt.type} label={pt.name} />
           )}
@@ -175,7 +182,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
+        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
 
       {bulkTasks.TasksErrorModal}
     </>

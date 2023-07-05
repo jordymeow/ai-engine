@@ -200,6 +200,7 @@ i18n.COMMON = {
   MODIFY_EMBEDDING: __( 'Modify Embedding', 'ai-engine' ),
   ADD_EMBEDDING: __( 'Add Embedding', 'ai-engine' ),
   DEV_TOOLS: __( 'Dev Tools', 'ai-engine' ),
+  SINGLE_GENERATE: __( 'Single Generate', 'ai-engine' ),
 }
 
 i18n.FORMS = {

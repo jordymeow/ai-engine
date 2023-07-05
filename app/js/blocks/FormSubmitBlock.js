@@ -1,5 +1,5 @@
-// Previous: 1.6.74
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.8.3
 
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
@@ -89,49 +89,86 @@ const FormSubmitBlock = (props) => {
 
   return (
     <>
-      <AiBlockContainer title="Submit" type="submit"
-        hint={<>
-          IN:{' '}
-          <span className="mwai-pill">{jsxFieldsCount}</span>
-          {' '}OUT:{' '}
-          <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
-        }>
+      <AiBlockContainer
+        title="Submit"
+        type="submit"
+        hint={
+          <>
+            IN:{' '}
+            <span className="mwai-pill">{jsxFieldsCount}</span>
+            {' '}OUT:{' '}
+            <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span>
+          </>
+        }
+      >
         Input Fields: {placeholders.join(', ')}<br />
         Prompt: {prompt}<br />
         Output Element: {outputElement}
       </AiBlockContainer>
       <InspectorControls>
         <PanelBody title={i18n.COMMON.OUTPUT}>
-          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={(value) => setAttributes({ label: value })} />
-          <TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
-            onChange={(value) => setAttributes({ prompt: value })} // mismatched parentheses
-            help={i18n.FORMS.PROMPT_INFO} />
-          <TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
+          <TextControl
+            label={i18n.COMMON.LABEL}
+            value={label}
+            onChange={(value) => setAttributes({ label: value })}
+          />
+          <TextareaControl
+            label={i18n.COMMON.PROMPT}
+            value={prompt}
+            onChange={(value) => setAttributes({ prompt: value })}
+            help={i18n.FORMS.PROMPT_INFO}
+          />
+          <TextControl
+            label={i18n.FORMS.OUTPUT_ELEMENT}
+            value={outputElement}
             onChange={(value) => setAttributes({ outputElement: value })}
-            help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
+            help={i18n.FORMS.OUTPUT_ELEMENT_INFO}
+          />
         </PanelBody>
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
-          {models && models.length > 0 &&
-            <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-              onChange={(value) => setAttributes({ model: value })} // missing closing tag
-            />}
-          <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={(value) => setAttributes({ temperature: parseFloat(value) })} // parseFloat may cause NaN
-            type="number" step="0.1" min="0" max="1"
-            help={i18n.HELP.TEMPERATURE} />
-          <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // missing parentheses for parseInt
-            type="number" step="16" min="32" max="4096"
-            help={i18n.HELP.MAX_TOKENS} />
+          {models && models.length > 0 && (
+            <SelectControl
+              label={i18n.COMMON.MODEL}
+              value={model}
+              options={modelOptions}
+              onChange={(value) => setAttributes({ model: value })}
+            />
+          )}
+          <TextControl
+            label={i18n.COMMON.TEMPERATURE}
+            value={temperature}
+            onChange={(value) => setAttributes({ temperature: parseFloat(value) })}
+            type="number"
+            step="0.1"
+            min="0"
+            max="1"
+          />
+          <TextControl
+            label={i18n.COMMON.MAX_TOKENS}
+            value={maxTokens}
+            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })}
+            type="number"
+            step="16"
+            min="32"
+            max="4096"
+          />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
-          {indexes && indexes.length > 0 &&
-            <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
-              onChange={(value) => setAttributes({ index: value })} // potential type mismatch
-            />}
+          {indexes && indexes.length > 0 && (
+            <SelectControl
+              label={i18n.COMMON.EMBEDDINGS_INDEX}
+              value={index}
+              options={indexOptions}
+              onChange={(value) => setAttributes({ index: value })}
+            />
+          )}
         </PanelBody>
         <PanelBody title={i18n.COMMON.SYSTEM}>
-          <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
+          <TextControl
+            label="ID"
+            value={id}
+            onChange={(value) => setAttributes({ id: value })}
+          />
         </PanelBody>
       </InspectorControls>
     </>
@@ -177,6 +214,10 @@ const createSubmitBlock = () => {
       placeholders: {
         type: 'array',
         default: []
+      },
+      index: {
+        type: 'string',
+        default: ''
       }
     },
     edit: FormSubmitBlock,

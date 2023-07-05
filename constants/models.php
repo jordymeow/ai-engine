@@ -39,7 +39,6 @@ define( 'MWAI_OPENAI_MODELS', [
 		"model" => "gpt-4",
 		"name" => "gpt-4",
 		"family" => "gpt4",
-		"price" => 0.03,
 		"price" => [
 			"in" => 0.03,
 			"out" => 0.06,
@@ -55,7 +54,6 @@ define( 'MWAI_OPENAI_MODELS', [
 		"model" => "gpt-4-32k",
 		"name" => "gpt-4-32k",
 		"family" => "gpt4-32k",
-		"price" => 0.06,
 		"price" => [
 			"in" => 0.06,
 			"out" => 0.12,
@@ -75,7 +73,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "out",
+		"mode" => "completion",
 		"finetune" => [
 			"price" => 0.12
 		],
@@ -89,7 +87,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "out",
+		"mode" => "completion",
 		"finetune" => [
 			"price" => 0.012
 		],
@@ -103,7 +101,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "out",
+		"mode" => "completion",
 		"finetune" => [
 			"price" => 0.0024
 		],
@@ -117,7 +115,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"maxTokens" => 2048,
-		"mode" => "out",
+		"mode" => "completion",
 		"finetune" => [
 			"price" => 0.0016
 		],
