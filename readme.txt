@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.8.3
+Stable tag: 1.8.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,11 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 Languages: English.
 
 == Changelog ==
+
+= 1.8.4 (2023/07/11) =
+* Fix: Avoid flooding the chatbot via the JS API.
+* Fix: Avoid crashing when Deployment Name for Azure is empty.
+* ⚠️ Modernized AI form fields to use styles from the block editor. This will crash the forms already made, but they can be restored easily by clicking on the "Attempt Block Recovery" button. 
 
 = 1.8.3 (2023/07/05) =
 * Fix: Models list.

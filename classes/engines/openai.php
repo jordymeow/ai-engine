@@ -208,7 +208,7 @@ class Meow_MWAI_Engines_OpenAI
     if ( $query->service === 'azure' && !empty( $this->localAzureDeployments ) ) {
       $found = false;
       foreach ( $this->localAzureDeployments as $deployment ) {
-        if ( $deployment['model'] === $query->model ) {
+        if ( $deployment['model'] === $query->model && !empty( $deployment['name'] ) ) {
           $query->azureDeployment = $deployment['name'];
           if ( empty( $query->azureEndpoint ) ) {
             $query->azureEndpoint = $this->localAzureEndpoint;

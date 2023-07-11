@@ -1,5 +1,5 @@
-// Previous: 1.4.9
-// Current: 1.6.5
+// Previous: 1.6.5
+// Current: 1.8.4
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -35,11 +35,11 @@ const FormContainerBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer title="Container" type="container">
-				<div {...blockProps}>
-					<InnerBlocks />
-				</div>
-			</AiBlockContainer>
+			<div {...blockProps}>
+				<AiBlockContainer title="Container" type="container">
+						<InnerBlocks />
+				</AiBlockContainer>
+			</div>
 			<InspectorControls>
 				<PanelBody title={i18n.COMMON.STYLE}>
 				<p>The theme will be applied to all the AI elements in this container.</p>

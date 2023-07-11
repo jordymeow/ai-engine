@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.8.4
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -8,15 +8,18 @@ const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
 const { PanelBody, TextControl } = wp.components;
-const { InspectorControls } = wp.blockEditor;
+const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
+	const blockProps = useBlockProps.save();
 	const { attributes: { id } } = props;
-	return `[mwai-form-output id="${id}"]`;
+	const shortcode = `[mwai-form-output id="${id}"]`;
+	return <div {...blockProps}>{shortcode}</div>;
 }
 
 const FormOutputBlock = props => {
 	const { attributes: { id }, setAttributes } = props;
+	const blockProps = useBlockProps();
 
 	useEffect(() => {
 		if (!id) {
@@ -27,15 +30,14 @@ const FormOutputBlock = props => {
 
 	return (
 		<>
-			<AiBlockContainer title="Output" type="output"
-				hint={<span className="mwai-pill mwai-pill-purple">#{id}</span>}>
-				<div>
-				</div>
-				<div style={{ flex: 'auto' }}></div>
-				<div>
-					#{id}
-				</div>
-			</AiBlockContainer>
+			<div {...blockProps}>
+				<AiBlockContainer title="Output" type="output"
+					hint={<span className="mwai-pill mwai-pill-purple">#{id}</span>}>
+					<div></div>
+					<div style={{ flex: 'auto' }}></div>
+					<div>#{id}</div>
+				</AiBlockContainer>
+			</div>
 			<InspectorControls>
 				<PanelBody title={i18n.FORMS.OUTPUT}>
 					<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
@@ -52,6 +54,11 @@ const createOutputBlock = () => {
 		icon: meowIcon,
 		category: 'layout',
 		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
+		supports: {
+			dimensions: {
+				minHeight: true,
+			}
+		},
 		attributes: {
 			id: {
 				type: 'string',

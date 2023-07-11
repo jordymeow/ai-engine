@@ -1,17 +1,14 @@
-// Previous: 1.7.3
-// Current: 1.7.7
+// Previous: 1.7.7
+// Current: 1.8.4
 
-// React & Vendor Libs
 const { useState, useEffect } = wp.element;
 
-// NekoUI
 import { NekoSelect, NekoOption, NekoModal, NekoTextArea, NekoInput, NekoSpacer } from '@neko-ui';
 
-// AI Engine
 import i18n from '@root/i18n';
 
 const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbedding }) => {
-  const [ embedding, setEmbedding ] = useState(false);
+  const [ embedding, setEmbedding ] = useState(null);
   const isBusy = busy;
 
   useEffect(() => {
@@ -21,13 +18,23 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
   }, [ modal ]);
 
   const onModifyClick = async () => {
-    await onModifyEmbedding(embedding);
-    setModal(null);
+    try {
+      await onModifyEmbedding(embedding);
+      setModal(null);
+    }
+    catch (e) {
+      alert(e.message);
+    }
   }
 
   const onAddClick = async () => {
-    await onAddEmbedding(embedding);
-    setModal(null);
+    try {
+      await onAddEmbedding(embedding);
+      setModal(null);
+    }
+    catch (e) {
+      alert(e.message);
+    }
   }
 
   return (<>
@@ -45,14 +52,20 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
         <NekoSpacer />
         <label>Title:</label>
         <NekoSpacer />
-        <NekoInput value={embedding?.title} 
+        <NekoInput value={embedding?.title}
           placeholder={`Title, like "My Website Information"`}
           description="This is for your convenience only, it's not used anywhere."
           onChange={value => setEmbedding({ ...embedding, title: value }) } />
         <NekoSpacer />
         <label>Content:</label>
         <NekoSpacer />
-        <NekoTextArea value={embedding?.content} onChange={value => setEmbedding({ ...embedding, content: value }) } />
+        <NekoTextArea
+          countable="chars"
+          maxLength={64000}
+          description="The content of your embeddings that will be used by the AI if it matches the user input."
+          value={embedding?.content}
+          onChange={value => setEmbedding({ ...embedding, content: value }) }
+        />
         <NekoSpacer />
         <label>Behavior:</label>
         <NekoSpacer />
@@ -78,7 +91,7 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
           <NekoSpacer />
           <label>Post ID:</label>
           <NekoSpacer />
-          <NekoInput value={embedding?.refId} 
+          <NekoInput value={embedding?.refId}
             onChange={value => setEmbedding({ ...embedding, refId: value }) } />
         </>}
       </>}

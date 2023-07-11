@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.7.7
+// Previous: 1.7.7
+// Current: 1.8.4
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -103,7 +103,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [botId]);
+  }, [botId, startSentence]);
 
   useEffect(() => {
     initChatbot();
@@ -118,10 +118,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverReply.success) {
-      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      // Remove the user message, but accidentally refer to wrong variable
+      freshMessages.pop(); // BUG: overwriting previous pop without condition
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -134,7 +135,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = serverReply.reply;
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -142,7 +143,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
     }
-    else if (lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
       lastMessage.content = serverReply.reply;
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -165,7 +166,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverReply ]);
+  }, [ serverReply, messages ]); // BUG: missing dependency causes stale closure
 
   const onClear = useCallback(async () => {
     await setClientId(randomStr());
@@ -177,9 +178,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [botId]);
 
   const onSubmit = async (textQuery) => {
+
+    if (busy) {
+      console.error('AI Engine: There is already a query in progress.');
+      return;
+    }
+
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
+
     setBusy(true);
     setInputText('');
     const bodyMessages = [...messages, {

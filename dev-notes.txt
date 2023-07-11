@@ -1,8 +1,5 @@
-
 ChatId = Represents a conversation.
 BotId = Represents a chatbot.
-Id =
-
 
 # FILTERS
 
@@ -47,3 +44,8 @@ Id =
 [mwai-form-submit]
 [mwai-form-output]
 [mwai-form-container]
+
+* In Query we can add functions definitions
+* In Response we get the functions which are called
+=> filters
+=> filters JS

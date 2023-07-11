@@ -1,5 +1,5 @@
-// Previous: 1.4.9
-// Current: 1.5.7
+// Previous: 1.5.7
+// Current: 1.8.4
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -8,7 +8,7 @@ const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
 const { Button, PanelBody, TextControl, SelectControl } = wp.components;
-const { InspectorControls } = wp.blockEditor;
+const { useBlockProps, InspectorControls } = wp.blockEditor;
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -18,6 +18,7 @@ const saveFormField = (props) => {
 	const { attributes: { id, label, type, name, options = [],
 		placeholder, rows, defaultValue, maxlength } } = props;
 	const encodedOptions = encodeURIComponent(JSON.stringify(options));
+	const blockProps = useBlockProps.save();
 
 	let shortcode = '[mwai-form-field';
 	if (id) {
@@ -48,12 +49,14 @@ const saveFormField = (props) => {
 		shortcode += ` maxlength="${maxlength}"`;
 	}
 	shortcode += ']';
-	return shortcode;
+
+	return <div {...blockProps}>{shortcode}</div>;
 }
 
 const FormFieldBlock = (props) => {
 	const { attributes: { id, type, name, options = [], label, placeholder, rows,
 		defaultValue, maxlength }, setAttributes } = props;
+	const blockProps = useBlockProps();
 
 	useEffect(() => {
 		if (!id) {
@@ -72,16 +75,18 @@ const FormFieldBlock = (props) => {
 
 	return (
 		<>
-		<AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
-			hint={<span className="mwai-pill">{'{'}{name}{'}'}</span>}>
-			<div>
-				{label}
-			</div>
-			<div style={{ flex: 'auto' }}></div>
-			<div>
-				{name}
-			</div>
-		</AiBlockContainer>
+		<div {...blockProps}>
+			<AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
+				hint={<span className="mwai-pill">{'{'}{name}{'}'}</span>}>
+				<div>
+					{label}
+				</div>
+				<div style={{ flex: 'auto' }}></div>
+				<div>
+					{name}
+				</div>
+			</AiBlockContainer>
+		</div>
 		<InspectorControls>
 			<PanelBody title={ __( 'Field' ) }>
 			<TextControl label="Label Text" value={label} onChange={onUpdateLabel} />
@@ -170,11 +175,17 @@ const FormFieldBlock = (props) => {
 
 const createFormFieldBlock = () => {
 	registerBlockType('ai-engine/form-field', {
+		apiVersion: 3,
 		title: 'AI Form Field',
 		description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
 		icon: meowIcon,
 		category: 'layout',
 		keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
+		supports: {
+			dimensions: {
+				width: true
+			}
+		},
 		attributes: {
 			id: {
 				type: 'string',
