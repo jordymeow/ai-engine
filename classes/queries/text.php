@@ -102,7 +102,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
     $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
     $foundModel = null;
-    foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+    $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
+    foreach ( $openai_models as $currentModel ) {
       if ( $currentModel['model'] === $this->model || $currentModel['family'] === $finetuneFamily ) {
         $foundModel = $currentModel['name'];
         $realMax = $currentModel['maxTokens'];
@@ -126,7 +127,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public function setModel( string $model ) {
     $this->model = $model;
     $this->mode = 'completion';
-    foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+    $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
+    foreach ( $openai_models as $currentModel ) {
       if ( $currentModel['model'] === $this->model ) {
         if ( $currentModel['mode'] ) {
           $this->mode = $currentModel['mode'];

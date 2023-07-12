@@ -21,7 +21,7 @@ class Meow_MWAI_Engines_OpenAI
   private $streamCallback = null;
   private $streamedTokens = 0;
 
-  public function __construct($core)
+  public function __construct( $core )
   {
     $this->core = $core;
     $this->localService = $this->core->get_option( 'openai_service' );
@@ -699,6 +699,10 @@ class Meow_MWAI_Engines_OpenAI
     }
   }
 
+  static public function get_openai_models() {
+    return apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
+  }
+
   private function calculatePrice( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
   {
     // Finetuned models => We need to modify the model to the family of the model.
@@ -707,7 +711,8 @@ class Meow_MWAI_Engines_OpenAI
       $finetune = true;
     }
 
-    foreach ( MWAI_OPENAI_MODELS as $currentModel ) {
+    $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
+    foreach ( $openai_models as $currentModel ) {
       if ( $currentModel['model'] === $modelFamily || ( $finetune && $currentModel['family'] === $modelFamily ) ) {
         if ( $currentModel['type'] === 'image' ) {
           if ( !$option ) {

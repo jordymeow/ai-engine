@@ -182,7 +182,6 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'rest_nonce' => wp_create_nonce( 'wp_rest' ),
 			'session' => $this->core->get_session_id(),
 			'options' => $this->core->get_all_options(),
-			'pricing' => MWAI_OPENAI_MODELS,
 			'chatbots' => $this->core->getChatbots(),
 			'themes' => $this->core->getThemes(),
 			'stream' => $this->core->get_option( 'shortcode_chat_stream' ),

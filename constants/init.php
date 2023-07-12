@@ -157,7 +157,7 @@ define( 'MWAI_OPTIONS', [
 	'openai_apikey' => false,
 	'openai_service' => 'openai', // 'openai', 'azure' (if not set here, it will use the Settings)
 	'openai_usage' => [],
-	'openai_models' => MWAI_OPENAI_MODELS,
+	'openai_models' => Meow_MWAI_Engines_OpenAI::get_openai_models(),
 	'openai_azure_endpoint' => '',
 	'openai_azure_apikey' => '',
 	'openai_azure_deployments' => [],

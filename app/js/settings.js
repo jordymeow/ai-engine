@@ -1,5 +1,5 @@
-// Previous: 1.4.1
-// Current: 1.6.94
+// Previous: 1.6.94
+// Current: 1.8.5
 
 const prefix = mwai.prefix;
 const domain = mwai.domain;
@@ -12,10 +12,9 @@ const isRegistered = isPro && mwai.is_registered === '1';
 const restNonce = mwai.rest_nonce;
 const options = mwai.options;
 const session = mwai.session;
-const pricing = mwai.pricing;
 const themes = mwai.themes;
 const stream = !!mwai.stream;
 const chatbots = mwai.chatbots;
 
 export { prefix, domain, apiUrl, restUrl, pluginUrl, userData, isPro, stream,
-  isRegistered, restNonce, session, pricing, options, themes, chatbots };
+  isRegistered, restNonce, session, options, themes, chatbots };

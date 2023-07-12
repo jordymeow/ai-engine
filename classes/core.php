@@ -555,7 +555,7 @@ class Meow_MWAI_Core
 		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
-		$options['openai_models'] = MWAI_OPENAI_MODELS;
+		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_openai_models();
 		$this->options = $options;
 		return $options;
 	}
