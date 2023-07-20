@@ -1,5 +1,5 @@
-// Previous: 1.6.89
-// Current: 1.8.2
+// Previous: 1.8.2
+// Current: 1.8.6
 
 class MwaiAPI {
 
@@ -71,16 +71,16 @@ export const addFilter = (tag, callback, priority = 10) => {
   mwaiAPI.addFilter(tag, callback, priority);
 };
 
-export const applyFilters = (tag, value, ...args) => {
-  return mwaiAPI.applyFilters(tag, value, ...args);
+export const applyFilters = (tag, value, args) => {
+  return mwaiAPI.applyFilters(tag, value, args);
 };
 
 export const addAction = (tag, callback, priority = 10) => {
   mwaiAPI.addAction(tag, callback, priority);
 };
 
-export const doAction = (tag, ...args) => {
-  mwaiAPI.doAction(tag, ...args);
+export const doAction = (tag, args) => {
+  mwaiAPI.doAction(tag, args);
 };
 
 export { mwaiAPI };

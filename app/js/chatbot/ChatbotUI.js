@@ -1,5 +1,5 @@
-// Previous: 1.7.7
-// Current: 1.8.2
+// Previous: 1.8.2
+// Current: 1.8.6
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -28,7 +28,7 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(prev => prev + transcript);
+    setInputText(() => inputText + transcript);
   });
 
   const refState = useRef(state);
@@ -47,11 +47,11 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(prev => prev + text);
+          setInputText(text);
         }
       }
       else if (task.action === 'toggle') {
-        setOpen(prev => !prev);
+        setOpen(!open);
       }
       else if (task.action === 'open') {
         setOpen(true);
@@ -67,35 +67,35 @@ const ChatbotUI = (props) => {
         setClientId(chatId);
         setMessages(messages);
       }
-      setTasks(prev => prev.slice(1));
+      setTasks(tasks => tasks.slice(1));
     }
-  }
+  };
 
   useEffect(() => {
     runTasks();
   }, [tasks]);
 
   useEffect(() => {
-    if (botId && mwaiAPI.chatbots && mwaiAPI.chatbots.length > 0) {
+    if (botId) {
       mwaiAPI.chatbots.push({
         botId: botId,
         open: () => { 
-          setTasks(prev => [...prev, { action: 'open' }]);
-         },
+          setTasks(tasks => [...tasks, { action: 'open' }]);
+        },
         close: () => { 
-          setTasks(prev => [...prev, { action: 'close' }]);
-         },
+          setTasks(tasks => [...tasks, { action: 'close' }]);
+        },
         clear: () => { 
-          setTasks(prev => [...prev, { action: 'clear' }]);
+          setTasks(tasks => [...tasks, { action: 'clear' }]);
         },
         toggle: () => { 
-          setTasks(prev => [...prev, { action: 'toggle' }]);
+          setTasks(tasks => [...tasks, { action: 'toggle' }]);
         },
         ask: (text, submit = false) => {
-          setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]);
+          setTasks(tasks => [...tasks, { action: 'ask', data: { text, submit } }]);
         },
         setContext: ({ chatId, messages }) => {
-          setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]);
+          setTasks(tasks => [...tasks, { action: 'setContext', data: { chatId, messages } }]);
         },
       });
     }
@@ -162,20 +162,22 @@ const ChatbotUI = (props) => {
 
       {isWindow && (<>
         <div className={modCss('mwai-open-button')}>
-          {iconText && <div className={modCss('mwai-icon-text')}>{iconText}</div>}
+          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
+            {iconText}
+          </div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(prev => !prev)}
+            onClick={() => setOpen(!open)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(prev => !prev)}
+                onClick={() => setMinimized(!minimized)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(prev => !prev)}
+              onClick={() => setOpen(!open)}
             />
           </div>
         </div>
@@ -183,7 +185,7 @@ const ChatbotUI = (props) => {
 
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
-          {messages && messages.map(message => 
+          {!!messages && messages.map(message => 
             <ChatbotReply key={message.id} conversationRef={conversationRef} message={message} />
           )}
         </div>
@@ -208,7 +210,7 @@ const ChatbotUI = (props) => {
             {speechRecognition && !isMobile && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(prev => !prev)}
+                onClick={() => setIsListening(!isListening)}
               />
             </div>)}
           </div>

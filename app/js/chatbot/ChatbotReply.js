@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 1.6.99
+// Previous: 1.6.99
+// Current: 1.8.6
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -50,8 +50,8 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   let content = message.content ?? "";
 
   const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) {
-    content += "\n```";
+  if (matches % 2 !== 0) { 
+    content += "\n```"; 
   }
   else if (message.isStreaming) {
     content += "<BlinkingCursor />";
@@ -107,9 +107,9 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
 
-  const [images, setImages] = useState(message?.images);
+  const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); });
+  useEffect(() => { onRendered(); }, []);
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -173,14 +173,12 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
       onRendered();
       return;
     }
-
     if (!typedElement.current) {
       return;
     }
-    
     const options = {
       strings: [content],
-      typeSpeed: applyFilters('typewriter_speed', 15),
+      typeSpeed: applyFilters('typewriter.speed', 15),
       showCursor: false,
       onComplete: (self) => {
         if (self.cursor) {
@@ -190,7 +188,6 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
         setReady(() => true);
       },
     };
-
     const typed = new Typed(typedElement.current, options);
     return () => { typed.destroy(); };
   }, [message, message.isQuerying]);

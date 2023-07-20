@@ -8,6 +8,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public ?string $session = null;
   public int $maxResults = 1;
   public ?string $service = null;
+  public ?string $botId = null;
 
   // OpenAI
   public ?string $apiKey = null;
@@ -142,6 +143,14 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    */
   public function setSession( string $session ) {
     $this->session = $session;
+  }
+
+  /**
+   * The bot ID to use.
+   * @param string $botId The bot ID.
+   */
+  public function setBotId( string $botId ) {
+    $this->botId = $botId;
   }
 
   /**

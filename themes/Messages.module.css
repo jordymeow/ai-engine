@@ -94,7 +94,6 @@
   background: var(--mwai-backgroundUserColor);
   color: white;
   margin-right: 10px;
-  text-align: right;
 }
 
 .mwai-chat .mwai-conversation .mwai-reply.mwai-user::before, .mwai-chat .mwai-conversation .mwai-reply.mwai-user::after {

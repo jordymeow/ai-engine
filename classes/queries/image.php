@@ -29,6 +29,9 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 		if ( !empty( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
 		}
+		if ( !empty( $params['botId'] ) ) {
+      $this->setBotId( $params['botId'] );
+    }
   }
 
 }

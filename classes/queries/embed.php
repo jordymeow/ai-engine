@@ -15,6 +15,7 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
 			$this->env = $promptOrQuery->env;
 			$this->apiKey = $promptOrQuery->apiKey;
 			$this->service = $promptOrQuery->service;
+			$this->botId = $promptOrQuery->botId;
 		}
 		else {
 			parent::__construct( $promptOrQuery ? $promptOrQuery : '' );
@@ -45,5 +46,8 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
     if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
+		if ( !empty( $params['botId'] ) ) {
+      $this->setBotId( $params['botId'] );
+    }
   }
 }

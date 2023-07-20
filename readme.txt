@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 7.4
-Stable tag: 1.8.5
+Stable tag: 1.8.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,20 @@ Languages: English.
 
 == Changelog ==
 
+= 1.8.6 (2023/07/20) =
+* Add: New JS API filter: [ai.reply](https://meowapps.com/ai-engine/api/#js-filters).
+* Add: Embeddings Import (CSV or JSON). Thanks, Mike! ☺️
+* Fix: Few issues related to embeddings and their default values.
+* Update: Enhanced the checkboxes.
+* Update: Added the botId to the Query object.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.8.5 (2023/07/12) =
 * Add: New filter "mwai_openai_models" to customize the models list. Check [this example](https://wordpress.org/support/topic/how-to-use-gpt-4-0314/#post-16886291). 
 * Fix: Avoid flooding the chatbot via the JS API.
 * Fix: Avoid crashing when Deployment Name for Azure is empty.
 * ⚠️ Modernized AI form fields to use styles from the block editor. This will crash the forms already made, but they can be restored easily by clicking on the "Attempt Block Recovery" button. 
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.8.3 (2023/07/05) =
 * Fix: Models list.

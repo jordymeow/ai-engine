@@ -32,5 +32,8 @@ class Meow_MWAI_Query_Transcribe extends Meow_MWAI_Query_Base {
 		if ( !empty( $params['url'] ) ) {
 			$this->setURL( $params['url'] );
 		}
+		if ( !empty( $params['botId'] ) ) {
+      $this->setBotId( $params['botId'] );
+    }
   }
 }

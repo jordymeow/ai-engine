@@ -395,5 +395,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     if ( !empty( $params['apiKey'] ) ) {
 			$this->setApiKey( $params['apiKey'] );
 		}
+    if ( !empty( $params['botId'] ) ) {
+      $this->setBotId( $params['botId'] );
+    }
   }
 }
