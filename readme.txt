@@ -4,8 +4,8 @@ Tags: ai, chatgpt, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
-Requires PHP: 7.4
-Stable tag: 1.8.6
+Requires PHP: 6.3
+Stable tag: 1.8.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,14 +78,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.8.7 (2023/10/22) =
+* Add: Support of [Function Calling](https://meowapps.com/ai-engine/api/#function-calling) in the AI Engine API.
+* Fix: Import Embeddings was not displaying progress accurately, and some error messages were wrong.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.8.6 (2023/07/20) =
 * Add: New JS API filter: [ai.reply](https://meowapps.com/ai-engine/api/#js-filters).
 * Add: Embeddings Import (CSV or JSON). Thanks, Mike! ☺️
 * Fix: Few issues related to embeddings and their default values.
 * Update: Enhanced the checkboxes.
 * Update: Added the botId to the Query object.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.8.5 (2023/07/12) =
 * Add: New filter "mwai_openai_models" to customize the models list. Check [this example](https://wordpress.org/support/topic/how-to-use-gpt-4-0314/#post-16886291). 

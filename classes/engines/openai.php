@@ -17,7 +17,9 @@ class Meow_MWAI_Engines_OpenAI
 
   // Streaming
   private $streamTemporaryBuffer = "";
-  private $streamBuffer = "";
+  private $streamContent = "";
+  private $streamFunctionCall = null;
+  private $streamParameter = "";
   private $streamCallback = null;
   private $streamedTokens = 0;
 
@@ -99,9 +101,21 @@ class Meow_MWAI_Engines_OpenAI
             else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
               $content = $json['choices'][0]['delta']['content'];
             }
+            else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
+              $function_call = $json['choices'][0]['delta']['function_call'];
+              if ( empty( $this->streamFunctionCall ) ) {
+                $this->streamFunctionCall = [ 'name' => "", 'arguments' => "" ];
+              }
+              if ( isset( $function_call['name'] ) ) {
+                $this->streamFunctionCall['name'] .= $function_call['name'];
+              }
+              if ( isset( $function_call['arguments'] ) ) {
+                $this->streamFunctionCall['arguments'] .= $function_call['arguments'];
+              }
+            }
             if ( $content !== null && $content !== "" ) {
               $this->streamedTokens += count( explode( " ", $content ) );
-              $this->streamBuffer .= $content;
+              $this->streamContent .= $content;
               call_user_func( $this->streamCallback, $content );
             }
           }
@@ -338,6 +352,10 @@ class Meow_MWAI_Engines_OpenAI
       "temperature" => $query->temperature,
       "stream" => !is_null( $streamCallback ),
     );
+    if ( !empty( $query->functions ) ) {
+      $body['functions'] = $query->functions;
+      $body['function_call'] = $query->functionCall;
+    }
     if ( $query->mode === 'chat' ) {
       $body['messages'] = $query->messages;
     }
@@ -367,7 +385,14 @@ class Meow_MWAI_Engines_OpenAI
             'prompt_tokens' => $query->getPromptTokens(),
             'completion_tokens' => $this->streamedTokens
           ],
-          'choices' => [ [ 'message' => [ 'content' => $this->streamBuffer ] ] ]
+          'choices' => [
+            [ 
+              'message' => [ 
+                'content' => $this->streamContent,
+                'function_call' => $this->streamFunctionCall
+              ]
+            ]
+          ],
         ];
       }
       // Regular data

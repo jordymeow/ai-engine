@@ -330,7 +330,8 @@ i18n.ALERTS = {
   CHECK_CONSOLE: __( 'Error! Check your console for more details.', 'ai-engine' ),
   DATASET_UPLOADED: __( 'Uploaded successfully! You can now train a model based on this dataset.', 'ai-engine' ),
   ONLY_SUPPORTS_FILES: __( 'This only supports JSON, JSONL, and CSV files.', 'ai-engine' ),
-  EMPTY_LINES: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'prompt\' and \'completion\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
+  EMPTY_LINES_DATASET: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'prompt\' and \'completion\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
+  EMPTY_LINES_EMBEDDINGS: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'title\' and \'content\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
   ARE_YOU_SURE: __( 'Are you sure?', 'ai-engine' ),
 }
 

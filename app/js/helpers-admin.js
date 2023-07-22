@@ -1,5 +1,5 @@
-// Previous: 1.7.7
-// Current: 1.8.2
+// Previous: 1.8.2
+// Current: 1.8.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -94,22 +94,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     setCurrentLanguage(startLanguage);
   }, [startLanguage]);
 
-  useEffect(() => {
-    // Use the language stored in the local storage if it exists
-    let preferredLanguage = localStorage.getItem('mwai_preferred_language');
-    if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
-      setCurrentLanguage(preferredLanguage);
-      return;
-    }
-
-    // Otherwise, try to detect the language from the browser
-    let detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
-    if (languages.find(l => l.value === detectedLanguage)) {
-      setCurrentLanguage(detectedLanguage);
-    }
-  }, []);
-
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
       return customLanguage;
@@ -120,7 +104,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]);
+  }, [currentLanguage, customLanguage, isCustom, languages]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -148,7 +132,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, isCustom, languages, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -159,7 +143,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const deletedFineTunes = options?.openai_finetunes_deleted || [];
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models;
+    let allModels = options.openai_models || [];
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
@@ -182,7 +166,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
       })];
     }
     extraModels = extraModels?.split(',').filter(x => x);
-    if (extraModels && extraModels.length) {
+    if (extraModels.length) {
       allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
     return allModels;
@@ -197,12 +181,8 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
 
-  const completionModels = useMemo(() => {
-    return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
-  }, [models]);
-
   const getModel = (model) => {
-    if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo') {
+    if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
       return 'gpt-3.5-turbo';
     }
     else if (model === 'gpt-4-0314') {
@@ -210,6 +190,10 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     }
     return allModels.find(x => x.model === model);
   }
+
+  const completionModels = useMemo(() => {
+    return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
+  }, [models]);
 
   const isFineTunedModel = (model) => {
     const modelObj = getModel(model);
@@ -228,12 +212,14 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getFamilyModel = (model) => {
     const modelObj = getModel(model);
+    if(!modelObj) return null;
     const coreModel = coreModels.find(x => x.family === modelObj.family);
     return coreModel || null;
   }
 
   const getPrice = (model, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
+    if(!modelObj) return null;
     if (modelObj?.type === 'image') {
       if (modelObj?.options) {
         const opt = modelObj.options.find(x => x.option === option);
@@ -245,11 +231,11 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
+    if (!modelObj) return 0;
     const price = getPrice(model, option);
-    
     let priceIn = price;
     let priceOut = price;
-    if (typeof price === 'object') {
+    if (price && typeof price === 'object') {
       priceIn = price['in'];
       priceOut = price['out'];
     }
@@ -265,13 +251,13 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 }
 
 const retrieveVectors = async (queryParams) => {
-  const isSearch = queryParams?.filters?.search !== undefined; // Changed from !== null
+  const isSearch = queryParams?.filters?.search !== undefined; 
   if (queryParams?.filters?.search === "") {
     return [];
   }
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
-  if (isSearch && res?.vectors?.length) {
+  if (isSearch && res?.vectors?.length >= 0) {
     const sortedVectors = res.vectors.sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
         return a.score - b.score;

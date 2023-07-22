@@ -8,6 +8,9 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $query = null;
   public $type = 'text';
 
+  // Function Call
+  public $functionCall = null;
+
   public function __construct( $query = null ) {
     $this->query = $query;
   }
@@ -74,6 +77,11 @@ class Meow_MWAI_Reply implements JsonSerializable {
     return $this->type;
   }
 
+  public function setReply( $reply ) {
+    $this->result = $reply;
+    $this->results[] = [ $reply ];
+  }
+
   public function replace( $search, $replace ) {
     $this->result = str_replace( $search, $replace, $this->result );
     $this->results = array_map( function( $result ) use ( $search, $replace ) {
@@ -93,27 +101,42 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
         // It's chat completion
         if ( isset( $choice['message'] ) ) {
-          $content = trim( $choice['message']['content'] );
-          $this->results[] = $content;
-          $this->result = $content;
+
+          // It's text content
+          if ( isset( $choice['message']['content'] ) ) {
+            $content = trim( $choice['message']['content'] );
+            $this->results[] = $content;
+            $this->result = $content;
+          }
+
+          // It's a function call
+          if ( isset( $choice['message']['function_call'] ) ) {
+            $content = $choice['message']['function_call'];
+            $name = trim( $content['name'] );
+            $arguments = trim( str_replace( "\n", "", $content['arguments'] ) );
+            if ( substr( $arguments, 0, 1 ) == '{' ) {
+              $arguments = json_decode( $arguments, true );
+            }
+            $this->functionCall = [ 'name' => $name, 'arguments' => $arguments ];
+          }
         }
 
         // It's text completion
-        if ( isset( $choice['text'] ) ) {
+        else if ( isset( $choice['text'] ) ) {
           $text = trim( $choice['text'] );
           $this->results[] = $text;
           $this->result = $text;
         }
 
         // It's url/image
-        if ( isset( $choice['url'] ) ) {
+        else if ( isset( $choice['url'] ) ) {
           $url = trim( $choice['url'] );
           $this->results[] = $url;
           $this->result = $url;
         }
 
         // It's embedding
-        if ( isset( $choice['embedding'] ) ) {
+        else if ( isset( $choice['embedding'] ) ) {
           $content = $choice['embedding'];
           $this->results[] = $content;
           $this->result = $content;

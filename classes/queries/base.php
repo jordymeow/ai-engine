@@ -10,6 +10,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public ?string $service = null;
   public ?string $botId = null;
 
+  // Functions
+  public array $functions = [];
+  public ?string $functionCall = null;
+
   // OpenAI
   public ?string $apiKey = null;
 
@@ -37,12 +41,26 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     ];
   }
 
+  public function addFunction( Meow_MWAI_Query_Function $function ): void {
+    $this->functions[] = $function;
+    $this->functionCall = "auto";
+  }
+
+  public function setFunctions( array $functions ): void {
+    $this->functions = $functions;
+    $this->functionCall = "auto";
+  }
+
+  public function getFunctions(): array {
+    return $this->functions;
+  }
+
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
   }
 
   public function getLastPrompt(): string {
-    return $this->prompt; 
+    return $this->prompt;
   }
 
   /**

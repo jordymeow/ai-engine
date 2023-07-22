@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.8.6
+// Previous: 1.8.6
+// Current: 1.8.7
 
 const { useState } = wp.element;
 
@@ -21,11 +21,11 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     console.log('Calculate Diff', { currentVectors, importVectors });
     for (const importVector of importVectors) {
       const cleanVector = {
-        id: importVector.id ?? null,
+        id: importVector.id ?? null, // If there is an ID, it means it already exists in the Local DB.
         type: importVector.type ?? 'manual',
         title: importVector.title ?? 'N/A',
         behavior: importVector.behavior ?? 'context',
-        dbId: importVector.dbId ?? null,
+        dbId: importVector.dbId ?? null, // If there is a dbId, it means it already exists in the Vector DB. 
         dbIndex: importVector.dbIndex ?? null,
         dbNS: importVector.dbNS ?? null,
         content: importVector.content ?? '',
@@ -65,7 +65,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
 
       if (sameVector && cleanVector.content === sameVector.content && cleanVector.title === sameVector.title) {
         sameVectors.push(cleanVector);
-      } else if (cleanVector.id) {
+      } else if (!!cleanVector.id) {
         modifyVectors.push(cleanVector);
       } else {
         addVectors.push(cleanVector);
@@ -87,9 +87,9 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
         if (res.vectors.length < 2) {
           finished = true;
         }
-        setTotal(prev => res.total); // subtle bug: using previous value may cause mismatch if multiple calls happen fast
+        setTotal(res.total);
         vectors = vectors.concat(res.vectors);
-        setCount(prev => vectors.length);
+        setCount(vectors.length);
         params.page++;
       }
       await calculateDiff(vectors, importVectors);
@@ -156,21 +156,21 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
         <NekoSpacer />
         <div style={{ display: 'flex' }}>
           <NekoCheckbox small label="ID" disabled={true} checked={embeddingBasedOn.id}
-            onChange={() => setEmbeddingBasedOn(prev => ({ ...prev, id: !prev.id }))}
+            onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, id: !embeddingBasedOn.id })}
           />
           <div style={{ marginLeft: 15 }}>
             <NekoCheckbox small label="DB ID" disabled={true} checked={embeddingBasedOn.dbId}
-              onChange={() => setEmbeddingBasedOn(prev => ({ ...prev, dbId: !prev.dbId }))}
+              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbId: !embeddingBasedOn.dbId })}
             />
           </div>
-          <div style={{marginLeft:15}}>
+          <div style={{ marginLeft: 15 }}>
             <NekoCheckbox small label="Title" disabled={false} checked={embeddingBasedOn.title}
-              onChange={() => setEmbeddingBasedOn(prev => ({ ...prev, title: !prev.title }))}
+              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, title: !embeddingBasedOn.title })}
             />
           </div>
-          <div style={{marginLeft:15}}>
+          <div style={{ marginLeft: 15 }}>
             <NekoCheckbox small label="Post ID" disabled={false} checked={embeddingBasedOn.refId}
-              onChange={() => setEmbeddingBasedOn(prev => ({ ...prev, refId: !prev.refId }))}
+              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, refId: !embeddingBasedOn.refId })}
             />  
           </div>
         </div>
@@ -198,6 +198,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
         <NekoSpacer />
       </>}
     />
+
   </>);
 }
 
