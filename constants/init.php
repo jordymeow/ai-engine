@@ -181,6 +181,7 @@ define( 'MWAI_OPTIONS', [
 		'syncPostStatus' => ['publish'],
 	],
 	'extra_models' => "",
+	'public_api' => false,
 	'debug_mode' => true,
 	'resolve_shortcodes' => false,
 	'dynamic_max_tokens' => true,

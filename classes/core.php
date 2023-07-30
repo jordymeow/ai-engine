@@ -73,6 +73,10 @@ class Meow_MWAI_Core
 		$editor_or_admin = current_user_can( 'editor' ) || current_user_can( 'administrator' );
 		return apply_filters( 'mwai_allow_usage', $editor_or_admin );
 	}
+	
+	function can_access_public_api() {
+		return apply_filters( 'mwai_allow_public_api', '__return_true' );
+	}
 
 	#endregion
 

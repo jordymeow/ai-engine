@@ -6,18 +6,23 @@ class Meow_MWAI_API {
 	public function __construct() {
 		global $mwai_core;
 		$this->core = $mwai_core;
+		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 	}
 
 	function rest_api_init() {
+		$public_api = $this->core->get_option( 'public_api' );
+		if ( !$public_api ) {
+			return;
+		}
 		register_rest_route( 'mwai/v1', '/simpleTextQuery', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_simpleTextQuery' ),
-			'permission_callback' => array( $this->core, 'can_access_features' ),
+			'permission_callback' => array( $this->core, 'can_access_public_api' ),
 		) );
 		register_rest_route( 'mwai/v1', '/moderationCheck', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_moderationCheck' ),
-			'permission_callback' => array( $this->core, 'can_access_features' ),
+			'permission_callback' => array( $this->core, 'can_access_public_api' ),
 		) );
 	}
 

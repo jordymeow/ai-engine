@@ -201,6 +201,7 @@ i18n.COMMON = {
   ADD_EMBEDDING: __( 'Add Embedding', 'ai-engine' ),
   DEV_TOOLS: __( 'Dev Tools', 'ai-engine' ),
   SINGLE_GENERATE: __( 'Single Generate', 'ai-engine' ),
+  PUBLIC_API: __( 'Public API', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -235,6 +236,7 @@ i18n.HELP = {
   STREAMING: __( 'The AI\'s response will appear as it\'s being created. Be cautious: this feature\'s ability to manage statistics, limits, and filters is still in its beta phase.', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Enable syntax highlighting for the code blocks.', 'ai-engine' ),
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
+  PUBLIC_API: __( 'Enable the Public REST API. By default, it will be accessible to everyone.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

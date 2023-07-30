@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 6.3
-Stable tag: 1.8.7
+Stable tag: 1.8.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,11 +78,14 @@ Languages: English.
 
 == Changelog ==
 
-= 1.8.7 (2023/10/22) =
-* Add: Support of [Function Calling](https://meowapps.com/ai-engine/api/#function-calling) in the AI Engine API.
-* Fix: Import Embeddings was not displaying progress accurately, and some error messages were wrong.
+= 1.8.8 (2023/07/30) =
+* Add: Public API. This is really beta, use with caution (and the endpoints might change).
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 1.8.7 (2023/07/22) =
+* Add: Support of [Function Calling](https://meowapps.com/ai-engine/api/#function-calling) in the AI Engine API.
+* Fix: Import Embeddings was not displaying progress accurately, and some error messages were wrong.
 
 = 1.8.6 (2023/07/20) =
 * Add: New JS API filter: [ai.reply](https://meowapps.com/ai-engine/api/#js-filters).
