@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 6.3
-Stable tag: 1.8.8
+Stable tag: 1.8.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,10 +78,13 @@ Languages: English.
 
 == Changelog ==
 
-= 1.8.8 (2023/07/30) =
-* Add: Public API. This is really beta, use with caution (and the endpoints might change).
+= 1.8.9 (2023/08/07) =
+* Fix: Avoid the double slashes in some URLs.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 1.8.8 (2023/07/30) =
+* Add: Public API. This is really beta, use with caution (and the endpoints might change).
 
 = 1.8.7 (2023/07/22) =
 * Add: Support of [Function Calling](https://meowapps.com/ai-engine/api/#function-calling) in the AI Engine API.

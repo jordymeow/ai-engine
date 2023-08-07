@@ -1,5 +1,5 @@
-// Previous: 1.8.4
-// Current: 1.8.6
+// Previous: 1.8.6
+// Current: 1.8.9
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -36,7 +36,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
+  const contextId = system.contextId; 
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -54,7 +54,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const localMemory = localMemoryParam && (!!id || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${id || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + 'images/' + icon) : pluginUrl + 'images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
@@ -95,7 +95,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    var chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -125,6 +125,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         freshMessages.pop();
       }
       if (lastMessage && lastMessage.role === 'user') {
+        // Remove the user message if it exists
         freshMessages.pop();
       }
       freshMessages.push({
@@ -186,9 +187,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       console.error('AI Engine: There is already a query in progress.');
       return;
     }
+
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
+
     setBusy(true);
     setInputText('');
     const bodyMessages = [...messages, {
@@ -223,7 +226,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     };
     try {
       if (debugMode) { console.log('[CHATBOT] OUT: ', body); }
-      const streamCallback = stream ? (content) => {
+      const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
           const freshMessages = [...messages];
           const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
@@ -233,7 +236,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           }
           return freshMessages;
         });
-      } : null;
+      };
 
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
