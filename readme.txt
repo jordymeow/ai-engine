@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 6.3
-Stable tag: 1.8.9
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,8 @@ Languages: English.
 
 == Changelog ==
 
-= 1.8.9 (2023/08/07) =
+= 1.9.0 (2023/09/18) =
+* Add: Added missing servers for Pinecone.
 * Fix: Avoid the double slashes in some URLs.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
