@@ -70,8 +70,9 @@ class Meow_MWAI_Modules_Chatbot {
 			error_log("AI Engine: The query was rejected - no botId nor id was specified.");
 			return false;
 		}
+
 		$length = strlen( $newMessage );
-		if ( $length < 1 || $length > ( 4096 - 512 ) ) {
+		if ( $length < 1 || $length > ( 4096 * 16 ) ) {
 			error_log("AI Engine: The query was rejected - message was too short or too long.");
 			return false;
 		}
@@ -90,8 +91,8 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( !$this->basics_security_check( $id, $botId, $newMessage )) {
 				return new WP_REST_Response( [ 
 					'success' => false, 
-					'message' => 'Sorry, your query has been rejected.' ], 403
-				);
+					'message' => apply_filters( 'mwai_ai_exception', 'Sorry, your query has been rejected.' )
+				], 403 );
 			}
 
 			// Custom Chatbot

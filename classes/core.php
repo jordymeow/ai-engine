@@ -134,14 +134,21 @@ class Meow_MWAI_Core
 		if ( !$post ) {
 			return false;
 		}
-		$text = $post->post_content;
+		$text = apply_filters( 'mwai_pre_post_content', $post->post_content, $postId );
 		$pattern = '/\[mwai_.*?\]/';
     $text = preg_replace( $pattern, '', $text );
 		if ( $this->get_option( 'resolve_shortcodes' ) ) {
 			$text = apply_filters( 'the_content', $text );
 		}
+		else {
+			$pattern = "/\[[^\]]+\]/";
+    	$text = preg_replace( $pattern, '', $text );
+			$pattern = "/<!--\s*\/?wp:[^\>]+-->/";
+			$text = preg_replace( $pattern, '', $text );
+		}
 		$text = $this->cleanText( $text );
 		$text = $this->cleanSentences( $text );
+		$text = apply_filters( 'mwai_post_content', $text, $postId );
 		return $text;
 	}
 
@@ -279,9 +286,7 @@ class Meow_MWAI_Core
 			$post = (array)$post;
 		}
 		$language = $this->get_post_language( $post['ID'] );
-		$content = apply_filters( 'mwai_pre_post_content', $post['post_content'], $post['ID'] );
-		$content = $this->cleanText( $content );
-		$content = apply_filters( 'mwai_post_content', $content, $post['ID'] );
+		$content = $this->getCleanPostContent( $post['ID'] );
 		$title = $post['post_title'];
 		$excerpt = $post['post_excerpt'];
 		$url = get_permalink( $post['ID'] );

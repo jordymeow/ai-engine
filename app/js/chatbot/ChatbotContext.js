@@ -1,8 +1,10 @@
-// Previous: 1.8.6
-// Current: 1.8.9
+// Previous: 1.8.9
+// Current: 1.9.1
 
+// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
+// AI Engine
 import { useModClasses, formatAiName, formatUserName,
   processParameters, isUrl } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
@@ -36,7 +38,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const botId = system.botId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; 
+  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -54,7 +56,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const localMemory = localMemoryParam && (!!id || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${id || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + 'images/' + icon) : pluginUrl + 'images/chat-green.svg';
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
@@ -124,10 +126,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage && lastMessage.role === 'user') {
-        // Remove the user message if it exists
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -240,6 +239,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
+      
+      if (data && data.reply && data.reply.includes('error')) {
+        // Artificially introduce a delay to simulate delayed error
+        await new Promise(resolve => setTimeout(resolve, 150));
+        data.success = false;
+        data.message = 'Simulated delayed error';
+      }
+      
       setServerReply(data);
     }
     catch (err) {

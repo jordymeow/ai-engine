@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 6.3
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,11 +78,17 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.1 (2023/09/22) =
+* Fix: Issue with broken avatars.
+* Fix: Security limitations were a bit too strict.
+* Fix: Issue with forms when using external input elements.
+* Update: Optimized content cleaning when used to create embeddings or by other parts of AI Engine.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.0 (2023/09/18) =
 * Add: Added missing servers for Pinecone.
 * Fix: Avoid the double slashes in some URLs.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.8.8 (2023/07/30) =
 * Add: Public API. This is really beta, use with caution (and the endpoints might change).

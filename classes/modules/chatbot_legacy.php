@@ -74,8 +74,8 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 			if ( !$this->basics_security_check( $params )) {
 				return new WP_REST_Response( [ 
 					'success' => false, 
-					'message' => 'Sorry, your query has been rejected.' ], 403
-				);
+					'message' => apply_filters( 'mwai_ai_exception', 'Sorry, your query has been rejected.' )
+				], 403 );
 			}
 
 			$query = new Meow_MWAI_Query_Text( $params['newMessage'], 1024 );
