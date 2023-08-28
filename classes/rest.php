@@ -167,6 +167,13 @@ class Meow_MWAI_Rest
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
 				'callback' => array( $this, 'rest_openai_deleted_finetunes_get' ),
 			) );
+
+			register_rest_route( $this->namespace, '/openai/models', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_settings' ),
+				'callback' => array( $this, 'rest_openai_models_get' ),
+			) );
+
 			register_rest_route( $this->namespace, '/openai/finetunes/list', array(
 				'methods' => 'GET',
 				'permission_callback' => array( $this->core, 'can_access_settings' ),
@@ -549,10 +556,23 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function rest_openai_deleted_finetunes_get() {
+	function rest_openai_models_get() {
 		try {
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
-			$finetunes = $openai->listDeletedFineTunes();
+			$finetunes = $openai->listModels();
+			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+		}
+	}
+
+	function rest_openai_deleted_finetunes_get() {
+		try {
+			$legacy = isset( $_GET['legacy'] ) ? $_GET['legacy'] === 'true' : false;
+			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
+			$finetunes = $openai->listDeletedFineTunes( $legacy );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -563,8 +583,9 @@ class Meow_MWAI_Rest
 
 	function rest_openai_finetunes_get() {
 		try {
+			$legacy = isset( $_GET['legacy'] ) ? $_GET['legacy'] === 'true' : false;
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
-			$finetunes = $openai->listFineTunes();
+			$finetunes = $openai->listFineTunes( $legacy );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {

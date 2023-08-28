@@ -353,6 +353,9 @@ class Meow_MWAI_Engines_OpenAI
       "stream" => !is_null( $streamCallback ),
     );
     if ( !empty( $query->functions ) ) {
+      if ( strpos( $query->model, 'ft:' ) === 0 ) {
+        throw new Exception( 'OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
+      }
       $body['functions'] = $query->functions;
       $body['function_call'] = $query->functionCall;
     }
@@ -513,27 +516,49 @@ class Meow_MWAI_Engines_OpenAI
     return $this->run( 'GET', '/files' );
   }
 
-  function getSuffixForModel($model)
+  static function getSuffixForModel($model)
   {
-    preg_match("/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
+    // Legacy fine-tuned models
+    preg_match( "/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
     if ( count( $matches ) > 0 ) {
       return $matches[1];
     }
+
+    // New fine-tuned models
+    preg_match("/:([^:]+)(?=:[^:]+$)/", $model, $matches);
+    if (count($matches) > 0) {
+       return $matches[1];
+    }
+
     return 'N/A';
   }
 
-  function getBaseModel($model)
+  static function getBaseModelForFinetune($model)
   {
-    preg_match("/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
+    // New fine-tuned models
+    preg_match("/^ft:([^:]+):/", $model, $matches);
     if (count($matches) > 0) {
+      if ( preg_match( '/^gpt-3.5/', $matches[1] ) ) {
+        return "gpt-3.5-turbo";
+      }
+      else if ( preg_match( '/^gpt-4/', $matches[1] ) ) {
+        return "gpt-4";
+      }
       return $matches[1];
     }
-    return 'N/A';
+
+    // Legacy fine-tuned models
+    preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches );
+    if ( count( $matches ) > 0 ) {
+      return $matches[1];
+    }
+
+    return null;
   }
 
-  public function listDeletedFineTunes()
+  public function listDeletedFineTunes( $legacy = false ) 
   {
-    $finetunes = $this->listFineTunes();
+    $finetunes = $this->listFineTunes( $legacy );
     $deleted = [];
 
     foreach ( $finetunes as $finetune ) {
@@ -548,19 +573,36 @@ class Meow_MWAI_Engines_OpenAI
         }
       }
     }
-
-    $this->core->update_option( 'openai_finetunes_deleted', $deleted );
+    if ( $legacy ) {
+      $this->core->update_option( 'openai_legacy_finetunes_deleted', $deleted );
+    }
+    else {
+      $this->core->update_option( 'openai_finetunes_deleted', $deleted );
+    }
     return $deleted;
   }
 
-  public function listFineTunes()
+  public function listModels() {
+    $res = $this->run( 'GET', '/models' );
+    // TODO: Not used by the UI.
+    throw new Exception( 'Not implemented yet.' );
+  }
+
+  // TODO: This was used to retrieve the fine-tuned models, but not sure this is how we should
+  // retrieve all the models since Summer 2023, let's see! WIP.
+  public function listFineTunes( $legacy = false )
   {
-    $res = $this->run( 'GET', '/fine-tunes' );
+    if ( $legacy ) {
+      $res = $this->run( 'GET', '/fine-tunes' );
+    }
+    else {
+      $res = $this->run( 'GET', '/fine_tuning/jobs' );
+    }
     $finetunes = $res['data'];
 
     // Add suffix
     $finetunes = array_map( function ( $finetune ) {
-      $finetune['suffix'] = $this->getSuffixForModel( $finetune['fine_tuned_model'] );
+      $finetune['suffix'] = SELF::getSuffixForModel( $finetune['fine_tuned_model'] );
       $finetune['createdOn'] = date( 'Y-m-d H:i:s', $finetune['created_at'] );
       $finetune['updatedOn'] = date( 'Y-m-d H:i:s', $finetune['updated_at'] );
       $finetune['base_model'] = $finetune['model'];
@@ -580,7 +622,13 @@ class Meow_MWAI_Engines_OpenAI
       return strtotime( $b['createdOn'] ) - strtotime( $a['createdOn'] );
     });
 
-    $this->core->update_option( 'openai_finetunes', $finetunes );
+    if ( $legacy ) {
+      $this->core->update_option( 'openai_legacy_finetunes', $finetunes );
+    }
+    else {
+      $this->core->update_option( 'openai_finetunes', $finetunes );
+    }
+
     return $finetunes;
   }
 
@@ -626,7 +674,7 @@ class Meow_MWAI_Engines_OpenAI
     return $this->run('GET', '/files/' . $fileId . '/content', null, null, false);
   }
 
-  public function fineTuneFile( $fileId, $model, $suffix, $hyperparams = [] )
+  public function fineTuneFile( $fileId, $model, $suffix, $hyperparams = [], $legacy = false )
   {
     $n_epochs = isset( $hyperparams['nEpochs'] ) ? (int)$hyperparams['nEpochs'] : 4;
     $batch_size = isset( $hyperparams['batchSize'] ) ? (int)$hyperparams['batchSize'] : null;
@@ -639,7 +687,21 @@ class Meow_MWAI_Engines_OpenAI
     if ( $batch_size ) {
       $arguments['batch_size'] = $batch_size;
     }
-    $result = $this->run('POST', '/fine-tunes', $arguments);
+    if ( $legacy ) {
+      $result = $this->run( 'POST', '/fine-tunes', $arguments );
+    }
+    else {
+      $arguments['hyperparameters'] = [ "n_epochs" => $n_epochs ];
+      if ( $batch_size ) {
+        $arguments['hyperparameters']['batch_size'] = $batch_size;
+        unset( $arguments['batch_size'] );
+      }
+      unset( $arguments['n_epochs'] );
+      if ( $model === 'turbo' ) {
+        $arguments['model'] = 'gpt-3.5-turbo';
+      }
+      $result = $this->run( 'POST', '/fine_tuning/jobs', $arguments );
+    }
     return $result;
   }
 
@@ -730,9 +792,10 @@ class Meow_MWAI_Engines_OpenAI
 
   private function calculatePrice( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
   {
-    // Finetuned models => We need to modify the model to the family of the model.
-    if ( $finetune && preg_match('/^([a-zA-Z]{0,32}):/', $modelFamily, $matches ) ) {
-      $modelFamily = $matches[1];
+    // For fine-tuned models:
+    $potentialBaseModel = SELF::getBaseModelForFinetune( $modelFamily );
+    if ( !empty( $potentialBaseModel ) ) {
+      $modelFamily = $potentialBaseModel;
       $finetune = true;
     }
 
@@ -754,7 +817,16 @@ class Meow_MWAI_Engines_OpenAI
         }
         else {
           if ( $finetune ) {
-            $currentModel['price'] = $currentModel['finetune']['price'];
+
+            if ( isset( $currentModel['finetune']['price'] ) ) {
+              $currentModel['price'] = $currentModel['finetune']['price'];
+            }
+            else if ( isset( $currentModel['finetune']['in'] ) ) {
+              $currentModel['price'] = [
+                'in' => $currentModel['finetune']['in'],
+                'out' => $currentModel['finetune']['out']
+              ];
+            }
           }
           $inPrice = $currentModel['price'];
           $outPrice = $currentModel['price'];

@@ -1,9 +1,9 @@
-// Previous: 1.6.98
-// Current: 1.6.99
+// Previous: 1.6.99
+// Current: 1.9.2
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { JsonViewer } from '@textea/json-viewer'
+import { JsonViewer } from '@textea/json-viewer';
 
 import { nekoFetch } from '@neko-ui';
 import { NekoButton, NekoInput, NekoBlock, NekoSpacer, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, 
@@ -36,6 +36,7 @@ const Statistics = ({ options, updateOption, busy }) => {
     keepPreviousData: true
   });
 
+
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
     await updateOption(newParams, 'limits');
@@ -66,7 +67,7 @@ const Statistics = ({ options, updateOption, busy }) => {
   }
 
   const data = useMemo(() => {
-    if (!Array.isArray(metaData)) {
+    if (Array.isArray(metaData)) {
       return null;
     }
     return metaData;

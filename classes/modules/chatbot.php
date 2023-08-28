@@ -133,7 +133,6 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 			else {
 				$query = new Meow_MWAI_Query_Text( $newMessage, 1024 );
-				//$query->setIsChat( true );
 				$streamCallback = null;
 
 				// Handle Params

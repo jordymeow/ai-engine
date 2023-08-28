@@ -9,9 +9,16 @@ if ( !class_exists( 'MeowCommon_Issues' ) ) {
     }
 
     function check_plugins() {
+      
+      // Previous technique to disable caching on the REST API.
       // if ( class_exists( 'LiteSpeed\Core' ) ) {
       //   $this->check_litespeed();
       // }
+
+      // Recommended technique to disable caching on the REST API by the Litespeed team.
+      if ( defined( 'LSCWP_V' ) ) {
+        do_action( 'litespeed_control_set_nocache', 'Meow Apps API must not be cached.' );
+      }
     }
 
     function check_litespeed() {

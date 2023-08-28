@@ -136,6 +136,7 @@ define( 'MWAI_OPTIONS', [
 	'module_moderation' => false,
 	'module_statistics' => false,
 	'module_finetunes' => false,
+	'module_legacy_finetunes' => false,
 	'module_embeddings' => false,
 	'module_audio' => false,
 	'shortcode_chat' => true,
@@ -163,6 +164,8 @@ define( 'MWAI_OPTIONS', [
 	'openai_azure_deployments' => [],
 	'openai_finetunes' => [], // All finetunes listed by OpenAI
 	'openai_finetunes_deleted' => [], // The finetunes that have been deleted
+	'openai_legacy_finetunes' => [],
+	'openai_legacy_finetunes_deleted' => [],
 	'pinecone' => [
 		'apikey' => false,
 		'server' => 'us-east1-gcp',

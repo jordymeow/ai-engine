@@ -1,7 +1,6 @@
-// Previous: 1.6.91
-// Current: 1.6.93
+// Previous: 1.6.93
+// Current: 1.9.2
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
 
@@ -32,16 +31,24 @@ const retrieveFiles = async () => {
   return res?.files?.data;
 }
 
-const retrieveDeletedFineTunes = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list_deleted`, { nonce: restNonce });
+const retrieveDeletedFineTunes = async (legacy) => {
+  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list_deleted?legacy=${legacy}`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
   return res?.finetunes;
 }
 
-const retrieveFineTunes = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list`, { nonce: restNonce });
+const retrieveModels = async () => {
+  const res = await nekoFetch(`${apiUrl}/openai/models`, { nonce: restNonce });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res?.models;
+}
+
+const retrieveFineTunes = async (legacy) => {
+  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list?legacy=${legacy}`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -72,7 +79,6 @@ const retrieveThemes = async () => {
 const updateThemes = async (themes) => {
   try {
 
-    // Make sure all the themeId of each theme in themes are unique. Let's loop through them, and if one is identical to any other before, let's add a number to it.
     const themeIds = [];
     for (let i = 0; i < themes.length; i++) {
       let themeId = themes[i].themeId;
@@ -93,8 +99,4 @@ const updateThemes = async (themes) => {
   catch (err) {
     throw err;
   }
-}
-
-export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, 
-  retrieveDeletedFineTunes, retrieveFineTunes,
-  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };
+};

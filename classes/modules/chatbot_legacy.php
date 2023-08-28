@@ -79,7 +79,6 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 			}
 
 			$query = new Meow_MWAI_Query_Text( $params['newMessage'], 1024 );
-			//$query->setIsChat( true );
 			$query->injectParams( $params );
 
 			$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );

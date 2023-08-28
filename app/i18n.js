@@ -186,6 +186,7 @@ i18n.COMMON = {
   PREVIEW: __( 'Preview', 'ai-engine' ),
   LEGACY_CHATBOT: __( 'Legacy Chatbot', 'ai-engine' ),
   LEGACY_FORMS: __( 'Legacy Forms', 'ai-engine' ),
+  LEGACY_FINETUNES: __( 'Legacy Finetunes', 'ai-engine' ),
   LEGACY_FEATURES: __( 'Legacy Features', 'ai-engine' ),
   DUPLICATE: __( 'Duplicate', 'ai-engine' ),
   CHATBOT_EDITOR: __( 'Chatbot Editor', 'ai-engine' ),
@@ -245,7 +246,6 @@ i18n.SETTINGS = {
   INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit AI Engine\'s <a href="https://meowapps.com/ai-engine/" target="_blank">website</a> for more information. Also make sure you read the <a href="https://meowapps.com/ai-engine/disclaimer/" target="_blank">disclaimer</a>. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
   ALERT_INJECT_BUT_NO_POPUP: __( 'You choose to inject the chatbot in your website. You probably also want to use the chatbot in a Popup.', 'ai-engine' ),
-  ALERT_FINETUNE_BUT_NO_CASUALLY: __( 'You choose a fine-tuned model. However, you didn\'t check the Casually Fine Tuned option. Make sure that\'s what you want.', 'ai-engine' ),
   ALERT_CASUALLY_BUT_NO_FINETUNE: __( 'Normally, you should not check the Casually Fine Tuned option with a non-finetuned model. Make sure that\'s what you want.', 'ai-engine' ),
   ALERT_CONTENTAWARE_BUT_NO_CONTENT: __( 'Content Aware requires your Context to use the {CONTENT} placeholder. It will be replaced by the content of page the chatbot is on. More info <a href="https://meowapps.com/ai-engine/tutorial/#contextualization" target="_blank">here</a>.', 'ai-engine' ),
   SET_AS_DEFAULT_PARAMETERS: __( 'Set as Default Parameters', 'ai-engine' ),
@@ -338,9 +338,13 @@ i18n.ALERTS = {
 }
 
 i18n.FINETUNING = {
+  CONTEXT_DESCRIPTION: __( 'In Easy mode, this context will be automatically used for every message. This context will need to be re-used in your chatbot as well.', 'ai-engine' ),
   MODELS_INTRO: __( 'The AI models you have fine-tuned. To create more, visit <b>Datasets</b>.', 'ai-engine' ),
+  LEGACY_MODELS_INTRO: __( 'The AI models you have fine-tuned. <b>Do not use legacy fine-tuning anymore (based on models prior to GPT 3.5). Their deprecation has been <a href="https://platform.openai.com/docs/guides/legacy-fine-tuning" target="_blank">announced by OpenAI</a> for January 4th, 2024.</b><br />', 'ai-engine' ),
   DATASETS_INTRO: __( 'The datasets you have uploaded to OpenAI. To create a new dataset, switch from <b>Model Finetuner</b> to <b>Dataset Builder</b>. To train a new model, click on the <i>magic wand</i>.', 'ai-engine' ),
   MODEL_FINETUNE: __( 'Model Finetune', 'ai-engine' ),
+  MODELS_DATASETS: __( 'Models & Datasets', 'ai-engine' ),
+  DATASET_EDITOR: __( 'Dataset Editor', 'ai-engine' ),
   DATASET_BUILDER: __( 'Dataset Builder', 'ai-engine' ),
   ENTRIES_EDITOR: __( 'Entries Editor', 'ai-engine' ),
   ENTRIES_GENERATOR: __( 'Entries Generator', 'ai-engine' ),

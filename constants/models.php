@@ -16,8 +16,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000,
 		"maxTokens" => 4096,
 		"mode" => "chat",
-		"finetune" => false,
-		"tags" => ['core', 'chat', '4k']
+		"finetune" => [
+			"in" => 0.03,
+			"out" => 0.06,
+		],
+		"tags" => ['core', 'chat', '4k', 'finetune']
 	],
 	[ 
 		"model" => "gpt-3.5-turbo-16k",
@@ -77,7 +80,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.12
 		],
-		"tags" => ['core', 'chat', 'finetune']
+		"tags" => ['core', 'chat', 'legacy-finetune']
 	],
   [
 		"model" => "text-curie-001",
@@ -91,7 +94,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.012
 		],
-		"tags" => ['core', 'chat', 'finetune']
+		"tags" => ['core', 'chat', 'legacy-finetune']
 	],
   [
 		"model" => "text-babbage-001",
@@ -105,7 +108,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.0024
 		],
-		"tags" => ['core', 'finetune']
+		"tags" => ['core', 'legacy-finetune']
 	],
   [
 		"model" => "text-ada-001",
@@ -119,7 +122,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.0016
 		],
-		"tags" => ['core', 'finetune']
+		"tags" => ['core', 'legacy-finetune']
 	],
   // Image models:
   [

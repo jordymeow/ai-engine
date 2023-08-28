@@ -4,7 +4,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public int $maxTokens = 1024;
   public float $temperature = 0.8;
   public int $maxSentences = 15;
-  public bool $isChat = false;
   public ?string $stop = null;
   public array $messages = [];
   public ?string $context = null;
@@ -27,7 +26,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       'maxTokens' => $this->maxTokens,
       'temperature' => $this->temperature,
       'maxSentences' => $this->maxSentences,
-      'isChat' => $this->isChat,
       'stop' => $this->stop,
       'context' => $this->context,
       'newMessage' => $this->newMessage,
@@ -127,13 +125,24 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public function setModel( string $model ) {
     $this->model = $model;
     $this->mode = 'completion';
+    $found = false;
     $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
     foreach ( $openai_models as $currentModel ) {
       if ( $currentModel['model'] === $this->model ) {
         if ( $currentModel['mode'] ) {
           $this->mode = $currentModel['mode'];
         }
+        $found = true;
         break;
+      }
+    }
+    if ( !$found ) {
+      // If the model can't be found, it's because it's probably a fine-tuned model. In the past (before August 2023),
+      // fine-tuned models were always based on GPT-3 (and therefore, using completion mode). From now on, they can be
+      // based on GPT-3.5 or 4 (and therefore, using chat mode). We need to detect that.
+      $baseModel = Meow_MWAI_Engines_OpenAI::getBaseModelForFinetune( $model );
+      if ( preg_match( '/^gpt-3.5|^gpt-4/', $baseModel ) ) {
+        $this->mode = 'chat';
       }
     }
   }
@@ -154,7 +163,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * all the messages nicely formatted.
    */
   public function getPrompt(): ?string {
-    if ( !$this->isChat ) {
+    if ( $this->mode === 'completion' ) {
       return $this->prompt . $this->promptEnding;
     }
     
@@ -204,10 +213,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
     $this->validateMessages();
-  }
-
-  public function setIsChat( $isChat ) {
-    $this->isChat = $isChat;
   }
 
   /**

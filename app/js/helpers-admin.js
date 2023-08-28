@@ -1,5 +1,5 @@
-// Previous: 1.8.2
-// Current: 1.8.7
+// Previous: 1.8.7
+// Current: 1.9.2
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -88,11 +88,24 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom, startLanguage]);
+  }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
   }, [startLanguage]);
+
+  useEffect(() => {
+    let preferredLanguage = localStorage.getItem('mwai_preferred_language');
+    if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
+      setCurrentLanguage(preferredLanguage);
+    } else {
+      let detectedLanguage = (document.querySelector('html').lang || navigator.language
+        || navigator.userLanguage).substr(0, 2);
+      if (languages.find(l => l.value === detectedLanguage)) {
+        setCurrentLanguage(detectedLanguage);
+      }
+    }
+  }, []);
 
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
@@ -140,24 +153,40 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 
 const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const [model, setModel] = useState(defaultModel);
-  const deletedFineTunes = options?.openai_finetunes_deleted || [];
+  let deletedFineTunes = options?.openai_finetunes_deleted || [];
+  if (options?.openai_legacy_finetunes_deleted) {
+    deletedFineTunes = [ ...deletedFineTunes, ...options?.openai_legacy_finetunes_deleted ];
+  }
 
   const allModels = useMemo(() => {
     let allModels = options.openai_models || [];
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
+    if (options?.openai_legacy_finetunes) {
+      fineTunes = [ ...fineTunes, ...options?.openai_legacy_finetunes ];
+    }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
 
     if (fineTunes.length) {
       allModels = [ ...allModels, ...fineTunes.map(x => {
+        let mode = 'completion';
         const splitted = x.model.split(':');
-        const family = splitted[0];
+        let family = splitted[0];
+
+        if (x.model.includes('ft:gpt-3.5')) {
+          mode = 'chat';
+          family = 'turbo';
+        }
+        else if (x.model.includes('ft:gpt-4')) {
+          mode = 'chat';
+          family = 'gpt4';
+        }
         return { 
           model: x.model,
           name: <>{x.suffix}&nbsp;<small style={{ background: 'var(--neko-green)', color: 'white', padding: '3px 4px',
             margin: '-3px 2px', borderRadius: 3, fontSize: 9, lineHeight: '100%' }}>TUNED</small></>,
           suffix: x.suffix,
-          mode: 'completion',
+          mode,
           family,
           description: "finetuned",
           finetuned: true,
@@ -176,24 +205,23 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
-
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
 
+  const defaultModels = useMemo(() => {
+    return allModels.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
+  }, [allModels]);
+
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
-      return 'gpt-3.5-turbo';
+      model = 'gpt-3.5-turbo';
     }
     else if (model === 'gpt-4-0314') {
-      return 'gpt-4';
+      model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
   }
-
-  const completionModels = useMemo(() => {
-    return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
-  }, [models]);
 
   const isFineTunedModel = (model) => {
     const modelObj = getModel(model);
@@ -212,14 +240,12 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const getFamilyModel = (model) => {
     const modelObj = getModel(model);
-    if(!modelObj) return null;
     const coreModel = coreModels.find(x => x.family === modelObj.family);
     return coreModel || null;
   }
 
   const getPrice = (model, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
-    if(!modelObj) return null;
     if (modelObj?.type === 'image') {
       if (modelObj?.options) {
         const opt = modelObj.options.find(x => x.option === option);
@@ -231,34 +257,34 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
-    if (!modelObj) return 0;
     const price = getPrice(model, option);
+    
     let priceIn = price;
     let priceOut = price;
-    if (price && typeof price === 'object') {
+    if (typeof price === 'object') {
       priceIn = price['in'];
       priceOut = price['out'];
     }
-    if (priceIn && priceOut) {
+    if (priceIn && priceOut && modelObj?.unit) {
       return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
   }
 
-  return { allModels, model, models, completionModels, coreModels, 
+  return { allModels, model, models, defaultModels, coreModels, 
     setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
 }
 
 const retrieveVectors = async (queryParams) => {
-  const isSearch = queryParams?.filters?.search !== undefined; 
+  const isSearch = queryParams?.filters?.search !== null;
   if (queryParams?.filters?.search === "") {
     return [];
   }
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
-  if (isSearch && res?.vectors?.length >= 0) {
-    const sortedVectors = res.vectors.sort((a, b) => {
+  if (isSearch && res?.vectors?.length) {
+    const sortedVectors = res.vectors.slice().sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
         return a.score - b.score;
       }
@@ -266,7 +292,6 @@ const retrieveVectors = async (queryParams) => {
     });
     res.vectors = sortedVectors;
   }
-
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
@@ -311,7 +336,7 @@ function reduceContent(content, tokens = 2048) {
 
 function tableDateTimeFormatter(value) {
   let time = new Date(value);
-  time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
+  time = new Date(time.getTime() - time.getTimezoneOffset() * 60000);
   let formattedDate = time.toLocaleDateString('ja-JP', {
     year: 'numeric', month: '2-digit', day: '2-digit'
   });
@@ -334,7 +359,7 @@ function tableUserIPFormatter(userId, ip) {
     return substr;
   })() : '';
   return <>
-    {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`}>ID {userId}</a><br /></>}
+    {userId && <><a target="_blank" rel="noopener noreferrer" href={`/wp-admin/user-edit.php?user_id=${userId}`}>ID {userId}</a><br /></>}
     <small>{formattedIP}</small>
   </>;
 }
