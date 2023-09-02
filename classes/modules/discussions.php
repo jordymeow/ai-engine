@@ -170,6 +170,7 @@ class Meow_MWAI_Modules_Discussions {
     $userId = $mwai_core->get_user_id();
     $botId = isset( $params['botId'] ) ? $params['botId'] : null;
     $chatId = isset( $params['clientId'] ) ? $params['clientId'] : $query->session;
+    $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->prompt;
     //$chatId = hash( 'sha256', $userIp . $userId . $clientChatId );
     $this->check_db();
     $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $chatId ) );
@@ -180,7 +181,7 @@ class Meow_MWAI_Modules_Discussions {
       $chat->messages = json_decode( $chat->messages );
       $chat->messages[] = [
         'role' => 'user',
-        'content' => $params['newMessage']
+        'content' => $newMessage
       ];
       $chat->messages[] = [
         'role' => 'assistant',
@@ -200,7 +201,7 @@ class Meow_MWAI_Modules_Discussions {
         'messages' => json_encode( [
           [
             'role' => 'user',
-            'content' => $params['newMessage']
+            'content' => $newMessage
           ],
           [
             'role' => 'assistant',

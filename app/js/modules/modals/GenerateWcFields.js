@@ -1,15 +1,12 @@
-// Previous: 1.6.76
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.9.3
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
-// NekoUI
 import { NekoWrapper, NekoModal, NekoInput, NekoButton, NekoTextArea,
   NekoSpacer } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
-// AI Engine
 import { apiUrl, restNonce, session, options } from '@app/settings';
 import { StyledForm } from '@app/styles/CommonStyles';
 import i18n from '@root/i18n';
@@ -63,7 +60,13 @@ const GenerateWcFields = (props) => {
     const res = await nekoFetch(`${apiUrl}/ai/completions`, {
       method: 'POST',
       nonce: restNonce,
-      json: { maxTokens: 512, temperature: 0.8, env: 'admin-tools', session, prompt }
+      json: { maxTokens: 512,
+        temperature: 0.8,
+        model: options.assistants_model,
+        env: 'admin-tools',
+        session,
+        prompt
+      }
     });
     setBusy(false);
     if (res.success) {
@@ -81,18 +84,12 @@ const GenerateWcFields = (props) => {
     if (titleField) {
       titleField.value = seoTitle;
     }
-    else {
-      alert("The title cannot be written (the field could not be found).");
-    }
   }
 
   const onUseDesc = () => {
     const contentField = tinyMCE.get('content');
     if (contentField) {
       contentField.setContent(desc);
-    }
-    else {
-      alert("The content cannot be written (the field could not be found).");
     }
   }
 
@@ -101,18 +98,12 @@ const GenerateWcFields = (props) => {
     if (contentField) {
       contentField.setContent(shortDesc);
     }
-    else {
-      alert("The content cannot be written (the field could not be found).");
-    }
   }
 
   const onUseTags = () => {
     const tagsField = document.getElementById('new-tag-product_tag');
     if (tagsField) {
       tagsField.value = tags;
-    }
-    else {
-      alert("The tags cannot be written (the field could not be found).");
     }
   }
 
@@ -185,3 +176,5 @@ const GenerateWcFields = (props) => {
     </NekoWrapper>
   );
 };
+
+export default GenerateWcFields;

@@ -37,7 +37,7 @@ class Meow_MWAI_Core
 
 	function init() {
 		global $mwai;
-		$mwai = new Meow_MWAI_API();
+		$chatbot_module = null;
 		new Meow_MWAI_Modules_Security( $this );
 		if ( $this->is_rest ) {
 			new Meow_MWAI_Rest( $this );
@@ -47,7 +47,7 @@ class Meow_MWAI_Core
 			new Meow_MWAI_Modules_Assistants( $this );
 		}
 		if ( $this->get_option( 'shortcode_chat' ) ) {
-			new Meow_MWAI_Modules_Chatbot();
+			$chatbot_module = new Meow_MWAI_Modules_Chatbot();
 			new Meow_MWAI_Modules_Chatbot_Legacy();
 			new Meow_MWAI_Modules_Discussions();
 		}
@@ -61,6 +61,8 @@ class Meow_MWAI_Core
 		if ( $this->get_option( 'dynamic_max_tokens' ) ) {
 			add_filter( 'mwai_estimate_tokens', array( $this, 'dynamic_max_tokens' ), 10, 2 );
 		}
+
+		$mwai = new Meow_MWAI_API( $chatbot_module );
 	}
 
 	#region Roles & Capabilities
@@ -74,8 +76,9 @@ class Meow_MWAI_Core
 		return apply_filters( 'mwai_allow_usage', $editor_or_admin );
 	}
 	
-	function can_access_public_api() {
-		return apply_filters( 'mwai_allow_public_api', '__return_true' );
+	function can_access_public_api( $feature, $extra ) {
+		$logged_in = is_user_logged_in();
+		return apply_filters( 'mwai_allow_public_api', $logged_in, $feature, $extra );
 	}
 
 	#endregion

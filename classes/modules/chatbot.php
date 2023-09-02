@@ -59,6 +59,7 @@ class Meow_MWAI_Modules_Chatbot {
 			'callback' => array( $this, 'rest_chat' ),
 			'permission_callback' => '__return_true'
 		) );
+		
 	}
 
 	public function basics_security_check( $id, $botId, $newMessage ) {
@@ -80,20 +81,41 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function rest_chat( $request ) {
-		try {
-			$params = $request->get_json_params();
-			$id = $params['id'] ?? null;
-			$botId = $params['botId'] ?? null;
-			$stream = $params['stream'] ?? false;
-			$newMessage = trim( $params['newMessage'] ?? '' );
-			$chatbot = null;
+		$params = $request->get_json_params();
+		$id = $params['id'] ?? null;
+		$botId = $params['botId'] ?? null;
+		$stream = $params['stream'] ?? false;
+		$newMessage = trim( $params['newMessage'] ?? '' );
 
-			if ( !$this->basics_security_check( $id, $botId, $newMessage )) {
-				return new WP_REST_Response( [ 
-					'success' => false, 
-					'message' => apply_filters( 'mwai_ai_exception', 'Sorry, your query has been rejected.' )
-				], 403 );
-			}
+		if ( !$this->basics_security_check( $id, $botId, $newMessage )) {
+			return new WP_REST_Response( [ 
+				'success' => false, 
+				'message' => apply_filters( 'mwai_ai_exception', 'Sorry, your query has been rejected.' )
+			], 403 );
+		}
+
+		try {
+			$data = $this->chat_submit( $botId, $newMessage, $params, $stream );
+			return new WP_REST_Response( [
+				'success' => true,
+				'reply' => $data['reply'],
+				'images' => $data['images'],
+				'usage' => $data['usage']
+			], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response( [ 
+				'success' => false, 
+				'message' => $message
+			], 500 );
+		}
+	}
+
+	public function chat_submit( $botId, $newMessage, $params = [], $stream = false ) {
+		try {
+			$chatbot = null;
+			$id = $params['id'] ?? null;
 
 			// Custom Chatbot
 			if ( $id ) {
@@ -106,10 +128,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 			if ( !$chatbot ) {
 				error_log("AI Engine: No chatbot was found for this query.");
-				return new WP_REST_Response( [ 
-					'success' => false, 
-					'message' => 'Sorry, your query has been rejected.' ], 403
-				);
+				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
 			
 			// Create QueryText
@@ -150,11 +169,11 @@ class Meow_MWAI_Modules_Chatbot {
 				// Takeover
 				$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 				if ( !empty( $takeoverAnswer ) ) {
-					return new WP_REST_Response( [ 
-						'success' => true,
+					return [
 						'reply' => $takeoverAnswer,
+						'images' => null,
 						'usage' => null
-					], 200 );
+					];
 				}
 
 				// Moderation
@@ -162,10 +181,7 @@ class Meow_MWAI_Modules_Chatbot {
 					global $mwai;
 					$isFlagged = $mwai->moderationCheck( $query->prompt );
 					if ( $isFlagged ) {
-						return new WP_REST_Response( [ 
-							'success' => false, 
-							'message' => 'Sorry, your message has been rejected by moderation.' ], 403
-						);
+						throw new Exception( 'Sorry, your message has been rejected by moderation.' );
 					}
 				}
 
@@ -222,7 +238,6 @@ class Meow_MWAI_Modules_Chatbot {
 			// }
 
 			$restRes = [
-				'success' => true,
 				'reply' => $rawText,
 				'images' => $reply->getType() === 'images' ? $reply->results : null,
 				'usage' => $reply->usage
@@ -230,11 +245,19 @@ class Meow_MWAI_Modules_Chatbot {
 
 			// Process Reply
 			if ( $stream ) {
-				$this->stream_push( [ 'type' => 'end', 'data' => json_encode( $restRes ) ] );
+				$this->stream_push( [
+					'type' => 'end',
+					'data' => json_encode([
+						'success' => true,
+						'reply' => $restRes['reply'],
+						'images' => $restRes['images'],
+						'usage' => $restRes['usage']
+					])
+				] );
 				die();
 			}
 			else {
-				return new WP_REST_Response( $restRes, 200 );
+				return $restRes;
 			}
 
 		}
@@ -244,7 +267,7 @@ class Meow_MWAI_Modules_Chatbot {
 				$this->stream_push( [ 'type' => 'error', 'data' => $message ] );
 			}
 			else {
-				return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+				throw $e;
 			}
 		}
 	}

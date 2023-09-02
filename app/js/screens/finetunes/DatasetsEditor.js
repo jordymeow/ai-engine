@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.8.3
+// Previous: 1.8.3
+// Current: 1.9.3
 
 const { useState, useEffect } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '@root/i18n';
 import { retrievePostTypes, retrievePostsCount, retrievePostContent } from '@app/requests';
 
-const DatasetBuilder = ({ setBuilderData }) => {
+const DatasetEditor = ({ options, setBuilderData }) => {
   const [postType, setPostType] = useState('post');
   const [totalTokens, setTotalTokens] = useState(0);
   const [quickBusy, setQuickBusy] = useState(false);
@@ -23,7 +23,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
 
   const createEntriesFromRaw = (rawData) => {
@@ -37,7 +37,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length === 0) continue;
+        if (entries.length === 0) continue; // potential bug: if A: appears before Q:
         entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
@@ -57,7 +57,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content && content.length < 64) {
+    else if (content?.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
@@ -71,7 +71,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
           session,
           prompt: finalPrompt,
           temperature: 0.8,
-          model: 'gpt-3.5-turbo',
+          model: options.assistants_model,
           maxTokens: 2048,
           stop: ''
         },
@@ -91,7 +91,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
         setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
       }
     }
-    if (signal?.aborted) {
+    if (signal && signal.aborted) {
       cancelledByUser();
     }
     const entries = createEntriesFromRaw(rawData);
@@ -110,10 +110,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr, 10);
+    const startOffset = startOffsetStr ? parseInt(startOffsetStr, 10) : 0;
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetStr && offset < startOffset) {
+      if (startOffset && offset < startOffset) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
@@ -131,10 +131,11 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const onSingleGenerateClick = async () => {
     try {
       setTotalTokens(0);
-      const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
-      if (postId === null) {
+      const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
+      if (postIdInput === null) {
         return;
       }
+      const postId = postIdInput.trim() === "" ? undefined : postIdInput.trim();
       setQuickBusy('singleGenerate');
       const result = await runProcess(0, postId);
       if (!result.entries || result.entries.length === 0) {
@@ -189,4 +190,4 @@ const DatasetBuilder = ({ setBuilderData }) => {
   );
 }
 
-export default DatasetBuilder;
+export default DatasetEditor;
