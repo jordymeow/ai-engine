@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.2
 Requires PHP: 6.3
-Stable tag: 1.9.3
+Stable tag: 1.9.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,26 +78,31 @@ Languages: English.
 
 == Changelog ==
 
-= 1.9.3 (2023/10/02) =
-* Add: Added a new "simpleChatbotQuery" endpoint. 
-* Add: Embeddings Export to JSON.
-* Fix: Embeddings Rewrite, Finetunes Entries Generator and WooCommerce Assistant now use correctly the Default Model set in the Settings.
-* Update: Set the Batch Size (Hyperparameters) to 4 by default, rather than null.
+= 1.9.4 (2023/09/09) =
+* Fix: Bulk Generate for the new finetunes.
+* Fix: Issues with the dropdown position.
+* Add: Copy Button in Forms.
 * 😇 The Public REST API is now only accessible if the requests are authenticated, to avoid abuse. The process can however be completely overriden. More information [here](https://meowapps.com/ai-engine/api/#public-rest-api).
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
-= 1.9.2 (2023/09/28) =
+= 1.9.3 (2023/09/02) =
+* Add: Added a new "simpleChatbotQuery" endpoint. 
+* Add: Embeddings Export to JSON.
+* Fix: Embeddings Rewrite, Finetunes Entries Generator and WooCommerce Assistant now use correctly the Default Model set in the Settings.
+* Update: Set the Batch Size (Hyperparameters) to 4 by default, rather than null.
+
+= 1.9.2 (2023/08/28) =
 * Add: The "Finetunes" tab is now about the new models (and new format of JSONL). The former "Finetunes" tab has been renamed into "Legacy Finetunes" (and is only accessible if you enable it in the "Settings"). Try to finetune your own models using GPT 3.5! 🥳 More info [here](https://openai.com/blog/gpt-3-5-turbo-fine-tuning-and-api-updates).
 * Info: It will take some time for me to update the documentation, as everything has just been announced by OpenAI and not much of it has been tested by the community (I am also testing it myself). I will update the documentation as soon as I can.
 
-= 1.9.1 (2023/09/22) =
+= 1.9.1 (2023/08/22) =
 * Fix: Issue with broken avatars.
 * Fix: Security limitations were a bit too strict.
 * Fix: Issue with forms when using external input elements.
 * Update: Optimized content cleaning when used to create embeddings or by other parts of AI Engine.
 
-= 1.9.0 (2023/09/18) =
+= 1.9.0 (2023/08/18) =
 * Add: Added missing servers for Pinecone.
 * Fix: Avoid the double slashes in some URLs.
 

@@ -1,9 +1,9 @@
-// Previous: 1.9.0
-// Current: 1.9.2
+// Previous: 1.9.2
+// Current: 1.9.4
 
 const { useMemo, useState, useEffect } = wp.element;
 
-import { NekoButton, NekoInput, NekoTypo, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
+import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoCollapsableCategory, NekoColumn, NekoTextArea, NekoIcon, NekoModal } from '@neko-ui';
 
@@ -162,18 +162,18 @@ const Settings = () => {
   const resolve_shortcodes = options?.resolve_shortcodes;
 
   const isChat = (shortcodeParams.mode ?? 'chat') === 'chat';
-  const isImagesChat = (shortcodeParams.mode ?? 'chat') === 'images';
+  const isImagesChat = (shortcodeParams.mode ?? '') === 'images';
   const chatIcon = shortcodeStyles?.icon ? shortcodeStyles?.icon : 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['openAI_status'], queryFn: retrieveIncidents
   });
-  const indexes = pinecone?.indexes || [];
-  const isFineTuned = useMemo(() => isFineTunedModel(shortcodeParams.model), [shortcodeParams.model]);
-  const currentModel = useMemo(() => getModel(shortcodeParams.model), [shortcodeParams.model]);
+  const indexes = pinecone.indexes || [];
+  const isFineTuned = isFineTunedModel(shortcodeParams.model);
+  const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.content_aware;
-  const contextHasContent = useMemo(() => shortcodeParams?.context?.includes('{CONTENT}'), [shortcodeParams]);
+  const contextHasContent = shortcodeParams.content_aware && shortcodeParams.content_aware.includes('{CONTENT}');
 
   const accidentsPastDay = useMemo(() => incidents?.filter(x => {
     const incidentDate = new Date(x.date);
@@ -210,7 +210,9 @@ const Settings = () => {
   const builtShortcode = useMemo(() => {
     const params = [];
     for (const key in shortcodeParamsDiff) {
-      if (shortcodeParams[key] === undefined) continue;
+      if (shortcodeParams[key] === undefined) {
+        continue;
+      }
       let value = shortcodeParams[key];
       if (value && typeof value === 'string' && value.includes('"')) {
         value = value.replace(/"/g, '\'');
@@ -255,13 +257,17 @@ const Settings = () => {
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
-    if (JSON.stringify(newOptions) === JSON.stringify(options)) return;
+    if (JSON.stringify(newOptions) === JSON.stringify(options)) {
+      return;
+    }
     setBusyAction(true);
     try {
       const response = await nekoFetch(`${apiUrl}/settings/update`, { 
         method: 'POST',
         nonce: restNonce,
-        json: { options: newOptions }
+        json: { 
+          options: newOptions
+        }
       });
       setOptions(response.options);
     }
@@ -280,7 +286,9 @@ const Settings = () => {
   }
 
   const onResetSettings = async () => {
-    if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) return;
+    if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) {
+      return;
+    }
     setBusyAction(true);
     try {
       const response = await nekoFetch(`${apiUrl}/settings/reset`, { method: 'POST', nonce: restNonce });
@@ -610,64 +618,64 @@ const Settings = () => {
   const jsxAdminBarPlayground =
     <NekoSettings title={i18n.COMMON.PLAYGROUND}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.includes('playground')}
+        checked={admin_bar?.playground}
         onChange={(value) => {
-          const newAdminBar = [...admin_bar];
-          if (value) {
-            if (!newAdminBar.includes('playground')) newAdminBar.push('playground');
+          const freshAdminBar = [...admin_bar];
+          const index = freshAdminBar.indexOf('playground');
+          if (index >= 0) {
+            freshAdminBar.splice(index, 1);
           } else {
-            const index = newAdminBar.indexOf('playground');
-            if (index > -1) newAdminBar.splice(index,1);
+            freshAdminBar.push('playground');
           }
-          updateOption(newAdminBar, 'admin_bar');
+          updateOption(freshAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarGenerateContent =
     <NekoSettings title={i18n.COMMON.GENERATE_CONTENT}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.includes('content_generator')}
+        checked={admin_bar?.content_generator}
         onChange={(value) => {
-          const newAdminBar = [...admin_bar];
-          if (value) {
-            if (!newAdminBar.includes('content_generator')) newAdminBar.push('content_generator');
+          const freshAdminBar = [...admin_bar];
+          const index = freshAdminBar.indexOf('content_generator');
+          if (index >= 0) {
+            freshAdminBar.splice(index, 1);
           } else {
-            const index = newAdminBar.indexOf('content_generator');
-            if (index > -1) newAdminBar.splice(index,1);
+            freshAdminBar.push('content_generator');
           }
-          updateOption(newAdminBar, 'admin_bar');
+          updateOption(freshAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarGenerateImages =
     <NekoSettings title={i18n.COMMON.GENERATE_IMAGES}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.includes('images_generator')}
+        checked={admin_bar?.images_generator}
         onChange={(value) => {
-          const newAdminBar = [...admin_bar];
-          if (value) {
-            if (!newAdminBar.includes('images_generator')) newAdminBar.push('images_generator');
+          const freshAdminBar = [...admin_bar];
+          const index = freshAdminBar.indexOf('images_generator');
+          if (index >= 0) {
+            freshAdminBar.splice(index, 1);
           } else {
-            const index = newAdminBar.indexOf('images_generator');
-            if (index > -1) newAdminBar.splice(index,1);
+            freshAdminBar.push('images_generator');
           }
-          updateOption(newAdminBar, 'admin_bar');
+          updateOption(freshAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarSettings =
     <NekoSettings title={'AI Engine'}> 
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.includes('settings')}
+        checked={admin_bar?.settings}
         onChange={(value) => {  
-          const newAdminBar = [...admin_bar];
-          if (value) {
-            if (!newAdminBar.includes('settings')) newAdminBar.push('settings');
+          const freshAdminBar = [...admin_bar];
+          const index = freshAdminBar.indexOf('settings');
+          if (index >= 0) {
+            freshAdminBar.splice(index, 1);
           } else {
-            const index = newAdminBar.indexOf('settings');
-            if (index > -1) newAdminBar.splice(index,1);
+            freshAdminBar.push('settings');
           }
-          updateOption(newAdminBar, 'admin_bar');
+          updateOption(freshAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
@@ -703,9 +711,10 @@ const Settings = () => {
 
   const jsxPineconeApiKey =
     <NekoSettings title={i18n.COMMON.API_KEY}>
-      <NekoInput name="apikey" value={pinecone?.apikey || ''}
+      <NekoInput name="apikey" value={pinecone?.apikey ?? ''}
         description={toHTML(i18n.COMMON.EMBEDDINGS_APIKEY_HELP)} onBlur={value => {
-          const freshPinecone = { ...pinecone, apikey: value };
+          const freshPinecone = { ...pinecone };
+          freshPinecone.apikey = value;
           updateOption(freshPinecone, 'pinecone');
         }} />
     </NekoSettings>;
@@ -715,7 +724,8 @@ const Settings = () => {
       <NekoSelect scrolldown name="server" value={pinecone?.server} 
         description={toHTML(i18n.COMMON.SERVER_HELP)}
         onChange={value => {
-          const freshPinecone = { ...pinecone, server: value };
+          const freshPinecone = { ...pinecone };
+          freshPinecone.server = value;
           updateOption(freshPinecone, 'pinecone');
         }}>
         <NekoOption value="us-east1-gcp" label="us-east1-gcp" />
@@ -739,7 +749,8 @@ const Settings = () => {
     <NekoSettings title={i18n.COMMON.NAMESPACES}>
       <NekoInput isCommaSeparatedArray name="namespaces" value={pinecone?.namespaces}
         description={toHTML(i18n.COMMON.NAMESPACES_HELP)} onBlur={value => {
-          const freshPinecone = { ...pinecone, namespaces: value };
+          const freshPinecone = { ...pinecone };
+          freshPinecone.namespaces = value;
           updateOption(freshPinecone, 'pinecone');
         }} />
     </NekoSettings>;
@@ -759,18 +770,22 @@ const Settings = () => {
   return (
     <NekoPage>
       <AiNekoHeader options={options} />
+
       <NekoWrapper>
+
         <NekoColumn fullWidth>
+
           <OptionsCheck options={options} />
+
           <NekoContainer>
-            <NekoTypo p>
-              {toHTML(i18n.SETTINGS.INTRO)}
-            </NekoTypo>
+            {toHTML(i18n.SETTINGS.INTRO)}
           </NekoContainer>
+
           <NekoTabs keepTabOnReload={true}>
 
             <NekoTab title={i18n.COMMON.DASHBOARD}>
               <NekoWrapper>
+
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title={i18n.COMMON.MODULES} className="primary">
                     <p>{i18n.SETTINGS.MODULES_INTRO}</p>
@@ -787,19 +802,21 @@ const Settings = () => {
                     {jsxAudioTranscribe}
                   </NekoBlock>
                 </NekoColumn>
+
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title={i18n.COMMON.USAGE_COSTS} className="primary">
                     {jsxOpenAiUsage}
                   </NekoBlock>
                 </NekoColumn>
+
               </NekoWrapper>
             </NekoTab>
 
-            {(shortcode_chat) && <NekoTab title={<>{i18n.COMMON.CHATBOTS}</>}>
+            {shortcode_chat && <NekoTab title={<>{i18n.COMMON.CHATBOTS}</>}>
               <Chatbots options={options} updateOption={updateOption} busy={busy} />
             </NekoTab>}
 
-            {(shortcode_chat && shortcode_chat_discussions) && <NekoTab title={i18n.COMMON.DISCUSSIONS}>
+            {shortcode_chat && shortcode_chat_discussions && <NekoTab title={i18n.COMMON.DISCUSSIONS}>
               <Discussions />
             </NekoTab>}
 
@@ -829,7 +846,9 @@ const Settings = () => {
 
             <NekoTab key="advanced" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
               <NekoWrapper>
-                <NekoColumn minimal>
+
+                <NekoColumn minimal>  
+
                   <NekoBlock busy={busy} title={i18n.COMMON.OPENAI} className="primary">
                     {jsxOpenAiService}
                     {openai_service === 'openai' && <>
@@ -846,28 +865,35 @@ const Settings = () => {
                     </>}
                     {jsxStream}
                   </NekoBlock>
+
                   {module_embeddings && <NekoBlock busy={busy} title="Pinecone" className="primary">
                     {jsxPineconeApiKey}
                     {jsxPineconeServer}
                     {jsxPineconeNamespace}
                   </NekoBlock>}
+
                   <NekoBlock busy={isLoadingIncidents}
                     title={<div style={{ display: 'flex' }}>{i18n.COMMON.INCIDENTS_OPENAI}{jsxIncidentsIcon}</div>}
                     className="primary" contentStyle={{ padding: 0 }}>
                     <OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
                   </NekoBlock>
+
                   <NekoBlock busy={busy} title={i18n.COMMON.MAINTENANCE} className="primary">
                     <NekoButton className="danger" onClick={onResetSettings}>
                       Reset Settings
                     </NekoButton>
                   </NekoBlock>
+
                 </NekoColumn>
+
                 <NekoColumn minimal>
+
                   <NekoBlock busy={busy} title={i18n.COMMON.CHATBOT} className="primary">
                     {jsxShortcodeDiscussions}
                     {jsxShortcodeSyntaxHighlighting}
                     {jsxWebSpeechAPI}
                   </NekoBlock>
+
                   <NekoBlock busy={busy} title={i18n.COMMON.LEGACY_FEATURES} className="primary">
                     {jsxLegacyChatbot}
                     {jsxLegacyFinetunes}
@@ -875,9 +901,11 @@ const Settings = () => {
                     {jsxShortcodeFormatting}
                     {jsxShortcodeTypewriter}
                   </NekoBlock>
+
                   {module_statistics && <NekoBlock busy={busy} title={i18n.COMMON.STATISTICS} className="primary">
                     {jsxStatisticsData}
                   </NekoBlock>}
+
                   <NekoBlock busy={busy} title={i18n.COMMON.ADMIN_TOOLS} className="primary">
                     <NekoCollapsableCategory title={i18n.COMMON.ASSISTANTS}  />
                     {jsxAssistantsModel}
@@ -887,6 +915,7 @@ const Settings = () => {
                     {jsxAdminBarGenerateContent}
                     {jsxAdminBarGenerateImages}
                   </NekoBlock>
+
                   <NekoBlock busy={busy} title={i18n.COMMON.ADVANCED} className="primary">
                     {jsxResolveShortcodes}
                     {jsxDynamicMaxTokens}
@@ -896,29 +925,35 @@ const Settings = () => {
                     {jsxDebugMode}
                     {jsxDevTools}
                   </NekoBlock>
+
                   <NekoBlock busy={busy} title={i18n.COMMON.SECURITY} className="primary">
                     {jsxBannedKeywords}
                     {jsxBannedIPs}
                   </NekoBlock>
                 </NekoColumn>
+
               </NekoWrapper>
             </NekoTab>
 
-            {(shortcode_chat && shortcode_chat_legacy) && <NekoTab title={i18n.COMMON.LEGACY_CHATBOT}>
+            {shortcode_chat && shortcode_chat_legacy && <NekoTab title={i18n.COMMON.LEGACY_CHATBOT}>
               <NekoWrapper>
+
                 <NekoColumn minimal fullWidth>
                   <NekoBlock className="primary">
-                    <NekoTypo p><b style={{ color: 'red' }}>Don't use the Legacy Chabot. It's deprecated and will be removed in the future.</b> Migrate to the new Chatbot, via the <b>Chatbots</b> tab. If there is a feature you need that is not available in the new Chatbot, or any other issue, please let me know. We'll make sure it works better with the new chatbot for every case! 🎉
-                    </NekoTypo>
+                    <b style={{ color: 'red' }}>Don't use the Legacy Chabot. It's deprecated and will be removed in the future.</b> Migrate to the new Chatbot, via the <b>Chatbots</b> tab. If there is a feature you need that is not available in the new Chatbot, or any other issue, please let me know. We'll make sure it works better with the new chatbot for every case! 🎉
                   </NekoBlock>
                 </NekoColumn>
+
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title={i18n.CHATBOT.CHATBOT_BUILDER} className="primary" action={
                     <NekoButton className="danger" onClick={onResetShortcodeParams}>
                       {i18n.CHATBOT.RESET_PARAMS}
                     </NekoButton>}>
+
                     <StyledBuilderForm>
+
                       <b>{i18n.COMMON.MAIN_SETTINGS}</b>
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col"
                           style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
@@ -929,18 +964,23 @@ const Settings = () => {
                               <NekoOption value="images" label="Images" />
                             </NekoSelect>
                         </div>
+
                         {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.CONTEXT}:</label>
                           <NekoTextArea id="context" name="context" rows={4}
                             value={shortcodeParams.context} onBlur={updateShortcodeParams} />
                         </div>}
+
                         {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                           <label>{i18n.COMMON.IMAGES_NUMBER}:</label>
                           <NekoInput id="max_results" name="max_results" type="number"
                             value={shortcodeParams.max_results} onBlur={updateShortcodeParams} />
                         </div>}
+
                       </div>
+
                       <b>{i18n.COMMON.VISUAL_SETTINGS}</b>
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.AI_NAME}:</label>
@@ -953,7 +993,9 @@ const Settings = () => {
                             value={shortcodeParams.start_sentence} onBlur={updateShortcodeParams} />
                         </div>
                       </div>
+
                       <div className="mwai-builder-row">
+                        
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.USER_NAME}:</label>
                           <NekoInput id="user_name" name="user_name" data-form-type="other"
@@ -975,13 +1017,17 @@ const Settings = () => {
                             onBlur={updateShortcodeParams} />
                         </div>
                       </div>
+
                       <div className="mwai-builder-row">
+
                         <div className="mwai-builder-col" style={{ flex: 3 }}>
                           <label>{i18n.COMMON.COMPLIANCE_TEXT}:</label>
                           <NekoInput id="text_compliance" name="text_compliance"
                             value={shortcodeParams.text_compliance} onBlur={updateShortcodeParams} />
                         </div>
+
                       </div>
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.SYSTEM_NAME}:</label>
@@ -1008,8 +1054,11 @@ const Settings = () => {
                           <NekoCheckbox name="window" label="Yes"
                             checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
                         </div>
+
                       </div>
+
                       <div className="mwai-builder-row">
+                        
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>{i18n.COMMON.POSITION}:</label>
                           <NekoSelect scrolldown id="icon_position" name="icon_position" disabled={!shortcodeParams.window}
@@ -1020,19 +1069,24 @@ const Settings = () => {
                             <NekoOption value="top-left" label="Top Left" />
                           </NekoSelect>
                         </div>
+
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>{i18n.COMMON.ICON_TEXT}:</label>
                           <NekoInput id="icon_text" name="icon_text" disabled={!shortcodeParams.window}
                             placeholder="If set, appears next to icon"
                             value={shortcodeParams.icon_text ?? 'Chat'} onBlur={updateShortcodeParams} />
                         </div>
+
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.FULL_SCREEN}:</label>
                           <NekoCheckbox name="fullscreen" label="Yes"
                             checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
                         </div>
+                        
                       </div>
+
                       <b>{i18n.COMMON.TECHNICAL_SETTINGS}</b>
+
                       {isChat && <div className="mwai-builder-row">
                         <div className="mwai-builder-col" style={{ flex: 3 }}>
                           <label>{i18n.COMMON.MODEL}:</label>
@@ -1057,27 +1111,34 @@ const Settings = () => {
                             value={shortcodeParams.temperature} onBlur={updateShortcodeParams} />
                         </div>
                       </div>}
+
                       {isChat && <div className="mwai-builder-row">
+                        
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.MAX_TOKENS}:</label>
                           <NekoInput id="max_tokens" name="max_tokens" type="number"
                             min="10" max="2048"
                             value={shortcodeParams.max_tokens} onBlur={updateShortcodeParams} />
                         </div>
+
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.MAX_MESSAGES}:</label>
                           <NekoInput id="max_messages" name="max_messages"
                             step="1" min="1" max="512"
                             value={shortcodeParams.max_messages} onBlur={updateShortcodeParams} />
                         </div>
+
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.INPUT_MAXLENGTH}:</label>
                           <NekoInput id="text_input_maxlength" name="text_input_maxlength"
                             step="1" min="1" max="512"
                             value={shortcodeParams.text_input_maxlength} onBlur={updateShortcodeParams} />
                         </div>
+
                       </div>}
+
                       {isChat && <div className="mwai-builder-row">
+                        
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.EMBEDDINGS_INDEX}:</label>
                           <NekoSelect scrolldown id="embeddings_index" name="embeddings_index"
@@ -1087,54 +1148,70 @@ const Settings = () => {
                             {indexes.map((x) => (
                               <NekoOption key={x.name} value={x.name} label={x.name}></NekoOption>
                             ))}
-                            <NekoOption value={""} label={"Disabled"}></NekoOption>
+                            <NekoOption key="none" value="" label="Disabled"></NekoOption>
                           </NekoSelect>
                         </div>
+
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                           <NekoCheckbox name="content_aware" label="Yes"
                             requirePro={true} isPro={isRegistered}
                             checked={shortcodeParams.content_aware} value="1" onChange={updateShortcodeParams} />
                         </div>
+
                       </div>}
+
                       {shortcodeChatInject && !shortcodeParams.window && 
                         <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{i18n.SETTINGS.ALERT_INJECT_BUT_NO_POPUP}</p>
                         </NekoMessage>
                       }
+
                       {!isFineTuned && shortcodeParams.casually_fine_tuned && 
                         <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{i18n.SETTINGS.ALERT_CASUALLY_BUT_NO_FINETUNE}</p>
                         </NekoMessage>
                       }
-                      {isContentAware && !contextHasContent && 
+
+                      {isContentAware && !contentHasContent && 
                         <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                           <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
                         </NekoMessage>
                       }
+
                       <b>{i18n.COMMON.SHORTCODE}</b>
-                      <pre>{builtShortcode}</pre>
+
+                      <pre>
+                        {builtShortcode}
+                      </pre>
+
                     </StyledBuilderForm>
+
                     <NekoCheckbox name="shortcode_chat_params_override"
                       label={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS}
-                      disabled={Object.keys(shortcodeParamsDiff).length < 1 && !shortcodeParamsOverride}
+                      disabled={Object.keys(shortcodeParamsDiff).length < 1}
                       value="1" checked={shortcodeParamsOverride}
                       description={i18n.SETTINGS.SET_AS_DEFAULT_PARAMETERS_HELP}
                       onChange={updateOption} />
+
                     <NekoCheckbox name="shortcode_chat_inject"
                       label={i18n.SETTINGS.INJECT_DEFAULT_CHATBOT}
                       value="1" checked={shortcodeChatInject}
                       description={i18n.SETTINGS.INJECT_DEFAULT_CHATBOT_HELP}
                       onChange={updateOption} />
+
                   </NekoBlock>
                 </NekoColumn>
+
                 <NekoColumn minimal>
+
                   <NekoBlock busy={busy} title="ChatGPT Style" className="primary" action={
                     <NekoButton className="danger" onClick={onResetShortcodeStyles}>
                       Reset Styles
                     </NekoButton>}>
                     <StyledBuilderForm>
                       <p>{toHTML(i18n.SETTINGS.CHATGPT_STYLE_INTRO)}</p>
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col" style={{ flex: 0.66 }}>
                           <label>{i18n.COMMON.SPACING}:</label>
@@ -1163,7 +1240,9 @@ const Settings = () => {
                           </div>
                         </div>
                       </div>
+
                       <div className="mwai-builder-row">
+                        
                         <div className="mwai-builder-col">
                           <label>{i18n.COMMON.BACK_PRIMARY_COLOR}:</label>
                           <div style={{ display: 'flex' }}>
@@ -1198,7 +1277,9 @@ const Settings = () => {
                           </div>                          
                         </div>
                       </div>
+
                       <b>{i18n.COMMON.COMMON}</b>
+
                       <div className="mwai-builder-row">
                         <div className="mwai-builder-col" style={{ flex: 2 }}>
                           <label>{i18n.COMMON.POPUP_ICON}:</label>
@@ -1228,6 +1309,7 @@ const Settings = () => {
                             onEnter={updateIcon} onBlur={updateIcon} />
                         </div>
                       </div>}
+
                       <div className="mwai-builder-row" style={{ marginTop: 0 }}>
                         <div className="mwai-builder-col" style={{ flex: 1 }}>
                           <label>{i18n.COMMON.WIDTH}:</label>
@@ -1243,6 +1325,7 @@ const Settings = () => {
                     </StyledBuilderForm>
                   </NekoBlock>
                 </NekoColumn>
+
               </NekoWrapper>
             </NekoTab>}
 
@@ -1255,11 +1338,15 @@ const Settings = () => {
             </NekoTab>
 
           </NekoTabs>
+
         </NekoColumn>
+
       </NekoWrapper>
-      <NekoModal isOpen={error} title={i18n.COMMON.ERROR} content={error} ok="Close"
-        onRequestClose={() => setError(false)} onOkClick={() => setError(false)}
+
+      <NekoModal isOpen={Boolean(error)} title={i18n.COMMON.ERROR} content={error} ok="Close"
+        onRequestClose={() => setError(null)} onOkClick={() => setError(null)}
       />
+
     </NekoPage>
   );
 };

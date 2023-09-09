@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.8.6
+// Previous: 1.8.6
+// Current: 1.9.4
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -10,33 +10,7 @@ import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { BlinkingCursor } from '@app/helpers';
-
-const CopyButton = ({ content }) => {
-  const { state } = useChatbotContext();
-  const { modCss } = state;
-  const [ copyAnimation, setCopyAnimation ] = useState(false);
-
-  const onCopy = () => {
-    try {
-      navigator.clipboard.writeText(content);
-      setCopyAnimation(true);
-      setTimeout(function () {
-        setCopyAnimation(false);
-      }, 1000);
-    }
-    catch (err) {
-      console.warn('Not allowed to copy to clipboard. Make sure your website uses HTTPS.');
-    }
-  }
-
-  return (
-    <div className={modCss('mwai-copy-button', { 'mwai-animate': copyAnimation })} onClick={onCopy}>
-      <div className={modCss('mwai-copy-button-one')}></div>
-      <div className={modCss('mwai-copy-button-two')}></div>
-    </div>
-  );
-};
-
+import CopyButton from '@app/components/CopyButton';
 
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
@@ -44,24 +18,22 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
-  const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
+  const [ isLongProcess, setIsLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
-  const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) { 
-    content += "\n```"; 
-  }
-  else if (message.isStreaming) {
+  const matchCount = (content.match(/```/g) || []).length;
+  if (matchCount % 2 !== 0) {
+    content += "\n```";
+  } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
   useEffect(() => { 
     if (!isLongProcess) {
       onRendered();
-    }
-    else if (isLongProcess && !isQuerying && !isStreaming) {
+    } else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -73,6 +45,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
         a: {
           props: {
             target: "_blank",
+            rel: "noopener noreferrer",
           },
         },
       }
@@ -95,7 +68,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
           <Markdown children={content} options={markdownOptions} />
         </span>
       </span>
-      {copyButton && <CopyButton content={message.content} />}
+      {copyButton && <CopyButton content={message.content} modCss={modCss} />}
     </>
   );
 };
@@ -109,7 +82,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, []);
+  useEffect(() => { onRendered(); }, [onRendered]);
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -139,7 +112,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
   const typedElement = useRef(null);
-  const [ dynamic ] = useState(message.isQuerying);
+  const [ dynamic] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
   const [ userScrolledUp, setUserScrolledUp ] = useState(false);
   const name = message.role === 'user' ? userName : aiName;
@@ -173,9 +146,11 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
       onRendered();
       return;
     }
+
     if (!typedElement.current) {
       return;
     }
+    
     const options = {
       strings: [content],
       typeSpeed: applyFilters('typewriter.speed', 15),
@@ -188,6 +163,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
         setReady(() => true);
       },
     };
+
     const typed = new Typed(typedElement.current, options);
     return () => { typed.destroy(); };
   }, [message, message.isQuerying]);
@@ -205,7 +181,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           <Markdown>{content}</Markdown>
         </span>
       </>}
-      {ready && copyButton && <CopyButton content={content} />}
+      {ready && copyButton && <CopyButton content={content} modCss={modCss} />}
     </>
   );
 };
@@ -240,15 +216,14 @@ const ChatbotReply = ({ message, conversationRef }) => {
             let classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            }
-            else {
+            } else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
         });
       });
     }
-  }
+  };
 
   const output = useMemo(() => {
     if (message.role === 'user') {
@@ -288,5 +263,3 @@ const ChatbotReply = ({ message, conversationRef }) => {
   return output;
   
 };
-
-export default ChatbotReply;

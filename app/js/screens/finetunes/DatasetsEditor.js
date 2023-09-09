@@ -1,5 +1,5 @@
-// Previous: 1.8.3
-// Current: 1.9.3
+// Previous: 1.9.3
+// Current: 1.9.4
 
 const { useState, useEffect } = wp.element;
 import { useQuery } from '@tanstack/react-query';
@@ -11,35 +11,46 @@ import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '@root/i18n';
 import { retrievePostTypes, retrievePostsCount, retrievePostContent } from '@app/requests';
 
-const DatasetEditor = ({ options, setBuilderData }) => {
+const DatasetEditor = ({ options, setMessages }) => {
   const [postType, setPostType] = useState('post');
   const [totalTokens, setTotalTokens] = useState(0);
   const [quickBusy, setQuickBusy] = useState(false);
-  const [generatePrompt, setGeneratePrompt] = useState("Generate 30 questions and answers from this text. Question use a neutral tone. Answers use the same tone as the text.");
-  const [suffixPrompt, setSuffixPrompt] = useState("\n\nUse this format:\n\nQ: \nA: \n\nArticle:\n\n{CONTENT}");
+  const [generatePrompt, setGeneratePrompt] = useState("Generate 30 questions and answers from this text. Questions use a neutral tone. Answers use the same tone as the text.");
+  const [suffixPrompt, setSuffixPrompt] = useState("\n\nUse this format:\n\nQ: Question?\nA: Answer.\n\nQ: Question?\nA: Answer.\n\Text:\n\n{CONTENT}");
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
 
   const createEntriesFromRaw = (rawData) => {
     if (!rawData) {
       return [];
     }
+
     const arr = rawData.split("\n").filter(line => line.trim() !== "");
     const entries = [];
+    let messages = [];
+
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].startsWith("Q:")) {
-        entries.push({ prompt: arr[i].slice(2).trim() });
+        if (messages.length) {
+          entries.push({ messages: [...messages] });
+          messages = [];
+        }
+        messages.push({ role: 'user', content: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
-        if (entries.length === 0) continue; // potential bug: if A: appears before Q:
-        entries[entries.length - 1].completion = arr[i].slice(2).trim();
+        messages.push({ role: 'assistant', content: arr[i].slice(2).trim() });
+        entries.push({ messages: [...messages] });
+        messages = [];
       }
+    }
+    if (messages.length) {
+      entries.push({ messages });
     }
     return entries;
   }
@@ -57,7 +68,7 @@ const DatasetEditor = ({ options, setBuilderData }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content?.length < 64) {
+    else if (content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
@@ -91,7 +102,7 @@ const DatasetEditor = ({ options, setBuilderData }) => {
         setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
       }
     }
-    if (signal && signal.aborted) {
+    if (signal?.aborted) {
       cancelledByUser();
     }
     const entries = createEntriesFromRaw(rawData);
@@ -102,7 +113,7 @@ const DatasetEditor = ({ options, setBuilderData }) => {
 
   const cancelledByUser = () => {
     console.log('User aborted.');
-    setQuickBusy(false);
+    setBusy(false);
     bulkTasks.reset();
   }
 
@@ -110,15 +121,16 @@ const DatasetEditor = ({ options, setBuilderData }) => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = startOffsetStr ? parseInt(startOffsetStr, 10) : 0;
+    const startOffset = startOffsetStr !== null ? parseInt(startOffsetStr, 10) : null;
     let tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffset && offset < startOffset) {
+      if (startOffset !== null && offset < startOffset) {
         return { success: true };
       }
       let result = await runProcess(offset, null, signal);
+      //let result = { entries: [ { prompt: offset, completion: offset } ] }
       if (result?.entries?.length > 0) {
-        setBuilderData(builderData => [...builderData, ...result.entries]);
+        setMessages(messages => [...messages, ...result.entries]);
       }
       return { success: true };
     });
@@ -132,10 +144,10 @@ const DatasetEditor = ({ options, setBuilderData }) => {
     try {
       setTotalTokens(0);
       const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-      if (postIdInput === null) {
+      const postId = postIdInput !== null && postIdInput.trim() !== "" ? postIdInput : null;
+      if (postId === null) {
         return;
       }
-      const postId = postIdInput.trim() === "" ? undefined : postIdInput.trim();
       setQuickBusy('singleGenerate');
       const result = await runProcess(0, postId);
       if (!result.entries || result.entries.length === 0) {
@@ -144,7 +156,7 @@ const DatasetEditor = ({ options, setBuilderData }) => {
       else {
         const confirmAdd = confirm(`Got ${result.entries.length} entries! Do you want to add them to your data? If not, they will be displayed in your console.`);
         if (confirmAdd) {
-          setBuilderData(builderData => [...builderData, ...result.entries]);
+          setMessages(messages => [...messages, ...result.entries]);
         }
       }
     }
@@ -170,9 +182,9 @@ const DatasetEditor = ({ options, setBuilderData }) => {
           Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
-          {postTypes?.map(pt => 
-            <NekoOption key={pt.type} value={pt.type} label={pt.name} />
+          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          {postTypes?.map(postType => 
+            <NekoOption key={postType.type} value={postType.type} label={postType.name} />
           )}
         </NekoSelect>
         <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
@@ -183,7 +195,7 @@ const DatasetEditor = ({ options, setBuilderData }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
+        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
 
       {bulkTasks.TasksErrorModal}
     </>

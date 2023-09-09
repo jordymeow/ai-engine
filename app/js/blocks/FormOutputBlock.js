@@ -1,5 +1,5 @@
-// Previous: 1.4.9
-// Current: 1.8.4
+// Previous: 1.8.4
+// Current: 1.9.4
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -7,18 +7,31 @@ import { AiBlockContainer, meowIcon } from "./common";
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
-const { PanelBody, TextControl } = wp.components;
+const { PanelBody, TextControl, CheckboxControl } = wp.components;
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
+  const { attributes: { id, copyButton } } = props;
 	const blockProps = useBlockProps.save();
-	const { attributes: { id } } = props;
-	const shortcode = `[mwai-form-output id="${id}"]`;
+
+	// Shortcode attributes
+  const shortcodeAttributes = {
+    id: { value: id, insertIfNull: true },
+    copy_button: { value: copyButton, insertIfNull: true },
+  };
+
+	// Create the shortcode
+  let shortcode = Object.entries(shortcodeAttributes)
+    .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
+    .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-output");
+	shortcode = `${shortcode}]`;
+
+	// Return the shortcode
 	return <div {...blockProps}>{shortcode}</div>;
-}
+};
 
 const FormOutputBlock = props => {
-	const { attributes: { id }, setAttributes } = props;
+	const { attributes: { id, copyButton }, setAttributes } = props;
 	const blockProps = useBlockProps();
 
 	useEffect(() => {
@@ -40,6 +53,9 @@ const FormOutputBlock = props => {
 			</div>
 			<InspectorControls>
 				<PanelBody title={i18n.FORMS.OUTPUT}>
+					<CheckboxControl label="Copy Button" checked={copyButton}
+						onChange={value => setAttributes({ copyButton: value })}
+					/>
 					<TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
 				</PanelBody>
 			</InspectorControls>
@@ -64,6 +80,10 @@ const createOutputBlock = () => {
 				type: 'string',
 				default: ''
 			},
+			copyButton: {
+				type: 'boolean',
+				default: true
+			}
 		},
 		edit: FormOutputBlock,
 		save: saveFormField
