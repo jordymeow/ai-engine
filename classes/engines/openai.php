@@ -676,27 +676,43 @@ class Meow_MWAI_Engines_OpenAI
 
   public function fineTuneFile( $fileId, $model, $suffix, $hyperparams = [], $legacy = false )
   {
-    $n_epochs = isset( $hyperparams['nEpochs'] ) ? (int)$hyperparams['nEpochs'] : 4;
+    $n_epochs = isset( $hyperparams['nEpochs'] ) ? (int)$hyperparams['nEpochs'] : null;
     $batch_size = isset( $hyperparams['batchSize'] ) ? (int)$hyperparams['batchSize'] : null;
+    $learning_rate_multiplier = isset( $hyperparams['learningRateMultiplier'] ) ? 
+      (float)$hyperparams['learningRateMultiplier'] : null;
+    $prompt_loss_weight = isset( $hyperparams['promptLossWeight'] ) ? 
+      (float)$hyperparams['promptLossWeight'] : null;
     $arguments = [
       'training_file' => $fileId,
       'model' => $model,
-      'suffix' => $suffix,
-      'n_epochs' => $n_epochs
+      'suffix' => $suffix
     ];
-    if ( $batch_size ) {
-      $arguments['batch_size'] = $batch_size;
-    }
     if ( $legacy ) {
       $result = $this->run( 'POST', '/fine-tunes', $arguments );
     }
     else {
-      $arguments['hyperparameters'] = [ "n_epochs" => $n_epochs ];
-      if ( $batch_size ) {
-        $arguments['hyperparameters']['batch_size'] = $batch_size;
-        unset( $arguments['batch_size'] );
+      if ( $n_epochs ) {
+        $arguments['hyperparams'] = [];
+        $arguments['hyperparams']['n_epochs'] = $n_epochs;
       }
-      unset( $arguments['n_epochs'] );
+      if ( $batch_size ) {
+        if ( empty( $arguments['hyperparams'] ) ) {
+          $arguments['hyperparams'] = [];
+        }
+        $arguments['hyperparams']['batch_size'] = $batch_size;
+      }
+      if ( $learning_rate_multiplier ) {
+        if ( empty( $arguments['hyperparams'] ) ) {
+          $arguments['hyperparams'] = [];
+        }
+        $arguments['hyperparams']['learning_rate_multiplier'] = $learning_rate_multiplier;
+      }
+      if ( $prompt_loss_weight ) {
+        if ( empty( $arguments['hyperparams'] ) ) {
+          $arguments['hyperparams'] = [];
+        }
+        $arguments['hyperparams']['prompt_loss_weight'] = $prompt_loss_weight;
+      }
       if ( $model === 'turbo' ) {
         $arguments['model'] = 'gpt-3.5-turbo';
       }

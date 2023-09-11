@@ -190,6 +190,7 @@ class Meow_MWAI_Modules_Discussions {
       ];
       $chat->messages = json_encode( $chat->messages );
       $this->wpdb->update( $this->table_chats, [ 
+        'userId' => $userId,
         'messages' => $chat->messages,
         'updated' => date( 'Y-m-d H:i:s' )
        ], [ 'id' => $chat->id ] );

@@ -517,8 +517,6 @@
   top: 0 !important;
   width: inherit;
   height: inherit;
-  max-height: inherit;
-  max-width: inherit;
   display: flex;
   flex-direction: column;
   margin: 0;

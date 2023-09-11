@@ -1,11 +1,11 @@
-=== AI Engine: ChatGPT Chatbot, Content Generator, GPT 3 & 4, Ultra-Customizable ===
+=== AI Engine: ChatGPT Chatbot, Content Generator, GPT 4, Ultra-Customizable ===
 Contributors: TigrouMeow
 Tags: ai, chatgpt, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
-Tested up to: 6.2
-Requires PHP: 6.3
-Stable tag: 1.9.4
+Tested up to: 6.3.1
+Requires PHP: 7.4
+Stable tag: 1.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,12 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 Languages: English.
 
 == Changelog ==
+
+= 1.9.5 (2023/09/11) =
+* Fix: Error when finetuning new models. 
+* Fix: Chatbot fullscreen issue.
+* Update: AI Submit can be used outside a AI Container.
+* Update: Register the user to the conversation with the chatbot if the user logs in.
 
 = 1.9.4 (2023/09/09) =
 * Fix: Bulk Generate for the new finetunes.
