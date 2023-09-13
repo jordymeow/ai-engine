@@ -3,11 +3,13 @@
 class Meow_MWAI_API {
 	public $core;
 	private $chatbot_module;
+	private $discussions_module;
 
-	public function __construct( $chatbot_module ) {
+	public function __construct( $chatbot_module, $discussions_module ) {
 		global $mwai_core;
 		$this->core = $mwai_core;
 		$this->chatbot_module = $chatbot_module;
+		$this->discussions_module = $discussions_module;
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 	}
 
@@ -47,10 +49,10 @@ class Meow_MWAI_API {
 			$params = $request->get_params();
 			$botId = isset( $params['botId'] ) ? $params['botId'] : '';
 			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
-			$clientId = isset( $params['clientId'] ) ? $params['clientId'] : null;
+			$chatId = isset( $params['chatId'] ) ? $params['chatId'] : null;
 			$params = null;
-			if ( !empty( $clientId ) ) {
-				$params = array( 'clientId' => $clientId );
+			if ( !empty( $chatId ) ) {
+				$params = array( 'chatId' => $chatId );
 			}
 			if ( empty( $botId ) || empty( $prompt ) ) {
 				throw new Exception( 'The botId and prompt are required.' );
@@ -96,6 +98,12 @@ class Meow_MWAI_API {
 	}
 
 	public function simpleChatbotQuery( $botId, $prompt, $params = [] ) {
+		if ( !isset( $params['messages'] ) && isset( $params['chatId'] ) ) {
+			$discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
+			if ( !empty( $discussion ) ) {
+				$params['messages'] = $discussion->messages;
+			}
+		}
 		$data = $this->chatbot_module->chat_submit( $botId, $prompt, $params );
 		return $data['reply'];
 	}

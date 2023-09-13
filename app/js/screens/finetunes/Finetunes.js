@@ -1,5 +1,5 @@
-// Previous: 1.9.3
-// Current: 1.9.5
+// Previous: 1.9.5
+// Current: 1.9.6
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,8 +49,10 @@ const fineTuneColumns = [
   { accessor: 'actions', title: '' }
 ];
 
+// Status can be: pending, succeeded, failed, or cancelled
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
+  
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -58,22 +60,16 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
     case 'pending':
-      icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-      break;
     case 'running':
       icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
       break;
     case 'succeeded':
-      icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
-      break;
     case 'processed':
       icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
       break;
     case 'failed':
-      icon = <NekoIcon title={status} icon="close" width={24} color={red} />;
-      break;
     case 'cancelled':
-      icon = <NekoIcon title={status} icon="close" width={24} color={orange} />;
+      icon = <NekoIcon title={status} icon="close" width={24} color={red} />;
       break;
     default:
       icon = <NekoIcon title={status} icon="alert" width={24} color={orange} />;
@@ -174,7 +170,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const EditableMessages = ({ entries, messages, currentRow, onUpdateDataRow, onDeleteDataRow }) => {
     return <>
-      {messages.map((x, messageRow) => <div style={{ display: 'flex' }}>
+      {messages.map((x, messageRow) => <div style={{ display: 'flex' }} key={'msg-' + messageRow}>
         <NekoButton rounded icon="trash" onClick={() => onDeleteDataRow(currentRow, messageRow + 1)} />
         <div style={{ width: 120, paddingLeft: 5, paddingTop: 0, paddingBottom: 4, marginRight: 10 }}>
           <NekoSelect scrolldown name="role" value={x.role} style={{ width: 120 }}
@@ -300,7 +296,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             if (!shouldReplace) {
               if (confirm("The context in your data does not match the one in your entries. Do you want to replace it for every entries?")) {
                 shouldReplace = true;
-              } else {
+              }
+              else {
                 return;
               }
             }
@@ -323,24 +320,26 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     try {
       if (!data) {
         localStorage.removeItem('mwai_builder_data_v2');
-      } else {
+      }
+      else {
         localStorage.setItem('mwai_builder_data_v2', JSON.stringify(data));
       }
       setHasStorageBackup(true);
-    } catch (err) {
+    }
+    catch (err) {
       localStorage.removeItem('mwai_builder_data_v2');
       setHasStorageBackup(false);
     }
   }
 
   useEffect(() => {
-    if (entries && entries?.length > 0) {
+    if (entries && entries.length > 0) {
       updateLocalStorage({ context: context, entries });
     }
   }, [entries]);
 
   useEffect(() => {
-    if (context && context?.length > 0) {
+    if (context && context.length > 0) {
       updateLocalStorage({ context: context, entries });
     }
   }, [context]);
@@ -356,7 +355,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow) {
+        if (messageRow !== null) {
           return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content } }
             return y; 
@@ -383,11 +382,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const builderRows = useMemo(() => {
     let row = (currentPage - 1) * rowsPerPage;
     let chunkOfBuilderData = entries?.slice((currentPage - 1) * rowsPerPage,
-      ((currentPage - 1) * rowsPerPage) + rowsPerPage);
+      ((currentPage - 1) * rowsPerPage) + rowsPerPage) || [];
 
-    return chunkOfBuilderData?.map(x => {
+    return chunkOfBuilderData.map(x => {
       const currentRow = ++row;
-
       let question = "";
       let answer = "";
       let messages = [];
@@ -515,15 +513,13 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const downloadFile = async (fileId, filename) => {
     setBusyAction(true);
     try {
-      console.log({ fileId, filename });
       const res = await nekoFetch(`${apiUrl}/openai/files/download`, { method: 'POST', nonce: restNonce, json: { fileId } });
       if (res.success) {
-        console.log(res);
         const blob = new Blob([res.data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `${filename}`);
+        link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -540,13 +536,13 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   }
 
   const fileRows = useMemo(() => {
-    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFiles?.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
       const forFineTune = x.purpose === 'fine-tune';
       return {
-        status: <StatusIcon status={(x.status)} includeText />,
+        status: <StatusIcon status={x.status} includeText />,
         id: currentId,
         filename: currentFilename,
         purpose: x.purpose,
@@ -563,7 +559,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             onClick={() => deleteFile(currentId)} />
         </>
       }
-    })
+    });
   }, [dataFiles]);
 
   const isDeleted = (x) => {
@@ -596,13 +592,16 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       const createdOn = new Date(x.createdOn);
       return {
         ...x,
-        status: <StatusIcon status={(x.status)} includeText />,
+        status: <StatusIcon status={x.status} includeText />,
         createdOn: <>{createdOn.toLocaleDateString()}<br />{createdOn.toLocaleTimeString()}</>,
         actions:  <>
           {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => deleteFineTune(x.model)}>
           </NekoButton>}
-          {(x.status === 'cancelled' || x.status === 'failed') && <NekoButton className="danger" rounded icon="trash"
+          {x.status === 'cancelled' && <NekoButton className="danger" rounded icon="trash"
+            onClick={() => removeFineTune(x.id)}>
+          </NekoButton>}
+          {x.status === 'failed' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
           {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
@@ -622,8 +621,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     const link = document.createElement('a');
     link.href = url;
     const date = new Date();
-    // Create a filename based on the current date with the time
-
     const filename = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-WP.json`;
     link.download = filename;
     document.body.appendChild(link);
@@ -634,10 +631,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = entries.map(x => {
-        let jsonStr = JSON.stringify(x);
-        return jsonStr;
-      }).join("\n");
+      const data = entries.map(x => JSON.stringify(x)).join("\n");
       console.log(data);
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
@@ -661,7 +655,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; // getMonth returns a 0-based value
+    const month = date.getMonth() + 1; 
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -709,7 +703,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
-          console.log('The CSV was loaded.', data);
+          console.log('The CSV was loaded!', data);
           isMigration = true;
         }
 
@@ -722,13 +716,17 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             isMigration = true;
             const promptColumns = ['prompt', 'question', 'q'];
             const completionColumns = ['completion', 'reply', 'a'];
-            const promptKey = promptColumns.find(x => values[x]);
-            const completionKey = completionColumns.find(x => values[x]);
+            const promptKey = promptColumns.find(k => values[k]);
+            const completionKey = completionColumns.find(k => values[k]);
             const promptValue = values[promptKey];
             const completionValue = values[completionKey];
-            const completionValueClean = completionValue.replace(/\n\n$/g, '');
-            const promptValueClean = promptValue.replace(/\n\n###\n\n$/g, '');
+            const completionValueClean = completionValue?.replace(/\n\n$/g, '');
+            const promptValueClean = promptValue?.replace(/\n\n###\n\n$/g, '');
             
+            if (!promptValue || !completionValue) {
+              return null;
+            }
+
             return {
               messages: [{
                 role: 'system',
@@ -744,7 +742,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           });
         }
 
-        const hasMessages = data.every(x => x.messages);
+        data = data.filter(x => x);
+        const hasMessages = data.every(x => x?.messages);
         if (!hasMessages) {
           alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
           return;
@@ -756,7 +755,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   }
 
   const addRow = (question = 'Question?', answer = 'Answer.') => {
-    setEntries([...entries, { messages: [{
+    setEntries(prev => [...prev, { messages: [{
       role: 'system',
       content: context,
     }, {
@@ -852,7 +851,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           </NekoButton>
           <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
         </div>
-        
       </>}
 
       {isModeTrain && section === 'files' && <>
@@ -892,13 +890,16 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           emptyMessage={<>You can import a file, or create manually each entry by clicking <b>Add</b>.</>}
         />
         <NekoSpacer />
-        {!expert && <div className="mwai-builder-col">
+        {!expert && dataSection === 'editor' && <>
+          <div className="mwai-builder-col">
             <label>{i18n.COMMON.CONTEXT}:</label>
             <NekoTextArea id="context" name="context" rows={2}
               description={i18n.FINETUNING.CONTEXT_DESCRIPTION}
               value={context} onBlur={updateContext} onEnter={updateContext}
             />
-        </div>}
+          </div>
+          <NekoSpacer />
+        </>}
         <div style={{ display: 'flex' }}>
           <NekoButton disabled={!totalRows} onClick={onResetBuilder} className="danger">
             Reset Entries
@@ -921,8 +922,68 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank">case studies</a>. Please also check my <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
           </p>
         </>}
+      </>}
 
-      </>
+      <NekoModal isOpen={errorModal}
+        title="Error"
+        onOkClick={() => setErrorModal(undefined)}
+        onRequestClose={() => setErrorModal(undefined)}
+        ok="Ok"
+        content={<>
+          <p>{errorModal?.message}</p>
+        </>}
+      />
+
+      <NekoModal isOpen={fileForFineTune}
+        title="Train a new model"
+        onOkClick={onStartFineTune}
+        onRequestClose={() => setFileForFineTune(undefined)}
+        onCancelClick={() => setFileForFineTune(undefined)}
+        ok="Start"
+        disabled={busyAction}
+        content={<>
+          <p>
+            Exciting! 🎵 You are about to create your own new model, based on your dataset. You simply need to select a base model, and optionally, to modify the <a href="https://beta.openai.com/docs/guides/fine-tuning/hyperparameters" target="_blank">hyperparameters</a>. Before starting the process, make sure that:
+          </p>
+          <ul>
+            <li>✅ The dataset is well-defined.</li>
+            <li>✅ You understand <a href="https://openai.com/api/pricing/#faq-fine-tuning-pricing-calculation" target="_blank">OpenAI pricing</a> about fine-tuning.</li>
+          </ul>
+          <label>Base model:</label>
+          <NekoSpacer height={5} />
+          <NekoSelect value={model} scrolldown={true} onChange={setModel}>
+            {finetunableModels.map((x) => (
+              <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
+            ))}
+          </NekoSelect>
+          <NekoSpacer height={5} />
+          <small>For now, the hyperparameters can't be modified - they are set automatically by OpenAI.</small>
+          <NekoSpacer height={10} />
+          <label>Suffix (for new model name):</label>
+          <NekoSpacer height={5} />
+          <NekoInput value={suffix} onChange={setSuffix} />
+          <NekoSpacer height={5} />
+          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
+          <NekoSpacer line height={20} />
+          <NekoCheckbox label="Enable HyperParams" checked={hyperParams} onChange={setHyperParams} />
+          {hyperParams && <>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <label style={{ marginRight: 5 }}>Number of Epochs:</label>
+              <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
+              <label style={{ marginRight: 5 }}>Batch Size:</label>
+              <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <label style={{ marginRight: 5 }}>Learning Rate Multiplier:</label>
+              <NekoInput style={{ marginRight: 5 }} value={learningRateMultiplier}
+                onChange={setLearningRateMultiplier} type="number" />
+              <label style={{ marginRight: 5 }}>Prompt Loss Weight:</label>
+              <NekoInput value={promptLossWeight} onChange={setPromptLossWeight} type="number" />
+            </div>
+          </>}
+        </>
+        }
+      />
     </NekoContainer>
   </>);
 };

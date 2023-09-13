@@ -48,8 +48,8 @@ class Meow_MWAI_Core
 		}
 		if ( $this->get_option( 'shortcode_chat' ) ) {
 			$chatbot_module = new Meow_MWAI_Modules_Chatbot();
-			new Meow_MWAI_Modules_Chatbot_Legacy();
-			new Meow_MWAI_Modules_Discussions();
+			$discussions_module = new Meow_MWAI_Modules_Discussions();
+			// new Meow_MWAI_Modules_Chatbot_Legacy();
 		}
 
 		// Advanced core
@@ -62,7 +62,7 @@ class Meow_MWAI_Core
 			add_filter( 'mwai_estimate_tokens', array( $this, 'dynamic_max_tokens' ), 10, 2 );
 		}
 
-		$mwai = new Meow_MWAI_API( $chatbot_module );
+		$mwai = new Meow_MWAI_API( $chatbot_module, $discussions_module );
 	}
 
 	#region Roles & Capabilities

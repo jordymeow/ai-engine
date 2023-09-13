@@ -221,7 +221,15 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    */
   public function setMessages( array $messages ) {
     $messages = array_map( function( $message ) {
-      return [ 'role' => $message['role'], 'content' => $message['content'] ];
+      if ( is_array( $message ) ) {
+        return [ 'role' => $message['role'], 'content' => $message['content'] ];
+      }
+      else if ( is_object( $message ) ) {
+        return [ 'role' => $message->role, 'content' => $message->content ];
+      }
+      else {
+        throw new InvalidArgumentException( 'Unsupported message type.' );
+      }
     }, $messages );
     $this->messages = $messages;
     $this->validateMessages();

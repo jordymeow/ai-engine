@@ -419,8 +419,8 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 				let temperature = <?php echo str_replace(',', '.', (float)$temperature) ?>;
 				let typewriter = <?php echo $typewriter ? 'true' : 'false' ?>;
 				let copyButton = <?php echo $copyButton ? 'true' : 'false' ?>;
-				let clientId = randomStr();
-				let memorizedChat = { clientId, messages: [] };
+				let chatId = randomStr();
+				let memorizedChat = { chatId, messages: [] };
 
 				if (isDebugMode) {
 					window.mwai_<?php echo esc_attr( $id ) ?> = {
@@ -612,10 +612,10 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 
 					// Reset the conversation if empty
 					if (inputText === '') {
-						clientId = randomStr();
+						chatId = randomStr();
 						document.querySelector('#mwai-chat-<?php echo esc_attr( $id ) ?> .mwai-conversation').innerHTML = '';
 						localStorage.removeItem('mwai-chat-<?php echo esc_attr( $id ) ?>')
-						memorizedChat = { clientId: clientId, messages: [] };
+						memorizedChat = { chatId: chatId, messages: [] };
 						memorizedChat.messages.push({ 
 							id: randomStr(),
 							role: 'assistant',
@@ -654,7 +654,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 						maxResults,
 						apiKey: apiKey,
 						service: service,
-						clientId: clientId,
+						chatId: chatId,
 					} : {
 						env, session: session,
 						prompt: prompt,
@@ -671,7 +671,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 						service: service,
 						embeddingsIndex: embeddingsIndex,
 						stop: stop,
-						clientId: clientId,
+						chatId: chatId,
 					};
 
 					// Start the timer
@@ -804,8 +804,8 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 						chatHistory = localStorage.getItem('mwai-chat-<?php echo esc_attr( $id ) ?>');
 						if (chatHistory) {
 							memorizedChat = JSON.parse(chatHistory);
-							if (memorizedChat && memorizedChat.clientId && memorizedChat.messages) {
-								clientId = memorizedChat.clientId;
+							if (memorizedChat && memorizedChat.chatId && memorizedChat.messages) {
+								chatId = memorizedChat.chatId;
 								memorizedChat.messages = memorizedChat.messages.filter(x => x && x.html && x.role);
 								memorizedChat.messages.forEach(x => {
 									addReply(x.html, x.role, true);
@@ -817,7 +817,7 @@ class Meow_MWAI_Modules_Chatbot_Legacy {
 						}
 						if (!memorizedChat) {
 							memorizedChat = {
-								clientId: clientId,
+								chatId: chatId,
 								messages: []
 							};
 						}

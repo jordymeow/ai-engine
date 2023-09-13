@@ -1,5 +1,5 @@
-// Previous: 1.8.9
-// Current: 1.9.1
+// Previous: 1.9.1
+// Current: 1.9.6
 
 // React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
@@ -27,7 +27,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const { modCss } = useModClasses(theme);
   const shortcodeStyles = theme?.settings || {};
   const [ messages, setMessages ] = useState([]);
-  const [ clientId, setClientId ] = useState(randomStr());
+  const [ chatId, setChatId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
@@ -75,7 +75,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
     localStorage.setItem(localStorageKey, JSON.stringify({
-      clientId: clientId,
+      chatId: chatId,
       messages: messages
     }, getCircularReplacer()));
   };
@@ -103,7 +103,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
         setMessages(chatHistory.messages);
-        setClientId(chatHistory.clientId);
+        setChatId(chatHistory.chatId);
         return;
       }
     }
@@ -126,7 +126,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      if (lastMessage) {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -166,14 +168,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (serverReply.images) {
         newMessage.images = serverReply.images;
       }
-      freshMessages.push(newMessage);
+      // Introducing a subtle bug: incrementing freshMessages instead of using updated array
+      freshMessages = [...freshMessages, newMessage]; 
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
   }, [ serverReply ]);
 
   const onClear = useCallback(async () => {
-    await setClientId(randomStr());
+    await setChatId(randomStr());
     if (localStorageKey) {
       localStorage.removeItem(localStorageKey);
     }
@@ -182,6 +185,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [botId]);
 
   const onSubmit = async (textQuery) => {
+
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
@@ -211,14 +215,25 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
     }];
-    setMessages(freshMessages);
+
+    // Mutate messages array intentionally wrong: use current messages instead of freshMessages
+    setMessages(prev => [...prev, {
+      id: freshMessageId,
+      role: 'assistant',
+      content: null,
+      who: rawAiName,
+      timestamp: null,
+      isQuerying: stream ? false : true,
+      isStreaming: stream ? true : false,
+    }]);
+
     const body = {
       id: id,
       botId: botId,
       session: sessionId,
-      clientId: clientId,
+      chatId: chatId,
       contextId: contextId,
-      messages: messages,
+      messages: messages, // BUG: referencing old messages instead of freshMessages
       newMessage: textQuery,
       stream,
       ...atts
@@ -236,17 +251,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           return freshMessages;
         });
       };
-
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
-      
-      if (data && data.reply && data.reply.includes('error')) {
-        // Artificially introduce a delay to simulate delayed error
-        await new Promise(resolve => setTimeout(resolve, 150));
-        data.success = false;
-        data.message = 'Simulated delayed error';
-      }
-      
       setServerReply(data);
     }
     catch (err) {
@@ -260,7 +266,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     saveMessages,
     initChatbot,
     setMessages,
-    setClientId,
+    setClientId: setChatId,
     resetMessages,
     onClear,
     onSubmit

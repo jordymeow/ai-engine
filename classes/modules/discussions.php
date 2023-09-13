@@ -104,6 +104,20 @@ class Meow_MWAI_Modules_Discussions {
     }
   }
   
+  // Get latest discussion for the given parameter
+  function get_discussion( $botId, $chatId ) {
+    $this->check_db();
+    $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+      FROM $this->table_chats
+      WHERE chatId = %s AND botId = %s", $chatId, $botId
+    ) );
+    if ( $chat ) {
+      $chat->messages = json_decode( $chat->messages );
+      return $chat;
+    }
+    return null;
+  }
+
   function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
     $this->check_db();
     $offset = !empty( $offset ) ? intval( $offset ) : 0;
@@ -169,7 +183,7 @@ class Meow_MWAI_Modules_Discussions {
     $userIp = $mwai_core->get_ip_address();
     $userId = $mwai_core->get_user_id();
     $botId = isset( $params['botId'] ) ? $params['botId'] : null;
-    $chatId = isset( $params['clientId'] ) ? $params['clientId'] : $query->session;
+    $chatId = isset( $params['chatId'] ) ? $params['chatId'] : $query->session;
     $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->prompt;
     //$chatId = hash( 'sha256', $userIp . $userId . $clientChatId );
     $this->check_db();

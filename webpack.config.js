@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const regexNodeModules = /[\\/]node_modules[\\/]/;
@@ -23,6 +24,17 @@ module.exports = function (env, options) {
 	if (isAnalysis) {
 		plugins.push(new BundleAnalyzerPlugin());
 	}
+	plugins.push({
+		apply: (compiler) => {
+			compiler.hooks.emit.tapAsync('AfterEmitPlugin', (compilation, callback) => {
+				const filePath = path.join(__dirname, 'premium', 'forms.js.LICENSE.txt');
+				if (fs.existsSync(filePath)) {
+					fs.unlinkSync(filePath);
+				}
+				callback();
+			});
+		}
+	});
 	console.log("Production: " + isProduction);
 
 	const baseConfig = {
