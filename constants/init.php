@@ -186,6 +186,7 @@ define( 'MWAI_OPTIONS', [
 	'extra_models' => "",
 	'public_api' => false,
 	'debug_mode' => true,
+	'intro_message' => true,
 	'resolve_shortcodes' => false,
 	'dynamic_max_tokens' => true,
 	'context_max_tokens' => 1024,

@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.9.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -73,7 +73,7 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData?.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       let time = tableDateTimeFormatter(x.time);
       let user = tableUserIPFormatter(x.userId, x.ip);
 
@@ -93,7 +93,10 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
         id: x.id,
         env: <div>{x.env}<br /><small>{x.session}</small></div>,
         user: user,
-        model: <div><span title={x.model}>{getModelName(x.model)}</span><br /><small>{x.apiSrv} (key: {x.apiOwn})</small></div>,
+        model: <div>
+          <span title={x.model}>{getModelName(x.model)}</span><br />
+          <small>{x.apiSrv} (key: {x.apiOwn})</small>
+        </div>,
         units: <div style={{ textAlign: 'right' }}>{x.units}<br /><small>{x.type}</small></div>,
         price: <>{jsxSimplifiedPrice}<br /><small>${x.price}</small></>,
         time: time
@@ -110,9 +113,8 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
       }
       await deleteLogs();
       queryClient.invalidateQueries({ queryKey: ['logs'] });
-    } else {
-      await deleteLogs(selectedLogIds);
     }
+    await deleteLogs(selectedLogIds);
     setSelectedLogIds([]);
     queryClient.invalidateQueries({ queryKey: ['logs'] });
     setBusyAction(false);
@@ -142,8 +144,8 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
       <NekoTable busy={isFetchingLogs || busyAction}
         onSelectRow={id => { setSelectedLogIds([id]) }}
-        onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids  ]) }}
-        onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]) }}
+        onSelect={ids => { setSelectedLogIds(prev => [...prev, ...ids]) }}
+        onUnselect={ids => { setSelectedLogIds(prev => [...prev.filter(x => !ids.includes(x))]) }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
           setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });

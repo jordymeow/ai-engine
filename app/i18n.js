@@ -61,7 +61,9 @@ i18n.COMMON = {
   CREDITS: __( 'Credits', 'ai-engine' ),
   TYPE: __( 'Type', 'ai-engine' ),
   USERS: __( 'Users', 'ai-engine' ),
+  USER: __( 'User', 'ai-engine' ),
   GUESTS: __( 'Guests', 'ai-engine' ),
+  GUEST: __( 'Guest', 'ai-engine' ),
   OPENAI: __( 'Open AI', 'ai-engine' ),
   LICENSE_TAB: __( 'License', 'ai-engine' ),
   FINETUNES: __( 'Finetunes', 'ai-engine' ),
@@ -203,6 +205,8 @@ i18n.COMMON = {
   DEV_TOOLS: __( 'Dev Tools', 'ai-engine' ),
   SINGLE_GENERATE: __( 'Single Generate', 'ai-engine' ),
   PUBLIC_API: __( 'Public API', 'ai-engine' ),
+  USER_INTERFACE: __( 'User Interface', 'ai-engine' ),
+  INTRO_MESSAGE: __( 'Intro Message', 'ai-engine' ),
 }
 
 i18n.FORMS = {
@@ -238,6 +242,7 @@ i18n.HELP = {
   SYNTAX_HIGHLIGHT: __( 'Enable syntax highlighting for the code blocks.', 'ai-engine' ),
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
   PUBLIC_API: __( 'Enable the Public REST API. By default, it will be accessible to everyone.', 'ai-engine' ),
+  INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
 }
 
 i18n.SETTINGS = {

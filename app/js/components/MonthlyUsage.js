@@ -1,14 +1,15 @@
-// Previous: 1.6.98
-// Current: 1.8.2
+// Previous: 1.8.2
+// Current: 1.9.7
 
-import { NekoTypo } from '@neko-ui';
 import { useModels } from "@app/helpers-admin";
+
+// React & Vendor Libs
 const { __ } = wp.i18n;
 const { useMemo, useState } = wp.element;
 
 const UsageDetails = ({ month, usageData }) => {
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const [isExpanded, setIsExpanded] = useState(currentMonth !== month);
+  const [isExpanded, setIsExpanded] = useState(currentMonth === month);
   
   return <li>
     <strong style={{ marginLeft: 5, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>
@@ -92,7 +93,7 @@ const MonthlyUsage = ({ options }) => {
   }, [ openai_usage, models ]);
 
   return (<>
-    {!!openai_usage && Object.keys(openai_usage).length && jsxUsage}
+    {!!openai_usage && !!Object.keys(openai_usage).length && jsxUsage}
   </>);
 }
 

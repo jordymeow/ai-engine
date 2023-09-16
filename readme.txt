@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 5.0
 Tested up to: 6.3.1
 Requires PHP: 7.4
-Stable tag: 1.9.6
+Stable tag: 1.9.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,14 +78,19 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.7 (2023/09/16) =
+* Fix: Rewrite Content (in Embeddings) uses the right value as Max Tokens.
+* Add: The Intro Message in the Settings can now be disabled, for a slighlty cleaner UI.
+* Update: Optimized the way the UI is built and refreshed, for a better performance.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.6 (2023/09/13) =
 * Add: The simpleChatbotQuery has now a memory of the discussion.
 * Fix: Handle errors more gracefully when importing data.
 * Fix: The data in the Copy Button in the Forms was missing line returns.
 * Fix: Some issues with forms if the JS was loaded too early.
 * ✨ The clientId was renamed into chatId (update your custom code if you use any).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.5 (2023/09/11) =
 * Fix: Error when finetuning new models. 

@@ -1,5 +1,5 @@
-// Previous: 1.8.7
-// Current: 1.9.2
+// Previous: 1.9.2
+// Current: 1.9.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -98,12 +98,13 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     let preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-    } else {
-      let detectedLanguage = (document.querySelector('html').lang || navigator.language
-        || navigator.userLanguage).substr(0, 2);
-      if (languages.find(l => l.value === detectedLanguage)) {
-        setCurrentLanguage(detectedLanguage);
-      }
+      return;
+    }
+
+    let detectedLanguage = (document.querySelector('html').lang || navigator.language
+      || navigator.userLanguage).substr(0, 2);
+    if (languages.find(l => l.value === detectedLanguage)) {
+      setCurrentLanguage(detectedLanguage);
     }
   }, []);
 
@@ -117,7 +118,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom, languages]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -131,21 +132,30 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   const jsxLanguageSelector = useMemo(() => {
     return (
       <>
-        {isCustom && <NekoInput name="customLanguage" disabled={disabled}
+        {isCustom && <NekoInput
+          name="customLanguage"
+          disabled={disabled}
           onReset={() => { setIsCustom(false); }}
           description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={customLanguage} onChange={setCustomLanguage} />}
-        {!isCustom && <NekoSelect scrolldown name="language" disabled={disabled} 
+          value={customLanguage}
+          onChange={setCustomLanguage}
+        />}
+        {!isCustom && <NekoSelect
+          scrolldown
+          name="language"
+          disabled={disabled}
           description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={currentLanguage} onChange={onChange}>
-            {languages.map((lang) => {
-              return <NekoOption key={lang.value} value={lang.value} label={lang.label} />
-            })}
+          value={currentLanguage}
+          onChange={onChange}
+        >
+            {languages.map((lang) => (
+              <NekoOption key={lang.value} value={lang.value} label={lang.label} />
+            ))}
             <NekoOption key="custom" value="custom" label="Other" />
         </NekoSelect>}
       </>
     )
-  }, [currentLanguage, customLanguage, isCustom, languages, disabled]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -159,7 +169,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   }
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models || [];
+    let allModels = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
     if (options?.openai_legacy_finetunes) {
@@ -181,6 +191,7 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
           mode = 'chat';
           family = 'gpt4';
         }
+
         return { 
           model: x.model,
           name: <>{x.suffix}&nbsp;<small style={{ background: 'var(--neko-green)', color: 'white', padding: '3px 4px',
@@ -209,15 +220,15 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
 
-  const defaultModels = useMemo(() => {
-    return allModels.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
-  }, [allModels]);
+  const completionModels = useMemo(() => {
+    return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
+  }, [models]);
 
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
       model = 'gpt-3.5-turbo';
     }
-    else if (model === 'gpt-4-0314') {
+    else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -265,13 +276,13 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
       priceIn = price['in'];
       priceOut = price['out'];
     }
-    if (priceIn && priceOut && modelObj?.unit) {
+    if (priceIn && priceOut) {
       return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
   }
 
-  return { allModels, model, models, defaultModels, coreModels, 
+  return { allModels, model, models, completionModels, coreModels, 
     setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
 }
@@ -284,7 +295,7 @@ const retrieveVectors = async (queryParams) => {
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
   if (isSearch && res?.vectors?.length) {
-    const sortedVectors = res.vectors.slice().sort((a, b) => {
+    const sortedVectors = res.vectors.sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
         return a.score - b.score;
       }
@@ -292,6 +303,7 @@ const retrieveVectors = async (queryParams) => {
     });
     res.vectors = sortedVectors;
   }
+
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 }
 
@@ -306,6 +318,8 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 }
 
+// Quick and dirty token estimation
+// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -336,7 +350,7 @@ function reduceContent(content, tokens = 2048) {
 
 function tableDateTimeFormatter(value) {
   let time = new Date(value);
-  time = new Date(time.getTime() - time.getTimezoneOffset() * 60000);
+  time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
   let formattedDate = time.toLocaleDateString('ja-JP', {
     year: 'numeric', month: '2-digit', day: '2-digit'
   });
@@ -359,7 +373,11 @@ function tableUserIPFormatter(userId, ip) {
     return substr;
   })() : '';
   return <>
-    {userId && <><a target="_blank" rel="noopener noreferrer" href={`/wp-admin/user-edit.php?user_id=${userId}`}>ID {userId}</a><br /></>}
+    {!userId && <>{i18n.COMMON.GUEST}</>}
+    {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`}>
+      {i18n.COMMON.USER} #{userId}
+    </a></>}
+    <br />
     <small>{formattedIP}</small>
   </>;
 }
