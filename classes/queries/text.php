@@ -163,10 +163,13 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * all the messages nicely formatted.
    */
   public function getPrompt(): ?string {
-    // if ( $this->mode === 'completion' ) {
-    //   return $this->prompt . $this->promptEnding;
-    // }
+    // In the case it's really just a prompt.
+    if ( count( $this->messages ) === 1 ) {
+      $first = reset( $this->messages );
+      return $first['content'];
+    }
     
+    // In the case it's a chat that we need to convert into a prompt.
     $first = reset( $this->messages );
     $prompt = "";
     if ( $first && $first['role'] === 'system' ) {

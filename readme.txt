@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.1
 Requires PHP: 7.4
-Stable tag: 1.9.8
+Stable tag: 1.9.81
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.9.8 (2023/09/20) =
+= 1.9.81 (2023/09/20) =
 * Add: New gpt-3.5-turbo-instruct model. Have a look at [this](https://openai.com/research/instruction-following).
 * Fix: AI Forms work better with external input fields (such as radios and checkboxes). The debugging mode is also now more verbose.
 * Update: Consolidate the way ID and Custom ID are handled. That fixes a few issues with custom chatbots too.

@@ -1,5 +1,5 @@
-// Previous: 1.1.8
-// Current: 1.4.1
+// Previous: 1.4.1
+// Current: 1.9.81
 
 const { useState, useEffect, useRef, useCallback } = wp.element;
 
@@ -89,4 +89,4 @@ const NekoColorPicker = ({ name, value, onChange }) => {
   );
 };
 
-export { NekoColorPicker }
+export { NekoColorPicker };

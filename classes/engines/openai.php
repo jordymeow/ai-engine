@@ -13,7 +13,7 @@ class Meow_MWAI_Engines_OpenAI
   private $localAzureEndpoint = null;
   private $localAzureApiKey = null;
   private $localAzureDeployments = null;
-  private $azureApiVersion = 'api-version=2023-03-15-preview';
+  private $azureApiVersion = 'api-version=2023-06-01-preview';
 
   // Streaming
   private $streamTemporaryBuffer = "";
@@ -32,6 +32,7 @@ class Meow_MWAI_Engines_OpenAI
     $this->localAzureApiKey = $this->core->get_option( 'openai_azure_apikey' );
     $this->localAzureDeployments = $this->core->get_option( 'openai_azure_deployments' );
     $this->localAzureDeployments[] = [ 'model' => 'dall-e', 'name' => 'dall-e' ];
+    $this->localAzureDeployments[] = [];
   }
 
 
@@ -294,7 +295,8 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      throw new Exception( $e->getMessage() . " (OpenAI)" );
+      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
 
@@ -491,7 +493,8 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      throw new Exception( $e->getMessage() . " (OpenAI)" );
+      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
 

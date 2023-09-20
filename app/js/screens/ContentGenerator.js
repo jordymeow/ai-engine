@@ -1,10 +1,8 @@
-// Previous: 1.8.2
-// Current: 1.9.7
+// Previous: 1.9.7
+// Current: 1.9.81
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
-// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -67,15 +65,7 @@ const ContentGenerator = () => {
   const [postType, setPostType] = useState('post');
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
-
   const [runTimes, setRunTimes] = useState({});
-  const titleMessage = useMemo(() => getSeoMessage(title), [title]);
-  const { addUsage, jsxUsageCosts } = UsageCosts(options);
-const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
-    queryKey: ['postTypes'], queryFn: retrievePostTypes
-  });
-  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
-
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
@@ -132,7 +122,7 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
+  }, [isCustom, currentLanguage, currentHumanLanguage]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -141,10 +131,10 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
       .replace('{WRITING_TONE}', writingTone)
       .replace('{PARAGRAPHS_PER_SECTION}', paragraphsCount)
       .replace('{SECTIONS_COUNT}', sectionsCount);
-  }
+  };
 
   const formInputs = useMemo(() => {
-    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); }
+    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); };
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
       language: lookFor('{LANGUAGE}', arr),
@@ -152,11 +142,11 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
       writingTone: lookFor('{WRITING_TONE}', arr),
       sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
       paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
-    }
+    };
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse = '', maxTokensParam = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse, maxTokens = 2048, isBulk = false) => {
     try {
       const res = await nekoFetch(`${apiUrl}/ai/completions`, { 
         method: 'POST',
@@ -166,9 +156,9 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
           session: session,
           prompt: promptToUse,
           temperature,
-          maxTokens: maxTokensParam,
+          maxTokens,
           model 
-      } });
+        } });
       addUsage(model, res?.usage?.prompt_tokens || 0, res?.usage?.completion_tokens || 0);
       let data = res.data.trim();
       if (data.startsWith('"') && data.endsWith('"')) {
@@ -180,6 +170,7 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
       if (isBulk) {
         throw new Error(err.message);
       }
+      console.error(err);
       setError(err.message);
       return null;
     }
@@ -275,23 +266,24 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
         if (!noSections) {
           setRunTimes(x => ({ ...x, sections: new Date() }));
           freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          await setRunTimes(x => ({ ...x, sections: null }));
+          setRunTimes(x => ({ ...x, sections: null }));
         }
 
         if (freshSections || noSections) {
-          await setRunTimes(x => ({ ...x, content: new Date() }));
+          setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          await setRunTimes(x => ({ ...x, content: null }));
+          setRunTimes(x => ({ ...x, content: null }));
           if (freshContent) {
-            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            setRunTimes(x => ({ ...x, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            await setRunTimes(x => ({ ...x, excerpt: null }));
+            setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
       return { title: freshTitle, heads: freshSections, content: freshContent, excerpt: freshExcerpt };
     }
     catch (e) {
+      console.error(e);
       setBusy(false);
       setRunTimes({});
       throw e;
@@ -313,6 +305,7 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
       return res.postId;
     }
     catch (err) {
+      console.error(err);
       setError(err.message);
       return null;
     }
@@ -323,12 +316,12 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
 
   const onBulkStart = async () => {
     setCreatedPosts([]);
-    let tasks = topicsArray.map((topic, offset) => async () => {
+    const tasks = topicsArray.map((topic, offset) => async () => {
       console.log("Topic " + offset);
       try {
         const { title, content, excerpt } = await onGenerateAllClick(topic, true);
         if (title && content && excerpt) {
-          let postId = await onSubmitNewPost(title, content, excerpt, true);
+          const postId = await onSubmitNewPost(title, content, excerpt, true);
           setCreatedPosts(x => [...x, { postId, topic, title, content, excerpt  }]);
         }
         else {
@@ -346,7 +339,7 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     });
     await bulkTasks.start(tasks);
     bulkTasks.reset();
-  }
+  };
 
   return (
     <NekoPage nekoErrors={[]}>
@@ -414,8 +407,8 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
             {!createdPosts.length && <i>Nothing yet.</i>}
             {createdPosts.length > 0 && <ul>
               {createdPosts.map((x) => (
-                <li>
-                  {x.title} <a target="_blank" href={`/?p=${x.postId}`}>View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`}>Edit</a>
+                <li key={x.postId}>
+                  {x.title} <a target="_blank" href={`/?p=${x.postId}`} rel="noreferrer">View</a> or <a target="_blank" href={`/wp-admin/post.php?post=${x.postId}&action=edit`} rel="noreferrer">Edit</a>
                 </li>
               ))}
             </ul>}
@@ -438,13 +431,13 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
                     <NekoSelect scrolldown name="sectionsCount" disabled={isBusy}
                       style={{ marginRight: 10 }}
                       value={sectionsCount} description="" onChange={setTemplateProperty}>
-                        <NekoOption key={2} value={2} label={2} />
-                        <NekoOption key={3} value={3} label={3} />
-                        <NekoOption key={4} value={4} label={4} />
-                        <NekoOption key={6} value={6} label={6} />
-                        <NekoOption key={8} value={8} label={8} />
-                        <NekoOption key={10} value={10} label={10} />
-                        <NekoOption key={12} value={12} label={12} />
+                      <NekoOption key={2} value={2} label={2} />
+                      <NekoOption key={3} value={3} label={3} />
+                      <NekoOption key={4} value={4} label={4} />
+                      <NekoOption key={6} value={6} label={6} />
+                      <NekoOption key={8} value={8} label={8} />
+                      <NekoOption key={10} value={10} label={10} />
+                      <NekoOption key={12} value={12} label={12} />
                     </NekoSelect>
                   </>}
 
@@ -476,13 +469,13 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
                   <NekoSelect scrolldown name="paragraphsCount" disabled={isBusy}
                     style={{ marginRight: 10 }}
                     value={paragraphsCount} description="" onChange={setTemplateProperty}>
-                      <NekoOption key={1} value={1} label={1} />
-                      <NekoOption key={2} value={2} label={2} />
-                      <NekoOption key={3} value={3} label={3} />
-                      <NekoOption key={4} value={4} label={4} />
-                      <NekoOption key={6} value={6} label={6} />
-                      <NekoOption key={8} value={8} label={8} />
-                      <NekoOption key={10} value={10} label={10} />
+                    <NekoOption key={1} value={1} label={1} />
+                    <NekoOption key={2} value={2} label={2} />
+                    <NekoOption key={3} value={3} label={3} />
+                    <NekoOption key={4} value={4} label={4} />
+                    <NekoOption key={6} value={6} label={6} />
+                    <NekoOption key={8} value={8} label={8} />
+                    <NekoOption key={10} value={10} label={10} />
                   </NekoSelect>
                 </>}
 
@@ -517,9 +510,9 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
 
             <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
               onChange={setPostType} value={postType}>
-                {postTypes?.map(postType => 
-                  <NekoOption key={postType.type} value={postType.type} label={postType.name} />
-                )}
+              {postTypes?.map(postType => 
+                <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+              )}
             </NekoSelect>
 
             <NekoSpacer />
@@ -553,9 +546,9 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
               <label>{i18n.CONTENT_GENERATOR.WRITING_STYLE}:</label>
               <NekoSelect scrolldown name="writingStyle" disabled={isBusy}
                 value={writingStyle} description="" onChange={setTemplateProperty}>
-                  {WritingStyles.map((style) => {
-                    return <NekoOption key={style.value} value={style.value} label={style.label} />
-                  })}
+                {WritingStyles.map((style) => {
+                  return <NekoOption key={style.value} value={style.value} label={style.label} />;
+                })}
               </NekoSelect>
             </>}
 
@@ -563,9 +556,9 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
               <label>{i18n.CONTENT_GENERATOR.WRITING_TONE}:</label>
               <NekoSelect scrolldown name="writingTone" disabled={isBusy}
                 value={writingTone} description="" onChange={setTemplateProperty}>
-                  {WritingTones.map((tone) => {
-                    return <NekoOption key={tone.value} value={tone.value} label={tone.label} />
-                  })}
+                {WritingTones.map((tone) => {
+                  return <NekoOption key={tone.value} value={tone.value} label={tone.label} />;
+                })}
               </NekoSelect>
             </>}
 
@@ -584,9 +577,9 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
               <label>{i18n.COMMON.POST_TYPE}:</label>
               <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
                 onChange={setPostType} value={postType}>
-                  {postTypes?.map(postType => 
-                    <NekoOption key={postType.type} value={postType.type} label={postType.name} />
-                  )}
+                {postTypes?.map(postType => 
+                  <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+                )}
               </NekoSelect>
             </>}
           </StyledSidebar>
@@ -667,8 +660,8 @@ const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
       />
 
       <NekoModal isOpen={error}
-        onRequestClose={() => { setError() }}
-        onOkClick={() => { setError() }}
+        onRequestClose={() => { setError(); }}
+        onOkClick={() => { setError(); }}
         title="Error"
         content={<p>{error}</p>}
       />
