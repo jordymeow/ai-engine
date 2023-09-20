@@ -1,5 +1,5 @@
-// Previous: 1.6.56
-// Current: 1.6.81
+// Previous: 1.6.81
+// Current: 1.9.8
 
 const { render } = wp.element;
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
@@ -15,9 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function processContainers(containers, component) {
     containers.forEach((container) => {
-      let params = JSON.parse(decodeHtmlEntities(container.getAttribute('data-params')));
-      let system = JSON.parse(decodeHtmlEntities(container.getAttribute('data-system')));
-      let theme = JSON.parse(decodeHtmlEntities(container.getAttribute('data-theme')));
+      const params = JSON.parse(decodeHtmlEntities(container.getAttribute('data-params')));
+      const system = JSON.parse(decodeHtmlEntities(container.getAttribute('data-system')));
+      const theme = JSON.parse(decodeHtmlEntities(container.getAttribute('data-theme')));
       container.removeAttribute('data-params');
       container.removeAttribute('data-system');
       container.removeAttribute('data-theme');

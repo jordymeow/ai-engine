@@ -1,5 +1,5 @@
-// Previous: 0.8.7
-// Current: 1.4.9
+// Previous: 1.4.9
+// Current: 1.9.8
 
 import { NekoTheme, useClasses } from '@neko-ui';
 import Styled from "styled-components";
@@ -98,19 +98,31 @@ const BlockContainer = Styled.div`
 `;
 
 const AiBlockContainer = ({ children, type = "", title = "", hint = "", ...rest }) => {
-	const classes = useClasses('mwai-block-container', 'mwai-' + type);
-	return (
-		<BlockContainer className={classes} {...rest}>
-			<div className="mwai-title-container">
-				<AiIcon icon="ai" style={{ width: 20, height: 20 }} />
-				<div>{title}</div>
-				<div className="mwai-hint">{hint}</div>
-			</div>
-			<div className="mwai-block-container-content">
-				{children}
-			</div>
-		</BlockContainer>
-	);
-}
+  const classes = useClasses('mwai-block-container', 'mwai-' + type);
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (type === "expandable") {
+      setIsOpen(true);
+    }
+  }, [type]);
+
+  const toggleOpen = () => {
+    setIsOpen(prev => !prev);
+  };
+
+  return (
+    <BlockContainer className={`${classes} ${isOpen ? 'mwai-container' : ''}`} {...rest} onClick={toggleOpen}>
+      <div className="mwai-title-container">
+        <AiIcon icon="ai" style={{ width: 20, height: 20 }} />
+        <div>{title}</div>
+        <div className="mwai-hint">{hint}</div>
+      </div>
+      <div className="mwai-block-container-content" style={{ display: isOpen ? 'block' : 'none' }}>
+        {children}
+      </div>
+    </BlockContainer>
+  );
+};
 
 export { meowIcon, AiBlockContainer };

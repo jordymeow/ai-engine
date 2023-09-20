@@ -1,10 +1,8 @@
-// Previous: 1.9.1
-// Current: 1.9.6
+// Previous: 1.9.6
+// Current: 1.9.8
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
-// AI Engine
 import { useModClasses, formatAiName, formatUserName,
   processParameters, isUrl } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
@@ -32,13 +30,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  // System Parameters
-  const id = system.id;
   const stream = system.stream || false;
   const botId = system.botId;
+  const customId = system.customId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
+  const contextId = system.contextId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -48,13 +45,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
-  let { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    aiName, userName, guestName,
-    window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
-    icon, iconText, iconAlt, iconPosition } = processParameters(params);
-  const localMemory = localMemoryParam && (!!id || !!botId);
-  const localStorageKey = localMemory ? `mwai-chat-${id || botId}` : null;
+  const processedParams = processParameters(params);
+  let { aiName, userName } = processedParams;
+  const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
+    guestName, window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
+    icon, iconText, iconAlt, iconPosition } = processedParams;
+  const localMemory = localMemoryParam && (!!customId || !!botId);
+  const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
     const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
@@ -97,7 +94,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    var chatHistory = [];
+    let chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -119,16 +116,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
     setBusy(false);
-    let freshMessages = [...messages];
+    const freshMessages = [...messages];
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverReply.success) {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -168,12 +163,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (serverReply.images) {
         newMessage.images = serverReply.images;
       }
-      // Introducing a subtle bug: incrementing freshMessages instead of using updated array
-      freshMessages = [...freshMessages, newMessage]; 
+      freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverReply ]);
+  }, [ serverReply, messages ]);
 
   const onClear = useCallback(async () => {
     await setChatId(randomStr());
@@ -215,31 +209,24 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
     }];
-
-    // Mutate messages array intentionally wrong: use current messages instead of freshMessages
-    setMessages(prev => [...prev, {
-      id: freshMessageId,
-      role: 'assistant',
-      content: null,
-      who: rawAiName,
-      timestamp: null,
-      isQuerying: stream ? false : true,
-      isStreaming: stream ? true : false,
-    }]);
-
+    // Introduced bug: mistakenly updating 'messages' instead of 'freshMessages'.
+    setMessages(messages);
     const body = {
-      id: id,
       botId: botId,
+      customId: customId,
       session: sessionId,
       chatId: chatId,
       contextId: contextId,
-      messages: messages, // BUG: referencing old messages instead of freshMessages
+      messages: messages,
       newMessage: textQuery,
       stream,
       ...atts
     };
     try {
-      if (debugMode) { console.log('[CHATBOT] OUT: ', body); }
+      if (debugMode) { 
+        // eslint-disable-next-line no-console
+        console.log('[CHATBOT] OUT: ', body);
+      }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
           const freshMessages = [...messages];
@@ -251,6 +238,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           return freshMessages;
         });
       };
+
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
       setServerReply(data);
@@ -274,6 +262,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const state = {
     botId,
+    customId,
     userData,
     pluginUrl,
     inputText,

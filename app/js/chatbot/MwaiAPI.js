@@ -1,5 +1,5 @@
-// Previous: 1.8.2
-// Current: 1.8.6
+// Previous: 1.8.6
+// Current: 1.9.8
 
 class MwaiAPI {
 
@@ -25,7 +25,7 @@ class MwaiAPI {
     if (!botId) {
       return this.chatbots[0];
     }
-    return this.chatbots.find(x => x.botId === botId);
+    return this.chatbots.find(x => x.botId === botId || x.customId === botId);
   }
 
   addFilter(tag, callback, priority = 10) {

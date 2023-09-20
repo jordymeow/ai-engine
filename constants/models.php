@@ -68,6 +68,24 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'chat']
 	],
+	[
+		"model" => "gpt-3.5-turbo-instruct",
+		"name" => "turbo-instruct",
+		"family" => "turbo-instruct",
+		"price" => [
+			"in" => 0.0015,
+			"out" => 0.002,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096,
+		"mode" => "completion",
+		"finetune" => [
+			"in" => 0.03,
+			"out" => 0.06,
+		],
+		"tags" => ['core', 'chat', '4k']
+	],
   [
 		"model" => "text-davinci-003",
 		"name" => "davinci-003",
@@ -80,7 +98,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.12
 		],
-		"tags" => ['core', 'chat', 'legacy-finetune']
+		"tags" => ['core', 'chat', 'legacy-finetune', 'deprecated']
 	],
   [
 		"model" => "text-curie-001",
@@ -94,7 +112,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.012
 		],
-		"tags" => ['core', 'chat', 'legacy-finetune']
+		"tags" => ['core', 'chat', 'legacy-finetune', 'deprecated']
 	],
   [
 		"model" => "text-babbage-001",
@@ -108,7 +126,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.0024
 		],
-		"tags" => ['core', 'legacy-finetune']
+		"tags" => ['core', 'legacy-finetune', 'deprecated']
 	],
   [
 		"model" => "text-ada-001",
@@ -122,7 +140,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => [
 			"price" => 0.0016
 		],
-		"tags" => ['core', 'legacy-finetune']
+		"tags" => ['core', 'legacy-finetune', 'deprecated']
 	],
   // Image models:
   [

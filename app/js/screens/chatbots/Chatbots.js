@@ -1,5 +1,5 @@
-// Previous: 1.7.7
-// Current: 1.8.3
+// Previous: 1.8.3
+// Current: 1.9.8
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 1000); // clear message after 1 second
   };
 
   if (!currentChatbot) {
@@ -118,7 +118,7 @@ const Chatbots = (props) => {
 
   const currentTheme = useMemo(() => {
     if (themes && currentChatbot) {
-      let chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
+      const chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
       return chatTheme;
     }
     return themes.find(theme => theme.themeId === 'chatgpt');
@@ -148,15 +148,15 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   const onChangeTab = (_themeIndex, attributes) => {
     setCurrentBotId(attributes.key);
-  }
+  };
 
   const onSwitchTheme = (themeId) => {
     updateChatbotParams(themeId, 'themeId');
-  }
+  };
 
   const addNewChatbot = async (defaults = chatbotDefaults) => {
     setBusyAction(true);
@@ -167,7 +167,7 @@ const Chatbots = (props) => {
     }]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   const deleteCurrentChatbot = async () => {
     setBusyAction(true);
@@ -176,7 +176,7 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   const resetCurrentChatbot = async () => {
     setBusyAction(true);
@@ -186,11 +186,11 @@ const Chatbots = (props) => {
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
-  }
+  };
 
   const duplicateCurrentChatbot = async () => {
     addNewChatbot(currentChatbot);
-  }
+  };
 
   return (<>
     <NekoWrapper>
@@ -200,7 +200,7 @@ const Chatbots = (props) => {
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <label>{i18n.COMMON.SITE_WIDE_CHAT}:</label>
             <NekoSelect scrolldown style={{ marginLeft: 10 }} name='botId' disabled={isBusy}
-              value={botId} onChange={(e) => updateOption(e)}>
+              value={botId} onChange={updateOption}>
               <NekoOption value='none' label="None" />
               {chatbots?.map(chat => 
                 <NekoOption key={chat.botId} value={chat.botId} label={chat.name} />)
@@ -231,18 +231,13 @@ const Chatbots = (props) => {
 
       {(chatbotEditor || themeEditor) && <NekoColumn minimal style={{ margin: 10 }}>
 
-        {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentChatbot?.botId}
+        {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
           action={<><NekoButton className="primary-block" icon='plus' onClick={() => addNewChatbot()} /></>}>
           {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
-            <ChatbotParams 
-              options={options} 
-              themes={themes} 
-              defaultChatbot={defaultChatbot}
-              deleteCurrentChatbot={deleteCurrentChatbot} 
-              resetCurrentChatbot={resetCurrentChatbot}
+            <ChatbotParams options={options} themes={themes} defaultChatbot={defaultChatbot}
+              deleteCurrentChatbot={deleteCurrentChatbot} resetCurrentChatbot={resetCurrentChatbot}
               duplicateCurrentChatbot={duplicateCurrentChatbot}
-              shortcodeParams={chatbotParams} 
-              updateShortcodeParams={updateChatbotParams}
+              shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
             />
           </NekoTab>)}
         </NekoTabs>}

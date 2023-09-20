@@ -1,10 +1,10 @@
-// Previous: 1.7.7
-// Current: 1.9.2
+// Previous: 1.9.2
+// Current: 1.9.8
 
 const { useMemo, useEffect } = wp.element;
 
 import {
-  NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage, NekoSpacer,
+  NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoColumn, NekoTextArea, NekoButton, NekoCollapsableCategory, NekoCollapsableCategories
 } from '@neko-ui';
 
@@ -24,8 +24,8 @@ const ChatbotParams = (props) => {
 
   const pinecone = options?.pinecone || {};
   const shortcodeChatInject = options?.shortcode_chat_inject;
-  const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
-  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
+  const isChat = (shortcodeParams.mode === 'chat') ?? false;
+  const isImagesChat = (shortcodeParams.mode === 'images') ?? false;
   const indexes = pinecone?.indexes || [];
   const namespaces = pinecone.namespaces || [];
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
@@ -62,17 +62,13 @@ const ChatbotParams = (props) => {
     }
     const joinedParams = params.join(' ');
     return '[mwai_chatbot_v2' + (joinedParams ? ` ${joinedParams}` : '') + ']';
-  }, [shortcodeParams, defaultChatbot]);
+  }, [shortcodeParams]);
 
   useEffect(() => {
     if (shortcodeParams.embeddingsIndex && !shortcodeParams.embeddingsNamespace && namespaces.length > 0) {
       updateShortcodeParams(namespaces[0], 'embeddingsNamespace');
     }
-  }, [shortcodeParams.embeddingsIndex, namespaces]);
-
-  const handleUpdateShortcode = (name, value) => {
-    updateShortcodeParams({ target: { name, value } });
-  };
+  }, [shortcodeParams.embeddingsIndex, namespaces, updateShortcodeParams]);
 
   return (<>
     <NekoWrapper>
@@ -121,9 +117,10 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>
+
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col"
-                  style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
+                  style={{ height: (shortcodeParams.mode === 'chat') ? 76 : 'inherit' }}>
                   <label>{i18n.COMMON.MODE}:</label>
                   <NekoSelect scrolldown id="mode" name="mode"
                     value={shortcodeParams.mode}
@@ -132,6 +129,7 @@ const ChatbotParams = (props) => {
                     <NekoOption value="images" label="Images" />
                   </NekoSelect>
                 </div>
+
                 {isChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                   <label>{i18n.COMMON.CONTEXT}:</label>
                   <NekoTextArea name="context" rows={10} textAreaStyle={{ resize: 'none' }}
@@ -140,6 +138,7 @@ const ChatbotParams = (props) => {
                     onEnter={updateShortcodeParams}
                   />
                 </div>}
+
                 {isImagesChat && <div className="mwai-builder-col" style={{ flex: 5 }}>
                   <label>{i18n.COMMON.IMAGES_NUMBER}:</label>
                   <NekoInput name="maxResults" type="number"
@@ -149,7 +148,9 @@ const ChatbotParams = (props) => {
                   />
                 </div>}
               </div>
+
             </NekoCollapsableCategory>
+
             <NekoCollapsableCategory title={i18n.COMMON.VISUAL_SETTINGS}>
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -169,6 +170,7 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>
+
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.USER_NAME}:</label>
@@ -201,22 +203,26 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>
+
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.COPY_BUTTON}:</label>
                   <NekoCheckbox name="copyButton" label="Yes"
                     checked={shortcodeParams.copyButton} value="1" onChange={updateShortcodeParams} />
                 </div>
+
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.POPUP}:</label>
                   <NekoCheckbox name="window" label="Yes"
                     checked={shortcodeParams.window} value="1" onChange={updateShortcodeParams} />
                 </div>
+
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.FULL_SCREEN}:</label>
                   <NekoCheckbox name="fullscreen" label="Yes"
                     checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
                 </div>
+
                 <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.COMPLIANCE_TEXT}:</label>
                   <NekoInput name="textCompliance"
@@ -226,6 +232,7 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>
+
               {(shortcodeParams.window || !shortcodeParams.aiName) && <>
                 <div style={{
                   marginTop: 10, border: '2px solid #d2e4f3', borderRadius: 8,
@@ -236,9 +243,9 @@ const ChatbotParams = (props) => {
                       <label>{i18n.COMMON.AI_AVATAR}:</label>
                       <div style={{ display: 'flex' }}>
                         {chatIcons.map(x =>
-                          <img style={{ marginRight: 2, cursor: 'pointer' }} width={24} height={24}
+                          <img key={x} style={{ marginRight: 2, cursor: 'pointer' }} width={24} height={24}
                             src={`${pluginUrl}/images/${x}`} onClick={() => {
-                              updateShortcodeParams(x, 'icon')
+                              updateShortcodeParams(x, 'icon');
                             }} />
                         )}
                         <NekoButton small className="primary" style={{ marginLeft: 5 }}
@@ -261,7 +268,9 @@ const ChatbotParams = (props) => {
                   </div>}
                 </div>
               </>}
+
             </NekoCollapsableCategory>
+
             <NekoCollapsableCategory title={i18n.COMMON.POPUP_SETTINGS} hide={!shortcodeParams.window}>
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 2 }}>
@@ -274,6 +283,7 @@ const ChatbotParams = (props) => {
                     <NekoOption value="top-left" label="Top Left" />
                   </NekoSelect>
                 </div>
+
                 <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.ICON_TEXT}:</label>
                   <NekoInput name="iconText" disabled={!shortcodeParams.window}
@@ -285,14 +295,15 @@ const ChatbotParams = (props) => {
                 </div>
               </div>
             </NekoCollapsableCategory>
+
             <NekoCollapsableCategory title={i18n.COMMON.AI_SETTINGS}>
               {isChat && <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
                   <label>{i18n.COMMON.MODEL}:</label>
                   <NekoSelect scrolldown name="model"
-                    value={shortcodeParams.model} description="" onChange={updateShortcodeParams}>
+                    value={shortcodeParams.model} onChange={updateShortcodeParams}>
                     {completionModels.map((x) => (
-                      <NekoOption value={x.model} label={x.name}></NekoOption>
+                      <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
                   </NekoSelect>
                 </div>
@@ -313,7 +324,9 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>}
+
               {isChat && <div className="mwai-builder-row">
+
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.MAX_TOKENS}:</label>
                   <NekoInput name="maxTokens" type="number" min="10" max="2048"
@@ -322,6 +335,7 @@ const ChatbotParams = (props) => {
                     onEnter={updateShortcodeParams}
                   />
                 </div>
+
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.MAX_MESSAGES}:</label>
                   <NekoInput name="maxSentences"
@@ -331,6 +345,7 @@ const ChatbotParams = (props) => {
                     onEnter={updateShortcodeParams}
                   />
                 </div>
+
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.INPUT_MAXLENGTH}:</label>
                   <NekoInput name="textInputMaxLength"
@@ -341,6 +356,7 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>}
+
               {isChat && <div className="mwai-builder-row">
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.EMBEDDINGS_INDEX}:</label>
@@ -349,17 +365,18 @@ const ChatbotParams = (props) => {
                     disabled={!indexes?.length || currentModel?.mode !== 'chat'}
                     value={shortcodeParams.embeddingsIndex} onChange={updateShortcodeParams}>
                     {indexes.map((x) => (
-                      <NekoOption value={x.name} label={x.name}></NekoOption>
+                      <NekoOption key={x.name} value={x.name} label={x.name}></NekoOption>
                     ))}
                     <NekoOption value={""} label={"Disabled"}></NekoOption>
                   </NekoSelect>
                 </div>
+
                 {shortcodeParams.embeddingsIndex && <div className="mwai-builder-col">
                   <label>{i18n.COMMON.NAMESPACE}:</label>
                   <NekoSelect scrolldown name="embeddingsNamespace"
                     value={shortcodeParams.embeddingsNamespace} onChange={updateShortcodeParams}>
-                    {namespaces.map(x => <NekoOption value={x} label={x} />)}
-                    {!namespaces?.length && <NekoOption value={null} label="None" />}
+                    {namespaces.map(x => <NekoOption key={x} value={x} label={x} />)}
+                    {(!namespaces || !namespaces.length) && <NekoOption value={null} label="None" />}
                   </NekoSelect>
                 </div>}
                 <div className="mwai-builder-col">
@@ -369,26 +386,32 @@ const ChatbotParams = (props) => {
                     checked={shortcodeParams.contentAware} value="1" onChange={updateShortcodeParams} />
                 </div>
               </div>}
+
               {shortcodeChatInject && !shortcodeParams.window &&
                 <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                   <p>{i18n.SETTINGS.ALERT_INJECT_BUT_NO_POPUP}</p>
                 </NekoMessage>
               }
+
               {!isFineTuned && shortcodeParams.casuallyFineTuned &&
                 <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                   <p>{i18n.SETTINGS.ALERT_CASUALLY_BUT_NO_FINETUNE}</p>
                 </NekoMessage>
               }
+
               {isContentAware && !contextHasContent &&
                 <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                   <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
                 </NekoMessage>
               }
+
             </NekoCollapsableCategory>
+
             <NekoCollapsableCategory title={i18n.COMMON.CUSTOM_SHORTCODE}>
               <pre>{builtShortcode}</pre>
               <p>{i18n.HELP.CUSTOM_SHORTCODE}</p>
             </NekoCollapsableCategory>
+
             <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
               <div style={{ display: 'flex', marginTop: 10 }}>
                 <NekoButton className="primary" onClick={duplicateCurrentChatbot}>

@@ -33,8 +33,12 @@ class Meow_MWAI_Core
 		$this->is_cli = defined( 'WP_CLI' );
 		$this->ai = new Meow_MWAI_Engines_Core( $this );
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
+		add_action( 'wp_register_script', array( $this, 'register_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 	}
 
+	#region Init & Scripts
 	function init() {
 		global $mwai;
 		$chatbot_module = null;
@@ -66,6 +70,17 @@ class Meow_MWAI_Core
 		$mwai = new Meow_MWAI_API( $chatbot_module, $discussions_module );
 	}
 
+	public function register_scripts() {
+		wp_register_script( 'mwai_highlight', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
+	}
+
+	public function enqueue_scripts() {
+		$this->register_scripts();
+		wp_enqueue_script( "mwai_highlight" );
+	}
+
+	#endregion
+
 	#region Roles & Capabilities
 
 	function can_access_settings() {
@@ -92,19 +107,6 @@ class Meow_MWAI_Core
 		$text = wp_strip_all_tags( $text );
 		$text = preg_replace( '/[\r\n]+/', "\n", $text );
 		return $text . " ";
-
-		// Before simplification:
-    // $text = strip_tags( $rawText );
-    // $text = strip_shortcodes( $text );
-    // $text = html_entity_decode( $text );
-		// $text = preg_replace( '/[\r\n]+/', "\n", $text );
-    // $sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
-    // foreach ( $sentences as $key => $sentence ) {
-    //   $sentences[$key] = trim( $sentence );
-    // }
-    // $text = implode( " ", $sentences );
-    // $text = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $text );
-    // return $text . " ";
   }
 
   // Make sure there are no duplicate sentences, and keep the length under a maximum length.

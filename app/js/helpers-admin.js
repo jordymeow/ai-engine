@@ -1,5 +1,5 @@
-// Previous: 1.9.2
-// Current: 1.9.7
+// Previous: 1.9.7
+// Current: 1.9.8
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -11,12 +11,12 @@ const ENTRY_TYPES = {
   MANUAL: 'manual',
   POST_CONTENT: 'postContent',
   POST_FRAGMENT: 'postFragment'
-}
+};
 
 const ENTRY_BEHAVIORS = {
   CONTEXT: 'context',
   REPLY: 'reply',
-}
+};
 
 const DEFAULT_VECTOR = {
   title: '',
@@ -24,12 +24,12 @@ const DEFAULT_VECTOR = {
   refId: null,
   type: ENTRY_TYPES.MANUAL,
   behavior: ENTRY_BEHAVIORS.CONTEXT,
-}
+};
 
 const DEFAULT_INDEX = {
   name: '',
   podType: 'p2',
-}
+};
 
 const OptionsCheck = ({ options }) => {
   const { openai_apikey, pinecone } = options;
@@ -46,7 +46,7 @@ const OptionsCheck = ({ options }) => {
       </NekoMessage>}
     </>
   );
-}
+};
 
 function cleanSections(text) {
   if (!text) {
@@ -95,14 +95,13 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   }, [startLanguage]);
 
   useEffect(() => {
-    let preferredLanguage = localStorage.getItem('mwai_preferred_language');
+    const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
       return;
     }
-
-    let detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
+    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
+    const detectedLanguage = htmlLang.substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -112,7 +111,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     if (isCustom) {
       return customLanguage;
     }
-    let systemLanguage = languages.find(l => l.value === currentLanguage);
+    const systemLanguage = languages.find(l => l.value === currentLanguage);
     if (systemLanguage) {
       return systemLanguage.label;
     }
@@ -127,55 +126,77 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
-  }
+  };
 
   const jsxLanguageSelector = useMemo(() => {
     return (
       <>
-        {isCustom && <NekoInput
-          name="customLanguage"
-          disabled={disabled}
+        {isCustom && <NekoInput name="customLanguage" disabled={disabled}
           onReset={() => { setIsCustom(false); }}
           description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={customLanguage}
-          onChange={setCustomLanguage}
-        />}
-        {!isCustom && <NekoSelect
-          scrolldown
-          name="language"
-          disabled={disabled}
+          value={customLanguage} onChange={setCustomLanguage} />}
+        {!isCustom && <NekoSelect scrolldown name="language" disabled={disabled} 
           description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={currentLanguage}
-          onChange={onChange}
-        >
-            {languages.map((lang) => (
-              <NekoOption key={lang.value} value={lang.value} label={lang.label} />
-            ))}
-            <NekoOption key="custom" value="custom" label="Other" />
+          value={currentLanguage} onChange={onChange}>
+          {languages.map((lang) => {
+            return <NekoOption key={lang.value} value={lang.value} label={lang.label} />;
+          })}
+          <NekoOption key="custom" value="custom" label="Other" />
         </NekoSelect>}
       </>
-    )
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+    );
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
-}
+};
 
 const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const [model, setModel] = useState(defaultModel);
   let deletedFineTunes = options?.openai_finetunes_deleted || [];
-  if (options?.openai_legacy_finetunes_deleted) {
-    deletedFineTunes = [ ...deletedFineTunes, ...options?.openai_legacy_finetunes_deleted ];
+  if (Array.isArray(options?.openai_legacy_finetunes_deleted)) {
+    deletedFineTunes = [ ...deletedFineTunes, ...options.openai_legacy_finetunes_deleted ];
   }
+
+  const jsxModelName = (x, isTuned) => {
+    const isDeprecated = x.tags?.includes('deprecated');
+    if (!isTuned && !isDeprecated) {
+      return x.name;
+    }
+    return (
+      <>
+        {x.name || x.suffix}&nbsp;<small style={{ 
+          background: isDeprecated ? 'var(--neko-red)' : 'var(--neko-green)', 
+          color: 'white', 
+          padding: '3px 4px', 
+          margin: '-3px 2px', 
+          borderRadius: 3, 
+          fontSize: 9, 
+          lineHeight: '100%' 
+        }}>{isDeprecated ? 'DEPRECATED' : 'TUNED'}</small>
+      </>
+    );
+  };
 
   const allModels = useMemo(() => {
     let allModels = options.openai_models;
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
-    if (options?.openai_legacy_finetunes) {
-      fineTunes = [ ...fineTunes, ...options?.openai_legacy_finetunes ];
+    if (Array.isArray(options?.openai_legacy_finetunes)) {
+      fineTunes = [ ...fineTunes, ...options.openai_legacy_finetunes ];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
+    allModels = allModels.map(x => {
+      return { 
+        model: x.model,
+        name: jsxModelName(x),
+        suffix: x.suffix,
+        mode: x.mode,
+        family: x.family,
+        description: x.description,
+        tags: x.tags
+      };
+    });
 
     if (fineTunes.length) {
       allModels = [ ...allModels, ...fineTunes.map(x => {
@@ -194,15 +215,14 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
 
         return { 
           model: x.model,
-          name: <>{x.suffix}&nbsp;<small style={{ background: 'var(--neko-green)', color: 'white', padding: '3px 4px',
-            margin: '-3px 2px', borderRadius: 3, fontSize: 9, lineHeight: '100%' }}>TUNED</small></>,
+          name: jsxModelName(x, true),
           suffix: x.suffix,
           mode,
           family,
           description: "finetuned",
           finetuned: true,
           tags: ['finetune']
-        }
+        };
       })];
     }
     extraModels = extraModels?.split(',').filter(x => x);
@@ -227,33 +247,32 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
+    } else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
-  }
+  };
 
   const isFineTunedModel = (model) => {
     const modelObj = getModel(model);
     return modelObj?.finetuned || false;
-  }
+  };
 
   const getModelName = (model) => {
     const modelObj = getModel(model);
     return modelObj?.name || modelObj?.model || model;
-  }
+  };
 
   const getFamilyName = (model) => {
     const modelObj = getModel(model);
     return modelObj?.family || null;
-  }
+  };
 
   const getFamilyModel = (model) => {
     const modelObj = getModel(model);
     const coreModel = coreModels.find(x => x.family === modelObj.family);
     return coreModel || null;
-  }
+  };
 
   const getPrice = (model, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
@@ -264,12 +283,11 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
       }
     }
     return modelObj?.price || null;
-  }
+  };
 
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object') {
@@ -280,12 +298,12 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
       return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
-  }
+  };
 
   return { allModels, model, models, completionModels, coreModels, 
     setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
-}
+};
 
 const retrieveVectors = async (queryParams) => {
   const isSearch = queryParams?.filters?.search !== null;
@@ -305,21 +323,19 @@ const retrieveVectors = async (queryParams) => {
   }
 
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
-}
+};
 
 const retrievePostsCount = async (postType, postStatus = 'publish') => {
   const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
   return res?.count ? parseInt(res?.count) : null;
-}
+};
 
 const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus = 'publish') => {
   const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`, 
     { nonce: restNonce });
   return res;
-}
+};
 
-// Quick and dirty token estimation
-// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
@@ -327,8 +343,7 @@ function estimateTokens(text) {
     const char = text[i];
     if (char.charCodeAt(0) < 128) {
       asciiCount++;
-    }
-    else {
+    } else {
       nonAsciiCount++;
     }
   }
@@ -351,10 +366,10 @@ function reduceContent(content, tokens = 2048) {
 function tableDateTimeFormatter(value) {
   let time = new Date(value);
   time = new Date(time.getTime() - time.getTimezoneOffset() * 60 * 1000);
-  let formattedDate = time.toLocaleDateString('ja-JP', {
+  const formattedDate = time.toLocaleDateString('ja-JP', {
     year: 'numeric', month: '2-digit', day: '2-digit'
   });
-  let formattedTime = time.toLocaleTimeString('ja-JP', {
+  const formattedTime = time.toLocaleTimeString('ja-JP', {
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
   return <div style={{ textAlign: 'right' }}>{formattedDate}<br /><small>{formattedTime}</small></div>;
@@ -374,7 +389,7 @@ function tableUserIPFormatter(userId, ip) {
   })() : '';
   return <>
     {!userId && <>{i18n.COMMON.GUEST}</>}
-    {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`}>
+    {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`} rel="noreferrer">
       {i18n.COMMON.USER} #{userId}
     </a></>}
     <br />
@@ -389,7 +404,7 @@ const randomHash = (length = 6) => {
     hash += chars[Math.floor(Math.random() * chars.length)];
   }
   return hash;
-}
+};
 
 export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages,
   retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,

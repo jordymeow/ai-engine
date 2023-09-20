@@ -85,7 +85,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     if ( !empty( $this->maxSentences ) ) {
       $context = array_shift( $this->messages );
       if ( !empty( $this->messages ) ) {
-        $this->messages = array_slice( $this->messages, -$this->maxSentences * 2 );
+        $this->messages = array_slice( $this->messages, -$this->maxSentences );
       }
       else {
         $this->messages = [];
@@ -163,9 +163,9 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * all the messages nicely formatted.
    */
   public function getPrompt(): ?string {
-    if ( $this->mode === 'completion' ) {
-      return $this->prompt . $this->promptEnding;
-    }
+    // if ( $this->mode === 'completion' ) {
+    //   return $this->prompt . $this->promptEnding;
+    // }
     
     $first = reset( $this->messages );
     $prompt = "";

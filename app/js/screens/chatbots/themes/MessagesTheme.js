@@ -1,11 +1,10 @@
-// Previous: 1.6.59
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 1.9.8
 
 // NekoUI
 import { NekoInput, NekoCollapsableCategory, NekoSpacer } from '@neko-ui';
 
 import i18n from '@root/i18n';
-import { toHTML } from '@app/helpers-admin';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
 import { NekoColorPicker } from "@app/components/NekoColorPicker";
 

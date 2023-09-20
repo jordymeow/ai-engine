@@ -235,7 +235,7 @@ class Meow_MWAI_Engines_OpenAI
         }
       }
       if ( !$found ) {
-        error_log( 'Azure deployment not found for model: ' . $query->model );
+        //error_log( 'Azure deployment not found for model: ' . $query->model );
         $query->service = 'openai';
       }
     }
