@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.1
 Requires PHP: 7.4
-Stable tag: 1.9.81
+Stable tag: 1.9.82
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,14 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 Languages: English.
 
 == Changelog ==
+
+= 1.9.82 (2023/09/22) =
+* Fix: The value of external select fields was not interpreted correctly.
+* Fix: Better validation in the AI Forms.
+* Fix: Empty chatbot shorcode will automatically switch to the default chatbot.
+* Fix: Issues on mobile with the chatbot.
+* Fix: Avoid displaying the rendered HTML in the chatbot when typed by the user.
+* Update: Accept function calls without parameters, and make sure the types are correct.
 
 = 1.9.81 (2023/09/20) =
 * Add: New gpt-3.5-turbo-instruct model. Have a look at [this](https://openai.com/research/instruction-following).

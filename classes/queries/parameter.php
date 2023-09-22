@@ -12,6 +12,11 @@ class Meow_MWAI_Query_Parameter implements JsonSerializable {
       throw new InvalidArgumentException( "Invalid function name." );
     }
 
+    // Make sure the type is valid for JSON Schema.
+    if ( !in_array( $type, [ 'string', 'number', 'integer', 'boolean', 'array', 'object' ] ) ) {
+      throw new InvalidArgumentException( "Invalid parameter type ($type) for parameter '$name' in the function '$name'." );
+    }
+
     $this->name = $name;
     $this->description = $description;
     $this->type = $type;

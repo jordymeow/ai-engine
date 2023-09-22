@@ -321,6 +321,9 @@ class Meow_MWAI_Modules_Chatbot {
 		$chatbot = null;
 		$botId = $atts['id'] ?? null;
 		$customId = $atts['custom_id'] ?? null;
+		if ( !$botId && !$customId ) {
+			$botId = "default";
+		}
 		unset( $atts['id'] );
 		if ( $botId ) {
 			$chatbot = $this->core->getChatbot( $botId );

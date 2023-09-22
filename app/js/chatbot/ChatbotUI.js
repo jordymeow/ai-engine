@@ -1,5 +1,5 @@
-// Previous: 1.8.6
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 1.9.82
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -47,11 +47,11 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(text);
+          setInputText(prev => prev + text);
         }
       }
       else if (task.action === 'toggle') {
-        setOpen(!open);
+        setOpen(prev => !prev);
       }
       else if (task.action === 'open') {
         setOpen(true);
@@ -105,33 +105,25 @@ const ChatbotUI = (props) => {
   useEffect(() => {
     if (busy) {
       startChrono();
-      return;
+    } else {
+      stopChrono();
     }
-    if (!isMobile && hasFocusRef.current) {
-      inputRef.current.focus();
-    }
-    stopChrono();
   }, [busy]);
 
   useEffect(() => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    // BUG: Using a direct DOM assignment without checking if current exists
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [open]);
 
   useLayoutEffect(() => {
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText) {
+    if (forcedText !== null) {
       onSubmit(forcedText);
     }
     else if (inputText.length > 0) {
@@ -165,11 +157,11 @@ const ChatbotUI = (props) => {
 
       {isWindow && (<>
         <div className={modCss('mwai-open-button')}>
-          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
+          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
             {iconText}
           </div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl}
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(prev => !prev)}
           />
         </div>
         <div className={modCss('mwai-header')}>
@@ -180,7 +172,7 @@ const ChatbotUI = (props) => {
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(!open)}
+              onClick={() => setOpen(prev => !prev)}
             />
           </div>
         </div>

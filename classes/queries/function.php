@@ -24,22 +24,31 @@ class Meow_MWAI_Query_Function implements JsonSerializable {
     $this->type = $type;
   }
 
-  public function jsonSerialize() {
-    $params = [];
-    foreach( $this->parameters as $parameter ) {
-      $params[ $parameter->name ] = $parameter;
+  public function jsonSerialize()
+  {
+    $json = [ 'name' => $this->name, 'description' => $this->description ];
+
+    // OpenAI requires at least one parameter, so we'll add one if there are none.
+    if ( empty( $this->parameters ) ) {
+      $newParam = new Meow_MWAI_Query_Parameter( 
+        'intendedActionConfidence',
+        'The probability, in a range from 0 to 100, representing OpenAI’s confidence that invoking this function aligns with its intended action.',
+        'integer',
+        false
+      );
+      $this->parameters = [ $newParam ];
     }
-    $required = array_filter( $this->parameters, function( $param ) { return $param->required; } );
-    $required = array_map( function( $param ) { return $param->name; }, $required );
-    $json = [
-      'name' => $this->name,
-      'description' => $this->description,
-      'parameters' => [
-        'type' => 'object',
-        'properties' => $params,
-      ],
-      'required' => $required
-    ];
+
+    if ( !empty( $this->parameters ) ) {
+      $params = [];
+      foreach ( $this->parameters as $parameter ) {
+        $params[$parameter->name] = $parameter;
+      }
+      $required = array_filter( $this->parameters, function ( $param ) { return $param->required; } );
+      $required = array_map( function ( $param ) { return $param->name; }, $required );
+      $json['parameters'] = [ 'type' => 'object', 'properties' => $params ];
+      $json['required'] = $required;
+    }
     return $json;
   }
 }

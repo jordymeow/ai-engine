@@ -1,5 +1,5 @@
-// Previous: 1.8.6
-// Current: 1.9.4
+// Previous: 1.9.4
+// Current: 1.9.82
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -18,13 +18,13 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
-  const [ isLongProcess, setIsLongProcess ] = useState(message.isQuerying || message.isStreaming);
+  const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
-  const matchCount = (content.match(/```/g) || []).length;
-  if (matchCount % 2 !== 0) {
+  const matches = (content.match(/```/g) || []).length;
+  if (matches % 2 !== 0) {
     content += "\n```";
   } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
@@ -45,7 +45,6 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
         a: {
           props: {
             target: "_blank",
-            rel: "noopener noreferrer",
           },
         },
       }
@@ -65,7 +64,13 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
         <span>
-          <Markdown children={content} options={markdownOptions} />
+          {isUser && content.split('\n').map((line, index, array) => (
+            <React.Fragment key={index}>
+              {line}
+              {index === array.length - 1 ? null : <br />}
+            </React.Fragment>
+          ))}
+          {!isUser && <Markdown children={content} options={markdownOptions} />}
         </span>
       </span>
       {copyButton && <CopyButton content={message.content} modCss={modCss} />}
@@ -82,7 +87,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, [onRendered]);
+  useEffect(() => { onRendered(); }, []);
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -99,7 +104,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
         <div className={modCss('mwai-gallery')}>
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img src={image} onError={() => handleImageError(index)} />
+              <img key={index} src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -112,7 +117,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
   const typedElement = useRef(null);
-  const [ dynamic] = useState(message.isQuerying);
+  const [ dynamic ] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
   const [ userScrolledUp, setUserScrolledUp ] = useState(false);
   const name = message.role === 'user' ? userName : aiName;
@@ -171,16 +176,20 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   return (
     <>
       {message.isQuerying && <BouncingDots />}
-      {!message.isQuerying && dynamic && <>
-        <span className={modCss("mwai-name")}>{name}</span>
-        <span className={modCss("mwai-text")} ref={typedElement} />
-      </>}
-      {!message.isQuerying && !dynamic && <>
-        <span className={modCss("mwai-name")}>{name}</span>
-        <span className={modCss("mwai-text")}>
-          <Markdown>{content}</Markdown>
-        </span>
-      </>}
+      {!message.isQuerying && dynamic && (
+        <>
+          <span className={modCss("mwai-name")}>{name}</span>
+          <span className={modCss("mwai-text")} ref={typedElement} />
+        </>
+      )}
+      {!message.isQuerying && !dynamic && (
+        <>
+          <span className={modCss("mwai-name")}>{name}</span>
+          <span className={modCss("mwai-text")}>
+            <Markdown>{content}</Markdown>
+          </span>
+        </>
+      )}
       {ready && copyButton && <CopyButton content={content} modCss={modCss} />}
     </>
   );
@@ -213,7 +222,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
           const elementsWithOldClass = el.querySelectorAll('.' + oldClass);
           elementsWithOldClass.forEach((element) => {
             element.classList.remove(oldClass);
-            let classes = (modCss(oldClass)).split(' ');
+            const classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
             } else {
@@ -227,39 +236,46 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   const output = useMemo(() => {
     if (message.role === 'user') {
-      return <div ref={mainElement} className={classes}>
-        <RawMessage message={message} />
-      </div>;
+      return (
+        <div ref={mainElement} className={classes}>
+          <RawMessage message={message} />
+        </div>
+      );
     }
-  
+
     if (message.role === 'assistant') {
-  
       if (isImages) {
-        return <div ref={mainElement} className={classes}>
-          <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-        </div>;
+        return (
+          <div ref={mainElement} className={classes}>
+            <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+          </div>
+        );
+      } else if (typewriter && !message.isStreaming) {
+        return (
+          <div ref={mainElement} className={classes}>
+            <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+          </div>
+        );
       }
-      else if (typewriter && !message.isStreaming) {
-        return <div ref={mainElement} className={classes}>
-          <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-        </div>;
-      }
-      return <div ref={mainElement} className={classes}>
-        <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-      </div>;
+      return (
+        <div ref={mainElement} className={classes}>
+          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+        </div>
+      );
     }
-  
+
     if (message.role === 'system') {
-      return <div ref={mainElement} className={classes}>
-        <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-      </div>;
+      return (
+        <div ref={mainElement} className={classes}>
+          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+        </div>
+      );
     }
-  
+
     return (
       <div><i>Unhandled role.</i></div>
     );
   }, [ message, conversationRef, isImages, typewriter ]);
 
   return output;
-  
 };
