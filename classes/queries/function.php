@@ -24,6 +24,7 @@ class Meow_MWAI_Query_Function implements JsonSerializable {
     $this->type = $type;
   }
 
+  #[\ReturnTypeWillChange]
   public function jsonSerialize()
   {
     $json = [ 'name' => $this->name, 'description' => $this->description ];

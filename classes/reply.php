@@ -15,6 +15,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
     $this->query = $query;
   }
 
+  #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     return [
       'class' => get_class( $this ),

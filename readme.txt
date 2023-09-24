@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.1
 Requires PHP: 7.4
-Stable tag: 1.9.82
+Stable tag: 1.9.83
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,11 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.83 (2023/09/23) =
+* Fix: Avoid deprecation issues with PHP 8.2+.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.82 (2023/09/22) =
 * Fix: The value of external select fields was not interpreted correctly.
 * Fix: Better validation in the AI Forms.
@@ -90,8 +95,6 @@ Languages: English.
 * Add: New gpt-3.5-turbo-instruct model. Have a look at [this](https://openai.com/research/instruction-following).
 * Fix: AI Forms work better with external input fields (such as radios and checkboxes). The debugging mode is also now more verbose.
 * Update: Consolidate the way ID and Custom ID are handled. That fixes a few issues with custom chatbots too.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.7 (2023/09/16) =
 * Fix: Rewrite Content (in Embeddings) uses the right value as Max Tokens.

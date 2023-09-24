@@ -18,6 +18,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $this->setMaxTokens( $maxTokens );
   }
 
+  #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     return [
       'class' => get_class( $this ),

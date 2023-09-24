@@ -23,6 +23,7 @@ class Meow_MWAI_Query_Parameter implements JsonSerializable {
     $this->required = $required;
   }
 
+  #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     return [
       'type' => $this->type,
