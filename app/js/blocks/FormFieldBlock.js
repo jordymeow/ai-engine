@@ -1,5 +1,5 @@
-// Previous: 1.8.4
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 1.9.84
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -7,10 +7,8 @@ import { AiBlockContainer, meowIcon } from "./common";
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
-const { Button, PanelBody, TextControl, SelectControl } = wp.components;
+const { Button, PanelBody, TextControl, SelectControl, CheckboxControl } = wp.components;
 const { useBlockProps, InspectorControls } = wp.blockEditor;
-
-//import { useBlockProps } from '@wordpress/block-editor';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -18,7 +16,7 @@ function capitalizeFirstLetter(string) {
 
 const saveFormField = (props) => {
   const { attributes: { id, label, type, name, options = [],
-    placeholder, rows, defaultValue, maxlength } } = props;
+    placeholder, rows, defaultValue, maxlength, required } } = props;
   const encodedOptions = encodeURIComponent(JSON.stringify(options));
   const blockProps = useBlockProps.save();
 
@@ -50,6 +48,9 @@ const saveFormField = (props) => {
   if (maxlength) {
     shortcode += ` maxlength="${maxlength}"`;
   }
+  if (required) {
+    shortcode += ` required="${required}"`;
+  }
   shortcode += ']';
 
   return <div {...blockProps}>{shortcode}</div>;
@@ -57,7 +58,7 @@ const saveFormField = (props) => {
 
 const FormFieldBlock = (props) => {
   const { attributes: { id, type, name, options = [], label, placeholder, rows,
-    defaultValue, maxlength }, setAttributes } = props;
+    defaultValue, maxlength, required }, setAttributes } = props;
   const blockProps = useBlockProps();
 
   useEffect(() => {
@@ -119,14 +120,16 @@ const FormFieldBlock = (props) => {
               onChange={value => setAttributes({ rows: value })}
               type="number" step="1" min="1" max="100" />
           }
+          <CheckboxControl label="Required" checked={required}
+            onChange={value => setAttributes({ required: value })} />
         </PanelBody>
-        {(type === 'select' || type === 'radio' || type === 'checkbox') && <PanelBody title={
+        {(type === 'select' || type === 'radio' || type === 'checkbox') && (
+        <PanelBody title={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <div>{ __( 'Options' ) }</div>
           </div>}>
-				
-          {options.map((option, index) => {
-            return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
+          {options.map((option, index) => (
+            <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
               <div style={{ marginRight: 5 }}>
                 <TextControl style={{ marginRight: 10 }}
                   label="Label"
@@ -136,10 +139,10 @@ const FormFieldBlock = (props) => {
                     const newOptions = [...options];
                     newOptions[index].label = value;
                     setAttributes({ options: newOptions });
-                  }
-                  } />
+                  }}
+                />
               </div>
-              <TextControl style={{  }}
+              <TextControl style={{}}
                 label="Value"
                 isSubtle={true}
                 value={option.value}
@@ -147,8 +150,8 @@ const FormFieldBlock = (props) => {
                   const newOptions = [...options];
                   newOptions[index].value = value;
                   setAttributes({ options: newOptions });
-                }
-                } />
+                }}
+              />
               <div style={{ marginLeft: 5, position: 'relative', top: 23 }}>
                 <Button style={{ height: 30 }} isDestructive
                   icon="trash" isSmall onClick={() => {
@@ -157,16 +160,17 @@ const FormFieldBlock = (props) => {
                     setAttributes({ options: newOptions });
                   }} />
               </div>
-            </div>;
-						
-          })}
-
+            </div>
+          ))}
           <Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={() => {
+            //ev.preventDefault();
+            //ev.stopPropagation();
             const newOptions = [...options];
             newOptions.push({ label: '', value: '' });
             setAttributes({ options: newOptions });
           }}>Add Option</Button>
-        </PanelBody>}
+        </PanelBody>
+        )}
         <PanelBody title={i18n.COMMON.SYSTEM}>
           <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
         </PanelBody>
@@ -225,6 +229,10 @@ const createFormFieldBlock = () => {
         type: 'rows',
         default: 4
       },
+      required: {
+        type: 'boolean',
+        default: true
+      }
     },
     edit: FormFieldBlock,
     save: saveFormField

@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 1.9.82
+// Previous: 1.9.82
+// Current: 1.9.84
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -47,7 +47,7 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(prev => prev + text);
+          setInputText(prev => text);
         }
       }
       else if (task.action === 'toggle') {
@@ -81,22 +81,22 @@ const ChatbotUI = (props) => {
         botId: botId,
         customId: customId,
         open: () => { 
-          setTasks(prev => [...prev, { action: 'open' }]);
+          setTimeout(() => setTasks(prev => [...prev, { action: 'open' }]), 0);
         },
         close: () => { 
-          setTasks(prev => [...prev, { action: 'close' }]);
+          setTimeout(() => setTasks(prev => [...prev, { action: 'close' }]), 0);
         },
         clear: () => { 
-          setTasks(prev => [...prev, { action: 'clear' }]);
+          setTimeout(() => setTasks(prev => [...prev, { action: 'clear' }]), 0);
         },
         toggle: () => { 
-          setTasks(prev => [...prev, { action: 'toggle' }]);
+          setTimeout(() => setTasks(prev => [...prev, { action: 'toggle' }]), 0);
         },
         ask: (text, submit = false) => {
-          setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]);
+          setTimeout(() => setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]), 0);
         },
         setContext: ({ chatId, messages }) => {
-          setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]);
+          setTimeout(() => setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]), 0);
         },
       });
     }
@@ -105,25 +105,33 @@ const ChatbotUI = (props) => {
   useEffect(() => {
     if (busy) {
       startChrono();
-    } else {
-      stopChrono();
+      return;
     }
+    if (!isMobile && hasFocusRef.current) {
+      inputRef.current.focus();
+    }
+    stopChrono();
   }, [busy]);
 
   useEffect(() => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight + 1; // added +1 to introduce subtle flicker bug
+    }
   }, [open]);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText !== null) {
+    
+    if (forcedText) {
       onSubmit(forcedText);
     }
     else if (inputText.length > 0) {
@@ -146,7 +154,7 @@ const ChatbotUI = (props) => {
     if (isListening) {
       setIsListening(false);
     }
-    setInputText(text);
+    setInputText(prev => text);
   };
 
   return (<>
@@ -160,7 +168,7 @@ const ChatbotUI = (props) => {
           {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
             {iconText}
           </div>}
-          <img width="64" height="64" alt={iconAlt} src={iconUrl}
+          <img width="64" height="64" alt={iconAlt} src={iconUrl} className="no-lightbox"
             onClick={() => setOpen(prev => !prev)}
           />
         </div>

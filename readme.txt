@@ -1,15 +1,15 @@
-=== AI Engine: ChatGPT Chatbot, Content Generator, GPT 4, Ultra-Customizable ===
+=== AI Engine: Chatbots, Generators, Assistants, GPT 4 and more! ===
 Contributors: TigrouMeow
 Tags: ai, chatgpt, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.1
 Requires PHP: 7.4
-Stable tag: 1.9.83
+Stable tag: 1.9.84
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-GPT for WordPress! Chatbot (ChatGPT), content and images generator, copilot, model training and much more! Highly customizable, sleek UI. You will love it!
+Add AI into WordPress! Chatbot (ChatGPT), content and images generators, copilot, model training and much more! Highly customizable, sleek UI. You will love it!
 
 == Description ==
 Create your own chatbot like ChatGPT, generate content or images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track OpenAI usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, WooCommerce product fields, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
@@ -77,6 +77,10 @@ AI Engine is a plugin that helps users connect their websites to AI services lik
 Languages: English.
 
 == Changelog ==
+
+= 1.9.84 (2023/09/23) =
+* Fix: For Embeddings in Forms, the "None" could be mistaken for an actual index.
+* Update: The filter mwai_forms_params has been re-added into AI Forms, as deprecated. The filter that should actually be used is mwai_form_params (without s).
 
 = 1.9.83 (2023/09/23) =
 * Fix: Avoid deprecation issues with PHP 8.2+.

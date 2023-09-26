@@ -1,5 +1,5 @@
-// Previous: 1.8.4
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 1.9.84
 
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
@@ -75,8 +75,8 @@ const FormSubmitBlock = (props) => {
   }, [models]);
 
   const indexOptions = useMemo(() => {
-    const freshIndexes = indexes.map(index => ({ label: index.name, value: index.index }));
-    freshIndexes.unshift({ label: 'None', value: null });
+    const freshIndexes = indexes.map(index => ({ label: index.name, value: index.name }));
+    freshIndexes.unshift({ label: 'None', value: '' });
     return freshIndexes;
   }, [indexes]);
 
@@ -96,48 +96,47 @@ const FormSubmitBlock = (props) => {
       <div {...blockProps}>
         <AiBlockContainer title="Submit" type="submit"
           hint={<>
-            IN:{' '} 
+						IN:{' '} 
             <span className="mwai-pill">{jsxFieldsCount}</span>
             {' '}OUT:{' '}
             <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
           }>
-          Input Fields: {placeholders.join(', ')}<br />
-          Prompt: {prompt}<br />
-          Output Element: {outputElement}
+					Input Fields: {placeholders.join(', ')}<br />
+					Prompt: {prompt}<br />
+					Output Element: {outputElement}
         </AiBlockContainer>
       </div>
       <InspectorControls>
         <PanelBody title={i18n.COMMON.OUTPUT}>
-          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={(value) => setAttributes({ label: value })} />
+          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={value => setAttributes({ label: value })} />
           <TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
-            onChange={(value) => setAttributes({ prompt: value })}
+            onChange={value => setAttributes({ prompt: value })}
             help={i18n.FORMS.PROMPT_INFO} />
           <TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
-            onChange={(value) => setAttributes({ outputElement: value })}
+            onChange={value => setAttributes({ outputElement: value })}
             help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
           {models && models.length > 0 &&
             <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-              onChange={(value) => setAttributes({ model: value })}
+              onChange={value => setAttributes({ model: value })}
             />}
           <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={(value) => setAttributes({ temperature: parseFloat(value) })}
+            onChange={value => setAttributes({ temperature: parseFloat(value) })} 
             type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} 
+            onChange={value => setAttributes({ maxTokens: parseInt(value) })} 
             type="number" step="16" min="32" max="4096"
             help={i18n.HELP.MAX_TOKENS} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
           {indexes && indexes.length > 0 &&
             <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
-              onChange={(value) => setAttributes({ index: value })} 
-            />}
+              onChange={value => setAttributes({ index: value })} />}
         </PanelBody>
         <PanelBody title={i18n.COMMON.SYSTEM}>
-          <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
+          <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
         </PanelBody>
       </InspectorControls>
     </>
