@@ -1,5 +1,5 @@
-// Previous: 1.6.89
-// Current: 1.6.99
+// Previous: 1.6.99
+// Current: 1.9.85
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -25,6 +25,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
 
   const botId = system.botId;
+  const customId = system.customId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -36,22 +37,25 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       return acc;
     }, {});
     return cssVars;
-  }, [shortcodeStyles]);
+  }, [pluginUrl, shortcodeStyles]);
 
   const refresh = useCallback(async (silentRefresh = false) => {
     try {
       if (!silentRefresh) {
         setBusy(true);
       }
-      const body = { botId };
+      const body = { botId: botId || customId };
       if (debugMode) { console.log('[DISCUSSIONS] OUT: ', body); }
       const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/list`, { method: 'POST', headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': restNonce,
-        },
-        body: JSON.stringify(body, getCircularReplacer())
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': restNonce,
+      },
+      body: JSON.stringify(body, getCircularReplacer())
       });
-      const data = await response.json()
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(`Could not retrieve the discussions: ${data.message}`);
+      }
       if (debugMode) { console.log('[DISCUSSIONS] IN: ', data); }
       const conversations = data.chats.map((conversation) => {
         const messages = JSON.parse(conversation.messages);
@@ -61,21 +65,21 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       setDiscussions(conversations);
     }
     catch (err) {
-      console.error('Error in refresh:', err);
+      console.error(err);
     }
     finally {
       if (!silentRefresh) {
         setBusy(false);
       }
     }
-  }, [botId, restUrl, restNonce, debugMode]);
+  }, []);
 
   useEffect(() => {
     refresh();
     const interval = setInterval(() => {
       refresh(true);
     }, 5000);
-    // No cleanup here intentionally missing to simulate a leak
+    return () => clearInterval(interval);
   }, []);
 
   const getChatbot = (botId) => {
@@ -87,21 +91,19 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   };
 
   const onDiscussionClick = async (chatId) => {
-    const discussionItem = discussions.find(x => x.chatId === chatId);
-    if (!discussionItem) {
+    const discussion = discussions.find(x => x.chatId === chatId);
+    if (!discussion) {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
     const chatbot = getChatbot(botId);
-    chatbot.setContext({ chatId, messages: discussionItem.messages });
-    setDiscussion(discussionItem);
+    chatbot.setContext({ chatId, messages: discussion.messages });
+    setDiscussion(discussion);
   };
 
   const onNewChatClick = async () => {
     const chatbot = getChatbot(botId);
-    // Forget to await or handle async properly
     chatbot.clear();
-    // Or maybe the clear method is synchronous but mutates state unexpectedly
   };
 
   const actions = { onDiscussionClick, onNewChatClick };

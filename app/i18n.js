@@ -207,14 +207,14 @@ i18n.COMMON = {
   PUBLIC_API: __( 'Public API', 'ai-engine' ),
   USER_INTERFACE: __( 'User Interface', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Intro Message', 'ai-engine' ),
-}
+};
 
 i18n.FORMS = {
   PROMPT_INFO: __( 'The template of your prompt. To re-use the data entered by the user, use the name of that field between curly braces. Example: Recommend me {MUSIC_TYPE} artists. You can also use an ID as an input, like this: ${#myfield}. Finally, if you wish the output to be formatted, add: \'Use Markdown.\'."', 'ai-engine' ),
   OUTPUT: __( 'Output', 'ai-engine' ),
   OUTPUT_ELEMENT: __( 'Output Element', 'ai-engine' ),
   OUTPUT_ELEMENT_INFO: __( 'The result will be written to this element. If you wish to simply display the result in an Output Block, use its ID. For instance, if its ID is mwai-666, use \'#mwai-666\'.', 'ai-engine' ),
-}
+};
 
 i18n.HELP = {
   TEMPERATURE: __( 'Between 0 and 1. Higher values means the model will take more risks.', 'ai-engine' ),
@@ -243,7 +243,7 @@ i18n.HELP = {
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
   PUBLIC_API: __( 'Enable the Public REST API. By default, it will be accessible to everyone.', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
-}
+};
 
 i18n.SETTINGS = {
   OPENAI_SETUP: __( 'To use the features of AI Engine, you need an OpenAI account and an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website to create an account, then insert your OpenAI API Key in the <b>Settings</b> tab.', 'ai-engine' ),
@@ -262,19 +262,19 @@ i18n.SETTINGS = {
   TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. This delays the final output! Absolutely not recommended. Please use <b>Streaming</b> instead.', 'ai-engine' ),
   CHATBOT_MODERATION_HELP: __( 'If the conversation seems offensive, the chatbot will reject it.', 'ai-engine' ),
   CUSTOM_URL: __( 'Custom URL', 'ai-engine' ),
-}
+};
 
 i18n.CHATBOT = {
   CHATBOT_BUILDER: __( 'Chatbot Builder', 'ai-engine' ),
   RESET_PARAMS: __( 'Reset Parameters', 'ai-engine' ),
-}
+};
 
 i18n.STATISTICS = {
   ABSOLUTE_HELP: __( 'Using Absolute, Day represents <i>today</i>. Otherwise, the <i>past 24 hours</i>. Same logic applies to the other timeframes.', 'ai-engine' ),
   NO_CREDITS_MESSAGE: __( 'Message for No Credits', 'ai-engine' ),
   FULL_ACCESS_USERS: __( 'Full-Access Users', 'ai-engine' ),
   ENABLE_LIMITS: __( 'Enable Limits', 'ai-engine' ),
-}
+};
 
 i18n.CONTENT_GENERATOR = {
   INTRO: __( 'The Content Generator is a powerful tool that can generate content for you. It can be used to generate articles, emails, or even code. It can also be used to generate content for your chatbot. <b>Let me know if there are any new features you would like to see!</b> Have fun 🥳', 'ai-engine' ),
@@ -313,7 +313,7 @@ i18n.CONTENT_GENERATOR = {
   TITLE_TOO_SHORT_2: __( 'The title is too short.  It should be at least 40 characters.', 'ai-engine' ),
   TITLE_TOO_LONG: __( 'The title is too long. It should be less than 8 words.', 'ai-engine' ),
   TITLE_TOO_LONG_2: __( 'The title is too long. It should be less than 70 characters.', 'ai-engine' ),
-}
+};
 
 i18n.TEMPLATES = {
   TEMPLATES: __( 'Templates', 'ai-engine' ),
@@ -321,13 +321,13 @@ i18n.TEMPLATES = {
   NEW_TEMPLATE_NAME: __( 'New Template', 'ai-engine' ),
   EDIT: __( 'EDIT', 'ai-engine' ),
   JOIN_US: __( 'Interested in sharing and/or looking for more templates? Join us on the <a target="_blank" href="https://wordpress.org/support/topic/common-use-cases-for-templates">Templates Threads</a> in the forums.', 'ai-engine' ),
-}
+};
 
 i18n.PLAYGROUND = {
   INTRO: __( 'Welcome to the AI Playground! Here, you can play with different AI models and ask the UI to perform various tasks for you. You can ask it to write, rewrite, or translate an article, categorize words or elements into groups, write an email, etc. <b>Let me know if there are any new features you would like to see!</b> Have fun 🥳', 'ai-engine' ),
   PROMPT: __( 'Query / Prompt', 'ai-engine' ),
   REPLY: __( 'Reply', 'ai-engine' ),
-}
+};
 
 i18n.ALERTS = {
   FINETUNING_STARTED: __( 'Fine-tuning started! Check its progress in the <b>Models</b> section. Depending on your dataset size, it may take a while (from a few minutes to days).', 'ai-engine' ),
@@ -340,7 +340,7 @@ i18n.ALERTS = {
   EMPTY_LINES_DATASET: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'prompt\' and \'completion\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
   EMPTY_LINES_EMBEDDINGS: __( 'Some lines were empty. Make sure the CSV has a header row and that the columns are named \'title\' and \'content\'. For debugging, an empty line was logged to the console.', 'ai-engine' ),
   ARE_YOU_SURE: __( 'Are you sure?', 'ai-engine' ),
-}
+};
 
 i18n.FINETUNING = {
   CONTEXT_DESCRIPTION: __( 'In Easy mode, this context will be automatically used for every message. This context will need to be re-used in your chatbot as well.', 'ai-engine' ),
@@ -357,7 +357,7 @@ i18n.FINETUNING = {
   NO_FINETUNES_YET: __( 'No fine-tunes found. Refresh the list, or create a new one (via a dataset).', 'ai-engine' ),
   CLEAN_MODELS_LIST: __( 'Clean Models List', 'ai-engine' ),
   DELETED_FINETUNE_ISSUE: __( 'For some reason, OpenAI still return the models even after you deleted them. Don\'t worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.', 'ai-engine' ),
-}
+};
 
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
@@ -373,12 +373,13 @@ i18n.EMBEDDINGS = {
   SYNC_ONE: __( 'Sync One', 'ai-engine' ),
   ADD_INDEX: __( 'Add Index', 'ai-engine' ),
   ADD_INDEX_DESCRIPTION: __( 'An index is like a database, and contains embeddings. You can have many indexes and switch between them. The indexes are hosted on Pinecone.', 'ai-engine' ),
-}
+  NO_NAMESPACE_SUPPORT: __( 'Note: This server does not support namespaces.', 'ai-engine' ),
+};
 
 i18n.ERROR = {
   UPDATING_OPTIONS: __( 'An error occured while updating the options.' ),
   GETTING_OPTIONS: __( 'An error occured while getting the options.' ),
   CHECK_YOUR_CONSOLE: __( 'For more information, check <a target="_blank" href="https://meowapps.com/tutorial-network-activity-dev-tools/">your console</a>. You might also want to check your <a target="_blank" href="https://meowapps.com/tutorial-php-error-logs/">PHP Error Logs</a>.', 'ai-engine' ),
-}
+};
 
 export default i18n;

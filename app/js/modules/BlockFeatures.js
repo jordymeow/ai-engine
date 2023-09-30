@@ -1,12 +1,13 @@
-// Previous: 1.6.65
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.9.85
 
 const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
 const { registerPlugin } = wp.plugins;
 const { Button, ToolbarDropdownMenu, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
 const { BlockControls } = wp.blockEditor;
-const { PluginDocumentSettingPanel, PluginBlockSettingsMenuItem } = wp.editPost;
+const { PluginDocumentSettingPanel } = wp.editPost;
+//const { PluginBlockSettingsMenuItem } = wp.editPost;
 const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
@@ -22,29 +23,35 @@ import GenerateExcerptsModal from './modals/GenerateExcerpts';
 import AiIcon from '../styles/AiIcon';
 import MagicWandModal from './modals/MagicWandModal';
 
-const fadeOutStyle = `
-  opacity: 0.15;
-  pointer-events: none;
-  user-select: none;
-  animation: neko-fade-animation 0.85s infinite linear;
-`;
+// SlotFills Reference
+// https://developer.wordpress.org/block-editor/reference-guides/slotfills/
 
-const normalStyle = `
-  opacity: 1;
-  pointer-events: auto;
-  user-select: auto;
-  animation: none;
-`;
+// Plugin Block Settings Menu Item Reference
+// https://developer.wordpress.org/block-editor/reference-guides/slotfills/plugin-block-settings-menu-item/
 
-function BlockAIWand({ isActive, onChange, value, ...rest }) {
+function BlockAIWand() {
   const [ busy, setBusy ] = useState(false);
   const [ results, setResults ] = useState([]);
   const selectedBlock = useSelect((select) => select('core/block-editor').getSelectedBlock(), []);
 
   if (!selectedBlock) { return null; }
   if (selectedBlock.name !== 'core/paragraph') {
-    return null;
+    return;
   }
+
+  const applyFadeOutStyle = (element) => {
+    element.style.opacity = 0.15;
+    element.style.pointerEvents = 'none';
+    element.style.userSelect = 'none';
+    element.style.animation = 'neko-fade-animation 0.85s infinite linear';
+  };
+
+  const applyNormalStyle = (element) => {
+    element.style.opacity = 1;
+    element.style.pointerEvents = 'auto';
+    element.style.userSelect = 'auto';
+    element.style.animation = 'none';
+  };
 
   useEffect(() => {
     if (!selectedBlock?.clientId) { return; }  
@@ -53,7 +60,12 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
       console.warn("AI Engine: Could not find block element.");
       return;
     }
-    blockElement.style.cssText = busy ? fadeOutStyle : normalStyle;
+    if (busy) {
+      applyFadeOutStyle(blockElement);
+    }
+    else {
+      applyNormalStyle(blockElement);
+    }
   }, [busy, selectedBlock]);
 
   const setBlockStyle = () => {
@@ -62,8 +74,8 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
       console.warn("AI Engine: Could not find block element.");
       return;
     }
-    blockElement.style.cssText = fadeOutStyle;
-  }
+    applyFadeOutStyle(blockElement);
+  };
 
   const resetBlockStyle = () => {
     const blockElement = document.getElementById('block-' + selectedBlock.clientId);
@@ -71,8 +83,8 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
       console.warn("AI Engine: Could not find block element.");
       return;
     }
-    blockElement.style.cssText = normalStyle;
-  }
+    applyNormalStyle(blockElement);
+  };
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
@@ -82,17 +94,17 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
     wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: updatedContent });
-  }
+  };
 
   const updateText = (text) => {
     wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: text });
-  }
+  };
 
   const onClick = (text) => {
     setResults([]);
     if (!text) { return; }
     replaceText(text);
-  }
+  };
 
   const text = selectedBlock.attributes.content;
   const selectedText = window.getSelection().toString();
@@ -120,9 +132,11 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
       }
       else if (mode === 'suggest') {
         setResults(results);
+      } else {
+        setResults([]); // potential bug if mode is unknown, results might linger
       }
     }
-  }
+  };
 
   return (<>
     <style>
@@ -148,7 +162,7 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
                 </div>
               </MenuItem>
               <MenuItem onClick={() => doAction('enhanceText')}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <b>Enhance Text</b>
                   <small>Readibility & Quality</small>
                 </div>
@@ -187,34 +201,38 @@ function BlockAIWand({ isActive, onChange, value, ...rest }) {
       </ToolbarGroup>
     </BlockControls>
     <MagicWandModal
-        isOpen={results?.length}
-        results={results}
-        onClick={onClick}
-        onClose={() => setResults([])}
-      />
+      isOpen={results?.length}
+      results={results}
+      onClick={onClick}
+      onClose={() => setResults([])}
+    />
   </>);
 }
 
-const doOnClick = () => {
-  alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
-};
+// Paragraph Block: Menu
 
-const MWAI_Block_AI_Actions = () => (
-  <>
-      <PluginBlockSettingsMenuItem
-        allowedBlocks={['core/paragraph']}
-        icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-        label={<> {__('Enhance text')}</>}
-        onClick={doOnClick}
-      />
-      <PluginBlockSettingsMenuItem
-        allowedBlocks={['core/paragraph']}
-        icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-        label={<> {__('Translate text')}</>}
-        onClick={doOnClick}
-      />
-  </>
-);
+// const doOnClick = () => {
+//   alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
+// };
+
+// const MWAI_Block_AI_Actions = () => (
+//   <>
+//     <PluginBlockSettingsMenuItem
+//       allowedBlocks={['core/paragraph']}
+//       icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
+//       label={<> {__('Enhance text')}</>}
+//       onClick={doOnClick}
+//     />
+//     <PluginBlockSettingsMenuItem
+//       allowedBlocks={['core/paragraph']}
+//       icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
+//       label={<> {__('Translate text')}</>}
+//       onClick={doOnClick}
+//     />
+//   </>
+// );
+
+// Document Settings: Panel
 
 const MWAI_DocumentSettings = () => {
   const suggestionsEnabled = options?.module_suggestions;
@@ -225,21 +243,21 @@ const MWAI_DocumentSettings = () => {
     const { getCurrentPost } = wp.data.select("core/editor");
     const { id, title } = getCurrentPost();
     setPostForTitle({ postId: id, postTitle: title });
-  }
+  };
 
   const onExcerptsModalOpen = () => {
     const { getCurrentPost } = wp.data.select("core/editor");
     const { id, title } = getCurrentPost();
     setPostForExcerpt({ postId: id, postTitle: title });
-  }
+  };
 
   const onTitleClick = async (title) => {
     wp.data.dispatch('core/editor').editPost({ title });
-  }
+  };
 
   const onExcerptClick = async (excerpt) => {
     wp.data.dispatch('core/editor').editPost({ excerpt });
-  }
+  };
 
   if (!suggestionsEnabled) {
     return null;
@@ -271,11 +289,19 @@ const MWAI_DocumentSettings = () => {
 
 
 const BlockFeatures = () => {
+  useEffect(() => {
+    // This goes into the sidebar
+    registerPlugin('ai-engine-document-settings', {
+      render: MWAI_DocumentSettings
+    });
 
-  registerPlugin('ai-engine-document-settings', {
-    render: MWAI_DocumentSettings
-  });
+    // This goes in the context menu of the block toolbar
+    // registerPlugin('ai-engine-ai-wand', {
+    //   render: MWAI_Block_AI_Actions
+    // });
+  }, []);
 
+  // This goes in the block toolbar directly
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',
     tagName: 'mwai',

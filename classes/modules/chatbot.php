@@ -15,7 +15,7 @@ define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'em
 // Params for the discussions (front and server)
 
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
-define( 'MWAI_DISCUSSIONS_SERVER_PARAMS', [] );
+define( 'MWAI_DISCUSSIONS_SERVER_PARAMS', [ 'customId' ] );
 
 class Meow_MWAI_Modules_Chatbot {
 	private $core = null;
@@ -313,29 +313,45 @@ class Meow_MWAI_Modules_Chatbot {
 		return $frontSystem;
 	}
 
+  public function resolveBotInfo( $atts )
+  {
+    $chatbot = null;
+    $botId = $atts['id'] ?? null;
+    $customId = $atts['custom_id'] ?? null;
+    if (!$botId && !$customId) {
+      $botId = "default";
+    }
+    if ( $botId ) {
+      $chatbot = $this->core->getChatbot( $botId );
+      if (!$chatbot) {
+        $botId = $botId ?: 'N/A';
+        return [
+          'error' => "AI Engine: Chatbot '{$botId}' not found. If you meant to set an ID for your custom chatbot, please use 'custom_id' instead of 'id'.",
+        ];
+      }
+    }
+    $chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
+    if ( !empty( $customId ) ) {
+      $botId = null;
+    }
+    return [
+      'chatbot' => $chatbot,
+      'botId' => $botId,
+      'customId' => $customId,
+    ];
+  }
+
 	public function chat_shortcode( $atts ) {
 		$atts = empty($atts) ? [] : $atts;
 
-		// Properly handle the customId, botId, and chatbot
-		// We have the same in discussions.php
-		$chatbot = null;
-		$botId = $atts['id'] ?? null;
-		$customId = $atts['custom_id'] ?? null;
-		if ( !$botId && !$customId ) {
-			$botId = "default";
-		}
-		unset( $atts['id'] );
-		if ( $botId ) {
-			$chatbot = $this->core->getChatbot( $botId );
-			if ( !$chatbot ) {
-				$botId = $botId ?: 'N/A';
-				return "AI Engine: Chatbot '{$botId}' not found. If you meant to set an ID for your custom chatbot, please use 'custom_id' instead of 'id'.";
-			}
-		}
-		$chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
-		if ( !empty( $customId ) ) {
-			$botId = null;
-		}
+    // Resolve the bot info
+		$resolvedBot = $this->resolveBotInfo( $atts );
+    if ( isset( $resolvedBot['error'] ) ) {
+      return $resolvedBot['error'];
+    }
+    $chatbot = $resolvedBot['chatbot'];
+    $botId = $resolvedBot['botId'];
+    $customId = $resolvedBot['customId'];
 
 		// Let the user override the chatbot params
 		$atts = apply_filters( 'mwai_chatbot_params', $atts, $chatbot );
@@ -404,23 +420,14 @@ class Meow_MWAI_Modules_Chatbot {
 	function shortcode_chat_discussions( $atts ) {
     $atts = empty($atts) ? [] : $atts;
 
-    // Properly handle the id, botId, and chatbot
-		// We have the same in chatbot.php
-		$chatbot = null;
-		$botId = $atts['id'] ?? null;
-		$customId = $atts['custom_id'] ?? null;
-		unset( $atts['id'] );
-		if ( $botId ) {
-			$chatbot = $this->core->getChatbot( $botId );
-			if ( !$chatbot ) {
-				$botId = $botId ?: 'N/A';
-				return "AI Engine: Chatbot '{$botId}' not found. If you meant to set an ID for your custom chatbot, please use 'custom_id' instead of 'id'.";
-			}
-		}
-		$chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
-		if ( !empty( $customId ) ) {
-			$botId = null;
-		}
+    // Resolve the bot info
+		$resolvedBot = $this->resolveBotInfo( $atts );
+    if ( isset( $resolvedBot['error'] ) ) {
+      return $resolvedBot['error'];
+    }
+    $chatbot = $resolvedBot['chatbot'];
+    $botId = $resolvedBot['botId'];
+    $customId = $resolvedBot['customId'];
 
 		// Rename the keys of the atts into camelCase to match the internal params system.
 		$atts = array_map( function( $key, $value ) {
@@ -452,7 +459,7 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 
 		// Front System
-		$frontSystem = $this->build_front_params( $botId, null );
+		$frontSystem = $this->build_front_params( $botId, $customId );
 
     // Clean Params
 		$frontParams = $this->cleanParams( $frontParams );

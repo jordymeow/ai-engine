@@ -1,10 +1,12 @@
-// Previous: 1.8.3
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 1.9.85
 
+// React & Vendor Libs
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from 'styled-components';
 
+// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer, NekoSpacer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 
@@ -50,7 +52,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000); // clear message after 1 second
+    }, 1000);
   };
 
   if (!currentChatbot) {
@@ -125,21 +127,21 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes, chatbots]);
 
   const updateChatbotParams = async (value, id) => {
-
     if ( id === 'botId' && value === 'default' ) {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
     if ( id === 'botId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
-
+    if ( id === 'botId' && chatbots.find(x => x.botId === value) ) {
+      alert("This chatbot ID is already in use. Please choose another ID.");
+      return;
+    }
     if (id === 'botId' && value !== currentChatbot[id] ) {
       setCurrentBotId(value);
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];

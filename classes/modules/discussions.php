@@ -64,6 +64,11 @@ class Meow_MWAI_Modules_Discussions {
 			$offset = isset( $params['offset'] ) ? $params['offset'] : 0;
 			$limit = isset( $params['limit'] ) ? $params['limit'] : 10;
       $botId = isset( $params['botId'] ) ? $params['botId'] : null;
+      $customId = isset( $params['customId'] ) ? $params['customId'] : null;
+
+      if ( !is_null( $customId ) ) {
+        $botId = $customId;
+      }
 
       if ( is_null( $botId ) ) {
         return new WP_REST_Response([ 'success' => false, 'message' => "Bot ID is required." ], 200 );
@@ -184,6 +189,10 @@ class Meow_MWAI_Modules_Discussions {
     $userId = $mwai_core->get_user_id();
     $botId = isset( $params['botId'] ) ? $params['botId'] : null;
     $chatId = isset( $params['chatId'] ) ? $params['chatId'] : $query->session;
+    $customId = isset( $params['customId'] ) ? $params['customId'] : null;
+    if ( !empty( $customId ) ) {
+      $botId = $customId;
+    }
     $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->prompt;
     //$chatId = hash( 'sha256', $userIp . $userId . $clientChatId );
     $this->check_db();

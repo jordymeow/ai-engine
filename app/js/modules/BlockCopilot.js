@@ -1,15 +1,17 @@
-// Previous: 1.6.59
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.9.85
 
-const { createHigherOrderComponent } = wp.compose;
+/* eslint-disable react/display-name */
+
+// React & Vendor Libs
 const { addFilter } = wp.hooks;
 const { useState, useRef, useEffect } = wp.element;
-const { RichText } = wp.blockEditor;
-const { InspectorControls } = wp.blockEditor;
-const { PanelBody, TextControl, Spinner } = wp.components;
+const { TextControl, Spinner } = wp.components;
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 
+// AI Engine
 import AiIcon from "../styles/AiIcon";
 import { apiUrl, restNonce } from '@app/settings';
 
@@ -23,6 +25,7 @@ const BlockCopilot = () => {
       const [ busy, setBusy ] = useState(false);
       const [ composing, setComposing ] = useState(false);
       const { content } = props.attributes;
+      const shouldRefocus = useRef(false);
 
       const handleKeyPress = (e) => {
         if (composing) {
@@ -31,6 +34,7 @@ const BlockCopilot = () => {
         if (e.code === 'Space' && !content) {
           e.preventDefault();
           setDisplay(true);
+          shouldRefocus.current = true;
         }
       };
 
@@ -42,7 +46,7 @@ const BlockCopilot = () => {
             nonce: restNonce,
             json: { action: 'write', prompt: query }
           });
-          props.setAttributes({ content: res.data })
+          props.setAttributes({ content: res.data });
         }
         catch (e) {
           console.log("ERROR", e);
@@ -52,10 +56,9 @@ const BlockCopilot = () => {
           setDisplay(false);
           setQuery('');
         }
-      }
+      };
 
       const onAiTextKeyDown = async (e) => {
-
         if (composing) {
           return;
         }
@@ -71,8 +74,9 @@ const BlockCopilot = () => {
       };
 
       useEffect(() => {
-        if (display && aiTextControlRef.current) {
+        if (display && aiTextControlRef.current && shouldRefocus.current) {
           aiTextControlRef.current.focus();
+          shouldRefocus.current = false;
         }
       }, [display]);
 
@@ -94,13 +98,15 @@ const BlockCopilot = () => {
         return (<div
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
-          onKeyDown={handleKeyPress}>
-            <BlockEdit {...props} />
+          onKeyDown={handleKeyPress}
+          tabIndex={0} // Added to ensure div can receive key events
+        >
+          <BlockEdit {...props} />
         </div>);
       }
       return (<BlockEdit {...props} />);
     };
-  }
+  };
 
   addFilter("editor.BlockEdit", "mwai-copilot/module", blockEditCopilot);
 
@@ -120,7 +126,8 @@ const BlockCopilot = () => {
     return settings;
   };
 
+
   addFilter("blocks.registerBlockType", "mwai-copilot/placeholder", modifyPlaceholder);
-}
+};
 
 export default BlockCopilot;
