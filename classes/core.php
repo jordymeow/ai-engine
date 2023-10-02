@@ -228,24 +228,35 @@ class Meow_MWAI_Core
 		return $placeholders;
 	}		
 
-	function get_ip_address( $data = null ) {
-    if ( isset( $data ) && isset( $data['ip'] ) ) {
-      $data['ip'] = (string)$data['ip'];
-    }
-    else {
-      if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-        $data['ip'] = sanitize_text_field( $_SERVER['REMOTE_ADDR'] );
-      }
-      else if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-        $data['ip'] = sanitize_text_field( $_SERVER['HTTP_CLIENT_IP'] );
-      }
-      else if ( isset( $_SERVER['HTTP_X_FORWARDED_ FOR'] ) ) {
-        $data['ip'] = sanitize_text_field( $_SERVER['HTTP_X_FORWARDED_FOR'] );
-      }
-    }
-		$ip = apply_filters( 'mwai_get_ip_address', $data['ip'] );
-    return $ip;
-  }
+	function get_ip_address( $params = null ) {
+		$ip = '127.0.0.1';
+		$headers = [
+			'HTTP_TRUE_CLIENT_IP',
+			'HTTP_CF_CONNECTING_IP',
+			'HTTP_X_REAL_IP',
+			'HTTP_CLIENT_IP',
+			'HTTP_X_FORWARDED_FOR',
+			'HTTP_X_FORWARDED',
+			'HTTP_X_CLUSTER_CLIENT_IP',
+			'HTTP_FORWARDED_FOR',
+			'HTTP_FORWARDED',
+			'REMOTE_ADDR',
+		];
+	
+		if ( isset( $params ) && isset( $params[ 'ip' ] ) ) {
+			$ip = ( string )$params[ 'ip' ];
+		} else {
+			foreach ( $headers as $header ) {
+				if ( array_key_exists( $header, $_SERVER ) && !empty( $_SERVER[ $header ] && $_SERVER[ $header ] != '::1' ) ) {
+					$address_chain = explode( ',', wp_unslash( $_SERVER [ $header ] ) );
+					$ip = filter_var( trim( $address_chain[ 0 ] ), FILTER_VALIDATE_IP );
+					break;
+				}
+			}
+		}
+	
+		return filter_var( apply_filters( 'mwai_get_ip_address', $ip ), FILTER_VALIDATE_IP );
+  	}
 
 	#endregion
 

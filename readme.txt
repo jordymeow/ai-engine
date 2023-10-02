@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.1
 Requires PHP: 7.4
-Stable tag: 1.9.85
+Stable tag: 1.9.86
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,13 +78,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.86 (2023/10/02) =
+* Fix: Issue with model being overriden by the default model in the chatbot.
+* Update: Better IP resolution for logging.
+* Fix: The value from custom DIVs was not always retrieved by AI Forms.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.85 (2023/09/30) =
 * Update: Better support for gcp-starter server (Pinecone). Let us know if it's better for you!
 * Fix: No more swallowing spaces issues when using the AI Assistants in Firefox.
 * Fix: Prevent the user to re-use the same botId for different chatbots.
 * Fix: Custom ID can now be used in the conversations shortcode (custom_id).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.84 (2023/09/23) =
 * Fix: For Embeddings in Forms, the "None" could be mistaken for an actual index.

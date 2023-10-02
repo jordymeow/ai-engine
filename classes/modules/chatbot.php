@@ -189,18 +189,20 @@ class Meow_MWAI_Modules_Chatbot {
 				// TODO: This is same in Chatbot Legacy and Forms, maybe we should move it to the core?
 				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
 				$embeddingsNamespace = $params['embeddingsNamespace'] ?? null;
-				if ( $query->mode === 'chat' ) {
-					$context = apply_filters( 'mwai_context_search', $context, $query, [ 
-						'embeddingsIndex' => $embeddingsIndex,
-						'embeddingsNamespace' => $embeddingsNamespace
-					] );
-					if ( !empty( $context ) ) {
-						if ( isset( $context['content'] ) ) {
-							$content = $this->core->cleanSentences( $context['content'] );
-							$query->injectContext( $content );
-						}
-						else {
-							error_log( "AI Engine: A context without content was returned." );
+				if ( !empty( $embeddingsIndex ) ) {
+					if ( $query->mode === 'chat' ) {
+						$context = apply_filters( 'mwai_context_search', $context, $query, [ 
+							'embeddingsIndex' => $embeddingsIndex,
+							'embeddingsNamespace' => $embeddingsNamespace
+						] );
+						if ( !empty( $context ) ) {
+							if ( isset( $context['content'] ) ) {
+								$content = $this->core->cleanSentences( $context['content'] );
+								$query->injectContext( $content );
+							}
+							else {
+								error_log( "AI Engine: A context without content was returned." );
+							}
 						}
 					}
 				}
@@ -313,7 +315,7 @@ class Meow_MWAI_Modules_Chatbot {
 		return $frontSystem;
 	}
 
-  public function resolveBotInfo( $atts )
+  public function resolveBotInfo( &$atts )
   {
     $chatbot = null;
     $botId = $atts['id'] ?? null;
@@ -334,6 +336,7 @@ class Meow_MWAI_Modules_Chatbot {
     if ( !empty( $customId ) ) {
       $botId = null;
     }
+		unset( $atts['id'] );
     return [
       'chatbot' => $chatbot,
       'botId' => $botId,
@@ -344,17 +347,17 @@ class Meow_MWAI_Modules_Chatbot {
 	public function chat_shortcode( $atts ) {
 		$atts = empty($atts) ? [] : $atts;
 
+		// Let the user override the chatbot params
+		$atts = apply_filters( 'mwai_chatbot_params', $atts );
+
     // Resolve the bot info
-		$resolvedBot = $this->resolveBotInfo( $atts );
+		$resolvedBot = $this->resolveBotInfo( $atts, 'chatbot' );
     if ( isset( $resolvedBot['error'] ) ) {
       return $resolvedBot['error'];
     }
     $chatbot = $resolvedBot['chatbot'];
     $botId = $resolvedBot['botId'];
     $customId = $resolvedBot['customId'];
-
-		// Let the user override the chatbot params
-		$atts = apply_filters( 'mwai_chatbot_params', $atts, $chatbot );
 
 		// Rename the keys of the atts into camelCase to match the internal params system.
 		$atts = array_map( function( $key, $value ) {
