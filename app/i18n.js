@@ -130,7 +130,7 @@ i18n.COMMON = {
   NAMESPACE: __( 'Namespace', 'ai-engine' ),
   NAMESPACES: __( 'Namespaces', 'ai-engine' ),
   NAMESPACE_HELP: __( 'The namespace is used to separate the data from other data. This allows you to use the same index on more than one website.', 'ai-engine' ),
-  NAMESPACES_HELP: __( 'Enter the namespaces you would like to use on this site. The first namespace will be considered as default. Separate them by commas.', 'ai-engine' ),
+  NAMESPACES_HELP: __( 'Enter the namespaces you would like to use on this site, separated by commas.', 'ai-engine' ),
   ERROR: __( 'Error', 'ai-engine' ),
   RETRY: __( 'Retry', 'ai-engine' ),
   AUTO_RETRY: __( 'Auto Retry', 'ai-engine' ),

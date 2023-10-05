@@ -31,6 +31,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'mode' => 'chat',
 	'contentAware' => false,
 	'embeddingsIndex' => '',
+	'embeddingsNamespace' => null,
 	'casuallyFineTuned' => false,
 	'promptEnding' => null,
 	'completionEnding' => null,

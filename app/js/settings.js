@@ -1,6 +1,7 @@
-// Previous: 1.6.94
-// Current: 1.8.5
+// Previous: 1.8.5
+// Current: 1.9.87
 
+/* eslint-disable no-undef */
 const prefix = mwai.prefix;
 const domain = mwai.domain;
 const restUrl = mwai.rest_url.replace(/\/+$/, "");

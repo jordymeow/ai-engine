@@ -189,20 +189,18 @@ class Meow_MWAI_Modules_Chatbot {
 				// TODO: This is same in Chatbot Legacy and Forms, maybe we should move it to the core?
 				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
 				$embeddingsNamespace = $params['embeddingsNamespace'] ?? null;
-				if ( !empty( $embeddingsIndex ) ) {
-					if ( $query->mode === 'chat' ) {
-						$context = apply_filters( 'mwai_context_search', $context, $query, [ 
-							'embeddingsIndex' => $embeddingsIndex,
-							'embeddingsNamespace' => $embeddingsNamespace
-						] );
-						if ( !empty( $context ) ) {
-							if ( isset( $context['content'] ) ) {
-								$content = $this->core->cleanSentences( $context['content'] );
-								$query->injectContext( $content );
-							}
-							else {
-								error_log( "AI Engine: A context without content was returned." );
-							}
+				if ( $query->mode === 'chat' ) {
+					$context = apply_filters( 'mwai_context_search', $context, $query, [ 
+						'embeddingsIndex' => $embeddingsIndex,
+						'embeddingsNamespace' => $embeddingsNamespace
+					] );
+					if ( !empty( $context ) ) {
+						if ( isset( $context['content'] ) ) {
+							$content = $this->core->cleanSentences( $context['content'] );
+							$query->injectContext( $content );
+						}
+						else {
+							error_log( "AI Engine: A context without content was returned." );
 						}
 					}
 				}
