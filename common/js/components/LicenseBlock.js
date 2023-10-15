@@ -1,13 +1,14 @@
+/* eslint-disable no-undef */
 // React & Vendor Libs
 const { useState, useEffect } = wp.element;
 
 // NekoUI
-import { NekoButton, NekoTypo, NekoBlock, NekoSettings, NekoInput, 
+import { NekoButton, NekoTypo, NekoBlock, NekoInput, 
   NekoMessage, NekoModal } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
 // From Main Plugin
-import { restUrl, prefix, domain, isPro, isRegistered, restNonce } from '@app/settings';
+import { restUrl, prefix, isPro, isRegistered, restNonce } from '@app/settings';
 
 const CommonApiUrl = `${restUrl}/meow-licenser/${prefix}/v1`;
 
@@ -33,7 +34,7 @@ const LicenseBlock = () => {
       setSerialKey(res.data.key);
     }
     setBusy(false);
-  }
+  };
 
   const removeLicense = async () => {
     setBusy(true);
@@ -48,7 +49,7 @@ const LicenseBlock = () => {
       setCurrentModal('licenseRemoved');
     }
     setBusy(false);
-  }
+  };
 
   const forceLicense = async () => {
     setBusy(true);
@@ -67,7 +68,7 @@ const LicenseBlock = () => {
       }
     }
     setBusy(false);
-  }
+  };
 
   const validateLicense = async () => {
     if ( serialKey === 'MEOW_OVERRIDE' ) {
@@ -89,9 +90,9 @@ const LicenseBlock = () => {
       }
     }
     setBusy(false);
-  }
+  };
 
-  useEffect(() => { checkLicense() }, []);
+  useEffect(() => { checkLicense(); }, []);
 
   const licenseTextStatus = isOverridenLicense ? 'Forced License' : isRegistered ? 'Enabled' : 'Disabled';
 
@@ -100,7 +101,7 @@ const LicenseBlock = () => {
   if ( isOverridenLicense ) {
     message = 'This license has been force-enabled for you.';
     if (license && license.check_url ) {
-      message = <><span>{message}</span><br /><small>To check your license status, please click <a target="_blank" href={license.check_url + '&cache=' + (Math.random() * (642000))}>here</a>.</small></>;
+      message = <><span>{message}</span><br /><small>To check your license status, please click <a target="_blank" href={license.check_url + '&cache=' + (Math.random() * (642000))} rel="noreferrer">here</a>.</small></>;
     }
   } 
   if (!success) {
@@ -126,7 +127,7 @@ const LicenseBlock = () => {
       message = 'ABC';
     }
     else {
-      message = <span>There is an unknown error related to the system or this serial key. Really sorry about this! Make sure your security plugins and systems are off temporarily. If you are still experiencing an issue, please <a target='_blank' rel="noreferrer" href='https://meowapps.com/contact/'>contact us</a>.</span>
+      message = <span>There is an unknown error related to the system or this serial key. Really sorry about this! Make sure your security plugins and systems are off temporarily. If you are still experiencing an issue, please <a target='_blank' rel="noreferrer" href='https://meowapps.com/contact/'>contact us</a>.</span>;
       console.error({ license });
     }
   }
@@ -167,16 +168,20 @@ const LicenseBlock = () => {
         isOpen={currentModal === 'licenseAdded'}
         title="Thank you :)"
         content="The Pro features have been enabled. This page should be now reloaded."
-        ok='Reload'
-        onOkClick={() => location.reload()}
+        okButton={{
+          label: "Reload",
+          onClick: () => location.reload()
+        }}
       />
 
       <NekoModal
         isOpen={currentModal === 'licenseRemoved'}
         title="Goodbye :("
         content="The Pro features have been disabled. This page should be now reloaded."
-        ok='Reload'
-        onOkClick={() => location.reload()}
+        okButton={{
+          label: "Reload",
+          onClick: () => location.reload()
+        }}
       />
 
     </NekoBlock>;

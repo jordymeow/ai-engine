@@ -1,11 +1,11 @@
-// Previous: 1.6.0
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.9.88
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
 // NekoUI
-import { NekoUI, NekoWrapper, NekoModal, NekoSpinner } from '@neko-ui';
+import { NekoWrapper, NekoModal, NekoSpinner } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
 // AI Engine
@@ -22,7 +22,7 @@ const GenerateTitlesModal = (props) => {
     if (post) {
       fetchTitles(post);
     }
-  }, [post])
+  }, [post]);
 
 
   const fetchTitles = async ({ postId, postTitle }) => {
@@ -40,7 +40,7 @@ const GenerateTitlesModal = (props) => {
       setError(err.message);
     }
     setBusy(false);
-  }
+  };
 
   const onClick = async (title) => {
     setBusy(true);
@@ -52,14 +52,14 @@ const GenerateTitlesModal = (props) => {
       setError(e.message);
     }
     setBusy(false);
-  }
+  };
 
   const cleanClose = async () => {
     onClose();
     setTitles([]);
     setError();
     setBusy(false);
-  }
+  };
 
   const content = useMemo(() => {
     if (busy) {
@@ -73,7 +73,7 @@ const GenerateTitlesModal = (props) => {
         Pick a new title by clicking on it.
         <ResultsContainer>
           {titles.map(x => 
-            <Result key={x} onClick={() => { onClick(x) }}>{x}</Result>
+            <Result key={x} onClick={() => { onClick(x); }}>{x}</Result>
           )}
         </ResultsContainer>
       </>);
@@ -84,14 +84,16 @@ const GenerateTitlesModal = (props) => {
   }, [busy, titles, error]);
 
   return (
-      <NekoWrapper>
-        <NekoModal isOpen={post} onRequestClose={cleanClose}
-          title={`New title for "${post?.postTitle}"`}
-          content={content}
-          ok="Close"
-          onOkClick={cleanClose}
-        />
-      </NekoWrapper>
+    <NekoWrapper>
+      <NekoModal isOpen={post} onRequestClose={cleanClose}
+        title={`New title for "${post?.postTitle}"`}
+        content={content}
+        okButton={{
+          label: "Close",
+          onClick: cleanClose
+        }}
+      />
+    </NekoWrapper>
   );
 };
 

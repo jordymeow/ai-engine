@@ -1,5 +1,5 @@
-// Previous: 1.8.6
-// Current: 1.8.7
+// Previous: 1.8.7
+// Current: 1.9.88
 
 const { useState } = wp.element;
 
@@ -21,11 +21,11 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     console.log('Calculate Diff', { currentVectors, importVectors });
     for (const importVector of importVectors) {
       const cleanVector = {
-        id: importVector.id ?? null, // If there is an ID, it means it already exists in the Local DB.
+        id: importVector.id ?? null,
         type: importVector.type ?? 'manual',
         title: importVector.title ?? 'N/A',
         behavior: importVector.behavior ?? 'context',
-        dbId: importVector.dbId ?? null, // If there is a dbId, it means it already exists in the Vector DB. 
+        dbId: importVector.dbId ?? null,
         dbIndex: importVector.dbIndex ?? null,
         dbNS: importVector.dbNS ?? null,
         content: importVector.content ?? '',
@@ -84,7 +84,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
       setBusy('stepOne');
       while (!finished) {
         const res = await retrieveVectors(params);
-        if (res.vectors.length < 2) {
+        if (res.vectors.length === 0) {
           finished = true;
         }
         setTotal(res.total);
@@ -92,7 +92,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
         setCount(vectors.length);
         params.page++;
       }
-      await calculateDiff(vectors, importVectors);
+      calculateDiff(vectors, importVectors);
     }
     catch (err) {
       console.log(err);
@@ -140,8 +140,11 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
   return (<>
     <NekoModal isOpen={modal?.type === 'import'} disabled={busy}
       title="Import Embeddings"
-      ok={"Close"}
-      onOkClick={onClosed}
+      okButton={{
+        label: "Close",
+        onClick: onClosed,
+        disabled: busy
+      }}
       customButtons={<>
         <NekoButton onClick={runStepOne} disabled={busy}>Check Differences</NekoButton>
         <NekoButton onClick={runStepTwo} disabled={busy || readyVectors.total === 0}>Apply Changes</NekoButton>

@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 1.9.81
+// Previous: 1.9.81
+// Current: 1.9.88
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -34,7 +34,7 @@ const DEFAULT_INDEX = {
 const OptionsCheck = ({ options }) => {
   const { openai_apikey, pinecone } = options;
   const openAiKey = openai_apikey && openai_apikey.length > 0;
-  const pineconeIsOK = !options?.module_embeddings || (pinecone.apikey && pinecone.apikey.length > 0);
+  const pineconeIsOK = !options?.module_embeddings || (options?.embeddings_envs && options?.embeddings_envs.length > 0);
 
   return (
     <>
@@ -95,13 +95,11 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   }, [startLanguage]);
 
   useEffect(() => {
-    // Use the language stored in the local storage if it exists
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
     }
 
-    // Otherwise, try to detect the language from the browser
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -126,7 +124,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -181,28 +179,24 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   };
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models;
-    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let modelsCopy = options.openai_models;
+    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
     
     if (Array.isArray(options?.openai_legacy_finetunes)) {
       fineTunes = [ ...fineTunes, ...options.openai_legacy_finetunes ];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
-    allModels = allModels.map(x => {
+    modelsCopy = modelsCopy.map(x => {
       return { ...x, name: jsxModelName(x) };
     });
 
     if (fineTunes.length) {
-
-      // Add the finetuned models
-      allModels = [ ...allModels, ...fineTunes.map(x => {
-
+      modelsCopy = [ ...modelsCopy, ...fineTunes.map(x => {
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
 
-        // Handle new finetuned models
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
@@ -224,17 +218,16 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         };
       })];
     }
-    extraModels = extraModels?.split(',').filter(x => x);
-    if (extraModels.length) {
-      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+    extraModelsStr = extraModelsStr?.split(',').filter(x => x);
+    if (extraModelsStr.length) {
+      modelsCopy = [ ...modelsCopy, ...extraModelsStr.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return allModels;
+    return modelsCopy;
   }, [options]);
 
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
-
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -315,7 +308,6 @@ const retrieveVectors = async (queryParams) => {
   }
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
-  // Sort by score if it is a search
   if (isSearch && res?.vectors?.length) {
     const sortedVectors = res.vectors.sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
@@ -340,8 +332,6 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 };
 
-// Quick and dirty token estimation
-// Let's keep this synchronized with PHP's QueryText
 function estimateTokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;

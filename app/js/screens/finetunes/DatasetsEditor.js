@@ -1,9 +1,13 @@
-// Previous: 1.9.3
-// Current: 1.9.4
+// Previous: 1.9.4
+// Current: 1.9.88
 
+/* eslint-disable no-undef */
+/* eslint-disable no-console */
+// React & Vendor Libs
 const { useState, useEffect } = wp.element;
 import { useQuery } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, 
   NekoSelect, NekoOption, NekoProgress, NekoTextArea } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
@@ -49,20 +53,22 @@ const DatasetEditor = ({ options, setMessages }) => {
         messages = [];
       }
     }
+
     if (messages.length) {
       entries.push({ messages });
     }
+
     return entries;
-  }
+  };
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
+    const resContent = await retrievePostContent(postType, offset, postId);
     let error = null;
     let rawData = null;
-    let content = resContent?.content;
-    let url = resContent?.url;
-    let title = resContent?.title;
+    const content = resContent?.content;
+    const url = resContent?.url;
+    const title = resContent?.title;
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
@@ -109,26 +115,24 @@ const DatasetEditor = ({ options, setMessages }) => {
     const result = { content, prompt: finalPrompt, rawData, entries, error, tokens };
     console.log("Result:", result);
     return result;
-  }
+  };
 
   const cancelledByUser = () => {
     console.log('User aborted.');
     setBusy(false);
     bulkTasks.reset();
-  }
+  };
 
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = startOffsetStr !== null ? parseInt(startOffsetStr, 10) : null;
-    let tasks = offsets.map(offset => async (signal) => {
+    const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffset !== null && offset < startOffset) {
+      if (startOffset && offset < startOffset) {
         return { success: true };
       }
-      let result = await runProcess(offset, null, signal);
-      //let result = { entries: [ { prompt: offset, completion: offset } ] }
+      const result = await runProcess(offset, null, signal);
       if (result?.entries?.length > 0) {
         setMessages(messages => [...messages, ...result.entries]);
       }
@@ -138,18 +142,17 @@ const DatasetEditor = ({ options, setMessages }) => {
     setQuickBusy(false);
     alert("All done!");
     bulkTasks.reset();
-  }
+  };
 
   const onSingleGenerateClick = async () => {
     try {
       setTotalTokens(0);
       const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-      const postId = postIdInput !== null && postIdInput.trim() !== "" ? postIdInput : null;
-      if (postId === null) {
+      if (postIdInput === null) {
         return;
       }
       setQuickBusy('singleGenerate');
-      const result = await runProcess(0, postId);
+      const result = await runProcess(0, postIdInput);
       if (!result.entries || result.entries.length === 0) {
         alert("No entries were generated. Check the console for more information.");
       }
@@ -167,7 +170,7 @@ const DatasetEditor = ({ options, setMessages }) => {
     finally {
       setQuickBusy(false);
     }
-  }
+  };
 
   return (
     <>
@@ -182,7 +185,7 @@ const DatasetEditor = ({ options, setMessages }) => {
           Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
           {postTypes?.map(postType => 
             <NekoOption key={postType.type} value={postType.type} label={postType.name} />
           )}
@@ -195,11 +198,11 @@ const DatasetEditor = ({ options, setMessages }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
+        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
 
       {bulkTasks.TasksErrorModal}
     </>
   );
-}
+};
 
 export default DatasetEditor;

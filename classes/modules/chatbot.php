@@ -7,7 +7,8 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', '
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'embeddingsIndex', 'context',
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'context',
+	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace',
 	'casuallyFineTuned', 'promptEnding', 'completionEnding', 'model', 'temperature', 'maxTokens',
 	'maxResults', 'apiKey', 'service'
 ] );
@@ -187,10 +188,12 @@ class Meow_MWAI_Modules_Chatbot {
 
 				// Awareness & Embeddings
 				// TODO: This is same in Chatbot Legacy and Forms, maybe we should move it to the core?
+				$embeddingsEnvId = $params['embeddingsEnvId'] ?? null;
 				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
 				$embeddingsNamespace = $params['embeddingsNamespace'] ?? null;
 				if ( $query->mode === 'chat' ) {
 					$context = apply_filters( 'mwai_context_search', $context, $query, [ 
+						'embeddingsEnvId' => $embeddingsEnvId,
 						'embeddingsIndex' => $embeddingsIndex,
 						'embeddingsNamespace' => $embeddingsNamespace
 					] );

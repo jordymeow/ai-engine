@@ -1,5 +1,5 @@
-// Previous: 1.6.0
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 1.9.88
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -88,8 +88,10 @@ const GenerateExcerptsModal = (props) => {
       <NekoModal isOpen={post} onRequestClose={cleanClose}
         title={`New excerpt for "${post?.postTitle}"`}
         content={content}
-        ok="Close"
-        onOkClick={cleanClose}
+        okButton={{
+          label: "Close",
+          onClick: cleanClose
+        }}
       />
     </NekoWrapper>
   );
