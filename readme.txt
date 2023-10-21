@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.2
 Requires PHP: 7.4
-Stable tag: 1.9.89
+Stable tag: 1.9.90
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
 
-= 1.9.89 (2023/10/23) =
+= 1.9.90 (2023/10/22) =
 * Add: Sync Pull (to download remote embeddings - it does not insure that they have content however).
 * Update: Better UI for Embeddings. 
 * Fix: Many fixes linked to AI Search, auto-retrieval of remote embeddings, and the way the data is handled.
