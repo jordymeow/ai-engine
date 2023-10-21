@@ -1,5 +1,5 @@
-// Previous: 1.8.7
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 1.9.89
 
 const { useState } = wp.element;
 
@@ -11,97 +11,112 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
   const [ total, setTotal ] = useState(0);
   const [ count, setCount ] = useState(0);
   const [ readyVectors, setReadyVectors ] = useState({ add: [], modify: [], same: [], total: 0, isReady: false });
-  const importVectors = modal?.data ?? [];
-  const [ embeddingBasedOn, setEmbeddingBasedOn ] = useState({ id: true, dbId: true, title: true, refId: true });
+  const importVectors = modal?.data?.importVectors ?? [];
+  const [ embeddingBasedOn, setEmbeddingBasedOn ] = useState({ envId: false, dbId: false, dbIndex: false, dbNS: false,
+    title: true, refId: true
+  });
+  const modalData = modal?.data;
 
-  const calculateDiff = async (currentVectors, importVectors) => {
-    let addVectors = [];
-    let modifyVectors = [];
-    let sameVectors = [];
-    console.log('Calculate Diff', { currentVectors, importVectors });
-    for (const importVector of importVectors) {
-      const cleanVector = {
-        id: importVector.id ?? null,
-        type: importVector.type ?? 'manual',
-        title: importVector.title ?? 'N/A',
-        behavior: importVector.behavior ?? 'context',
-        dbId: importVector.dbId ?? null,
-        dbIndex: importVector.dbIndex ?? null,
-        dbNS: importVector.dbNS ?? null,
-        content: importVector.content ?? '',
-        refId: importVector.refId ?? null,
-      };
-
-      let sameVector = currentVectors.find(x => {
-        let same = false;
-        if (embeddingBasedOn.id && x.id === cleanVector.id) {
-          same = true;
-        }
-        if (embeddingBasedOn.dbId && x.dbId === cleanVector.dbId) {
-          same = true;
-        }
-        if (embeddingBasedOn.title && x.title === cleanVector.title) {
-          same = true;
-        }
-        if (embeddingBasedOn.refId && x.refId === cleanVector.refId) {
-          same = true;
-        }
-        return same;
-      });
-
-      if (sameVector) {
-        cleanVector.id = sameVector.id;
+  const createCleanVector = (importVector) => {
+    return {
+      id: importVector.id ?? null, 
+      type: importVector.type ?? 'manual',
+      title: importVector.title ?? 'N/A',
+      behavior: importVector.behavior ?? 'context',
+      envId: modalData?.envId ?? null,
+      dbId: importVector.dbId ?? null,
+      dbIndex: modalData.dbIndex ?? null,
+      dbNS: modalData.dbNS ?? null,
+      content: importVector.content ?? '',
+      refId: importVector.refId ?? null,
+    };
+  };
+  
+  const isSameVector = (x, cleanVector, embeddingBasedOn) => {
+    return Object.keys(embeddingBasedOn).every(key => {
+      if (key === 'envId') return false; // Bug: envId is ignored even if true
+      if (key === 'dbIndex') return false; // Bug: dbIndex ignored
+      if (key === 'dbNS') return false; // Bug: dbNS ignored
+      if (key === 'title') return x[key] === cleanVector[key];
+      if (key === 'refId') return x[key] === cleanVector[key];
+      if (x[key] !== undefined && cleanVector[key] !== undefined) {
+        return x[key] === cleanVector[key];
       }
+      return true;
+    });
+  };
+  
+  const calculateDiff = async (currentVectors, importVectors) => {
+    const addVectors = [];
+    const modifyVectors = [];
+    const sameVectors = [];
+  
+    console.log('Calculate Diff', { currentVectors, importVectors });
+  
+    for (const importVector of importVectors) {
+      const cleanVector = createCleanVector(importVector);
+      const matchedVector = currentVectors.find(x => isSameVector(x, cleanVector, embeddingBasedOn));
 
-      if (!currentVectors.find(x => x.id === cleanVector.id)) {
+      console.log("Matched Vector", { cleanVector: { ...cleanVector }, matchedVector: { ...matchedVector } });
+  
+      if (matchedVector) {
+        cleanVector.id = matchedVector.id;
+      } else {
         delete cleanVector.id;
       }
-
-      sameVector = currentVectors.find(x => x.id === cleanVector.id);
-
-      if (cleanVector.title === "About Dogs") {
-        console.log('Same Vector', { cleanVector, sameVector });
-      }
-
+  
+      const sameVector = currentVectors.find(x => x.id === cleanVector.id);
       if (sameVector && cleanVector.content === sameVector.content && cleanVector.title === sameVector.title) {
         sameVectors.push(cleanVector);
-      } else if (!!cleanVector.id) {
+      }
+      else if (cleanVector.id) {
         modifyVectors.push(cleanVector);
-      } else {
+      }
+      else {
         addVectors.push(cleanVector);
       }
     }
-    const totalCount = addVectors.length + modifyVectors.length;
-    setReadyVectors({ add: addVectors, modify: modifyVectors, same: sameVectors, total: totalCount, isReady: true });
-    console.log("Embeddings Diff", { add: addVectors, modify: modifyVectors, same: sameVectors, total: totalCount });
-  }
+  
+    const total = addVectors.length + modifyVectors.length;
+    setReadyVectors({ add: addVectors, modify: modifyVectors, same: sameVectors, total, isReady: true });
+
+    console.log("Embeddings Diff", { add: addVectors, modify: modifyVectors, same: sameVectors, total });
+  };  
 
   const runStepOne = async () => {
     try {
       let finished = false;
-      let params = { page: 1, limit: 20 };
+      const params = { 
+        page: 1,
+        limit: 20,
+        filters: { 
+          envId: modalData.envId,
+          dbIndex: modalData.dbIndex,
+          dbNS: modalData.dbNS,
+        }
+      };
       let vectors = [];
       setBusy('stepOne');
       while (!finished) {
         const res = await retrieveVectors(params);
-        if (res.vectors.length === 0) {
+        if (res.vectors.length < 2) {
           finished = true;
         }
-        setTotal(res.total);
+        setTotal(() => res.total);
         vectors = vectors.concat(res.vectors);
-        setCount(vectors.length);
+        setCount(() => vectors.length);
         params.page++;
       }
       calculateDiff(vectors, importVectors);
     }
     catch (err) {
-      console.log(err);
+      console.error(err);
       alert("An error occured while retrieving your current embeddings. Check your console.");
     }
     finally {
       setBusy(false);
     }
-  }
+  };
 
   const runStepTwo = async () => {
     try {
@@ -110,24 +125,24 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
       setBusy('stepTwo');
       for (const vector of readyVectors.add) {
         await onAddEmbedding(vector, true);
-        setCount(prev => prev + 1);
+        setCount(count => count + 1);
       }
       for (const vector of readyVectors.modify) {
         await onModifyEmbedding(vector, true);
-        setCount(prev => prev + 1);
+        setCount(count => count + 1);
       }
       alert("All embeddings have been updated.");
       setReadyVectors({ add: [], modify: [], same: [], total: 0, isReady: false });
       onClosed();
     }
     catch (err) {
-      console.log(err);
+      console.error(err);
       alert("An error occured while updating embeddings. Check your console.");
     }
     finally {
       setBusy(false);
     }
-  }
+  };
 
   const onClosed = () => {
     setModal(null);
@@ -135,11 +150,12 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     setTotal(0);
     setCount(0);
     setReadyVectors({ add: [], modify: [], same: [], total: 0, isReady: false });
-  }
+  };
 
   return (<>
     <NekoModal isOpen={modal?.type === 'import'} disabled={busy}
       title="Import Embeddings"
+      onRequestClose={onClosed}
       okButton={{
         label: "Close",
         onClick: onClosed,
@@ -154,16 +170,31 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
         <NekoSpacer />
         <NekoCollapsableCategory title={"1 - Check Differences"} />
         <p>
-          Calculates the differences between the embeddings in your file and the ones currently registered in AI Engine. Based on that, the list of changes will be created. An embedding will be considered the same entry based on:
+          Calculates the differences between the embeddings in your file and the ones currently registered in AI Engine. Based on that, a list of changes will be created. Please note that the environment, index and namespace that might be set in the file will be ignored.
+        </p>
+        <p style={{ marginTop: 10 }}>
+          An embedding will be considered the same entry based on:
         </p>
         <NekoSpacer />
         <div style={{ display: 'flex' }}>
-          <NekoCheckbox small label="ID" disabled={true} checked={embeddingBasedOn.id}
-            onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, id: !embeddingBasedOn.id })}
-          />
           <div style={{ marginLeft: 15 }}>
-            <NekoCheckbox small label="DB ID" disabled={true} checked={embeddingBasedOn.dbId}
+            <NekoCheckbox small label="DB ID" disabled={false} checked={embeddingBasedOn.dbId}
               onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbId: !embeddingBasedOn.dbId })}
+            />
+          </div>
+          <div style={{ marginLeft: 15 }}>
+            <NekoCheckbox small label="Env" disabled={false} checked={embeddingBasedOn.envId}
+              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, envId: !embeddingBasedOn.envId })}
+            />
+          </div>
+          <div style={{ marginLeft: 15 }}>
+            <NekoCheckbox small label="Index" disabled={false} checked={embeddingBasedOn.dbIndex}
+              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbIndex: !embeddingBasedOn.dbIndex })}
+            />
+          </div>
+          <div style={{ marginLeft: 15 }}>
+            <NekoCheckbox small label="Namespace" disabled={false} checked={embeddingBasedOn.dbNS}
+              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbNS: !embeddingBasedOn.dbNS })}
             />
           </div>
           <div style={{ marginLeft: 15 }}>
@@ -172,7 +203,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
             />
           </div>
           <div style={{ marginLeft: 15 }}>
-            <NekoCheckbox small label="Post ID" disabled={false} checked={embeddingBasedOn.refId}
+            <NekoCheckbox small label="Ref (Post ID)" disabled={false} checked={embeddingBasedOn.refId}
               onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, refId: !embeddingBasedOn.refId })}
             />  
           </div>
@@ -203,6 +234,6 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     />
 
   </>);
-}
+};
 
 export default ImportModal;

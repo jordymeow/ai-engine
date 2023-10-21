@@ -1,5 +1,5 @@
-// Previous: 1.9.81
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 1.9.89
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -32,7 +32,7 @@ const DEFAULT_INDEX = {
 };
 
 const OptionsCheck = ({ options }) => {
-  const { openai_apikey, pinecone } = options;
+  const { openai_apikey } = options;
   const openAiKey = openai_apikey && openai_apikey.length > 0;
   const pineconeIsOK = !options?.module_embeddings || (options?.embeddings_envs && options?.embeddings_envs.length > 0);
 
@@ -98,13 +98,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
-
-    const detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
+    const langAttr = document.querySelector('html')?.lang;
+    const detectedLanguage = (langAttr || navigator.language || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
+    // Missing else: if no match, fallback to current, but no default set
   }, []);
 
   const currentHumanLanguage = useMemo(() => {
@@ -179,20 +180,20 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   };
 
   const allModels = useMemo(() => {
-    let modelsCopy = options.openai_models;
-    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let modelsList = options.openai_models;
+    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = options?.openai_finetunes ?? [];
     
     if (Array.isArray(options?.openai_legacy_finetunes)) {
       fineTunes = [ ...fineTunes, ...options.openai_legacy_finetunes ];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
-    modelsCopy = modelsCopy.map(x => {
+    modelsList = modelsList.map(x => {
       return { ...x, name: jsxModelName(x) };
     });
 
     if (fineTunes.length) {
-      modelsCopy = [ ...modelsCopy, ...fineTunes.map(x => {
+      modelsList = [ ...modelsList, ...fineTunes.map(x => {
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
@@ -218,11 +219,11 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
         };
       })];
     }
-    extraModelsStr = extraModelsStr?.split(',').filter(x => x);
-    if (extraModelsStr.length) {
-      modelsCopy = [ ...modelsCopy, ...extraModelsStr.map(x => ({ id: x, model: x, description: "Extra" })) ];
+    extraModels = extraModels?.split(',').filter(x => x);
+    if (extraModels.length) {
+      modelsList = [ ...modelsList, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return modelsCopy;
+    return modelsList;
   }, [options]);
 
   const models = useMemo(() => {
@@ -299,6 +300,18 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   return { allModels, model, models, completionModels, coreModels, 
     setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
+};
+
+const retrieveRemoteVectors = async (queryParams) => {
+  const res = await nekoFetch(`${apiUrl}/vectors/remote_list`, { nonce: restNonce, method: 'POST', json: queryParams });
+  return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
+};
+
+const addFromRemote = async (queryParams, signal) => {
+  const res = await nekoFetch(`${apiUrl}/vectors/add_from_remote`, { nonce: restNonce, method: 'POST', 
+    json: queryParams, signal
+  });
+  return res;
 };
 
 const retrieveVectors = async (queryParams) => {
@@ -403,8 +416,8 @@ const randomHash = (length = 6) => {
   return hash;
 };
 
-export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages,
-  retrieveVectors, retrievePostsCount, retrievePostContent, reduceContent,
+export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages, addFromRemote,
+  retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, reduceContent,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
 };

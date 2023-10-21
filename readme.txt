@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.3.2
 Requires PHP: 7.4
-Stable tag: 1.9.88
+Stable tag: 1.9.89
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 1.9.89 (2023/10/23) =
+* Add: Sync Pull (to download remote embeddings - it does not insure that they have content however).
+* Update: Better UI for Embeddings. 
+* Fix: Many fixes linked to AI Search, auto-retrieval of remote embeddings, and the way the data is handled.
+* Fix: Minimum Score and Max Embeddings are now working correctly throughout the plugin.
+* Fix: Unselecting an embedding environment will now remove the index and the namespace.
+* Fix: A bunch of tiny additional fixes.
 
 = 1.9.88 (2023/10/16) =
 * Add: Support of multi-environments with embeddings (only Pinecone environments for now, but more will come soon).

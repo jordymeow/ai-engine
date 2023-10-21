@@ -194,7 +194,6 @@ i18n.COMMON = {
   DUPLICATE: __( 'Duplicate', 'ai-engine' ),
   CHATBOT_EDITOR: __( 'Chatbot Editor', 'ai-engine' ),
   THEME_EDITOR: __( 'Theme Editor', 'ai-engine' ),
-  PREVIEW: __( 'Preview', 'ai-engine' ),
   CUSTOM_SHORTCODE: __( 'Custom Shortcode', 'ai-engine' ),
   STREAMING: __( 'Streaming', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Syntax Highlight', 'ai-engine' ),
@@ -363,8 +362,8 @@ i18n.FINETUNING = {
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
-  SYNC_SETTINGS_INTRO: __( 'Create embeddings (with the <i>pending</i> status) when posts are published. They will be removed accordingly. This works with the default namespace.', 'ai-engine' ),
-  SYNC_POSTS: __( 'Sync Posts', 'ai-engine' ),
+  SYNC_SETTINGS_INTRO: __( 'Create embeddings (with the <i>pending</i> status) when posts are published or modified. They will be removed accordingly. This works with the default namespace.', 'ai-engine' ),
+  AUTO_SYNC_POSTS: __( 'Auto Sync Posts', 'ai-engine' ),
   REWRITE_CONTENT: __( 'Rewrite Content', 'ai-engine' ),
   REWRITE_CONTENT_DESCRIPTION: __( 'Shorten and improve the content for your embedding using the default model.', 'ai-engine' ),
   FORCE_RECREATE: __( 'Force Recreate', 'ai-engine' ),

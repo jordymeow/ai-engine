@@ -13,7 +13,7 @@ class Meow_MWAI_Engines_OpenAI
   private $localAzureEndpoint = null;
   private $localAzureApiKey = null;
   private $localAzureDeployments = null;
-  private $azureApiVersion = 'api-version=2023-06-01-preview';
+  private $azureApiVersion = 'api-version=2023-07-01-preview';
 
   // Streaming
   private $streamTemporaryBuffer = "";
