@@ -1,5 +1,5 @@
-// Previous: 1.9.88
-// Current: 1.9.89
+// Previous: 1.9.89
+// Current: 1.9.91
 
 const { useState } = wp.element;
 import Papa from 'papaparse';
@@ -25,7 +25,7 @@ const ExportModal = ({ modal, setModal }) => {
 
   const exportJSON = async () => {
     try {
-      setBusy(true);
+      setBusy('exporting');
       const vectors = await retrieveAllVectors();
       const json = JSON.stringify(vectors, null, 2);
       const date = new Date();
@@ -33,11 +33,11 @@ const ExportModal = ({ modal, setModal }) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       downloadAsFile(json, `vectors-${year}-${month}-${day}.json`);
-      setTimeout(() => { setTotal(0); }, 1000);
+      setTimeout(() => { setTotal(0); }, 1500);
     }
     catch (err) {
       console.error(err);
-      alert("An error occurred while exporting vectors. Check your console.");
+      alert("An error occured while exporting vectors. Check your console.");
     }
     finally {
       setBusy(false);
@@ -46,7 +46,7 @@ const ExportModal = ({ modal, setModal }) => {
 
   const exportCSV = async () => {
     try {
-      setBusy(true);
+      setBusy('exporting');
       const vectors = await retrieveAllVectors();
       const csv = Papa.unparse(vectors);
       const date = new Date();
@@ -54,11 +54,11 @@ const ExportModal = ({ modal, setModal }) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       downloadAsFile(csv, `vectors-${year}-${month}-${day}.csv`);
-      setTimeout(() => { setTotal(0); }, 1000);
+      setTimeout(() => { setTotal(0); }, 1500);
     }
     catch (err) {
       console.error(err);
-      alert("An error occurred while exporting vectors. Check your console.");
+      alert("An error occured while exporting vectors. Check your console.");
     }
     finally {
       setBusy(false);
@@ -76,7 +76,7 @@ const ExportModal = ({ modal, setModal }) => {
     };
     let vectors = [];
     
-    while (!finished && !busy) {
+    while (!finished) {
       const res = await retrieveVectors(params);
       if (res.vectors.length < 2) {
         finished = true;
@@ -91,16 +91,17 @@ const ExportModal = ({ modal, setModal }) => {
   };
 
   return (<>
-    <NekoModal isOpen={modal?.type === 'export'} disabled={busy} 
+    <NekoModal isOpen={modal?.type === 'export'}
       title="Export Embeddings"
       onRequestClose={() => setModal(null)}
       okButton={{
         label: "Close",
+        disabled: busy === 'addEmbedding' || busy === 'exporting',
         onClick: () => setModal(null)
       }}
       customButtons={<>
-        <NekoButton onClick={exportCSV}>Export CSV</NekoButton>
-        <NekoButton onClick={exportJSON}>Export JSON</NekoButton>
+        <NekoButton onClick={exportCSV} disabled={busy}>Export CSV</NekoButton>
+        <NekoButton onClick={exportJSON} disabled={busy}>Export JSON</NekoButton>
       </>}
       content={<>
         <NekoProgress busy={busy} style={{ flex: 'auto' }} value={count} max={total} />

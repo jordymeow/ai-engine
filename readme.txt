@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: ai, chatgpt, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
-Tested up to: 6.3.2
+Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.90
+Stable tag: 1.9.91
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,11 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 1.9.91 (2023/10/24) =
+* Update: Auto Sync Posts now can be set to use a specific environment, index and namespace.
+* Fix: Remove many warnings in the JS console.
+* Fix: Chatbot with IDs can now be overriden properly.
 
 = 1.9.90 (2023/10/22) =
 * Add: Sync Pull (to download remote embeddings - it does not insure that they have content however).

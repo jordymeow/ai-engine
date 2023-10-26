@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.3.93
+// Previous: 1.3.93
+// Current: 1.9.91
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -53,8 +53,11 @@ const MagicWandModal = (props) => {
           isOpen={isOpen}
           title={title ?? "Results"}
           content={content}
-          ok="Close"
           onRequestClose={() => onClick()}
+          okButton={{
+            label: "Close",
+            onClick: () => onClick()
+          }}
         />
       </NekoWrapper>
     </NekoUI>

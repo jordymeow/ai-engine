@@ -362,8 +362,8 @@ i18n.FINETUNING = {
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
-  SYNC_SETTINGS_INTRO: __( 'Create embeddings (with the <i>pending</i> status) when posts are published or modified. They will be removed accordingly. This works with the default namespace.', 'ai-engine' ),
   AUTO_SYNC_POSTS: __( 'Auto Sync Posts', 'ai-engine' ),
+  AUTO_SYNC_POSTS_DESCRIPTION: __( 'Embeddings will be created, updated or removed based on the activity related to your posts.', 'ai-engine' ),
   REWRITE_CONTENT: __( 'Rewrite Content', 'ai-engine' ),
   REWRITE_CONTENT_DESCRIPTION: __( 'Shorten and improve the content for your embedding using the default model.', 'ai-engine' ),
   FORCE_RECREATE: __( 'Force Recreate', 'ai-engine' ),

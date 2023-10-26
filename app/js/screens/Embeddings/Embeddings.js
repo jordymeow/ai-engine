@@ -1,5 +1,5 @@
-// Previous: 1.9.88
-// Current: 1.9.89
+// Previous: 1.9.89
+// Current: 1.9.91
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -84,7 +84,6 @@ const getLocalSettings = () => {
 
 const localSettings = getLocalSettings();
 const defaultEnvironmentId = localSettings?.environmentId ?? null;
-const defaultIndex = localSettings?.index ?? null;
 const defaultNamespace = localSettings?.namespace ?? null;
 
 const Embeddings = ({ options, updateEnvironment, updateOption }) => {
@@ -151,14 +150,26 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   });
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(false); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(null);
+    setBusy(false);
   };
+
+  const isSyncEnvDifferent = useMemo(() => {
+    const currentSyncEnv = embeddingsSettings.syncPostsEnv ?? {};
+    return currentSyncEnv.envId !== environmentId || currentSyncEnv.dbIndex !== index ||
+      currentSyncEnv.dbNS !== namespace;
+  }, [embeddingsSettings.syncPostsEnv, environmentId, index, namespace]);
+
+  const syncPostsEnvName = useMemo(() => {
+    const currentSyncEnv = embeddingsSettings.syncPostsEnv ?? {};
+    const currentEnvironment = environments.find(e => e.id === currentSyncEnv.envId) || null;
+    return currentEnvironment?.name ?? null;
+  }, [embeddingsSettings.syncPostsEnv, environments]);
 
   useEffect(() => {
     if ((environment?.server === 'gcp-starter' || !environment?.index) && namespace) {
@@ -174,11 +185,11 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       }
     });
     setLocalSettings({ environmentId, index, namespace });
-  }, [index, namespace]);
+  }, [index, namespace, environment?.server, environment?.index, environmentId, search]);
 
   useEffect(() => {
     const freshSearch = mode === 'edit' ? null : "";
-    setSearch(mode === 'edit' ? null : "");
+    setSearch(freshSearch);
     setQueryParams({ ...queryParams,
       filters: { ...queryParams.filters, search: freshSearch },
       sort: { accessor: (mode === 'edit' ? 'created' : 'score'), by: 'desc' }, page: 1, limit: 20
@@ -192,7 +203,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         syncPostStatus: ['publish']
       });
     }
-  }, [embeddingsSettings.syncPostTypes]);
+  }, [embeddingsSettings.syncPostTypes, embeddingsSettings.syncPostStatus]);
 
   const onAddIndex = async () => {
     setBusy('addIndex');
@@ -318,7 +329,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       await nekoFetch(`${apiUrl}/vectors/update`, { nonce: restNonce, method: 'POST', json: { vector } });
       setEmbeddingModal(false);
       console.log("Embeddings updated.", inEmbedding);
-      
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
     }
     catch (err) {
@@ -348,7 +358,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         }
       });
       if (!skipBusy) {
-        // bug: missed setting busy to false here, so it stays true longer than needed
+        setBusy(false);
       }
       return res.vectors;
     }
@@ -393,8 +403,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     console.log("Embeddings deleted.", { ids });
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
-      // bug: no warning or message, but for debugging, add a console log
-      console.log("Should update vectors after delete, but missing update logic");
+      console.error("We should update the vectors data with the deleted embeddings.");
     }
   };
 
@@ -426,6 +435,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
               console.error(e);
               return null;
             }
+            
           });
         }
         else if (isCsv) {
@@ -497,6 +507,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     }
 
     console.log("Content rewritten.", { from: post.content, to: rewrittenContent });
+
     return rewrittenContent;
   };
 
@@ -508,7 +519,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     const data = vectorsData;
     if (!data?.vectors) { return []; }
 
-    return data?.vectors.map(x => {
+    return data.vectors.map(x => {
       let updated = new Date(x.updated);
       updated = new Date(updated.getTime() - updated.getTimezoneOffset() * 60 * 1000);
       const updatedFormattedTime = updated.toLocaleDateString('ja-JP', {
@@ -553,7 +564,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         </>
       };
     });
-  }, [mode, vectorsData, isBusy]);
+  }, [mode, vectorsData, isBusy, minScore]);
 
   const cancelledByUser = () => {
     console.log('User aborted.');
@@ -569,7 +580,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     const resContent = await retrievePostContent(postType, offset,
-      postId ? postId : undefined, embeddingsSettings.syncPostStatus);
+      postId ? postId : undefined, embeddingsSettings?.syncPostStatus);
     let content = resContent?.content ?? null;
     const title = resContent?.title ?? null;
     const url = resContent?.url ?? null;
@@ -591,32 +602,26 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         afterLength: content.length
       });
     }
-
     const embeddings = await onGetEmbeddingsForRef(postId, true, signal);
     if (content.length < 64) {
       if (embeddings.length > 0) {
         await onDeleteEmbedding(embeddings.map(x => x.id), true, signal);
         console.warn("Content is too short. Embeddings deleted.", { content });
-      }
-      else {
+      } else {
         console.warn("Content is too short. Skipped.", { content });
       }
       return false;
-    }
-    else if (embeddings.length > 1) {
+    } else if (embeddings.length > 1) {
       alert(`Multiple embeddings for one single post are not handled yet. Please delete the embeddings related to ${postId} manually.`);
       return false;
-    }
-    else if (embeddings.length === 1) {
+    } else if (embeddings.length === 1) {
       const embedding = embeddings[0];
       if (embedding.refChecksum === checksum && !embeddingsSettings.forceRecreate) {
         console.log(`Embedding exists with same content.`, { embedding });
-      }
-      else {
+      } else {
         if (embedding.refChecksum === checksum) {
           console.log(`Embedding exists with same content (but force re-create).`);
-        }
-        else {
+        } else {
           console.log(`Embedding exists with different content.`, { 
             current: embedding.content,
             new: content
@@ -634,8 +639,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
           return false; 
         }
       }
-    }
-    else {
+    } else {
       const post = { postId, content, title, url, excerpt, checksum, language };
       const embeddingContent = await rewriteContent(post, language, signal);
       if (!embeddingContent || embeddingContent.length < 64) {
@@ -668,6 +672,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     let remoteVectors = [];
     let vectors = [];
     let finished = false;
+    
     while (!finished) {
       const res = await retrieveRemoteVectors(params);
       if (res.vectors.length < params.limit) { 
@@ -677,6 +682,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       params.page++;
     }
     console.log("Remote vectors retrieved.", { remoteVectors });
+
     finished = false;
     params.limit = 20;
     params.page = 0;
@@ -690,7 +696,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     }
     vectors = vectors.map(x => x.dbId);
     console.log("Local vectors retrieved.", { vectors });
-    const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x));
+    const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x.dbId));
     console.log("Vectors to pull from Vector DB to AI Engine.", { vectorsToPull });
    
     if (!vectorsToPull.length) {
@@ -698,14 +704,12 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       alert("No vectors to pull.");
       return;
     }
-
     const tasks = vectorsToPull.map(dbId => async (signal) => {
       await addFromRemote({ envId: environmentId, dbIndex: index, dbNS: namespace, dbId: dbId }, signal);
       await queryClient.invalidateQueries({ queryKey: ['vectors'] });
       return { success: true };
     });
     await bulkTasks.start(tasks);
-
     setBusy(false);
     alert("All done! For more information, check the console (Chrome Developer Tools).");
     bulkTasks.reset();
@@ -720,16 +724,14 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         await runProcess(offset, null, signal);
         return { success: true };
       });
-    }
-    else {
-      const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id))
+    } else {
+      const postIds = vectorsData?.vectors.filter(x => selectedIds.includes(x.id))
         .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null);
       tasks = postIds.map(postId => async (signal) => {
         await runProcess(0, postId, signal);
         return { success: true };
       });
     }
-    
     await bulkTasks.start(tasks);
     setBusy(false);
     alert("All done! For more information, check the console (Chrome Developer Tools). Posts with very short content (or content that could not be retrieved) are skipped.");
@@ -737,17 +739,14 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   };
 
   const OnSingleRunClick = async () => {
-    const postIdStr = prompt("Enter the Post ID to synchronize with:");
-    if (!postIdStr) {
+    const postId = prompt("Enter the Post ID to synchronize with:");
+    if (!postId) {
       return;
     }
-    // bug: not parsing input to int, passing string directly
-    const postId = postIdStr;
     setBusy('singleRun');
     try {
       await runProcess(0, postId);
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error);
       alert(error?.message ?? error);
     }
@@ -756,7 +755,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
   const jsxEnvIndexNS = useMemo(() => <>
     <div style={{ display: 'flex' }}>
-      <NekoSelect fullWidth scrolldown name="environment"
+      <NekoSelect scrolldown name="environment"
         style={{ flex: 1, marginBottom: 5 }} disabled={isBusy}
         value={environment?.id || ''} onChange={value => setEnvironmentId(value)}>
         {environments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
@@ -810,7 +809,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
           <NekoContainer style={{ margin: 10, flex: 'auto' }} contentStyle={{ padding: 10, display: 'flex' }}>
             {mode === 'edit' && <>
-
               {selectedIds.length > 0 && <>
                 <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkPushAll'}
                   onClick={() => onBulkPushClick(false)}>
@@ -821,12 +819,10 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
                   {i18n.COMMON.DELETE_SELECTED}
                 </NekoButton>
               </>}
-
               {selectedIds.length > 0 && <div style={{ display: 'flex',
                 alignItems: 'center', marginLeft: 10, marginRight: 10 }}>
                 {selectedIds.length} selected
               </div>}
-
               <NekoProgress busy={bulkTasks.busy} style={{ flex: 'auto' }}
                 value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
             </>}
@@ -856,7 +852,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
             }}
             data={vectorsRows} columns={columns} 
             onSelectRow={id => { setSelectedIds([id]); }}
-            onSelect={ids => { setSelectedIds([ ...new Set([...selectedIds, ...ids]) ]); }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
             selectedItems={selectedIds}
           />
@@ -913,14 +909,13 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
             {index && !indexIsReady && <NekoMessage variant="danger" style={{ marginTop: 15, padding: '8px 12px' }}>
               This index is currently being build by Pinecone. Wait a few minutes, then use the <b>Refresh</b> button.
             </NekoMessage>}
-
           </NekoTab>
 
           <NekoTab title="Settings">
             {jsxEnvIndexNS}
             <NekoSpacer />
             <div style={{ display: 'flex' }}>
-              <NekoButton className="primary" onClick={() => setIndexModal({ name: '', podType: 's1' })} style={{ flex: 1 }}
+              <NekoButton className="primary" onClick={() => setIndexModal(DEFAULT_INDEX)} style={{ flex: 1 }}
                 isBusy={busy === 'addIndex'} disabled={isBusy}>
                 {i18n.EMBEDDINGS.ADD_INDEX}
               </NekoButton>
@@ -1004,9 +999,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
             </NekoButton>
           </NekoTab>
           <NekoTab title="Settings" inversed>
-
-            <h3 style={{ marginTop: 0 }}>Settings</h3>
-
             <NekoCheckbox label={i18n.EMBEDDINGS.REWRITE_CONTENT} checked={embeddingsSettings.rewriteContent} disabled={busy}
               onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, rewriteContent: value }); }}
               description={i18n.EMBEDDINGS.REWRITE_CONTENT_DESCRIPTION}
@@ -1028,22 +1020,43 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
             <NekoSpacer medium line={true} />
 
             <h3 style={{ marginTop: 0 }}>Auto Sync</h3>
-            {toHTML(i18n.EMBEDDINGS.SYNC_SETTINGS_INTRO)}
-
-            <NekoSpacer />
 
             <NekoCheckbox label={i18n.EMBEDDINGS.AUTO_SYNC_POSTS} checked={embeddingsSettings.syncPosts}
               disabled={busy}
               onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, syncPosts: value }); }}
-              description={<>{i18n.COMMON.NAMESPACE}: <b>{namespaces[0]}</b></>}
+              description={i18n.EMBEDDINGS.AUTO_SYNC_POSTS_DESCRIPTION}
             />
 
             {embeddingsSettings.syncPosts && <>
-              <NekoSpacer />
+              <p>
+                {!embeddingsSettings.syncPostsEnv && "Auto Sync is not set."}
+                {embeddingsSettings.syncPostsEnv && <>
+                  <ul style={{ lineHeight: '10px', marginLeft: 15, listStyle: 'disc' }}>
+                    <li>Environment: <b>{syncPostsEnvName}</b></li>
+                    <li>Index: <b>{embeddingsSettings.syncPostsEnv.dbIndex}</b></li>
+                    <li>Namespace: <b>{embeddingsSettings.syncPostsEnv.dbNS}</b></li>
+                  </ul>
+                </>}
+              </p>
+
+              {isSyncEnvDifferent && <>
+                <NekoMessage variant="danger" style={{ padding: '10px 20px', marginBottom: 10 }}>The current environment is different from the one set for Auto Sync. Do you want to use it instead?</NekoMessage>
+                <NekoButton fullWidth className="primary"
+                  onClick={() => setEmbeddingsSettings({ ...embeddingsSettings, syncPostsEnv: {
+                    envId: environmentId,
+                    dbIndex: index,
+                    dbNS: namespace,
+                  } })}
+                  style={{ flex: 1 }} disabled={isBusy}>
+                Use Current Environment
+                </NekoButton>
+                <NekoSpacer />
+              </>}
+
               <NekoInput name="syncPostTypes" value={embeddingsSettings.syncPostTypes }
                 isCommaSeparatedArray={true}
                 description={i18n.HELP.POST_TYPES}
-                onBlur={value => { 
+                onBlur={value => {
                   setEmbeddingsSettings({ ...embeddingsSettings, syncPostTypes: value });
                 }}
               />
@@ -1051,7 +1064,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
               <NekoInput name="syncPostStatus" value={embeddingsSettings.syncPostStatus || "publish"}
                 isCommaSeparatedArray={true}
                 description={i18n.HELP.POST_STATUS}
-                onBlur={value => { 
+                onBlur={value => {
                   setEmbeddingsSettings({ ...embeddingsSettings, syncPostStatus: value });
                 }}
               />

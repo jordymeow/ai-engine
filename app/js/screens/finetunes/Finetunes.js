@@ -1,5 +1,5 @@
-// Previous: 1.9.6
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 1.9.91
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -51,7 +51,7 @@ const fineTuneColumns = [
 
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
-
+  
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -351,18 +351,14 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onDeleteDataRow = (row, messageRow) => {
     let updatedEntries = [...entries];
-    if (updatedEntries[row - 1]) {
-      if (updatedEntries[row - 1].messages) {
-        updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
-        setEntries(updatedEntries);
-      }
-    }
+    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+    setEntries(updatedEntries);
   }
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow != null && x.messages) {
+        if (messageRow !== null) {
           return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content } }
             return y; 
@@ -543,10 +539,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       alert(i18n.ALERTS.CHECK_CONSOLE);
     }
     setBusyAction(false);
-  };
+  }
 
   const fileRows = useMemo(() => {
-    return dataFiles?.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
@@ -608,10 +604,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => deleteFineTune(x.model)}>
           </NekoButton>}
-          {x.status === 'cancelled' && <NekoButton className="danger" rounded icon="trash"
-            onClick={() => removeFineTune(x.id)}>
-          </NekoButton>}
-          {x.status === 'failed' && <NekoButton className="danger" rounded icon="trash"
+          {(x.status === 'cancelled' || x.status === 'failed') && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
           {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
@@ -641,7 +634,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = entries.map(x => JSON.stringify(x)).join("\n");
+      const data = entries.map(x => {
+        let json = JSON.stringify(x);
+        return json;
+      }).join("\n");
       console.log(data);
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce, json: { filename, data } });
       await refreshFiles();
@@ -688,7 +684,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         continue;
       }
       reader.onload = async (e) => {
-        let fileContent = e.target.result;
+        const fileContent = e.target.result;
         let data = [];
         if (isJson) {
           data = JSON.parse(fileContent);
@@ -702,10 +698,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             }
             catch (e) {
               console.log(e, x);
-              return null;
+              return null
             }
           });
-          const hasMessages = data.every(x => x && x.messages);
+          const hasMessages = data.every(x => x.messages);
           if (!hasMessages) {
             isMigration = true;
           }
@@ -723,8 +719,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
               acc[key.toLowerCase()] = x[key];
               return acc;
             }, {});
-            // For migration, adjust flags
-            isMigration = true;
             const promptColumns = ['prompt', 'question', 'q'];
             const completionColumns = ['completion', 'reply', 'a'];
             const promptKey = promptColumns.find(x => values[x]);
@@ -754,7 +748,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         }
 
         data = data.filter(x => x);
-        const hasMessages = data.every(x => x && x.messages);
+        const hasMessages = data.every(x => x?.messages);
         if (!hasMessages) {
           alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
           return;
@@ -862,6 +856,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           </NekoButton>
           <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
         </div>
+        
       </>}
 
       {isModeTrain && section === 'files' && <>
@@ -933,7 +928,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">case studies</a>. Please also check my <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
           </p>
         </>}
-
       </>}
 
       <NekoModal isOpen={errorModal}
@@ -953,13 +947,14 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         onRequestClose={() => setFileForFineTune()}
         okButton={{
           label: 'Start',
+          disabled: busyAction,
           onClick: onStartFineTune,
         }}
         cancelButton={{
           label: 'Close',
+          disabled: busyAction,
           onClick: () => setFileForFineTune(),
         }}
-        disabled={busyAction}
         content={<>
           <p>
             Exciting! 🎵 You are about to create your own new model, based on your dataset. You simply need to select a base model, and optionally, to modify the <a href="https://beta.openai.com/docs/guides/fine-tuning/hyperparameters" target="_blank" rel="noreferrer">hyperparameters</a>. Before starting the process, make sure that:

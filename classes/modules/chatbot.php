@@ -299,7 +299,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function build_front_params( $botId, $customId ) {
 		$frontSystem = [
-			'botId' => $botId,
+			'botId' => $customId ? null : $botId,
 			'customId' => $customId,
 			'userData' => $this->core->getUserData(),
 			'sessionId' => $this->core->get_session_id(),
@@ -390,6 +390,9 @@ class Meow_MWAI_Modules_Chatbot {
 		foreach ( MWAI_CHATBOT_SERVER_PARAMS as $param ) {
 			if ( isset( $atts[$param] ) ) {
 				$serverParams[$param] = $atts[$param];
+			}
+			else {
+				$serverParams[$param] = $chatbot[$param] ?? null;
 			}
 		}
 

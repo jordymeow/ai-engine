@@ -186,6 +186,7 @@ define( 'MWAI_OPTIONS', [
 		'maxSelect' => 1,
 		'minScore' => 75,
 		'syncPosts' => false,
+		'syncPostsEnv' => null,
 		'syncPostTypes' => ['post', 'page', 'product'],
 		'syncPostStatus' => ['publish'],
 	],
