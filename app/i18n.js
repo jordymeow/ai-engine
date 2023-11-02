@@ -5,6 +5,7 @@ const { __ } = wp.i18n;
 const i18n = {};
 
 i18n.COMMON = {
+  GENERAL: __( 'General', 'ai-engine' ),
   MODULES: __( 'Modules', 'ai-engine' ),
   SETTINGS: __( 'Settings', 'ai-engine' ),
   CHATBOT: __( 'Chatbot', 'ai-engine' ),
@@ -88,7 +89,6 @@ i18n.COMMON = {
   DEBUG_MODE: __( 'Debug Mode', 'ai-engine' ),
   DEBUG_MODE_HELP: __( 'Debugging information will be displayed in the console.', 'ai-engine' ),
   API_KEY: __( 'API Key', 'ai-engine' ),
-  API_KEY_HELP: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   USAGE_COSTS_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>.', 'ai-engine' ),
   USAGE_COSTS_PRO_HELP: __( 'If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
   LANGUAGE: __( 'Language', 'ai-engine' ),
@@ -159,7 +159,6 @@ i18n.COMMON = {
   DELETE: __( 'Delete', 'ai-engine' ),
   DELETE_ALL: __( 'Delete All', 'ai-engine' ),
   DELETE_SELECTED: __( 'Delete Selected', 'ai-engine' ),
-  OPENAI_SERVICE: __( 'Service', 'ai-engine' ),
   OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
   OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENT_NAME: __( 'Deployment Name', 'ai-engine' ),
@@ -207,6 +206,11 @@ i18n.COMMON = {
   PUBLIC_API: __( 'Public API', 'ai-engine' ),
   USER_INTERFACE: __( 'User Interface', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Intro Message', 'ai-engine' ),
+  AI_ENVIRONMENT_DEFAULT: __( 'Default Environment for AI', 'ai-engine' ),
+  EMBEDDINGS_ENVIRONMENT_DEFAULT: __( 'Default Embeddings Environment', 'ai-engine' ),
+  ENVIRONMENT: __( 'Environment', 'ai-engine' ),
+  PLUGIN_DATA: __( 'Plugin Data', 'ai-engine' ),
+  PLUGIN_DATA_DESCRIPTION: __( "The database and all the options of the plugin will be removed on uninstall.", 'ai-engine' ),
 };
 
 i18n.FORMS = {
@@ -225,7 +229,6 @@ i18n.HELP = {
   DYNAMIC_MAX_TOKENS: __( 'Max Tokens will be dynamically decreased based on the length of the prompt.', 'ai-engine' ),
   FINETUNES: __( 'Train your own AI models.', 'ai-engine' ),
   DISCUSSIONS: __( 'Keep the conversations and enable browsing them via the Conversations tab.', 'ai-engine' ),
-  OPENAI_SERVICE: __( 'Open AI can be used through Open AI directly, but also through Azure.', 'ai-engine' ),
   AZURE_DEPLOYMENTS: __( 'Add your deployments below and define what kind of model they are.', 'ai-engine' ),
   BANNED_WORDS: __( 'Reject queries containing these words; separate with commas.', 'ai-engine' ),
   BANNED_IPS: __( 'Block access from specified IP addresses or ranges using CIDR notation; separate with commas.', 'ai-engine' ),
@@ -243,10 +246,12 @@ i18n.HELP = {
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
   PUBLIC_API: __( 'Enable the Public REST API. By default, it will be accessible to everyone.', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
+  OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
+  AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {
-  OPENAI_SETUP: __( 'To use the features of AI Engine, you need an OpenAI account and an API Key. Visit the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website to create an account, then insert your OpenAI API Key in the <b>Settings</b> tab.', 'ai-engine' ),
+  AI_ENV_SETUP: __( 'To leverage the functionalities of AI Engine, it needs to be connected directly to AI services. We recommend starting with OpenAI. Create an account and generate an API Key by visiting the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website. Once obtained, navigate to the <b>Settings</b> tab and input your OpenAI API Key in the "Environments for AI" section.', 'ai-engine' ),
   PINECONE_SETUP: __( 'You choose to use Embeddings. To use them, you need to a Pinecone account. Visit the <a href="https://app.pinecone.io" target="_blank">Pinecone</a> website to create an account, then insert your Pinecone API Key in the <b>Settings</b> tab.', 'ai-engine' ),
   INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit AI Engine\'s <a href="https://meowapps.com/ai-engine/" target="_blank">website</a> for more information. Also make sure you read the <a href="https://meowapps.com/ai-engine/disclaimer/" target="_blank">disclaimer</a>. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
@@ -289,7 +294,7 @@ i18n.CONTENT_GENERATOR = {
   WRITING_STYLE: __( 'Writing Style', 'ai-engine' ),
   WRITING_TONE: __( 'Writing Tone', 'ai-engine' ),
   CUSTOM_LANGUAGE_HELP: __( 'All the languages are <i>somehow</i> supported by AI. <a href="https://meowapps.com/ai-engine/faq/#languages" target="_blank">Learn more</a>.', 'ai-engine' ),
-  MODEL_HELP: __( 'The gpt-3.5-turbo and davinci models are currently the only acceptable ones for writing texts.', 'ai-engine' ),
+  MODEL_HELP: __( 'It is recommended to use Turbo or GPT-4 to write texts.', 'ai-engine' ),
   PROMPTS_INTRO: __( 'Prompts represent the exact request sent to the AI. The variables between curly braces will be replaced by the content of the corresponding field. Prompts are saved in your templates.', 'ai-engine' ),
   PROMPT_TITLE: __( 'Prompt for <b>Title</b>', 'ai-engine' ),
   PROMPT_SECTIONS: __( 'Prompt for <b>Sections</b>', 'ai-engine' ),
@@ -330,7 +335,7 @@ i18n.PLAYGROUND = {
 };
 
 i18n.ALERTS = {
-  FINETUNING_STARTED: __( 'Fine-tuning started! Check its progress in the <b>Models</b> section. Depending on your dataset size, it may take a while (from a few minutes to days).', 'ai-engine' ),
+  FINETUNING_STARTED: __( 'Fine-tuning started! Check its progress in the Models section. Depending on your dataset size, it may take a while (from a few minutes to days).', 'ai-engine' ),
   RESET_BUILDER: __( 'This will delete all the rows in the builder. Are you sure?', 'ai-engine' ),
   DELETE_FINETUNE: __( 'You are going to delete this fine-tune. Are you sure?\n\nPlease note that it will take a while before it is actually deleted. This might be a temporary issue of OpenAI.', 'ai-engine' ),
   FINETUNE_ALREADY_DELETED: __( 'This fine-tune was already deleted. It will be removed from the list.', 'ai-engine' ),

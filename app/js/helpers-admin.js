@@ -1,5 +1,5 @@
-// Previous: 1.9.88
-// Current: 1.9.89
+// Previous: 1.9.89
+// Current: 1.9.92
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -32,14 +32,15 @@ const DEFAULT_INDEX = {
 };
 
 const OptionsCheck = ({ options }) => {
-  const { openai_apikey } = options;
-  const openAiKey = openai_apikey && openai_apikey.length > 0;
+  const { ai_envs } = options;
+
+  const isAISetup = ai_envs.find(x => x.apikey && x.apikey.length > 0);
   const pineconeIsOK = !options?.module_embeddings || (options?.embeddings_envs && options?.embeddings_envs.length > 0);
 
   return (
     <>
-      {!openAiKey && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-        {toHTML(i18n.SETTINGS.OPENAI_SETUP)}
+      {!isAISetup && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
+        {toHTML(i18n.SETTINGS.AI_ENV_SETUP)}
       </NekoMessage>}
       {!pineconeIsOK && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
         {toHTML(i18n.SETTINGS.PINECONE_SETUP)}
@@ -98,14 +99,13 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-      return;
     }
-    const langAttr = document.querySelector('html')?.lang;
-    const detectedLanguage = (langAttr || navigator.language || navigator.userLanguage).substr(0, 2);
+
+    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
+    const detectedLanguage = htmlLang.substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
-    // Missing else: if no match, fallback to current, but no default set
   }, []);
 
   const currentHumanLanguage = useMemo(() => {
@@ -146,18 +146,60 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, isCustom, customLanguage, languages, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
 };
 
-const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
-  const [model, setModel] = useState(defaultModel);
-  let deletedFineTunes = options?.openai_finetunes_deleted || [];
-  if (Array.isArray(options?.openai_legacy_finetunes_deleted)) {
-    deletedFineTunes = [ ...deletedFineTunes, ...options.openai_legacy_finetunes_deleted ];
-  }
+const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
+  const [model, setModel] = useState(options?.ai_default_model);
+  const envId = overrideDefaultEnvId || options?.ai_default_env;
+
+  const allEnvironments = useMemo(() => {
+    if (allEnvs && options?.ai_envs) {
+      const fakeEnv = {
+        finetunes: [],
+        legacy_finetunes: [],
+        legacy_finetunes_deleted: [],
+        finetunes_deleted: [],
+        deployments: [],
+      };
+
+      options.ai_envs.forEach(env => {
+        if (env.finetunes) fakeEnv.finetunes.push(...env.finetunes);
+        if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...env.legacy_finetunes);
+        if (env.legacy_finetunes_deleted) fakeEnv.legacy_finetunes_deleted.push(...env.legacy_finetunes_deleted);
+        if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
+        if (env.deployments) fakeEnv.deployments.push(...env.deployments);
+      });
+
+      return fakeEnv;
+    }
+    return null;
+  }, [options.ai_envs, allEnvs]);
+
+  const env = useMemo(() => {
+    if (allEnvs) return allEnvironments;
+    if (!envId) {
+      console.warn("useModels: Environment ID is null. Please provide a valid envId.");
+      return null;
+    }
+    const selectedEnv = options?.ai_envs?.find(x => x.id === envId);
+    if (!selectedEnv) {
+      console.warn(`useModels: Environment with ID ${envId} could not be resolved.`, { envs: options.ai_envs, envId });
+      return null;
+    }
+    return selectedEnv;
+  }, [options.ai_envs, envId, allEnvs, allEnvironments]);
+
+  const deletedFineTunes = useMemo(() => {
+    let deleted = env?.finetunes_deleted || [];
+    if (Array.isArray(env?.legacy_finetunes_deleted)) {
+      deleted = [...deleted, ...env.legacy_finetunes_deleted];
+    }
+    return deleted;
+  }, [env]);
 
   const jsxModelName = (x, isTuned) => {
     const isDeprecated = x.tags?.includes('deprecated');
@@ -180,20 +222,31 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
   };
 
   const allModels = useMemo(() => {
-    let modelsList = options.openai_models;
+    let allModels = options.openai_models;
+
+    if (env?.type === 'azure') {
+      allModels = allModels.filter(x => env.deployments?.find(d => d.model === x.model));
+    }
+    else if (!env?.type === 'openai') {
+      console.warn("useModels: Environment Type is not supported.", { env });
+    }
+
     let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
-    let fineTunes = options?.openai_finetunes ?? [];
+    let fineTunes = env?.finetunes ?? [];
     
-    if (Array.isArray(options?.openai_legacy_finetunes)) {
-      fineTunes = [ ...fineTunes, ...options.openai_legacy_finetunes ];
+    if (Array.isArray(env?.legacy_finetunes)) {
+      fineTunes = [ ...fineTunes, ...env.legacy_finetunes ];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
-    modelsList = modelsList.map(x => {
+    allModels = allModels.map(x => {
       return { ...x, name: jsxModelName(x) };
     });
 
     if (fineTunes.length) {
-      modelsList = [ ...modelsList, ...fineTunes.map(x => {
+
+      // Add the finetuned models
+      allModels = [ ...allModels, ...fineTunes.map(x => {
+
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
@@ -221,10 +274,10 @@ const useModels = (options, defaultModel = "gpt-3.5-turbo") => {
     }
     extraModels = extraModels?.split(',').filter(x => x);
     if (extraModels.length) {
-      modelsList = [ ...modelsList, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return modelsList;
-  }, [options]);
+    return allModels;
+  }, [options, env]);
 
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
@@ -319,6 +372,11 @@ const retrieveVectors = async (queryParams) => {
   if (queryParams?.filters?.search === "") {
     return [];
   }
+
+  if (!queryParams.filters.envId || !queryParams.filters.dbIndex) {
+    return { total: 0, vectors: [] };
+  }
+
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
   if (isSearch && res?.vectors?.length) {

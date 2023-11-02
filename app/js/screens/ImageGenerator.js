@@ -1,10 +1,9 @@
-// Previous: 1.6.98
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 1.9.92
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoPage, NekoSelect, NekoOption, NekoModal, NekoButton, NekoCheckbox, NekoContainer, NekoSpacer,
   NekoTextArea, NekoWrapper, NekoColumn, NekoTypo, NekoInput, NekoMessage } from '@neko-ui';
@@ -54,7 +53,6 @@ const ImageGenerator = () => {
   const [continuousMode, setContinuousMode] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  // Results
   const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
@@ -65,17 +63,16 @@ const ImageGenerator = () => {
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
 
-  // Variables
   const prompt = template?.prompt;
   const maxResults = template?.maxResults;
 
   const setPrompt = (value) => {
     setTemplate({ ...template, prompt: value });
-  }
+  };
 
   const setMaxResults = (value) => {
     setTemplate({ ...template, maxResults: value });
-  }
+  };
 
   useEffect(() => {
     if (selectedUrl) {
@@ -86,19 +83,19 @@ const ImageGenerator = () => {
       setCaption(prompt);
       setAlt(prompt);
     }
-  }, [selectedUrl])
+  }, [selectedUrl]);
 
   const onGoBack = () => {
     if (urlIndex > 0) {
       setSelectedUrl(urls[urlIndex - 1]);
     }
-  }
+  };
 
   const onGoNext = () => {
     if (urlIndex < urls.length - 1) {
       setSelectedUrl(urls[urlIndex + 1]);
     }
-  }
+  };
 
   const onSubmit = async () => {
     setBusy(true);
@@ -111,10 +108,11 @@ const ImageGenerator = () => {
           session: session,
           prompt,
           maxResults,
-      }});
+        }});
       if (continuousMode) {
-        setUrls([...urls, ...res.data]);
-      } else {
+        setUrls(prevUrls => [...prevUrls, ...res.data]);
+      }
+      else {
         setUrls(res.data);
       }
     }
@@ -122,7 +120,9 @@ const ImageGenerator = () => {
       console.error(err);
       setError(err.message);
     }
-    // BUG: No setBusy(false) here, causing potential freeze state after submission
+    finally {
+      setBusy(false);
+    }
   };
 
   const onAdd = async () => {
@@ -134,7 +134,7 @@ const ImageGenerator = () => {
         json: { 
           url: selectedUrl, title, description,
           caption, alt, filename,
-      }});
+        }});
       setCreatedMediaIds(prev => [...prev, {
         id: res.attachmentId,
         url: selectedUrl
@@ -144,17 +144,18 @@ const ImageGenerator = () => {
       console.error(err);
       setError(err.message);
     }
-    // BUG: Missing finally to setBusy(false)
-  }
+    finally {
+      setBusy(false);
+    }
+  };
 
-  // Download the file (selected URL) with the given filename
   const onDownload = () => {
     const link = document.createElement('a');
     link.href = selectedUrl;
     link.target = '_blank';
     link.download = filename;
     link.click();
-  }
+  };
 
   const currentCreatedMediaId = useMemo(() => {
     const found = createdMediaIds.find(media => media.url === selectedUrl);
@@ -169,11 +170,11 @@ const ImageGenerator = () => {
       <NekoWrapper>
         
         <NekoColumn fullWidth>
-        <OptionsCheck options={options} />
+          <OptionsCheck options={options} />
 
-        <NekoTypo p style={{ marginTop: 0, marginBottom: 0 }}>
-          This will also be available in the Post Editor soon. If you have any idea or request, please join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/">Support Forum</a>! 🎵
-        </NekoTypo>
+          <NekoTypo p style={{ marginTop: 0, marginBottom: 0 }}>
+          This will also be available in the Post Editor soon. If you have any idea or request, please join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/" rel="noreferrer">Support Forum</a>! 🎵
+          </NekoTypo>
         </NekoColumn>
 
         <NekoColumn>
@@ -209,19 +210,19 @@ const ImageGenerator = () => {
                 <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                   <StyledInputWrapper>
                     <label>Title:</label>
-                    <NekoTextArea value={title} onChange={(e) => setTitle(e.target.value)} rows={2} onBlur={() => setTitle(title)} />
+                    <NekoTextArea value={title} onBlur={setTitle} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Caption:</label>
-                    <NekoTextArea value={caption} onChange={(e) => setCaption(e.target.value)} rows={2} onBlur={() => setCaption(caption)} />
+                    <NekoTextArea value={caption} onBlur={setCaption} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Description:</label>
-                    <NekoTextArea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} onBlur={() => setDescription(description)} />
+                    <NekoTextArea value={description} onBlur={setDescription} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Alternative Text:</label>
-                    <NekoTextArea value={alt} onChange={(e) => setAlt(e.target.value)} rows={2} onBlur={() => setAlt(alt)} />
+                    <NekoTextArea value={alt} onBlur={setAlt} rows={2} />
                   </StyledInputWrapper>
                   <StyledInputWrapper>
                     <label>Filename:</label>
@@ -236,7 +237,7 @@ const ImageGenerator = () => {
                   </NekoButton>
                   <NekoSpacer />
                   {currentCreatedMediaId && <NekoMessage variant="success">
-                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank">Edit Media #{currentCreatedMediaId}</a>.
+                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank" rel="noreferrer">Edit Media #{currentCreatedMediaId}</a>.
                   </NekoMessage>}
                 </div>
               </div>
@@ -253,9 +254,9 @@ const ImageGenerator = () => {
                   <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
                   <NekoSelect scrolldown id="maxResults" name="maxResults" disabled={busy} 
                     style={{ marginRight: 10 }}
-                    value={maxResults} description="" onChange={(value) => { setMaxResults(value); }}>
+                    value={maxResults} description="" onChange={(val) => setMaxResults(val)}>
                     {ImagesCount.map((count) => {
-                      return <NekoOption key={count} id={count} value={count} label={count} />
+                      return <NekoOption key={count} id={count} value={count} label={count} />;
                     })}
                   </NekoSelect>
                   <NekoButton disabled={!prompt} isBusy={busy} onClick={onSubmit}>
@@ -266,8 +267,8 @@ const ImageGenerator = () => {
               <NekoTextArea value={prompt} onChange={(e) => setPrompt(e.target.value)}
                 style={{ marginTop: 20 }} />
               <StyledGallery>
-                {urls.map((url) => <img src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map((x) => <div className="empty-image" key={x} />)}
+                {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div className="empty-image" />)}
               </StyledGallery>
             </NekoContainer>
           </>}
@@ -279,16 +280,16 @@ const ImageGenerator = () => {
             <h2 style={{ marginTop: 0 }}>Settings</h2>
             <NekoCheckbox id="continuous_mode" label="Continuous" value="1" checked={continuousMode}
               description="New images will be added to the already generated images."
-              onChange={(checked) => setContinuousMode(checked)} />
+              onChange={(val) => setContinuousMode(val)} />
           </NekoContainer>
         </NekoColumn>
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
-        onRequestClose={() => { setError() }}
+      <NekoModal isOpen={Boolean(error)}
+        onRequestClose={() => { setError(); }}
         okButton={{
-          onClick: () => { setError() },
+          onClick: () => { setError(); },
         }}
         title="Error"
         content={<p>{error}</p>}

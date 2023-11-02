@@ -1,5 +1,5 @@
-// Previous: 1.9.7
-// Current: 1.9.81
+// Previous: 1.9.81
+// Current: 1.9.92
 
 import { useModels } from "@app/helpers-admin";
 
@@ -34,7 +34,7 @@ const UsageDetails = ({ month, usageData }) => {
 };
 
 const MonthlyUsage = ({ options }) => {
-  const { models, getModelName, getModel, calculatePrice } = useModels(options);
+  const { models, getModelName, getModel, calculatePrice } = useModels(options, null, true);
   const openai_usage = options?.openai_usage;
 
   const jsxUsage = useMemo(() => {
@@ -69,7 +69,6 @@ const MonthlyUsage = ({ options }) => {
             usageData[month].data.push({ name: getModelName(model), isImage, isAudio, inUnits, outUnits, price });
           }
           else if (month === currentMonth) {
-            // Only show this error for the current month.
             console.warn(`Cannot find price for model ${model}.`);
           }
         });
@@ -93,7 +92,7 @@ const MonthlyUsage = ({ options }) => {
   }, [ openai_usage, models ]);
 
   return (<>
-    {!!openai_usage && Object.keys(openai_usage).length && jsxUsage}
+    {!!openai_usage && Object.keys(openai_usage).length > 0 && jsxUsage}
   </>);
 };
 

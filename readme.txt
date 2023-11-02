@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.91
+Stable tag: 1.9.92
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,16 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.92 (2023/11/02) =
+* 🎃 This is major update; check your Settings, Chatbots and Forms.
+* Add: Multi-environments for AIs are now supported.
+* Update: Discussions are now formatted in the admin too.
+* Update: Added new Pinecone environments.
+* Update: Enhanced the text cleaning functions to optimize the tokens count.
+* Fix: Various fixes and enhancements.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.91 (2023/10/24) =
 * Update: Auto Sync Posts now can be set to use a specific environment, index and namespace.
 * Fix: Remove many warnings in the JS console.
@@ -99,8 +109,6 @@ Languages: English.
 * Add: Support of multi-environments with embeddings (only Pinecone environments for now, but more will come soon).
 * Fix: Various issues when using embeddings without namespaces.
 * Fix: Various other little issues.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep me motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.87 (2023/10/04) =
 * Fix: The mwai_context_search was not being always called.

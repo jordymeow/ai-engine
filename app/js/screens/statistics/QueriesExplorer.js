@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 1.9.7
+// Previous: 1.9.7
+// Current: 1.9.92
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -39,20 +39,20 @@ const retrieveLogs = async (logsQueryParams) => {
   logsQueryParams.offset = (logsQueryParams.page - 1) * logsQueryParams.limit;
   const res = await nekoFetch(`${apiUrl}/system/logs/list`, { nonce: restNonce, method: 'POST', json: logsQueryParams });
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
-}
+};
 
 const deleteLogs = async (logIds = []) => {
   const res = await nekoFetch(`${apiUrl}/system/logs/delete`, { nonce: restNonce, method: 'POST', json: { logIds } });
   return res;
-}
+};
 
 const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
   const queryClient = useQueryClient();
   const [ busyAction, setBusyAction ] = useState(false);
-  const { getModelName } = useModels(options);
+  const { getModelName } = useModels(options, null, true);
   const [ filters, setFilters ] = useState(() => {
     return logsColumns.filter(v => v.filters).map(v => {
-      return { accessor: v.accessor, value: [] }
+      return { accessor: v.accessor, value: [] };
     });
   });
   const [ logsQueryParams, setLogsQueryParams ] = useState({
@@ -64,7 +64,7 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
   });
 
   useEffect(() => {
-    setLogsQueryParams({ ...logsQueryParams, filters: filters });
+    setLogsQueryParams(prev => ({ ...prev, filters: filters }));
   }, [filters]);
 
   const logsTotal = useMemo(() => {
@@ -73,9 +73,9 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
-      let time = tableDateTimeFormatter(x.time);
-      let user = tableUserIPFormatter(x.userId, x.ip);
+    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+      const time = tableDateTimeFormatter(x.time);
+      const user = tableUserIPFormatter(x.userId, x.ip);
 
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;
@@ -89,19 +89,21 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
         jsxSimplifiedPrice = <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>;
       }
 
+      const envName = options?.ai_envs?.find(v => v.id === x.apiSrv)?.name || x.apiSrv;
+
       return {
         id: x.id,
         env: <div>{x.env}<br /><small>{x.session}</small></div>,
         user: user,
         model: <div>
           <span title={x.model}>{getModelName(x.model)}</span><br />
-          <small>{x.apiSrv} (key: {x.apiOwn})</small>
+          <small>{envName}</small>
         </div>,
         units: <div style={{ textAlign: 'right' }}>{x.units}<br /><small>{x.type}</small></div>,
         price: <>{jsxSimplifiedPrice}<br /><small>${x.price}</small></>,
         time: time
-      }
-    })
+      };
+    });
   }, [logsData]);
 
   const onDeleteSelectedLogs = async () => {
@@ -113,12 +115,13 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
       }
       await deleteLogs();
       queryClient.invalidateQueries({ queryKey: ['logs'] });
+    } else {
+      await deleteLogs(selectedLogIds);
     }
-    await deleteLogs(selectedLogIds);
     setSelectedLogIds([]);
     queryClient.invalidateQueries({ queryKey: ['logs'] });
     setBusyAction(false);
-  }
+  };
 
   return (<>
     <NekoBlock className="primary" title={i18n.COMMON.QUERIES} action={<>
@@ -126,29 +129,22 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
         <NekoButton className="secondary" style={{ marginLeft: 5 }} disabled={isFetchingLogs}
           onClick={() => {
             queryClient.invalidateQueries({ queryKey: ['logs'] });
-        }}>{i18n.COMMON.REFRESH}</NekoButton>
+          }}>{i18n.COMMON.REFRESH}</NekoButton>
         {selectedLogIds.length > 0 && <>
           <NekoButton className="danger" disabled={false}
             onClick={onDeleteSelectedLogs}>
-            {selectedLogIds.length > 1 ? i18n.COMMON.DELETE_SELECTED : i18n.COMMON.DELETE}
-          </NekoButton>
-        </>}
-        {!selectedLogIds.length && <>
-          <NekoButton className="danger" disabled={false}
-            onClick={onDeleteSelectedLogs}>
-            {i18n.COMMON.DELETE_ALL}
+            {i18n.COMMON.DELETE}
           </NekoButton>
         </>}
       </div>
     </>}>
-
       <NekoTable busy={isFetchingLogs || busyAction}
-        onSelectRow={id => { setSelectedLogIds([id]) }}
-        onSelect={ids => { setSelectedLogIds(prev => [...prev, ...ids]) }}
-        onUnselect={ids => { setSelectedLogIds(prev => [...prev.filter(x => !ids.includes(x))]) }}
+        onSelectRow={id => { setSelectedLogIds([id]); }}
+        onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids ]); }}
+        onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-          setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
+          setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
         }}
         filters={filters}
         onFilterChange={(accessor, value) => {
@@ -162,21 +158,19 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: -5 }}>
-        <div>
-        </div>
-        <div>
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
-              total={logsTotal} onClick={page => { 
-                setLogsQueryParams({ ...logsQueryParams, page });
-              }}
-            />
-          </div>
-        </div>
+        <NekoButton className="danger" disabled={selectedLogIds.length === 0}
+          onClick={onDeleteSelectedLogs}>
+          {i18n.COMMON.DELETE_ALL}
+        </NekoButton>
+        <div style={{ flex: 'auto' }} />
+        <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
+          total={logsTotal} onClick={page => { 
+            setLogsQueryParams(prev => ({ ...prev, page }));
+          }}
+        />
       </div>
     </NekoBlock>
-
   </>);
-}
+};
 
 export default QueriesExplorer;

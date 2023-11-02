@@ -1,5 +1,5 @@
 // Previous: none
-// Current: 1.9.88
+// Current: 1.9.92
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoSpacer,
   NekoCollapsableCategories, NekoCollapsableCategory,
@@ -11,9 +11,9 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
 
   const addNewEnvironment = () => {
     const newEnv = {
-      id: Date.now().toString(),
+      id: Date.now(), 
       name: 'New Environment',
-      type: 'pinecone',
+      type: 'pinecone', 
       apikey: '',
       server: '',
       indexes: [],
@@ -34,16 +34,14 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
 
   return (
     <div style={{ padding: '0px 10px 20px 10px', marginTop: -5 }}>
-      <NekoTypo h2 style={{ color: 'white' }}>Embeddings Environments</NekoTypo>
+      <NekoTypo h2 style={{ color: 'white' }}>Environments for Embeddings</NekoTypo>
       <NekoTabs inversed keepTabOnReload={true} style={{ marginTop: -5 }} action={
-        <NekoButton className="primary-block" icon='plus' onClick={addNewEnvironment} />}>
+        <NekoButton rounded className="primary-block" icon='plus' onClick={addNewEnvironment} />}>
         {environments.map((env) => (
           <NekoTab key={env.id} title={env.name} busy={busy}>
             <NekoSettings title={i18n.COMMON.NAME}>
-              <NekoInput 
-                name="name"
-                value={env.name}
-                onBlur={value => updateEnvironment(env.id, { name: value })}
+              <NekoInput name="name" value={env.name}
+                onFinalChange={value => updateEnvironment(env.id, { name: value })}
               />
             </NekoSettings>
             
@@ -51,14 +49,13 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
               <NekoSelect scrolldown name="type" value={env.type}
                 onChange={value => updateEnvironment(env.id, { type: value })}>
                 <NekoOption value="pinecone" label="Pinecone" />
-                {/* <NekoOption value="qdrant" label="Qdrant" /> */}
               </NekoSelect>
             </NekoSettings>
             
             <NekoSettings title={i18n.COMMON.API_KEY}>
               <NekoInput  name="apikey" value={env.apikey}
                 description={toHTML(i18n.COMMON.EMBEDDINGS_APIKEY_HELP)} 
-                onBlur={value => updateEnvironment(env.id, { apikey: value })} 
+                onFinalChange={value => updateEnvironment(env.id, { apikey: value })} 
               />
             </NekoSettings>
             
@@ -82,15 +79,18 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
                 <NekoOption value="us-central1-gcp" label="us-central1-gcp" />
                 <NekoOption value="northamerica-northeast1-gcp" label="northamerica-northeast1-gcp" />
                 <NekoOption value="eu-west1-gcp" label="eu-west1-gcp" />
+                <NekoOption value="eu-west4-gcp" label="eu-west4-gcp" />
                 <NekoOption value="asia-northeast1-gcp" label="asia-northeast1-gcp" />
                 <NekoOption value="asia-southeast1-gcp-free" label="asia-southeast1-gcp-free" />
+                <NekoOption value="eastus-azure" label="eastus-azure" />
               </NekoSelect>
             </NekoSettings>
 
             <NekoSettings title={i18n.COMMON.NAMESPACES}>
               <NekoInput isCommaSeparatedArray name="namespaces" value={env.namespaces}
                 disabled={env.server === 'gcp-starter'}
-                description={toHTML(i18n.COMMON.NAMESPACES_HELP)} onBlur={value => {
+                description={toHTML(i18n.COMMON.NAMESPACES_HELP)}
+                onFinalChange={value => {
                   updateEnvironment(env.id, { namespaces: value });
                 }} />
             </NekoSettings>
@@ -102,7 +102,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
               <NekoSpacer />
             </>}
 
-            <NekoCollapsableCategories>
+            <NekoCollapsableCategories keepState="embeddingsEnvs">
 
               <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
                 <div style={{ display: 'flex', marginTop: 10 }}>

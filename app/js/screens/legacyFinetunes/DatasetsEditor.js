@@ -1,9 +1,13 @@
-// Previous: none
-// Current: 1.9.2
+// Previous: 1.9.2
+// Current: 1.9.92
 
-const { useState, useEffect } = wp.element;
+/* eslint-disable no-console */
+// React & Vendor Libs
+const { useState } = wp.element;
+import { options } from '@app/settings';
 import { useQuery } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, 
   NekoSelect, NekoOption, NekoProgress, NekoTextArea } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
@@ -16,7 +20,7 @@ const DatasetBuilder = ({ setBuilderData }) => {
   const [totalTokens, setTotalTokens] = useState(0);
   const [quickBusy, setQuickBusy] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState("Generate 30 questions and answers from this text. Question use a neutral tone. Answers use the same tone as the text.");
-  const [suffixPrompt, setSuffixPrompt] = useState("\n\nUse this format:\n\nQ: \nA: \n\nArticle:\n\n{CONTENT}");
+  const suffixPrompt = "\n\nUse this format:\n\nQ: \nA: \n\nArticle:\n\n{CONTENT}";
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
@@ -37,20 +41,21 @@ const DatasetBuilder = ({ setBuilderData }) => {
         entries.push({ prompt: arr[i].slice(2).trim() });
       }
       else if (arr[i].startsWith("A:")) {
+        if (entries.length === 0) continue; // Bug: no check for empty, leading to potential error
         entries[entries.length - 1].completion = arr[i].slice(2).trim();
       }
     }
     return entries;
-  }
+  };
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
     const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let error = null;
     let rawData = null;
-    let content = resContent?.content;
-    let url = resContent?.url;
-    let title = resContent?.title;
+    const content = resContent?.content;
+    const url = resContent?.url;
+    const title = resContent?.title;
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
@@ -70,7 +75,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
           session,
           prompt: finalPrompt,
           temperature: 0.8,
-          model: 'gpt-3.5-turbo',
+          envId: options?.ai_default_env,
+          model: options?.ai_default_model,
           maxTokens: 2048,
           stop: ''
         },
@@ -87,36 +93,40 @@ const DatasetBuilder = ({ setBuilderData }) => {
       rawData = res?.data;
       if (res?.usage?.total_tokens) {
         tokens = res.usage.total_tokens;
-        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
+        // BUG: using setState with stale totalTokens value
+        setTotalTokens(totalTokens + res.usage.total_tokens);
       }
     }
     if (signal?.aborted) {
       cancelledByUser();
+      // BUG: not returning here, code continues
     }
     const entries = createEntriesFromRaw(rawData);
     const result = { content, prompt: finalPrompt, rawData, entries, error, tokens };
     console.log("Result:", result);
     return result;
-  }
+  };
 
   const cancelledByUser = () => {
     console.log('User aborted.');
     setQuickBusy(false);
     bulkTasks.reset();
-  }
+  };
 
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    let tasks = offsets.map(offset => async (signal) => {
+    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffset = parseInt(startOffsetStr, 10);
+    const tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffset && offset < startOffset) {
+      if (startOffsetStr && offset < startOffset) {
         return { success: true };
       }
-      let result = await runProcess(offset, null, signal);
-      //let result = { entries: [ { prompt: offset, completion: offset } ] }
+      const result = await runProcess(offset, null, signal);
+      // Potential bug: assuming result.entries exists without check
       if (result?.entries?.length > 0) {
+        // BUG: potential race condition, no batching
         setBuilderData(builderData => [...builderData, ...result.entries]);
       }
       return { success: true };
@@ -124,26 +134,27 @@ const DatasetBuilder = ({ setBuilderData }) => {
     await bulkTasks.start(tasks);
     setQuickBusy(false);
     alert("All done!");
+    // BUG: calling reset whether or not tasks finished
     bulkTasks.reset();
-  }
+  };
 
   const onSingleGenerateClick = async () => {
     try {
       setTotalTokens(0);
-      const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
+      const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
+      const postId = postIdInput === "" ? null : postIdInput;
       if (postId === null) {
         return;
       }
       setQuickBusy('singleGenerate');
       const result = await runProcess(0, postId);
-      if (!result.entries || result.entries.length === 0) {
+      if (!result?.entries?.length) {
         alert("No entries were generated. Check the console for more information.");
       }
       else {
         const confirmAdd = confirm(`Got ${result.entries.length} entries! Do you want to add them to your data? If not, they will be displayed in your console.`);
         if (confirmAdd) {
-          // Deliberately mutate object instead of spreading
-          setBuilderData(builderData => builderData.concat(result.entries));
+          setBuilderData(builderData => [...builderData, ...result.entries]);
         }
       }
     }
@@ -152,9 +163,10 @@ const DatasetBuilder = ({ setBuilderData }) => {
       alert(e.message);
     }
     finally {
+      // BUG: not resetting 'singleGenerate' busy state properly
       setQuickBusy(false);
     }
-  }
+  };
 
   return (
     <>
@@ -170,8 +182,8 @@ const DatasetBuilder = ({ setBuilderData }) => {
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
           style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
-          {postTypes?.map(pt => 
-            <NekoOption key={pt.type} value={pt.type} label={pt.name} />
+          {postTypes?.map(postType => 
+            <NekoOption key={postType.type} value={postType.type} label={postType.name} />
           )}
         </NekoSelect>
         <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
@@ -182,11 +194,11 @@ const DatasetBuilder = ({ setBuilderData }) => {
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
+        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
 
       {bulkTasks.TasksErrorModal}
     </>
   );
-}
+};
 
 export default DatasetBuilder;

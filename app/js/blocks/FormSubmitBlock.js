@@ -1,5 +1,5 @@
-// Previous: 1.9.84
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 1.9.92
 
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
@@ -13,7 +13,7 @@ const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
-  const { attributes: { id, label, prompt, outputElement, envId, index, namespace,
+  const { attributes: { id, label, prompt, outputElement, aiEnvId, embeddingsEnvId, index, namespace,
     model, temperature, maxTokens } } = props;
   const encodedPrompt = encodeURIComponent(prompt);
   const blockProps = useBlockProps.save();
@@ -26,7 +26,8 @@ const saveFormField = (props) => {
     model: { value: model, insertIfNull: true },
     temperature: { value: temperature, insertIfNull: true },
     max_tokens: { value: maxTokens, insertIfNull: true },
-    embeddings_env: { value: envId, insertIfNull: false },
+    env_id: { value: aiEnvId, insertIfNull: false },
+    embeddings_env_id: { value: embeddingsEnvId, insertIfNull: false },
     embeddings_index: { value: index, insertIfNull: false },
     embeddings_namespace: { value: namespace, insertIfNull: false }
   };
@@ -40,20 +41,22 @@ const saveFormField = (props) => {
 };
 
 const FormSubmitBlock = (props) => {
-  const { models } = useModels(options);
-
   const blockProps = useBlockProps();
   const { attributes: {
-    id, label, prompt, model, temperature, maxTokens, envId, index, namespace,
+    id, label, prompt, model, temperature, maxTokens, aiEnvId, embeddingsEnvId, index, namespace,
     outputElement, placeholders = [] }, setAttributes } = props;
 
-  const environments = options.embeddings_envs || [];
-  const environment = useMemo(() => {
-    const freshEnvironment = environments.find(e => e.id === envId) || null;
+  const embeddingsEnvs = options.embeddings_envs || [];
+  const embeddingsEnv = useMemo(() => {
+    const freshEnvironment = embeddingsEnvs.find(e => e.id === embeddingsEnvId) || null;
     return freshEnvironment;
-  }, [environments, envId]);
-  const indexes = useMemo(() => environment?.indexes || [], [environment]);
-  const namespaces = useMemo(() => environment?.namespaces || [], [environment]);
+  }, [embeddingsEnvs, embeddingsEnvId]);
+  const indexes = useMemo(() => embeddingsEnv?.indexes || [], [embeddingsEnv]);
+  const namespaces = useMemo(() => embeddingsEnv?.namespaces || [], [embeddingsEnv]);
+
+  const aiEnvs = options.ai_envs || [];
+  const { models, getModel } = useModels(options, aiEnvId);
+  const currentModel = getModel(model);
 
   useEffect(() => {
     if (!id) {
@@ -66,7 +69,7 @@ const FormSubmitBlock = (props) => {
     const matches = prompt.match(/{([^}]+)}/g);
     if (matches) {
       const freshPlaceholders = matches.map(match => match.replace('{', '').replace('}', ''));
-      if (freshPlaceholders.join(',') !== placeholders.join(',')) {
+      if (freshPlaceholders.join(',') === placeholders.join(',')) {
         setAttributes({ placeholders: freshPlaceholders });
       }
     } else {
@@ -79,7 +82,7 @@ const FormSubmitBlock = (props) => {
   }, [placeholders]);
 
   const modelOptions = useMemo(() => {
-    const freshModels = models.map(model => ({ label: model.name, value: model.model }));
+    const freshModels = models.slice().map(model => ({ label: model.name, value: model.model }));
     freshModels.push({ label: 'dall-e', value: 'dall-e' });
     return freshModels;
   }, [models]);
@@ -90,14 +93,20 @@ const FormSubmitBlock = (props) => {
     return freshIndexes;
   }, [indexes]);
 
-  const environmentOptions = useMemo(() => {
-    const freshEnvironments = environments.map(env => ({ label: env.name, value: env.id }));
+  const aiEnvironmentOptions = useMemo(() => {
+    const freshEnvironments = aiEnvs.map(env => ({ label: env.name, value: env.id }));
     freshEnvironments.unshift({ label: 'None', value: '' });
     return freshEnvironments;
-  }, [environments]);
+  }, [aiEnvs]);
+
+  const embeddingsEnvironmentOptions = useMemo(() => {
+    const freshEnvironments = embeddingsEnvs.map(env => ({ label: env.name, value: env.id }));
+    freshEnvironments.unshift({ label: 'None', value: '' });
+    return freshEnvironments;
+  }, [embeddingsEnvs]);
 
   const namespaceOptions = useMemo(() => {
-    const freshNamespaces = namespaces.map(namespace => ({ label: namespace, value: namespace }));
+    const freshNamespaces = namespaces.map(ns => ({ label: ns, value: ns }));
     freshNamespaces.unshift({ label: 'None', value: '' });
     return freshNamespaces;
   }, [namespaces]);
@@ -108,7 +117,7 @@ const FormSubmitBlock = (props) => {
     }
     return (
       <span className="mwai-pill">
-        {fieldsCount} field{fieldsCount > 1 ? 's' : ''}
+        {fieldsCount} field{fieldsCount !== 1 ? 's' : ''}
       </span>
     );
   }, [fieldsCount]);
@@ -139,6 +148,10 @@ const FormSubmitBlock = (props) => {
             help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
+          {aiEnvs && aiEnvs.length > 0 &&
+            <SelectControl label={i18n.COMMON.ENVIRONMENT} value={aiEnvId} options={aiEnvironmentOptions}
+              onChange={(value) => setAttributes({ aiEnvId: value })} />
+          }
           {models && models.length > 0 &&
             <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
               onChange={(value) => setAttributes({ model: value })}
@@ -148,21 +161,24 @@ const FormSubmitBlock = (props) => {
             type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })}
+            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // Note: parseInt may cause issues if value is not integer
             type="number" step="16" min="32" max="4096"
             help={i18n.HELP.MAX_TOKENS} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
-          {environments && environments.length > 0 &&
-            <SelectControl label={i18n.COMMON.EMBEDDINGS_ENV} value={envId} options={environmentOptions}
-              onChange={(value) => setAttributes({ envId: value })} />
+          {embeddingsEnvs && embeddingsEnvs.length > 0 &&
+            <SelectControl label={i18n.COMMON.EMBEDDINGS_ENV} value={embeddingsEnvId} options={embeddingsEnvironmentOptions}
+              disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
+              onChange={(value) => setAttributes({ embeddingsEnvId: value })} />
           }
           {indexes && indexes.length > 0 &&
             <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
+              disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
               onChange={(value) => setAttributes({ index: value })} />
           }
           {namespaces && namespaces.length > 0 &&
             <SelectControl label={i18n.COMMON.NAMESPACE} value={namespace} options={namespaceOptions}
+              disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
               onChange={(value) => setAttributes({ namespace: value })} />
           }
         </PanelBody>
@@ -180,7 +196,7 @@ const createSubmitBlock = () => {
     description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
-    keywords: [ __('ai'), __('openai'), __('form') ],
+    keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
     supports: {
       dimensions: {
         minHeight: false
@@ -205,7 +221,7 @@ const createSubmitBlock = () => {
       },
       model: {
         type: 'string',
-        default: ''
+        default: options?.ai_default_model ?? ''
       },
       temperature: {
         type: 'number',
@@ -219,7 +235,11 @@ const createSubmitBlock = () => {
         type: 'array',
         default: []
       },
-      envId: {
+      aiEnvId: {
+        type: 'string',
+        default: options?.ai_default_env ?? ''
+      },
+      embeddingsEnvId: {
         type: 'string',
         default: ''
       },

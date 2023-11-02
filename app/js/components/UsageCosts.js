@@ -1,5 +1,5 @@
-// Previous: 1.8.2
-// Current: 1.9.81
+// Previous: 1.9.81
+// Current: 1.9.92
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -13,7 +13,7 @@ import { toHTML, useModels } from '@app/helpers-admin';
 import { StyledSidebar } from "@app/styles/StyledSidebar";
 
 const UsageCosts = (options) => {
-  const { calculatePrice } = useModels(options);
+  const { calculatePrice } = useModels(options, null, true);
   const [sessionCost, setSessionCost] = useState(0);
   const [lastCost, setLastCost] = useState(0);
 

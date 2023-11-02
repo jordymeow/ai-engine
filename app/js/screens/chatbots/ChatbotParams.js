@@ -1,5 +1,5 @@
-// Previous: 1.9.88
-// Current: 1.9.89
+// Previous: 1.9.89
+// Current: 1.9.92
 
 const { useMemo, useEffect } = wp.element;
 
@@ -20,23 +20,25 @@ const chatIcons = ['chat-openai.svg', 'chat-robot-1.svg', 'chat-robot-2.svg', 'c
 const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options } = props;
-  const { completionModels, isFineTunedModel, getModel } = useModels(options);
+  const { completionModels, isFineTunedModel, getModel } = useModels(options, shortcodeParams.envId || null);
   const shortcodeChatInject = options?.shortcode_chat_inject;
   const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
   const isImagesChat = shortcodeParams.mode === 'images' ?? false;
   const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(shortcodeParams.model);
   const isContentAware = shortcodeParams.contentAware;
-  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
+  const contextHasContent = shortcodeParams.context && shortcodeParams.context.includes('{CONTENT}');
   const chatIcon = shortcodeParams.icon ? shortcodeParams.icon : 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
+  const aiEnvironments = options?.ai_envs || [];
 
   const environments = options.embeddings_envs || [];
   const environment = useMemo(() => {
     const env = environments.find(e => e.id === shortcodeParams.embeddingsEnvId);
     return env || null;
   }, [environments, shortcodeParams.embeddingsEnvId]);
+
   const indexes = useMemo(() => environment?.indexes || [], [environment]);
   const namespaces = useMemo(() => environment?.namespaces || [], [environment]);
 
@@ -47,16 +49,16 @@ const ChatbotParams = (props) => {
     if (!environment && shortcodeParams.embeddingsNamespace) {
       updateShortcodeParams(null, 'embeddingsNamespace');
     }
-  }, [shortcodeParams.embeddingsIndex, environment]);
+  }, [shortcodeParams.embeddingsIndex, shortcodeParams.embeddingsNamespace, environment, updateShortcodeParams]);
 
   useEffect(() => {
     if (environment?.server === 'gcp-starter' && shortcodeParams.embeddingsNamespace) {
       updateShortcodeParams(null, 'embeddingsNamespace');
     }
-  }, [environment]);
+  }, [environment, shortcodeParams.embeddingsNamespace, updateShortcodeParams]);
 
   const builtShortcode = useMemo(() => {
-    const params = [];
+    const paramsArr = [];
     for (const key in shortcodeParams) {
       if (shortcodeParams[key] === undefined || shortcodeParams[key] === null ||
         key === 'botId' || key === 'name' || key === 'maxSentences' ||
@@ -64,24 +66,27 @@ const ChatbotParams = (props) => {
         continue;
       }
       let value = shortcodeParams[key];
-      if (value && typeof value === 'string' && value.includes('"')) {
-        value = value.replace(/"/g, '\'');
-      }
-      if (value && typeof value === 'string' && value.includes('\n')) {
-        value = value.replace(/\n/g, '\\n');
-      }
-      if (value && typeof value === 'string' && value.includes('[')) {
-        value = value.replace(/\[/g, '&#91;');
-      }
-      if (value && typeof value === 'string' && value.includes(']')) {
-        value = value.replace(/\]/g, '&#93;');
+      if (value && typeof value === 'string') {
+        if (value.includes('"')) {
+          value = value.replace(/"/g, '\'');
+        }
+        if (value.includes('\n')) {
+          value = value.replace(/\n/g, '\\n');
+        }
+        if (value.includes('[')) {
+          value = value.replace(/\[/g, '&#91;');
+        }
+        if (value.includes(']')) {
+          value = value.replace(/\]/g, '&#93;');
+        }
       }
       const newKey = key.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`);
-      params.push(`${newKey}="${value}"`);
+
+      paramsArr.push(`${newKey}="${value}"`);
     }
-    const joinedParams = params.join(' ');
+    const joinedParams = paramsArr.join(' ');
     return '[mwai_chatbot_v2' + (joinedParams ? ` ${joinedParams}` : '') + ']';
-  }, [shortcodeParams]);
+  }, [shortcodeParams, defaultChatbot]);
 
   return (<>
     <NekoWrapper>
@@ -130,7 +135,6 @@ const ChatbotParams = (props) => {
                   />
                 </div>
               </div>
-
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col"
                   style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
@@ -159,9 +163,7 @@ const ChatbotParams = (props) => {
                   />
                 </div>}
               </div>
-
             </NekoCollapsableCategory>
-
             <NekoCollapsableCategory title={i18n.COMMON.VISUAL_SETTINGS}>
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -275,7 +277,6 @@ const ChatbotParams = (props) => {
               </>}
 
             </NekoCollapsableCategory>
-
             <NekoCollapsableCategory title={i18n.COMMON.POPUP_SETTINGS} hide={!shortcodeParams.window}>
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 2 }}>
@@ -301,7 +302,15 @@ const ChatbotParams = (props) => {
             </NekoCollapsableCategory>
             <NekoCollapsableCategory title={i18n.COMMON.AI_SETTINGS}>
               {isChat && <div className="mwai-builder-row">
-                <div className="mwai-builder-col" style={{ flex: 3 }}>
+                <div className="mwai-builder-col" style={{ flex: 2 }}>
+                  <label>{i18n.COMMON.ENVIRONMENT}:</label>
+                  <NekoSelect scrolldown name="envId"
+                    value={shortcodeParams.envId ?? ""} onChange={updateShortcodeParams}>
+                    {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
+                    <NekoOption value={""} label={"None"}></NekoOption>
+                  </NekoSelect>
+                </div>
+                <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.MODEL}:</label>
                   <NekoSelect scrolldown name="model"
                     value={shortcodeParams.model} onChange={updateShortcodeParams}>
@@ -310,13 +319,8 @@ const ChatbotParams = (props) => {
                     ))}
                   </NekoSelect>
                 </div>
-                <div className="mwai-builder-col" style={{ flex: 2 }}>
-                  <label>{i18n.COMMON.CASUALLY_FINE_TUNED}:</label>
-                  <NekoCheckbox name="casuallyFineTuned" label="Yes (Legacy)"
-                    disabled={!isFineTuned && !shortcodeParams.casuallyFineTuned}
-                    checked={shortcodeParams.casuallyFineTuned} value="1" onChange={updateShortcodeParams}
-                  />
-                </div>
+              </div>}
+              {isChat && <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.TEMPERATURE}:</label>
                   <NekoInput name="temperature" type="number"
@@ -326,8 +330,6 @@ const ChatbotParams = (props) => {
                     onEnter={updateShortcodeParams}
                   />
                 </div>
-              </div>}
-              {isChat && <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.MAX_TOKENS}:</label>
                   <NekoInput name="maxTokens" type="number" min="10" max="2048"
@@ -362,6 +364,13 @@ const ChatbotParams = (props) => {
                     requirePro={true} isPro={isRegistered}
                     checked={shortcodeParams.contentAware} value="1" onChange={updateShortcodeParams} />
                 </div>
+                <div className="mwai-builder-col">
+                  <label>{i18n.COMMON.CASUALLY_FINE_TUNED}:</label>
+                  <NekoCheckbox name="casuallyFineTuned" label="Yes (Legacy)"
+                    disabled={!isFineTuned && !shortcodeParams.casuallyFineTuned}
+                    checked={shortcodeParams.casuallyFineTuned} value="1" onChange={updateShortcodeParams}
+                  />
+                </div>
               </div>}
               {shortcodeChatInject && !shortcodeParams.window &&
                 <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
@@ -383,7 +392,7 @@ const ChatbotParams = (props) => {
               {isChat && <div className="mwai-builder-row">
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.EMBEDDINGS_ENV}:</label>
-                  <NekoSelect fullWidth scrolldown name="embeddingsEnvId"
+                  <NekoSelect scrolldown name="embeddingsEnvId"
                     requirePro={true} isPro={isRegistered}
                     disabled={!environments?.length || currentModel?.mode !== 'chat'}
                     value={shortcodeParams.embeddingsEnvId} onChange={updateShortcodeParams}>

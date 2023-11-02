@@ -16,6 +16,7 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
 			$this->apiKey = $promptOrQuery->apiKey;
 			$this->service = $promptOrQuery->service;
 			$this->botId = $promptOrQuery->botId;
+			$this->envId = $promptOrQuery->envId;
 		}
 		else {
 			parent::__construct( $promptOrQuery ? $promptOrQuery : '' );

@@ -1,5 +1,5 @@
-// Previous: 1.9.4
-// Current: 1.9.82
+// Previous: 1.9.82
+// Current: 1.9.92
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -26,14 +26,16 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const matches = (content.match(/```/g) || []).length;
   if (matches % 2 !== 0) {
     content += "\n```";
-  } else if (message.isStreaming) {
+  }
+  else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
   useEffect(() => { 
     if (!isLongProcess) {
       onRendered();
-    } else if (isLongProcess && !isQuerying && !isStreaming) {
+    }
+    else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -64,13 +66,13 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
         <span>
-          {isUser && content.split('\n').map((line, index, array) => (
-            <React.Fragment key={index}>
+          {content.split('\n').map((line, index, array) => 
+            <>
               {line}
               {index === array.length - 1 ? null : <br />}
-            </React.Fragment>
-          ))}
-          {!isUser && <Markdown children={content} options={markdownOptions} />}
+            </>
+          )}
+          {!isUser && <Markdown options={markdownOptions}>{content}</Markdown>}
         </span>
       </span>
       {copyButton && <CopyButton content={message.content} modCss={modCss} />}
@@ -87,7 +89,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, []);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
@@ -176,20 +178,16 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   return (
     <>
       {message.isQuerying && <BouncingDots />}
-      {!message.isQuerying && dynamic && (
-        <>
-          <span className={modCss("mwai-name")}>{name}</span>
-          <span className={modCss("mwai-text")} ref={typedElement} />
-        </>
-      )}
-      {!message.isQuerying && !dynamic && (
-        <>
-          <span className={modCss("mwai-name")}>{name}</span>
-          <span className={modCss("mwai-text")}>
-            <Markdown>{content}</Markdown>
-          </span>
-        </>
-      )}
+      {!message.isQuerying && dynamic && <>
+        <span className={modCss("mwai-name")}>{name}</span>
+        <span className={modCss("mwai-text")} ref={typedElement} />
+      </>}
+      {!message.isQuerying && !dynamic && <>
+        <span className={modCss("mwai-name")}>{name}</span>
+        <span className={modCss("mwai-text")}>
+          <Markdown>{content}</Markdown>
+        </span>
+      </>}
       {ready && copyButton && <CopyButton content={content} modCss={modCss} />}
     </>
   );
@@ -225,7 +223,8 @@ const ChatbotReply = ({ message, conversationRef }) => {
             const classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            } else {
+            }
+            else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
@@ -236,46 +235,39 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   const output = useMemo(() => {
     if (message.role === 'user') {
-      return (
-        <div ref={mainElement} className={classes}>
-          <RawMessage message={message} />
-        </div>
-      );
+      return <div ref={mainElement} className={classes}>
+        <RawMessage message={message} />
+      </div>;
     }
-
+  
     if (message.role === 'assistant') {
+  
       if (isImages) {
-        return (
-          <div ref={mainElement} className={classes}>
-            <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-          </div>
-        );
-      } else if (typewriter && !message.isStreaming) {
-        return (
-          <div ref={mainElement} className={classes}>
-            <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-          </div>
-        );
+        return <div ref={mainElement} className={classes}>
+          <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+        </div>;
       }
-      return (
-        <div ref={mainElement} className={classes}>
-          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-        </div>
-      );
+      else if (typewriter && !message.isStreaming) {
+        return <div ref={mainElement} className={classes}>
+          <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+        </div>;
+      }
+      return <div ref={mainElement} className={classes}>
+        <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+      </div>;
     }
-
+  
     if (message.role === 'system') {
-      return (
-        <div ref={mainElement} className={classes}>
-          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-        </div>
-      );
+      return <div ref={mainElement} className={classes}>
+        <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+      </div>;
     }
-
+  
     return (
       <div><i>Unhandled role.</i></div>
     );
   }, [ message, conversationRef, isImages, typewriter ]);
 
   return output;
+  
 };

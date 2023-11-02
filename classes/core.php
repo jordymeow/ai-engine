@@ -106,6 +106,8 @@ class Meow_MWAI_Core
 		$text = html_entity_decode( $rawText );
 		$text = wp_strip_all_tags( $text );
 		$text = preg_replace( '/[\r\n]+/', "\n", $text );
+		$text = preg_replace( '/\n+/', "\n", $text );
+		$text = preg_replace( '/\t+/', "\t", $text );
 		return $text . " ";
   }
 
@@ -577,9 +579,9 @@ class Meow_MWAI_Core
 	function get_all_options( $force = false ) {
 		// We could cache options this way, but if we do, the apply_filters seems to be called too early.
 		// That causes issues with the mwai_languages filter.
-		// if ( !$force && !is_null( $this->options ) ) {
-		// 	return $this->options;
-		// }
+		if ( !$force && !is_null( $this->options ) ) {
+			return $this->options;
+		}
 		$options = get_option( $this->option_name, [] );
 		$options = $this->sanitize_options( $options );
 		foreach ( MWAI_OPTIONS as $key => $value ) {
@@ -629,7 +631,7 @@ class Meow_MWAI_Core
 				'namespaces' => isset( $pinecone['namespaces'] ) ? $pinecone['namespaces'] : [],
 				'index' => isset( $pinecone['index'] ) ? $pinecone['index'] : null,
 			];
-			$options['embeddings_envs_default'] = $default_id;
+			$options['embeddings_default_env'] = $default_id;
 			$needs_update = true;
 		}
 		if ( isset( $options['pinecone'] ) ) {
@@ -638,28 +640,105 @@ class Meow_MWAI_Core
 		}
 
 		// Support for Multi AI Environments
+		// After June 2024, let's remove this.
 		if ( !isset( $options['ai_envs'] ) ) {
-			//$options['ai_envs_default'] = 
-			// $needs_update = true;
+			$options['ai_envs'] = [];
+			$default_openai_id = $this->generateRandomId();
+			$default_azure_id = $this->generateRandomId();
+			$openai_service = isset( $options['openai_service'] ) ? $options['openai_service'] : 'openai';
+			$openai_apikey = isset( $options['openai_apikey'] ) ? $options['openai_apikey'] : '';
+			$azure_endpoint = isset( $options['openai_azure_endpoint'] ) ? $options['openai_azure_endpoint'] : '';
+
+			// OpenAI
+			// We create a default OpenAI environment if the API Key is set, or if the Azure Endpoint is not set.
+			if ( !empty( $openai_apikey ) || empty( $azure_endpoint )  ) {
+				$openai_finetunes = isset( $options['openai_finetunes'] ) ? $options['openai_finetunes'] : [];
+				$openai_finetunes_deleted = isset( $options['openai_finetunes_deleted'] ) ?
+					$options['openai_finetunes_deleted'] : [];
+				$openai_legacy_finetunes = isset( $options['openai_legacy_finetunes'] ) ?
+					$options['openai_legacy_finetunes'] : [];
+				$openai_legacy_finetunes_deleted = isset( $options['openai_legacy_finetunes_deleted'] ) ?
+					$options['openai_legacy_finetunes_deleted'] : [];
+				$options['ai_envs'][] = [
+					'id' => $default_openai_id,
+					'name' => 'OpenAI',
+					'type' => 'openai',
+					'apikey' => $openai_apikey,
+					'finetunes' => $openai_finetunes,
+					'finetunes_deleted' => $openai_finetunes_deleted,
+					'legacy_finetunes' => $openai_legacy_finetunes,
+					'legacy_finetunes_deleted' => $openai_legacy_finetunes_deleted
+				];
+			}
+
+			// Azure
+			if ( !empty( $azure_endpoint ) ) {
+				$azure_apikey = isset( $options['openai_azure_apikey'] ) ? $options['openai_azure_apikey'] : '';
+				$azure_deployments = isset( $options['openai_azure_deployments'] ) ? $options['openai_azure_deployments'] : [];
+				$options['ai_envs'][] = [
+					'id' => $default_azure_id,
+					'name' => 'Azure',
+					'type' => 'azure',
+					'apikey' => $azure_apikey,
+					'endpoint' => $azure_endpoint,
+					'deployments' => $azure_deployments,
+				];
+			}
+
+			$options['ai_default_env'] = $default_openai_id;
+			if ( $openai_service === 'azure' ) {
+				$options['ai_default_env'] = $default_azure_id;
+			}
+			$needs_update = true;
 		}
 
-		// The IDs for the environments are generated here.
-		// Let's also check if the embeddings_envs_default corresponds to an existing ID.
+		if ( !empty( $options['openai_apikey'] ) || !empty( $options['openai_azure_apikey'] ) ) {
+			unset( $options['openai_apikey'] );
+			unset( $options['openai_finetunes'] );
+			unset( $options['openai_finetunes_deleted'] );
+			unset( $options['openai_legacy_finetunes'] );
+			unset( $options['openai_legacy_finetunes_deleted'] );
+			unset( $options['openai_azure_apikey'] );
+			unset( $options['openai_azure_endpoint'] );
+			unset( $options['openai_azure_deployments'] );
+			unset( $options['openai_service'] );
+			$needs_update = true;
+		}
+
+		// The IDs for the embeddings environments are generated here.
 		// TODO: We should handle this more gracefully via an option in the Embeddings Settings.
-		$default_exists = false;
+		$embeddings_default_exists = false;
 		if ( isset( $options['embeddings_envs'] ) ) {
 			foreach ( $options['embeddings_envs'] as &$env ) {
 				if ( !isset( $env['id'] ) ) {
 					$env['id'] = $this->generateRandomId();
 					$needs_update = true;
 				}
-				if ( $env['id'] === $options['embeddings_envs_default'] ) {
-					$default_exists = true;
+				if ( $env['id'] === $options['embeddings_default_env'] ) {
+					$embeddings_default_exists = true;
 				}
 			}
 		}
-		if ( !$default_exists ) {
-			$options['embeddings_envs_default'] = $options['embeddings_envs'][0]['id'] ?? null;
+		if ( !$embeddings_default_exists ) {
+			$options['embeddings_default_env'] = $options['embeddings_envs'][0]['id'] ?? null;
+			$needs_update = true;
+		}
+
+		// The IDs for the AI environments are generated here.
+		$ai_default_exists = false;
+		if ( isset( $options['ai_envs'] ) ) {
+			foreach ( $options['ai_envs'] as &$env ) {
+				if ( !isset( $env['id'] ) ) {
+					$env['id'] = $this->generateRandomId();
+					$needs_update = true;
+				}
+				if ( $env['id'] === $options['ai_default_env'] ) {
+					$ai_default_exists = true;
+				}
+			}
+		}
+		if ( !$ai_default_exists ) {
+			$options['ai_default_env'] = $options['ai_envs'][0]['id'] ?? null;
 			$needs_update = true;
 		}
 
@@ -687,6 +766,17 @@ class Meow_MWAI_Core
 	function get_option( $option, $default = null ) {
 		$options = $this->get_all_options();
 		return $options[$option] ?? $default;
+	}
+
+	function update_ai_env( $env_id, $option, $value ) {
+		$options = $this->get_all_options( true );
+		foreach ( $options['ai_envs'] as &$env ) {
+			if ( $env['id'] === $env_id ) {
+				$env[$option] = $value;
+				break;
+			}
+		}
+		return $this->update_options( $options );
 	}
 
 	function reset_options() {

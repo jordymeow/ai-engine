@@ -1,26 +1,22 @@
 <?php
 
 class Meow_MWAI_Query_Base implements JsonSerializable {
-  public string $env = '';
+  public string $env = ''; // Ouch, not sure if it's used, but afraid that it will be confused with the AI env.
   public string $prompt = '';
   public string $model = '';
   public string $mode = '';
   public ?string $session = null;
   public int $maxResults = 1;
-  public ?string $service = null;
   public ?string $botId = null;
 
   // Functions
   public array $functions = [];
   public ?string $functionCall = null;
 
-  // OpenAI
+  // Overrides for env
+  public string $envId = '';
   public ?string $apiKey = null;
-
-  // Azure
-  public ?string $azureEndpoint = null;
-  public ?string $azureApiKey = null;
-  public ?string $azureDeployment = null;
+  public ?string $service = null; // TODO: This should be removed at some point. Should use envId instead.
 
   public function __construct( $prompt = '' ) {
     global $mwai_core;
@@ -33,6 +29,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     return [
       'class' => get_class( $this ),
       'env' => $this->env,
+      'envId' => $this->envId,
       'prompt' => $this->prompt,
       'model' => $this->model,
       'mode' => $this->mode,
@@ -70,6 +67,15 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    */
   public function setEnv( string $env ): void {
     $this->env = $env;
+  }
+
+  /**
+   * The environment ID for AI services.
+   * Used for statistics, mainly.
+   * @param string $envId The environment ID.
+   */
+  public function setEnvId( string $envId ): void {
+    $this->envId = $envId;
   }
 
   /**
@@ -129,30 +135,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    */
   public function setService( string $service ) {
     $this->service = $service;
-  }
-
-  /**
-   * The Azure endpoint to use.
-   * @param string $endpoint The endpoint.
-   */
-  public function setAzureEndpoint( string $endpoint ) {
-    $this->azureEndpoint = $endpoint;
-  }
-
-  /**
-   * The Azure API key to use.
-   * @param string $apiKey The API key.
-   */
-  public function setAzureApiKey( string $apiKey ) {
-    $this->azureApiKey = $apiKey;
-  }
-
-  /**
-   * The Azure deployment to use.
-   * @param string $deployment The deployment.
-   */
-  public function setAzureDeployment( string $deployment ) {
-    $this->azureDeployment = $deployment;
   }
 
   /**

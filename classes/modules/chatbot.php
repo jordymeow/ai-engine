@@ -7,7 +7,7 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', '
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'env', 'mode', 'contentAware', 'context',
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'mode', 'contentAware', 'context',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace',
 	'casuallyFineTuned', 'promptEnding', 'completionEnding', 'model', 'temperature', 'maxTokens',
 	'maxResults', 'apiKey', 'service'

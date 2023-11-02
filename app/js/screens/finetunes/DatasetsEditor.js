@@ -1,13 +1,11 @@
-// Previous: 1.9.4
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 1.9.92
 
 /* eslint-disable no-undef */
 /* eslint-disable no-console */
-// React & Vendor Libs
-const { useState, useEffect } = wp.element;
+const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
 
-// NekoUI
 import { NekoButton, 
   NekoSelect, NekoOption, NekoProgress, NekoTextArea } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
@@ -16,18 +14,18 @@ import i18n from '@root/i18n';
 import { retrievePostTypes, retrievePostsCount, retrievePostContent } from '@app/requests';
 
 const DatasetEditor = ({ options, setMessages }) => {
-  const [postType, setPostType] = useState('post');
-  const [totalTokens, setTotalTokens] = useState(0);
-  const [quickBusy, setQuickBusy] = useState(false);
-  const [generatePrompt, setGeneratePrompt] = useState("Generate 30 questions and answers from this text. Questions use a neutral tone. Answers use the same tone as the text.");
-  const [suffixPrompt, setSuffixPrompt] = useState("\n\nUse this format:\n\nQ: Question?\nA: Answer.\n\nQ: Question?\nA: Answer.\n\Text:\n\n{CONTENT}");
+  const [ postType, setPostType ] = useState('post');
+  const [ totalTokens, setTotalTokens ] = useState(0);
+  const [ quickBusy, setQuickBusy ] = useState(false);
+  const [ generatePrompt, setGeneratePrompt ] = useState("Generate 30 questions and answers from this text. Questions use a neutral tone. Answers use the same tone as the text.");
+  const suffixPrompt = "\n\nUse this format:\n\nQ: Question?\nA: Answer.\n\nQ: Question?\nA: Answer.\nText:\n\n{CONTENT}";
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
 
   const createEntriesFromRaw = (rawData) => {
@@ -63,7 +61,7 @@ const DatasetEditor = ({ options, setMessages }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId);
+    const resContent = await retrievePostContent(postType, offset, postId || undefined);
     let error = null;
     let rawData = null;
     const content = resContent?.content;
@@ -74,13 +72,13 @@ const DatasetEditor = ({ options, setMessages }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content.length < 64) {
+    else if (content && content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
-      finalPrompt = finalPrompt.replace('{CONTENT}', content);
-      finalPrompt = finalPrompt.replace('{URL}', url);
-      finalPrompt = finalPrompt.replace('{TITLE}', title);
+      finalPrompt = finalPrompt.replace('{CONTENT}', content || '');
+      finalPrompt = finalPrompt.replace('{URL}', url || '');
+      finalPrompt = finalPrompt.replace('{TITLE}', title || '');
       const res = await nekoFetch(`${apiUrl}/ai/completions`, {
         method: 'POST',
         json: {
@@ -88,7 +86,7 @@ const DatasetEditor = ({ options, setMessages }) => {
           session,
           prompt: finalPrompt,
           temperature: 0.8,
-          model: options.assistants_model,
+          model: options.ai_default_model,
           maxTokens: 2048,
           stop: ''
         },
@@ -103,9 +101,9 @@ const DatasetEditor = ({ options, setMessages }) => {
         throw new Error(res.message ?? "Unknown error, check your console logs.");
       }
       rawData = res?.data;
-      if (res?.usage?.total_tokens) {
+      if (res?.usage?.total_tokens !== undefined) {
         tokens = res.usage.total_tokens;
-        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
+        setTotalTokens(t => t + res.usage.total_tokens);
       }
     }
     if (signal?.aborted) {
@@ -119,17 +117,18 @@ const DatasetEditor = ({ options, setMessages }) => {
 
   const cancelledByUser = () => {
     console.log('User aborted.');
-    setBusy(false);
+    setQuickBusy(false);
     bulkTasks.reset();
   };
 
   const onRunClick = async () => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
-    const startOffset = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
+    const startOffset = parseInt(startOffsetStr, 10);
     const tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffset && offset < startOffset) {
+      if (startOffsetStr && !isNaN(startOffset) && offset < startOffset) {
         return { success: true };
       }
       const result = await runProcess(offset, null, signal);
@@ -151,8 +150,9 @@ const DatasetEditor = ({ options, setMessages }) => {
       if (postIdInput === null) {
         return;
       }
+      const postId = postIdInput.trim();
       setQuickBusy('singleGenerate');
-      const result = await runProcess(0, postIdInput);
+      const result = await runProcess(0, postId);
       if (!result.entries || result.entries.length === 0) {
         alert("No entries were generated. Check the console for more information.");
       }
@@ -185,20 +185,20 @@ const DatasetEditor = ({ options, setMessages }) => {
           Based on {isLoadingCount && '...'}{!isLoadingCount && postsCount}
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
-          style={{ width: 100, marginLeft: 10 }} onChange={setPostType} value={postType}>
-          {postTypes?.map(postType => 
-            <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+          style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
+          {postTypes?.map(pt => 
+            <NekoOption key={pt.type} value={pt.type} label={pt.name} />
           )}
         </NekoSelect>
         <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
-          value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
+          value={bulkTasks.value} max={bulkTasks.max} onStopClick={() => bulkTasks.stop()} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
           Tokens: {totalTokens}
         </div>
       </div>
 
       <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 15 }}
-        value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
+        value={generatePrompt} onBlur={(e) => setGeneratePrompt(e.target.value)} disabled={isBusy} />
 
       {bulkTasks.TasksErrorModal}
     </>

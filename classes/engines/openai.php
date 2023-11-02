@@ -3,38 +3,96 @@
 class Meow_MWAI_Engines_OpenAI
 {
   private $core = null;
-  private $localApiKey = null;
   private $localService = null;
+  private $defaultEnvId = null;
+  private $defaultEnv = null;
+  private $defaultApiKey = null;
 
   // OpenAI Server
-  private $openaiEndpoint = 'https://api.openai.com/v1';
+  private $defaultOpenAiEnvId = null;
+  private $defaultOpenAiEndpoint = 'https://api.openai.com/v1';
 
   // Azure Server
-  private $localAzureEndpoint = null;
-  private $localAzureApiKey = null;
-  private $localAzureDeployments = null;
+  private $defaultAzureEnvId = null;
+  private $defaultAzureEndpoint = null;
+  private $defaultAzureDeployments = null;
+  private $defaultAzureDeployment = null;
   private $azureApiVersion = 'api-version=2023-07-01-preview';
 
   // Streaming
   private $streamTemporaryBuffer = "";
   private $streamContent = "";
   private $streamFunctionCall = null;
-  private $streamParameter = "";
   private $streamCallback = null;
   private $streamedTokens = 0;
 
-  public function __construct( $core )
+  // TODO: We should streamline the way we handle this envId.
+  // Would be better to have it set only once, in the constructor here.
+  // We should avoid having the setEnvironment being called from other functions.
+  public function __construct( $core, $envId = null )
   {
     $this->core = $core;
-    $this->localService = $this->core->get_option( 'openai_service' );
-    $this->localApiKey = $this->core->get_option( 'openai_apikey' );
-    $this->localAzureEndpoint = $this->core->get_option( 'openai_azure_endpoint' );
-    $this->localAzureApiKey = $this->core->get_option( 'openai_azure_apikey' );
-    $this->localAzureDeployments = $this->core->get_option( 'openai_azure_deployments' );
-    $this->localAzureDeployments[] = [ 'model' => 'dall-e', 'name' => 'dall-e' ];
-    $this->localAzureDeployments[] = [];
+    $this->defaultEnvId = $this->core->get_option( 'ai_default_env' );
+    $this->setEnvironment( $this->defaultEnvId );
+
+    // We need $defaultAzureEnvId and $defaultOpenAiEnvId to support old versions of the plugin.
+    // We could use service="openai" or service="azure", and now we need to fetch the default envs for those services.
+    $envs = $this->core->get_option( 'ai_envs' );
+    foreach ( $envs as $env ) {
+      if ( $env['type'] === 'azure' ) {
+        $this->defaultAzureEnvId = $env['id'];
+      }
+      else if ( $env['type'] === 'openai' ) {
+        $this->defaultOpenAiEnvId = $env['id'];
+      }
+    }
+
+    if ( !empty( $envId ) ) {
+      $this->setEnvironment( $envId );
+    }
   }
 
+  function setEnvironment( $envId = null, $service = null ) {
+    $this->defaultEnv = null;
+    $envs = $this->core->get_option( 'ai_envs' );
+    if ( empty( $envId ) ) {
+      if ( $service === 'openai' ) {
+        $envId = $this->defaultOpenAiEnvId;
+      }
+      else if ( $service === 'azure' ) {
+        $envId = $this->defaultAzureEnvId;
+      }
+      else {
+        $envId = $this->defaultEnvId;
+      }
+    }
+    foreach ( $envs as $env ) {
+      if ( $env['id'] === $envId ) {
+        $this->defaultEnv = $env;
+        break;
+      }
+    }
+    if ( empty( $this->defaultEnv ) ) {
+      error_log( 'No environment found for ID: ' . $envId );
+      return;
+    }
+
+    // We apply the environment to the local variables.
+    // I feel it's a bit messy, but it works well with the current system.
+    $env = $this->defaultEnv;
+    $this->localService = $env['type'] === 'azure' ? 'azure' : 'openai';
+    $this->defaultEnvId = $env['id'];
+    $this->defaultApiKey = $env['apikey'];
+    if ( $env['type'] === 'openai' ) {
+      $this->defaultOpenAiEnvId = $env['id'];
+    }
+    else if ( $env['type'] === 'azure' ) {
+      $this->defaultAzureEnvId = isset( $env['id'] ) ? $env['id'] : null;
+      $this->defaultAzureEndpoint = isset( $env['endpoint'] ) ? $env['endpoint'] : null;
+      $this->defaultAzureDeployments = isset( $env['deployments'] ) ? $env['deployments'] : null;
+      $this->defaultAzureDeployments[] = [ 'model' => 'dall-e', 'name' => 'dall-e' ];
+    }
+  }
 
   // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
   function check_for_error( $data ) {
@@ -132,10 +190,10 @@ class Meow_MWAI_Engines_OpenAI
   private function buildHeaders( $query ) {
     $headers = array(
       'Content-Type' => 'application/json',
-      'Authorization' => 'Bearer ' . $query->apiKey,
+      'Authorization' => 'Bearer ' . $this->defaultApiKey,
     );
-    if ( $query->service === 'azure' ) {
-      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $query->azureApiKey );
+    if ( $this->localService === 'azure' ) {
+      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $this->defaultApiKey );
     }
     return $headers;
   }
@@ -209,37 +267,30 @@ class Meow_MWAI_Engines_OpenAI
   }
 
   private function applyQueryParameters( $query ) {
-    if ( empty( $query->service ) ) {
-      $query->service = $this->localService;
-    }
-
-    // OpenAI will be used by default for everything
-    if ( empty( $query->apiKey ) ) {
-      $query->apiKey = $this->localApiKey;
-    }
+    $this->setEnvironment( $query->envId, $query->service );
 
     // But if the service is set to Azure and the deployments/models are available,
     // then we will use Azure instead.
-    if ( $query->service === 'azure' && !empty( $this->localAzureDeployments ) ) {
+    if ( $this->localService === 'azure' && !empty( $this->defaultAzureDeployments ) ) {
       $found = false;
-      foreach ( $this->localAzureDeployments as $deployment ) {
+      foreach ( $this->defaultAzureDeployments as $deployment ) {
         if ( $deployment['model'] === $query->model && !empty( $deployment['name'] ) ) {
-          $query->azureDeployment = $deployment['name'];
-          if ( empty( $query->azureEndpoint ) ) {
-            $query->azureEndpoint = $this->localAzureEndpoint;
-          }
-          if ( empty( $query->azureApiKey ) ) {
-            $query->azureApiKey = $this->localAzureApiKey;
-          }
+          $this->defaultAzureDeployment = $deployment['name'];
           $found = true;
           break;
         }
       }
       if ( !$found ) {
-        //error_log( 'Azure deployment not found for model: ' . $query->model );
-        $query->service = 'openai';
+        $this->setEnvironment( $this->defaultOpenAiEnvId );
       }
     }
+
+    if ( !empty( $query->apiKey ) ) {
+      $this->defaultApiKey = $query->apiKey;
+    }
+
+    // This envId will still be used later for logging.
+    $query->envId = $this->defaultEnvId;
   }
 
   private function getAudio( $url ) {
@@ -295,7 +346,7 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
       throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
@@ -306,9 +357,9 @@ class Meow_MWAI_Engines_OpenAI
     // Prepare the request
     $url = 'https://api.openai.com/v1/embeddings';
     $body = array( 'input' => $query->prompt, 'model' => $query->model );
-    if ( $query->service === 'azure' ) {
-      $url = trailingslashit( $query->azureEndpoint ) . 'openai/deployments/' .
-        $query->azureDeployment . '/embeddings?' . $this->azureApiVersion;
+    if ( $this->localService === 'azure' ) {
+      $url = trailingslashit( $this->defaultAzureEndpoint ) . 'openai/deployments/' .
+        $this->defaultAzureDeployment . '/embeddings?' . $this->azureApiVersion;
       $body = array( "input" => $query->prompt );
     }
     $headers = $this->buildHeaders( $query );
@@ -330,7 +381,7 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
       throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
@@ -367,13 +418,13 @@ class Meow_MWAI_Engines_OpenAI
     else if ( $query->mode === 'completion' ) {
       $body['prompt'] = $query->getPrompt();
     }
-    $url = $query->service === 'azure' ? trailingslashit( $query->azureEndpoint ) . 
-      'openai/deployments/' . $query->azureDeployment : $this->openaiEndpoint;
+    $url = $this->localService === 'azure' ? trailingslashit( $this->defaultAzureEndpoint ) . 
+      'openai/deployments/' . $this->defaultAzureDeployment : $this->defaultOpenAiEndpoint;
     if ( $query->mode === 'chat' ) {
-      $url .= $query->service === 'azure' ? '/chat/completions?' . $this->azureApiVersion : '/chat/completions';
+      $url .= $this->localService === 'azure' ? '/chat/completions?' . $this->azureApiVersion : '/chat/completions';
     }
     else if ($query->mode === 'completion') {
-      $url .= $query->service === 'azure' ? '/completions?' . $this->azureApiVersion : '/completions';
+      $url .= $this->localService === 'azure' ? '/completions?' . $this->azureApiVersion : '/completions';
     }
     $headers = $this->buildHeaders( $query );
     $options = $this->buildOptions( $headers, $body );
@@ -425,7 +476,7 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
       throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
@@ -441,9 +492,8 @@ class Meow_MWAI_Engines_OpenAI
       "n" => $query->maxResults,
       "size" => '1024x1024',
     );
-    if ( $query->service === 'azure' ) {
-      //$url = trailingslashit( $query->azureEndpoint ) . 'dalle/text-to-image?' . $this->azureApiVersion;
-      $url = trailingslashit( $query->azureEndpoint ) . 'dalle/text-to-image?api-version=2022-08-03-preview';
+    if ( $this->localService === 'azure' ) {
+      $url = trailingslashit( $this->defaultAzureEndpoint ) . 'dalle/text-to-image?api-version=2022-08-03-preview';
       $body = array( 
         "caption" => $query->prompt,
         //"n" => $query->maxResults,
@@ -459,7 +509,7 @@ class Meow_MWAI_Engines_OpenAI
       $data = $res['data'];
       $choices = [];
 
-      if ( $query->service === 'azure' ) {
+      if ( $this->localService === 'azure' ) {
         if ( !isset( $res['headers']['operation-location'] ) || !isset( $res['headers']['retry-after'] ) ) {
           throw new Exception( 'Invalid response from Azure.' );
         }
@@ -493,7 +543,7 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      $service = $query->service === 'azure' ? 'Azure' : 'OpenAI';
+      $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
       throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
@@ -559,7 +609,7 @@ class Meow_MWAI_Engines_OpenAI
     return null;
   }
 
-  public function listDeletedFineTunes( $legacy = false ) 
+  public function listDeletedFineTunes( $envId = null, $legacy = false ) 
   {
     $finetunes = $this->listFineTunes( $legacy );
     $deleted = [];
@@ -577,19 +627,19 @@ class Meow_MWAI_Engines_OpenAI
       }
     }
     if ( $legacy ) {
-      $this->core->update_option( 'openai_legacy_finetunes_deleted', $deleted );
+      $this->core->update_ai_env( $this->defaultOpenAiEnvId, 'legacy_finetunes_deleted', $deleted );
     }
     else {
-      $this->core->update_option( 'openai_finetunes_deleted', $deleted );
+      $this->core->update_ai_env( $this->defaultOpenAiEnvId, 'finetunes_deleted', $deleted );
     }
     return $deleted;
   }
 
-  public function listModels() {
-    $res = $this->run( 'GET', '/models' );
-    // TODO: Not used by the UI.
-    throw new Exception( 'Not implemented yet.' );
-  }
+  // public function listModels() {
+  //   $res = $this->run( 'GET', '/models' );
+  //   // TODO: Not used by the UI.
+  //   throw new Exception( 'Not implemented yet.' );
+  // }
 
   // TODO: This was used to retrieve the fine-tuned models, but not sure this is how we should
   // retrieve all the models since Summer 2023, let's see! WIP.
@@ -626,10 +676,10 @@ class Meow_MWAI_Engines_OpenAI
     });
 
     if ( $legacy ) {
-      $this->core->update_option( 'openai_legacy_finetunes', $finetunes );
+      $this->core->update_ai_env( $this->defaultOpenAiEnvId, 'legacy_finetunes', $finetunes );
     }
     else {
-      $this->core->update_option( 'openai_finetunes', $finetunes );
+      $this->core->update_ai_env( $this->defaultOpenAiEnvId, 'finetunes', $finetunes );
     }
 
     return $finetunes;
@@ -768,14 +818,13 @@ class Meow_MWAI_Engines_OpenAI
    */
   public function run( $method, $url, $query = null, $formFields = null, $json = true )
   {
-    $apiKey = $this->localApiKey;
-    $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $apiKey . "\r\n";
+    $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $this->defaultApiKey . "\r\n";
     $body = $query ? json_encode( $query ) : null;
     if ( !empty( $formFields ) ) {
       $boundary = wp_generate_password (24, false );
       $headers  = [
         'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
-        'Authorization' => 'Bearer ' . $this->localApiKey,
+        'Authorization' => 'Bearer ' . $this->defaultApiKey
       ];
       $body = $this->buildFormBody( $formFields, $boundary );
     }
