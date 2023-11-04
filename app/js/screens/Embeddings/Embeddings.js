@@ -1,5 +1,5 @@
-// Previous: 1.9.91
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 1.9.93
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,7 +38,6 @@ const queryColumns = [
 
 const StatusIcon = ({ id, status, includeText = false, title = null }) => {
   const { colors } = useNekoColors();
-
   let icon = null;
   switch (status) {
   case 'outdated':
@@ -101,7 +100,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   const ref = useRef(null);
   const models = useModels(options);
   const assistantsModel = useMemo(() => models.getModel(options.ai_default_model), [options.ai_default_model]);
-  const assistantsModelName = assistantsModel?.model ?? 'gpt-3.5-turbo';
+  const assistantsModelName = assistantsModel?.model ?? options?.fallback_model ?? null;
   const assistantsModelMaxTokens = assistantsModel?.maxTokens ?? 2048;
 
   const environments = options.embeddings_envs || [];
@@ -158,7 +157,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(false);
+    setBusy(null);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
@@ -178,29 +177,24 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       setNamespace(null);
       return;
     }
-    setQueryParams(prev => ({ ...prev,
+    setQueryParams({ ...queryParams,
       filters: { 
         envId: environmentId, 
         dbIndex: index ?? null,
         dbNS: namespace ?? null,
         search
-      },
-      sort: { accessor: (mode === 'edit' ? 'created' : 'score'), by: 'desc' },
-      page: 1,
-      limit: 20
-    }));
+      }
+    });
     setLocalSettings({ environmentId, index, namespace });
-  }, [index, namespace, environment, environmentId, search, mode]);
+  }, [index, namespace, environmentId, search]);
 
   useEffect(() => {
     const freshSearch = mode === 'edit' ? null : "";
-    setSearch(mode === 'edit' ? null : "");
-    setQueryParams(prev => ({ ...prev,
-      filters: { ...prev.filters, search: freshSearch },
-      sort: { accessor: (mode === 'edit' ? 'created' : 'score'), by: 'desc' },
-      page: 1,
-      limit: 20
-    }));
+    setSearch(freshSearch);
+    setQueryParams({ ...queryParams,
+      filters: { ...queryParams.filters, search: freshSearch },
+      sort: { accessor: (mode === 'edit' ? 'created' : 'score'), by: 'desc' }, page: 1, limit: 20
+    });
   }, [mode]);
 
   useEffect(() => {
@@ -210,7 +204,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         syncPostStatus: ['publish']
       });
     }
-  }, [embeddingsSettings.syncPostTypes, embeddingsSettings.syncPostStatus]);
+  }, [embeddingsSettings?.syncPostTypes, embeddingsSettings?.syncPostStatus]);
 
   const onAddIndex = async () => {
     setBusy('addIndex');
@@ -273,12 +267,12 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
       return;
     }
-    setQueryParams(prev => ({ ...prev, filters: { ...prev.filters, search } }));
+    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search } });
   };
 
   const onResetSearch = async () => {
     setSearch("");
-    setQueryParams(prev => ({ ...prev, filters: { ...prev.filters, search: "" } }));
+    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search: "" } });
   };
 
   const onAddEmbedding = async (inEmbedding = embeddingModal, skipBusy = false) => {
@@ -298,7 +292,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       }
       await nekoFetch(`${apiUrl}/vectors/add`, { nonce: restNonce, method: 'POST', json: { vector } });
       setEmbeddingModal(false);
-      console.log("Embedding Added", inEmbedding);
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
       
     }
@@ -331,7 +324,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       }
       await nekoFetch(`${apiUrl}/vectors/update`, { nonce: restNonce, method: 'POST', json: { vector } });
       setEmbeddingModal(false);
-      console.log("Embeddings updated.", inEmbedding);
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
     }
     catch (err) {
@@ -403,9 +395,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         setBusy(false);
       }
     }
-
     console.log("Embeddings deleted.", { ids });
-
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
       console.error("We should update the vectors data with the deleted embeddings.");
@@ -489,7 +479,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     prompt = prompt.replace('{ID}', post.postId);
     prompt = prompt.replace('{LANGUAGE}', language);
     let rewrittenContent = null;
-    
     try {
       const res = await nekoFetch(`${apiUrl}/ai/completions`, {
         method: 'POST',
@@ -509,9 +498,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       console.error(err);
       throw new Error(err.message ?? "Unknown error, check your console logs.");
     }
-
     console.log("Content rewritten.", { from: post.content, to: rewrittenContent });
-
     return rewrittenContent;
   };
 
@@ -584,7 +571,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     const resContent = await retrievePostContent(postType, offset,
-      postId !== undefined ? postId : undefined, embeddingsSettings?.syncPostStatus);
+      postId ? postId : undefined, embeddingsSettings.syncPostStatus);
     let content = resContent?.content ?? null;
     const title = resContent?.title ?? null;
     const url = resContent?.url ?? null;
@@ -595,20 +582,17 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     if (!resContent.success) {
       throw new Error(resContent.message);
     }
-
     console.log("* Post ID " + postId);
-
     const estimatedTokens = estimateTokens(content);
     if (estimatedTokens > assistantsModelMaxTokens || estimatedTokens > 8191) {
       content = reduceContent(content, assistantsModelMaxTokens);
-      console.warn(`Too much content. Reduced to ${assistantsModelMaxTokens} tokens.`, { 
+      console.warn(`Too much content. Reduced it to approximatively ${assistantsModelMaxTokens} tokens.`, { 
         before: resContent.content,
         beforeLength: resContent.content.length,
         after: content,
         afterLength: content.length
       });
     }
-
     const embeddings = await onGetEmbeddingsForRef(postId, true, signal);
     if (content.length < 64) {
       if (embeddings.length > 0) {
@@ -685,7 +669,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     let remoteVectors = [];
     let vectors = [];
     let finished = false;
-    
     while (!finished) {
       const res = await retrieveRemoteVectors(params);
       if (res.vectors.length < params.limit) { 
@@ -695,7 +678,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       params.page++;
     }
     console.log("Remote vectors retrieved.", { remoteVectors });
-
     finished = false;
     params.limit = 20;
     params.page = 0;
@@ -708,25 +690,20 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       params.page++;
     }
     vectors = vectors.map(x => x.dbId);
-
     console.log("Local vectors retrieved.", { vectors });
     const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x));
-
     console.log("Vectors to pull from Vector DB to AI Engine.", { vectorsToPull });
-   
     if (!vectorsToPull.length) {
       setBusy(false);
       alert("No vectors to pull.");
       return;
     }
-
     const tasks = vectorsToPull.map(dbId => async (signal) => {
       await addFromRemote({ envId: environmentId, dbIndex: index, dbNS: namespace, dbId: dbId }, signal);
       await queryClient.invalidateQueries({ queryKey: ['vectors'] });
       return { success: true };
     });
     await bulkTasks.start(tasks);
-
     setBusy(false);
     alert("All done! For more information, check the console (Chrome Developer Tools).");
     bulkTasks.reset();
@@ -744,7 +721,10 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     }
     else {
       const postIds = vectorsData?.vectors?.filter(x => selectedIds.includes(x.id))
-        .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null) ?? [];
+        .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null);
+      if (!postIds) {
+        postIds = [];
+      }
       tasks = postIds.map(postId => async (signal) => {
         await runProcess(0, postId, signal);
         return { success: true };
@@ -758,7 +738,9 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
   const OnSingleRunClick = async () => {
     const postId = prompt("Enter the Post ID to synchronize with:");
-    if (!postId) return;
+    if (!postId) {
+      return;
+    }
     setBusy('singleRun');
     try {
       await runProcess(0, postId);
@@ -830,6 +812,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
           <NekoContainer style={{ margin: 10, flex: 'auto' }} contentStyle={{ padding: 10, display: 'flex' }}>
             {mode === 'edit' && <>
+
               {selectedIds.length > 0 && <>
                 <NekoButton className="primary" disabled={isBusy || !index} isBusy={busy === 'bulkPushAll'}
                   onClick={() => onBulkPushClick(false)}>
@@ -871,12 +854,12 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
           <NekoTable busy={isBusy}
             sort={queryParams.sort}
             onSortChange={(accessor, by) => {
-              setQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+              setQueryParams({ ...queryParams, sort: { accessor, by } });
             }}
             data={vectorsRows} columns={columns} 
             onSelectRow={id => { setSelectedIds([id]); }}
-            onSelect={ids => { setSelectedIds([ ...new Set([...selectedIds, ...ids]) ]); }}
-            onUnselect={ids => { setSelectedIds([...new Set([...selectedIds.filter(x => !ids.includes(x))])]); }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
             selectedItems={selectedIds}
           />
 
@@ -885,7 +868,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
           {mode !== 'search' && <div style={{ display: 'flex', justifyContent: 'end' }}>
             <NekoPaging currentPage={queryParams.page} limit={queryParams.limit}
               total={vectorsTotal} onClick={page => { 
-                setQueryParams(prev => ({ ...prev, page }));
+                setQueryParams({ ...queryParams, page });
               }}
             />
             <NekoButton className="primary" style={{ marginLeft: 5 }}
@@ -913,7 +896,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
             An embedding is a textual piece of data (sentence, paragraph, a whole article) that has been converted by OpenAI into a vector. Vectors can then be used to find the most relevant data for a given query. In this dashboard, you can create embeddings, and they will be synchronized with <a target="_blank" href="https://www.pinecone.io/" rel="noreferrer">Pinecone</a>, a very fast and affordable vector database.
           </p>
           <p>
-            You can switch from EDIT to AI SEARCH and you will be able to query the database, and get your content, with a score. You can edit the content and it will be synchronized with Pinecone. Then make your content perfect so that the results are satisfying! You can use Sync and Sync One, it will go through your posts and create the embeddings if they don&apos;t exist yet, or update them if they do.
+            You can switch from EDIT to AI SEARCH and you will be able to query the database, and get your content, with a score. You can edit the content and it will be synchronized with Pinecone. Then make your content perfect so that the results are satisfying! You can use Sync and Sync One, it will go through your posts and create the embeddings if they don't exist yet, or update them if they do.
           </p>
           <p>
             Both the chatbots and the AI Forms can use embeddings to enrich their answers.
@@ -993,6 +976,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
 
+              {/* Total Posts + Post Type Select */}
               <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                 style={{ width: 100 }} onChange={setPostType} value={postType}>
                 {postTypes?.map(pt => 
@@ -1000,6 +984,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
                 )}
               </NekoSelect>
 
+              {/* Actions for All Posts */}
               <NekoButton fullWidth className="primary" style={{ marginLeft: 10 }}
                 disabled={isBusy || !index} isBusy={busy === 'bulkPushAll'}
                 onClick={() => onBulkPushClick(true)}>
@@ -1112,7 +1097,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
     <NekoModal isOpen={indexModal}
       title={i18n.EMBEDDINGS.ADD_INDEX}
-      onRequestClose={() => setIndexModal(false)}
+      onRequestClose={() => setIndexModal(null)}
       content={<>
         <p>{i18n.EMBEDDINGS.ADD_INDEX_DESCRIPTION}</p>
         <NekoSpacer height={30} />
@@ -1139,7 +1124,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         busy: busy === 'addIndex'
       }}
       cancelButton={{
-        onClick: () => setIndexModal(false),
+        onClick: () => setIndexModal(null),
         disabled: busy
       }}
     />

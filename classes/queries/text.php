@@ -12,7 +12,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public bool $casuallyFineTuned = false;
   public ?int $promptTokens = null;
   
-  public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = MWAI_DEFAULT_MODEL ) {
+  public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = MWAI_FALLBACK_MODEL ) {
     parent::__construct( $prompt );
     $this->setModel( $model );
     $this->setMaxTokens( $maxTokens );

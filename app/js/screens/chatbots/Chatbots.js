@@ -1,5 +1,5 @@
-// Previous: 1.9.85
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 1.9.93
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,7 +41,7 @@ const Shortcode = ({ currentChatbot }) => {
   const currentBotId = currentChatbot?.botId ?? 'default';
 
   const onClick = async () => {
-    const text = `[mwai_chatbot_v2 id="${currentBotId}"]`;
+    const text = `[mwai_chatbot id="${currentBotId}"]`;
     if (!navigator.clipboard) {
       alert("Clipboard is not enabled (only works with https).");
       return;
@@ -50,14 +50,14 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 1500); // changed from 1000 to 1500 for subtle timing difference
   };
 
   if (!currentChatbot) {
     return null;
   }
 
-  const jsxShortcode = <span>[mwai_chatbot_v2 id="<span style={{ color: 'var(--neko-green)' }}>{currentBotId}</span>"]</span>;
+  const jsxShortcode = <span>[mwai_chatbot id="<span style={{ color: 'var(--neko-green)' }}>{currentBotId}</span>"]</span>;
 
   return (
     <>
@@ -106,7 +106,6 @@ const Chatbots = (props) => {
       const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
       return chatbot;
     }
-    return null;
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
@@ -115,7 +114,6 @@ const Chatbots = (props) => {
       setCurrentChatbot(chatbot?.botId);
       return chatbot;
     }
-    return null;
   }, [chatbots, currentBotId]);
 
   const currentTheme = useMemo(() => {
@@ -123,7 +121,7 @@ const Chatbots = (props) => {
       const chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
       return chatTheme;
     }
-    return themes && themes.find ? themes.find(theme => theme.themeId === 'chatgpt') : null;
+    return themes.find(theme => theme.themeId === 'chatgpt');
   }, [currentChatbot, themes, chatbots]);
 
   const updateChatbotParams = async (value, id) => {
@@ -136,22 +134,19 @@ const Chatbots = (props) => {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if ( id === 'botId' && chatbots && chatbots.find(x => x.botId === value) ) {
+    if ( id === 'botId' && chatbots?.some(x => x.botId === value) ) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-
-    if (id === 'botId' && value !== currentChatbot?.botId) {
+    if (id === 'botId' && value !== currentChatbot[id] ) {
       setCurrentBotId(value);
     }
 
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
-    const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot?.botId);
-    if (botIndex !== -1) {
-      newChatbots[botIndex] = newParams;
-    }
+    const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
+    newChatbots[botIndex] = newParams;
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
@@ -169,42 +164,30 @@ const Chatbots = (props) => {
     setBusyAction(true);
     const newName = 'New Chatbot';
     const newChatId = 'chatbot-' + randomHash();
-    const newChatbotsArr = [...(chatbots || [])];
-    newChatbotsArr.push({
+    const newChatbots = await updateChatbots([...chatbots, {
       ...defaults, botId: newChatId, name: newName,
       envId: options?.ai_default_env,
       model: options?.ai_default_model,
-    });
-    const newChatbots = await updateChatbots(newChatbotsArr);
+    }]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
 
   const deleteCurrentChatbot = async () => {
     setBusyAction(true);
-    if (!chatbots) {
-      setBusyAction(false);
-      return;
-    }
-    const newChatbots = chatbots.filter(x => x.botId !== currentChatbot?.botId);
+    let newChatbots = [...chatbots.filter(x => x.botId !== currentChatbot.botId)];
     setCurrentBotId('default');
-    const updatedChatbots = await updateChatbots(newChatbots);
-    queryClient.setQueryData(['chatbots'], updatedChatbots);
+    newChatbots = await updateChatbots(newChatbots);
+    queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
 
   const resetCurrentChatbot = async () => {
     setBusyAction(true);
-    if (!chatbots || !currentChatbot) {
-      setBusyAction(false);
-      return;
-    }
-    const newChatbotsArr = [...chatbots];
-    const botIndex = newChatbotsArr.findIndex(x => x.botId === currentChatbot?.botId);
-    if (botIndex !== -1) {
-      newChatbotsArr[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
-    }
-    const newChatbots = await updateChatbots(newChatbotsArr);
+    let newChatbots = [...chatbots];
+    const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
+    newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
@@ -231,17 +214,17 @@ const Chatbots = (props) => {
             <label>{i18n.COMMON.CHATBOT_EDITOR}:</label>
             <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
               onLabel={''} offLabel={''} width={50}
-              checked={chatbotEditor} onChange={() => setChatbotEditor(prev => !prev)} 
+              checked={chatbotEditor} onChange={setChatbotEditor} 
             />
             <label style={{ marginLeft: 10 }}>{i18n.COMMON.THEME_EDITOR}:</label>
             <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
               onLabel={''} offLabel={''} width={50}
-              checked={themeEditor} onChange={() => setThemeEditor(prev => !prev)}
+              checked={themeEditor} onChange={setThemeEditor}
             />
             <label style={{ marginLeft: 10 }}>{i18n.COMMON.PREVIEW}:</label>
             <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
               onLabel={''} offLabel={''} width={50}
-              checked={chatbotPreview} onChange={() => setChatbotPreview(prev => !prev)}
+              checked={chatbotPreview} onChange={setChatbotPreview}
             />
             <StyledShortcode style={{ marginLeft: 10 }}>
               <Shortcode currentChatbot={currentChatbot} />
@@ -252,7 +235,7 @@ const Chatbots = (props) => {
 
       {(chatbotEditor || themeEditor) && <NekoColumn minimal style={{ margin: 10 }}>
 
-        {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentChatbot?.botId}
+        {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
           action={<><NekoButton rounded className="primary-block" icon='plus' onClick={() => addNewChatbot()} /></>}>
           {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
             <ChatbotParams options={options} themes={themes} defaultChatbot={defaultChatbot}

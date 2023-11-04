@@ -26,6 +26,7 @@ class Meow_MWAI_Modules_Chatbot {
 	public function __construct() {
 		global $mwai_core;
 		$this->core = $mwai_core;
+		add_shortcode( 'mwai_chatbot', array( $this, 'chat_shortcode' ) );
 		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'botId' );
@@ -346,7 +347,7 @@ class Meow_MWAI_Modules_Chatbot {
   }
 
 	public function chat_shortcode( $atts ) {
-		$atts = empty($atts) ? [] : $atts;
+		$atts = empty( $atts ) ? [] : $atts;
 
 		// Let the user override the chatbot params
 		$atts = apply_filters( 'mwai_chatbot_params', $atts );
@@ -386,13 +387,18 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 
 		// Server Params
+		// NOTE: We don't need the server params for the chatbot if there are no overrides, it means
+		// we are using the default or a specific chatbot.
+		$hasServerOverrides = count( array_intersect( array_keys( $atts ), MWAI_CHATBOT_SERVER_PARAMS ) ) > 0;
 		$serverParams = [];
-		foreach ( MWAI_CHATBOT_SERVER_PARAMS as $param ) {
-			if ( isset( $atts[$param] ) ) {
-				$serverParams[$param] = $atts[$param];
-			}
-			else {
-				$serverParams[$param] = $chatbot[$param] ?? null;
+		if ( $hasServerOverrides ) {
+			foreach ( MWAI_CHATBOT_SERVER_PARAMS as $param ) {
+				if ( isset( $atts[$param] ) ) {
+					$serverParams[$param] = $atts[$param];
+				}
+				else {
+					$serverParams[$param] = $chatbot[$param] ?? null;
+				}
 			}
 		}
 
@@ -405,7 +411,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$serverParams = $this->cleanParams( $serverParams );
 
 		// Server-side: Keep the System Params
-		if ( count( $serverParams ) > 0 ) {
+		if ( $hasServerOverrides ) {
 			if ( empty( $customId ) ) {
 				$customId = md5( json_encode( $serverParams ) );
 				$frontSystem['customId'] = $customId;

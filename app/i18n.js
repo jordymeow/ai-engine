@@ -186,9 +186,9 @@ i18n.COMMON = {
   RESET: __( 'Reset', 'ai-engine' ),
   INCIDENTS_OPENAI: __( 'Incidents (OpenAI)', 'ai-engine' ),
   PREVIEW: __( 'Preview', 'ai-engine' ),
-  LEGACY_CHATBOT: __( 'Legacy Chatbot', 'ai-engine' ),
+  //LEGACY_CHATBOT: __( 'Legacy Chatbot', 'ai-engine' ),
   LEGACY_FORMS: __( 'Legacy Forms', 'ai-engine' ),
-  LEGACY_FINETUNES: __( 'Legacy Finetunes', 'ai-engine' ),
+  //LEGACY_FINETUNES: __( 'Legacy Finetunes', 'ai-engine' ),
   LEGACY_FEATURES: __( 'Legacy Features', 'ai-engine' ),
   DUPLICATE: __( 'Duplicate', 'ai-engine' ),
   CHATBOT_EDITOR: __( 'Chatbot Editor', 'ai-engine' ),
@@ -211,6 +211,7 @@ i18n.COMMON = {
   ENVIRONMENT: __( 'Environment', 'ai-engine' ),
   PLUGIN_DATA: __( 'Plugin Data', 'ai-engine' ),
   PLUGIN_DATA_DESCRIPTION: __( "The database and all the options of the plugin will be removed on uninstall.", 'ai-engine' ),
+  RESET_LIMITS: __( 'Reset Limits', 'ai-engine' ),
 };
 
 i18n.FORMS = {

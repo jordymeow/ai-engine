@@ -37,7 +37,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'promptEnding' => null,
 	'completionEnding' => null,
 	// AI Parameters
-	'model' => MWAI_DEFAULT_MODEL,
+	'model' => MWAI_FALLBACK_MODEL,
 	'temperature' => 0.8,
 	'maxTokens' => 1024,
 	'maxResults' => 1,
@@ -80,7 +80,7 @@ define( 'MWAI_CHATBOT_PARAMS', [
 	'prompt_ending' => null,
 	'completion_ending' => null,
 	// AI Parameters
-	'model' => MWAI_DEFAULT_MODEL,
+	'model' => MWAI_FALLBACK_MODEL,
 	'temperature' => 0.8,
 	'max_tokens' => 1024,
 	'max_results' => 1,
@@ -159,6 +159,7 @@ define( 'MWAI_OPTIONS', [
 	'limits' => MWAI_LIMITS,
 
 	// General Settings for OpenAI
+	'fallback_model' => MWAI_FALLBACK_MODEL,
 	'openai_models' => Meow_MWAI_Engines_OpenAI::get_openai_models(),
 	'openai_usage' => [],
 
@@ -178,7 +179,7 @@ define( 'MWAI_OPTIONS', [
 	'openai_service' => 'openai', // 'openai', 'azure' (if not set here, it will use the Settings)
 
 	'ai_default_env' => null,
-	'ai_default_model' => MWAI_DEFAULT_MODEL,
+	'ai_default_model' => MWAI_FALLBACK_MODEL,
 	'ai_envs' => [
 		[
 			'name' => 'OpenAI',

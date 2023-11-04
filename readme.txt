@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.92
+Stable tag: 1.9.93
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,13 +82,18 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.93 (2023/11/03) =
+* 🚀 Please check the previous changelog entry.
+* Update: Removed a lot of useless code related to legacy chatbot, finetuning, etc.
+* Fix: Conversations were not being logged for known IDs.
+
 = 1.9.92 (2023/11/02) =
-* 🎃 This is major update; check your Settings, Chatbots and Forms.
 * Add: Multi-environments for AIs are now supported.
 * Update: Discussions are now formatted in the admin too.
 * Update: Added new Pinecone environments.
 * Update: Enhanced the text cleaning functions to optimize the tokens count.
 * Fix: Various fixes and enhancements.
+* 🎃 This is major update; check your Settings, Chatbots and Forms.
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 

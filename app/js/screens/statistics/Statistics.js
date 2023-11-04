@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.9.2
+// Previous: 1.9.2
+// Current: 1.9.93
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ const retrieveLogsMeta = async (logId) => {
     json: { logId, metaKeys: [ 'query', 'reply' ] }
   });
   return res.data;
-}
+};
 
 const Statistics = ({ options, updateOption, busy }) => {
   const [ selectedLogIds, setSelectedLogIds ] = useState([]);
@@ -40,7 +40,7 @@ const Statistics = ({ options, updateOption, busy }) => {
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
     await updateOption(newParams, 'limits');
-  }
+  };
 
   const limitSectionParams = useMemo(() => {
     return limits?.[limitSection] ? limits?.[limitSection] : {
@@ -60,11 +60,13 @@ const Statistics = ({ options, updateOption, busy }) => {
     const newParams = { ...limitSectionParams, [id]: value };
     const newLimits = { ...limits, [limitSection]: newParams };
     await updateOption(newLimits, 'limits');
-  }
+  };
 
   const onResetLimits = async () => {
-    await updateOption(default_limits, 'limits');
-  }
+    if (!confirm(i18n.ALERTS.ARE_YOU_SURE)) {
+      await updateOption(default_limits, 'limits');
+    }
+  };
 
   const data = useMemo(() => {
     if (Array.isArray(metaData)) {
@@ -107,129 +109,136 @@ const Statistics = ({ options, updateOption, busy }) => {
                   displayObjectSize={false}
                   displayArrayKey={false}
                   enableClipboard={false}
-                style={{ fontSize: 12 }} />}
+                  style={{ fontSize: 12 }} />}
               </div>
             </NekoTab>
           </NekoTabs>
         </>}
 
         <StyledBuilderForm>
-          <NekoBlock className="primary" busy={busy} title="Limits" style={{ flex: 1 }} action={
-            <NekoButton className="danger" onClick={onResetLimits}>
-              Reset Limits
-            </NekoButton>}>
+          <NekoBlock className="primary" busy={busy} title="Limits" style={{ flex: 1 }}>
 
             <NekoCheckbox name="enabled" label={i18n.STATISTICS.ENABLE_LIMITS}
               checked={limits?.enabled} value="1" onChange={updateLimits}
             />
 
-            <NekoSpacer />
+            {limits?.enabled && <>
 
-            <NekoQuickLinks value={limitSection} busy={busy}
-              onChange={value => { setLimitSection(value) }}>
-              <NekoLink title={i18n.COMMON.USERS} value='users' disabled={!limits?.enabled} />
-              <NekoLink title={i18n.COMMON.GUESTS} value='guests' />
-              <NekoLink title={i18n.COMMON.SYSTEM} value='system' />
-            </NekoQuickLinks>
+              <NekoSpacer />
 
-            {limits?.target === 'userId' && <>
+              <NekoQuickLinks value={limitSection} busy={busy}
+                onChange={value => { setLimitSection(value); }}>
+                <NekoLink title={i18n.COMMON.USERS} value='users' disabled={!limits?.enabled} />
+                <NekoLink title={i18n.COMMON.GUESTS} value='guests' />
+                <NekoLink title={i18n.COMMON.SYSTEM} value='system' />
+              </NekoQuickLinks>
+
+              {limits?.target === 'userId' && <>
+                <div className="mwai-builder-row">
+                  <div className="mwai-builder-col">
+                    <label>Message for Guests:</label>
+                    <NekoInput id="guestMessage" name="guestMessage" disabled={!limits?.enabled}
+                      value={limits?.guestMessage}
+                      onEnter={updateLimitSection}
+                      onBlur={updateLimitSection}
+                    />
+                  </div>
+                </div>
+              </>}
+
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col">
-                  <label>Message for Guests:</label>
-                  <NekoInput id="guestMessage" name="guestMessage" disabled={!limits?.enabled}
-                    value={limits?.guestMessage}
+                  <label>{i18n.COMMON.CREDITS}:</label>
+                  <NekoInput id="credits" name="credits" type="number" min="0" max="1000000"
+                    disabled={!limits?.enabled} value={limitSectionParams.credits}
                     onEnter={updateLimitSection}
                     onBlur={updateLimitSection}
                   />
                 </div>
+                <div className="mwai-builder-col">
+                  <label>{i18n.COMMON.TYPE}:</label>
+                  <NekoSelect scrolldown id="creditType" name="creditType" disabled={!limits?.enabled}
+                    value={limitSectionParams.creditType}
+                    onChange={updateLimitSection}>
+                    <NekoOption key={'queries'} id={'queries'} value={'queries'} label={"Queries"} />
+                    <NekoOption key={'units'} id={'units'} value={'units'} label={"Tokens"} />
+                    <NekoOption key={'price'} id={'price'} value={'price'} label={"Dollars"} />
+                  </NekoSelect>
+                </div>
               </div>
+
+              {limitSectionParams.credits !== 0 && <p>
+                If you want to apply variable amount of credits, <a href="https://meowapps.com/ai-engine/faq/#limits" target="_blank" rel="noreferrer">click here</a>.
+              </p>}
+
+              {limitSectionParams.credits !== 0 && limitSectionParams.creditType === 'price' &&
+                <p>The dollars represent the budget you spent through OpenAI.</p>
+              }
+
+              {limitSectionParams.credits === 0 && <p>
+                Since there are no credits, the Message for No Credits Message with be displayed.
+              </p>}
+
+
+              <div className="mwai-builder-row">
+                <div className="mwai-builder-col">
+                  <label>{i18n.COMMON.TIMEFRAME}:</label>
+                  <NekoSelect scrolldown id="timeFrame" name="timeFrame" disabled={!limits?.enabled}
+                    value={limitSectionParams.timeFrame}
+                    onChange={updateLimitSection}>
+                    <NekoOption key={'second'} id={'second'} value={'second'} label={"Second"} />
+                    <NekoOption key={'minute'} id={'minute'} value={'minute'} label={"Minute"} />
+                    <NekoOption key={'hour'} id={'hour'} value={'hour'} label={"Hour"} />
+                    <NekoOption key={'day'} id={'day'} value={'day'} label={"Day"} />
+                    <NekoOption key={'week'} id={'week'} value={'week'} label={"Week"} />
+                    <NekoOption key={'month'} id={'month'} value={'month'} label={"Month"} />
+                    <NekoOption key={'year'} id={'year'} value={'year'} label={"Year"} />
+                  </NekoSelect>
+                </div>
+                <div className="mwai-builder-col">
+                  <label>{i18n.COMMON.ABSOLUTE}:</label>
+                  <NekoCheckbox name="isAbsolute" label="Yes" disabled={!limits?.enabled}
+                    checked={limitSectionParams.isAbsolute} value="1"
+                    onChange={updateLimitSection}
+                  />
+                </div>
+              </div>
+              {limitSectionParams.isAbsolute && <p>
+                {toHTML(i18n.STATISTICS.ABSOLUTE_HELP)}
+              </p>}
+
+              <div className="mwai-builder-row">
+                <div className="mwai-builder-col">
+                  <label>{i18n.STATISTICS.NO_CREDITS_MESSAGE}:</label>
+                  <NekoInput id="overLimitMessage" name="overLimitMessage" disabled={!limits?.enabled}
+                    value={limitSectionParams.overLimitMessage}
+                    onEnter={updateLimitSection}
+                    onBlur={updateLimitSection} />
+                </div>
+              </div>
+
+              {limitSection === 'users' && <div className="mwai-builder-row">
+                <div className="mwai-builder-col">
+                  <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
+                  <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
+                    value={limits?.users?.ignoredUsers} description="" onChange={updateLimitSection}>
+                    <NekoOption key={'none'} id={'none'} value={''}
+                      label={i18n.COMMON.NONE} />
+                    <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
+                      label={i18n.COMMON.EDITORS_ADMINS} />
+                    <NekoOption key={'admin'} id={'admin'} value={'administrator'}
+                      label={i18n.COMMON.ADMINS_ONLY} />
+                  </NekoSelect>
+                </div>
+              </div>}
+
+              <NekoSpacer />
+
+              <NekoButton fullWidth className="danger" onClick={onResetLimits}>
+                {i18n.COMMON.RESET_LIMITS}
+              </NekoButton>
+
             </>}
-
-            <div className="mwai-builder-row">
-              <div className="mwai-builder-col">
-                <label>{i18n.COMMON.CREDITS}:</label>
-                <NekoInput id="credits" name="credits" type="number" min="0" max="1000000"
-                  disabled={!limits?.enabled} value={limitSectionParams.credits}
-                  onEnter={updateLimitSection}
-                  onBlur={updateLimitSection}
-                />
-              </div>
-              <div className="mwai-builder-col">
-                <label>{i18n.COMMON.TYPE}:</label>
-                <NekoSelect scrolldown id="creditType" name="creditType" disabled={!limits?.enabled}
-                  value={limitSectionParams.creditType}
-                  onChange={updateLimitSection}>
-                  <NekoOption key={'queries'} id={'queries'} value={'queries'} label={"Queries"} />
-                  <NekoOption key={'units'} id={'units'} value={'units'} label={"Tokens"} />
-                  <NekoOption key={'price'} id={'price'} value={'price'} label={"Dollars"} />
-                </NekoSelect>
-              </div>
-            </div>
-
-            {limitSectionParams.credits !== 0 && <p>
-              If you want to apply variable amount of credits, <a href="https://meowapps.com/ai-engine/faq/#limits" target="_blank">click here</a>.
-            </p>}
-
-            {limitSectionParams.credits !== 0 && limitSectionParams.creditType === 'price' &&
-              <p>The dollars represent the budget you spent through OpenAI.</p>
-            }
-
-            {limitSectionParams.credits === 0 && <p>
-              Since there are no credits, the Message for No Credits Message with be displayed.
-            </p>}
-
-
-            <div className="mwai-builder-row">
-              <div className="mwai-builder-col">
-                <label>{i18n.COMMON.TIMEFRAME}:</label>
-                <NekoSelect scrolldown id="timeFrame" name="timeFrame" disabled={!limits?.enabled}
-                  value={limitSectionParams.timeFrame}
-                  onChange={updateLimitSection}>
-                  <NekoOption key={'second'} id={'second'} value={'second'} label={"Second"} />
-                  <NekoOption key={'minute'} id={'minute'} value={'minute'} label={"Minute"} />
-                  <NekoOption key={'hour'} id={'hour'} value={'hour'} label={"Hour"} />
-                  <NekoOption key={'day'} id={'day'} value={'day'} label={"Day"} />
-                  <NekoOption key={'week'} id={'week'} value={'week'} label={"Week"} />
-                  <NekoOption key={'month'} id={'month'} value={'month'} label={"Month"} />
-                  <NekoOption key={'year'} id={'year'} value={'year'} label={"Year"} />
-                </NekoSelect>
-              </div>
-              <div className="mwai-builder-col">
-                <label>{i18n.COMMON.ABSOLUTE}:</label>
-                <NekoCheckbox name="isAbsolute" label="Yes" disabled={!limits?.enabled}
-                  checked={limitSectionParams.isAbsolute} value="1"
-                  onChange={updateLimitSection}
-                />
-              </div>
-            </div>
-            {limitSectionParams.isAbsolute && <p>
-              {toHTML(i18n.STATISTICS.ABSOLUTE_HELP)}
-            </p>}
-
-            <div className="mwai-builder-row">
-              <div className="mwai-builder-col">
-                <label>{i18n.STATISTICS.NO_CREDITS_MESSAGE}:</label>
-                <NekoInput id="overLimitMessage" name="overLimitMessage" disabled={!limits?.enabled}
-                  value={limitSectionParams.overLimitMessage}
-                  onEnter={updateLimitSection}
-                  onBlur={updateLimitSection} />
-              </div>
-            </div>
-
-            {limitSection === 'users' && <div className="mwai-builder-row">
-              <div className="mwai-builder-col">
-                <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
-                <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
-                  value={limits?.users?.ignoredUsers} description="" onChange={updateLimitSection}>
-                  <NekoOption key={'none'} id={'none'} value={''}
-                    label={i18n.COMMON.NONE} />
-                  <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
-                    label={i18n.COMMON.EDITORS_ADMINS} />
-                  <NekoOption key={'admin'} id={'admin'} value={'administrator'}
-                    label={i18n.COMMON.ADMINS_ONLY} />
-                </NekoSelect>
-              </div>
-            </div>}
 
           </NekoBlock>
         </StyledBuilderForm>
@@ -237,6 +246,6 @@ const Statistics = ({ options, updateOption, busy }) => {
 
     </NekoWrapper>
   </>);
-}
+};
 
 export default Statistics;
