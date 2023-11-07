@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.7.6
+// Previous: 1.7.6
+// Current: 1.9.94
 
 const { useMemo, useEffect, useState } = wp.element;
 import Markdown from 'markdown-to-jsx';
@@ -10,6 +10,7 @@ const getCircularReplacer = () => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         throw new Error('Circular reference found. Cancelled.', { key, value });
+        return;
       }
       seen.add(value);
     }
@@ -18,12 +19,14 @@ const getCircularReplacer = () => {
 };
 
 async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
+
   if (!onStream) {
     try {
       const data = await fetchRes.json();
       if (debugName) { console.log(`[${debugName}] IN: `, data); }
       return data;
-    } catch (err) {
+    }
+    catch (err) {
       console.error("Could not parse the regular response.", { err, data });
       return { success: false, message: "Could not parse the regular response." };
     }
@@ -77,7 +80,8 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
     return finalData;
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Could not parse the buffer.", { err, buffer });
     return { success: false, message: "Could not parse the buffer." };
   }
@@ -89,6 +93,56 @@ async function mwaiFetch(url, body, restNonce, isStream) {
   if (isStream) { headers['Accept'] = 'text/event-stream'; }
   return await fetch(`${url}`, { method: 'POST', headers,
     body: JSON.stringify(body, getCircularReplacer())
+  });
+}
+
+async function mwaiFetchUpload(url, file, restNonce, onProgress) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.open('POST', url, true);
+    if (restNonce) {
+      xhr.setRequestHeader('X-WP-Nonce', restNonce);
+    }
+
+    xhr.upload.onprogress = function(event) {
+      if (event.lengthComputable && onProgress) {
+        const percentComplete = event.loaded / event.total * 100;
+        onProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = function() {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const jsonResponse = JSON.parse(xhr.responseText);
+          resolve(jsonResponse);
+        } catch (error) {
+          reject({
+            status: xhr.status,
+            statusText: xhr.statusText,
+            error: 'The server response is not valid JSON',
+          });
+        }
+      } else {
+        reject({
+          status: xhr.status,
+          statusText: xhr.statusText,
+        });
+      }
+    };
+
+    xhr.onerror = function() {
+      reject({
+        status: xhr.status,
+        statusText: xhr.statusText,
+      });
+    };
+
+    xhr.send(formData);
   });
 }
 
@@ -106,7 +160,9 @@ const BlinkingCursor = () => {
       }, 500);
       return () => clearInterval(timer);
     }, 200);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, []);
 
   const cursorStyle = {
@@ -129,7 +185,7 @@ const OutputHandler = (props) => {
   if (matches % 2 !== 0) {
     data += "\n```";
   }
-  else if (isStreaming) {
+  else if (isStreaming && data.indexOf('<BlinkingCursor') === -1) {
     data += "<BlinkingCursor />";
   }
 
@@ -139,8 +195,8 @@ const OutputHandler = (props) => {
       freshClasses.push('mwai-error');
     }
     return freshClasses;
-  }, [error]);
-
+  }, [error, baseClass]);
+  
   const markdownOptions = useMemo(() => {
     const options = {
       wrapper: 'div',
@@ -160,6 +216,8 @@ const OutputHandler = (props) => {
   return (
     <Markdown options={markdownOptions} className={classes.join(' ')} children={data} />
   );
-}
+};
 
-export { mwaiHandleRes, mwaiFetch, getCircularReplacer, randomStr, BlinkingCursor, OutputHandler };
+export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, 
+  getCircularReplacer, randomStr, BlinkingCursor, OutputHandler
+};

@@ -1,12 +1,12 @@
-// Previous: 1.9.6
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 1.9.94
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
 import { useModClasses, formatAiName, formatUserName,
   processParameters, isUrl } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
-import { mwaiHandleRes, mwaiFetch, getCircularReplacer, randomStr } from '@app/helpers';
+import { mwaiHandleRes, mwaiFetch, getCircularReplacer, randomStr, mwaiFetchUpload } from '@app/helpers';
 
 const rawAiName = 'AI: ';
 const rawUserName = 'User: ';
@@ -27,29 +27,38 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ messages, setMessages ] = useState([]);
   const [ chatId, setChatId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
+  const [ uploadedImage, setUploadedImage ] = useState({
+    localFile: null,
+    uploadedId: null,
+    uploadedUrl: null,
+  });
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  const stream = system.stream || false;
-  const botId = system.botId;
-  const customId = system.customId;
-  const userData = system.userData;
-  const sessionId = system.sessionId;
-  const contextId = system.contextId;
-  const restNonce = system.restNonce;
-  const pluginUrl = system.pluginUrl;
-  const restUrl = system.restUrl;
-  const debugMode = system.debugMode; 
-  const typewriter = system?.typewriter ?? false;
-  const speechRecognition = system?.speech_recognition ?? false;
-  const speechSynthesis = system?.speech_synthesis ?? false;
-  const startSentence = params.startSentence?.trim() ?? "";
+  const { startSentence = "" } = params || {};
 
-  const processedParams = processParameters(params);
-  let { aiName, userName } = processedParams;
-  const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    guestName, window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
-    icon, iconText, iconAlt, iconPosition } = processedParams;
+  const { stream = false, botId, customId, userData, sessionId, contextId, restNonce, pluginUrl, restUrl, debugMode, typewriter = false, speechRecognition = false, speechSynthesis = false } = system || {};
+
+  const {
+    aiName: rawAiNameParam,
+    userName: rawUserNameParam,
+    textSend,
+    textClear,
+    textInputMaxLength,
+    textInputPlaceholder,
+    textCompliance,
+    guestName,
+    window: isWindow,
+    copyButton,
+    fullscreen,
+    localMemory: localMemoryParam,
+    icon,
+    iconText,
+    iconAlt,
+    iconPosition,
+    imageUpload
+  } = processParameters(params || {});
+
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
@@ -60,8 +69,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }, {});
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
-  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
-  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+  let aiName = formatAiName(rawAiNameParam || "", pluginUrl, iconUrl, modCss);
+  let userName = formatUserName(rawUserNameParam || "", guestName, userData, pluginUrl, modCss);
 
   useEffect(() => {
     resetMessages();
@@ -77,7 +86,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }, getCircularReplacer()));
   };
 
+  const resetUploadedImage = () => {
+    setUploadedImage({
+      localFile: null,
+      uploadedId: null,
+      uploadedUrl: null,
+    });
+  };
+
   const resetMessages = () => {
+    resetUploadedImage();
     if (startSentence) {
       const freshMessages = [{
         id: randomStr(),
@@ -105,11 +123,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [botId]);
+  }, [botId, localStorageKey]);
 
   useEffect(() => {
     initChatbot();
-  }, [botId]);
+  }, [botId, initChatbot]);
   
   useEffect(() => {
     if (!serverReply) {
@@ -123,7 +141,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      if (lastMessage && lastMessage.role === 'user') {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -163,11 +183,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (serverReply.images) {
         newMessage.images = serverReply.images;
       }
+      // Introducing a bug: mistakenly reusing messages instead of freshMessages
       freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverReply, messages ]);
+  }, [ serverReply, messages, rawAiName ]);
 
   const onClear = useCallback(async () => {
     await setChatId(randomStr());
@@ -176,21 +197,19 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId]);
+  }, [botId, localStorageKey]);
 
   const onSubmit = async (textQuery) => {
-
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
     }
-
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
-
     setBusy(true);
     setInputText('');
+    resetUploadedImage();
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -209,8 +228,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
     }];
-    // Introduced bug: mistakenly updating 'messages' instead of 'freshMessages'.
-    setMessages(messages);
+    setMessages(freshMessages);
     const body = {
       botId: botId,
       customId: customId,
@@ -219,23 +237,23 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       contextId: contextId,
       messages: messages,
       newMessage: textQuery,
+      newImageId: uploadedImage?.uploadedId,
       stream,
       ...atts
     };
     try {
       if (debugMode) { 
-        // eslint-disable-next-line no-console
         console.log('[CHATBOT] OUT: ', body);
       }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
-          const freshMessages = [...messages];
-          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
-          if (lastMessage && lastMessage.id === freshMessageId) {
-            lastMessage.content = content;
-            lastMessage.timestamp = new Date().getTime();
+          const tempMessages = [...messages];
+          const lastMsg = tempMessages.length > 0 ? tempMessages[tempMessages.length - 1] : null;
+          if (lastMsg && lastMsg.id === freshMessageId) {
+            lastMsg.content = content;
+            lastMsg.timestamp = new Date().getTime();
           }
-          return freshMessages;
+          return tempMessages;
         });
       };
 
@@ -249,6 +267,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
   };
 
+  const onImageUpload = async (file) => {
+    try {
+      const res = await mwaiFetchUpload(`${restUrl}/mwai-ui/v1/upload`, file, restNonce, () => {});
+      setUploadedImage({ localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url });
+    }
+    catch (error) {
+      console.error('onImageUpload Error', error);
+    }
+  };
+
   const actions = {
     setInputText,
     saveMessages,
@@ -257,7 +285,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setClientId: setChatId,
     resetMessages,
     onClear,
-    onSubmit
+    onSubmit,
+    onImageUpload
   };
 
   const state = {
@@ -274,6 +303,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     speechSynthesis,
     modCss,
     localMemory,
+    imageUpload,
+    uploadedImage,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
     isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables, iconUrl
   };

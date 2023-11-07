@@ -404,7 +404,7 @@ class Meow_MWAI_Core
     ];
   }
 
-	public function recordAudioUsage( $model, $seconds ) {
+	public function record_audio_usage( $model, $seconds ) {
 		if ( !is_numeric( $seconds ) ) {
 			throw new Exception( 'Record usage: seconds is not a number.' );
 		}
@@ -428,7 +428,7 @@ class Meow_MWAI_Core
 		];
 	}
 
-  public function recordImagesUsage( $model, $resolution, $images ) {
+  public function record_images_usage( $model, $resolution, $images ) {
     if ( !$model || !$resolution || !$images ) {
       throw new Exception( 'Missing parameters for record_image_usage.' );
     }

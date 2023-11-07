@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.93
+Stable tag: 1.9.94
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,13 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.94 (2023/11/07) =
+* Add: Support for GPT 4 Turbo.
+* Add: Support for Qdrant (alternative to Pinecone).
+* Add: Support for Vision within the chatbot. It is ultra experimental, but it's there! Play with it, but the user experience has to be improved.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.93 (2023/11/03) =
 * 🚀 Please check the previous changelog entry.
 * Update: Removed a lot of useless code related to legacy chatbot, finetuning, etc.
@@ -94,8 +101,6 @@ Languages: English.
 * Update: Enhanced the text cleaning functions to optimize the tokens count.
 * Fix: Various fixes and enhancements.
 * 🎃 This is major update; check your Settings, Chatbots and Forms.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.91 (2023/10/24) =
 * Update: Auto Sync Posts now can be set to use a specific environment, index and namespace.

@@ -29,16 +29,16 @@ class Meow_MWAI_Engines_Core {
     // Only OpenAI is handled for now, so we send all the queries there.
     $reply = null;
     if ( $query instanceof Meow_MWAI_Query_Text ) {
-      $reply = $this->openai->runCompletionQuery( $query, $streamCallback );
+      $reply = $this->openai->run_completion_query( $query, $streamCallback );
     }
     else if ( $query instanceof Meow_MWAI_Query_Embed ) {
-      $reply = $this->openai->runEmbeddingQuery( $query );
+      $reply = $this->openai->run_embedding_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
-      $reply = $this->openai->runImagesQuery( $query );
+      $reply = $this->openai->run_images_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      $reply = $this->openai->runTranscribeQuery( $query );
+      $reply = $this->openai->run_transcribe_query( $query );
     }
     else {
       throw new Exception( 'Unknown query type.' );

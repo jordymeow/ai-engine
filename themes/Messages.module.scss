@@ -234,54 +234,85 @@
 			flex: auto;
 			position: relative;
 			display: flex;
+			background: var(--mwai-backgroundPrimaryColor);
+			border-radius: var(--mwai-borderRadius);
+			border: 1px solid var(--mwai-backgroundAiSecondaryColor);
+			overflow: hidden;
 
 			textarea {
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
 				flex: auto;
-				padding: 5px 10px;
+				padding: var(--mwai-spacing);
+				border: none;
+				font-size: var(--mwai-fontSize);
+				resize: none;
 				font-family: inherit;
-				border-radius: var(--mwai-borderRadius);
-				border: 1px solid var(--mwai-backgroundAiSecondaryColor);
-
+				margin: 0;
+				overflow: hidden;
+	
 				&:focus {
 					outline: none;
 					box-shadow: none;
 				}
-
+	
 				&::placeholder {
 					color: var(--mwai-fontColor);
 					opacity: 0.5;
 				}
 			}
-		}
 
-		.mwai-microphone {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			position: absolute;
-			right: 0px;
-			height: 100%;
-			cursor: pointer;
+			.mwai-microphone, .mwai-image-upload {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				height: 100%;
+				cursor: pointer;
 
-			svg {
-				fill: var(--mwai-fontColor);
-				width: 34px;
-				height: 34px;
-				padding: 5px 10px;
-				fill: var(--mwai-fontColor);
-				opacity: 0.5;
-				transition: opacity 0.3s ease-out;
-			}
-
-			&[active=true] {
 				svg {
-					opacity: 1;
+					fill: var(--mwai-fontColor);
+					width: 34px;
+					height: 34px;
+					fill: var(--mwai-fontColor);
+					opacity: 0.5;
+					transition: opacity 0.3s ease-out;
+				}
+
+				&[active=true] {
+					svg {
+						opacity: 1;
+					}
+				}
+	
+				&[disabled] {
+					svg {
+						opacity: 0;
+					}
 				}
 			}
 
-			&[disabled] {
+			.mwai-image-upload {
+				margin-left: 5px;
+				margin-right: -5px;
+
 				svg {
-					opacity: 0;
+					width: 42px;
+					height: 42px;
+					padding: 5px;
+				}
+
+				&.enabled {
+					svg {
+						opacity: 1;
+						filter: none;
+					}
+				}
+			}
+
+			.mwai-microphone {
+
+				svg {
+					padding: 5px 10px;
 				}
 			}
 		}

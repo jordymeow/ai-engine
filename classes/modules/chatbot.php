@@ -3,7 +3,7 @@
 // Params for the chatbot (front and server)
 
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName',
-	'textSend', 'textClear', 
+	'textSend', 'textClear', 'imageUpload',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
@@ -61,7 +61,11 @@ class Meow_MWAI_Modules_Chatbot {
 			'callback' => array( $this, 'rest_chat' ),
 			'permission_callback' => '__return_true'
 		) );
-		
+		register_rest_route( $this->namespace, '/upload', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_upload' ),
+			'permission_callback' => '__return_true'
+		) );
 	}
 
 	public function basics_security_check( $botId, $customId, $newMessage ) {
@@ -88,6 +92,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$customId = $params['customId'] ?? null;
 		$stream = $params['stream'] ?? false;
 		$newMessage = trim( $params['newMessage'] ?? '' );
+		$newImageId = $params['newImageId'] ?? null;
 
 		if ( !$this->basics_security_check( $botId, $customId, $newMessage )) {
 			return new WP_REST_Response( [ 
@@ -97,7 +102,7 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 
 		try {
-			$data = $this->chat_submit( $botId, $newMessage, $params, $stream );
+			$data = $this->chat_submit( $botId, $newMessage, $newImageId, $params, $stream );
 			return new WP_REST_Response( [
 				'success' => true,
 				'reply' => $data['reply'],
@@ -114,7 +119,31 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 	}
 
-	public function chat_submit( $botId, $newMessage, $params = [], $stream = false ) {
+	public function rest_upload( $request ) {
+    require_once( ABSPATH . 'wp-admin/includes/image.php' );
+    require_once( ABSPATH . 'wp-admin/includes/file.php' );
+    require_once( ABSPATH . 'wp-admin/includes/media.php' );
+    $file = $_FILES['file'];
+    $error = null;
+    if ( empty( $file ) ) {
+			return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
+    }
+    $attachment_id = media_handle_upload( 'file', 0 );
+    if ( is_wp_error( $attachment_id ) ) {
+			$error = $attachment_id->get_error_message();
+			return new WP_REST_Response([ 'success' => false, 'message' => $error ], 500);
+    }
+		update_post_meta( $attachment_id, '_mwai_chatbot_upload', true );
+    return new WP_REST_Response( [
+			'success' => true,
+			'data' => [
+				'id' => $attachment_id,
+				'url' => wp_get_attachment_url( $attachment_id )
+			]
+    ], 200 );
+	}
+
+	public function chat_submit( $botId, $newMessage, $newImageId, $params = [], $stream = false ) {
 		try {
 			$chatbot = null;
 			$customId = $params['customId'] ?? null;
@@ -167,6 +196,21 @@ class Meow_MWAI_Modules_Chatbot {
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
 				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
 				$query->injectParams( $params );
+
+				// Support for Uploaded Image
+				if ( !empty( $newImageId ) ) {
+					$newImage = wp_get_attachment_image_src( $newImageId, 'full' );
+					if ( $newImage ) {
+						$newImageUrl = $newImage[0];
+						$query->setNewImage( $newImageUrl );
+					}
+					if ( $this->core->get_option( 'image_upload' ) ) {
+						$file = get_attached_file( $newImageId );
+						$data = file_get_contents( $file );
+						$data = base64_encode( $data );
+						$query->setNewImageData( $data );
+					}
+				}
 
 				// Takeover
 				$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );

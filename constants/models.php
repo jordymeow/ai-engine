@@ -53,6 +53,23 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'chat']
 	],
+	[
+		"model" => "gpt-4-vision-preview",
+		"name" => "GPT-4 Turbo (Vision)",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'preview', 'json']
+	],
 	[ 
 		"model" => "gpt-4-32k",
 		"name" => "gpt-4-32k",
@@ -152,7 +169,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"options" => [
       [
 				"option" => "1024x1024",
-				"price" => 0.02
+				"price" => 0.020
 			],
       [
 				"option" => "512x512",
@@ -161,6 +178,52 @@ define( 'MWAI_OPENAI_MODELS', [
       [
 				"option" => "256x256",
 				"price" => 0.016
+			]
+    ],
+		"finetune" => false,
+		"tags" => ['core', 'image']
+  ],
+	[
+		"model" => "dall-e-3",
+		"name" => "dall-e-3",
+		"family" => "dall-e",
+		"type" => "image",
+		"unit" => 1,
+		"options" => [
+      [
+				"option" => "1024x1024",
+				"price" => 0.040
+			],
+      [
+				"option" => "1024×1792",
+				"price" => 0.080
+			],
+			[
+				"option" => "1792×1024",
+				"price" => 0.080
+			]
+    ],
+		"finetune" => false,
+		"tags" => ['core', 'image']
+  ],
+	[
+		"model" => "dall-e-3-hd",
+		"name" => "dall-e-3-hd",
+		"family" => "dall-e",
+		"type" => "image",
+		"unit" => 1,
+		"options" => [
+      [
+				"option" => "1024x1024",
+				"price" => 0.080
+			],
+      [
+				"option" => "1024×1792",
+				"price" => 0.120
+			],
+			[
+				"option" => "1792×1024",
+				"price" => 0.120
 			]
     ],
 		"finetune" => false,

@@ -1,13 +1,14 @@
-// Previous: 1.9.82
-// Current: 1.9.84
+// Previous: 1.9.84
+// Current: 1.9.94
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
 
-import { useModClasses, useChrono, useSpeechRecognition, Microphone } from '@app/chatbot/helpers';
+import { useModClasses, useChrono, useSpeechRecognition, Microphone, ImageUpload } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
+import { mwaiFetchUpload } from '@app/helpers';
 
 const ChatbotUI = (props) => {
   const { theme, style } = props;
@@ -25,10 +26,10 @@ const ChatbotUI = (props) => {
   const { state, actions } = useChatbotContext();
   const { botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
     textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables,
-    iconUrl, busy, speechRecognition } = state;
-  const { onClear, onSubmit, setInputText, setMessages, setClientId } = actions;
+    iconUrl, busy, speechRecognition, imageUpload, uploadedImage } = state;
+  const { onClear, onSubmit, setInputText, setMessages, setClientId, onImageUpload } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(prev => prev + transcript);
+    setInputText(() => inputText + transcript);
   });
 
   const refState = useRef(state);
@@ -47,11 +48,11 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(prev => text);
+          setInputText(text);
         }
       }
       else if (task.action === 'toggle') {
-        setOpen(prev => !prev);
+        setOpen(!open);
       }
       else if (task.action === 'open') {
         setOpen(true);
@@ -67,7 +68,7 @@ const ChatbotUI = (props) => {
         setClientId(chatId);
         setMessages(messages);
       }
-      setTasks(prev => prev.slice(1));
+      setTasks(tasks => tasks.slice(1));
     }
   };
 
@@ -81,22 +82,22 @@ const ChatbotUI = (props) => {
         botId: botId,
         customId: customId,
         open: () => { 
-          setTimeout(() => setTasks(prev => [...prev, { action: 'open' }]), 0);
+          setTasks(tasks => [...tasks, { action: 'open' }]);
         },
         close: () => { 
-          setTimeout(() => setTasks(prev => [...prev, { action: 'close' }]), 0);
+          setTasks(tasks => [...tasks, { action: 'close' }]);
         },
         clear: () => { 
-          setTimeout(() => setTasks(prev => [...prev, { action: 'clear' }]), 0);
+          setTasks(tasks => [...tasks, { action: 'clear' }]);
         },
         toggle: () => { 
-          setTimeout(() => setTasks(prev => [...prev, { action: 'toggle' }]), 0);
+          setTasks(tasks => [...tasks, { action: 'toggle' }]);
         },
         ask: (text, submit = false) => {
-          setTimeout(() => setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]), 0);
+          setTasks(tasks => [...tasks, { action: 'ask', data: { text, submit } }]);
         },
         setContext: ({ chatId, messages }) => {
-          setTimeout(() => setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]), 0);
+          setTasks(tasks => [...tasks, { action: 'setContext', data: { chatId, messages } }]);
         },
       });
     }
@@ -117,15 +118,11 @@ const ChatbotUI = (props) => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight + 1; // added +1 to introduce subtle flicker bug
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [open]);
 
   useLayoutEffect(() => {
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
@@ -154,7 +151,11 @@ const ChatbotUI = (props) => {
     if (isListening) {
       setIsListening(false);
     }
-    setInputText(prev => text);
+    setInputText(text);
+  };
+
+  const onUploadFile = async (file) => {
+    onImageUpload(file);
   };
 
   return (<>
@@ -165,22 +166,22 @@ const ChatbotUI = (props) => {
 
       {isWindow && (<>
         <div className={modCss('mwai-open-button')}>
-          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
+          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
             {iconText}
           </div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl} className="no-lightbox"
-            onClick={() => setOpen(prev => !prev)}
+            onClick={() => setOpen(!open)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(prev => !prev)}
+                onClick={() => setMinimized(!minimized)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(prev => !prev)}
+              onClick={() => setOpen(!open)}
             />
           </div>
         </div>
@@ -194,6 +195,15 @@ const ChatbotUI = (props) => {
         </div>
         <div className={modCss('mwai-input')}>
           <div className={modCss('mwai-input-text')}>
+            {imageUpload && 
+              <ImageUpload disabled={busy} className={modCss('mwai-image-upload', { 
+                'mwai-enabled': uploadedImage?.uploadedId,
+                'mwai-busy': uploadedImage?.localFile && !uploadedImage?.uploadedId
+              })}
+              uploadedImage={uploadedImage}
+              onUploadFile={(file) => onUploadFile(file)}
+              />
+            }
             <TextAreaAutosize ref={inputRef} disabled={busy} placeholder={textInputPlaceholder}
               value={inputText} maxLength={textInputMaxLength}
               onCompositionStart={() => setComposing(true)}
@@ -213,7 +223,7 @@ const ChatbotUI = (props) => {
             {speechRecognition && !isMobile && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(prev => !prev)}
+                onClick={() => setIsListening(!isListening)}
               />
             </div>)}
           </div>
@@ -222,7 +232,7 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={busy} onClick={() => { 
             if (isListening) {
-              setIsListening(prev => false);
+              setIsListening(false);
             }
             if (clearMode) {
               onClear();
@@ -241,5 +251,3 @@ const ChatbotUI = (props) => {
     </div>
   </>);
 };
-
-export default ChatbotUI;

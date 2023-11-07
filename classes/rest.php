@@ -549,7 +549,7 @@ class Meow_MWAI_Rest
 		try {
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$files = $openai->listFiles();
+			$files = $openai->list_files();
 			return new WP_REST_Response([ 'success' => true, 'files' => $files ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -575,7 +575,7 @@ class Meow_MWAI_Rest
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
 			$legacy = isset( $_GET['legacy'] ) ? $_GET['legacy'] === 'true' : false;
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$finetunes = $openai->listDeletedFineTunes( $legacy );
+			$finetunes = $openai->list_deleted_finetunes( $legacy );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -589,7 +589,7 @@ class Meow_MWAI_Rest
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
 			$legacy = isset( $_GET['legacy'] ) ? $_GET['legacy'] === 'true' : false;
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$finetunes = $openai->listFineTunes( $legacy );
+			$finetunes = $openai->list_finetunes( $legacy );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -605,7 +605,7 @@ class Meow_MWAI_Rest
 			$filename = sanitize_text_field( $params['filename'] );
 			$data = $params['data'];
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$file = $openai->uploadFile( $filename, $data );
+			$file = $openai->upload_file( $filename, $data );
 			return new WP_REST_Response([ 'success' => true, 'file' => $file ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -620,7 +620,7 @@ class Meow_MWAI_Rest
 			$envId = $params['envId'];;
 			$fileId = $params['fileId'];
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$openai->deleteFile( $fileId );
+			$openai->delete_file( $fileId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -635,7 +635,7 @@ class Meow_MWAI_Rest
 			$envId = $params['envId'];;
 			$finetuneId = $params['finetuneId'];
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$openai->cancelFineTune( $finetuneId );
+			$openai->cancel_finetune( $finetuneId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -650,7 +650,7 @@ class Meow_MWAI_Rest
 			$envId = $params['envId'];;
 			$modelId = $params['modelId'];
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$openai->deleteFineTune( $modelId );
+			$openai->delete_finetune( $modelId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -665,7 +665,7 @@ class Meow_MWAI_Rest
 			$envId = $params['envId'];;
 			$fileId = $params['fileId'];
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$data = $openai->downloadFile( $fileId );
+			$data = $openai->download_file( $fileId );
 			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -686,7 +686,7 @@ class Meow_MWAI_Rest
 				"batchSize" => $params['batchSize']
 			];
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
-			$finetune = $openai->fineTuneFile( $fileId, $model, $suffix, $hyperparams );
+			$finetune = $openai->run_finetune( $fileId, $model, $suffix, $hyperparams );
 			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -702,7 +702,7 @@ class Meow_MWAI_Rest
 				return new WP_REST_Response([ 'success' => true, 'incidents' => $transient ], 200 );
 			}
 			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
-			$incidents = $openai->getIncidents();
+			$incidents = $openai->get_incidents();
 			set_transient( 'mwai_openai_incidents', $incidents, 60 * 10 );
 			return new WP_REST_Response([ 'success' => true, 'incidents' => $incidents ], 200 );
 		}

@@ -1,10 +1,13 @@
-// Previous: 1.6.98
-// Current: 1.6.99
+// Previous: 1.6.99
+// Current: 1.9.94
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
 import cssChatGPT from '@root/../themes/ChatGPT.module.css';
 import cssMessages from '@root/../themes/Messages.module.css';
+
+const svgPicturePath = `
+<linearGradient id=\"SVGID_1_\" gradientUnits=\"userSpaceOnUse\" x1=\"2\" x2=\"22\" y1=\"12\" y2=\"12\"><stop offset=\"0\" stop-color=\"#bbdefb\"/><stop offset=\"1\" stop-color=\"#64b5f6\"/></linearGradient><linearGradient id=\"lg1\"><stop offset=\"0\" stop-color=\"#42a5f5\"/><stop offset=\"1\" stop-color=\"#1e88e5\"/></linearGradient><linearGradient id=\"SVGID_2_\" gradientUnits=\"userSpaceOnUse\" x1=\"2\" x2=\"22\" xlink:href=\"#lg1\" y1=\"15.672\" y2=\"15.672\"/><linearGradient id=\"SVGID_3_\" gradientUnits=\"userSpaceOnUse\" x1=\"13\" x2=\"19\" xlink:href=\"#lg1\" y1=\"8\" y2=\"8\"/><g id=\"picture\"><g><path d=\"m19 2h-14c-1.6542969 0-3 1.3457031-3 3v14c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-14c0-1.6542969-1.3457031-3-3-3z\" fill=\"url(#SVGID_1_)\"/><path d=\"m17.2304688 13.7666016c-.3330078.1679688-.7348633.2568359-1.1630859.2568359-.8891602 0-1.7543945-.3662109-2.2597656-.9560547l-2.0976563-2.4375c-.7006837-.8183594-1.6884766-1.2871094-2.709961-1.2871094s-2.0092773.46875-2.7089844 1.2861328l-4.2910156 5.0009766v3.3701172c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-7.6181641z\" fill=\"url(#SVGID_2_)\"/><circle cx=\"16\" cy=\"8\" fill=\"url(#SVGID_3_)\" r=\"3\"/></g></g>`;
 
 const Microphone = ({ active, disabled, style, ...rest }) => {
 
@@ -28,11 +31,11 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
   `;
 
   const iconStyle = {
-    display: "inline-block",
-    width: "16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    width: "16px",
+    height: "16px",
     animation: active ? "pulse 2s infinite" : "",
     WebkitAnimation: active ? "pulse 2s infinite" : ""
   };
@@ -41,6 +44,64 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
     <div active={active ? "true" : "false"} disabled={disabled} {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"
         dangerouslySetInnerHTML={{ __html: svgPath }}
+      />
+    </div>
+  );
+};
+
+const ImageUpload = ({ active, onUploadFile, uploadedImage, disabled, style, ...rest }) => {
+  const fileInputRef = useRef();
+
+  const handleClick = () => {
+    if (!disabled) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const files = event.target.files;
+    if (files.length > 0) {
+      const file = files[0];
+      onUploadFile(file);
+    }
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (disabled) {
+      return;
+    }
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      onUploadFile(file);
+    }
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  return (
+    <div 
+      disabled={disabled} 
+      onClick={handleClick} 
+      onDrop={handleDrop} 
+      onDragOver={handleDragOver}
+      style={{ cursor: disabled ? 'default' : 'pointer', ...style }}
+      {...rest}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+        dangerouslySetInnerHTML={{ __html: svgPicturePath }}
+      />
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        style={{ display: 'none' }} 
       />
     </div>
   );
@@ -124,13 +185,14 @@ function handlePlaceholders(template, guestName = 'Guest: ', userData) {
 function useChrono() {
   const [timeElapsed, setTimeElapsed] = useState(null);
   const intervalIdRef = useRef(null);
+  const startTimeRef = useRef(0);
 
   function startChrono() {
     if (intervalIdRef.current !== null) return;
 
-    const startTime = Date.now();
+    startTimeRef.current = Date.now();
     intervalIdRef.current = setInterval(() => {
-      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
       setTimeElapsed(formatTime(elapsedSeconds));
     }, 500);
   }
@@ -214,10 +276,11 @@ const processParameters = (params) => {
   const aiName = params.aiName?.trim() ?? "";
   const userName = params.userName?.trim() ?? "";
   const localMemory = Boolean(params.localMemory);
+  const imageUpload = Boolean(params.imageUpload);
 
   return { 
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    window, copyButton, fullscreen, localMemory,
+    window, copyButton, fullscreen, localMemory, imageUpload,
     icon, iconText, iconAlt, iconPosition,
     aiName, userName, guestName
   };
@@ -265,4 +328,9 @@ const useSpeechRecognition = (onResult) => {
   }, [isListening, speechRecognitionAvailable]);
 
   return { isListening, setIsListening, speechRecognitionAvailable };
+};
+
+export { useModClasses, isUrl, handlePlaceholders, useInterval,
+  useSpeechRecognition, Microphone, ImageUpload, 
+  useChrono, formatUserName, formatAiName, processParameters
 };

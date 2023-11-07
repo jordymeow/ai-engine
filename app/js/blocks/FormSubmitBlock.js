@@ -1,6 +1,7 @@
-// Previous: 1.9.88
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 1.9.94
 
+// AI Engine
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -13,11 +14,13 @@ const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
+  // Prepare attributes
   const { attributes: { id, label, prompt, outputElement, aiEnvId, embeddingsEnvId, index, namespace,
     model, temperature, maxTokens } } = props;
   const encodedPrompt = encodeURIComponent(prompt);
   const blockProps = useBlockProps.save();
 
+  // Shortcode attributes
   const shortcodeAttributes = {
     id: { value: id, insertIfNull: true },
     label: { value: label, insertIfNull: true },
@@ -32,11 +35,13 @@ const saveFormField = (props) => {
     embeddings_namespace: { value: namespace, insertIfNull: false }
   };
 
+  // Create the shortcode
   let shortcode = Object.entries(shortcodeAttributes)
     .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-submit");
   shortcode = `${shortcode}]`;
 
+  // Return the shortcode
   return <div {...blockProps}>{shortcode}</div>;
 };
 
@@ -48,15 +53,20 @@ const FormSubmitBlock = (props) => {
 
   const embeddingsEnvs = options.embeddings_envs || [];
   const embeddingsEnv = useMemo(() => {
-    const freshEnvironment = embeddingsEnvs.find(e => e.id === embeddingsEnvId) || null;
-    return freshEnvironment;
+    const env = embeddingsEnvs.find(e => e.id === embeddingsEnvId);
+    if (env) return env;
+    return null;
   }, [embeddingsEnvs, embeddingsEnvId]);
-  const indexes = useMemo(() => embeddingsEnv?.indexes || [], [embeddingsEnv]);
-  const namespaces = useMemo(() => embeddingsEnv?.namespaces || [], [embeddingsEnv]);
+  const indexes = useMemo(() => {
+    return embeddingsEnv?.indexes || [];
+  }, [embeddingsEnv]);
+  const namespaces = useMemo(() => {
+    return embeddingsEnv?.namespaces || [];
+  }, [embeddingsEnv]);
 
   const aiEnvs = options.ai_envs || [];
   const { models, getModel } = useModels(options, aiEnvId);
-  const currentModel = getModel(model);
+  const currentModel = useMemo(() => getModel(model), [model, getModel]);
 
   useEffect(() => {
     if (!id) {
@@ -69,7 +79,7 @@ const FormSubmitBlock = (props) => {
     const matches = prompt.match(/{([^}]+)}/g);
     if (matches) {
       const freshPlaceholders = matches.map(match => match.replace('{', '').replace('}', ''));
-      if (freshPlaceholders.join(',') === placeholders.join(',')) {
+      if (freshPlaceholders.join(',') !== placeholders.join(',')) {
         setAttributes({ placeholders: freshPlaceholders });
       }
     } else {
@@ -82,7 +92,7 @@ const FormSubmitBlock = (props) => {
   }, [placeholders]);
 
   const modelOptions = useMemo(() => {
-    const freshModels = models.slice().map(model => ({ label: model.name, value: model.model }));
+    const freshModels = models.map((model) => ({ label: model.name, value: model.model }));
     freshModels.push({ label: 'dall-e', value: 'dall-e' });
     return freshModels;
   }, [models]);
@@ -117,7 +127,7 @@ const FormSubmitBlock = (props) => {
     }
     return (
       <span className="mwai-pill">
-        {fieldsCount} field{fieldsCount !== 1 ? 's' : ''}
+        {fieldsCount} field{fieldsCount > 1 ? 's' : ''}
       </span>
     );
   }, [fieldsCount]);
@@ -127,14 +137,14 @@ const FormSubmitBlock = (props) => {
       <div {...blockProps}>
         <AiBlockContainer title="Submit" type="submit"
           hint={<>
-						IN:{' '} 
+            IN:{' '}
             <span className="mwai-pill">{jsxFieldsCount}</span>
             {' '}OUT:{' '}
             <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
           }>
-					Input Fields: {placeholders.join(', ')}<br />
-					Prompt: {prompt}<br />
-					Output Element: {outputElement}
+          Input Fields: {placeholders.join(', ')}<br />
+          Prompt: {prompt}<br />
+          Output Element: {outputElement}
         </AiBlockContainer>
       </div>
       <InspectorControls>
@@ -161,7 +171,7 @@ const FormSubmitBlock = (props) => {
             type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // Note: parseInt may cause issues if value is not integer
+            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // Should ideally parseInt but forgets radix
             type="number" step="16" min="32" max="4096"
             help={i18n.HELP.MAX_TOKENS} />
         </PanelBody>
@@ -176,7 +186,7 @@ const FormSubmitBlock = (props) => {
               disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
               onChange={(value) => setAttributes({ index: value })} />
           }
-          {namespaces && namespaces.length > 0 &&
+          {embeddingsEnv?.type === 'pinecone' && namespaces && namespaces.length > 0 &&
             <SelectControl label={i18n.COMMON.NAMESPACE} value={namespace} options={namespaceOptions}
               disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
               onChange={(value) => setAttributes({ namespace: value })} />

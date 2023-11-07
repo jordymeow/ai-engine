@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 1.9.94
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoSpacer,
   NekoCollapsableCategories, NekoCollapsableCategory,
@@ -11,20 +11,19 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
 
   const addNewEnvironment = () => {
     const newEnv = {
-      id: Date.now(), 
       name: 'New Environment',
       type: 'pinecone', 
       apikey: '',
       server: '',
       indexes: [],
-      namespaces: []
+      namespaces: [],
     };
     const updatedEnvironments = [...environments, newEnv];
     updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
   const deleteEnvironment = (id) => {
-    if (environments.length === 1) {
+    if (environments.length <= 1) {
       alert("You can't delete the last environment.");
       return;
     }
@@ -49,19 +48,22 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
               <NekoSelect scrolldown name="type" value={env.type}
                 onChange={value => updateEnvironment(env.id, { type: value })}>
                 <NekoOption value="pinecone" label="Pinecone" />
+                <NekoOption value="qdrant" label="Qdrant" />
               </NekoSelect>
             </NekoSettings>
             
             <NekoSettings title={i18n.COMMON.API_KEY}>
               <NekoInput  name="apikey" value={env.apikey}
-                description={toHTML(i18n.COMMON.EMBEDDINGS_APIKEY_HELP)} 
+                description={toHTML(env.type === 'pinecone' ? i18n.COMMON.PINECONE_APIKEY_HELP :
+                  i18n.COMMON.QDRANT_APIKEY_HELP)}
                 onFinalChange={value => updateEnvironment(env.id, { apikey: value })} 
               />
             </NekoSettings>
             
             <NekoSettings title={i18n.COMMON.SERVER}>
+              {env.type === 'pinecone' && 
               <NekoSelect scrolldown name="server" value={env.server} 
-                description={toHTML(i18n.COMMON.SERVER_HELP)}
+                description={toHTML(i18n.COMMON.PINECONE_SERVER_HELP)}
                 onChange={value => {
                   updateEnvironment(env.id, { server: value });
                 }}>
@@ -83,17 +85,22 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
                 <NekoOption value="asia-northeast1-gcp" label="asia-northeast1-gcp" />
                 <NekoOption value="asia-southeast1-gcp-free" label="asia-southeast1-gcp-free" />
                 <NekoOption value="eastus-azure" label="eastus-azure" />
-              </NekoSelect>
+              </NekoSelect>}
+              {env.type === 'qdrant' &&
+              <NekoInput name="server" value={env.server} 
+                description={toHTML(i18n.COMMON.QDRANT_SERVER_HELP)}
+                onFinalChange={value => updateEnvironment(env.id, { server: value })}
+              />}
             </NekoSettings>
 
-            <NekoSettings title={i18n.COMMON.NAMESPACES}>
+            {env.type === 'pinecone' && <NekoSettings title={i18n.COMMON.NAMESPACES}>
               <NekoInput isCommaSeparatedArray name="namespaces" value={env.namespaces}
                 disabled={env.server === 'gcp-starter'}
                 description={toHTML(i18n.COMMON.NAMESPACES_HELP)}
                 onFinalChange={value => {
                   updateEnvironment(env.id, { namespaces: value });
                 }} />
-            </NekoSettings>
+            </NekoSettings>}
 
             {env?.indexes?.length === 0 && <>
               <NekoMessage variant="danger">
@@ -108,7 +115,9 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
                 <div style={{ display: 'flex', marginTop: 10 }}>
                   <div style={{ flex: 'auto' }} />
                   <NekoButton className="danger"
-                    onClick={() => deleteEnvironment(env.id)}>
+                    onClick={() => {
+                      deleteEnvironment(env.id);
+                    }}>
                     {i18n.COMMON.DELETE}
                   </NekoButton>
                 </div>

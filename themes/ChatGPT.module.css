@@ -370,6 +370,9 @@
   flex: auto;
   position: relative;
   display: flex;
+  background: var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  overflow: hidden;
 }
 
 .mwai-chat .mwai-input .mwai-input-text textarea {
@@ -378,7 +381,6 @@
   flex: auto;
   padding: var(--mwai-spacing);
   border: none;
-  border-radius: var(--mwai-borderRadius);
   font-size: var(--mwai-fontSize);
   resize: none;
   font-family: inherit;
@@ -396,32 +398,51 @@
   opacity: 0.5;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  right: 0px;
   height: 100%;
   cursor: pointer;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload svg {
   fill: var(--mwai-fontColor);
   width: 34px;
   height: 34px;
-  padding: 5px 10px;
   fill: var(--mwai-fontColor);
   opacity: 0.5;
+  filter: grayscale(100%);
   transition: opacity 0.3s ease-out;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload[active=true] svg {
   opacity: 1;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload[disabled] svg {
   opacity: 0;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload {
+  margin-left: 5px;
+  margin-right: -12px;
+  z-index: 100;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload svg {
+  width: 42px;
+  height: 42px;
+  padding: 5px;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload.mwai-enabled svg {
+  opacity: 1;
+  filter: none;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg {
+  padding: 5px 10px;
 }
 
 .mwai-chat .mwai-input button {
