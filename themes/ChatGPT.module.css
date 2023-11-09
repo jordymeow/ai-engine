@@ -44,11 +44,19 @@
   background: var(--mwai-backgroundPrimaryColor);
 }
 
+.mwai-discussions button[disabled], .mwai-chat button[disabled] {
+  cursor: not-allowed;
+}
+
 .mwai-discussions button[disabled] span, .mwai-chat button[disabled] span {
+  opacity: 0.5;
+}
+
+.mwai-discussions button[disabled].mwai-busy span, .mwai-chat button[disabled].mwai-busy span {
   display: none;
 }
 
-.mwai-discussions button[disabled]:before, .mwai-chat button[disabled]:before {
+.mwai-discussions button[disabled].mwai-busy:before, .mwai-chat button[disabled].mwai-busy:before {
   content: '';
   width: 18px;
   height: 18px;
@@ -434,6 +442,11 @@
   width: 42px;
   height: 42px;
   padding: 5px;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload span {
+  position: absolute;
+  font-size: 55%;
 }
 
 .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload.mwai-enabled svg {

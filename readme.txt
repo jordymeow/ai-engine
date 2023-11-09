@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.94
+Stable tag: 1.9.95
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Features ==
 
-* Models: ChatGPT, GPT-3, GPT-3 16k, GPT-4, GPT-4 32k, DaVinci, Babbage, etc.
+* Models: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc
 * Add a ChatGPT chatbot (or an images creation bot) to your website easily
 * Generate fresh and engaging content for your site
 * Use the AI Copilot to help you brainstorm ideas and write faster
@@ -82,12 +82,16 @@ Languages: English.
 
 == Changelog ==
 
-= 1.9.94 (2023/11/07) =
-* Add: Support for GPT 4 Turbo.
-* Add: Support for Qdrant (alternative to Pinecone).
-* Add: Support for Vision within the chatbot. It is ultra experimental, but it's there! Play with it, but the user experience has to be improved.
+= 1.9.95 (2023/11/10) =
+* Add: New "Images" section in the Settings related to "Vision".
+* Update: Much better handling of images (where/how it's stored and sent to the models, their expiries, etc).
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 1.9.94 (2023/11/07) =
+* Add: Support for GPT-4 Turbo.
+* Add: Support for Qdrant (alternative to Pinecone).
+* Add: Support for Vision within the chatbot. It is ultra experimental, but it's there! Play with it, but the user experience has to be improved.
 
 = 1.9.93 (2023/11/03) =
 * 🚀 Please check the previous changelog entry.

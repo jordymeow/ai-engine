@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.9.94
+// Previous: 1.9.94
+// Current: 1.9.95
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -7,10 +7,9 @@ import cssChatGPT from '@root/../themes/ChatGPT.module.css';
 import cssMessages from '@root/../themes/Messages.module.css';
 
 const svgPicturePath = `
-<linearGradient id=\"SVGID_1_\" gradientUnits=\"userSpaceOnUse\" x1=\"2\" x2=\"22\" y1=\"12\" y2=\"12\"><stop offset=\"0\" stop-color=\"#bbdefb\"/><stop offset=\"1\" stop-color=\"#64b5f6\"/></linearGradient><linearGradient id=\"lg1\"><stop offset=\"0\" stop-color=\"#42a5f5\"/><stop offset=\"1\" stop-color=\"#1e88e5\"/></linearGradient><linearGradient id=\"SVGID_2_\" gradientUnits=\"userSpaceOnUse\" x1=\"2\" x2=\"22\" xlink:href=\"#lg1\" y1=\"15.672\" y2=\"15.672\"/><linearGradient id=\"SVGID_3_\" gradientUnits=\"userSpaceOnUse\" x1=\"13\" x2=\"19\" xlink:href=\"#lg1\" y1=\"8\" y2=\"8\"/><g id=\"picture\"><g><path d=\"m19 2h-14c-1.6542969 0-3 1.3457031-3 3v14c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-14c0-1.6542969-1.3457031-3-3-3z\" fill=\"url(#SVGID_1_)\"/><path d=\"m17.2304688 13.7666016c-.3330078.1679688-.7348633.2568359-1.1630859.2568359-.8891602 0-1.7543945-.3662109-2.2597656-.9560547l-2.0976563-2.4375c-.7006837-.8183594-1.6884766-1.2871094-2.709961-1.2871094s-2.0092773.46875-2.7089844 1.2861328l-4.2910156 5.0009766v3.3701172c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-7.6181641z\" fill=\"url(#SVGID_2_)\"/><circle cx=\"16\" cy=\"8\" fill=\"url(#SVGID_3_)\" r=\"3\"/></g></g>`;
+<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="2" x2="22" y1="12" y2="12"><stop offset="0" stop-color="#bbdefb"/><stop offset="1" stop-color="#64b5f6"/></linearGradient><linearGradient id="lg1"><stop offset="0" stop-color="#42a5f5"/><stop offset="1" stop-color="#1e88e5"/></linearGradient><linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="2" x2="22" xlink:href="#lg1" y1="15.672" y2="15.672"/><linearGradient id="SVGID_3_" gradientUnits="userSpaceOnUse" x1="13" x2="19" xlink:href="#lg1" y1="8" y2="8"/><g id="picture"><g><path d="m19 2h-14c-1.6542969 0-3 1.3457031-3 3v14c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-14c0-1.6542969-1.3457031-3-3-3z" fill="url(#SVGID_1_)"/><path d="m17.2304688 13.7666016c-.3330078.1679688-.7348633.2568359-1.1630859.2568359-.8891602 0-1.7543945-.3662109-2.2597656-.9560547l-2.0976563-2.4375c-.7006837-.8183594-1.6884766-1.2871094-2.709961-1.2871094s-2.0092773.46875-2.7089844 1.2861328l-4.2910156 5.0009766v3.3701172c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-7.6181641z" fill="url(#SVGID_2_)"/><circle cx="16" cy="8" fill="url(#SVGID_3_)" r="3"/></g></g>`;
 
 const Microphone = ({ active, disabled, style, ...rest }) => {
-
   const svgPath = `<path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM64 216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 89.1 66.2 162.7 152 174.4V464H120c-13.3 0-24 10.7-24 24s10.7 24 24 24h72 72c13.3 0 24-10.7 24-24s-10.7-24-24-24H216V430.4c85.8-11.7 152-85.3 152-174.4V216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 70.7-57.3 128-128 128s-128-57.3-128-128V216z"/>`;
 
   const pulsarAnimation = `
@@ -31,11 +30,11 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
   `;
 
   const iconStyle = {
+    display: "inline-block",
+    width: "16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "16px",
-    height: "16px",
     animation: active ? "pulse 2s infinite" : "",
     WebkitAnimation: active ? "pulse 2s infinite" : ""
   };
@@ -86,23 +85,16 @@ const ImageUpload = ({ active, onUploadFile, uploadedImage, disabled, style, ...
   };
 
   return (
-    <div 
-      disabled={disabled} 
-      onClick={handleClick} 
-      onDrop={handleDrop} 
-      onDragOver={handleDragOver}
+    <div disabled={disabled} onClick={handleClick} onDrop={handleDrop} onDragOver={handleDragOver}
       style={{ cursor: disabled ? 'default' : 'pointer', ...style }}
-      {...rest}
-    >
+      {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
         dangerouslySetInnerHTML={{ __html: svgPicturePath }}
       />
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        style={{ display: 'none' }} 
-      />
+      <span>
+        {uploadedImage.uploadProgress && `${Math.round(uploadedImage.uploadProgress)}%`}
+      </span>
+      <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
     </div>
   );
 };
@@ -119,7 +111,7 @@ function useInterval(delay, callback, enabled = true) {
       savedCallback.current();
     }
     if (delay !== null && enabled) {
-      let id = setInterval(tick, delay);
+      const id = setInterval(tick, delay);
       return () => clearInterval(id);
     }
   }, [delay, enabled]);
@@ -185,14 +177,13 @@ function handlePlaceholders(template, guestName = 'Guest: ', userData) {
 function useChrono() {
   const [timeElapsed, setTimeElapsed] = useState(null);
   const intervalIdRef = useRef(null);
-  const startTimeRef = useRef(0);
 
   function startChrono() {
     if (intervalIdRef.current !== null) return;
 
-    startTimeRef.current = Date.now();
+    const startTime = Date.now();
     intervalIdRef.current = setInterval(() => {
-      const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
       setTimeElapsed(formatTime(elapsedSeconds));
     }, 500);
   }

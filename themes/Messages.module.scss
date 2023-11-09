@@ -301,6 +301,11 @@
 					padding: 5px;
 				}
 
+				span {
+					position: absolute;
+					font-size: 55%;
+				}
+
 				&.enabled {
 					svg {
 						opacity: 1;
@@ -344,20 +349,28 @@
 	}
 
 	button[disabled] {
+		cursor: not-allowed;
 
 		span {
-			display: none;
+			opacity: 0.5;
 		}
 
-		&:before {
-			content: '';
-			width: 14px;
-			height: 14px;
-			margin: auto;
-			border: 2px solid transparent;
-			border-top-color: white;
-			border-radius: 50%;
-			animation: mwai-button-spinner 1s ease infinite;
+		&.mwai-busy {
+
+			span {
+				display: none;
+			}
+
+			&:before {
+				content: '';
+				width: 18px;
+				height: 18px;
+				margin: auto;
+				border: 3px solid transparent;
+				border-top-color: var(--mwai-fontColor);
+				border-radius: 50%;
+				animation: mwai-button-spinner 1s ease infinite;
+			}
 		}
 	}
 

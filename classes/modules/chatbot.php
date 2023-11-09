@@ -61,11 +61,6 @@ class Meow_MWAI_Modules_Chatbot {
 			'callback' => array( $this, 'rest_chat' ),
 			'permission_callback' => '__return_true'
 		) );
-		register_rest_route( $this->namespace, '/upload', array(
-			'methods' => 'POST',
-			'callback' => array( $this, 'rest_upload' ),
-			'permission_callback' => '__return_true'
-		) );
 	}
 
 	public function basics_security_check( $botId, $customId, $newMessage ) {
@@ -117,30 +112,6 @@ class Meow_MWAI_Modules_Chatbot {
 				'message' => $message
 			], 500 );
 		}
-	}
-
-	public function rest_upload( $request ) {
-    require_once( ABSPATH . 'wp-admin/includes/image.php' );
-    require_once( ABSPATH . 'wp-admin/includes/file.php' );
-    require_once( ABSPATH . 'wp-admin/includes/media.php' );
-    $file = $_FILES['file'];
-    $error = null;
-    if ( empty( $file ) ) {
-			return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
-    }
-    $attachment_id = media_handle_upload( 'file', 0 );
-    if ( is_wp_error( $attachment_id ) ) {
-			$error = $attachment_id->get_error_message();
-			return new WP_REST_Response([ 'success' => false, 'message' => $error ], 500);
-    }
-		update_post_meta( $attachment_id, '_mwai_chatbot_upload', true );
-    return new WP_REST_Response( [
-			'success' => true,
-			'data' => [
-				'id' => $attachment_id,
-				'url' => wp_get_attachment_url( $attachment_id )
-			]
-    ], 200 );
 	}
 
 	public function chat_submit( $botId, $newMessage, $newImageId, $params = [], $stream = false ) {
@@ -199,15 +170,13 @@ class Meow_MWAI_Modules_Chatbot {
 
 				// Support for Uploaded Image
 				if ( !empty( $newImageId ) ) {
-					$newImage = wp_get_attachment_image_src( $newImageId, 'full' );
-					if ( $newImage ) {
-						$newImageUrl = $newImage[0];
-						$query->setNewImage( $newImageUrl );
+					$remote_upload = $this->core->get_option( 'image_remote_upload' );
+					$url = $this->core->files->get_url( $newImageId );
+					if ( $url ) {
+						$query->setNewImage( $url );
 					}
-					if ( $this->core->get_option( 'image_upload' ) ) {
-						$file = get_attached_file( $newImageId );
-						$data = file_get_contents( $file );
-						$data = base64_encode( $data );
+					if ( $remote_upload === 'data' ) {
+						$data = $this->core->files->get_base64_data( $newImageId );
 						$query->setNewImageData( $data );
 					}
 				}

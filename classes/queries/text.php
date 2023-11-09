@@ -62,19 +62,26 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   // Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
-  function estimateTokens( $content ): int
+  function estimateTokens( $promptOrMessages ): int
   {
     $text = "";
     // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    if ( is_array( $content ) ) {
-      foreach ( $content as $message ) {
+    if ( is_array( $promptOrMessages ) ) {
+      foreach ( $promptOrMessages as $message ) {
         $role = $message['role'];
         $content = $message['content'];
+        if ( is_array( $content ) ) {
+          foreach ( $content as $subMessage ) { 
+            if ( $subMessage['type'] === 'text' ) {
+              $text .= $subMessage['text'];
+            }
+          }
+        }
         $text .= "=#=$role\n$content=#=\n";
       }
     }
     else {
-      $text = $content;
+      $text = $promptOrMessages;
     }
     $tokens = 0;
     return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $this->model );
@@ -86,7 +93,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public function finalChecks() {
     if ( empty( $this->model )  ) { return; }
 
-    // Make sure the number of messages is not too great
+    // Make sure the number of messages is not too great.
     if ( !empty( $this->maxSentences ) ) {
       $context = array_shift( $this->messages );
       if ( !empty( $this->messages ) ) {
@@ -99,10 +106,10 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
         array_unshift( $this->messages, $context );
       }
 
-      // If the last message is an array, let's look at the message which has a type === 'image_url'
-      $lastKey = key(array_slice($this->messages, -1, 1, true)); // Get the last key of the messages array
-
+      // If there is a newImageData, it means we are using the Vision API with Image Upload to the OpenAI servers
+      // instead of using the URL. In that case, we need to update the URL with the newImageData.
       if ( !empty( $this->newImageData ) ) {
+        $lastKey = key( array_slice( $this->messages, -1, 1, true ) );
         if ( is_array( $this->messages[$lastKey]['content'] ) ) {
           foreach ( $this->messages[$lastKey]['content'] as &$message ) {
             if ( $message['type'] === 'image_url' ) {
@@ -115,27 +122,31 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       }
     }
 
+    //NOTE: Removed the checks related to the MaxTokens (as of November 8th)
+    // Let's see if we can remove this completely.
+
     // Make sure the max tokens are respected.
-    $realMax = 4096;
-    $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
-    $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
-    $foundModel = null;
-    $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
-    foreach ( $openai_models as $currentModel ) {
-      if ( $currentModel['model'] === $this->model || $currentModel['family'] === $finetuneFamily ) {
-        $foundModel = $currentModel['name'];
-        $realMax = $currentModel['maxTokens'];
-        break;
-      }
-    }
-    $estimatedTokens = $this->getPromptTokens();
-    if ( !empty( $realMax ) && $estimatedTokens > $realMax ) {
-      throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The $foundModel model only accepts a maximum of $realMax tokens. " );
-    }
-    $realMax = (int)($realMax - $estimatedTokens) - 16;
-    if ( $this->maxTokens > $realMax ) {
-      $this->maxTokens = $realMax;
-    }
+    // $realMax = 4096;
+    // $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
+    // $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
+    // $foundModel = null;
+    // $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
+    // foreach ( $openai_models as $currentModel ) {
+    //   if ( $currentModel['model'] === $this->model || $currentModel['family'] === $finetuneFamily ) {
+    //     $foundModel = $currentModel['name'];
+    //     $realMax = $currentModel['maxTokens'];
+    //     break;
+    //   }
+    // }
+
+    // $estimatedTokens = $this->getPromptTokens();
+    // if ( !empty( $realMax ) && $estimatedTokens > $realMax ) {
+    //   throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The $foundModel model only accepts a maximum of $realMax tokens. " );
+    // }
+    // $realMax = (int)($realMax - $estimatedTokens) - 16;
+    // if ( $this->maxTokens > $realMax ) {
+    //   $this->maxTokens = $realMax;
+    // }
   }
 
   /**

@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 1.9.94
+// Previous: 1.9.94
+// Current: 1.9.95
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoSpacer,
   NekoCollapsableCategories, NekoCollapsableCategory,
@@ -11,19 +11,20 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
 
   const addNewEnvironment = () => {
     const newEnv = {
+      id: Math.random().toString(36).substr(2, 9),
       name: 'New Environment',
       type: 'pinecone', 
       apikey: '',
       server: '',
       indexes: [],
-      namespaces: [],
+      namespaces: []
     };
     const updatedEnvironments = [...environments, newEnv];
     updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
   const deleteEnvironment = (id) => {
-    if (environments.length <= 1) {
+    if (environments.length === 1) {
       alert("You can't delete the last environment.");
       return;
     }
@@ -46,6 +47,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
             
             <NekoSettings title={i18n.COMMON.TYPE}>
               <NekoSelect scrolldown name="type" value={env.type}
+                description={env.type === 'qdrant' ? toHTML(i18n.HELP.QDRANT) : null}
                 onChange={value => updateEnvironment(env.id, { type: value })}>
                 <NekoOption value="pinecone" label="Pinecone" />
                 <NekoOption value="qdrant" label="Qdrant" />
@@ -115,9 +117,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
                 <div style={{ display: 'flex', marginTop: 10 }}>
                   <div style={{ flex: 'auto' }} />
                   <NekoButton className="danger"
-                    onClick={() => {
-                      deleteEnvironment(env.id);
-                    }}>
+                    onClick={() => deleteEnvironment(env.id)}>
                     {i18n.COMMON.DELETE}
                   </NekoButton>
                 </div>

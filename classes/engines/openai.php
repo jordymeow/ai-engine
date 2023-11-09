@@ -438,11 +438,12 @@ class Meow_MWAI_Engines_OpenAI
       $reply = new Meow_MWAI_Reply( $query );
 
       // Streamed data
+      $prompt_tokens = $query->getPromptTokens();
       if ( !is_null( $streamCallback ) ) {
         $data = [
           'model' => $query->model,
           'usage' => [
-            'prompt_tokens' => $query->getPromptTokens(),
+            'prompt_tokens' => $prompt_tokens,
             'completion_tokens' => $this->streamedTokens
           ],
           'choices' => [

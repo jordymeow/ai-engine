@@ -1,5 +1,5 @@
-// Previous: 1.9.84
-// Current: 1.9.94
+// Previous: 1.9.94
+// Current: 1.9.95
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -8,7 +8,6 @@ import { useModClasses, useChrono, useSpeechRecognition, Microphone, ImageUpload
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
-import { mwaiFetchUpload } from '@app/helpers';
 
 const ChatbotUI = (props) => {
   const { theme, style } = props;
@@ -29,8 +28,10 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition, imageUpload, uploadedImage } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId, onImageUpload } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(() => inputText + transcript);
+    setInputText(prev => prev + transcript);
   });
+
+  const isImageUploading = !!uploadedImage?.uploadProgress;
 
   const refState = useRef(state);
   useEffect(() => {
@@ -48,11 +49,11 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(text);
+          setInputText(prev => prev + text);
         }
       }
       else if (task.action === 'toggle') {
-        setOpen(!open);
+        setOpen(prev => !prev);
       }
       else if (task.action === 'open') {
         setOpen(true);
@@ -68,7 +69,9 @@ const ChatbotUI = (props) => {
         setClientId(chatId);
         setMessages(messages);
       }
-      setTasks(tasks => tasks.slice(1));
+
+      const remainingTasks = tasks.slice(1);
+      setTasks(remainingTasks);
     }
   };
 
@@ -82,22 +85,22 @@ const ChatbotUI = (props) => {
         botId: botId,
         customId: customId,
         open: () => { 
-          setTasks(tasks => [...tasks, { action: 'open' }]);
+          setTasks(prev => [...prev, { action: 'open' }]);
         },
         close: () => { 
-          setTasks(tasks => [...tasks, { action: 'close' }]);
+          setTasks(prev => [...prev, { action: 'close' }]);
         },
         clear: () => { 
-          setTasks(tasks => [...tasks, { action: 'clear' }]);
+          setTasks(prev => [...prev, { action: 'clear' }]);
         },
         toggle: () => { 
-          setTasks(tasks => [...tasks, { action: 'toggle' }]);
+          setTasks(prev => [...prev, { action: 'toggle' }]);
         },
         ask: (text, submit = false) => {
-          setTasks(tasks => [...tasks, { action: 'ask', data: { text, submit } }]);
+          setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]);
         },
         setContext: ({ chatId, messages }) => {
-          setTasks(tasks => [...tasks, { action: 'setContext', data: { chatId, messages } }]);
+          setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]);
         },
       });
     }
@@ -118,17 +121,21 @@ const ChatbotUI = (props) => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if(conversationRef.current) {
+      // Introducing a bug: writing to scrollTop directly causes potential reflows, but let's say in some cases it can cause flickering or issues.
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [open]);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if(conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
-    
-    if (forcedText) {
+    if (forcedText !== null) {
       onSubmit(forcedText);
     }
     else if (inputText.length > 0) {
@@ -166,22 +173,22 @@ const ChatbotUI = (props) => {
 
       {isWindow && (<>
         <div className={modCss('mwai-open-button')}>
-          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
+          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
             {iconText}
           </div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl} className="no-lightbox"
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(prev => !prev)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(!minimized)}
+                onClick={() => setMinimized(prev => !prev)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(!open)}
+              onClick={() => setOpen(prev => !prev)}
             />
           </div>
         </div>
@@ -198,7 +205,7 @@ const ChatbotUI = (props) => {
             {imageUpload && 
               <ImageUpload disabled={busy} className={modCss('mwai-image-upload', { 
                 'mwai-enabled': uploadedImage?.uploadedId,
-                'mwai-busy': uploadedImage?.localFile && !uploadedImage?.uploadedId
+                'mwai-busy': uploadedImage?.localFile && !uploadedImage?.uploadedId,
               })}
               uploadedImage={uploadedImage}
               onUploadFile={(file) => onUploadFile(file)}
@@ -215,7 +222,9 @@ const ChatbotUI = (props) => {
                 if (event.code === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   event.stopPropagation();
-                  onSubmitAction();
+                  if (!isImageUploading) {
+                    onSubmitAction();
+                  }
                 }
               }}
               onChange={e => onTypeText(e.target.value)}>
@@ -227,10 +236,10 @@ const ChatbotUI = (props) => {
               />
             </div>)}
           </div>
-          {busy && <button disabled>
+          {busy && <button disabled className={modCss('mwai-busy')}>
             {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
           </button>}
-          {!busy && <button disabled={busy} onClick={() => { 
+          {!busy && <button disabled={isImageUploading} onClick={() => { 
             if (isListening) {
               setIsListening(false);
             }
@@ -251,3 +260,5 @@ const ChatbotUI = (props) => {
     </div>
   </>);
 };
+
+export default ChatbotUI;

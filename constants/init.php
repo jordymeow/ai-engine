@@ -163,6 +163,11 @@ define( 'MWAI_OPTIONS', [
 	'openai_models' => Meow_MWAI_Engines_OpenAI::get_openai_models(),
 	'openai_usage' => [],
 
+	// Settings for Images
+	'image_local_upload' => 'uploads',
+	'image_remote_upload' => 'data',
+	'image_expires' => 1 * HOUR_IN_SECONDS,
+
 	// TODO: To Migrate (Azure)
 	'openai_azure_endpoint' => '',
 	'openai_azure_apikey' => '',

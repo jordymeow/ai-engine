@@ -300,6 +300,11 @@
   padding: 5px;
 }
 
+.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload span {
+  position: absolute;
+  font-size: 55%;
+}
+
 .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload.enabled svg {
   opacity: 1;
   filter: none;
@@ -334,17 +339,25 @@
   filter: brightness(1.2);
 }
 
+.mwai-chat button[disabled] {
+  cursor: not-allowed;
+}
+
 .mwai-chat button[disabled] span {
+  opacity: 0.5;
+}
+
+.mwai-chat button[disabled].mwai-busy span {
   display: none;
 }
 
-.mwai-chat button[disabled]:before {
+.mwai-chat button[disabled].mwai-busy:before {
   content: '';
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   margin: auto;
-  border: 2px solid transparent;
-  border-top-color: white;
+  border: 3px solid transparent;
+  border-top-color: var(--mwai-fontColor);
   border-radius: 50%;
   animation: mwai-button-spinner 1s ease infinite;
 }

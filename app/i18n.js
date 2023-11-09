@@ -255,6 +255,7 @@ i18n.HELP = {
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
   OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
+  QDRANT: __( 'Use the code <b>#AIENGINE5</b> when you <a href="https://qdrant.to/cloud" target="_blank">Create a Qdrant Account</a>. You will get 5% off.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {
