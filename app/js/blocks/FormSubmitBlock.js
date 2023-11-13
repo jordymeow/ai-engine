@@ -1,11 +1,11 @@
-// Previous: 1.9.92
-// Current: 1.9.94
+// Previous: 1.9.94
+// Current: 1.9.96
 
-// AI Engine
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
 import i18n from '@root/i18n';
+import TokensInfo from "@app/components/TokensInfo";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
@@ -14,13 +14,11 @@ const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
-  // Prepare attributes
   const { attributes: { id, label, prompt, outputElement, aiEnvId, embeddingsEnvId, index, namespace,
     model, temperature, maxTokens } } = props;
   const encodedPrompt = encodeURIComponent(prompt);
   const blockProps = useBlockProps.save();
 
-  // Shortcode attributes
   const shortcodeAttributes = {
     id: { value: id, insertIfNull: true },
     label: { value: label, insertIfNull: true },
@@ -35,13 +33,11 @@ const saveFormField = (props) => {
     embeddings_namespace: { value: namespace, insertIfNull: false }
   };
 
-  // Create the shortcode
   let shortcode = Object.entries(shortcodeAttributes)
     .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-submit");
   shortcode = `${shortcode}]`;
 
-  // Return the shortcode
   return <div {...blockProps}>{shortcode}</div>;
 };
 
@@ -54,8 +50,7 @@ const FormSubmitBlock = (props) => {
   const embeddingsEnvs = options.embeddings_envs || [];
   const embeddingsEnv = useMemo(() => {
     const env = embeddingsEnvs.find(e => e.id === embeddingsEnvId);
-    if (env) return env;
-    return null;
+    return env ? env : null;
   }, [embeddingsEnvs, embeddingsEnvId]);
   const indexes = useMemo(() => {
     return embeddingsEnv?.indexes || [];
@@ -66,7 +61,7 @@ const FormSubmitBlock = (props) => {
 
   const aiEnvs = options.ai_envs || [];
   const { models, getModel } = useModels(options, aiEnvId);
-  const currentModel = useMemo(() => getModel(model), [model, getModel]);
+  const currentModel = getModel(model);
 
   useEffect(() => {
     if (!id) {
@@ -82,7 +77,8 @@ const FormSubmitBlock = (props) => {
       if (freshPlaceholders.join(',') !== placeholders.join(',')) {
         setAttributes({ placeholders: freshPlaceholders });
       }
-    } else {
+    }
+    else {
       setAttributes({ placeholders: [] });
     }
   }, [prompt]);
@@ -92,7 +88,7 @@ const FormSubmitBlock = (props) => {
   }, [placeholders]);
 
   const modelOptions = useMemo(() => {
-    const freshModels = models.map((model) => ({ label: model.name, value: model.model }));
+    const freshModels = models.map(model => ({ label: model.name, value: model.model }));
     freshModels.push({ label: 'dall-e', value: 'dall-e' });
     return freshModels;
   }, [models]);
@@ -164,16 +160,17 @@ const FormSubmitBlock = (props) => {
           }
           {models && models.length > 0 &&
             <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
+              description="FUCK"
               onChange={(value) => setAttributes({ model: value })}
             />}
           <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={(value) => setAttributes({ temperature: parseFloat(value) })}
+            onChange={(value) => setAttributes({ temperature: parseFloat(value) })} // potential NaN
             type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // Should ideally parseInt but forgets radix
+            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // potential NaN
             type="number" step="16" min="32" max="4096"
-            help={i18n.HELP.MAX_TOKENS} />
+            help={<TokensInfo model={currentModel} maxTokens={maxTokens} />} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
           {embeddingsEnvs && embeddingsEnvs.length > 0 &&

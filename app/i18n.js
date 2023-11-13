@@ -125,9 +125,12 @@ i18n.COMMON = {
   QDRANT_SERVER_HELP: __( 'The URL of your cluster (known as Cluster URL).', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
   USAGE_COSTS: __( 'Usage Costs', 'ai-engine' ),
+  TRANSCRIPTION: __( 'Transcription', 'ai-engine' ),
+  TRANSCRIPTION_HELP: __( 'Introduces a \'Transcribe\' tab to easily transform audio/images into text and get AI answers in JSON format.', 'ai-engine' ),
   AUDIO_TRANSCRIPTION: __( 'Audio-to-Text', 'ai-engine' ),
-  AUDIO_TRANSCRIPTION_HELP: __( 'Transcribe audio files into texts.', 'ai-engine' ),
-  AUDIO_TAB: __( 'Audio', 'ai-engine' ),
+  IMAGE_TRANSCRIPTION: __( 'Image-to-Text', 'ai-engine' ),
+  AUDIO_TO_TEXT: __( 'Audio ➡ Text', 'ai-engine' ),
+  IMAGE_TO_TEXT: __( 'Image ➡ Text', 'ai-engine' ),
   EMBEDDINGS_ENV: __( 'Environment', 'ai-engine' ),
   EMBEDDINGS_INDEX: __( 'Index', 'ai-engine' ),
   NAMESPACE: __( 'Namespace', 'ai-engine' ),
@@ -216,6 +219,7 @@ i18n.COMMON = {
   PLUGIN_DATA_DESCRIPTION: __( "The database and all the options of the plugin will be removed on uninstall.", 'ai-engine' ),
   RESET_LIMITS: __( 'Reset Limits', 'ai-engine' ),
   VISION: __( 'Vision', 'ai-engine' ),
+  PROMPT_TO_JSON: __( 'Prompt ➡ JSON', 'ai-engine' ),
 };
 
 i18n.FORMS = {

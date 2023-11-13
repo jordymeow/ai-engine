@@ -93,10 +93,20 @@ class Meow_MWAI_Rest
 				'permission_callback' => [ $this->core, 'can_access_settings' ],
 				'callback' => [ $this, 'rest_ai_moderate' ],
 			) );
-			register_rest_route( $this->namespace, '/ai/transcribe', array(
+			register_rest_route( $this->namespace, '/ai/transcribe_audio', array(
 				'methods' => 'POST',
 				'permission_callback' => [ $this->core, 'can_access_settings' ],
-				'callback' => [ $this, 'rest_ai_transcribe' ],
+				'callback' => [ $this, 'rest_ai_transcribe_audio' ],
+			) );
+			register_rest_route( $this->namespace, '/ai/transcribe_image', array(
+				'methods' => 'POST',
+				'permission_callback' => [ $this->core, 'can_access_settings' ],
+				'callback' => [ $this, 'rest_ai_transcribe_image' ],
+			) );
+			register_rest_route( $this->namespace, '/ai/json', array(
+				'methods' => 'POST',
+				'permission_callback' => [ $this->core, 'can_access_settings' ],
+				'callback' => [ $this, 'rest_ai_json' ],
 			) );
 
 			// Helpers Endpoints
@@ -875,10 +885,9 @@ class Meow_MWAI_Rest
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
 			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
-
 	}
 	
-	function rest_ai_transcribe( $request ) {
+	function rest_ai_transcribe_audio( $request ) {
 		try {
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_Query_Transcribe();
@@ -889,6 +898,36 @@ class Meow_MWAI_Rest
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+		}
+	}
+
+	function rest_ai_transcribe_image( $request ) {
+		try {
+			global $mwai;
+			$params = $request->get_json_params();
+			$prompt = !empty( $params['prompt'] ) ? $params['prompt'] : null;
+			$url = !empty( $params['url'] ) ? $params['url'] : null;
+			$path = !empty( $params['path'] ) ? $params['path'] : null;
+			$result = $mwai->simpleVisionQuery( $prompt, $url, $path );
+			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() ); 
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+		}
+	}
+
+	function rest_ai_json( $request ) {
+		try {
+			global $mwai;
+			$params = $request->get_json_params();
+			$prompt = !empty( $params['prompt'] ) ? $params['prompt'] : null;
+			$result = $mwai->simpleJsonQuery( $prompt );
+			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() ); 
 			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}

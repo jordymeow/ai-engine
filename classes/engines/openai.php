@@ -21,6 +21,7 @@ class Meow_MWAI_Engines_OpenAI
 
   // Streaming
   private $streamTemporaryBuffer = "";
+  private $streamBuffer = "";
   private $streamContent = "";
   private $streamFunctionCall = null;
   private $streamCallback = null;
@@ -136,6 +137,7 @@ class Meow_MWAI_Engines_OpenAI
 
       // Bufferize the unfinished stream (if it's the case)
       $this->streamTemporaryBuffer .= $data;
+      $this->streamBuffer .= $data;
       $lines = explode( "\n", $this->streamTemporaryBuffer );
       if ( substr( $this->streamTemporaryBuffer, -1 ) !== "\n" ) {
         $this->streamTemporaryBuffer = array_pop( $lines );
@@ -409,6 +411,12 @@ class Meow_MWAI_Engines_OpenAI
       $body['stop'] = $query->stop;
     }
 
+    if ( !empty( $query->responseFormat ) ) {
+      if ( $query->responseFormat === 'json' ) {
+        $body['response_format'] = [ 'type' => 'json_object' ];
+      }
+    }
+
     if ( !empty( $query->functions ) ) {
       if ( strpos( $query->model, 'ft:' ) === 0 ) {
         throw new Exception( 'OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
@@ -440,6 +448,13 @@ class Meow_MWAI_Engines_OpenAI
       // Streamed data
       $prompt_tokens = $query->getPromptTokens();
       if ( !is_null( $streamCallback ) ) {
+        if ( empty( $this->streamContent ) ) {
+          $json = json_decode( $this->streamBuffer, true );
+          if ( isset( $json['error']['message'] ) ) {
+            throw new Exception( $json['error']['message'] );
+          }
+          throw new Exception( 'No content received from OpenAI.' );
+        }
         $data = [
           'model' => $query->model,
           'usage' => [
@@ -482,7 +497,8 @@ class Meow_MWAI_Engines_OpenAI
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
       $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
-      throw new Exception( $e->getMessage() . " ($service)" );
+      $message = $e->getMessage() . " ($service)";
+      throw new Exception( $message );
     }
   }
 

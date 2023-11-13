@@ -1,5 +1,5 @@
-// Previous: 1.9.94
-// Current: 1.9.95
+// Previous: 1.9.95
+// Current: 1.9.96
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -10,6 +10,7 @@ const svgPicturePath = `
 <linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="2" x2="22" y1="12" y2="12"><stop offset="0" stop-color="#bbdefb"/><stop offset="1" stop-color="#64b5f6"/></linearGradient><linearGradient id="lg1"><stop offset="0" stop-color="#42a5f5"/><stop offset="1" stop-color="#1e88e5"/></linearGradient><linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="2" x2="22" xlink:href="#lg1" y1="15.672" y2="15.672"/><linearGradient id="SVGID_3_" gradientUnits="userSpaceOnUse" x1="13" x2="19" xlink:href="#lg1" y1="8" y2="8"/><g id="picture"><g><path d="m19 2h-14c-1.6542969 0-3 1.3457031-3 3v14c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-14c0-1.6542969-1.3457031-3-3-3z" fill="url(#SVGID_1_)"/><path d="m17.2304688 13.7666016c-.3330078.1679688-.7348633.2568359-1.1630859.2568359-.8891602 0-1.7543945-.3662109-2.2597656-.9560547l-2.0976563-2.4375c-.7006837-.8183594-1.6884766-1.2871094-2.709961-1.2871094s-2.0092773.46875-2.7089844 1.2861328l-4.2910156 5.0009766v3.3701172c0 1.6542969 1.3457031 3 3 3h14c1.6542969 0 3-1.3457031 3-3v-7.6181641z" fill="url(#SVGID_2_)"/><circle cx="16" cy="8" fill="url(#SVGID_3_)" r="3"/></g></g>`;
 
 const Microphone = ({ active, disabled, style, ...rest }) => {
+
   const svgPath = `<path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM64 216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 89.1 66.2 162.7 152 174.4V464H120c-13.3 0-24 10.7-24 24s10.7 24 24 24h72 72c13.3 0 24-10.7 24-24s-10.7-24-24-24H216V430.4c85.8-11.7 152-85.3 152-174.4V216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 70.7-57.3 128-128 128s-128-57.3-128-128V216z"/>`;
 
   const pulsarAnimation = `
@@ -294,6 +295,10 @@ const useSpeechRecognition = (onResult) => {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    let lastTranscript = '';
+
     recognition.interimResults = true;
     recognition.continuous = true;
 
@@ -302,7 +307,15 @@ const useSpeechRecognition = (onResult) => {
         .map(result => result[0])
         .map(result => result.transcript)
         .join('');
-      onResult(transcript);
+
+      if (isAndroid) {
+        const diff = transcript.slice(lastTranscript.length);
+        lastTranscript = transcript;
+        onResult(diff);
+      }
+      else {
+        onResult(transcript);
+      }
     };
 
     if (isListening) {

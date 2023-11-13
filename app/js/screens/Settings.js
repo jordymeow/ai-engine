@@ -1,10 +1,10 @@
-// Previous: 1.9.94
-// Current: 1.9.95
+// Previous: 1.9.95
+// Current: 1.9.96
 
 const { useMemo, useState, useEffect } = wp.element;
 
-import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
-  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, 
+import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoWrapper, 
+  NekoSettings, NekoSpacer, NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, 
   NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
@@ -21,13 +21,13 @@ import OpenAIStatus from '@app/screens/misc/OpenAIStatus';
 import Moderation from '@app/screens/misc/Moderation';
 import Embeddings from '@app/screens/embeddings/Embeddings';
 import MonthlyUsage from '@app/components/MonthlyUsage';
-import Audio from '@app/screens/misc/Audio';
 import Discussions from '@app/screens/discussions/Discussions';
 import Chatbots from './chatbots/Chatbots';
 import Statistics from '@app/screens/statistics/Statistics';
 import DevToolsTab from './settings/DevToolsTab';
 import EmbeddingsEnvironmentsSettings from './embeddings/Environments';
 import AIEnvironmentsSettings from './ai/Environments';
+import Transcription from './misc/Transcription';
 
 const retrieveIncidents = async () => {
   const res = await nekoFetch(`${apiUrl}/openai/incidents`, { nonce: restNonce });
@@ -64,7 +64,7 @@ const Settings = () => {
   const module_generator_images = options?.module_generator_images;
   const module_moderation = options?.module_moderation;
   const module_embeddings = options?.module_embeddings;
-  const module_audio = options?.module_audio;
+  const module_transcription = options?.module_transcription;
   const module_devtools = options?.module_devtools;
   const shortcode_chat = options?.shortcode_chat;
   const shortcode_chat_formatting = options?.shortcode_chat_formatting;
@@ -130,11 +130,9 @@ const Settings = () => {
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
-
     if (JSON.stringify(newOptions) === JSON.stringify(options)) {
       return;
     }
-
     setBusyAction(true);
     try {
       const response = await nekoFetch(`${apiUrl}/settings/update`, { 
@@ -278,11 +276,11 @@ const Settings = () => {
         onChange={updateOption} />
     </NekoSettings>;
 
-  const jsxAudioTranscribe = 
-    <NekoSettings title={<>{i18n.COMMON.AUDIO_TRANSCRIPTION}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox name="module_audio" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_audio}
-        description={i18n.COMMON.AUDIO_TRANSCRIPTION_HELP}
+  const jsxTranscribe = 
+    <NekoSettings title={<>{i18n.COMMON.TRANSCRIPTION}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
+      <NekoCheckbox name="module_transcription" label={i18n.COMMON.ENABLE} value="1"
+        checked={module_transcription}
+        description={i18n.COMMON.TRANSCRIPTION_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
@@ -301,7 +299,7 @@ const Settings = () => {
           description={i18n.COMMON.CHATBOT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
-    </NekoSettings>
+    </NekoSettings>()
    ;
 
   const jsxStatisticsData =
@@ -418,7 +416,7 @@ const Settings = () => {
   const jsxImageLocalUpload =
     <NekoSettings title="Local Upload">
       <NekoSelect scrolldown name="image_local_upload" value={options?.image_local_upload} onChange={updateOption}
-        description="Images can be stored either in the filesystem or in the Media Library;">
+        description="Images can be stored either in the filesystem or in the Media Library.">
         <NekoOption key='uploads' value='uploads' label="Filesystem"></NekoOption>
         <NekoOption key='library' value='library' label="Media Library"></NekoOption>
       </NekoSelect>
@@ -511,40 +509,44 @@ const Settings = () => {
   const jsxAdminBarPlayground =
     <NekoSettings title={i18n.COMMON.PLAYGROUND}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.playground}
+        checked={admin_bar?.includes('playground')}
         onChange={(value) => {
-          const freshAdminBar = { ...admin_bar, playground: value };
-          updateOption(freshAdminBar, 'admin_bar');
+          const exists = admin_bar.includes('playground');
+          const newAdminBar = exists ? admin_bar.filter(v => v !== 'playground') : [...admin_bar, 'playground'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarGenerateContent =
     <NekoSettings title={i18n.COMMON.GENERATE_CONTENT}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.content_generator}
+        checked={admin_bar?.includes('content_generator')}
         onChange={(value) => {
-          const freshAdminBar = { ...admin_bar, content_generator: value };
-          updateOption(freshAdminBar, 'admin_bar');
+          const exists = admin_bar.includes('content_generator');
+          const newAdminBar = exists ? admin_bar.filter(v => v !== 'content_generator') : [...admin_bar, 'content_generator'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarGenerateImages =
     <NekoSettings title={i18n.COMMON.GENERATE_IMAGES}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.images_generator}
+        checked={admin_bar?.includes('images_generator')}
         onChange={(value) => {
-          const freshAdminBar = { ...admin_bar, images_generator: value };
-          updateOption(freshAdminBar, 'admin_bar');
+          const exists = admin_bar.includes('images_generator');
+          const newAdminBar = exists ? admin_bar.filter(v => v !== 'images_generator') : [...admin_bar, 'images_generator'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarSettings =
     <NekoSettings title={'AI Engine'}> 
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.settings}
-        onChange={(value) => {  
-          const freshAdminBar = { ...admin_bar, settings: value };
-          updateOption(freshAdminBar, 'admin_bar');
+        checked={admin_bar?.includes('settings')}
+        onChange={(value) => {
+          const exists = admin_bar.includes('settings');
+          const newAdminBar = exists ? admin_bar.filter(v => v !== 'settings') : [...admin_bar, 'settings'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
@@ -555,10 +557,11 @@ const Settings = () => {
     <MonthlyUsage options={options} />
   </div>;
 
-  const jsxIncidentsIcon = accidentsPastDay > 0 ? <NekoIcon
+  const jsxIncidentsIcon = incidents?.length > 0 ? <NekoIcon
     style={{ marginLeft: 5, marginRight: -5, display: 'inline' }} width="16"
     icon="alert" variant="warning" />
     : null;
+
 
   const jsxAIEnvironmentDefault =
     <NekoSelect scrolldown name="ai_default_env" value={ai_default_env} onChange={updateOption}>
@@ -582,11 +585,15 @@ const Settings = () => {
     </NekoSettings>;
 
   return (
+
     <NekoPage>
+
       <AiNekoHeader options={options} />
 
       <NekoWrapper>
+
         <NekoColumn fullWidth>
+
           <OptionsCheck options={options} />
 
           {intro_message && <NekoContainer>
@@ -597,6 +604,7 @@ const Settings = () => {
 
             <NekoTab title={i18n.COMMON.DASHBOARD}>
               <NekoWrapper>
+
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title={i18n.COMMON.MODULES} className="primary">
                     <p>{i18n.SETTINGS.MODULES_INTRO}</p>
@@ -605,103 +613,87 @@ const Settings = () => {
                     {jsxGenerators}
                     {jsxPlayground}
                     {jsxAssistants}
-                    {jsxFinetunes}
                     {jsxStatistics}
                     {jsxEmbeddings}
                     {jsxForms}
+                    {jsxTranscribe}
+                    {jsxFinetunes}
                     {jsxModeration}
-                    {jsxAudioTranscribe}
                   </NekoBlock>
                 </NekoColumn>
+
                 <NekoColumn minimal>
                   <NekoBlock busy={busy} title={i18n.COMMON.USAGE_COSTS} className="primary">
                     {jsxOpenAiUsage}
                   </NekoBlock>
                 </NekoColumn>
+
               </NekoWrapper>
             </NekoTab>
 
-            {(shortcode_chat) && (
-              <NekoTab title={<>{i18n.COMMON.CHATBOTS}</>}>
-                <Chatbots options={options} updateOption={updateOption} busy={busy} />
-              </NekoTab>
-            )}
+            {shortcode_chat && <NekoTab title={<>{i18n.COMMON.CHATBOTS}</>}>
+              <Chatbots options={options} updateOption={updateOption} busy={busy} />
+            </NekoTab>}
 
-            {(shortcode_chat && shortcode_chat_discussions) && (
-              <NekoTab title={i18n.COMMON.DISCUSSIONS}>
-                <Discussions />
-              </NekoTab>
-            )}
+            {shortcode_chat && shortcode_chat_discussions && <NekoTab title={i18n.COMMON.DISCUSSIONS}>
+              <Discussions />
+            </NekoTab>}
 
-            {module_statistics && (
-              <NekoTab title={i18n.COMMON.QUERIES}>
-                <Statistics options={options} updateOption={updateOption} busy={busy} />
-              </NekoTab>
-            )}
+            {module_statistics && <NekoTab title={i18n.COMMON.QUERIES}>
+              <Statistics options={options} updateOption={updateOption} busy={busy} />
+            </NekoTab>}
 
-            {module_embeddings && (
-              <NekoTab title={i18n.COMMON.EMBEDDINGS}>
-                <Embeddings
-                  options={options}
-                  updateEnvironment={updateVectorDbEnvironment}
-                  updateOption={updateOption}
-                />
-              </NekoTab>
-            )}
+            {module_embeddings && <NekoTab title={i18n.COMMON.EMBEDDINGS}>
+              <Embeddings
+                options={options}
+                updateEnvironment={updateVectorDbEnvironment}
+                updateOption={updateOption}
+              />
+            </NekoTab>}
 
-            {module_finetunes && (
-              <NekoTab title={i18n.COMMON.FINETUNES}>
-                <FineTunes options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
-              </NekoTab>
-            )}
+            {module_finetunes && <NekoTab title={i18n.COMMON.FINETUNES}>
+              <FineTunes options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
+            </NekoTab>}
 
-            {module_moderation && (
-              <NekoTab title={i18n.COMMON.MODERATION}>
-                <Moderation options={options} updateOption={updateOption} busy={busy} />
-              </NekoTab>
-            )}
+            {module_moderation && <NekoTab title={i18n.COMMON.MODERATION}>
+              <Moderation options={options} updateOption={updateOption} busy={busy} />
+            </NekoTab>}
 
-            {module_audio && (
-              <NekoTab title={i18n.COMMON.AUDIO_TAB}>
-                <Audio options={options} updateOption={updateOption} />
-              </NekoTab>
-            )}
+            {module_transcription && <NekoTab title={i18n.COMMON.TRANSCRIPTION}>
+              <Transcription options={options} updateOption={updateOption} />
+            </NekoTab>}
 
             <NekoTab key="advanced" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
               <NekoWrapper>
-                <NekoColumn minimal>
-                  <AIEnvironmentsSettings
-                    busy={busy}
-                    coreModels={coreModels}
+
+                <NekoColumn minimal>  
+
+                  <AIEnvironmentsSettings busy={busy} coreModels={coreModels}
                     environments={ai_envs}
                     updateEnvironment={updateAIEnvironment}
                     updateOption={updateOption}
                   />
+
                   <NekoBlock busy={busy} title={i18n.COMMON.AI_ENVIRONMENT_DEFAULT} className="primary">
                     {jsxAIEnvironmentDefault}
                     <NekoSpacer />
                     {jsxAssistantsModel}
                   </NekoBlock>
 
-                  {module_embeddings && (
-                    <>
-                      <EmbeddingsEnvironmentsSettings
-                        busy={busy}
-                        environments={embeddings_envs}
-                        updateEnvironment={updateVectorDbEnvironment}
-                        updateOption={updateOption}
-                      />
-                      <NekoBlock busy={busy} title={i18n.COMMON.EMBEDDINGS_ENVIRONMENT_DEFAULT} className="primary">
-                        {jsxEmbeddingsEnvironmentDefault}
-                      </NekoBlock>
-                    </>
-                  )}
+                  {module_embeddings && <>
+                    <EmbeddingsEnvironmentsSettings busy={busy}
+                      environments={embeddings_envs} 
+                      updateEnvironment={updateVectorDbEnvironment}
+                      updateOption={updateOption}
+                    />
+                    <NekoBlock busy={busy} title={i18n.COMMON.EMBEDDINGS_ENVIRONMENT_DEFAULT} className="primary">
+                      {jsxEmbeddingsEnvironmentDefault}
+                    </NekoBlock>
+                  </>}
 
                   <NekoBlock busy={isLoadingIncidents}
                     title={<div style={{ display: 'flex' }}>{i18n.COMMON.INCIDENTS_OPENAI}{jsxIncidentsIcon}</div>}
-                    className="primary"
-                    contentStyle={{ padding: 0 }}
-                  >
+                    className="primary" contentStyle={{ padding: 0 }}>
                     <OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
                   </NekoBlock>
 
@@ -710,9 +702,11 @@ const Settings = () => {
                       Reset Settings
                     </NekoButton>
                   </NekoBlock>
+
                 </NekoColumn>
 
                 <NekoColumn minimal>
+
                   <NekoBlock busy={busy} title={i18n.COMMON.GENERAL} className="primary">
                     {jsxStream}
                   </NekoBlock>
@@ -727,13 +721,11 @@ const Settings = () => {
                     {jsxWebSpeechAPI}
                   </NekoBlock>
 
-                  {module_statistics && (
-                    <NekoBlock busy={busy} title={i18n.COMMON.STATISTICS} className="primary">
-                      <p>{i18n.HELP.STATISTICS}</p>
-                      {jsxStatisticsData}
-                      {jsxStatisticsFormsData}
-                    </NekoBlock>
-                  )}
+                  {module_statistics && <NekoBlock busy={busy} title={i18n.COMMON.STATISTICS} className="primary">
+                    <p>{i18n.HELP.STATISTICS}</p>
+                    {jsxStatisticsData}
+                    {jsxStatisticsFormsData}
+                  </NekoBlock>}
 
                   <NekoBlock busy={busy} title={i18n.COMMON.IMAGES} className="primary">
                     {jsxImageLocalUpload}
@@ -769,32 +761,36 @@ const Settings = () => {
                     {jsxShortcodeFormatting}
                     {jsxShortcodeTypewriter}
                   </NekoBlock>
+
                 </NekoColumn>
+
               </NekoWrapper>
             </NekoTab>
 
-            {module_devtools && (
-              <NekoTab title={i18n.COMMON.DEV_TOOLS}>
-                <DevToolsTab options={options} setOptions={setOptions} updateOption={updateOption} />
-              </NekoTab>
-            )}
+            {module_devtools && <NekoTab title={i18n.COMMON.DEV_TOOLS}>
+              <DevToolsTab options={options} setOptions={setOptions} updateOption={updateOption} />
+            </NekoTab>}
 
             <NekoTab title={i18n.COMMON.LICENSE_TAB}>
               <LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
             </NekoTab>
+
           </NekoTabs>
+
         </NekoColumn>
+
       </NekoWrapper>
-      <NekoModal
-        isOpen={error}
+
+      <NekoModal isOpen={error}
         title={i18n.COMMON.ERROR}
         content={error}
         onRequestClose={() => setError(null)}
         okButton={{
           label: "Close",
-          onClick: () => setError(null),
+          onClick: () => setError(null)
         }}
       />
+
     </NekoPage>
   );
 };

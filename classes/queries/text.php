@@ -12,9 +12,11 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public ?string $newImageData = null;
   public ?string $promptEnding = null;
   public bool $casuallyFineTuned = false;
+  public ?string $responseFormat = null;
   public ?int $promptTokens = null;
   
-  public function __construct( ?string $prompt = '', int $maxTokens = 1024, string $model = MWAI_FALLBACK_MODEL ) {
+  public function __construct( ?string $prompt = '', int $maxTokens = 1024,
+    string $model = MWAI_FALLBACK_MODEL ) {
     parent::__construct( $prompt );
     $this->setModel( $model );
     $this->setMaxTokens( $maxTokens );
@@ -77,7 +79,9 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
             }
           }
         }
-        $text .= "=#=$role\n$content=#=\n";
+        else {
+          $text .= "=#=$role\n$content=#=\n";
+        }
       }
     }
     else {
@@ -120,9 +124,15 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
           unset( $message );
         }
       }
+
+      // NOTE: If nobody complains about this, we can probably get rid of everything
+      // related to the casuallyFineTuned. This was added on November 13th, 2023.
+      if ( $this->casuallyFineTuned ) {
+        error_log( 'AI Engine: The casuallyFineTuned parameter is deprecated.' );
+      }
     }
 
-    //NOTE: Removed the checks related to the MaxTokens (as of November 8th)
+    // NOTE: Removed the checks related to the MaxTokens (as of November 8th)
     // Let's see if we can remove this completely.
 
     // Make sure the max tokens are respected.
@@ -186,6 +196,17 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public function setPrompt( $prompt ) {
     parent::setPrompt( $prompt );
     $this->validateMessages();
+  }
+
+  /**
+   * The type of return expected from the API. It can be either null or "json".
+   * @param int $maxResults The maximum number of completions.
+   */
+  public function setResponseFormat( $responseFormat ) {
+    if ( !empty( $responseFormat ) && $responseFormat !== 'json' ) {
+      throw new Exception( "AI Engine: The response format can only be null or json." );
+    }
+    $this->responseFormat = $responseFormat;
   }
 
   /**
@@ -476,6 +497,9 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     }
     if ( !empty( $params['envId'] ) ) {
       $this->setEnvId( $params['envId'] );
+    }
+    if ( !empty( $params['responseFormat'] ) ) {
+      $this->setResponseFormat( $params['responseFormat'] );
     }
   }
 }

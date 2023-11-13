@@ -1,11 +1,11 @@
 === AI Engine: Chatbots, Generators, Assistants, GPT 4 and more! ===
 Contributors: TigrouMeow
-Tags: ai, chatgpt, gpt, openai, chatbot, copilot
+Tags: ai, gpt, openai, chatbot, copilot, chatgpt
 Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.95
+Stable tag: 1.9.96
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,16 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 1.9.96 (2023/11/13) =
+* Add: GPT-4 model without Vision (since its RPM is much higher).
+* Add: simpleJsonQuery function, to retrieve a JSON from the AI.
+* Add: New Transcription tab with Image to Text, Audio to Text, Prompt to JSON.
+* Add: Useful information are dynamically added under Max Tokens fields. Let's try to make the issues around Max Tokens easier to understand and handle!
+* Add: Support for errors from OpenAI while using streaming.
+* Fix: MaxTokens in the forms was not working properly.
+* Fix: Android Speech Recognition was not working properly.
+* Fix: Issue with inputs and textareas when they were used as Output in the Forms.
 
 = 1.9.95 (2023/11/10) =
 * Add: New "Images" section in the Settings related to "Vision".

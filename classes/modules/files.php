@@ -20,10 +20,12 @@ class Meow_MWAI_Modules_Files {
 	}
 
   public function cleanup_expired_files() {
-    $current_time = current_time( 'mysql' );
-    $expired_files = $this->wpdb->get_results( 
-      "SELECT * FROM $this->table_files WHERE expires IS NOT NULL AND expires < '{$current_time}'"
-    );
+    if ( $this->check_db() ) {
+      $current_time = current_time( 'mysql' );
+      $expired_files = $this->wpdb->get_results( 
+        "SELECT * FROM $this->table_files WHERE expires IS NOT NULL AND expires < '{$current_time}'"
+      );
+    }
     $expired_posts = get_posts( [
       'post_type' => 'attachment',
       'meta_key' => '_mwai_file_expires',
@@ -45,7 +47,13 @@ class Meow_MWAI_Modules_Files {
       $fileIds = [ $fileIds ];
     }
     foreach ( $fileIds as $fileId ) {
-      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_files WHERE fileId = %s", $fileId ) );
+      $file = null;
+      if ( $this->check_db() ) {
+        $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+          FROM $this->table_files
+          WHERE fileId = %s", $fileId
+        ) );
+      }
       if ( $file ) {
         $this->wpdb->delete( $this->table_files, [ 'fileId' => $fileId ] );
         if ( file_exists( $file->path ) ) {
@@ -64,7 +72,13 @@ class Meow_MWAI_Modules_Files {
   }
 
   public function get_path( $fileId ) {
-    $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_files WHERE fileId = %s", $fileId ) );
+    $file = null;
+    if ( $this->check_db() ) {
+      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+        FROM $this->table_files
+        WHERE fileId = %s", $fileId
+      ) );
+    }
     if ( $file ) {
       return $file->path;
     }
@@ -90,7 +104,13 @@ class Meow_MWAI_Modules_Files {
   }
 
   public function get_url( $fileId ) {
-    $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_files WHERE fileId = %s", $fileId ) );
+    $file = null;
+    if ( $this->check_db() ) {
+      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+        FROM $this->table_files
+        WHERE fileId = %s", $fileId
+      ) );
+    }
     if ( $file ) {
       return $file->url;
     }
