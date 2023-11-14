@@ -508,17 +508,26 @@ class Meow_MWAI_Engines_OpenAI
 
     // Prepare the request
     $url = 'https://api.openai.com/v1/images/generations';
+    $model = $query->model;
+    $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
     $body = array(
       "prompt" => $query->prompt,
       "n" => $query->maxResults,
-      "size" => '1024x1024',
+      "size" => $resolution,
     );
+    if ( $model === 'dall-e-3' ) { 
+      $body['model'] = 'dall-e-3';
+    }
+    if ( $model === 'dall-e-3-hd' ) {
+      $body['model'] = 'dall-e-3';
+      $body['quality'] = 'hd';
+    }
     if ( $this->localService === 'azure' ) {
       $url = trailingslashit( $this->defaultAzureEndpoint ) . 'dalle/text-to-image?api-version=2022-08-03-preview';
       $body = array( 
         "caption" => $query->prompt,
         //"n" => $query->maxResults,
-        "resolution" => '1024x1024',
+        "resolution" => $resolution,
       );
      }
     $headers = $this->build_headers( $query );
@@ -556,7 +565,7 @@ class Meow_MWAI_Engines_OpenAI
       }
 
       $reply = new Meow_MWAI_Reply( $query );
-      $usage = $this->core->record_images_usage( "dall-e", "1024x1024", $query->maxResults );
+      $usage = $this->core->record_images_usage( $model, $resolution, $query->maxResults );
       $reply->setUsage( $usage );
       $reply->setChoices( $choices );
       $reply->setType( 'images' );
@@ -568,7 +577,6 @@ class Meow_MWAI_Engines_OpenAI
       throw new Exception( $e->getMessage() . " ($service)" );
     }
   }
-
 
   /*
     This is the rest of the OpenAI API support, not related to the models directly.

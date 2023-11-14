@@ -220,6 +220,7 @@ i18n.COMMON = {
   RESET_LIMITS: __( 'Reset Limits', 'ai-engine' ),
   VISION: __( 'Vision', 'ai-engine' ),
   PROMPT_TO_JSON: __( 'Prompt ➡ JSON', 'ai-engine' ),
+  RESOLUTION: __( 'Resolution', 'ai-engine' ),
 };
 
 i18n.FORMS = {

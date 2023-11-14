@@ -110,21 +110,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
         array_unshift( $this->messages, $context );
       }
 
-      // If there is a newImageData, it means we are using the Vision API with Image Upload to the OpenAI servers
-      // instead of using the URL. In that case, we need to update the URL with the newImageData.
-      if ( !empty( $this->newImageData ) ) {
-        $lastKey = key( array_slice( $this->messages, -1, 1, true ) );
-        if ( is_array( $this->messages[$lastKey]['content'] ) ) {
-          foreach ( $this->messages[$lastKey]['content'] as &$message ) {
-            if ( $message['type'] === 'image_url' ) {
-              $message['image_url']['url'] = "data:image/jpeg;base64,{$this->newImageData}";
-              break;
-            }
-          }
-          unset( $message );
-        }
-      }
-
       // NOTE: If nobody complains about this, we can probably get rid of everything
       // related to the casuallyFineTuned. This was added on November 13th, 2023.
       if ( $this->casuallyFineTuned ) {
@@ -338,16 +323,27 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $this->validateMessages();
   }
 
+  private function getImageURL( $image ) {
+    if ( !empty( $this->newImage ) ) {
+      return $this->newImage;
+    }
+    if ( !empty( $this->newImageData ) ) {
+      return "data:image/jpeg;base64,{$this->newImageData}";
+    }
+  }
+
+
   private function validateMessages(): void {
     // Messages should end with either the prompt or, if exists, the newMessage.
     $message = empty( $this->newMessage ) ? $this->prompt : $this->newMessage;
     $content = $message;
 
     // If there is an image, we need to adapt it to Vision.
-    if ( !empty( $this->newImage ) ) {
+    $imageURL = $this->getImageURL( $this->newImage );
+    if ( !empty( $imageURL ) ) {
       $content = [
         [ "type" => "text", "text" => $message ],
-        [ "type" => "image_url", "image_url" => [ "url" => $this->newImage ] ]
+        [ "type" => "image_url", "image_url" => [ "url" => $imageURL ] ]
       ];
     }
 

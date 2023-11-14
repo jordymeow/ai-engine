@@ -181,7 +181,7 @@ define( 'MWAI_OPENAI_MODELS', [
   // Image models:
   [
 		"model" => "dall-e",
-		"name" => "dall-e",
+		"name" => "DALL-E 2",
 		"family" => "dall-e",
 		"type" => "image",
 		"unit" => 1,
@@ -204,7 +204,7 @@ define( 'MWAI_OPENAI_MODELS', [
   ],
 	[
 		"model" => "dall-e-3",
-		"name" => "dall-e-3",
+		"name" => "DALL-E 3",
 		"family" => "dall-e",
 		"type" => "image",
 		"unit" => 1,
@@ -214,11 +214,11 @@ define( 'MWAI_OPENAI_MODELS', [
 				"price" => 0.040
 			],
       [
-				"option" => "1024×1792",
+				"option" => "1024x1792",
 				"price" => 0.080
 			],
 			[
-				"option" => "1792×1024",
+				"option" => "1792x1024",
 				"price" => 0.080
 			]
     ],
@@ -227,7 +227,7 @@ define( 'MWAI_OPENAI_MODELS', [
   ],
 	[
 		"model" => "dall-e-3-hd",
-		"name" => "dall-e-3-hd",
+		"name" => "DALL-E 3 (HD)",
 		"family" => "dall-e",
 		"type" => "image",
 		"unit" => 1,
@@ -237,11 +237,11 @@ define( 'MWAI_OPENAI_MODELS', [
 				"price" => 0.080
 			],
       [
-				"option" => "1024×1792",
+				"option" => "1024x1792",
 				"price" => 0.120
 			],
 			[
-				"option" => "1792×1024",
+				"option" => "1792x1024",
 				"price" => 0.120
 			]
     ],

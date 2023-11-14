@@ -173,15 +173,25 @@ class Meow_MWAI_API {
 		global $mwai_core;
 		$query = new Meow_MWAI_Query_Text( $prompt );
 		$query->injectParams( $params );
-		$query->setModel( 'gpt-4-vision-preview' );
-		if ( $url ) {
+		$query->setModel( MWAI_FALLBACK_MODEL_VISION );
+		$remote_upload = $this->core->get_option( 'image_remote_upload' );
+		$preferURL = $remote_upload === 'url';
+
+		if ( $preferURL && $url ) {
 			$query->setNewImage( $url );
 		}
-		if ( !empty( $path ) ) {
-			$content = file_get_contents( $path );
-			$data = base64_encode( $content );
+		else if ( !$preferURL && !empty( $path ) ) {
+			$data = base64_encode( file_get_contents( $path ) );
 			$query->setNewImageData( $data );
 		}
+		else if ( $url ) {
+			$query->setNewImage( $url );
+		}
+		else if ( !empty($path ) ) {
+			$data = base64_encode( file_get_contents( $path ) );
+			$query->setNewImageData( $data );
+		}
+
 		$reply = $mwai_core->ai->run( $query );
 		return $reply->result;
 	}
@@ -239,7 +249,7 @@ class Meow_MWAI_API {
 		$query = new Meow_MWAI_Query_Text( $prompt . "\nYour reply must be a formatted JSON." );
 		$query->injectParams( $params );
 		$query->setResponseFormat( 'json' );
-		$query->setModel( 'gpt-4-1106-preview' );
+		$query->setModel( MWAI_FALLBACK_MODEL_JSON );
 		$reply = $mwai_core->ai->run( $query );
 		try {
 			$json = json_decode( $reply->result, true );

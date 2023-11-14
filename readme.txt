@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.96
+Stable tag: 1.9.97
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,12 @@ Languages: English.
 
 == Changelog ==
 
+= 1.9.97 (2023/11/15) =
+* Add: Support for DALL-E 3.
+* Fix: Many little fixes.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.96 (2023/11/13) =
 * Add: GPT-4 model without Vision (since its RPM is much higher).
 * Add: simpleJsonQuery function, to retrieve a JSON from the AI.
@@ -95,8 +101,6 @@ Languages: English.
 = 1.9.95 (2023/11/10) =
 * Add: New "Images" section in the Settings related to "Vision".
 * Update: Much better handling of images (where/how it's stored and sent to the models, their expiries, etc).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.94 (2023/11/07) =
 * Add: Support for GPT-4 Turbo.

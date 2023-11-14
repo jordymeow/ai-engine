@@ -171,13 +171,13 @@ class Meow_MWAI_Modules_Chatbot {
 				// Support for Uploaded Image
 				if ( !empty( $newImageId ) ) {
 					$remote_upload = $this->core->get_option( 'image_remote_upload' );
-					$url = $this->core->files->get_url( $newImageId );
-					if ( $url ) {
-						$query->setNewImage( $url );
-					}
 					if ( $remote_upload === 'data' ) {
 						$data = $this->core->files->get_base64_data( $newImageId );
 						$query->setNewImageData( $data );
+					}
+					else {
+						$url = $this->core->files->get_url( $newImageId );
+						$query->setNewImage( $url );
 					}
 				}
 

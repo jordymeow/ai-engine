@@ -1,5 +1,5 @@
-// Previous: 1.6.89
-// Current: 1.7.6
+// Previous: 1.7.6
+// Current: 1.9.97
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -84,16 +84,6 @@ const Templates_Playground = [
     maxTokens: 1024,
     prompt: `For the following article, write a SEO-friendly and short title, keywords for Google, and a short excerpt to introduce it. Use this format:\n\nTitle: \nKeywords: \nExcerpt:\n\nArticle:\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.`,
   },
-  // {
-  //   id: 'wp_assistant',
-  //   name: 'WordPress Assistant',
-  //   mode: 'continuous',
-  //   model: defaultModel,
-  //   temperature: 0.8,
-  //   stopSequence: '',
-  //   maxTokens: 150,
-  //   prompt: `Converse as a WordPress expert. Be helpful, friendly, concise, avoid external URLs and commercial solutions.\n\nAI: Hi! How can I help you with WP today?\n`
-  // },
   {
     id: 'casually_fine_tuned',
     name: 'Casually-Tuned Tester',
@@ -110,29 +100,29 @@ const Templates_ImagesGenerator = [
   {
     id: 'default',
     name: 'Default',
-    model: 'dall-e',
-    maxResults: 3,
+    model: 'dall-e-3',
+    maxResults: 1,
     prompt: '',
   },
   {
     id: 'japan',
     name: 'Ghibli Inspired',
-    model: 'dall-e',
-    maxResults: 3,
+    model: 'dall-e-3',
+    maxResults: 1,
     prompt: 'japan, tokyo, trees, izakaya, anime oil painting, high resolution, ghibli inspired, 4k',
   },
   {
     id: 'steampunk',
     name: 'Steampunk Architecture',
-    model: 'dall-e',
-    maxResults: 3,
+    model: 'dall-e-3',
+    maxResults: 1,
     prompt: 'steampunk architecture, exterior view, award-winning architectural photography from magazine, trees, theater',
   },
   {
     id: 'modern-illustration',
     name: 'Modern Illustration',
-    model: 'dall-e',
-    maxResults: 3,
+    model: 'dall-e-3',
+    maxResults: 1,
     prompt: 'illustration of a cat, modern design, for the web, cute, happy, 4k, high resolution, trending in artstation',
   },
 ];

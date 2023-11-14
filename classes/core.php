@@ -516,13 +516,13 @@ class Meow_MWAI_Core
 					$chatbot[$key] = $value;
 				}
 			}
-			// After September 2023, let's remove this if statement.
+			// TODO: After September 2023, let's remove this if statement.
 			if ( isset( $chatbot['chatId'] ) ) {
 				$chatbot['botId'] = $chatbot['chatId'];
 				unset( $chatbot['chatId'] );
 				$hasChanges = true;
 			}
-			// After September 2023, let's remove this if statement.
+			// TODO: After September 2023, let's remove this if statement.
 			if ( empty( $chatbot['botId'] ) && $chatbot['name'] === 'default' ) {
 				$chatbot['botId'] = sanitize_title( $chatbot['name'] );
 				$hasChanges = true;
@@ -582,9 +582,9 @@ class Meow_MWAI_Core
 	function get_all_options( $force = false ) {
 		// We could cache options this way, but if we do, the apply_filters seems to be called too early.
 		// That causes issues with the mwai_languages filter.
-		if ( !$force && !is_null( $this->options ) ) {
-			return $this->options;
-		}
+		// if ( !$force && !is_null( $this->options ) ) {
+		// 	return $this->options;
+		// }
 		$options = get_option( $this->option_name, [] );
 		$options = $this->sanitize_options( $options );
 		foreach ( MWAI_OPTIONS as $key => $value ) {

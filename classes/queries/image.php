@@ -1,6 +1,7 @@
 <?php
 
 class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
+	public ?string $resolution = null;
 
   public function __construct( ?string $prompt = "", ?string $model = "dall-e" ) {
 		parent::__construct( $prompt );
@@ -9,7 +10,11 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
   }
 
 	public function setModel( string $model ) {
-		// Can't be changed to another model for now.
+		$this->model = $model;
+	}
+
+	public function setResolution( string $resolution ) {
+		$this->resolution = $resolution;
 	}
 
   // Based on the params of the query, update the attributes
@@ -32,6 +37,9 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 		if ( !empty( $params['botId'] ) ) {
       $this->setBotId( $params['botId'] );
     }
+		if ( !empty( $params['resolution'] ) ) {
+			$this->setResolution( $params['resolution'] );
+		}
   }
 
 }

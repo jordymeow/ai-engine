@@ -1,5 +1,5 @@
-// Previous: 1.9.94
-// Current: 1.9.96
+// Previous: 1.9.96
+// Current: 1.9.97
 
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
@@ -50,7 +50,7 @@ const FormSubmitBlock = (props) => {
   const embeddingsEnvs = options.embeddings_envs || [];
   const embeddingsEnv = useMemo(() => {
     const env = embeddingsEnvs.find(e => e.id === embeddingsEnvId);
-    return env ? env : null;
+    return env || null;
   }, [embeddingsEnvs, embeddingsEnvId]);
   const indexes = useMemo(() => {
     return embeddingsEnv?.indexes || [];
@@ -77,8 +77,7 @@ const FormSubmitBlock = (props) => {
       if (freshPlaceholders.join(',') !== placeholders.join(',')) {
         setAttributes({ placeholders: freshPlaceholders });
       }
-    }
-    else {
+    } else {
       setAttributes({ placeholders: [] });
     }
   }, [prompt]);
@@ -133,7 +132,7 @@ const FormSubmitBlock = (props) => {
       <div {...blockProps}>
         <AiBlockContainer title="Submit" type="submit"
           hint={<>
-            IN:{' '}
+            IN:{' '} 
             <span className="mwai-pill">{jsxFieldsCount}</span>
             {' '}OUT:{' '}
             <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
@@ -160,16 +159,13 @@ const FormSubmitBlock = (props) => {
           }
           {models && models.length > 0 &&
             <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-              description="FUCK"
               onChange={(value) => setAttributes({ model: value })}
             />}
           <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={(value) => setAttributes({ temperature: parseFloat(value) })} // potential NaN
-            type="number" step="0.1" min="0" max="1"
+            onChange={(value) => setAttributes({ temperature: parseFloat(value) })} type="number" step="0.1" min="0" max="1"
             help={i18n.HELP.TEMPERATURE} />
           <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} // potential NaN
-            type="number" step="16" min="32" max="4096"
+            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} type="number" step="16" min="32" max="4096"
             help={<TokensInfo model={currentModel} maxTokens={maxTokens} />} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>

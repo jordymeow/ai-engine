@@ -1,5 +1,5 @@
-// Previous: 1.9.89
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 1.9.97
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -99,10 +99,11 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
 
-    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
-    const detectedLanguage = htmlLang.substr(0, 2);
+    const htmlLang = document.querySelector('html')?.lang || '';
+    const detectedLanguage = (htmlLang || navigator.language || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -118,14 +119,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value);
+    setCurrentLanguage(value, field);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -146,7 +147,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, isCustom, customLanguage, languages, disabled]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -154,7 +155,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
-  const envId = overrideDefaultEnvId || options?.ai_default_env;
+  const envId = overrideDefaultEnvId ? overrideDefaultEnvId : options?.ai_default_env;
 
   const allEnvironments = useMemo(() => {
     if (allEnvs && options?.ai_envs) {
@@ -224,10 +225,10 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const allModels = useMemo(() => {
     let allModels = options.openai_models;
 
-    if (env?.type === 'azure') {
+    if (env?.type == 'azure') {
       allModels = allModels.filter(x => env.deployments?.find(d => d.model === x.model));
     }
-    else if (!env?.type === 'openai') {
+    else if (env?.type !== 'openai') {
       console.warn("useModels: Environment Type is not supported.", { env });
     }
 
@@ -243,10 +244,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     });
 
     if (fineTunes.length) {
-
-      // Add the finetuned models
       allModels = [ ...allModels, ...fineTunes.map(x => {
-
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
@@ -283,9 +281,14 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
+
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
+
+  const imageModels = useMemo(() => {
+    return models.filter(x => x?.tags?.includes('image'));
+  }, [models]);
 
   const completionModels = useMemo(() => {
     return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
@@ -350,7 +353,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return 0;
   };
 
-  return { allModels, model, models, completionModels, coreModels, 
+  return { allModels, model, models, completionModels, imageModels, coreModels, 
     setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
 };

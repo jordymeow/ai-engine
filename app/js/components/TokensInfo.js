@@ -1,12 +1,11 @@
-// Previous: none
-// Current: 1.9.96
+// Previous: 1.9.96
+// Current: 1.9.97
 
 const { useMemo } = wp.element;
 
 const TokensInfo = ({ model, maxTokens, ...rest }) => {
 
   const recommendedMaxTokens = useMemo(() => {
-    console.log(model);
     if (!model) return null;
     const { maxContextualTokens, maxCompletionTokens, maxTokens } = model;
     if (maxCompletionTokens) {
