@@ -1,9 +1,10 @@
 <?php
 
 class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
-	public ?string $resolution = null;
+	public ?string $resolution = '1792x1024';
+	public ?string $style = null;
 
-  public function __construct( ?string $prompt = "", ?string $model = "dall-e" ) {
+  public function __construct( ?string $prompt = "", ?string $model = "dall-e-3" ) {
 		parent::__construct( $prompt );
     $this->model = $model;
     $this->mode = "generation"; // could be generation, edit, variation
@@ -15,6 +16,10 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
 	public function setResolution( string $resolution ) {
 		$this->resolution = $resolution;
+	}
+
+	public function setStyle( string $style ) {
+		$this->style = $style;
 	}
 
   // Based on the params of the query, update the attributes
@@ -39,6 +44,9 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
     }
 		if ( !empty( $params['resolution'] ) ) {
 			$this->setResolution( $params['resolution'] );
+		}
+		if ( !empty( $params['style'] ) ) {
+			$this->setStyle( $params['style'] );
 		}
   }
 

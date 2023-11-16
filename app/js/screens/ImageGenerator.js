@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 1.9.97
+// Previous: 1.9.97
+// Current: 1.9.98
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -17,7 +17,7 @@ import { StyledSidebar } from "../styles/StyledSidebar";
 import useTemplates from "../components/Templates";
 import i18n from "@root/i18n";
 
-const ImagesCount = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 40, 60, 80, 100];
+const ImagesCount = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 40, 60, 80, 100];
 
 function generateFilename(prompt, maxLength = 42) {
   let cleaned = prompt.replace(/[\s|,]+/g, '-');
@@ -48,10 +48,13 @@ const ImageGenerator = () => {
   const [error, setError] = useState();
   const [continuousMode, setContinuousMode] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [busyMediaLibrary, setBusyMediaLibrary] = useState(false);
   const aiEnvironments = options?.ai_envs || [];
   const { imageModels, getModel } = useModels(options, template?.envId || null);
-  const currentModel = useMemo(() => getModel(template?.model), [template?.model, getModel]);
+  const currentModel = getModel(template?.model);
+  const [taskQueue, setTaskQueue] = useState([]);
 
+  // Results
   const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
@@ -60,12 +63,16 @@ const ImageGenerator = () => {
   const [alt, setAlt] = useState('');
   const [filename, setFilename] = useState('');
   const [createdMediaIds, setCreatedMediaIds] = useState([]);
-
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
   const prompt = template?.prompt;
 
   const [currentImageNumber, setCurrentImageNumber] = useState(0);
   const [totalImagesToGenerate, setTotalImagesToGenerate] = useState(1);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [processedTasks, setProcessedTasks] = useState(0);
+  const abortController = new AbortController();
+
+  const currentStyle = template?.style ?? null;
 
   const setPrompt = (value) => {
     setTemplate({ ...template, prompt: value });
@@ -85,7 +92,7 @@ const ImageGenerator = () => {
       const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
       setTemplate({ ...template, resolution: bestResolution });
     }
-  }, [template, imageModels, currentModel]);
+  }, [template]);
 
   useEffect(() => {
     if (selectedUrl) {
@@ -96,7 +103,7 @@ const ImageGenerator = () => {
       setCaption(prompt);
       setAlt(prompt);
     }
-  }, [selectedUrl, prompt]);
+  }, [selectedUrl]);
 
   const onGoBack = () => {
     if (urlIndex > 0) {
@@ -110,44 +117,81 @@ const ImageGenerator = () => {
     }
   };
 
-  const onSubmit = async () => {
-    setBusy(true);
-    if (!continuousMode) {
-      setUrls([]);
+  const addToQueue = () => {
+    if (!prompt) {
+      console.error("Prompt is empty, cannot add to queue.");
+      return;
     }
+  
+    for (let i = 0; i < totalImagesToGenerate; i++) {
+      const newTask = {
+        prompt,
+        envId: template.envId,
+        model: template.model,
+        resolution: template.resolution,
+        style: template.style,
+      };
+      setTaskQueue(queue => [...queue, newTask]);
+    }
+    setTotalTasks(prev => prev + totalImagesToGenerate);
+  };
+
+  const processQueue = async () => {
+    if (taskQueue.length === 0 || busy) return;
+  
+    setBusy(true);
+    const currentTask = taskQueue[0];
+  
     try {
-      for (let i = 0; i < totalImagesToGenerate; i++) {
-        const res = await nekoFetch(`${apiUrl}/ai/images`, {
-          method: 'POST',
-          nonce: restNonce,
-          json: { 
-            env: 'admin-tools',
-            envId: template.envId,
-            model: template.model,
-            resolution: template.resolution,
-            session: session,
-            prompt,
-            maxResults: 1,
-          }}
-        );
-        setCurrentImageNumber(i + 1);
-        if (res.data && res.data.length > 0) {
-          setUrls(prevUrls => [...prevUrls, res.data[0]]);
-        }
+      const res = await nekoFetch(`${apiUrl}/ai/images`, {
+        method: 'POST',
+        nonce: restNonce,
+        signal: abortController.signal,
+        json: { 
+          env: 'admin-tools',
+          envId: currentTask.envId,
+          model: currentTask.model,
+          resolution: currentTask.resolution,
+          style: currentTask.style,
+          session: session,
+          prompt: currentTask.prompt,
+          maxResults: 1,
+        }}
+      );
+      if (res.data && res.data.length > 0) {
+        setUrls(urls => [...urls, res.data[0]]);
+      }
+      setTaskQueue(queue => queue.slice(1));
+      setProcessedTasks(prev => prev + 1);
+      if (taskQueue.length === 1) {
+        setTotalTasks(0);
+        setProcessedTasks(0);
       }
     }
     catch (err) {
-      console.error(err);
-      setError(err.message);
+      if (err.name !== 'AbortError') {
+        console.error(err);
+        setError(err.message + (taskQueue.length > 1 ? ' The other tasks will continue.' : ''));
+      }
     }
     finally {
       setBusy(false);
-      setCurrentImageNumber(0);
     }
+  };
+  
+  useEffect(() => {
+    if (taskQueue.length > 0 && !busy) {
+      processQueue();
+    }
+  }, [taskQueue, busy]);
+  
+
+  const clearImages = () => {
+    setUrls([]);
   };
 
   const onAdd = async () => {
-    setBusy(true);
+    setBusyMediaLibrary(true);
     try {
       const res = await nekoFetch(`${apiUrl}/helpers/create_image`, {
         method: 'POST',
@@ -166,16 +210,8 @@ const ImageGenerator = () => {
       setError(err.message);
     }
     finally {
-      setBusy(false);
+      setBusyMediaLibrary(false);
     }
-  };
-
-  const onDownload = () => {
-    const link = document.createElement('a');
-    link.href = selectedUrl;
-    link.target = '_blank';
-    link.download = filename;
-    link.click();
   };
 
   const currentCreatedMediaId = useMemo(() => {
@@ -189,12 +225,14 @@ const ImageGenerator = () => {
       <AiNekoHeader title={i18n.COMMON.IMAGES_GENERATOR} />
 
       <NekoWrapper>
+        
         <NekoColumn fullWidth>
           <OptionsCheck options={options} />
 
           <NekoTypo p style={{ marginTop: 0, marginBottom: 0 }}>
-          This will also be available in the Post Editor soon. If you have any idea or request, please join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/" rel="noreferrer">Support Forum</a>! 🎵
+            This will also be available in the Post Editor soon. If you have any idea or request, please join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/" rel="noreferrer">Support Forum</a>! 🎵
           </NekoTypo>
+
         </NekoColumn>
 
         <NekoColumn>
@@ -204,13 +242,25 @@ const ImageGenerator = () => {
         </NekoColumn>
 
         <NekoColumn style={{ flex: 3 }}>
-          <NekoProgress busy={busy} value={currentImageNumber} max={totalImagesToGenerate} onStopClick={null} />  
+
+          <NekoProgress busy={busy} value={processedTasks} max={totalTasks}
+            onStopClick={() => {
+              abortController.abort();
+              setTaskQueue([]);
+              setTotalTasks(0);
+              setProcessedTasks(0);
+              setBusy(false);
+            }}
+            status={() => `${processedTasks} / ${totalTasks}`}
+          />  
+          
           <NekoSpacer />
 
           <NekoContainer>
+
             {selectedUrl && <>
+
               <StyledTitleWithButton style={{ paddingBottom: 10 }}>
-                <h2>Images Generator</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
                     &lt;
@@ -224,9 +274,11 @@ const ImageGenerator = () => {
                 </div>
               </StyledTitleWithButton>
 
-              <div style={{ display: 'flex' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ flex: 2 }}>
-                  <img src={selectedUrl} style={{ width: '100%' }} />
+                  <a href={selectedUrl} target="_blank" rel="noreferrer">
+                    <img src={selectedUrl} style={{ width: '100%' }} />
+                  </a>
                 </div>
                 <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                   <StyledInputWrapper>
@@ -249,46 +301,55 @@ const ImageGenerator = () => {
                     <label>Filename:</label>
                     <NekoInput value={filename} onChange={setFilename} />
                   </StyledInputWrapper>
-                  <NekoButton fullWidth style={{ marginTop: 7 }} isBusy={busy} onClick={() => onAdd()}>
+                  <NekoSpacer />
+                  <NekoButton fullWidth style={{ height: 42 }} onClick={onAdd} isBusy={busyMediaLibrary}>
                     Add to Media Library
                   </NekoButton>
-                  <NekoButton fullWidth style={{ marginLeft: 0, marginTop: 7 }} isBusy={busy}
-                    onClick={() => onDownload()}>
-                    Download
-                  </NekoButton>
                   <NekoSpacer tiny />
-                  {currentCreatedMediaId && <NekoMessage variant="success">
-                    The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank" rel="noreferrer">Edit Media #{currentCreatedMediaId}</a>.
-                  </NekoMessage>}
+                  {currentCreatedMediaId && <>
+                    <NekoSpacer />
+                    <NekoMessage variant="success">
+                      The media has been created! You can edit it here: <a href={`/wp-admin/post.php?post=${currentCreatedMediaId}&action=edit`} target="_blank" rel="noreferrer">Edit Media #{currentCreatedMediaId}</a>.
+                    </NekoMessage>
+                  </>}
                 </div>
               </div>
+
             </>}
 
             {!selectedUrl && <>
               <StyledTitleWithButton>
-                <h2>Generated Images</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <label style={{ margin: '0 5px 0 0' }}># of Images: </label>
+                  <NekoButton disabled={!prompt} isBusy={busy} onClick={addToQueue}>
+                    Generate
+                  </NekoButton>
                   <NekoSelect scrolldown id="totalImagesToGenerate" name="totalImagesToGenerate"
-                    disabled={busy} style={{ marginRight: 10 }}
+                    style={{ marginLeft: 10, marginRight: 10, width: 120 }}
                     value={totalImagesToGenerate} onChange={value => setTotalImagesToGenerate(value)}>
                     {ImagesCount.map((count) => {
-                      return <NekoOption key={count} id={count} value={count} label={count} />;
+                      return <NekoOption key={count} id={count} value={count}
+                        label={`${count} ${count > 1 ? 'Images' : 'Image'}`}
+                      />;
                     })}
                   </NekoSelect>
-                  <NekoButton disabled={!prompt} isBusy={busy} onClick={onSubmit}>
-                    Generate Images
-                  </NekoButton>
+                  {busy && <NekoButton disabled={!prompt} onClick={addToQueue}>
+                    Add to Queue
+                  </NekoButton>}
+                  {urls.length > 0 && <NekoButton onClick={clearImages}>
+                    Clear
+                  </NekoButton>}
                 </div>
               </StyledTitleWithButton>
               <NekoSpacer />
               <NekoTextArea value={prompt} onChange={setPrompt} />
               <StyledGallery>
                 {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div className="empty-image" />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
               </StyledGallery>
             </>}
+
           </NekoContainer>
+            
         </NekoColumn>
 
         <NekoColumn>
@@ -315,23 +376,33 @@ const ImageGenerator = () => {
             <NekoSpacer tiny />
             <NekoSelect scrolldown name="resolution"
               value={template?.resolution} onChange={setTemplateProperty}>
-              {currentModel?.options?.map((x) => (
+              {currentModel?.options.map((x) => (
                 <NekoOption key={x.option} value={x.option} label={x.option}></NekoOption>
               ))}
             </NekoSelect>
+            {currentModel?.model?.startsWith('dall-e-3') && <>
+              <NekoSpacer tiny />
+              <label>{i18n.COMMON.STYLE}:</label>
+              <NekoSpacer tiny />
+              <NekoSelect scrolldown name="style" value={currentStyle} onChange={setTemplateProperty}>
+                <NekoOption key={'none'} value={null} label={'None'}></NekoOption>
+                <NekoOption key={'natural'} value={'natural'} label={'Natural'}></NekoOption>
+                <NekoOption key={'vivid'} value={'vivid'} label={'Vivid'}></NekoOption>
+              </NekoSelect>
+            </>}
           </NekoContainer>
 
           <NekoContainer style={{ marginBottom: 25 }}>
             <h2 style={{ marginTop: 0 }}>Settings</h2>
             <NekoCheckbox id="continuous_mode" label="Continuous" value="1" checked={continuousMode}
               description="New images will be added to the already generated images."
-              onChange={setContinuousMode} />
+              onChange={(val) => setContinuousMode(val)} />
           </NekoContainer>
         </NekoColumn>
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
+      <NekoModal isOpen={!!error}
         onRequestClose={() => { setError(); }}
         okButton={{
           onClick: () => { setError(); },
@@ -341,7 +412,6 @@ const ImageGenerator = () => {
       />
       
     </NekoPage>
-    
   );
 };
 

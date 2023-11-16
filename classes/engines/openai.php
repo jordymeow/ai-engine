@@ -453,7 +453,8 @@ class Meow_MWAI_Engines_OpenAI
           if ( isset( $json['error']['message'] ) ) {
             throw new Exception( $json['error']['message'] );
           }
-          throw new Exception( 'No content received from OpenAI.' );
+          // We can't do this, otherwise the Function Calling will not work...
+          //throw new Exception( 'No content received from OpenAI.' );
         }
         $data = [
           'model' => $query->model,
@@ -522,6 +523,9 @@ class Meow_MWAI_Engines_OpenAI
       $body['model'] = 'dall-e-3';
       $body['quality'] = 'hd';
     }
+    if ( !empty( $query->style ) && strpos( $model, 'dall-e-3' ) === 0 ) {
+      $body['style'] = $query->style;
+    }
     if ( $this->localService === 'azure' ) {
       $url = trailingslashit( $this->defaultAzureEndpoint ) . 'dalle/text-to-image?api-version=2022-08-03-preview';
       $body = array( 
@@ -569,6 +573,13 @@ class Meow_MWAI_Engines_OpenAI
       $reply->setUsage( $usage );
       $reply->setChoices( $choices );
       $reply->setType( 'images' );
+
+      // Convert the URLs into Markdown.
+      $reply->result = "";
+      foreach ( $reply->results as $result ) {
+        $reply->result .= "![Image]($result)\n";
+      }
+
       return $reply;
     }
     catch ( Exception $e ) {

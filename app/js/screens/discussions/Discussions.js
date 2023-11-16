@@ -1,5 +1,5 @@
-// Previous: 1.9.87
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 1.9.98
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -31,33 +31,142 @@ const StyledEmbedding = styled.div`
   padding: 2px 8px;
 `;
 
-const StyledMessage = styled.div`
+const StyledMessageWrapper = styled.div`
+  font-size: 14px;
+  padding: 10px;
+  border: 1px solid #eaeaea;
+  background: #f5f5f5;
+  color: #333333;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  a {
+    color: #333333;
+    text-decoration: underline;
+  }
+
+  a:hover {
+    color: #333333;
+    text-decoration: none;
+  }
+
+  blockquote {
+    border-left: 4px solid #dddddd;
+    padding-left: 10px;
+    margin-left: 0;
+    font-style: italic;
+  }
+
+  pre {
+    background: #eeeeee;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+  }
+
+  code {
+    background: #eeeeee;
+    padding: 2px 5px;
+    border-radius: 5px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  table td, table th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 5px;
+  }
+
+  table tr:nth-child(even) {
+    background-color: #dddddd;
+  }
+
+  .mwai-dead-image {
+    color: #ab5252;
+    background: #ffd2d2;
+    padding: 8px 8px;
+    text-align: center;
+  }
 `;
+
+const StyledMessage = ({ content }) => {
+  const [processedContent, setProcessedContent] = useState(content || '');
+
+  useEffect(() => {
+    if (content) {
+      handleDeadUrls(content);
+    }
+  }, [content]);
+
+  const checkImageURL = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
+  };
+
+  const handleDeadUrls = async (markdownContent) => {
+    const regex = /!\[.*?\]\((.*?)\)/g;
+    let newContent = markdownContent;
+    let match;
+
+    while ((match = regex.exec(markdownContent)) !== null) {
+      const imageUrl = match[1];
+      const isImageAvailable = await checkImageURL(imageUrl);
+      
+      if (!isImageAvailable) {
+        const placeholder = `<div class="mwai-dead-image">Image not available</div>`;
+        newContent = newContent.replace(match[0], placeholder);
+      }
+    }
+
+    setProcessedContent(newContent);
+  };
+  console.log({ content, processedContent });
+  return (
+    <StyledMessageWrapper>
+      <Markdown>{processedContent}</Markdown>
+    </StyledMessageWrapper>
+  );
+};
 
 const Message = ({ message }) => {
   const embeddings = message?.extra?.embeddings ? message?.extra?.embeddings : (
     message?.extra?.embedding ? [message?.extra?.embedding] : []
   );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
       <StyledContext>
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embeddings.id}>
+        {embeddings.map(embedding => <div key={embedding.id}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
-      <StyledMessage>
-        <Markdown>
-          {message.content || message.text}
-        </Markdown>  
-      </StyledMessage>
+      <StyledMessage content={message.content || message.text} />
     </div>
   );
 }
 
 const chatsColumns = [
+  //{ accessor: 'id', title: 'ID', width: '50px' },
+  //{ accessor: 'chatId',  title: 'ChatID', width: '80px' },
   { accessor: 'updated', title: 'Time', width: '80px', sortable: true },
   { accessor: 'user', title: 'User', width: '85px', 
     filters: {
@@ -71,6 +180,8 @@ const chatsColumns = [
     },
   },
   { accessor: 'messages', title: '#', width: '45px' },
+  //{ accessor: 'extra', title: 'Info', width: '45px' },
+  //{ accessor: 'created', title: 'Started', width: '140px', sortable: true }
 ];
 
 const retrieveDiscussions = async (chatsQueryParams) => {
@@ -170,13 +281,14 @@ const Discussions = () => {
         return;
       }
       await deleteDiscussions();
-      queryClient.invalidateQueries('chats');
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+    } else {
+      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+      const selectedChatIds = selectedChats.map(x => x.chatId);
+      await deleteDiscussions(selectedChatIds);
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
     }
-    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-    const selectedChatIds = selectedChats.map(x => x.chatId);
-    await deleteDiscussions(selectedChatIds);
-    setSelectedIds([]);
-    queryClient.invalidateQueries('chats');
     setBusyAction(false);
   }
 
