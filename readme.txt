@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.98
+Stable tag: 1.9.99
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,10 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 1.9.99 (2023/11/17) =
+* Update: Cleaner way of handling errors in the chatbot.
+* Update: Enhanced the way the files are uploaded, and follow the rules set by the Media Library.
 
 = 1.9.98 (2023/11/16) =
 * Update: Enhanced the Images Generator a lot, you can now add tasks to it, and let them run. The idea is to move this experience at some point to the Post Editor. 

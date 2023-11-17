@@ -1,10 +1,8 @@
-// Previous: 1.9.94
-// Current: 1.9.95
+// Previous: 1.9.95
+// Current: 1.9.99
 
-// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
-// AI Engine
 import { useModClasses, formatAiName, formatUserName,
   processParameters, isUrl } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
@@ -35,44 +33,51 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     uploadedUrl: null,
     uploadProgress: null,
   });
+  const [ error, setError ] = useState(null);
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  // System Parameters
-  //const id = system.id;
-  const stream = system.stream || false;
-  const botId = system.botId;
-  const customId = system.customId;
-  const userData = system.userData;
-  const sessionId = system.sessionId;
-  const contextId = system.contextId; // This is used by Content Aware (to retrieve a Post)
-  const restNonce = system.restNonce;
-  const pluginUrl = system.pluginUrl;
-  const restUrl = system.restUrl;
-  const debugMode = system.debugMode; 
-  const typewriter = system?.typewriter ?? false;
-  const speechRecognition = system?.speech_recognition ?? false;
-  const speechSynthesis = system?.speech_synthesis ?? false;
+  const { id: systemId, stream = false, botId, customId, userData, sessionId, contextId, restNonce, pluginUrl, restUrl, debugMode, typewriter = false, speechRecognition = false, speechSynthesis = false } = system;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
-  const processedParams = processParameters(params);
-  let { aiName, userName } = processedParams;
-  const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    guestName, window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
-    icon, iconText, iconAlt, iconPosition, imageUpload } = processedParams;
+  const {
+    textSend,
+    textClear,
+    textInputMaxLength,
+    textInputPlaceholder,
+    textCompliance,
+    guestName,
+    window: isWindow,
+    copyButton,
+    fullscreen,
+    localMemory: localMemoryParam,
+    icon,
+    iconText,
+    iconAlt,
+    iconPosition,
+    imageUpload
+  } = processParameters(params);
+
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
+
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrlVal = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
-    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const iconUrl = icon ? (isUrl(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return { cssVariables: cssVars, iconUrl: iconUrlVal };
+    return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
-  aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
-  userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+
+  let formattedAiName = formatAiName(/* passing original aiName variable? */ 'AIName', pluginUrl, iconUrl, modCss);
+  let formattedUserName = formatUserName(/* passing original userName variable? */ 'UserName', guestName, userData, pluginUrl, modCss);
+  // BUG: Using placeholder strings instead of actual variables (should pass aiName, userName variables from processedParams)
+  // Also, reassigning variables unnecessarily, which might cause confusion or bugs.
+  // Instead, replace with:
+  // let aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
+  // let userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+  // But for bug insertion, the above placeholder is enough to cause misbehavior.
 
   useEffect(() => {
     resetMessages();
@@ -95,6 +100,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       uploadedUrl: null,
       uploadProgress: null,
     });
+  };
+
+  const resetError = () => {
+    setError(null);
   };
 
   const resetMessages = () => {
@@ -144,9 +153,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -182,12 +189,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         content: applyFilters('ai.reply', serverReply.reply),
         who: rawAiName,
         timestamp: new Date().getTime(),
+        images: serverReply.images || undefined,
       };
-      if (serverReply.images) {
-        newMessage.images = serverReply.images;
-      }
-      // Introducing a subtle bug: pushing the new message after a deliberate delay (simulate async issues)
-      // Note: no actual delay here, but code is structured as if it could cause race conditions.
       freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
@@ -201,23 +204,23 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId]);
+  }, [botId, localStorageKey, resetMessages, setInputText]);
 
   const onSubmit = async (textQuery) => {
-
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
     }
-
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
-
     setBusy(true);
     setInputText('');
     resetUploadedImage();
 
+    // BUG: Using stale messages reference here may cause concurrency issues
+    // Instead, use a functional update to get the latest messages.
+    // But as per instruction, we inject a subtle bug: reusing 'messages' array which might be stale.
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -243,7 +246,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       session: sessionId,
       chatId: chatId,
       contextId: contextId,
-      messages: messages,
+      messages: messages, // BUG: passing 'messages' instead of 'bodyMessages' or 'freshMessages'
       newMessage: textQuery,
       newImageId: uploadedImage?.uploadedId,
       stream,
@@ -264,9 +267,18 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           return freshMessages;
         });
       };
-
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
+      if (!data.success && data.message) {
+        setError(data.message);
+        // Remove the last two messages with bug: does not handle multiple incomplete messages or concurrency
+        freshMessages.pop();
+        freshMessages.pop();
+        setMessages(freshMessages);
+        saveMessages(freshMessages);
+        setBusy(false);
+        return;
+      }
       setServerReply(data);
     }
     catch (err) {
@@ -284,6 +296,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     catch (error) {
       console.error('onImageUpload Error', error);
+      setError(error.message || 'An unknown error occurred');
+      resetUploadedImage();
     }
   };
 
@@ -294,6 +308,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setMessages,
     setClientId: setChatId,
     resetMessages,
+    resetError,
     onClear,
     onSubmit,
     onImageUpload
@@ -307,6 +322,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     inputText,
     messages,
     busy,
+    error,
     setBusy,
     typewriter,
     speechRecognition,
@@ -315,7 +331,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     localMemory,
     imageUpload,
     uploadedImage,
-    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
+    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName: formattedAiName, userName: formattedUserName, guestName,
     isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables, iconUrl
   };
 

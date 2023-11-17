@@ -1,5 +1,5 @@
-// Previous: 1.9.94
-// Current: 1.9.95
+// Previous: 1.9.95
+// Current: 1.9.99
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -24,9 +24,9 @@ const ChatbotUI = (props) => {
 
   const { state, actions } = useChatbotContext();
   const { botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
-    textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables,
+    textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables, error,
     iconUrl, busy, speechRecognition, imageUpload, uploadedImage } = state;
-  const { onClear, onSubmit, setInputText, setMessages, setClientId, onImageUpload } = actions;
+  const { onClear, onSubmit, setInputText, setMessages, setClientId, onImageUpload, resetError } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
     setInputText(prev => prev + transcript);
   });
@@ -49,7 +49,7 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(prev => prev + text);
+          setInputText(prev => text);
         }
       }
       else if (task.action === 'toggle') {
@@ -69,9 +69,7 @@ const ChatbotUI = (props) => {
         setClientId(chatId);
         setMessages(messages);
       }
-
-      const remainingTasks = tasks.slice(1);
-      setTasks(remainingTasks);
+      setTasks(prev => prev.slice(1));
     }
   };
 
@@ -121,14 +119,13 @@ const ChatbotUI = (props) => {
     if (!isMobile && open) { 
       inputRef.current.focus();
     }
-    if(conversationRef.current) {
-      // Introducing a bug: writing to scrollTop directly causes potential reflows, but let's say in some cases it can cause flickering or issues.
+    if (conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [open]);
 
   useLayoutEffect(() => {
-    if(conversationRef.current) {
+    if (conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [messages]);
@@ -137,8 +134,7 @@ const ChatbotUI = (props) => {
     hasFocusRef.current = document.activeElement === inputRef.current;
     if (forcedText !== null) {
       onSubmit(forcedText);
-    }
-    else if (inputText.length > 0) {
+    } else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -158,10 +154,16 @@ const ChatbotUI = (props) => {
     if (isListening) {
       setIsListening(false);
     }
+    if (error) {
+      resetError();
+    }
     setInputText(text);
   };
 
   const onUploadFile = async (file) => {
+    if (error) {
+      resetError();
+    }
     onImageUpload(file);
   };
 
@@ -200,6 +202,9 @@ const ChatbotUI = (props) => {
             <ChatbotReply key={message.id} conversationRef={conversationRef} message={message} />
           )}
         </div>
+        {error && <div className={modCss('mwai-error')} onClick={() => resetError()}>
+          {error}
+        </div>}
         <div className={modCss('mwai-input')}>
           <div className={modCss('mwai-input-text')}>
             {imageUpload && 
@@ -232,7 +237,7 @@ const ChatbotUI = (props) => {
             {speechRecognition && !isMobile && (<div>
               <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
                 className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(!isListening)}
+                onClick={() => setIsListening(prev => !prev)}
               />
             </div>)}
           </div>
@@ -241,7 +246,7 @@ const ChatbotUI = (props) => {
           </button>}
           {!busy && <button disabled={isImageUploading} onClick={() => { 
             if (isListening) {
-              setIsListening(false);
+              setIsListening(prev => false);
             }
             if (clearMode) {
               onClear();

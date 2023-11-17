@@ -127,16 +127,24 @@ class Meow_MWAI_Modules_Files {
 
   #region REST endpoints
 
+  public function check_permission( $request ) {
+    $nonce = $request->get_header( 'X-WP-Nonce' );
+    if ( !wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid nonce.' ], 403 );
+    }
+    return true;
+  }
+
   public function rest_api_init() {
 		register_rest_route( $this->namespace, '/files/upload', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_upload' ),
-			'permission_callback' => '__return_true'
+			'permission_callback' => array( $this, 'check_permission' )
 		) );
     register_rest_route( $this->namespace, '/files/delete', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_delete' ),
-			'permission_callback' => '__return_true'
+			'permission_callback' => array( $this, 'check_permission' )
 		) );
 	}
 
@@ -149,6 +157,13 @@ class Meow_MWAI_Modules_Files {
     if ( empty( $file ) ) {
 			return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
     }
+
+    // File validation by WordPress Media Library
+    $fileTypeCheck = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
+    if ( !$fileTypeCheck['type'] ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
+    }
+
     $local_upload = $this->core->get_option( 'image_local_upload' );
     $image_expires_seconds = $this->core->get_option( 'image_expires' );
     $expires = ( empty( $image_expires_seconds ) || $image_expires_seconds === 'never' ) ? null : 
@@ -159,8 +174,11 @@ class Meow_MWAI_Modules_Files {
       if ( !$this->check_db() ) {
         return new WP_REST_Response( [ 'success' => false, 'message' => 'Could not create database table.' ], 500 );
       }
+      $extension = pathinfo( $file['name'], PATHINFO_EXTENSION );
+      $randomFileName = wp_generate_password( 20, false ) . '.' . $extension;
       $upload_dir = wp_upload_dir();
-      $filename = wp_unique_filename( $upload_dir['path'], $file['name'] );
+      $path = $upload_dir['path'] . '/' . $randomFileName;
+      $filename = wp_unique_filename( $upload_dir['path'], $randomFileName );
       $path = $upload_dir['path'] . '/' . $filename;
       if ( !move_uploaded_file( $file['tmp_name'], $path ) ) {
         return new WP_REST_Response( [ 'success' => false, 'message' => 'Could not move the file.' ], 500 );

@@ -250,6 +250,19 @@
 	}
 }
 
+.mwai-error {
+	margin: var(--mwai-spacing);
+	color: white;
+	background: rgba(180, 55, 55, 0.55);
+	padding: var(--mwai-spacing);
+	border-radius: var(--mwai-borderRadius);
+
+	&:hover {
+		cursor: pointer;
+		background: rgba(180, 44, 44, 0.85);
+	}
+}
+
 // Keyframes for buttons
 
 @keyframes mwai-button-spinner {

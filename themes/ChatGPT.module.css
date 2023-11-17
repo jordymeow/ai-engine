@@ -702,6 +702,19 @@
   display: none;
 }
 
+.mwai-error {
+  margin: var(--mwai-spacing);
+  color: white;
+  background: rgba(180, 55, 55, 0.55);
+  padding: var(--mwai-spacing);
+  border-radius: var(--mwai-borderRadius);
+}
+
+.mwai-error:hover {
+  cursor: pointer;
+  background: rgba(180, 44, 44, 0.85);
+}
+
 @keyframes mwai-button-spinner {
   from {
     transform: rotate(0turn);

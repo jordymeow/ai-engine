@@ -349,7 +349,7 @@ class Meow_MWAI_Engines_OpenAI
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
       $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
-      throw new Exception( $e->getMessage() . " ($service)" );
+      throw new Exception( "From $service: " . $e->getMessage() );
     }
   }
 
@@ -384,7 +384,7 @@ class Meow_MWAI_Engines_OpenAI
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
       $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
-      throw new Exception( $e->getMessage() . " ($service)" );
+      throw new Exception( "From $service: " . $e->getMessage() );
     }
   }
 
@@ -498,7 +498,7 @@ class Meow_MWAI_Engines_OpenAI
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
       $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
-      $message = $e->getMessage() . " ($service)";
+      $message = "From $service: " . $e->getMessage();
       throw new Exception( $message );
     }
   }
@@ -585,7 +585,7 @@ class Meow_MWAI_Engines_OpenAI
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
       $service = $this->localService === 'azure' ? 'Azure' : 'OpenAI';
-      throw new Exception( $e->getMessage() . " ($service)" );
+      throw new Exception( "From $service: " . $e->getMessage() );
     }
   }
 
@@ -890,7 +890,7 @@ class Meow_MWAI_Engines_OpenAI
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
-      throw new Exception( $e->getMessage() . " (OpenAI)" );
+      throw new Exception( 'From OpenAI: ' . $e->getMessage() );
     }
   }
 
