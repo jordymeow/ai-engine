@@ -1,5 +1,5 @@
-// Previous: 1.9.7
-// Current: 1.9.92
+// Previous: none
+// Current: 2.0.0
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -46,7 +46,7 @@ const deleteLogs = async (logIds = []) => {
   return res;
 };
 
-const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
+const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
   const queryClient = useQueryClient();
   const [ busyAction, setBusyAction ] = useState(false);
   const { getModelName } = useModels(options, null, true);
@@ -79,26 +79,26 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;
-      if (x.price >= 0.001) {
-        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
-      }
-      if (x.price >= 0.01) {
-        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
-      }
       if (x.price >= 0.10) {
         jsxSimplifiedPrice = <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>;
+      } else if (x.price >= 0.01) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
+      } else if (x.price >= 0.001) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
       }
 
       const envName = options?.ai_envs?.find(v => v.id === x.apiSrv)?.name || x.apiSrv;
+
+      let model = <div>
+        <span title={x.model}>{getModelName(x.model)}{x.mode === 'assistant' && <i> (Assistant)</i>}</span><br />
+        <small>{envName}</small>
+      </div>;
 
       return {
         id: x.id,
         env: <div>{x.env}<br /><small>{x.session}</small></div>,
         user: user,
-        model: <div>
-          <span title={x.model}>{getModelName(x.model)}</span><br />
-          <small>{envName}</small>
-        </div>,
+        model: model,
         units: <div style={{ textAlign: 'right' }}>{x.units}<br /><small>{x.type}</small></div>,
         price: <>{jsxSimplifiedPrice}<br /><small>${x.price}</small></>,
         time: time
@@ -108,12 +108,12 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const onDeleteSelectedLogs = async () => {
     setBusyAction(true);
-    if (!selectedLogIds.length) {
+    if (selectedLogIds.length === 0) {
       if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) { 
         setBusyAction(false);
         return;
       }
-      await deleteLogs();
+      await deleteLogs(); // Will delete no IDs, but proceed
       queryClient.invalidateQueries({ queryKey: ['logs'] });
     } else {
       await deleteLogs(selectedLogIds);
@@ -130,7 +130,7 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
           onClick={() => {
             queryClient.invalidateQueries({ queryKey: ['logs'] });
           }}>{i18n.COMMON.REFRESH}</NekoButton>
-        {selectedLogIds.length > 0 && <>
+        {selectedLogIds?.length > 0 && <>
           <NekoButton className="danger" disabled={false}
             onClick={onDeleteSelectedLogs}>
             {i18n.COMMON.DELETE}
@@ -138,13 +138,14 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
         </>}
       </div>
     </>}>
+
       <NekoTable busy={isFetchingLogs || busyAction}
         onSelectRow={id => { setSelectedLogIds([id]); }}
-        onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids ]); }}
-        onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
+        onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids  ]); }}
+        onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-          setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+          setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
         }}
         filters={filters}
         onFilterChange={(accessor, value) => {
@@ -158,7 +159,7 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: -5 }}>
-        <NekoButton className="danger" disabled={selectedLogIds.length === 0}
+        <NekoButton className="danger" disabled={selectedLogIds.length}
           onClick={onDeleteSelectedLogs}>
           {i18n.COMMON.DELETE_ALL}
         </NekoButton>
@@ -170,7 +171,8 @@ const QueriesExplorer = ({ setSelectedLogIds, selectedLogIds }) => {
         />
       </div>
     </NekoBlock>
+
   </>);
 };
 
-export default QueriesExplorer;
+export default Queries;

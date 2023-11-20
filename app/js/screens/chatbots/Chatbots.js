@@ -1,11 +1,11 @@
-// Previous: 1.9.92
-// Current: 1.9.93
+// Previous: 1.9.93
+// Current: 2.0.0
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from 'styled-components';
 
-import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer, NekoSpacer,
+import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer, NekoSpacer, NekoCheckbox,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 
 import { pluginUrl, restUrl, userData, restNonce, session, stream,
@@ -50,7 +50,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1500); // changed from 1000 to 1500 for subtle timing difference
+    }, 1000);
   };
 
   if (!currentChatbot) {
@@ -125,19 +125,21 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes, chatbots]);
 
   const updateChatbotParams = async (value, id) => {
-
     if ( id === 'botId' && value === 'default' ) {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
+
     if ( id === 'botId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if ( id === 'botId' && chatbots?.some(x => x.botId === value) ) {
+
+    if ( id === 'botId' && chatbots && chatbots.find(x => x.botId === value) ) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
+
     if (id === 'botId' && value !== currentChatbot[id] ) {
       setCurrentBotId(value);
     }
@@ -213,17 +215,17 @@ const Chatbots = (props) => {
             <div style={{ flex: 'auto' }}></div>
             <label>{i18n.COMMON.CHATBOT_EDITOR}:</label>
             <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
-              onLabel={''} offLabel={''} width={50}
+              onLabel={''} offLabel={''} width={42}
               checked={chatbotEditor} onChange={setChatbotEditor} 
             />
             <label style={{ marginLeft: 10 }}>{i18n.COMMON.THEME_EDITOR}:</label>
             <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
-              onLabel={''} offLabel={''} width={50}
+              onLabel={''} offLabel={''} width={42}
               checked={themeEditor} onChange={setThemeEditor}
             />
             <label style={{ marginLeft: 10 }}>{i18n.COMMON.PREVIEW}:</label>
             <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
-              onLabel={''} offLabel={''} width={50}
+              onLabel={''} offLabel={''} width={42}
               checked={chatbotPreview} onChange={setChatbotPreview}
             />
             <StyledShortcode style={{ marginLeft: 10 }}>

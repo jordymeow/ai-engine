@@ -53,6 +53,10 @@ class Meow_MWAI_Engines_OpenAI
     }
   }
 
+  public function get_env_id() {
+    return $this->defaultEnvId;
+  }
+
   function set_environment( $envId = null, $service = null ) {
     $this->defaultEnv = null;
     $envs = $this->core->get_option( 'ai_envs' );
@@ -475,9 +479,12 @@ class Meow_MWAI_Engines_OpenAI
       // Regular data
       else {
         $data = $res['data'];
+        if ( empty( $data ) ) {
+          throw new Exception( 'No content received (res is null).' );
+        }
         if ( !$data['model'] ) {
           error_log( print_r( $data, 1 ) );
-          throw new Exception( "Got an unexpected response from OpenAI. Check your PHP Error Logs." );
+          throw new Exception( 'Invalid response (no model information).' );
         }
       }
       
@@ -856,7 +863,7 @@ class Meow_MWAI_Engines_OpenAI
     * @param bool $json Whether to return the response as json or not
     * @return array
    */
-  public function run( $method, $url, $query = null, $formFields = null, $json = true )
+  public function run( $method, $url, $query = null, $formFields = null, $json = true, $extraHeaders = null )
   {
     $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $this->defaultApiKey . "\r\n";
     $body = $query ? json_encode( $query ) : null;
@@ -867,6 +874,18 @@ class Meow_MWAI_Engines_OpenAI
         'Authorization' => 'Bearer ' . $this->defaultApiKey
       ];
       $body = $this->build_form_body( $formFields, $boundary );
+    }
+
+    // Maybe we should have headers always as an array... not sure why we have it as a string.
+    if ( !empty( $extraHeaders ) ) {
+      foreach ( $extraHeaders as $key => $value ) {
+        if ( is_array( $headers ) ) {
+          $headers[$key] = $value;
+        }
+        else {
+          $headers .= "$key: $value\r\n";
+        }
+      }
     }
 
     $url = 'https://api.openai.com/v1' . $url;
@@ -959,7 +978,7 @@ class Meow_MWAI_Engines_OpenAI
     $option = null;
 
     $finetune = false;
-    if ( is_a( $query, 'Meow_MWAI_Query_Text' ) ) {
+    if ( is_a( $query, 'Meow_MWAI_Query_Text' ) || is_a( $query, 'Meow_MWAI_Query_Assistant' ) ) {
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
         $finetune = true;
       }

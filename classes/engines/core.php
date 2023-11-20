@@ -31,6 +31,13 @@ class Meow_MWAI_Engines_Core {
     if ( $query instanceof Meow_MWAI_Query_Text ) {
       $reply = $this->openai->run_completion_query( $query, $streamCallback );
     }
+    else if ( $query instanceof Meow_MWAI_Query_Assistant ) {
+      $reply = null;
+      $reply = apply_filters( 'mwai_ai_query_assistant', $reply, $query );
+      if ( $reply === null ) {
+        throw new Exception( 'Assistants are not supported in this version of AI Engine.' );
+      }
+    }
     else if ( $query instanceof Meow_MWAI_Query_Embed ) {
       $reply = $this->openai->run_embedding_query( $query );
     }

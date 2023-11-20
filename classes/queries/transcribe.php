@@ -26,9 +26,6 @@ class Meow_MWAI_Query_Transcribe extends Meow_MWAI_Query_Base {
 		if ( !empty( $params['session'] ) ) {
 			$this->setSession( $params['session'] );
 		}
-		if ( !empty( $params['mode'] ) ) {
-			$this->setMode( $params['mode'] );
-		}
 		if ( !empty( $params['url'] ) ) {
 			$this->setURL( $params['url'] );
 		}

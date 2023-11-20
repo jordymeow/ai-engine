@@ -124,9 +124,19 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
         // It's text completion
         else if ( isset( $choice['text'] ) ) {
-          $text = trim( $choice['text'] );
-          $this->results[] = $text;
-          $this->result = $text;
+
+          // TODO: Assistants return an array (so actually not really a text completion)
+          // We should probably make this clearer and analyze all the outputs from different endpoints.
+          if ( is_array( $choice['text'] ) ) {
+            $text = trim( $choice['text']['value'] );
+            $this->results[] = $text;
+            $this->result = $text;
+          }
+          else {
+            $text = trim( $choice['text'] );
+            $this->results[] = $text;
+            $this->result = $text;
+          }
         }
 
         // It's url/image

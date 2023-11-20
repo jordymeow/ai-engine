@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.9.99
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,13 @@ Languages: English.
 
 == Changelog ==
 
+= 2.0.0 (2023/11/20) =
+* Add: Implemented the new OpenAI Assistants. It's beta, but it's there!
+* Update: The former "Assistants" (which were tools in the Admin section) have been renamed into "Utilities".
+* Update: Better control of who/what is using the REST API.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 1.9.99 (2023/11/17) =
 * Update: Cleaner way of handling errors in the chatbot.
 * Update: Enhanced the way the files are uploaded, and follow the rules set by the Media Library.
@@ -91,8 +98,6 @@ Languages: English.
 * Update: The URLs returned by DALL-E are now properly converted into Markdown (and therefore, HTML on the front-end).
 * Update: Meow_MWAI_Query_Image is now using DALL-E 3 by default, and 1792x1024 as the resolution.
 * Update: Better Discussions UI, displaying the images if they are still available.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.97 (2023/11/15) =
 * Add: Support for DALL-E 3.

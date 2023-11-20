@@ -127,24 +127,16 @@ class Meow_MWAI_Modules_Files {
 
   #region REST endpoints
 
-  public function check_permission( $request ) {
-    $nonce = $request->get_header( 'X-WP-Nonce' );
-    if ( !wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid nonce.' ], 403 );
-    }
-    return true;
-  }
-
   public function rest_api_init() {
 		register_rest_route( $this->namespace, '/files/upload', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_upload' ),
-			'permission_callback' => array( $this, 'check_permission' )
+			'permission_callback' => array( $this->core, 'check_rest_nonce' )
 		) );
     register_rest_route( $this->namespace, '/files/delete', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_delete' ),
-			'permission_callback' => array( $this, 'check_permission' )
+			'permission_callback' => array( $this->core, 'check_rest_nonce' )
 		) );
 	}
 

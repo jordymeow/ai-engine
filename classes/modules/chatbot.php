@@ -8,7 +8,7 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', '
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'mode', 'contentAware', 'context',
-	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace',
+	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId',
 	'casuallyFineTuned', 'promptEnding', 'completionEnding', 'model', 'temperature', 'maxTokens',
 	'maxResults', 'apiKey', 'service'
 ] );
@@ -58,8 +58,8 @@ class Meow_MWAI_Modules_Chatbot {
 	public function rest_api_init() {
 		register_rest_route( $this->namespace, '/chats/submit', array(
 			'methods' => 'POST',
-			'callback' => array( $this, 'rest_chat' ),
-			'permission_callback' => '__return_true'
+			'callback' => [ $this, 'rest_chat' ],
+			'permission_callback' => array( $this->core, 'check_rest_nonce' )
 		) );
 	}
 
@@ -153,7 +153,8 @@ class Meow_MWAI_Modules_Chatbot {
 				$query->injectParams( $params );
 			}
 			else {
-				$query = new Meow_MWAI_Query_Text( $newMessage, 1024 );
+				$query = $mode === 'assistant' ? new Meow_MWAI_Query_Assistant( $newMessage ) : 
+					new Meow_MWAI_Query_Text( $newMessage, 1024 );
 				$streamCallback = null;
 
 				// Handle Params
@@ -205,7 +206,7 @@ class Meow_MWAI_Modules_Chatbot {
 				$embeddingsEnvId = $params['embeddingsEnvId'] ?? null;
 				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
 				$embeddingsNamespace = $params['embeddingsNamespace'] ?? null;
-				if ( $query->mode === 'chat' ) {
+				if ( $query->mode === 'chat' || $query->mode === 'assistant' ) {
 					$context = apply_filters( 'mwai_context_search', $context, $query, [ 
 						'embeddingsEnvId' => $embeddingsEnvId,
 						'embeddingsIndex' => $embeddingsIndex,

@@ -1,5 +1,5 @@
-// Previous: 1.9.2
-// Current: 1.9.93
+// Previous: none
+// Current: 2.0.0
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { apiUrl, restNonce } from '@app/settings';
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers-admin';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
-import QueriesExplorer from '@app/screens/statistics/QueriesExplorer';
+import QueriesExplorer from '@app/screens/queries/Queries';
 
 const retrieveLogsMeta = async (logId) => {
   if (!logId) { return null; }
@@ -36,14 +36,13 @@ const Statistics = ({ options, updateOption, busy }) => {
     keepPreviousData: true
   });
 
-
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
     await updateOption(newParams, 'limits');
   };
 
   const limitSectionParams = useMemo(() => {
-    return limits?.[limitSection] ? limits?.[limitSection] : {
+    return limits?.[limitSection] ? limits[limitSection] : {
       credits: 1,
       creditType: 'price',
       timeFrame: 'month',

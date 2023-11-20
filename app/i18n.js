@@ -7,6 +7,9 @@ const i18n = {};
 i18n.COMMON = {
   GENERAL: __( 'General', 'ai-engine' ),
   MODULES: __( 'Modules', 'ai-engine' ),
+  CLIENT_MODULES: __( 'Client Modules', 'ai-engine' ),
+  BACKEND_MODULES: __( 'Admin Modules', 'ai-engine' ),
+  SERVER_MODULES: __( 'Server Modules', 'ai-engine' ),
   SETTINGS: __( 'Settings', 'ai-engine' ),
   CHATBOT: __( 'Chatbot', 'ai-engine' ),
   CHATBOTS: __( 'Chatbots', 'ai-engine' ),
@@ -70,7 +73,9 @@ i18n.COMMON = {
   FINETUNES: __( 'Finetunes', 'ai-engine' ),
   MODELS: __( 'Models', 'ai-engine' ),
   DATASETS: __( 'Datasets', 'ai-engine' ),
+  ASSISTANT: __( 'Assistant', 'ai-engine' ),
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
+  UTILITIES: __( 'Utilities', 'ai-engine' ),
   POSTS_SUGGESTIONS: __( 'AI Copilot, AI Suggestions, Magic Wands', 'ai-engine' ),
   POSTS_SUGGESTIONS_HELP: __( 'Tools to brainstorm/write faster and better.', 'ai-engine' ),
   GENERATORS: __( 'Generators', 'ai-engine' ),
@@ -261,6 +266,9 @@ i18n.HELP = {
   OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
   QDRANT: __( 'Use the code <b>#AIENGINE5</b> when you <a href="https://qdrant.to/cloud" target="_blank">Create a Qdrant Account</a>. You will get 5% off.', 'ai-engine' ),
+  ASSISTANTS: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks.', 'ai-engine' ),
+  ASSISTANTS_INTRO: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks. They are in beta both in OpenAI and AI Engine. To create them, head to the <a href="https://beta.openai.com/assistants" target="_blank">OpenAI Assistants</a> dashboard, then <b>Refresh Assistants</b> here. You can use an assistant in your chatbots by switching the <b>Mode</b> to <b>Assistant</b>.', 'ai-engine' ),
+  ASSISTANTS_WARNINGS: __( 'Currently, OpenAI does not support streaming for its Assistants. Pricing is also different and <a href="https://openai.com/pricing" target="_blank">a bit tricky</a>, AI Engine does only an estimation.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {
@@ -337,8 +345,7 @@ i18n.TEMPLATES = {
   TEMPLATES: __( 'Templates', 'ai-engine' ),
   DELETE_CONFIRM: __( 'Are you sure you want to delete this template?', 'ai-engine' ),
   NEW_TEMPLATE_NAME: __( 'New Template', 'ai-engine' ),
-  EDIT: __( 'EDIT', 'ai-engine' ),
-  JOIN_US: __( 'Interested in sharing and/or looking for more templates? Join us on the <a target="_blank" href="https://wordpress.org/support/topic/common-use-cases-for-templates">Templates Threads</a> in the forums.', 'ai-engine' ),
+  EDIT: __( 'EDIT', 'ai-engine' )
 };
 
 i18n.PLAYGROUND = {

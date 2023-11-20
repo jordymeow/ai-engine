@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Modules_Assistants {
+class Meow_MWAI_Modules_Utilities {
   private $core = null;
   private $module_woocommerce = false;
 

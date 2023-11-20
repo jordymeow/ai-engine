@@ -25,6 +25,9 @@ class Meow_MWAI_Core
 	private $nonce = null;
 	public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
 
+	public $chatbot = null;
+	public $discussions = null;
+
 	// Cached
 	private $options = null;
 
@@ -44,20 +47,19 @@ class Meow_MWAI_Core
 	#region Init & Scripts
 	function init() {
 		global $mwai;
-		$chatbot_module = null;
-		$discussions_module = null;
+		$this->chatbot = null;
+		$this->discussions = null;
 		new Meow_MWAI_Modules_Security( $this );
 		if ( $this->is_rest ) {
 			new Meow_MWAI_Rest( $this );
 		}
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
-			new Meow_MWAI_Modules_Assistants( $this );
+			new Meow_MWAI_Modules_Utilities( $this );
 		}
 		if ( $this->get_option( 'shortcode_chat' ) ) {
-			$chatbot_module = new Meow_MWAI_Modules_Chatbot();
-			$discussions_module = new Meow_MWAI_Modules_Discussions();
-			// new Meow_MWAI_Modules_Chatbot_Legacy();
+			$this->chatbot = new Meow_MWAI_Modules_Chatbot();
+			$this->discussions = new Meow_MWAI_Modules_Discussions();
 		}
 
 		// Advanced core
@@ -70,7 +72,7 @@ class Meow_MWAI_Core
 			add_filter( 'mwai_estimate_tokens', array( $this, 'dynamic_max_tokens' ), 10, 2 );
 		}
 
-		$mwai = new Meow_MWAI_API( $chatbot_module, $discussions_module );
+		$mwai = new Meow_MWAI_API( $this->chatbot, $this->discussions );
 	}
 
 	public function register_scripts() {
@@ -267,6 +269,11 @@ class Meow_MWAI_Core
 
 	#region Other Helpers
 
+	public function check_rest_nonce( $request ) {
+    $nonce = $request->get_header( 'X-WP-Nonce' );
+    return wp_verify_nonce( $nonce, 'wp_rest' );
+  }
+
 	function generateRandomId( $length = 8, $excludeIds = [] ) {
 		$characters = '0123456789abcdefghijklmnopqrstuvwxyz';
 		$charactersLength = strlen( $characters );
@@ -339,6 +346,35 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Usage & Costs
+
+	// Quick and dirty token estimation
+  // Let's keep this synchronized with Helpers in JS
+  static function estimateTokens( $promptOrMessages, $model = null ): int
+  {
+    $text = "";
+    // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+    if ( is_array( $promptOrMessages ) ) {
+      foreach ( $promptOrMessages as $message ) {
+        $role = $message['role'];
+        $content = $message['content'];
+        if ( is_array( $content ) ) {
+          foreach ( $content as $subMessage ) { 
+            if ( $subMessage['type'] === 'text' ) {
+              $text .= $subMessage['text'];
+            }
+          }
+        }
+        else {
+          $text .= "=#=$role\n$content=#=\n";
+        }
+      }
+    }
+    else {
+      $text = $promptOrMessages;
+    }
+    $tokens = 0;
+    return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $model );
+  }
 
 	public function dynamic_max_tokens( $tokens, $text ) {
 		// Approximation (fast, no lib)
@@ -543,6 +579,30 @@ class Meow_MWAI_Core
 				// into the Settings of the chatbot).
 				$chatbot['service'] = null;
 				return $chatbot;
+			}
+		}
+		return null;
+	}
+
+	function getEnvironment( $envId ) {
+		$envs = $this->get_option( 'ai_envs' );
+		foreach ( $envs as $env ) {
+			if ( $env['id'] === $envId ) {
+				return $env;
+			}
+		}
+		return null;
+	}
+
+	function getAssistant( $envId, $assistantId ) {
+		$env = $this->getEnvironment( $envId );
+		if ( !$env ) {
+			return null;
+		}
+		$assistants = $env['assistants'];
+		foreach ( $assistants as $assistant ) {
+			if ( $assistant['id'] === $assistantId ) {
+				return $assistant;
 			}
 		}
 		return null;

@@ -1,5 +1,5 @@
-// Previous: 1.9.89
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 2.0.0
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -78,7 +78,6 @@ const retrieveThemes = async () => {
 };
 
 const updateThemes = async (themes) => {
-  // Make sure all the themeId of each theme in themes are unique. Let's loop through them, and if one is identical to any other before, let's add a number to it.
   const themeIds = [];
   for (let i = 0; i < themes.length; i++) {
     let themeId = themes[i].themeId;
@@ -97,6 +96,14 @@ const updateThemes = async (themes) => {
   return res?.themes;
 };
 
+const retrieveAssistants = async (envId) => {
+  const res = await nekoFetch(`${apiUrl}/openai/assistants/list?envId=${envId}`, { nonce: restNonce });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res?.assistants;
+}
+
 export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, 
-  retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels,
+  retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants,
   retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };

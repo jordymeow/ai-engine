@@ -20,7 +20,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   public function __construct( $prompt = '' ) {
     global $mwai_core;
-    $this->setPrompt( $prompt );
+    if ( is_string( $prompt ) ) {
+      $this->setPrompt( $prompt );
+    }
     $this->session = $mwai_core->get_session_id();
   }
 
@@ -86,6 +88,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     $this->model = $model;
   }
 
+  public function getModel() {
+    return $this->model;
+  }
+
   /**
    * The mode
    * @param string $mode.
@@ -119,6 +125,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   public function getLastMessage() {
     return $this->getPrompt();
+  }
+
+  public function getMessages() {
+    return null;
   }
 
   /**
@@ -167,6 +177,55 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   //  * Check if everything is correct, otherwise fix it (like the max number of tokens).
   //  */
   public function finalChecks() {
+  }
+
+  protected function convertKeys( $params )
+  {
+    $newParams = [];
+    foreach ( $params as $key => $value ) {
+      $newKey = '';
+      $capitalizeNextChar = false;
+      for ( $i = 0; $i < strlen( $key ); $i++ ) {
+        if ( $key[$i] == '_' ) {
+          $capitalizeNextChar = true;
+        }
+        else {
+          $newKey .= $capitalizeNextChar ? strtoupper($key[$i]) : $key[$i];
+          $capitalizeNextChar = false;
+        }
+      }
+      $newParams[$newKey] = $value;
+    }
+    return $newParams;
+  }
+
+  // Quick and dirty token estimation
+  // Let's keep this synchronized with Helpers in JS
+  protected function estimateTokens( $promptOrMessages ): int
+  {
+    $text = "";
+    // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+    if ( is_array( $promptOrMessages ) ) {
+      foreach ( $promptOrMessages as $message ) {
+        $role = $message['role'];
+        $content = $message['content'];
+        if ( is_array( $content ) ) {
+          foreach ( $content as $subMessage ) { 
+            if ( $subMessage['type'] === 'text' ) {
+              $text .= $subMessage['text'];
+            }
+          }
+        }
+        else {
+          $text .= "=#=$role\n$content=#=\n";
+        }
+      }
+    }
+    else {
+      $text = $promptOrMessages;
+    }
+    $tokens = 0;
+    return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $this->model );
   }
 
   /*
