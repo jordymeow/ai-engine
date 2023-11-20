@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
 
-= 2.0.0 (2023/11/20) =
+= 2.0.1 (2023/11/21) =
 * Add: Implemented the new OpenAI Assistants. It's beta, but it's there!
 * Update: The former "Assistants" (which were tools in the Admin section) have been renamed into "Utilities".
 * Update: Better control of who/what is using the REST API.
