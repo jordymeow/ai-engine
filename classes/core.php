@@ -184,6 +184,71 @@ class Meow_MWAI_Core
 	}
 	#endregion
 
+ 	#region Image-Related Helpers
+	function downloadImage( $url ) {
+		$args = array( 'timeout' => 60, );
+		$response = wp_remote_get( $url, $args );
+		if ( is_wp_error( $response ) ) {
+			throw new Exception( $response->get_error_message() );
+		}
+		$output = wp_remote_retrieve_body( $response );
+		if ( is_wp_error( $output ) ) {
+			throw new Exception( $output->get_error_message() );
+		}
+		return $output;
+	}
+
+	public function addImageFromURL( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null ) {
+		$image_data = $this->downloadImage( $url );
+		if ( !$image_data ) {
+			throw new Exception( 'Could not download the image.' );
+		}
+		$upload_dir = wp_upload_dir();
+		if ( empty( $filename ) ) {
+			$filename = basename( $url );
+			$filename = sanitize_file_name( $filename );
+			if ( strlen( $filename ) > 32 ) {
+				$filename = $this->generateRandomId( 16 ) . '.jpg';
+			}
+			if ( strpos( $filename, '.' ) === false ) {
+				$filename .= '.jpg';
+			}
+		}
+		$wp_filetype = wp_check_filetype( $filename );
+		if ( wp_mkdir_p( $upload_dir['path'] ) ) {
+			$file = $upload_dir['path'] . '/' . $filename;
+		}
+		else {
+			$file = $upload_dir['basedir'] . '/' . $filename;
+		}
+		
+		// Make sure the file is unique, if not, add a number to the end of the file before the extension
+		$i = 1;
+		$parts = pathinfo( $file );
+		while ( file_exists( $file ) ) {
+			$file = $parts['dirname'] . '/' . $parts['filename'] . '-' . $i . '.' . $parts['extension'];
+			$i++;
+		}
+
+		// Write the file
+		file_put_contents( $file, $image_data );
+		$attachment = [
+			'post_mime_type' => $wp_filetype['type'],
+			'post_title' => $title ?? '',
+			'post_content' => $description ?? '',
+			'post_excerpt' => $caption ?? '',
+			'post_status' => 'inherit'
+		];
+		// Register the file as a Media Library attachment
+		$attachmentId = wp_insert_attachment( $attachment, $file );
+		require_once( ABSPATH . 'wp-admin/includes/image.php' );
+		$attachment_data = wp_generate_attachment_metadata( $attachmentId, $file );
+		wp_update_attachment_metadata( $attachmentId, $attachment_data );
+		update_post_meta( $attachmentId, '_wp_attachment_image_alt', $alt );
+		return $attachmentId;
+	}
+ 	#endregion
+
 	#region Users/Sessions Helpers
 
 	function get_nonce() {

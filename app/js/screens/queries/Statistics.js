@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.0.0
+// Previous: 2.0.0
+// Current: 2.0.2
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ import QueriesExplorer from '@app/screens/queries/Queries';
 const retrieveLogsMeta = async (logId) => {
   if (!logId) { return null; }
   const res = await nekoFetch(`${apiUrl}/system/logs/meta`, { nonce: restNonce, method: 'POST',
-    json: { logId, metaKeys: [ 'query', 'reply' ] }
+    json: { logId, metaKeys: [ 'query', 'reply', 'fields' ] }
   });
   return res.data;
 };
@@ -42,7 +42,7 @@ const Statistics = ({ options, updateOption, busy }) => {
   };
 
   const limitSectionParams = useMemo(() => {
-    return limits?.[limitSection] ? limits[limitSection] : {
+    return limits?.[limitSection] ? limits?.[limitSection] : {
       credits: 1,
       creditType: 'price',
       timeFrame: 'month',
@@ -90,6 +90,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                 {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
                 {!isFetchingMeta && !data && <i style={{ color: 'gray' }}>{i18n.COMMON.DATA_NOT_AVAILABLE}</i>}
                 {!isFetchingMeta && data && <JsonViewer value={data['query']} 
+                  rootName={'query'}
                   indentWidth={2}
                   displayDataTypes={false}
                   displayObjectSize={false}
@@ -103,6 +104,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                 {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
                 {!isFetchingMeta && !data && <i style={{ color: 'gray' }}>{i18n.COMMON.DATA_NOT_AVAILABLE}</i>}
                 {!isFetchingMeta && data && <JsonViewer value={data['reply']} 
+                  rootName={'reply'}
                   indentWidth={2}
                   displayDataTypes={false}
                   displayObjectSize={false}
@@ -111,6 +113,20 @@ const Statistics = ({ options, updateOption, busy }) => {
                   style={{ fontSize: 12 }} />}
               </div>
             </NekoTab>
+            {data && data['fields'] && <NekoTab title="Fields">
+              <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
+                {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
+                {!isFetchingMeta && !data && <i style={{ color: 'gray' }}>{i18n.COMMON.DATA_NOT_AVAILABLE}</i>}
+                {!isFetchingMeta && data && <JsonViewer value={data['fields']}
+                  rootName={'fields'}
+                  indentWidth={2}
+                  displayDataTypes={false}
+                  displayObjectSize={false}
+                  displayArrayKey={false}
+                  enableClipboard={false}
+                  style={{ fontSize: 12 }} />}
+              </div>
+            </NekoTab>}
           </NekoTabs>
         </>}
 
@@ -118,7 +134,7 @@ const Statistics = ({ options, updateOption, busy }) => {
           <NekoBlock className="primary" busy={busy} title="Limits" style={{ flex: 1 }}>
 
             <NekoCheckbox name="enabled" label={i18n.STATISTICS.ENABLE_LIMITS}
-              checked={limits?.enabled} value="1" onChange={updateLimits}
+              checked={limits?.enabled} value="1" onChange={(e) => updateLimits(e.target.checked ? '1' : '0', 'enabled')}
             />
 
             {limits?.enabled && <>
@@ -158,7 +174,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                   <label>{i18n.COMMON.TYPE}:</label>
                   <NekoSelect scrolldown id="creditType" name="creditType" disabled={!limits?.enabled}
                     value={limitSectionParams.creditType}
-                    onChange={updateLimitSection}>
+                    onChange={(e) => updateLimitSection(e.target.value, 'creditType')}>
                     <NekoOption key={'queries'} id={'queries'} value={'queries'} label={"Queries"} />
                     <NekoOption key={'units'} id={'units'} value={'units'} label={"Tokens"} />
                     <NekoOption key={'price'} id={'price'} value={'price'} label={"Dollars"} />
@@ -184,7 +200,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                   <label>{i18n.COMMON.TIMEFRAME}:</label>
                   <NekoSelect scrolldown id="timeFrame" name="timeFrame" disabled={!limits?.enabled}
                     value={limitSectionParams.timeFrame}
-                    onChange={updateLimitSection}>
+                    onChange={(e) => updateLimitSection(e.target.value, 'timeFrame')}>
                     <NekoOption key={'second'} id={'second'} value={'second'} label={"Second"} />
                     <NekoOption key={'minute'} id={'minute'} value={'minute'} label={"Minute"} />
                     <NekoOption key={'hour'} id={'hour'} value={'hour'} label={"Hour"} />
@@ -198,7 +214,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                   <label>{i18n.COMMON.ABSOLUTE}:</label>
                   <NekoCheckbox name="isAbsolute" label="Yes" disabled={!limits?.enabled}
                     checked={limitSectionParams.isAbsolute} value="1"
-                    onChange={updateLimitSection}
+                    onChange={(e) => updateLimitSection(e.target.checked ? '1' : '0', 'isAbsolute')}
                   />
                 </div>
               </div>
@@ -211,8 +227,8 @@ const Statistics = ({ options, updateOption, busy }) => {
                   <label>{i18n.STATISTICS.NO_CREDITS_MESSAGE}:</label>
                   <NekoInput id="overLimitMessage" name="overLimitMessage" disabled={!limits?.enabled}
                     value={limitSectionParams.overLimitMessage}
-                    onEnter={updateLimitSection}
-                    onBlur={updateLimitSection} />
+                    onEnter={(e) => updateLimitSection(e.target.value, 'overLimitMessage')}
+                    onBlur={(e) => updateLimitSection(e.target.value, 'overLimitMessage')} />
                 </div>
               </div>
 
@@ -220,14 +236,14 @@ const Statistics = ({ options, updateOption, busy }) => {
                 <div className="mwai-builder-col">
                   <label>{i18n.STATISTICS.FULL_ACCESS_USERS}:</label>
                   <NekoSelect scrolldown id="ignoredUsers" name="ignoredUsers" disabled={!limits?.enabled}
-                    value={limits?.users?.ignoredUsers} description="" onChange={updateLimitSection}>
+                    value={limits?.ignoredUsers} description="" onChange={(e) => updateLimitSection(e.target.value, 'ignoredUsers')}>
                     <NekoOption key={'none'} id={'none'} value={''}
                       label={i18n.COMMON.NONE} />
                     <NekoOption key={'editor'} id={'editor'} value={'administrator,editor'}
                       label={i18n.COMMON.EDITORS_ADMINS} />
                     <NekoOption key={'admin'} id={'admin'} value={'administrator'}
                       label={i18n.COMMON.ADMINS_ONLY} />
-                  </NekoSelect>
+                  </NekoOption>
                 </div>
               </div>}
 

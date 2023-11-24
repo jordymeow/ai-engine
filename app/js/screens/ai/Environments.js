@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 2.0.2
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, 
   NekoCollapsableCategories, NekoCollapsableCategory,
@@ -7,7 +7,7 @@ import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput,
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers-admin';
 
-const Deployments = ({ updateEnvironment, environmentId, deployments, models }) => {
+const Deployments = ({ updateEnvironment, environmentId, deployments, options }) => {
 
   const updateDeployments = (index, field, value) => {
     const freshDeployments = JSON.parse(JSON.stringify(deployments));
@@ -41,7 +41,7 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, models }) 
             value={deployment['model']}
             onChange={(value) => updateDeployments(index, 'model', value)}
           >
-            {models.map((x) => (
+            {options?.openai_models?.map((x) => (
               <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
             ))}
           </NekoSelect>
@@ -55,7 +55,7 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, models }) 
   );
 };
 
-function AIEnvironmentsSettings({ coreModels, environments, updateEnvironment, updateOption, busy }) {
+function AIEnvironmentsSettings({ options, environments, updateEnvironment, updateOption, busy }) {
 
   const addNewEnvironment = () => {
     const newEnv = {
@@ -118,9 +118,9 @@ function AIEnvironmentsSettings({ coreModels, environments, updateEnvironment, u
                 <NekoCollapsableCategory title={i18n.COMMON.OPENAI_AZURE_DEPLOYMENTS}>
                   <Deployments 
                     deployments={env.deployments ?? []} 
-                    models={coreModels}
                     environmentId={env.id}
                     updateEnvironment={updateEnvironment}
+                    options={options}
                   />
                 </NekoCollapsableCategory>
               }

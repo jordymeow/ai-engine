@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.9.85
+// Previous: 1.9.85
+// Current: 2.0.2
 
 const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
@@ -7,7 +7,6 @@ const { registerPlugin } = wp.plugins;
 const { Button, ToolbarDropdownMenu, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
 const { BlockControls } = wp.blockEditor;
 const { PluginDocumentSettingPanel } = wp.editPost;
-//const { PluginBlockSettingsMenuItem } = wp.editPost;
 const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
@@ -36,7 +35,7 @@ function BlockAIWand() {
 
   if (!selectedBlock) { return null; }
   if (selectedBlock.name !== 'core/paragraph') {
-    return;
+    return null;
   }
 
   const applyFadeOutStyle = (element) => {
@@ -89,9 +88,10 @@ function BlockAIWand() {
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
     const selectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
+    if (!selectedBlock) { return; }
     const blockContent = selectedBlock.attributes.content;
-    const startOffset = getSelectionStart().offset;
-    const endOffset = getSelectionEnd().offset;
+    const startOffset = getSelectionStart() ? getSelectionStart().offset : 0;
+    const endOffset = getSelectionEnd() ? getSelectionEnd().offset : 0;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
     wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: updatedContent });
   };
@@ -106,11 +106,13 @@ function BlockAIWand() {
     replaceText(text);
   };
 
-  const text = selectedBlock.attributes.content;
+  const contentAttr = selectedBlock.attributes.content;
   const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
-    const { getCurrentPost } = wp.data.select("core/editor");
+    const { getSelectedBlockClientId, getBlockIndex, getCurrentPost } = wp.data.select("core/editor");
+    const selectedBlockClientId = getSelectedBlockClientId();
+    const blockIndex = getBlockIndex(selectedBlockClientId);
     const { id: postId } = getCurrentPost();
     setBusy(true);
     setBlockStyle();
@@ -118,7 +120,7 @@ function BlockAIWand() {
     const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, { 
       method: 'POST',
       nonce: restNonce,
-      json: { action, data: { postId, text, selectedText } }
+      json: { action, data: { postId, text: contentAttr, selectedText } }
     });
     resetBlockStyle();
     setBusy(false);
@@ -132,8 +134,18 @@ function BlockAIWand() {
       }
       else if (mode === 'suggest') {
         setResults(results);
-      } else {
-        setResults([]); // potential bug if mode is unknown, results might linger
+      }
+      else if (mode === 'insertMedia') {
+        const { media } = res.data;
+        const { createBlock } = wp.blocks;
+        const block = createBlock('core/image', {
+          id: media.id,
+          url: media.url,
+          title: media.title,
+          caption: media.caption,
+          alt: media.alt,
+        });
+        wp.data.dispatch('core/block-editor').insertBlock(block, blockIndex + 1);
       }
     }
   };
@@ -196,12 +208,20 @@ function BlockAIWand() {
                 </div>
               </MenuItem>
             </MenuGroup>
+            <MenuGroup>
+              <MenuItem  onClick={() => doAction('generateImage')}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <b>Generate Image</b>
+                  <small>For this Text</small>
+                </div>
+              </MenuItem>
+            </MenuGroup>
           </>)}
         </ToolbarDropdownMenu>
       </ToolbarGroup>
     </BlockControls>
     <MagicWandModal
-      isOpen={results?.length}
+      isOpen={results?.length > 0}
       results={results}
       onClick={onClick}
       onClose={() => setResults([])}
@@ -209,35 +229,10 @@ function BlockAIWand() {
   </>);
 }
 
-// Paragraph Block: Menu
-
-// const doOnClick = () => {
-//   alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
-// };
-
-// const MWAI_Block_AI_Actions = () => (
-//   <>
-//     <PluginBlockSettingsMenuItem
-//       allowedBlocks={['core/paragraph']}
-//       icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-//       label={<> {__('Enhance text')}</>}
-//       onClick={doOnClick}
-//     />
-//     <PluginBlockSettingsMenuItem
-//       allowedBlocks={['core/paragraph']}
-//       icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-//       label={<> {__('Translate text')}</>}
-//       onClick={doOnClick}
-//     />
-//   </>
-// );
-
-// Document Settings: Panel
-
 const MWAI_DocumentSettings = () => {
   const suggestionsEnabled = options?.module_suggestions;
-  const [postForTitle, setPostForTitle] = useState();
-  const [postForExcerpt, setPostForExcerpt] = useState();
+  const [postForTitle, setPostForTitle] = useState(null);
+  const [postForExcerpt, setPostForExcerpt] = useState(null);
 
   const onTitlesModalOpen = () => {
     const { getCurrentPost } = wp.data.select("core/editor");
@@ -289,19 +284,11 @@ const MWAI_DocumentSettings = () => {
 
 
 const BlockFeatures = () => {
-  useEffect(() => {
-    // This goes into the sidebar
-    registerPlugin('ai-engine-document-settings', {
-      render: MWAI_DocumentSettings
-    });
 
-    // This goes in the context menu of the block toolbar
-    // registerPlugin('ai-engine-ai-wand', {
-    //   render: MWAI_Block_AI_Actions
-    // });
-  }, []);
+  registerPlugin('ai-engine-document-settings', {
+    render: MWAI_DocumentSettings
+  });
 
-  // This goes in the block toolbar directly
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',
     tagName: 'mwai',

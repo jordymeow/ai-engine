@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,12 +82,17 @@ Languages: English.
 
 == Changelog ==
 
+= 2.0.2 (2023/11/24) =
+* Add: New tab "Fields" in "Queries" tab (to inspect what was send via the AI Forms).
+* Add: Added "Generate Image" in the AI CoPilot. 
+* Fix: Models weren't displayed correctly when Azure was chosen as the default environment.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.0.1 (2023/11/21) =
 * Add: Implemented the new OpenAI Assistants. It's beta, but it's there!
 * Update: The former "Assistants" (which were tools in the Admin section) have been renamed into "Utilities".
 * Update: Better control of who/what is using the REST API.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 1.9.99 (2023/11/17) =
 * Update: Cleaner way of handling errors in the chatbot.

@@ -1,13 +1,12 @@
 <?php
 
 class Meow_MWAI_Query_Base implements JsonSerializable {
-  public string $env = ''; // Ouch, not sure if it's used, but afraid that it will be confused with the AI env.
+  public ?string $session = null;
+  public string $env = ''; // I don't like this env, as it can be confused with envId. Could be renamed 'domain' or 'source'.
   public string $prompt = '';
   public string $model = '';
   public string $mode = '';
-  public ?string $session = null;
   public int $maxResults = 1;
-  public ?string $botId = null;
 
   // Functions
   public array $functions = [];
@@ -17,6 +16,13 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public string $envId = '';
   public ?string $apiKey = null;
   public ?string $service = null; // TODO: This should be removed at some point. Should use envId instead.
+
+  // Seem to be only used by the Assistants, to get the current thread/discussion.
+  // Maybe we should try to move this to the assistant class, or use it as ExtraParams.
+  public ?string $botId = null;  
+
+  // Extra Parameters (used by specific services, or for statistics, etc)
+  public array $extraParams = [];
 
   public function __construct( $prompt = '' ) {
     global $mwai_core;
@@ -228,10 +234,19 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $this->model );
   }
 
-  /*
-    * Get the JSON representation of the query.
-  */
   public function toJson() {
     return json_encode( $this );
   }
+
+  #region Extra Params
+  public function setExtraParam( string $key, $value ): void {
+    $this->extraParams[$key] = $value;
+  }
+
+  public function getExtraParam( string $key ) {
+    $value = $this->extraParams[$key];
+    return $value;
+  }
+
+  #endregion Extra Params
 }

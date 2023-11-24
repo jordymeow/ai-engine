@@ -374,6 +374,15 @@ class Meow_MWAI_Rest
 				$query->setTemperature( 1 );
 				$query->setMaxResults( 5 );
 			}
+			else if ( $action === 'generateImage' ) {
+				$mode = 'insert';
+				$query = new Meow_MWAI_Query_Image( "Generate an image that is relevant to the following text:\n\n" . $text );
+			}
+			else if ( $action === 'suggestImages' ) {
+				$mode = 'suggest';
+				$query = new Meow_MWAI_Query_Image( "Suggest three images that is relevant to the following text:\n\n" . $text );
+				throw new Exception( 'Not implemented yet.' );
+			}
 			else if ( $action === 'translateText' ) {
 				$query->setPrompt( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
 			}
@@ -388,8 +397,35 @@ class Meow_MWAI_Rest
 				$query->setMaxResults( 5 );
 			}
 			$reply = $this->core->ai->run( $query );
+
+			// If it's an image, let's add it to the Media Library and return it.
+			if ( $action === 'generateImage' ) {
+				preg_match( '/\!\[Image\]\((.*?)\)/', $reply->result, $matches );
+				$url = $matches[1] ?? $reply->result;
+				$attachmentId = $this->core->addImageFromURL( $url, null, null, null, null, null, $postId );
+				if ( empty( $attachmentId ) ) {
+					throw new Exception( 'Could not add the image to the Media Library.' );
+				}
+				$media = [
+					'id' => $attachmentId,
+					'url' => wp_get_attachment_url( $attachmentId ),
+					'title' => get_the_title( $attachmentId ),
+					'caption' => wp_get_attachment_caption( $attachmentId ),
+					'alt' => get_post_meta( $attachmentId, '_wp_attachment_image_alt', true )
+				];
+				return new WP_REST_Response([ 
+					'success' => true,
+					'data' => [
+						'mode' => 'insertMedia',
+						'type' => 'image',
+						'media' => $media
+					]
+				], 200 );
+			}
+
 			return new WP_REST_Response([ 'success' => true, 'data' => [
 				'mode' => $mode,
+				'type' => $reply->type,
 				'result' => $reply->result,
 				'results' => $reply->results
 			] ], 200 );
@@ -486,19 +522,6 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function image_download( $url ) {
-		$args = array( 'timeout' => 60, );
-		$response = wp_remote_get( $url, $args );
-		if ( is_wp_error( $response ) ) {
-			throw new Exception( $response->get_error_message() );
-		}
-		$output = wp_remote_retrieve_body( $response );
-		if ( is_wp_error( $output ) ) {
-			throw new Exception( $output->get_error_message() );
-		}
-		return $output;
-	}
-
 	function rest_helpers_create_images( $request ) {
 		try {
 			$params = $request->get_json_params();
@@ -508,45 +531,7 @@ class Meow_MWAI_Rest
 			$description = sanitize_text_field( $params['description'] );
 			$url = $params['url'];
 			$filename = sanitize_text_field( $params['filename'] );
-			$image_data = $this->image_download( $url );
-			if ( !$image_data ) {
-				throw new Exception( 'Could not download the image.' );
-			}
-			$upload_dir = wp_upload_dir();
-			if ( empty( $filename ) ) {
-				$filename = basename( $url );
-			}
-			$wp_filetype = wp_check_filetype( $filename );
-			if ( wp_mkdir_p( $upload_dir['path'] ) ) {
-				$file = $upload_dir['path'] . '/' . $filename;
-			}
-			else {
-				$file = $upload_dir['basedir'] . '/' . $filename;
-			}
-			
-			// Make sure the file is unique, if not, add a number to the end of the file before the extension
-			$i = 1;
-			$parts = pathinfo( $file );
-			while ( file_exists( $file ) ) {
-				$file = $parts['dirname'] . '/' . $parts['filename'] . '-' . $i . '.' . $parts['extension'];
-				$i++;
-			}
-
-			// Write the file
-			file_put_contents( $file, $image_data );
-			$attachment = [
-				'post_mime_type' => $wp_filetype['type'],
-				'post_title' => $title,
-				'post_content' => $description,
-				'post_excerpt' => $caption,
-				'post_status' => 'inherit'
-			];
-			// Register the file as a Media Library attachment
-			$attachmentId = wp_insert_attachment( $attachment, $file );
-			require_once( ABSPATH . 'wp-admin/includes/image.php' );
-			$attachment_data = wp_generate_attachment_metadata( $attachmentId, $file );
-			wp_update_attachment_metadata( $attachmentId, $attachment_data );
-			update_post_meta( $attachmentId, '_wp_attachment_image_alt', $alt );
+			$attachmentId = $this->core->addImageFromURL( $url, $filename, $title, $description, $caption, $alt );
 			return new WP_REST_Response([ 'success' => true, 'attachmentId' => $attachmentId ], 200 );
 		}
 		catch ( Exception $e ) {

@@ -1,5 +1,5 @@
-// Previous: 1.9.94
-// Current: 1.9.99
+// Previous: 1.9.99
+// Current: 2.0.2
 
 const { useMemo, useEffect, useState } = wp.element;
 import Markdown from 'markdown-to-jsx';
@@ -10,6 +10,7 @@ const getCircularReplacer = () => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         throw new Error('Circular reference found. Cancelled.', { key, value });
+        return;
       }
       seen.add(value);
     }
@@ -18,6 +19,7 @@ const getCircularReplacer = () => {
 };
 
 async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
+
   if (!onStream) {
     try {
       const data = await fetchRes.json();
@@ -43,30 +45,30 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       if (lines[i].indexOf('data: ') !== 0) {
         continue;
       }
-      const dataItem = JSON.parse(lines[i].replace('data: ', ''));
-      if (dataItem['type'] === 'live') {
-        if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, dataItem); }
-        decodedContent += dataItem.data; 
-        onStream && onStream(decodedContent, dataItem.data);
+      const data = JSON.parse(lines[i].replace('data: ', ''));
+      if (data['type'] === 'live') {
+        if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
+        decodedContent += data.data; 
+        onStream && onStream(decodedContent, data.data);
       }
-      else if (dataItem['type'] === 'error') {
+      else if (data['type'] === 'error') {
         try {
-          if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, dataItem.data); }
-          return { success: false, message: dataItem.data };
+          if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, data.data); }
+          return { success: false, message: data.data };
         }
         catch (err) {
-          console.error("Could not parse the 'error' stream.", { err, dataItem });
+          console.error("Could not parse the 'error' stream.", { err, data });
           return { success: false, message: "Could not parse the 'error' stream." };
         }
       }
-      else if (dataItem['type'] === 'end') {
+      else if (data['type'] === 'end') {
         try {
-          const finalData = JSON.parse(dataItem.data);
+          const finalData = JSON.parse(data.data);
           if (debugName) { console.log(`[${debugName} STREAM] END: `, finalData); }
           return finalData;
         }
         catch (err) {
-          console.error("Could not parse the 'end' stream.", { err, dataItem });
+          console.error("Could not parse the 'end' stream.", { err, data });
           return { success: false, message: "Could not parse the 'end' stream." };
         }
       }
@@ -128,6 +130,7 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress) {
         }
       }
       else {
+
         try {
           const jsonResponse = JSON.parse(xhr.responseText);
           reject({
@@ -138,7 +141,6 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress) {
         }
         catch (error) {
         }
-        console.log("LOL 1", xhr);
         reject({
           status: xhr.status,
           statusText: xhr.statusText,
@@ -156,6 +158,7 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress) {
     xhr.send(formData);
   });
 }
+
 
 function randomStr() {
   return Math.random().toString(36).substring(2);
