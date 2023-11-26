@@ -1,5 +1,5 @@
-// Previous: 1.9.4
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 2.0.3
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -66,7 +66,7 @@ const FormOutputBlock = props => {
 const createOutputBlock = () => {
   registerBlockType('ai-engine/form-output', {
     title: 'AI Form Output',
-    description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
+    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],

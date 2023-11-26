@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 1.9.84
+// Previous: 1.9.84
+// Current: 2.0.3
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -9,6 +9,8 @@ const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
 const { Button, PanelBody, TextControl, SelectControl, CheckboxControl } = wp.components;
 const { useBlockProps, InspectorControls } = wp.blockEditor;
+
+//import { useBlockProps } from '@wordpress/block-editor';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -20,6 +22,7 @@ const saveFormField = (props) => {
   const encodedOptions = encodeURIComponent(JSON.stringify(options));
   const blockProps = useBlockProps.save();
 
+  // Build shortcode
   let shortcode = '[mwai-form-field';
   if (id) {
     shortcode += ` id="${id}"`;
@@ -56,7 +59,7 @@ const saveFormField = (props) => {
   return <div {...blockProps}>{shortcode}</div>;
 };
 
-const FormFieldBlock = (props) => {
+const FormFieldBlock = props => {
   const { attributes: { id, type, name, options = [], label, placeholder, rows,
     defaultValue, maxlength, required }, setAttributes } = props;
   const blockProps = useBlockProps();
@@ -123,13 +126,13 @@ const FormFieldBlock = (props) => {
           <CheckboxControl label="Required" checked={required}
             onChange={value => setAttributes({ required: value })} />
         </PanelBody>
-        {(type === 'select' || type === 'radio' || type === 'checkbox') && (
-        <PanelBody title={
+        {(type === 'select' || type === 'radio' || type === 'checkbox') && <PanelBody title={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <div>{ __( 'Options' ) }</div>
           </div>}>
-          {options.map((option, index) => (
-            <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
+				
+          {options.map((option, index) => {
+            return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
               <div style={{ marginRight: 5 }}>
                 <TextControl style={{ marginRight: 10 }}
                   label="Label"
@@ -139,10 +142,10 @@ const FormFieldBlock = (props) => {
                     const newOptions = [...options];
                     newOptions[index].label = value;
                     setAttributes({ options: newOptions });
-                  }}
-                />
+                  }
+                  } />
               </div>
-              <TextControl style={{}}
+              <TextControl style={{  }}
                 label="Value"
                 isSubtle={true}
                 value={option.value}
@@ -150,8 +153,8 @@ const FormFieldBlock = (props) => {
                   const newOptions = [...options];
                   newOptions[index].value = value;
                   setAttributes({ options: newOptions });
-                }}
-              />
+                }
+                } />
               <div style={{ marginLeft: 5, position: 'relative', top: 23 }}>
                 <Button style={{ height: 30 }} isDestructive
                   icon="trash" isSmall onClick={() => {
@@ -160,17 +163,16 @@ const FormFieldBlock = (props) => {
                     setAttributes({ options: newOptions });
                   }} />
               </div>
-            </div>
-          ))}
+            </div>;
+						
+          })}
+
           <Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={() => {
-            //ev.preventDefault();
-            //ev.stopPropagation();
             const newOptions = [...options];
             newOptions.push({ label: '', value: '' });
             setAttributes({ options: newOptions });
           }}>Add Option</Button>
-        </PanelBody>
-        )}
+        </PanelBody>}
         <PanelBody title={i18n.COMMON.SYSTEM}>
           <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
         </PanelBody>
@@ -183,7 +185,7 @@ const createFormFieldBlock = () => {
   registerBlockType('ai-engine/form-field', {
     apiVersion: 3,
     title: 'AI Form Field',
-    description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
+    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],

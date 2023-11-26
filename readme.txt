@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,8 @@ Languages: English.
 
 == Changelog ==
 
-= 2.0.2 (2023/11/24) =
+= 2.0.3 (2023/11/26) =
+* Add: Assistants are now usable in AI Forms.
 * Add: New tab "Fields" in "Queries" tab (to inspect what was send via the AI Forms).
 * Add: Added "Generate Image" in the AI CoPilot. 
 * Fix: Models weren't displayed correctly when Azure was chosen as the default environment.

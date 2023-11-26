@@ -1,5 +1,5 @@
-// Previous: 1.9.96
-// Current: 1.9.97
+// Previous: 1.9.97
+// Current: 2.0.3
 
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
@@ -10,12 +10,12 @@ import TokensInfo from "@app/components/TokensInfo";
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useMemo, useEffect } = wp.element;
-const { PanelBody, TextControl, TextareaControl, SelectControl } = wp.components;
+const { PanelBody, TextControl, TextareaControl, SelectControl, CheckboxControl } = wp.components;
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
   const { attributes: { id, label, prompt, outputElement, aiEnvId, embeddingsEnvId, index, namespace,
-    model, temperature, maxTokens } } = props;
+    model, temperature, maxTokens, isAssistant, assistantId } } = props;
   const encodedPrompt = encodeURIComponent(prompt);
   const blockProps = useBlockProps.save();
 
@@ -27,10 +27,12 @@ const saveFormField = (props) => {
     model: { value: model, insertIfNull: true },
     temperature: { value: temperature, insertIfNull: true },
     max_tokens: { value: maxTokens, insertIfNull: true },
+    is_assistant: { value: isAssistant, insertIfNull: false },
     env_id: { value: aiEnvId, insertIfNull: false },
     embeddings_env_id: { value: embeddingsEnvId, insertIfNull: false },
     embeddings_index: { value: index, insertIfNull: false },
-    embeddings_namespace: { value: namespace, insertIfNull: false }
+    embeddings_namespace: { value: namespace, insertIfNull: false },
+    assistant_id: { value: assistantId, insertIfNull: false },
   };
 
   let shortcode = Object.entries(shortcodeAttributes)
@@ -45,23 +47,32 @@ const FormSubmitBlock = (props) => {
   const blockProps = useBlockProps();
   const { attributes: {
     id, label, prompt, model, temperature, maxTokens, aiEnvId, embeddingsEnvId, index, namespace,
+    assistantId, isAssistant,
     outputElement, placeholders = [] }, setAttributes } = props;
 
   const embeddingsEnvs = options.embeddings_envs || [];
   const embeddingsEnv = useMemo(() => {
-    const env = embeddingsEnvs.find(e => e.id === embeddingsEnvId);
-    return env || null;
+    const freshEnvironment = embeddingsEnvs.find(e => e.id === embeddingsEnvId) || null;
+    return freshEnvironment;
   }, [embeddingsEnvs, embeddingsEnvId]);
-  const indexes = useMemo(() => {
-    return embeddingsEnv?.indexes || [];
-  }, [embeddingsEnv]);
-  const namespaces = useMemo(() => {
-    return embeddingsEnv?.namespaces || [];
-  }, [embeddingsEnv]);
+
+  const indexes = useMemo(() => embeddingsEnv?.indexes || [], [embeddingsEnv]);
+  const namespaces = useMemo(() => embeddingsEnv?.namespaces || [], [embeddingsEnv]);
 
   const aiEnvs = options.ai_envs || [];
   const { models, getModel } = useModels(options, aiEnvId);
   const currentModel = getModel(model);
+
+  const aiEnvironment = useMemo(() => {
+    const freshEnvironment = aiEnvs.find(e => e.id === aiEnvId) || null;
+    return freshEnvironment;
+  }, [aiEnvs, aiEnvId]);
+
+  const allAssistants = aiEnvironment?.assistants || [];
+  const assistant = useMemo(() => {
+    const freshAssistant = allAssistants.find(e => e.id === assistantId) || null;
+    return freshAssistant;
+  }, [allAssistants, assistantId]);
 
   useEffect(() => {
     if (!id) {
@@ -77,14 +88,27 @@ const FormSubmitBlock = (props) => {
       if (freshPlaceholders.join(',') !== placeholders.join(',')) {
         setAttributes({ placeholders: freshPlaceholders });
       }
-    } else {
+    }
+    else {
       setAttributes({ placeholders: [] });
     }
   }, [prompt]);
 
+  useEffect(() => {
+    if (!isAssistant) {
+      setAttributes({ assistantId: '' });
+    }
+  }, [isAssistant]);
+
   const fieldsCount = useMemo(() => {
     return placeholders ? placeholders.length : 0;
   }, [placeholders]);
+
+  const assistantOptions = useMemo(() => {
+    const freshAssistants = allAssistants.map(assistant => ({ label: assistant.name, value: assistant.id }));
+    freshAssistants.unshift({ label: 'None', value: '' });
+    return freshAssistants;
+  }, [allAssistants]);
 
   const modelOptions = useMemo(() => {
     const freshModels = models.map(model => ({ label: model.name, value: model.model }));
@@ -111,7 +135,7 @@ const FormSubmitBlock = (props) => {
   }, [embeddingsEnvs]);
 
   const namespaceOptions = useMemo(() => {
-    const freshNamespaces = namespaces.map(ns => ({ label: ns, value: ns }));
+    const freshNamespaces = namespaces.map(namespace => ({ label: namespace, value: namespace }));
     freshNamespaces.unshift({ label: 'None', value: '' });
     return freshNamespaces;
   }, [namespaces]);
@@ -132,61 +156,79 @@ const FormSubmitBlock = (props) => {
       <div {...blockProps}>
         <AiBlockContainer title="Submit" type="submit"
           hint={<>
-            IN:{' '} 
+						IN:{' '} 
             <span className="mwai-pill">{jsxFieldsCount}</span>
             {' '}OUT:{' '}
             <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
           }>
-          Input Fields: {placeholders.join(', ')}<br />
-          Prompt: {prompt}<br />
-          Output Element: {outputElement}
+					Input Fields: {placeholders.join(', ')}<br />
+					Prompt: {prompt}<br />
+					Output Element: {outputElement}
         </AiBlockContainer>
       </div>
       <InspectorControls>
         <PanelBody title={i18n.COMMON.OUTPUT}>
-          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={(value) => setAttributes({ label: value })} />
+          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={value => setAttributes({ label: value })} />
           <TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
-            onChange={(value) => setAttributes({ prompt: value })}
+            onChange={value => setAttributes({ prompt: value })}
             help={i18n.FORMS.PROMPT_INFO} />
           <TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
-            onChange={(value) => setAttributes({ outputElement: value })}
+            onChange={value => setAttributes({ outputElement: value })}
             help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
         </PanelBody>
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
           {aiEnvs && aiEnvs.length > 0 &&
             <SelectControl label={i18n.COMMON.ENVIRONMENT} value={aiEnvId} options={aiEnvironmentOptions}
-              onChange={(value) => setAttributes({ aiEnvId: value })} />
+              onChange={value => setAttributes({ aiEnvId: value })} />
           }
-          {models && models.length > 0 &&
-            <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-              onChange={(value) => setAttributes({ model: value })}
-            />}
-          <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-            onChange={(value) => setAttributes({ temperature: parseFloat(value) })} type="number" step="0.1" min="0" max="1"
-            help={i18n.HELP.TEMPERATURE} />
-          <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-            onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} type="number" step="16" min="32" max="4096"
-            help={<TokensInfo model={currentModel} maxTokens={maxTokens} />} />
+          {aiEnvs && aiEnvs.length > 0 &&
+            <CheckboxControl label="Assistant Mode" checked={isAssistant}
+              onChange={value => setAttributes({ isAssistant: value })}
+            />
+          }
+
+          {isAssistant && allAssistants && allAssistants.length > 0 && <>
+            <SelectControl label={i18n.COMMON.ASSISTANT} value={assistantId} options={assistantOptions}
+              onChange={value => setAttributes({ assistantId: value })} />
+          </>}
+
+          {!isAssistant && <>
+            {models && models.length > 0 &&
+              <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
+                onChange={value => setAttributes({ model: value })}
+              />}
+            <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
+              onChange={value => setAttributes({ temperature: parseFloat(value) })} // Potential bug: if value is empty string, parseFloat returns NaN
+              type="number" step="0.1" min="0" max="1"
+              help={i18n.HELP.TEMPERATURE}
+            />
+            <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
+              onChange={value => setAttributes({ maxTokens: parseInt(value) })} // Potential bug: parseInt may return NaN if value is not a number
+              type="number" step="16" min="32" max="4096"
+              help={<TokensInfo model={currentModel} maxTokens={maxTokens} />}
+            />
+          </>}
+
         </PanelBody>
         <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
           {embeddingsEnvs && embeddingsEnvs.length > 0 &&
             <SelectControl label={i18n.COMMON.EMBEDDINGS_ENV} value={embeddingsEnvId} options={embeddingsEnvironmentOptions}
               disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
-              onChange={(value) => setAttributes({ embeddingsEnvId: value })} />
+              onChange={value => setAttributes({ embeddingsEnvId: value })} />
           }
           {indexes && indexes.length > 0 &&
             <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
               disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
-              onChange={(value) => setAttributes({ index: value })} />
+              onChange={value => setAttributes({ index: value })} />
           }
           {embeddingsEnv?.type === 'pinecone' && namespaces && namespaces.length > 0 &&
             <SelectControl label={i18n.COMMON.NAMESPACE} value={namespace} options={namespaceOptions}
               disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
-              onChange={(value) => setAttributes({ namespace: value })} />
+              onChange={value => setAttributes({ namespace: value })} />
           }
         </PanelBody>
         <PanelBody title={i18n.COMMON.SYSTEM}>
-          <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
+          <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
         </PanelBody>
       </InspectorControls>
     </>
@@ -196,7 +238,7 @@ const FormSubmitBlock = (props) => {
 const createSubmitBlock = () => {
   registerBlockType('ai-engine/form-submit', {
     title: 'AI Form Submit',
-    description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
+    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
@@ -254,6 +296,14 @@ const createSubmitBlock = () => {
         type: 'string',
         default: null
       },
+      isAssistant: {
+        type: 'boolean',
+        default: false
+      },
+      assistantId: {
+        type: 'string',
+        default: ''
+      }
     },
     edit: FormSubmitBlock,
     save: saveFormField
