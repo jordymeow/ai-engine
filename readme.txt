@@ -82,6 +82,9 @@ Languages: English.
 
 == Changelog ==
 
+= 2.0.4 (2023/11/30) =
+* Fix: Missing extra information (such as embeddings) in the discussions tab.
+
 = 2.0.3 (2023/11/26) =
 * Add: Assistants are now usable in AI Forms.
 * Add: New tab "Fields" in "Queries" tab (to inspect what was send via the AI Forms).

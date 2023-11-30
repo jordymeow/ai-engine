@@ -200,7 +200,7 @@ class Meow_MWAI_Modules_Discussions {
     $this->check_db();
     $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $chatId ) );
     $messageExtra = [
-      'embeddings' => isset( $messageExtra['embeddings'] ) ? $messageExtra['embeddings'] : null
+      'embeddings' => isset( $extra['embeddings'] ) ? $extra['embeddings'] : null
     ];
     $chatExtra = [
       'session' => $query->session,

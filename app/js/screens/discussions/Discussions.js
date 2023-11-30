@@ -1,15 +1,18 @@
-// Previous: 2.0.0
-// Current: 2.0.2
+// Previous: 2.0.2
+// Current: 2.0.3
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import Markdown from 'markdown-to-jsx';
 
+// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
+// AI Engine
 import i18n from '@root/i18n';
 import { apiUrl, restNonce } from '@app/settings';
 import { tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
@@ -123,27 +126,19 @@ const StyledMessage = ({ content }) => {
     const regex = /!\[.*?\]\((.*?)\)/g;
     let newContent = markdownContent;
     let match;
-    const promises = [];
-    const matches = [];
 
     while ((match = regex.exec(markdownContent)) !== null) {
-      matches.push(match);
       const imageUrl = match[1];
-      promises.push(checkImageURL(imageUrl));
-    }
-
-    const results = await Promise.all(promises);
-    results.forEach((isAvailable, index) => {
-      if (!isAvailable) {
-        const match = matches[index];
+      const isImageAvailable = await checkImageURL(imageUrl);
+      
+      if (!isImageAvailable) {
         const placeholder = `<div class="mwai-dead-image">Image not available</div>`;
         newContent = newContent.replace(match[0], placeholder);
       }
-    });
+    }
 
     setProcessedContent(newContent);
   };
-  console.log({ content, processedContent });
   return (
     <StyledMessageWrapper>
       <Markdown>{processedContent}</Markdown>
@@ -162,7 +157,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map((embedding, index) => <div key={embedding.id || index}>
+        {embeddings.map(embedding => <div key={embeddings.id}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -172,8 +167,6 @@ const Message = ({ message }) => {
 }
 
 const chatsColumns = [
-  //{ accessor: 'id', title: 'ID', width: '50px' },
-  //{ accessor: 'chatId',  title: 'ChatID', width: '80px' },
   { accessor: 'updated', title: 'Time', width: '80px', sortable: true },
   { accessor: 'user', title: 'User', width: '85px', 
     filters: {
@@ -187,8 +180,6 @@ const chatsColumns = [
     },
   },
   { accessor: 'messages', title: '#', width: '45px' },
-  //{ accessor: 'extra', title: 'Info', width: '45px' },
-  //{ accessor: 'created', title: 'Started', width: '140px', sortable: true }
 ];
 
 const retrieveDiscussions = async (chatsQueryParams) => {
@@ -289,11 +280,11 @@ const Discussions = () => {
       }
       await deleteDiscussions();
       queryClient.invalidateQueries({ queryKey: ['chats'] });
-    } else {
-      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
-      await deleteDiscussions(selectedChatIds);
+      return;
     }
+    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+    const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
+    await deleteDiscussions(selectedChatIds);
     setSelectedIds([]);
     queryClient.invalidateQueries({ queryKey: ['chats'] });
     setBusyAction(false);
@@ -354,7 +345,7 @@ const Discussions = () => {
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
@@ -420,7 +411,6 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{discussion?.updated}</div>
           </div>
-
         </NekoBlock>}
 
       </NekoColumn>
