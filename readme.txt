@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.3
+Stable tag: 2.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,8 @@ Languages: English.
 
 == Changelog ==
 
-= 2.0.4 (2023/11/30) =
+= 2.0.5 (2023/12/03) =
+* Fix: Logs and conversations were not refreshed correctly when deleted.
 * Fix: Missing extra information (such as embeddings) in the discussions tab.
 
 = 2.0.3 (2023/11/26) =

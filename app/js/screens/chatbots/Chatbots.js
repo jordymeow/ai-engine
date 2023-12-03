@@ -1,5 +1,5 @@
-// Previous: 1.9.93
-// Current: 2.0.0
+// Previous: 2.0.0
+// Current: 2.0.5
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer, NekoSpacer, 
 import { pluginUrl, restUrl, userData, restNonce, session, stream,
   themes as initThemes, chatbots as initChatbots } from '@app/settings';
 import i18n from '@root/i18n';
-import { retrieveChatbots, retrieveThemes, updateChatbots } from '@app/requests';
+import { retrieveChatbots, retrieveThemes, update_chatbots } from '@app/requests';
 import ChatbotParams from '@app/screens/chatbots/ChatbotParams';
 import Themes from '@app/screens/chatbots/Themes';
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
@@ -50,7 +50,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000);
+    }, 1000); // clear message after 1 second
   };
 
   if (!currentChatbot) {
@@ -129,27 +129,23 @@ const Chatbots = (props) => {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
     if ( id === 'botId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
-
     if ( id === 'botId' && chatbots && chatbots.find(x => x.botId === value) ) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-
     if (id === 'botId' && value !== currentChatbot[id] ) {
       setCurrentBotId(value);
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
     newChatbots[botIndex] = newParams;
-    newChatbots = await updateChatbots(newChatbots);
+    newChatbots = await update_chatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
@@ -166,7 +162,7 @@ const Chatbots = (props) => {
     setBusyAction(true);
     const newName = 'New Chatbot';
     const newChatId = 'chatbot-' + randomHash();
-    const newChatbots = await updateChatbots([...chatbots, {
+    const newChatbots = await update_chatbots([...chatbots, {
       ...defaults, botId: newChatId, name: newName,
       envId: options?.ai_default_env,
       model: options?.ai_default_model,
@@ -179,7 +175,7 @@ const Chatbots = (props) => {
     setBusyAction(true);
     let newChatbots = [...chatbots.filter(x => x.botId !== currentChatbot.botId)];
     setCurrentBotId('default');
-    newChatbots = await updateChatbots(newChatbots);
+    newChatbots = await update_chatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
@@ -189,7 +185,7 @@ const Chatbots = (props) => {
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
     newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
-    newChatbots = await updateChatbots(newChatbots);
+    newChatbots = await update_chatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
@@ -200,7 +196,6 @@ const Chatbots = (props) => {
 
   return (<>
     <NekoWrapper>
-
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
         <NekoContainer contentStyle={{ padding: 10, marginBottom: -20 }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -234,9 +229,7 @@ const Chatbots = (props) => {
           </div>
         </NekoContainer>
       </NekoColumn>
-
       {(chatbotEditor || themeEditor) && <NekoColumn minimal style={{ margin: 10 }}>
-
         {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
           action={<><NekoButton rounded className="primary-block" icon='plus' onClick={() => addNewChatbot()} /></>}>
           {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
@@ -247,17 +240,13 @@ const Chatbots = (props) => {
             />
           </NekoTab>)}
         </NekoTabs>}
-
         {chatbotEditor && themeEditor && <NekoSpacer large />}
-    
         {themeEditor && <Themes themes={themes}
           options={options} updateOption={updateOption}
           currentTheme={currentTheme}
           onSwitchTheme={onSwitchTheme}
         />}
-
       </NekoColumn>}
-      
       {chatbotPreview && <NekoColumn minimal>
         <small style={{ marginLeft: 15, marginBottom: -20 }}>
           Chatbot: <b>{currentChatbot?.name}</b> - Theme: <b>{currentTheme?.name}</b>
@@ -285,7 +274,6 @@ const Chatbots = (props) => {
         </div>
         <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
       </NekoColumn>}
-
     </NekoWrapper>
   </>);
 };

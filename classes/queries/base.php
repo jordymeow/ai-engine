@@ -207,7 +207,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   // Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
-  protected function estimateTokens( $promptOrMessages ): int
+  protected function estimate_tokens( $promptOrMessages ): int
   {
     $text = "";
     // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb

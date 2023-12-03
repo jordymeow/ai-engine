@@ -1,18 +1,15 @@
-// Previous: 2.0.2
-// Current: 2.0.3
+// Previous: 2.0.3
+// Current: 2.0.5
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import Markdown from 'markdown-to-jsx';
 
-// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
-// AI Engine
 import i18n from '@root/i18n';
 import { apiUrl, restNonce } from '@app/settings';
 import { tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
@@ -279,14 +276,15 @@ const Discussions = () => {
         return;
       }
       await deleteDiscussions();
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-      return;
     }
-    const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-    const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
-    await deleteDiscussions(selectedChatIds);
-    setSelectedIds([]);
-    queryClient.invalidateQueries({ queryKey: ['chats'] });
+    else {
+      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+      const selectedChatIds = selectedChats ? selectedChats.map(x => x.chatId) : [];
+      await deleteDiscussions(selectedChatIds);
+      setSelectedIds([]);
+    }
+    await queryClient.invalidateQueries({ queryKey: ['chats'] });
+    queryClient.refetchQueries({ queryKey: ['chats'] });
     setBusyAction(false);
   }
 
@@ -312,8 +310,9 @@ const Discussions = () => {
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
               disabled={isFetchingChats}
-              onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ['chats'] });
+              onClick={async () => {
+                await queryClient.invalidateQueries({ queryKey: ['chats'] });
+                queryClient.refetchQueries({ queryKey: ['chats'] });
               }}>{i18n.COMMON.REFRESH}</NekoButton>}
             {selectedIds.length > 0 && <>
               <NekoButton className="danger" disabled={false}
@@ -345,7 +344,7 @@ const Discussions = () => {
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
@@ -411,6 +410,7 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{discussion?.updated}</div>
           </div>
+
         </NekoBlock>}
 
       </NekoColumn>

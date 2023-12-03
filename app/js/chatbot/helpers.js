@@ -1,5 +1,5 @@
-// Previous: 1.9.95
-// Current: 1.9.96
+// Previous: 1.9.96
+// Current: 2.0.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -115,6 +115,7 @@ function useInterval(delay, callback, enabled = true) {
       const id = setInterval(tick, delay);
       return () => clearInterval(id);
     }
+    return undefined;
   }, [delay, enabled]);
 }
 
@@ -158,7 +159,7 @@ const useModClasses = (theme) => {
   return { modCss };
 };
 
-function isUrl(url) {
+function is_url(url) {
   return url.indexOf('http') === 0;
 }
 
@@ -216,19 +217,16 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, mo
       userName = <div className={modCss(['mwai-avatar'])}>
         <img src={userData.AVATAR_URL} />
       </div>;
-    }
-    else {
+    } else {
       userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
         <img src={`${pluginUrl}/images/avatar-user.svg`} />
       </div>;
     }
-  }
-  else if (isUrl(userName)) {
+  } else if (is_url(userName)) {
     userName = <div className={modCss(['mwai-avatar'])}>
       <img src={userName} />
     </div>;
-  }
-  else {
+  } else {
     userName = handlePlaceholders(userName, guestName, userData);
     userName = <div className={modCss(['mwai-name-text'])}>{userName}</div>;
   }
@@ -241,11 +239,9 @@ function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
     aiName = <div className={modCss(['mwai-avatar'])}>
       <img src={`${avatar}`} />
     </div>;
-  }
-  else if (isUrl(aiName)) {
+  } else if (is_url(aiName)) {
     aiName = <div className={modCss('mwai-avatar')}><img src={aiName} /></div>;
-  }
-  else {
+  } else {
     aiName = <div className={modCss('mwai-name-text')}>{aiName}</div>;
   }
   return aiName;
@@ -334,7 +330,7 @@ const useSpeechRecognition = (onResult) => {
   return { isListening, setIsListening, speechRecognitionAvailable };
 };
 
-export { useModClasses, isUrl, handlePlaceholders, useInterval,
+export { useModClasses, is_url, handlePlaceholders, useInterval,
   useSpeechRecognition, Microphone, ImageUpload, 
   useChrono, formatUserName, formatAiName, processParameters
 };

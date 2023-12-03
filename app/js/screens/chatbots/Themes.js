@@ -1,5 +1,5 @@
-// Previous: 1.6.93
-// Current: 1.6.98
+// Previous: 1.6.98
+// Current: 2.0.5
 
 const { useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
 
 import { themes as initThemes } from '@app/settings';
-import { retrieveThemes, updateThemes } from '@app/requests';
+import { retrieveThemes, update_themes } from '@app/requests';
 import Theme from './Theme';
 import { randomHash } from '@app/helpers-admin';
 
@@ -21,7 +21,7 @@ const Themes = (props) => {
   const currentTheme = props.currentTheme;
 
   const onChangeTab = (_themeIndex, attributes) => {
-    const theme = themes.find(x => x.themeId === attributes?.key);
+    const theme = themes.find(x => x.themeId === attributes.key);
     if (theme) {
       onSwitchTheme(theme.themeId);
     }
@@ -34,7 +34,7 @@ const Themes = (props) => {
       let newThemes = [...themes];
       const themeIndex = newThemes.findIndex(x => x.themeId === currentTheme.themeId);
       newThemes[themeIndex] = newParams;
-      const updatedThemes = await updateThemes(newThemes);
+      const updatedThemes = await update_themes(newThemes);
       queryClient.setQueryData(['themes'], updatedThemes);
     }
     catch (e) {
@@ -46,14 +46,13 @@ const Themes = (props) => {
   const addNewTheme = async () => {
     setBusy(true);
     try {
-      const newThemesList = [...themes, {
+      const newThemes = await update_themes([...themes, {
         type: 'css',
         name: 'New Theme',
         themeId: 'theme-' + randomHash(),
         settings: [],
         style: ""
-      }];
-      const newThemes = await updateThemes(newThemesList);
+      }]);
       queryClient.setQueryData(['themes'], newThemes);
     }
     catch (e) {
@@ -64,31 +63,27 @@ const Themes = (props) => {
 
   const deleteCurrentTheme = async () => {
     setBusy(true);
-    const newThemes = themes.filter(x => x.themeId !== currentTheme.themeId);
-    const firstTheme = newThemes[0] || null;
-    if (firstTheme) {
-      onSwitchTheme(firstTheme.themeId);
-    }
-    await updateThemes(newThemes);
+    const newThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
+    const firstTheme = newThemes[0];
+    onSwitchTheme(firstTheme.themeId);
+    await update_themes(newThemes);
     await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
 
   const resetTheme = async () => {
     setBusy(true);
-    const newThemesCopy = [...themes];
-    const themeIndex = newThemesCopy.findIndex(x => x.themeId === currentTheme.themeId);
-    if (themeIndex !== -1) {
-      newThemesCopy[themeIndex] = {
-        type: newThemesCopy[themeIndex].type,
-        name: newThemesCopy[themeIndex].name,
-        themeId: newThemesCopy[themeIndex].themeId,
-        settings: [],
-        style: ""
-      };
-    }
-    await updateThemes(newThemesCopy);
-    await queryClient.setQueryData(['themes'], newThemesCopy);
+    const newThemes = [...themes];
+    const themeIndex = newThemes.findIndex(x => x.themeId === currentTheme.themeId);
+    newThemes[themeIndex] = {
+      type: newThemes[themeIndex].type,
+      name: newThemes[themeIndex].name,
+      themeId: newThemes[themeIndex].themeId,
+      settings: [],
+      style: ""
+    };
+    await update_themes(newThemes);
+    await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
 

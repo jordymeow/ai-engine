@@ -1,11 +1,11 @@
-// Previous: 2.0.0
-// Current: 2.0.2
+// Previous: 2.0.2
+// Current: 2.0.5
 
 const { useMemo, useState, useEffect } = wp.element;
 
 import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoWrapper, 
-  NekoSettings, NekoSpacer, NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, 
-  NekoCheckbox, NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
+  NekoSettings, NekoSpacer, NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, 
+  NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
@@ -85,15 +85,13 @@ const Settings = () => {
   const statistics_data = options?.statistics_data;
   const statistics_forms_data = options?.statistics_forms_data;
   const intro_message = options?.intro_message;
-  const dynamic_max_tokens = options?.dynamic_max_tokens;
-  const dynamic_max_messages = options?.dynamic_max_messages;
   const context_max_tokens = options?.context_max_tokens; 
   const banned_ips = options?.banned_ips;
   const banned_words = options?.banned_words;
   const admin_bar = options?.admin_bar ?? ['settings'];
   const resolve_shortcodes = options?.resolve_shortcodes;
   const clean_uninstall = options?.clean_uninstall;
-  const { completionModels, allModels, getModel } = useModels(options);
+  const { completionModels, getModel } = useModels(options);
 
   const currentModel = getModel(shortcodeParams.model);
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
@@ -131,11 +129,9 @@ const Settings = () => {
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
-
     if (JSON.stringify(newOptions) === JSON.stringify(options)) {
       return;
     }
-
     setBusyAction(true);
     try {
       const response = await nekoFetch(`${apiUrl}/settings/update`, { 
@@ -310,9 +306,8 @@ const Settings = () => {
           description={i18n.COMMON.CHATBOT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
-    </NekoSettings>
-   ;
-
+    </NekoSettings>;
+   
   const jsxStatisticsData =
    <NekoSettings title={i18n.COMMON.QUERIES_DATA}>
      <NekoCheckboxGroup max="1">
@@ -469,26 +464,11 @@ const Settings = () => {
         onChange={updateOption} />
     </NekoSettings>;
 
-  const jsxDynamicMaxTokens =
-    <NekoSettings title={i18n.COMMON.DYNAMIC_MAX_TOKENS}>
-      <NekoCheckbox name="dynamic_max_tokens" label={i18n.COMMON.ENABLE} value="1" checked={dynamic_max_tokens}
-        description={i18n.HELP.DYNAMIC_MAX_TOKENS}
-        onChange={updateOption} />
-    </NekoSettings>;
-
   const jsxContextMaxTokens =
     <NekoSettings title={i18n.COMMON.CONTEXT_MAX_TOKENS}>
       <NekoInput name="context_max_tokens" value={context_max_tokens}
         description={i18n.HELP.CONTEXT_MAX_TOKENS}
         onBlur={updateOption} />
-    </NekoSettings>;
-
-  const jsxDynamicMaxMessages =
-    <NekoSettings title={i18n.COMMON.DYNAMIC_MAX_MESSAGES}>
-      <NekoCheckbox name="dynamic_max_messages" label={i18n.COMMON.ENABLE + " (SOON)"} value="1" checked={dynamic_max_messages}
-        disabled={true}
-        description={i18n.HELP.DYNAMIC_MAX_TOKENS}
-        onChange={updateOption} />
     </NekoSettings>;
 
   const jsxBannedKeywords =
@@ -568,6 +548,7 @@ const Settings = () => {
     style={{ marginLeft: 5, marginRight: -5, display: 'inline' }} width="16"
     icon="alert" variant="warning" />
     : null;
+
 
   const jsxAIEnvironmentDefault =
     <NekoSelect scrolldown name="ai_default_env" value={ai_default_env} onChange={updateOption}>
@@ -767,9 +748,7 @@ const Settings = () => {
 
                   <NekoBlock busy={busy} title={i18n.COMMON.ADVANCED} className="primary">
                     {jsxResolveShortcodes}
-                    {jsxDynamicMaxTokens}
                     {jsxContextMaxTokens}
-                    {jsxDynamicMaxMessages}
                     {jsxPublicAPI}
                     {jsxDevTools}
                     {jsxCleanUninstall}

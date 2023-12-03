@@ -125,7 +125,7 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 			// Registered Chatbot
 			if ( !$chatbot && $botId ) {
-				$chatbot = $this->core->getChatbot( $botId );
+				$chatbot = $this->core->get_chatbot( $botId );
 			}
 
 			if ( !$chatbot ) {
@@ -214,7 +214,7 @@ class Meow_MWAI_Modules_Chatbot {
 					] );
 					if ( !empty( $context ) ) {
 						if ( isset( $context['content'] ) ) {
-							$content = $this->core->cleanSentences( $context['content'] );
+							$content = $this->core->clean_sentences( $context['content'] );
 							$query->injectContext( $content );
 						}
 						else {
@@ -302,12 +302,12 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function inject_chat() {
-		$params = $this->core->getChatbot( $this->siteWideChatId );
-		$cleanParams = [];
+		$params = $this->core->get_chatbot( $this->siteWideChatId );
+		$clean_params = [];
 		if ( !empty( $params ) ) {
-			$cleanParams['window'] = true;
-			$cleanParams['id'] = $this->siteWideChatId;
-			echo $this->chat_shortcode( $cleanParams );
+			$clean_params['window'] = true;
+			$clean_params['id'] = $this->siteWideChatId;
+			echo $this->chat_shortcode( $clean_params );
 		}
 		return null;
 	}
@@ -316,7 +316,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$frontSystem = [
 			'botId' => $customId ? null : $botId,
 			'customId' => $customId,
-			'userData' => $this->core->getUserData(),
+			'userData' => $this->core->get_user_data(),
 			'sessionId' => $this->core->get_session_id(),
 			'restNonce' => $this->core->get_nonce(),
 			'contextId' => get_the_ID(),
@@ -340,7 +340,7 @@ class Meow_MWAI_Modules_Chatbot {
       $botId = "default";
     }
     if ( $botId ) {
-      $chatbot = $this->core->getChatbot( $botId );
+      $chatbot = $this->core->get_chatbot( $botId );
       if (!$chatbot) {
         $botId = $botId ?: 'N/A';
         return [
@@ -348,7 +348,7 @@ class Meow_MWAI_Modules_Chatbot {
         ];
       }
     }
-    $chatbot = $chatbot ?: $this->core->getChatbot( 'default' );
+    $chatbot = $chatbot ?: $this->core->get_chatbot( 'default' );
     if ( !empty( $customId ) ) {
       $botId = null;
     }
@@ -420,9 +420,9 @@ class Meow_MWAI_Modules_Chatbot {
 		$frontSystem = $this->build_front_params( $botId, $customId );
 
 		// Clean Params
-		$frontParams = $this->cleanParams( $frontParams );
-		$frontSystem = $this->cleanParams( $frontSystem );
-		$serverParams = $this->cleanParams( $serverParams );
+		$frontParams = $this->clean_params( $frontParams );
+		$frontSystem = $this->clean_params( $frontSystem );
+		$serverParams = $this->clean_params( $serverParams );
 
 		// Server-side: Keep the System Params
 		if ( $hasServerOverrides ) {
@@ -434,7 +434,7 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 
 		// Client-side: Prepare JSON for Front Params and System Params
-		$theme = isset( $frontParams['themeId'] ) ? $this->core->getTheme( $frontParams['themeId'] ) : null;
+		$theme = isset( $frontParams['themeId'] ) ? $this->core->get_theme( $frontParams['themeId'] ) : null;
 		$jsonFrontParams = htmlspecialchars( json_encode( $frontParams ), ENT_QUOTES, 'UTF-8' );
 		$jsonFrontSystem = htmlspecialchars( json_encode( $frontSystem ), ENT_QUOTES, 'UTF-8' );
 		$jsonFrontTheme = htmlspecialchars( json_encode( $theme ), ENT_QUOTES, 'UTF-8' );
@@ -489,11 +489,11 @@ class Meow_MWAI_Modules_Chatbot {
 		$frontSystem = $this->build_front_params( $botId, $customId );
 
     // Clean Params
-		$frontParams = $this->cleanParams( $frontParams );
-		$frontSystem = $this->cleanParams( $frontSystem );
-		$serverParams = $this->cleanParams( $serverParams );
+		$frontParams = $this->clean_params( $frontParams );
+		$frontSystem = $this->clean_params( $frontSystem );
+		$serverParams = $this->clean_params( $serverParams );
 
-    $theme = isset( $frontParams['themeId'] ) ? $this->core->getTheme( $frontParams['themeId'] ) : null;
+    $theme = isset( $frontParams['themeId'] ) ? $this->core->get_theme( $frontParams['themeId'] ) : null;
 		$jsonFrontParams = htmlspecialchars( json_encode( $frontParams ), ENT_QUOTES, 'UTF-8' );
 		$jsonFrontSystem = htmlspecialchars( json_encode( $frontSystem ), ENT_QUOTES, 'UTF-8' );
 		$jsonFrontTheme = htmlspecialchars( json_encode( $theme ), ENT_QUOTES, 'UTF-8' );
@@ -501,7 +501,7 @@ class Meow_MWAI_Modules_Chatbot {
     return "<div class='mwai-discussions-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
   }
 
-	function cleanParams( &$params ) {
+	function clean_params( &$params ) {
 		foreach ( $params as $param => $value ) {
 			if ( empty( $value ) || is_array( $value ) ) {
 				continue;

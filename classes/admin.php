@@ -174,7 +174,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'api_url' => rest_url( 'mwai/v1' ),
 			'rest_url' => rest_url(),
 			'plugin_url' => MWAI_URL,
-			'user_data' => $this->core->getUserData(),
+			'user_data' => $this->core->get_user_data(),
 			'prefix' => MWAI_PREFIX,
 			'domain' => MWAI_DOMAIN,
 			'is_pro' => class_exists( 'MeowPro_MWAI_Core' ),
@@ -182,8 +182,8 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 			'rest_nonce' => wp_create_nonce( 'wp_rest' ),
 			'session' => $this->core->get_session_id(),
 			'options' => $this->core->get_all_options(),
-			'chatbots' => $this->core->getChatbots(),
-			'themes' => $this->core->getThemes(),
+			'chatbots' => $this->core->get_chatbots(),
+			'themes' => $this->core->get_themes(),
 			'stream' => $this->core->get_option( 'shortcode_chat_stream' ),
 		] );
 	}

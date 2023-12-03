@@ -387,12 +387,12 @@ class Meow_MWAI_Rest
 				$query->setPrompt( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
 			}
 			else if ( $action === 'suggestExcerpts' ) {
-				$text = $this->core->getCleanPostContent( $postId );
+				$text = $this->core->get_post_content( $postId );
 				$query->setPrompt( "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.{$keepLanguage}\n\n" . $text );
 				$query->setMaxResults( 5 );
 			}
 			else if ( $action === 'suggestTitles' ) {
-				$text = $this->core->getCleanPostContent( $postId );
+				$text = $this->core->get_post_content( $postId );
 				$query->setPrompt( "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.{$keepLanguage}\n\n" . $text );
 				$query->setMaxResults( 5 );
 			}
@@ -402,7 +402,7 @@ class Meow_MWAI_Rest
 			if ( $action === 'generateImage' ) {
 				preg_match( '/\!\[Image\]\((.*?)\)/', $reply->result, $matches );
 				$url = $matches[1] ?? $reply->result;
-				$attachmentId = $this->core->addImageFromURL( $url, null, null, null, null, null, $postId );
+				$attachmentId = $this->core->add_image_from_url( $url, null, null, null, null, null, $postId );
 				if ( empty( $attachmentId ) ) {
 					throw new Exception( 'Could not add the image to the Media Library.' );
 				}
@@ -531,7 +531,7 @@ class Meow_MWAI_Rest
 			$description = sanitize_text_field( $params['description'] );
 			$url = $params['url'];
 			$filename = sanitize_text_field( $params['filename'] );
-			$attachmentId = $this->core->addImageFromURL( $url, $filename, $title, $description, $caption, $alt );
+			$attachmentId = $this->core->add_image_from_url( $url, $filename, $title, $description, $caption, $alt );
 			return new WP_REST_Response([ 'success' => true, 'attachmentId' => $attachmentId ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -752,7 +752,7 @@ class Meow_MWAI_Rest
 			if ( !$post ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => 'Post not found' ], 404 );
 			}
-			$cleanPost = $this->core->getCleanPost( $post );
+			$cleanPost = $this->core->get_post( $post );
 			return new WP_REST_Response([ 'success' => true, 'content' => $cleanPost['content'],
 				'checksum' => $cleanPost['checksum'], 'language' => $cleanPost['language'], 'excerpt' => $cleanPost['excerpt'],
 				'postId' => $cleanPost['postId'], 'title' => $cleanPost['title'], 'url' => $cleanPost['url'] ], 200 );
@@ -919,7 +919,7 @@ class Meow_MWAI_Rest
 
 	function rest_helpers_post_types() {
 		try {
-			$postTypes = $this->core->getPostTypes();
+			$postTypes = $this->core->get_post_types();
 			return new WP_REST_Response([ 'success' => true, 'postTypes' => $postTypes ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -932,13 +932,13 @@ class Meow_MWAI_Rest
 		try {
 			$method = $request->get_method();
 			if ( $method === 'GET' ) {
-				$themes = $this->core->getThemes();
+				$themes = $this->core->get_themes();
 				return new WP_REST_Response([ 'success' => true, 'themes' => $themes ], 200 );
 			}
 			else if ( $method === 'POST' ) {
 				$params = $request->get_json_params();
 				$themes = $params['themes'];
-				$themes = $this->core->updateThemes( $themes );
+				$themes = $this->core->update_themes( $themes );
 				return new WP_REST_Response([ 'success' => true, 'themes' => $themes ], 200 );
 			}
 		}
@@ -952,13 +952,13 @@ class Meow_MWAI_Rest
 		try {
 			$method = $request->get_method();
 			if ( $method === 'GET' ) {
-				$chatbots = $this->core->getChatbots();
+				$chatbots = $this->core->get_chatbots();
 				return new WP_REST_Response([ 'success' => true, 'chatbots' => $chatbots ], 200 );
 			}
 			else if ( $method === 'POST' ) {
 				$params = $request->get_json_params();
 				$chatbots = $params['chatbots'];
-				$chatbots = $this->core->updateChatbots( $chatbots );
+				$chatbots = $this->core->update_chatbots( $chatbots );
 				return new WP_REST_Response([ 'success' => true, 'chatbots' => $chatbots ], 200 );
 			}
 			return new WP_REST_Response([ 'success' => false, 'message' => 'Method not allowed' ], 405 );

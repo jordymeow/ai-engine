@@ -379,7 +379,7 @@ class Meow_MWAI_Engines_OpenAI
         throw new Exception( 'Invalid data for embedding.' );
       }
       $usage = $data['usage'];
-      $this->core->recordTokensUsage( $query->model, $usage['prompt_tokens'] );
+      $this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
       $reply = new Meow_MWAI_Reply( $query );
       $reply->setUsage( $usage );
       $reply->setChoices( $data['data'] );
@@ -489,7 +489,7 @@ class Meow_MWAI_Engines_OpenAI
       }
       
       try {
-        $usage = $this->core->recordTokensUsage( 
+        $usage = $this->core->record_tokens_usage( 
           $data['model'], 
           $data['usage']['prompt_tokens'],
           $data['usage']['completion_tokens']

@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 1.9.97
+// Previous: 1.9.97
+// Current: 2.0.5
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -101,9 +101,8 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCurrentLanguage(preferredLanguage);
       return;
     }
-
-    const htmlLang = document.querySelector('html')?.lang || '';
-    const detectedLanguage = (htmlLang || navigator.language || navigator.userLanguage).substr(0, 2);
+    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
+    const detectedLanguage = htmlLang.substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -119,14 +118,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -223,12 +222,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   };
 
   const allModels = useMemo(() => {
-    let allModels = options.openai_models;
+    let modelsList = options.openai_models;
 
-    if (env?.type == 'azure') {
-      allModels = allModels.filter(x => env.deployments?.find(d => d.model === x.model));
+    if (env?.type === 'azure') {
+      modelsList = modelsList.filter(x => env.deployments?.find(d => d.model === x.model));
     }
-    else if (env?.type !== 'openai') {
+    else if (!env?.type !== 'openai') {
       console.warn("useModels: Environment Type is not supported.", { env });
     }
 
@@ -239,12 +238,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       fineTunes = [ ...fineTunes, ...env.legacy_finetunes ];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
-    allModels = allModels.map(x => {
+    modelsList = modelsList.map(x => {
       return { ...x, name: jsxModelName(x) };
     });
 
     if (fineTunes.length) {
-      allModels = [ ...allModels, ...fineTunes.map(x => {
+      modelsList = [ ...modelsList, ...fineTunes.map(x => {
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
@@ -272,15 +271,14 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     extraModels = extraModels?.split(',').filter(x => x);
     if (extraModels.length) {
-      allModels = [ ...allModels, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+      modelsList = [ ...modelsList, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return allModels;
+    return modelsList;
   }, [options, env]);
 
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
-
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -406,7 +404,7 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 };
 
-function estimateTokens(text) {
+function estimate_tokens(text) {
   let asciiCount = 0;
   let nonAsciiCount = 0;
   for (let i = 0; i < text.length; i++) {
@@ -426,10 +424,10 @@ function estimateTokens(text) {
 
 function reduceContent(content, tokens = 2048) {
   let reduced = content;
-  let reducedTokens = estimateTokens(reduced);
+  let reducedTokens = estimate_tokens(reduced);
   while (reducedTokens > tokens) {
     reduced = reduced.slice(0, -32);
-    reducedTokens = estimateTokens(reduced);
+    reducedTokens = estimate_tokens(reduced);
   }
   return reduced;
 }
@@ -477,7 +475,7 @@ const randomHash = (length = 6) => {
   return hash;
 };
 
-export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages, addFromRemote,
+export { OptionsCheck, cleanSections, useModels, toHTML, estimate_tokens, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, reduceContent,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX

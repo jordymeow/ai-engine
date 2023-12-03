@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.9.85
+// Previous: 1.9.85
+// Current: 2.0.5
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -37,11 +37,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       return acc;
     }, {});
     return cssVars;
-  }, [pluginUrl, shortcodeStyles]);
+  }, [shortcodeStyles, pluginUrl]);
 
   const refresh = useCallback(async (silentRefresh = false) => {
     try {
-      if (!silentRefresh) {
+      if (!silentRefresh && !busy) {
         setBusy(true);
       }
       const body = { botId: botId || customId };
@@ -72,37 +72,37 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setBusy(false);
       }
     }
-  }, []);
+  }, [botId, customId, restNonce, restUrl, debugMode, busy]);
 
   useEffect(() => {
     refresh();
     const interval = setInterval(() => {
-      refresh(true);
+      refresh();
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refresh]);
 
-  const getChatbot = (botId) => {
-    const chatbot = MwaiAPI.getChatbot(botId);
+  const get_chatbot = (id) => {
+    const chatbot = MwaiAPI.get_chatbot(id);
     if (!chatbot) {
-      throw new Error(`Chatbot not found.`, { botId, chatbots: MwaiAPI.chatbots });
+      throw new Error(`Chatbot not found.`, { botId: id, chatbots: MwaiAPI.chatbots });
     }
     return chatbot;
   };
 
   const onDiscussionClick = async (chatId) => {
-    const discussion = discussions.find(x => x.chatId === chatId);
-    if (!discussion) {
+    const discussionItem = discussions.find(x => x.chatId === chatId);
+    if (!discussionItem) {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
-    const chatbot = getChatbot(botId);
-    chatbot.setContext({ chatId, messages: discussion.messages });
-    setDiscussion(discussion);
+    const chatbot = get_chatbot(botId);
+    chatbot.setContext({ chatId, messages: discussionItem.messages });
+    setDiscussion(discussionItem);
   };
 
-  const onNewChatClick = async () => {
-    const chatbot = getChatbot(botId);
+  const onNewChatClick = () => {
+    const chatbot = get_chatbot(botId);
     chatbot.clear();
   };
 

@@ -50,7 +50,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     if ( $this->promptTokens && !$refresh ) {
       return $this->promptTokens;
     }
-    $this->promptTokens = Meow_MWAI_Core::estimateTokens( $this->messages );
+    $this->promptTokens = Meow_MWAI_Core::estimate_tokens( $this->messages );
     return $this->promptTokens;
   }
 

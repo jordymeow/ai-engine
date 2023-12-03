@@ -241,9 +241,9 @@ const Dashboard = () => {
 
                   <StyledPluginBlock title="Contact Form Block" className="primary">
                     <StyledPluginImage
-                      src='https://ps.w.org/seo-kiss/assets/icon-256x256.png' />
+                      src='https://ps.w.org/ai-seo/assets/icon-256x256.png' />
                     <div className="plugin-desc">
-                      <h2><a target='_blank' href='https://wordpress.org/plugins/seo-kiss/'>AI-SEO KISS (Keep It Simple Stupid)</a></h2>
+                      <h2><a target='_blank' href='https://wordpress.org/plugins/ai-seo/'>AI-SEO</a></h2>
                       <p>Optimize your content for SEO. Keep everything simple and fast.</p>
                     </div>
                   </StyledPluginBlock>
