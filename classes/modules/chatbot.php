@@ -321,7 +321,7 @@ class Meow_MWAI_Modules_Chatbot {
 			'restNonce' => $this->core->get_nonce(),
 			'contextId' => get_the_ID(),
 			'pluginUrl' => MWAI_URL,
-			'restUrl' => untrailingslashit( rest_url() ),
+			'restUrl' => untrailingslashit( get_rest_url() ),
 			'debugMode' => $this->core->get_option( 'debug_mode' ),
 			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' ),
 			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),

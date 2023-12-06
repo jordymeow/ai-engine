@@ -113,7 +113,7 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 			if ( $wp_rewrite === null ) { 
 				$wp_rewrite = new WP_Rewrite();
 			}
-			$rest_url = wp_parse_url( trailingslashit( rest_url() ) );
+			$rest_url = wp_parse_url( trailingslashit( get_rest_url() ) );
 			$current_url = wp_parse_url( add_query_arg( array() ) );
 			if ( !$rest_url || !$current_url )
 				return false;

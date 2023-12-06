@@ -1,11 +1,11 @@
-// Previous: 2.0.0
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.0.6
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Styled from 'styled-components';
 
-import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoContainer, NekoSpacer, NekoCheckbox,
+import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoToolbar, NekoSpacer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
 
 import { pluginUrl, restUrl, userData, restNonce, session, stream,
@@ -50,7 +50,7 @@ const Shortcode = ({ currentChatbot }) => {
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);
-    }, 1000); // clear message after 1 second
+    }, 1000);
   };
 
   if (!currentChatbot) {
@@ -72,9 +72,9 @@ const Shortcode = ({ currentChatbot }) => {
 const setCurrentChatbot = (chatbotId) => {
   if (chatbotId) {
     localStorage.setItem('mwai-admin-chatbotId', chatbotId);
-    return;
+  } else {
+    localStorage.removeItem('mwai-admin-chatbotId');
   }
-  localStorage.removeItem('mwai-admin-chatbotId');
 };
 
 const getCurrentChatbot = () => {
@@ -133,13 +133,14 @@ const Chatbots = (props) => {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if ( id === 'botId' && chatbots && chatbots.find(x => x.botId === value) ) {
+    if ( id === 'botId' && chatbots.find(x => x.botId === value) ) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
     if (id === 'botId' && value !== currentChatbot[id] ) {
       setCurrentBotId(value);
     }
+
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -197,8 +198,7 @@ const Chatbots = (props) => {
   return (<>
     <NekoWrapper>
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
-        <NekoContainer contentStyle={{ padding: 10, marginBottom: -20 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+        <NekoToolbar>
             <label>{i18n.COMMON.SITE_WIDE_CHAT}:</label>
             <NekoSelect scrolldown style={{ marginLeft: 10 }} name='botId' disabled={isBusy}
               value={botId} onChange={updateOption}>
@@ -226,10 +226,11 @@ const Chatbots = (props) => {
             <StyledShortcode style={{ marginLeft: 10 }}>
               <Shortcode currentChatbot={currentChatbot} />
             </StyledShortcode>
-          </div>
-        </NekoContainer>
+        </NekoToolbar>
       </NekoColumn>
+
       {(chatbotEditor || themeEditor) && <NekoColumn minimal style={{ margin: 10 }}>
+
         {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
           action={<><NekoButton rounded className="primary-block" icon='plus' onClick={() => addNewChatbot()} /></>}>
           {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
@@ -240,13 +241,17 @@ const Chatbots = (props) => {
             />
           </NekoTab>)}
         </NekoTabs>}
+
         {chatbotEditor && themeEditor && <NekoSpacer large />}
+    
         {themeEditor && <Themes themes={themes}
           options={options} updateOption={updateOption}
           currentTheme={currentTheme}
           onSwitchTheme={onSwitchTheme}
         />}
+
       </NekoColumn>}
+      
       {chatbotPreview && <NekoColumn minimal>
         <small style={{ marginLeft: 15, marginBottom: -20 }}>
           Chatbot: <b>{currentChatbot?.name}</b> - Theme: <b>{currentTheme?.name}</b>
@@ -274,6 +279,7 @@ const Chatbots = (props) => {
         </div>
         <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
       </NekoColumn>}
+
     </NekoWrapper>
   </>);
 };

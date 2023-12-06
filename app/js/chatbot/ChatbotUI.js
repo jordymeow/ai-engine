@@ -1,5 +1,5 @@
-// Previous: 1.9.95
-// Current: 1.9.99
+// Previous: 1.9.99
+// Current: 2.0.6
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -8,6 +8,7 @@ import { useModClasses, useChrono, useSpeechRecognition, Microphone, ImageUpload
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
+import ChatbotInput from './ChatbotInput';
 
 const ChatbotUI = (props) => {
   const { theme, style } = props;
@@ -49,7 +50,7 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(prev => text);
+          setInputText(prev => prev + text);
         }
       }
       else if (task.action === 'toggle') {
@@ -120,13 +121,13 @@ const ChatbotUI = (props) => {
       inputRef.current.focus();
     }
     if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight - 1;
     }
   }, [open]);
 
   useLayoutEffect(() => {
     if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight - 1;
     }
   }, [messages]);
 
@@ -167,13 +168,14 @@ const ChatbotUI = (props) => {
     onImageUpload(file);
   };
 
-  return (<>
+  return (
     <div id={`mwai-chatbot-${customId || botId}`}
       className={baseClasses} style={{ ...cssVariables, ...style }}>
         
       {themeStyle && <style>{themeStyle}</style>}
 
-      {isWindow && (<>
+      {isWindow && (
+        <>
         <div className={modCss('mwai-open-button')}>
           {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
             {iconText}
@@ -194,7 +196,8 @@ const ChatbotUI = (props) => {
             />
           </div>
         </div>
-      </>)}
+        </>
+      )}
 
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
@@ -206,64 +209,52 @@ const ChatbotUI = (props) => {
           {error}
         </div>}
         <div className={modCss('mwai-input')}>
-          <div className={modCss('mwai-input-text')}>
-            {imageUpload && 
-              <ImageUpload disabled={busy} className={modCss('mwai-image-upload', { 
-                'mwai-enabled': uploadedImage?.uploadedId,
-                'mwai-busy': uploadedImage?.localFile && !uploadedImage?.uploadedId,
-              })}
-              uploadedImage={uploadedImage}
-              onUploadFile={(file) => onUploadFile(file)}
-              />
-            }
-            <TextAreaAutosize ref={inputRef} disabled={busy} placeholder={textInputPlaceholder}
-              value={inputText} maxLength={textInputMaxLength}
-              onCompositionStart={() => setComposing(true)}
-              onCompositionEnd={() => setComposing(false)}
-              onKeyDown={event => {
-                if (composing) {
-                  return;
-                }
-                if (event.code === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  if (!isImageUploading) {
-                    onSubmitAction();
-                  }
-                }
-              }}
-              onChange={e => onTypeText(e.target.value)}>
-            </TextAreaAutosize>
-            {speechRecognition && !isMobile && (<div>
-              <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
-                className={modCss('mwai-microphone')}
-                onClick={() => setIsListening(prev => !prev)}
-              />
-            </div>)}
-          </div>
-          {busy && <button disabled className={modCss('mwai-busy')}>
-            {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
-          </button>}
-          {!busy && <button disabled={isImageUploading} onClick={() => { 
-            if (isListening) {
-              setIsListening(prev => false);
-            }
-            if (clearMode) {
-              onClear();
-            }
-            else {
-              onSubmitAction();
-            }
-          }}>
-            <span>{clearMode ? textClear : textSend}</span>
-          </button>}
+          <ChatbotInput 
+            onTypeText={onTypeText}
+            onSubmitAction={onSubmitAction}
+            onUploadFile={onUploadFile}
+            inputText={inputText}
+            textInputMaxLength={textInputMaxLength}
+            textInputPlaceholder={textInputPlaceholder}
+            busy={busy}
+            isListening={isListening}
+            setIsListening={setIsListening}
+            speechRecognitionAvailable={speechRecognitionAvailable}
+            speechRecognition={speechRecognition}
+            uploadedImage={uploadedImage}
+            composing={composing}
+            setComposing={setComposing}
+            modCss={modCss}
+            imageUpload={imageUpload}
+          />
+          {busy && (
+            <button disabled className={modCss('mwai-busy')}>
+              {timeElapsed && (
+                <div className={modCss('mwai-timer')}>{timeElapsed}</div>
+              )}
+            </button>
+          )}
+          {!busy && (
+            <button disabled={isImageUploading} onClick={() => { 
+              if (isListening) {
+                setIsListening(false);
+              }
+              if (clearMode) {
+                onClear();
+              } else {
+                onSubmitAction();
+              }
+            }}>
+              <span>{clearMode ? textClear : textSend}</span>
+            </button>
+          )}
         </div>
-        {textCompliance && <div className={modCss('mwai-compliance')}
-          dangerouslySetInnerHTML={{ __html: textCompliance }}>
-        </div>}
+        {textCompliance && (
+          <div className={modCss('mwai-compliance')} dangerouslySetInnerHTML={{ __html: textCompliance }} />
+        )}
       </div>
     </div>
-  </>);
+  );
 };
 
 export default ChatbotUI;

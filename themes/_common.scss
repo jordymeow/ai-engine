@@ -289,10 +289,7 @@
 	.mwai-chat {
 
 		&.mwai-window {
-			left: 10px;
-			right: 10px;
-			bottom: 10px;
-			width: calc(100% - 20px);
+			width: calc(100% - 40px);
 			z-index: 9999999999;
 		}
 

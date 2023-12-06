@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.5
+Stable tag: 2.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,14 @@ Languages: English.
 
 == Changelog ==
 
+= 2.0.6 (2023/12/06) =
+* Fix: Chatbot could interfere with the events on mobile.
+* Fix: Compatibility with network sites.
+* Update: Enhanced some elements in the UI.
+* Update: Images can be now dropped on the entire input (not only the little image icon).
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.0.5 (2023/12/03) =
 * Fix: Logs and conversations were not refreshed correctly when deleted.
 * Fix: Missing extra information (such as embeddings) in the discussions tab.
@@ -91,8 +99,6 @@ Languages: English.
 * Add: New tab "Fields" in "Queries" tab (to inspect what was send via the AI Forms).
 * Add: Added "Generate Image" in the AI CoPilot. 
 * Fix: Models weren't displayed correctly when Azure was chosen as the default environment.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.0.1 (2023/11/21) =
 * Add: Implemented the new OpenAI Assistants. It's beta, but it's there!

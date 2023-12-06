@@ -171,8 +171,8 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
 		wp_set_script_translations( 'mwai', 'ai-engine' );
 		wp_localize_script( 'mwai', 'mwai', [
-			'api_url' => rest_url( 'mwai/v1' ),
-			'rest_url' => rest_url(),
+			'api_url' => get_rest_url( null, 'mwai/v1' ),
+			'rest_url' => get_rest_url(),
 			'plugin_url' => MWAI_URL,
 			'user_data' => $this->core->get_user_data(),
 			'prefix' => MWAI_PREFIX,

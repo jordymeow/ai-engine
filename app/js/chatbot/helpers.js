@@ -1,7 +1,7 @@
-// Previous: 1.9.96
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.0.6
 
-const { useState, useMemo, useEffect, useRef } = wp.element;
+const { useState, useMemo, useEffect, useRef, useImperativeHandle } = wp.element;
 
 import cssChatGPT from '@root/../themes/ChatGPT.module.css';
 import cssMessages from '@root/../themes/Messages.module.css';
@@ -49,10 +49,21 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
   );
 };
 
-const ImageUpload = ({ active, onUploadFile, uploadedImage, disabled, style, ...rest }) => {
+const ImageUpload = React.forwardRef(({ onUploadFile, uploadedImage, disabled, style, ...rest }, ref) => {
   const fileInputRef = useRef();
 
+  // uploadedImage contains .uploadedId, .uploadedUrl, .uploadProgress, and .localFile.
+  // .localFile is the original file object.
+
+  const resetUpload = () => {
+    onUploadFile(null);
+  };
+
   const handleClick = () => {
+    if (uploadedImage?.localFile) {
+      resetUpload();
+      return;
+    }
     if (!disabled) {
       fileInputRef.current.click();
     }
@@ -85,6 +96,14 @@ const ImageUpload = ({ active, onUploadFile, uploadedImage, disabled, style, ...
     event.preventDefault();
   };
 
+  const handleExternalFile = (file) => {
+    onUploadFile(file);
+  };
+
+  useImperativeHandle(ref, () => ({
+    handleExternalFile
+  }));
+
   return (
     <div disabled={disabled} onClick={handleClick} onDrop={handleDrop} onDragOver={handleDragOver}
       style={{ cursor: disabled ? 'default' : 'pointer', ...style }}
@@ -95,10 +114,11 @@ const ImageUpload = ({ active, onUploadFile, uploadedImage, disabled, style, ...
       <span>
         {uploadedImage.uploadProgress && `${Math.round(uploadedImage.uploadProgress)}%`}
       </span>
+      {/* Hidden file input */}
       <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
     </div>
   );
-};
+});
 
 function useInterval(delay, callback, enabled = true) {
   const savedCallback = useRef();
@@ -115,7 +135,6 @@ function useInterval(delay, callback, enabled = true) {
       const id = setInterval(tick, delay);
       return () => clearInterval(id);
     }
-    return undefined;
   }, [delay, enabled]);
 }
 
@@ -217,16 +236,19 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, mo
       userName = <div className={modCss(['mwai-avatar'])}>
         <img src={userData.AVATAR_URL} />
       </div>;
-    } else {
+    }
+    else {
       userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
         <img src={`${pluginUrl}/images/avatar-user.svg`} />
       </div>;
     }
-  } else if (is_url(userName)) {
+  }
+  else if (is_url(userName)) {
     userName = <div className={modCss(['mwai-avatar'])}>
       <img src={userName} />
     </div>;
-  } else {
+  }
+  else {
     userName = handlePlaceholders(userName, guestName, userData);
     userName = <div className={modCss(['mwai-name-text'])}>{userName}</div>;
   }
@@ -239,9 +261,11 @@ function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
     aiName = <div className={modCss(['mwai-avatar'])}>
       <img src={`${avatar}`} />
     </div>;
-  } else if (is_url(aiName)) {
+  }
+  else if (is_url(aiName)) {
     aiName = <div className={modCss('mwai-avatar')}><img src={aiName} /></div>;
-  } else {
+  }
+  else {
     aiName = <div className={modCss('mwai-name-text')}>{aiName}</div>;
   }
   return aiName;
