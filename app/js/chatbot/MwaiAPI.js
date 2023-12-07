@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.0.7
 
 class MwaiAPI {
 
@@ -21,7 +21,7 @@ class MwaiAPI {
     }
   }
 
-  get_chatbot(botId = null) {
+  getChatbot(botId = null) {
     if (!botId) {
       return this.chatbots[0];
     }

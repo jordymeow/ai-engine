@@ -1,5 +1,5 @@
-// Previous: 1.9.85
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.0.7
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -41,7 +41,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
   const refresh = useCallback(async (silentRefresh = false) => {
     try {
-      if (!silentRefresh && !busy) {
+      if (!silentRefresh) {
         setBusy(true);
       }
       const body = { botId: botId || customId };
@@ -72,18 +72,18 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setBusy(false);
       }
     }
-  }, [botId, customId, restNonce, restUrl, debugMode, busy]);
+  }, [botId, customId, restNonce, restUrl, debugMode]);
 
   useEffect(() => {
     refresh();
     const interval = setInterval(() => {
-      refresh();
+      refresh(true);
     }, 5000);
     return () => clearInterval(interval);
   }, [refresh]);
 
-  const get_chatbot = (id) => {
-    const chatbot = MwaiAPI.get_chatbot(id);
+  const getChatbot = (id) => {
+    const chatbot = MwaiAPI.getChatbot(id);
     if (!chatbot) {
       throw new Error(`Chatbot not found.`, { botId: id, chatbots: MwaiAPI.chatbots });
     }
@@ -91,19 +91,19 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   };
 
   const onDiscussionClick = async (chatId) => {
-    const discussionItem = discussions.find(x => x.chatId === chatId);
-    if (!discussionItem) {
+    const discussionObj = discussions.find(x => x.chatId === chatId);
+    if (!discussionObj) {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
-    const chatbot = get_chatbot(botId);
-    chatbot.setContext({ chatId, messages: discussionItem.messages });
-    setDiscussion(discussionItem);
+    const chatbotInstance = getChatbot(botId);
+    chatbotInstance.setContext({ chatId, messages: discussionObj.messages });
+    setDiscussion(discussionObj);
   };
 
-  const onNewChatClick = () => {
-    const chatbot = get_chatbot(botId);
-    chatbot.clear();
+  const onNewChatClick = async () => {
+    const chatbotInstance = getChatbot(botId);
+    chatbotInstance.clear();
   };
 
   const actions = { onDiscussionClick, onNewChatClick };

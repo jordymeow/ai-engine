@@ -19,8 +19,10 @@ class Meow_MWAI_Engines_Core {
       throw new Exception( $message );
     }
 
-    // Allow to modify the query before it is sent.
-    $query = apply_filters( 'mwai_ai_query', $query );
+    // Allow to modify the query before it is sent. It should not be a Meow_MWAI_Query_Embed.
+    if ( !($query instanceof Meow_MWAI_Query_Embed) ) {
+      $query = apply_filters( 'mwai_ai_query', $query );
+    }
 
     // Important as it makes sure everything is consolidated in the query.
     $query->finalChecks();

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.6
+Stable tag: 2.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,8 @@ Languages: English.
 
 == Changelog ==
 
-= 2.0.6 (2023/12/06) =
+= 2.0.7 (2023/12/07) =
+* Fix: Various fixes related to the internal APIs.
 * Fix: Chatbot could interfere with the events on mobile.
 * Fix: Compatibility with network sites.
 * Update: Enhanced some elements in the UI.

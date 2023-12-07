@@ -1,11 +1,11 @@
-// Previous: none
-// Current: 2.0.6
+// Previous: 2.0.6
+// Current: 2.0.7
 
-const { useRef } = wp.element;
+const { useRef, useImperativeHandle } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
 import { Microphone, ImageUpload } from '@app/chatbot/helpers';
 
-const ChatbotInput = (props) => {
+const ChatbotInput = React.forwardRef((props, ref) => {
   const {  onTypeText, onSubmitAction, onUploadFile,
     inputText, textInputMaxLength, textInputPlaceholder,
     busy, modCss,
@@ -26,6 +26,12 @@ const ChatbotInput = (props) => {
       imageUploadRef.current.handleExternalFile(files[0]);
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    focusInput: () => {
+      inputRef.current?.focus();
+    }
+  }));
 
   const handleDragOver = (event) => {
     event.preventDefault();
@@ -71,6 +77,6 @@ const ChatbotInput = (props) => {
       )}
     </div>
   );
-};
+});
 
 export default ChatbotInput;

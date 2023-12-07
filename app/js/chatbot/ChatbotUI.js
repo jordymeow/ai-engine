@@ -1,5 +1,5 @@
-// Previous: 1.9.99
-// Current: 2.0.6
+// Previous: 2.0.6
+// Current: 2.0.7
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -18,7 +18,7 @@ const ChatbotUI = (props) => {
   const [ minimized, setMinimized ] = useState(true);
   const { modCss } = useModClasses(theme);
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
-  const inputRef = useRef();
+  const chatbotInputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
   const isMobile = document.innerWidth <= 768;
@@ -29,10 +29,12 @@ const ChatbotUI = (props) => {
     iconUrl, busy, speechRecognition, imageUpload, uploadedImage } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId, onImageUpload, resetError } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(prev => prev + transcript);
+    setInputText(() => inputText + transcript);
   });
 
   const isImageUploading = !!uploadedImage?.uploadProgress;
+
+  // #region Client-Side API
 
   const refState = useRef(state);
   useEffect(() => {
@@ -50,14 +52,18 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(prev => prev + text);
+          setInputText(text);
         }
       }
       else if (task.action === 'toggle') {
-        setOpen(prev => !prev);
+        setOpen(!open);
       }
       else if (task.action === 'open') {
         setOpen(true);
+        setTimeout(() => {
+          setTasks(tasks => tasks.slice(1));
+        }, 50);
+        return;
       }
       else if (task.action === 'close') {
         setOpen(false);
@@ -70,7 +76,7 @@ const ChatbotUI = (props) => {
         setClientId(chatId);
         setMessages(messages);
       }
-      setTasks(prev => prev.slice(1));
+      setTasks(tasks => tasks.slice(1));
     }
   };
 
@@ -84,26 +90,28 @@ const ChatbotUI = (props) => {
         botId: botId,
         customId: customId,
         open: () => { 
-          setTasks(prev => [...prev, { action: 'open' }]);
+          setTasks(tasks => [...tasks, { action: 'open' }]);
         },
         close: () => { 
-          setTasks(prev => [...prev, { action: 'close' }]);
+          setTasks(tasks => [...tasks, { action: 'close' }]);
         },
         clear: () => { 
-          setTasks(prev => [...prev, { action: 'clear' }]);
+          setTasks(tasks => [...tasks, { action: 'clear' }]);
         },
         toggle: () => { 
-          setTasks(prev => [...prev, { action: 'toggle' }]);
+          setTasks(tasks => [...tasks, { action: 'toggle' }]);
         },
         ask: (text, submit = false) => {
-          setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]);
+          setTasks(tasks => [...tasks, { action: 'ask', data: { text, submit } }]);
         },
         setContext: ({ chatId, messages }) => {
-          setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]);
+          setTasks(tasks => [...tasks, { action: 'setContext', data: { chatId, messages } }]);
         },
       });
     }
   }, []);
+
+  // #endregion
 
   useEffect(() => {
     if (busy) {
@@ -111,31 +119,29 @@ const ChatbotUI = (props) => {
       return;
     }
     if (!isMobile && hasFocusRef.current) {
-      inputRef.current.focus();
+      chatbotInputRef.current.focusInput();
     }
     stopChrono();
   }, [busy]);
 
   useEffect(() => {
     if (!isMobile && open) { 
-      inputRef.current.focus();
+      chatbotInputRef.current.focusInput();
     }
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight - 1;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [open]);
 
   useLayoutEffect(() => {
-    if (conversationRef.current) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight - 1;
-    }
+    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
-    hasFocusRef.current = document.activeElement === inputRef.current;
-    if (forcedText !== null) {
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current;
+    
+    if (forcedText) {
       onSubmit(forcedText);
-    } else if (inputText.length > 0) {
+    }
+    else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -168,36 +174,34 @@ const ChatbotUI = (props) => {
     onImageUpload(file);
   };
 
-  return (
+  return (<>
     <div id={`mwai-chatbot-${customId || botId}`}
       className={baseClasses} style={{ ...cssVariables, ...style }}>
         
       {themeStyle && <style>{themeStyle}</style>}
 
-      {isWindow && (
-        <>
+      {isWindow && (<>
         <div className={modCss('mwai-open-button')}>
-          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
+          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
             {iconText}
           </div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl} className="no-lightbox"
-            onClick={() => setOpen(prev => !prev)}
+            onClick={() => setOpen(!open)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(prev => !prev)}
+                onClick={() => setMinimized(!minimized)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(prev => !prev)}
+              onClick={() => setOpen(!open)}
             />
           </div>
         </div>
-        </>
-      )}
+      </>)}
 
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
@@ -210,6 +214,7 @@ const ChatbotUI = (props) => {
         </div>}
         <div className={modCss('mwai-input')}>
           <ChatbotInput 
+            ref={chatbotInputRef}
             onTypeText={onTypeText}
             onSubmitAction={onSubmitAction}
             onUploadFile={onUploadFile}
@@ -227,34 +232,29 @@ const ChatbotUI = (props) => {
             modCss={modCss}
             imageUpload={imageUpload}
           />
-          {busy && (
-            <button disabled className={modCss('mwai-busy')}>
-              {timeElapsed && (
-                <div className={modCss('mwai-timer')}>{timeElapsed}</div>
-              )}
-            </button>
-          )}
-          {!busy && (
-            <button disabled={isImageUploading} onClick={() => { 
-              if (isListening) {
-                setIsListening(false);
-              }
-              if (clearMode) {
-                onClear();
-              } else {
-                onSubmitAction();
-              }
-            }}>
-              <span>{clearMode ? textClear : textSend}</span>
-            </button>
-          )}
+          {busy && <button disabled className={modCss('mwai-busy')}>
+            {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
+          </button>}
+          {!busy && <button disabled={isImageUploading} onClick={() => { 
+            if (isListening) {
+              setIsListening(false);
+            }
+            if (clearMode) {
+              onClear();
+            }
+            else {
+              onSubmitAction();
+            }
+          }}>
+            <span>{clearMode ? textClear : textSend}</span>
+          </button>}
         </div>
-        {textCompliance && (
-          <div className={modCss('mwai-compliance')} dangerouslySetInnerHTML={{ __html: textCompliance }} />
-        )}
+        {textCompliance && <div className={modCss('mwai-compliance')}
+          dangerouslySetInnerHTML={{ __html: textCompliance }}>
+        </div>}
       </div>
     </div>
-  );
+  </>);
 };
 
 export default ChatbotUI;
