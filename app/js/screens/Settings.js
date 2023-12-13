@@ -1,17 +1,18 @@
-// Previous: 2.0.2
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.0.8
 
 const { useMemo, useState, useEffect } = wp.element;
 
-import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoWrapper, 
-  NekoSettings, NekoSpacer, NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, 
+import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer,
+  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, 
   NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
 import { LicenseBlock } from '@common';
-import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, options as defaultOptions } from '@app/settings';
+import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, 
+  options as defaultOptions } from '@app/settings';
 import i18n from '@root/i18n';
 import { OptionsCheck, toHTML, useModels } from '@app/helpers-admin';
 import { AiNekoHeader } from '@app/styles/CommonStyles';
@@ -57,7 +58,6 @@ const Settings = () => {
   const module_woocommerce = options?.module_woocommerce;
   const module_forms = options?.module_forms;
   const module_finetunes = options?.module_finetunes;
-
   const module_statistics = options?.module_statistics;
   const module_playground = options?.module_playground;
   const module_generator_content = options?.module_generator_content;
@@ -68,7 +68,6 @@ const Settings = () => {
   const module_transcription = options?.module_transcription;
   const module_devtools = options?.module_devtools;
   const shortcode_chat = options?.shortcode_chat;
-  const shortcode_chat_formatting = options?.shortcode_chat_formatting;
   const ai_envs = options?.ai_envs ? options?.ai_envs : [];
   const ai_default_env = options?.ai_default_env;
   const ai_default_model = options?.ai_default_model;
@@ -77,7 +76,6 @@ const Settings = () => {
   const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
   const shortcode_chat_typewriter = options?.shortcode_chat_typewriter;
   const shortcode_chat_discussions = options?.shortcode_chat_discussions;
-  const shortcode_forms_legacy = options?.shortcode_forms_legacy;
   const shortcode_chat_stream = options?.shortcode_chat_stream;
   const speech_recognition = options?.speech_recognition;
   const speech_synthesis = options?.speech_synthesis;
@@ -85,7 +83,7 @@ const Settings = () => {
   const statistics_data = options?.statistics_data;
   const statistics_forms_data = options?.statistics_forms_data;
   const intro_message = options?.intro_message;
-  const context_max_tokens = options?.context_max_tokens; 
+  const context_max_length = options?.context_max_length; 
   const banned_ips = options?.banned_ips;
   const banned_words = options?.banned_words;
   const admin_bar = options?.admin_bar ?? ['settings'];
@@ -129,9 +127,11 @@ const Settings = () => {
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
+
     if (JSON.stringify(newOptions) === JSON.stringify(options)) {
       return;
     }
+
     setBusyAction(true);
     try {
       const response = await nekoFetch(`${apiUrl}/settings/update`, { 
@@ -216,10 +216,10 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="module_suggestions" label={i18n.COMMON.POSTS_SUGGESTIONS} value="1" checked={module_suggestions}
           description={i18n.COMMON.POSTS_SUGGESTIONS_HELP}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'module_suggestions')} />
         <NekoCheckbox name="module_woocommerce" label={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR} value="1" checked={module_woocommerce}
           description={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR_HELP}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'module_woocommerce')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -228,10 +228,10 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="module_generator_content" label={i18n.COMMON.CONTENT_GENERATOR} value="1" checked={module_generator_content}
           description={i18n.COMMON.CONTENT_GENERATOR_HELP}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'module_generator_content')} />
         <NekoCheckbox name="module_generator_images" label={i18n.COMMON.IMAGES_GENERATOR} value="1" checked={module_generator_images}
           description={i18n.COMMON.IMAGES_GENERATOR_HELP}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'module_generator_images')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -240,7 +240,7 @@ const Settings = () => {
       <NekoCheckbox name="module_playground" label={i18n.COMMON.ENABLE} value="1"
         checked={module_playground}
         description={i18n.COMMON.PLAYGROUND_HELP}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_playground')} />
     </NekoSettings>;
 
   const jsxForms = 
@@ -248,7 +248,7 @@ const Settings = () => {
       <NekoCheckbox name="module_forms" label={i18n.COMMON.ENABLE} value="1"
         checked={module_forms} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.FORMS_HELP}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_forms')} />
     </NekoSettings>;
 
   const jsxFinetunes = 
@@ -256,47 +256,42 @@ const Settings = () => {
       <NekoCheckbox name="module_finetunes" label={i18n.COMMON.ENABLE} value="1"
         checked={module_finetunes}
         description={i18n.HELP.FINETUNES}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_finetunes')} />
     </NekoSettings>;
 
   const jsxStatistics = 
     <NekoSettings title={<>{i18n.COMMON.STATISTICS}</>}>
-      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_statistics} requirePro={true} isPro={isRegistered}
+      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1" checked={module_statistics} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.STATISTICS_HELP}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_statistics')} />
     </NekoSettings>;
 
   const jsxModeration = 
     <NekoSettings title={<>{i18n.COMMON.MODERATION}</>}>
-      <NekoCheckbox name="module_moderation" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_moderation}
+      <NekoCheckbox name="module_moderation" label={i18n.COMMON.ENABLE} value="1" checked={module_moderation}
         description={i18n.COMMON.MODERATION_HELP}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_moderation')} />
     </NekoSettings>;
 
   const jsxTranscribe = 
     <NekoSettings title={<>{i18n.COMMON.TRANSCRIPTION}</>}>
-      <NekoCheckbox name="module_transcription" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_transcription}
+      <NekoCheckbox name="module_transcription" label={i18n.COMMON.ENABLE} value="1" checked={module_transcription}
         description={i18n.COMMON.TRANSCRIPTION_HELP}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_transcription')} />
     </NekoSettings>;
 
   const jsxEmbeddings = 
     <NekoSettings title={<>{i18n.COMMON.EMBEDDINGS}</>}>
-      <NekoCheckbox name="module_embeddings" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_embeddings} requirePro={true} isPro={isRegistered}
+      <NekoCheckbox name="module_embeddings" label={i18n.COMMON.ENABLE} value="1" checked={module_embeddings} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.EMBEDDINGS_HELP}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_embeddings')} />
     </NekoSettings>;
 
   const jsxAssistants =
     <NekoSettings title={<>{i18n.COMMON.ASSISTANTS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
-      <NekoCheckbox name="module_assistants" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_assistants} requirePro={true} isPro={isRegistered}
+      <NekoCheckbox name="module_assistants" label={i18n.COMMON.ENABLE} value="1" checked={module_assistants} requirePro={true} isPro={isRegistered}
         description={i18n.HELP.ASSISTANTS}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_assistants')} />
     </NekoSettings>;
 
   const jsxChatbot =
@@ -304,16 +299,16 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="shortcode_chat" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat}
           description={i18n.COMMON.CHATBOT_HELP}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'shortcode_chat')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
-   
+
   const jsxStatisticsData =
    <NekoSettings title={i18n.COMMON.QUERIES_DATA}>
      <NekoCheckboxGroup max="1">
        <NekoCheckbox name="statistics_data" label={i18n.COMMON.ENABLE} value="1" checked={statistics_data}
          description={i18n.HELP.QUERIES_DATA}
-         onChange={updateOption} />
+         onChange={(val) => updateOption(val, 'statistics_data')} />
      </NekoCheckboxGroup>
    </NekoSettings>;
 
@@ -322,7 +317,7 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="statistics_forms_data" label={i18n.COMMON.ENABLE} value="1" checked={statistics_forms_data}
           description={i18n.HELP.QUERIES_FORMS_DATA}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'statistics_forms_data')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -331,19 +326,10 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="intro_message" label={i18n.COMMON.ENABLE} value="1" checked={intro_message}
           description={i18n.HELP.INTRO_MESSAGE}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'intro_message')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  const jsxShortcodeFormatting =
-    <NekoSettings title={i18n.COMMON.FORMATTING}>
-      <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_formatting" label={i18n.COMMON.ENABLE} value="1"
-          checked={shortcode_chat_formatting}
-          description={toHTML(i18n.COMMON.FORMATTING_HELP)}
-          onChange={updateOption} />
-      </NekoCheckboxGroup>
-    </NekoSettings>;
 
   const jsxWebSpeechAPI =
     <NekoSettings title={i18n.COMMON.WEBSPEECH_API}>
@@ -351,27 +337,27 @@ const Settings = () => {
         <NekoCheckbox name="speech_recognition" label={i18n.COMMON.SPEECH_RECOGNITION} value="1"
           checked={speech_recognition}
           description={i18n.HELP.SPEECH_RECOGNITION}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'speech_recognition')} />
       </NekoCheckboxGroup>
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="speech_synthesis" label={i18n.COMMON.SPEECH_SYNTHESIS + " (SOON)"} value="1"
           disabled={true}
           checked={speech_synthesis}
           description={i18n.HELP.SPEECH_SYNTHESIS}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'speech_synthesis')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  const jsxLegacyForms =
-    <NekoSettings title={i18n.COMMON.LEGACY_FORMS}>
-      <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_forms_legacy" label={`${i18n.COMMON.ENABLE}`} value="1"
-          requirePro={true} isPro={isRegistered}
-          checked={shortcode_forms_legacy}
-          description="Don't use the Legacy Forms. It's deprecated and will be removed in the future. Only enable if you have issues with the new forms."
-          onChange={updateOption} />
-      </NekoCheckboxGroup>
-    </NekoSettings>;
+  // const jsxLegacyForms =
+  //   <NekoSettings title={i18n.COMMON.LEGACY_FORMS}>
+  //     <NekoCheckboxGroup max="1">
+  //       <NekoCheckbox name="shortcode_forms_legacy" label={`${i18n.COMMON.ENABLE}`} value="1"
+  //         requirePro={true} isPro={isRegistered}
+  //         checked={shortcode_forms_legacy}
+  //         description="Don't use the Legacy Forms. It's deprecated and will be removed in the future. Only enable if you have issues with the new forms."
+  //         onChange={updateOption} />
+  //     </NekoCheckboxGroup>
+  //   </NekoSettings>;
 
   const jsxStream =
     <NekoSettings title={i18n.COMMON.STREAMING}>
@@ -379,7 +365,7 @@ const Settings = () => {
         <NekoCheckbox name="shortcode_chat_stream" label={i18n.COMMON.ENABLE} value="1"
           checked={shortcode_chat_stream}
           description={i18n.HELP.STREAMING}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'shortcode_chat_stream')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -389,7 +375,7 @@ const Settings = () => {
         <NekoCheckbox name="shortcode_chat_typewriter" label={i18n.COMMON.ENABLE} value="1"
           checked={shortcode_chat_typewriter}
           description={toHTML(i18n.SETTINGS.TYPEWRITER_EFFECT_HELP)}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'shortcode_chat_typewriter')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -399,7 +385,7 @@ const Settings = () => {
         <NekoCheckbox name="shortcode_chat_discussions" label={i18n.COMMON.ENABLE} value="1"
           checked={shortcode_chat_discussions}
           description={i18n.HELP.DISCUSSIONS}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'shortcode_chat_discussions')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -408,7 +394,7 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="shortcode_chat_syntax_highlighting" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_syntax_highlighting}
           description={i18n.HELP.SYNTAX_HIGHLIGHT}
-          onChange={updateOption} />
+          onChange={(val) => updateOption(val, 'shortcode_chat_syntax_highlighting')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -416,12 +402,12 @@ const Settings = () => {
     <NekoSettings title={i18n.COMMON.PUBLIC_API}>
       <NekoCheckbox name="public_api" label={i18n.COMMON.ENABLE} value="1" checked={public_api}
         description={i18n.HELP.PUBLIC_API}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'public_api')} />
     </NekoSettings>;
 
   const jsxImageLocalUpload =
     <NekoSettings title="Local Upload">
-      <NekoSelect scrolldown name="image_local_upload" value={options?.image_local_upload} onChange={updateOption}
+      <NekoSelect scrolldown name="image_local_upload" value={options?.image_local_upload} onChange={(val) => updateOption(val, 'image_local_upload')}
         description="Images can be stored either in the filesystem or in the Media Library.">
         <NekoOption key='uploads' value='uploads' label="Filesystem"></NekoOption>
         <NekoOption key='library' value='library' label="Media Library"></NekoOption>
@@ -430,7 +416,7 @@ const Settings = () => {
 
   const jsxImageRemoteUpload =
     <NekoSettings title="Remote Upload">
-      <NekoSelect scrolldown name="image_remote_upload" value={options?.image_remote_upload} onChange={updateOption}
+      <NekoSelect scrolldown name="image_remote_upload" value={options?.image_remote_upload} onChange={(val) => updateOption(val, 'image_remote_upload')}
         description="Select Upload Data for private sites; Share URLs requires your WordPress to be online and reachable.">
         <NekoOption key='data' value='data' label="Upload Data"></NekoOption>
         <NekoOption key='url' value='url' label="Share URLs"></NekoOption>
@@ -439,7 +425,7 @@ const Settings = () => {
 
   const jsxImageExpiration =
     <NekoSettings title="Expiration">
-      <NekoSelect scrolldown name="image_expires" value={options?.image_expires ?? null} onChange={updateOption}
+      <NekoSelect scrolldown name="image_expires" value={options?.image_expires ?? null} onChange={(val) => updateOption(val, 'image_expires')}
         description="The images will be deleted after a certain amount of time.">
         <NekoOption key={1 * 60 * 60} value={1 * 60 * 60} label="1 hour"></NekoOption>
         <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></NekoOption>
@@ -454,21 +440,21 @@ const Settings = () => {
     <NekoSettings title={i18n.COMMON.DEV_TOOLS}>
       <NekoCheckbox name="module_devtools" label={i18n.COMMON.ENABLE} value="1" checked={module_devtools}
         description={i18n.HELP.DEV_TOOLS}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'module_devtools')} />
     </NekoSettings>;
 
   const jsxResolveShortcodes = 
     <NekoSettings title={i18n.COMMON.SHORTCODES}>
       <NekoCheckbox name="resolve_shortcodes" label={i18n.COMMON.RESOLVE} value="1" checked={resolve_shortcodes}
         description={i18n.HELP.RESOLVE_SHORTCODE}
-        onChange={updateOption} />
+        onChange={(val) => updateOption(val, 'resolve_shortcodes')} />
     </NekoSettings>;
 
   const jsxContextMaxTokens =
-    <NekoSettings title={i18n.COMMON.CONTEXT_MAX_TOKENS}>
-      <NekoInput name="context_max_tokens" value={context_max_tokens}
-        description={i18n.HELP.CONTEXT_MAX_TOKENS}
-        onBlur={updateOption} />
+    <NekoSettings title={i18n.COMMON.CONTEXT_MAX_LENGTH}>
+      <NekoInput name="context_max_length" value={context_max_length} type="number" step="1"
+        description={i18n.HELP.CONTEXT_MAX_LENGTH}
+        onBlur={(val) => updateOption(val, 'context_max_length')} />
     </NekoSettings>;
 
   const jsxBannedKeywords =
@@ -476,13 +462,13 @@ const Settings = () => {
       <NekoInput id="banned_words" name="banned_words" value={banned_words}
         isCommaSeparatedArray={true}
         description={i18n.HELP.BANNED_WORDS}
-        onBlur={updateOption} />
+        onBlur={(val) => updateOption(val, 'banned_words')} />
     </NekoSettings>;
     
   const jsxUtilitiesModel =
     <NekoSettings title={i18n.COMMON.DEFAULT_MODEL}>
       <NekoSelect scrolldown name="ai_default_model"
-        value={ai_default_model} description="" onChange={updateOption}>
+        value={ai_default_model} description="" onChange={(val) => updateOption(val, 'ai_default_model')}>
         {completionModels.map((x) => (
           <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
         ))}
@@ -494,46 +480,50 @@ const Settings = () => {
       <NekoInput id="banned_ips" name="banned_ips" value={banned_ips}
         isCommaSeparatedArray={true}
         description={i18n.HELP.BANNED_IPS}
-        onBlur={updateOption} />
+        onBlur={(val) => updateOption(val, 'banned_ips')} />
     </NekoSettings>;
 
   const jsxAdminBarPlayground =
     <NekoSettings title={i18n.COMMON.PLAYGROUND}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.playground}
-        onChange={(value) => {
-          const freshAdminBar = { ...admin_bar, playground: value };
-          updateOption(freshAdminBar, 'admin_bar');
+        checked={admin_bar?.includes('playground')}
+        onChange={(val) => {
+          const exists = admin_bar.includes('playground');
+          const newAdminBar = exists ? admin_bar.filter(x => x !== 'playground') : [...admin_bar, 'playground'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarGenerateContent =
     <NekoSettings title={i18n.COMMON.GENERATE_CONTENT}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.content_generator}
-        onChange={(value) => {
-          const freshAdminBar = { ...admin_bar, content_generator: value };
-          updateOption(freshAdminBar, 'admin_bar');
+        checked={admin_bar?.includes('content_generator')}
+        onChange={(val) => {
+          const exists = admin_bar.includes('content_generator');
+          const newAdminBar = exists ? admin_bar.filter(x => x !== 'content_generator') : [...admin_bar, 'content_generator'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarGenerateImages =
     <NekoSettings title={i18n.COMMON.GENERATE_IMAGES}>
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.images_generator}
-        onChange={(value) => {
-          const freshAdminBar = { ...admin_bar, images_generator: value };
-          updateOption(freshAdminBar, 'admin_bar');
+        checked={admin_bar?.includes('images_generator')}
+        onChange={(val) => {
+          const exists = admin_bar.includes('images_generator');
+          const newAdminBar = exists ? admin_bar.filter(x => x !== 'images_generator') : [...admin_bar, 'images_generator'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
   const jsxAdminBarSettings =
     <NekoSettings title={'AI Engine'}> 
       <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-        checked={admin_bar?.settings}
-        onChange={(value) => {  
-          const freshAdminBar = { ...admin_bar, settings: value };
-          updateOption(freshAdminBar, 'admin_bar');
+        checked={admin_bar?.includes('settings')}
+        onChange={(val) => {
+          const exists = admin_bar.includes('settings');
+          const newAdminBar = exists ? admin_bar.filter(x => x !== 'settings') : [...admin_bar, 'settings'];
+          updateOption(newAdminBar, 'admin_bar');
         }} />
     </NekoSettings>;
 
@@ -551,14 +541,14 @@ const Settings = () => {
 
 
   const jsxAIEnvironmentDefault =
-    <NekoSelect scrolldown name="ai_default_env" value={ai_default_env} onChange={updateOption}>
+    <NekoSelect scrolldown name="ai_default_env" value={ai_default_env} onChange={(val) => updateOption(val, 'ai_default_env')}>
       {ai_envs.map((x) => (
         <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
       ))}
     </NekoSelect>;
 
   const jsxEmbeddingsEnvironmentDefault =
-    <NekoSelect scrolldown name="embeddings_default_env" value={embeddings_default_env} onChange={updateOption}>
+    <NekoSelect scrolldown name="embeddings_default_env" value={embeddings_default_env} onChange={(val) => updateOption(val, 'embeddings_default_env')}>
       {embeddings_envs.map((x) => (
         <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
       ))}
@@ -567,7 +557,7 @@ const Settings = () => {
   const jsxCleanUninstall =
     <NekoSettings title={i18n.COMMON.PLUGIN_DATA}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="clean_uninstall" label={i18n.COMMON.DELETE_ALL} description={i18n.COMMON.PLUGIN_DATA_DESCRIPTION} value="1" checked={clean_uninstall} onChange={updateOption} />
+        <NekoCheckbox name="clean_uninstall" label={i18n.COMMON.DELETE_ALL} description={i18n.COMMON.PLUGIN_DATA_DESCRIPTION} value="1" checked={clean_uninstall} onChange={(val) => updateOption(val, 'clean_uninstall')} />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -589,7 +579,7 @@ const Settings = () => {
 
           <NekoTabs keepTabOnReload={true}>
 
-            <NekoTab title={i18n.COMMON.DASHBOARD}>
+            <NekoTab key="dashboard" title={i18n.COMMON.DASHBOARD}>
               <NekoWrapper>
 
                 <NekoColumn minimal>
@@ -631,19 +621,21 @@ const Settings = () => {
               </NekoWrapper>
             </NekoTab>
 
-            {(shortcode_chat) && <NekoTab title={<>{i18n.COMMON.CHATBOTS}</>}>
+            {(shortcode_chat) && <NekoTab key="chatbots" title={i18n.COMMON.CHATBOTS}>
               <Chatbots options={options} updateOption={updateOption} busy={busy} />
             </NekoTab>}
 
-            {(shortcode_chat && shortcode_chat_discussions) && <NekoTab title={i18n.COMMON.DISCUSSIONS}>
-              <Discussions />
-            </NekoTab>}
+            {shortcode_chat && shortcode_chat_discussions && 
+              <NekoTab key="discussions" title={i18n.COMMON.DISCUSSIONS}>
+                <Discussions />
+              </NekoTab>
+            }
 
-            {module_statistics && <NekoTab title={i18n.COMMON.QUERIES}>
+            {module_statistics && <NekoTab key="queries" title={i18n.COMMON.QUERIES}>
               <Statistics options={options} updateOption={updateOption} busy={busy} />
             </NekoTab>}
 
-            {module_embeddings && <NekoTab title={i18n.COMMON.EMBEDDINGS}>
+            {module_embeddings && <NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS}>
               <Embeddings
                 options={options}
                 updateEnvironment={updateVectorDbEnvironment}
@@ -651,23 +643,23 @@ const Settings = () => {
               />
             </NekoTab>}
 
-            {module_assistants && <NekoTab title={i18n.COMMON.ASSISTANTS}>
+            {module_assistants && <NekoTab key="assistants" title={i18n.COMMON.ASSISTANTS}>
               <Assistants options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
             </NekoTab>}
 
-            {module_finetunes && <NekoTab title={i18n.COMMON.FINETUNES}>
+            {module_finetunes && <NekoTab key="finetunes" title={i18n.COMMON.FINETUNES}>
               <FineTunes options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
             </NekoTab>}
 
-            {module_moderation && <NekoTab title={i18n.COMMON.MODERATION}>
+            {module_moderation && <NekoTab key="moderation" title={i18n.COMMON.MODERATION}>
               <Moderation options={options} updateOption={updateOption} busy={busy} />
             </NekoTab>}
 
-            {module_transcription && <NekoTab title={i18n.COMMON.TRANSCRIPTION}>
+            {module_transcription && <NekoTab key="transcription" title={i18n.COMMON.TRANSCRIPTION}>
               <Transcription options={options} updateOption={updateOption} />
             </NekoTab>}
 
-            <NekoTab key="advanced" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
+            <NekoTab key="settings" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
               <NekoWrapper>
 
                 <NekoColumn minimal>  
@@ -760,8 +752,8 @@ const Settings = () => {
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title={i18n.COMMON.LEGACY_FEATURES} className="primary">
-                    {jsxLegacyForms}
-                    {jsxShortcodeFormatting}
+                    {/* {jsxLegacyForms} */}
+                    {/* {jsxShortcodeFormatting} */}
                     {jsxShortcodeTypewriter}
                   </NekoBlock>
 
@@ -770,11 +762,11 @@ const Settings = () => {
               </NekoWrapper>
             </NekoTab>
 
-            {module_devtools && <NekoTab title={i18n.COMMON.DEV_TOOLS}>
+            {module_devtools && <NekoTab key="devtools" title={i18n.COMMON.DEV_TOOLS}>
               <DevToolsTab options={options} setOptions={setOptions} updateOption={updateOption} />
             </NekoTab>}
 
-            <NekoTab title={i18n.COMMON.LICENSE_TAB}>
+            <NekoTab key="license" title={i18n.COMMON.LICENSE_TAB}>
               <LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
             </NekoTab>
 

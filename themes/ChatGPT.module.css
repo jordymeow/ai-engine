@@ -502,6 +502,10 @@
   border-radius: 8px;
 }
 
+.mwai-open-button img {
+  filter: drop-shadow(0px 0px 15px rgba(0, 0, 0, 0.15));
+}
+
 .mwai-open-button:hover {
   cursor: pointer;
   filter: saturate(2.5) hue-rotate(5deg);

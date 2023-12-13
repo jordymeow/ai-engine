@@ -41,7 +41,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
     return $this->usage['total_tokens'];
   }
 
-  public function getPromptTokens() {
+  public function get_prompt_tokens() {
     return $this->usage['prompt_tokens'];
   }
 

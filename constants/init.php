@@ -2,7 +2,6 @@
 
 require_once( MWAI_PATH . '/constants/models.php' );
 
-// Thisi
 define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	// UI Parameters
 	'aiName' => "AI: ",
@@ -33,58 +32,12 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'embeddingsEnvId' => '',
 	'embeddingsIndex' => '',
 	'embeddingsNamespace' => null,
-	'casuallyFineTuned' => false,
-	'promptEnding' => null,
-	'completionEnding' => null,
 	// AI Parameters
 	'model' => MWAI_FALLBACK_MODEL,
 	'temperature' => 0.8,
 	'maxTokens' => 1024,
 	'maxResults' => 1,
 	'apiKey' => null,
-	'service' => 'openai'
-] );
-
-// This is the defaults for the old chatbot (Vanilla JS)
-define( 'MWAI_CHATBOT_PARAMS', [
-	// UI Parameters
-	'id' => '',
-	'env' => 'chatbot',
-	'mode' => 'chat',
-	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
-	'ai_name' => "AI: ",
-	'user_name' => "User: ",
-	'guest_name' => "Guest: ",
-	'sys_name' => "System: ",
-	'start_sentence' => "Hi! How can I help you?",
-	'text_send' => 'Send',
-	'text_clear' => 'Clear',
-	'text_input_placeholder' => 'Type your message...',
-	'text_input_maxlength' => '512',
-	'text_compliance' => '',
-	'max_messages' => 15,
-	'style' => 'chatgpt', // This is only used in the old version of Chatbot
-	'themeId' => 'chatgpt',
-	'window' => false,
-	'icon' => '',
-	'icon_text' => '',
-	'icon_alt' => 'AI Chatbot Avatar',
-	'icon_position' => 'bottom-right',
-	'fullscreen' => false,
-	'copy_button' => false,
-	'local_memory' => true,
-	// Chatbot System Parameters
-	'casually_fine_tuned' => false,
-	'content_aware' => false,
-	'embeddings_index' => '',
-	'prompt_ending' => null,
-	'completion_ending' => null,
-	// AI Parameters
-	'model' => MWAI_FALLBACK_MODEL,
-	'temperature' => 0.8,
-	'max_tokens' => 1024,
-	'max_results' => 1,
-	'api_key' => null,
 	'service' => 'openai'
 ] );
 
@@ -141,11 +94,6 @@ define( 'MWAI_OPTIONS', [
 	'module_embeddings' => false,
 	'module_transcription' => false,
 	'shortcode_chat' => true,
-	'shortcode_chat_params' => MWAI_CHATBOT_PARAMS,
-	'shortcode_chat_params_override' => false,
-	'shortcode_chat_html' => true,
-	'shortcode_chat_formatting' => true,
-	'shortcode_chat_legacy' => false,
 	'shortcode_chat_stream' => false,
 	'shortcode_chat_typewriter' => false,
 	'speech_recognition' => false,
@@ -153,8 +101,6 @@ define( 'MWAI_OPTIONS', [
 	'shortcode_chat_discussions' => false,
 	'shortcode_chat_moderation' => false,
 	'shortcode_chat_syntax_highlighting' => false,
-	'shortcode_chat_inject' => false,
-	'shortcode_chat_styles' => [],
 	'limits' => MWAI_LIMITS,
 
 	// General Settings for OpenAI
@@ -166,21 +112,6 @@ define( 'MWAI_OPTIONS', [
 	'image_local_upload' => 'uploads',
 	'image_remote_upload' => 'data',
 	'image_expires' => 1 * HOUR_IN_SECONDS,
-
-	// TODO: To Migrate (Azure)
-	'openai_azure_endpoint' => '',
-	'openai_azure_apikey' => '',
-	'openai_azure_deployments' => [],
-
-	// TODO: To Migrate (OpenAI)
-	'openai_apikey' => false,
-	'openai_finetunes' => [], // All finetunes listed by OpenAI
-	'openai_finetunes_deleted' => [], // The finetunes that have been deleted
-	'openai_legacy_finetunes' => [],
-	'openai_legacy_finetunes_deleted' => [],
-
-	// TODO: openai_service to ai_env_default
-	'openai_service' => 'openai', // 'openai', 'azure' (if not set here, it will use the Settings)
 
 	'ai_default_env' => null,
 	'ai_default_model' => MWAI_FALLBACK_MODEL,
@@ -230,8 +161,7 @@ define( 'MWAI_OPTIONS', [
 	'debug_mode' => true,
 	'intro_message' => true,
 	'resolve_shortcodes' => false,
-	'dynamic_max_tokens' => true,
-	'context_max_tokens' => 1024,
+	'context_max_length' => 4096,
 	'banned_words' => [],
 	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES,

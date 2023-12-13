@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.7
+Stable tag: 2.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,14 +82,19 @@ Languages: English.
 
 == Changelog ==
 
+= 2.0.8 (2023/12/14) =
+* Update: The UI related to the Settings has been improved.
+* Update: The overall code was refactored and cleaned, to allow the next features.
+* Add: Context Max Length was added in the Chatbot Settings, and will override the one in the Settings.
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.0.7 (2023/12/07) =
 * Fix: Various fixes related to the internal APIs.
 * Fix: Chatbot could interfere with the events on mobile.
 * Fix: Compatibility with network sites.
 * Update: Enhanced some elements in the UI.
 * Update: Images can be now dropped on the entire input (not only the little image icon).
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.0.5 (2023/12/03) =
 * Fix: Logs and conversations were not refreshed correctly when deleted.

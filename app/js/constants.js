@@ -1,5 +1,5 @@
-// Previous: 1.7.6
-// Current: 1.9.97
+// Previous: 1.9.97
+// Current: 2.0.8
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -83,16 +83,6 @@ const Templates_Playground = [
     stopSequence: '',
     maxTokens: 1024,
     prompt: `For the following article, write a SEO-friendly and short title, keywords for Google, and a short excerpt to introduce it. Use this format:\n\nTitle: \nKeywords: \nExcerpt:\n\nArticle:\nUchiko is located in Ehime prefecture, in the west of the island. The town was prosperous at the end of the 19th century thanks to its production of very good quality white wax. This economic boom allowed wealthy local merchants to build beautiful properties, whose heritage is still visible throughout the town.`,
-  },
-  {
-    id: 'casually_fine_tuned',
-    name: 'Casually-Tuned Tester',
-    mode: 'query',
-    model: 'text-davinci-003',
-    temperature: 0.4,
-    stopSequence: '\\n\\n',
-    maxTokens: 1024,
-    prompt: `Hello! What's your name?\n\n###\n\n`
   }
 ];
 

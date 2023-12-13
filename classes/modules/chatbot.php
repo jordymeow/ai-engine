@@ -3,13 +3,13 @@
 // Params for the chatbot (front and server)
 
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName',
-	'textSend', 'textClear', 'imageUpload',
+	'textSend', 'textClear', 'imageUpload', 
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'mode', 'contentAware', 'context',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId',
-	'casuallyFineTuned', 'promptEnding', 'completionEnding', 'model', 'temperature', 'maxTokens',
+	'model', 'temperature', 'maxTokens', 'contextMaxLength',
 	'maxResults', 'apiKey', 'service'
 ] );
 
@@ -150,7 +150,7 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
 				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
-				$query->injectParams( $params );
+				$query->inject_params( $params );
 			}
 			else {
 				$query = $mode === 'assistant' ? new Meow_MWAI_Query_Assistant( $newMessage ) : 
@@ -167,18 +167,18 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
 				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
-				$query->injectParams( $params );
+				$query->inject_params( $params );
 
 				// Support for Uploaded Image
 				if ( !empty( $newImageId ) ) {
 					$remote_upload = $this->core->get_option( 'image_remote_upload' );
 					if ( $remote_upload === 'data' ) {
 						$data = $this->core->files->get_base64_data( $newImageId );
-						$query->setNewImageData( $data );
+						$query->set_new_image_data( $data );
 					}
 					else {
 						$url = $this->core->files->get_url( $newImageId );
-						$query->setNewImage( $url );
+						$query->set_new_image( $url );
 					}
 				}
 
@@ -202,24 +202,10 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 
 				// Awareness & Embeddings
-				// TODO: This is same in Chatbot Legacy and Forms, maybe we should move it to the core?
-				$embeddingsEnvId = $params['embeddingsEnvId'] ?? null;
-				$embeddingsIndex = $params['embeddingsIndex'] ?? null;
-				$embeddingsNamespace = $params['embeddingsNamespace'] ?? null;
 				if ( $query->mode === 'chat' || $query->mode === 'assistant' ) {
-					$context = apply_filters( 'mwai_context_search', $context, $query, [ 
-						'embeddingsEnvId' => $embeddingsEnvId,
-						'embeddingsIndex' => $embeddingsIndex,
-						'embeddingsNamespace' => $embeddingsNamespace
-					] );
+					$context = $this->core->retrieve_context( $params, $query );
 					if ( !empty( $context ) ) {
-						if ( isset( $context['content'] ) ) {
-							$content = $this->core->clean_sentences( $context['content'] );
-							$query->injectContext( $content );
-						}
-						else {
-							error_log( "AI Engine: A context without content was returned." );
-						}
+						$query->inject_context( $context['content'] );
 					}
 				}
 			}
@@ -248,12 +234,7 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $context ) {
 				$extra = [ 'embeddings' => $context['embeddings'] ];
 			}
-
 			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
-			// TODO: There is no need for the shortcode_chat_formatting sice Markdown is handled on the client side.
-			// if ( $this->core->get_option( 'shortcode_chat_formatting' ) ) {
-			// 	$html = $this->core->markdown_to_html( $rawText );
-			// }
 
 			$restRes = [
 				'reply' => $rawText,

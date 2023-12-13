@@ -432,7 +432,7 @@ class Meow_MWAI_Engines_OpenAI
       $body['messages'] = $query->messages;
     }
     else if ( $query->mode === 'completion' ) {
-      $body['prompt'] = $query->getPrompt();
+      $body['prompt'] = $query->get_prompt();
     }
     $url = $this->localService === 'azure' ? trailingslashit( $this->defaultAzureEndpoint ) . 
       'openai/deployments/' . $this->defaultAzureDeployment : $this->defaultOpenAiEndpoint;
@@ -450,7 +450,7 @@ class Meow_MWAI_Engines_OpenAI
       $reply = new Meow_MWAI_Reply( $query );
 
       // Streamed data
-      $prompt_tokens = $query->getPromptTokens();
+      $prompt_tokens = $query->get_prompt_tokens();
       if ( !is_null( $streamCallback ) ) {
         if ( empty( $this->streamContent ) ) {
           $json = json_decode( $this->streamBuffer, true );
@@ -982,7 +982,7 @@ class Meow_MWAI_Engines_OpenAI
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
         $finetune = true;
       }
-      $inUnits = $reply->getPromptTokens();
+      $inUnits = $reply->get_prompt_tokens();
       $outUnits = $reply->getCompletionTokens();
       return $this->calculate_price( $model, $inUnits, $outUnits, $option, $finetune );
     }

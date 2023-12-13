@@ -1,9 +1,8 @@
-// Previous: 2.0.5
-// Current: 2.0.6
+// Previous: 2.0.6
+// Current: 2.0.8
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import Styled from 'styled-components';
 
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoToolbar, NekoSpacer,
   NekoColumn, NekoButton, NekoSelect, NekoOption } from '@neko-ui';
@@ -12,69 +11,18 @@ import { pluginUrl, restUrl, userData, restNonce, session, stream,
   themes as initThemes, chatbots as initChatbots } from '@app/settings';
 import i18n from '@root/i18n';
 import { retrieveChatbots, retrieveThemes, update_chatbots } from '@app/requests';
-import ChatbotParams from '@app/screens/chatbots/ChatbotParams';
+import ChatbotParams from '@app/screens/chatbots/Params';
 import Themes from '@app/screens/chatbots/Themes';
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
 import { randomHash } from '@app/helpers-admin';
-
-const StyledShortcode = Styled.div`
-  pre {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8fcff;
-    height: 26px;
-    color: #779bb8;
-    margin: 0px;
-    padding: 0px 10px;
-    font-size: 13px;
-    text-align: center;
-    border: 2px solid rgb(210 228 243);
-    border-radius: 8px;
-    font-family: system-ui;
-    cursor: pointer;
-  }
-`;
-
-const Shortcode = ({ currentChatbot }) => {
-  const [ copyMessage, setCopyMessage ] = useState(null);
-  const currentBotId = currentChatbot?.botId ?? 'default';
-
-  const onClick = async () => {
-    const text = `[mwai_chatbot id="${currentBotId}"]`;
-    if (!navigator.clipboard) {
-      alert("Clipboard is not enabled (only works with https).");
-      return;
-    }
-    await navigator.clipboard.writeText(text);
-    setCopyMessage('Copied!');
-    setTimeout(() => {
-      setCopyMessage(null);
-    }, 1000);
-  };
-
-  if (!currentChatbot) {
-    return null;
-  }
-
-  const jsxShortcode = <span>[mwai_chatbot id="<span style={{ color: 'var(--neko-green)' }}>{currentBotId}</span>"]</span>;
-
-  return (
-    <>
-      <pre onClick={onClick}>
-        {!copyMessage && jsxShortcode}
-        {copyMessage && <span>{copyMessage}</span>}
-      </pre>
-    </>
-  );
-};
+import Shortcode from './Shortcode';
 
 const setCurrentChatbot = (chatbotId) => {
   if (chatbotId) {
     localStorage.setItem('mwai-admin-chatbotId', chatbotId);
-  } else {
-    localStorage.removeItem('mwai-admin-chatbotId');
+    return;
   }
+  localStorage.removeItem('mwai-admin-chatbotId');
 };
 
 const getCurrentChatbot = () => {
@@ -106,6 +54,7 @@ const Chatbots = (props) => {
       const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
       return chatbot;
     }
+    return null;
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
@@ -114,12 +63,13 @@ const Chatbots = (props) => {
       setCurrentChatbot(chatbot?.botId);
       return chatbot;
     }
+    return null;
   }, [chatbots, currentBotId]);
 
   const currentTheme = useMemo(() => {
     if (themes && currentChatbot) {
       const chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
-      return chatTheme;
+      if (chatTheme) return chatTheme;
     }
     return themes.find(theme => theme.themeId === 'chatgpt');
   }, [currentChatbot, themes, chatbots]);
@@ -133,19 +83,20 @@ const Chatbots = (props) => {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if ( id === 'botId' && chatbots.find(x => x.botId === value) ) {
+    if ( id === 'botId' && chatbots && chatbots.find(x => x.botId === value) ) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-    if (id === 'botId' && value !== currentChatbot[id] ) {
+    if (id === 'botId' && value !== currentChatbot.id) {
       setCurrentBotId(value);
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    newChatbots[botIndex] = newParams;
+    if (botIndex !== -1) {
+      newChatbots[botIndex] = newParams;
+    }
     newChatbots = await update_chatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
@@ -185,7 +136,9 @@ const Chatbots = (props) => {
     setBusyAction(true);
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    if (botIndex !== -1) {
+      newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    }
     newChatbots = await update_chatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
@@ -197,35 +150,37 @@ const Chatbots = (props) => {
 
   return (<>
     <NekoWrapper>
+
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
         <NekoToolbar>
-            <label>{i18n.COMMON.SITE_WIDE_CHAT}:</label>
-            <NekoSelect scrolldown style={{ marginLeft: 10 }} name='botId' disabled={isBusy}
+            <Shortcode currentChatbot={currentChatbot} />
+            <label style={{ marginLeft: 5 }}>{i18n.COMMON.CHATBOT_EDITOR}:</label>
+            <NekoSwitch style={{ marginLeft: 5 }} disabled={isBusy}
+              onLabel={''} offLabel={''} width={42}
+              checked={chatbotEditor} onChange={setChatbotEditor} 
+            />
+            <label style={{ marginLeft: 5 }}>{i18n.COMMON.THEME_EDITOR}:</label>
+            <NekoSwitch style={{ marginLeft: 5 }} disabled={isBusy}
+              onLabel={''} offLabel={''} width={42}
+              checked={themeEditor} onChange={setThemeEditor}
+            />
+            <label style={{ marginLeft: 5 }}>{i18n.COMMON.PREVIEW}:</label>
+            <NekoSwitch style={{ marginLeft: 5 }} disabled={isBusy}
+              onLabel={''} offLabel={''} width={42}
+              checked={chatbotPreview} onChange={setChatbotPreview}
+            />
+
+            <div style={{ flex: 'auto' }}></div>
+
+            <label>{i18n.COMMON.SITE_WIDE_CHATBOT}:</label>
+            <NekoSelect scrolldown name='botId' disabled={isBusy}
+              style={{ minWidth: 160 }}
               value={botId} onChange={updateOption}>
               <NekoOption value='none' label="None" />
               {chatbots?.map(chat => 
                 <NekoOption key={chat.botId} value={chat.botId} label={chat.name} />)
               }
             </NekoSelect>
-            <div style={{ flex: 'auto' }}></div>
-            <label>{i18n.COMMON.CHATBOT_EDITOR}:</label>
-            <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
-              onLabel={''} offLabel={''} width={42}
-              checked={chatbotEditor} onChange={setChatbotEditor} 
-            />
-            <label style={{ marginLeft: 10 }}>{i18n.COMMON.THEME_EDITOR}:</label>
-            <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
-              onLabel={''} offLabel={''} width={42}
-              checked={themeEditor} onChange={setThemeEditor}
-            />
-            <label style={{ marginLeft: 10 }}>{i18n.COMMON.PREVIEW}:</label>
-            <NekoSwitch style={{ marginLeft: 10 }} disabled={isBusy}
-              onLabel={''} offLabel={''} width={42}
-              checked={chatbotPreview} onChange={setChatbotPreview}
-            />
-            <StyledShortcode style={{ marginLeft: 10 }}>
-              <Shortcode currentChatbot={currentChatbot} />
-            </StyledShortcode>
         </NekoToolbar>
       </NekoColumn>
 

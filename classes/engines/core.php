@@ -25,7 +25,7 @@ class Meow_MWAI_Engines_Core {
     }
 
     // Important as it makes sure everything is consolidated in the query.
-    $query->finalChecks();
+    $query->final_checks();
 
     // Run the query
     // Only OpenAI is handled for now, so we send all the queries there.

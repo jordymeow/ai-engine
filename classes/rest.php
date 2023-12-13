@@ -265,7 +265,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
 			$query = new Meow_MWAI_Query_Text( $prompt );
-			$query->injectParams( $params );
+			$query->inject_params( $params );
 
 			// Handle streaming
 			$stream = $params['stream'] ?? false;
@@ -316,7 +316,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$prompt = $params['prompt'];
 			$query = new Meow_MWAI_Query_Image( $prompt );
-			$query->injectParams( $params );
+			$query->inject_params( $params );
 			$reply = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->results, 'usage' => $reply->usage ], 200 );
 		}
@@ -341,11 +341,11 @@ class Meow_MWAI_Rest
 			// NOTE: As soon as we have a wide range of usages and possibilities,
 			// let's refactor this into a nice and extensible UI/API.
 			$query = new Meow_MWAI_Query_Text( "", 1024 );
-			$query->setEnv( 'admin-tools' );
+			$query->set_env( 'admin-tools' );
 			// TODO: We should also use the envId (as the model belongs to it)
 			$model = $this->core->get_option( 'ai_default_model' );
 			if ( !empty( $model ) ) {
-				$query->setModel( $model );
+				$query->set_model( $model );
 			}
 			$mode = 'replace';
 
@@ -357,22 +357,22 @@ class Meow_MWAI_Rest
 			}
 
 			if ( $action === 'correctText' ) {
-				$query->setPrompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.{$keepLanguage}\n\n" . $text );
+				$query->set_prompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'enhanceText' ) {
-				$query->setPrompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.{$keepLanguage}\n\n" . $text );
+				$query->set_prompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'longerText' ) {
-				$query->setPrompt( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.{$keepLanguage}\n\n" . $text );
+				$query->set_prompt( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'shorterText' ) {
-				$query->setPrompt( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.{$keepLanguage}\n\n" . $text );
+				$query->set_prompt( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'suggestSynonyms' ) {
 				$mode = 'suggest';
-				$query->setPrompt( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.{$keepLanguage}\n\n" . $selectedText );
-				$query->setTemperature( 1 );
-				$query->setMaxResults( 5 );
+				$query->set_prompt( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.{$keepLanguage}\n\n" . $selectedText );
+				$query->set_temperature( 1 );
+				$query->set_max_results( 5 );
 			}
 			else if ( $action === 'generateImage' ) {
 				$mode = 'insert';
@@ -384,17 +384,17 @@ class Meow_MWAI_Rest
 				throw new Exception( 'Not implemented yet.' );
 			}
 			else if ( $action === 'translateText' ) {
-				$query->setPrompt( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
+				$query->set_prompt( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
 			}
 			else if ( $action === 'suggestExcerpts' ) {
 				$text = $this->core->get_post_content( $postId );
-				$query->setPrompt( "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.{$keepLanguage}\n\n" . $text );
-				$query->setMaxResults( 5 );
+				$query->set_prompt( "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.{$keepLanguage}\n\n" . $text );
+				$query->set_max_results( 5 );
 			}
 			else if ( $action === 'suggestTitles' ) {
 				$text = $this->core->get_post_content( $postId );
-				$query->setPrompt( "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.{$keepLanguage}\n\n" . $text );
-				$query->setMaxResults( 5 );
+				$query->set_prompt( "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.{$keepLanguage}\n\n" . $text );
+				$query->set_max_results( 5 );
 			}
 			$reply = $this->core->ai->run( $query );
 
@@ -445,11 +445,11 @@ class Meow_MWAI_Rest
 				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
 			}
 			$query = new Meow_MWAI_Query_Text( $prompt, 2048 );
-			$query->setEnv( 'admin-tools' );
+			$query->set_env( 'admin-tools' );
 			// TODO: We should also use the envId (as the model belongs to it)
 			$model = $this->core->get_option( 'ai_default_model' );
 			if ( !empty( $model ) ) {
-				$query->setModel( $model );
+				$query->set_model( $model );
 			}
 			$reply = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
@@ -512,6 +512,9 @@ class Meow_MWAI_Rest
 			$post->post_content = $content;
 			$post->post_status = 'draft';
 			$post->post_type = isset( $postType ) ? $postType : 'post';
+			// TODO: Let's try to avoid using Markdown to create the Post
+			// Instead, we should create Gutenberg Blocks, or simple HTML.
+			// Then, we can get rid of the library for Markdown.
 			$post->post_content = $this->core->markdown_to_html( $post->post_content );
 			$postId = wp_insert_post( $post );
 			return new WP_REST_Response([ 'success' => true, 'postId' => $postId ], 200 );
@@ -876,8 +879,8 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_Query_Transcribe();
-			$query->injectParams( $params );
-			$query->setEnv('admin-tools');
+			$query->inject_params( $params );
+			$query->set_env('admin-tools');
 			$reply = $this->core->ai->run( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
 		}

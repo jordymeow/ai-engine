@@ -27,7 +27,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function __construct( $prompt = '' ) {
     global $mwai_core;
     if ( is_string( $prompt ) ) {
-      $this->setPrompt( $prompt );
+      $this->set_prompt( $prompt );
     }
     $this->session = $mwai_core->get_session_id();
   }
@@ -46,25 +46,21 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     ];
   }
 
-  public function addFunction( Meow_MWAI_Query_Function $function ): void {
+  public function add_function( Meow_MWAI_Query_Function $function ): void {
     $this->functions[] = $function;
     $this->functionCall = "auto";
   }
 
-  public function setFunctions( array $functions ): void {
+  public function set_functions( array $functions ): void {
     $this->functions = $functions;
     $this->functionCall = "auto";
-  }
-
-  public function getFunctions(): array {
-    return $this->functions;
   }
 
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
   }
 
-  public function getLastPrompt(): string {
+  public function get_last_prompt(): string {
     return $this->prompt;
   }
 
@@ -73,7 +69,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * Used for statistics, mainly.
    * @param string $env The environment.
    */
-  public function setEnv( string $env ): void {
+  public function set_env( string $env ): void {
     $this->env = $env;
   }
 
@@ -82,7 +78,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * Used for statistics, mainly.
    * @param string $envId The environment ID.
    */
-  public function setEnvId( string $envId ): void {
+  public function set_env_id( string $envId ): void {
     $this->envId = $envId;
   }
 
@@ -90,20 +86,12 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * ID of the model to use.
    * @param string $model ID of the model to use.
    */
-  public function setModel( string $model ) {
+  public function set_model( string $model ) {
     $this->model = $model;
   }
 
-  public function getModel() {
+  public function get_model() {
     return $this->model;
-  }
-
-  /**
-   * The mode
-   * @param string $mode.
-   */
-  public function setMode( string $mode ) {
-    $this->mode = $mode;
   }
 
   /**
@@ -111,37 +99,33 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * It can also return the probabilities of alternative tokens at each position.
    * @param string $prompt The prompt to generate completions.
    */
-  public function setPrompt( string $prompt ) {
+  public function set_prompt( string $prompt ) {
     $this->prompt = $prompt;
   }
 
-  public function getPrompt() {
+  public function get_prompt() {
     return $this->prompt;
   }
 
   /**
    * Similar to the prompt, but focus on the new/last message.
    * Only used when the model has a chat mode (and only used in messages).
-   * With Meow_MWAI_Query_Base, this is the same as setPrompt.
+   * With Meow_MWAI_Query_Base, this is the same as set_prompt.
    * @param string $prompt The messages to generate completions.
    */
-  public function setNewMessage( string $newMessage ): void {
-    $this->setPrompt( $newMessage );
+  public function set_new_message( string $newMessage ): void {
+    $this->set_prompt( $newMessage );
   }
 
-  public function getLastMessage() {
-    return $this->getPrompt();
-  }
-
-  public function getMessages() {
-    return null;
+  public function get_last_message() {
+    return $this->get_prompt();
   }
 
   /**
    * The API key to use.
    * @param string $apiKey The API key.
    */
-  public function setApiKey( string $apiKey ) {
+  public function set_api_key( string $apiKey ) {
     $this->apiKey = $apiKey;
   }
 
@@ -149,7 +133,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * The service to use.
    * @param string $service The service.
    */
-  public function setService( string $service ) {
+  public function set_service( string $service ) {
     $this->service = $service;
   }
 
@@ -157,7 +141,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * The session ID to use.
    * @param string $session The session ID.
    */
-  public function setSession( string $session ) {
+  public function set_session( string $session ) {
     $this->session = $session;
   }
 
@@ -165,7 +149,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * The bot ID to use.
    * @param string $botId The bot ID.
    */
-  public function setBotId( string $botId ) {
+  public function set_bot_id( string $botId ) {
     $this->botId = $botId;
   }
 
@@ -175,17 +159,17 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * Use carefully and ensure that you have reasonable settings for max_tokens and stop.
    * @param float $maxResults Number of completions.
    */
-  public function setMaxResults( int $maxResults ) {
+  public function set_max_results( int $maxResults ) {
     $this->maxResults = $maxResults;
   }
 
   // **
   //  * Check if everything is correct, otherwise fix it (like the max number of tokens).
   //  */
-  public function finalChecks() {
+  public function final_checks() {
   }
 
-  protected function convertKeys( $params )
+  protected function convert_keys( $params )
   {
     $newParams = [];
     foreach ( $params as $key => $value ) {

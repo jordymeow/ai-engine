@@ -172,24 +172,24 @@ class Meow_MWAI_API {
 	public function simpleVisionQuery( $prompt, $url, $path = null, $params = [] ) {
 		global $mwai_core;
 		$query = new Meow_MWAI_Query_Text( $prompt );
-		$query->injectParams( $params );
-		$query->setModel( MWAI_FALLBACK_MODEL_VISION );
+		$query->inject_params( $params );
+		$query->set_model( MWAI_FALLBACK_MODEL_VISION );
 		$remote_upload = $this->core->get_option( 'image_remote_upload' );
 		$preferURL = $remote_upload === 'url';
 
 		if ( $preferURL && $url ) {
-			$query->setNewImage( $url );
+			$query->set_new_image( $url );
 		}
 		else if ( !$preferURL && !empty( $path ) ) {
 			$data = base64_encode( file_get_contents( $path ) );
-			$query->setNewImageData( $data );
+			$query->set_new_image_data( $data );
 		}
 		else if ( $url ) {
-			$query->setNewImage( $url );
+			$query->set_new_image( $url );
 		}
 		else if ( !empty($path ) ) {
 			$data = base64_encode( file_get_contents( $path ) );
-			$query->setNewImageData( $data );
+			$query->set_new_image_data( $data );
 		}
 
 		$reply = $mwai_core->ai->run( $query );
@@ -228,7 +228,7 @@ class Meow_MWAI_API {
   public function simpleTextQuery( $prompt, $params = [] ) {
     global $mwai_core;
 		$query = new Meow_MWAI_Query_Text( $prompt );
-		$query->injectParams( $params );
+		$query->inject_params( $params );
 		$reply = $mwai_core->ai->run( $query );
 		return $reply->result;
 	}
@@ -247,9 +247,9 @@ class Meow_MWAI_API {
 		} 
 		global $mwai_core;
 		$query = new Meow_MWAI_Query_Text( $prompt . "\nYour reply must be a formatted JSON." );
-		$query->injectParams( $params );
-		$query->setResponseFormat( 'json' );
-		$query->setModel( MWAI_FALLBACK_MODEL_JSON );
+		$query->inject_params( $params );
+		$query->set_response_format( 'json' );
+		$query->set_model( MWAI_FALLBACK_MODEL_JSON );
 		$reply = $mwai_core->ai->run( $query );
 		try {
 			$json = json_decode( $reply->result, true );

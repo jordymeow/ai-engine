@@ -23,8 +23,6 @@ class Meow_MWAI_Core
 	private $themes_option_name = 'mwai_themes';
 	private $chatbots_option_name = 'mwai_chatbots';
 	private $nonce = null;
-	// This seems useless:
-	//public $defaultChatbotParams = MWAI_CHATBOT_PARAMS;
 
 	public $chatbot = null;
 	public $discussions = null;
@@ -66,11 +64,6 @@ class Meow_MWAI_Core
 		// Advanced core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
 			new MeowPro_MWAI_Core( $this );
-		}
-
-		// Dynamic max tokens
-		if ( $this->get_option( 'dynamic_max_tokens' ) ) {
-			add_filter( 'mwai_estimate_tokens', array( $this, 'dynamic_max_tokens' ), 10, 2 );
 		}
 
 		$mwai = new Meow_MWAI_API( $this->chatbot, $this->discussions );
@@ -118,24 +111,23 @@ class Meow_MWAI_Core
   }
 
   // Make sure there are no duplicate sentences, and keep the length under a maximum length.
-  function clean_sentences( $text, $maxTokens = null ) {
-    //$sentences = preg_split( '/(?<=[.?!])(?=[a-zA-Z ])/', $text );
-		$maxTokens = $maxTokens ? $maxTokens : $this->get_option( 'context_max_tokens', 1024 );
+  function clean_sentences( $text, $maxLength = null ) {
+		$maxLength = (int)($maxLength ? $maxLength : $this->get_option( 'context_max_length', 4096 ));
 		$sentences = preg_split('/(?<=[.?!。．！？])+/u', $text);
     $hashes = array();
     $uniqueSentences = array();
-    $length = 0;
+    $total = 0;
     foreach ( $sentences as $sentence ) {
       $sentence = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $sentence );
       $hash = md5( $sentence );
       if ( !in_array( $hash, $hashes ) ) {
-				$tokensCount = apply_filters( 'mwai_estimate_tokens', 0, $sentence );
-        if ( $length + $tokensCount > $maxTokens ) {
+				$length = strlen( $sentence );
+        if ( $total + $length > $maxLength ) {
           continue;
         }
         $hashes[] = $hash;
         $uniqueSentences[] = $sentence;
-        $length += $tokensCount;
+        $total += $length;
       }
     }
     $freshText = implode( " ", $uniqueSentences );
@@ -249,6 +241,30 @@ class Meow_MWAI_Core
 		return $attachmentId;
 	}
  	#endregion
+
+	#region Context-Related Helpers
+	function retrieve_context( $params, $query ) {
+		$contextMaxLength = $params['contextMaxLength'] ?? $this->get_option( 'context_max_length', 4096 );
+    $embeddingsEnvId = $params['embeddingsEnvId'] ?? null;
+    $embeddingsIndex = $params['embeddingsIndex'] ?? null;
+    $embeddingsNamespace = $params['embeddingsNamespace'] ?? null;    
+		$context = apply_filters( 'mwai_context_search', [], $query, [
+			'embeddingsEnvId' => $embeddingsEnvId,
+			'embeddingsIndex' => $embeddingsIndex,
+			'embeddingsNamespace' => $embeddingsNamespace
+		]);
+		if ( empty( $context ) ) {
+			return null;
+		}
+		else if ( !isset( $context['content'] ) ) {
+			error_log( "AI Engine: A context without content was returned." );
+			return null;
+		}
+		$context['content'] = $this->clean_sentences( $context['content'], $contextMaxLength );
+		$context['length'] = strlen( $context['content'] );
+		return $context;
+	}
+	#endregion
 
 	#region Users/Sessions Helpers
 
@@ -441,40 +457,6 @@ class Meow_MWAI_Core
     $tokens = 0;
     return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $model );
   }
-
-	public function dynamic_max_tokens( $tokens, $text ) {
-		// Approximation (fast, no lib)
-    $asciiCount = 0;
-    $nonAsciiCount = 0;
-    for ( $i = 0; $i < mb_strlen( $text ); $i++ ) {
-      $char = mb_substr( $text, $i, 1 );
-      if ( ord( $char ) < 128 ) {
-        $asciiCount++;
-      }
-      else {
-        $nonAsciiCount++;
-      }
-    }
-    $asciiTokens = $asciiCount / 3.5;
-    $nonAsciiTokens = $nonAsciiCount * 2.5;
-    $tokens = $asciiTokens + $nonAsciiTokens;
-
-    // More exact (slower, and lib)
-    if ( PHP_VERSION_ID >= 70400 && function_exists( 'mb_convert_encoding' ) ) {
-      try {
-        $token_array = Encoder::encode( $text );
-        if ( !empty( $token_array ) ) {
-          $tokens = count( $token_array );
-        }
-      }
-      catch ( Exception $e ) {
-        error_log( $e->getMessage() );
-      }
-    }
-
-		$tokens = $tokens;
-		return (int)$tokens;
-	}
 
   public function record_tokens_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
     if ( !is_numeric( $prompt_tokens ) ) {
@@ -722,7 +704,6 @@ class Meow_MWAI_Core
 				$options[$key] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
 			}
 		}
-		$options['shortcode_chat_default_params'] = MWAI_CHATBOT_PARAMS;
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
 		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_openai_models();
@@ -737,6 +718,25 @@ class Meow_MWAI_Core
 	function sanitize_options( $options ) {
 		$needs_update = false;
 
+		// This list was updated on December 11, 2023. After May 2024, let's remove this.
+		$old_options = [
+			'shortcode_chat_default_params',
+			'shortcode_chat_params_override',
+			'module_legacy_finetunes',
+			'shortcode_chat_legacy',
+			'shortcode_chat_inject',
+			'shortcode_chat_styles',
+			'dynamic_max_tokens',
+			'shortcode_chat_formatting',
+			'shortcode_forms_legacy',
+		];
+		foreach ( $old_options as $old_option ) {
+			if ( isset( $options[$old_option] ) ) {
+				unset( $options[$old_option] );
+				$needs_update = true;
+			}
+		}
+
 		// This upgrades namespace to multi-namespaces (June 2023)
 		// After January 2024, let's remove this.
 		if ( isset( $options['pinecone'] ) && isset( $options['pinecone']['namespace'] ) ) {
@@ -744,7 +744,6 @@ class Meow_MWAI_Core
 			unset( $options['pinecone']['namespace'] );
 			$needs_update = true;
 		}
-
 		// Support for Multi Vector DB Environments
 		// After June 2024, let's remove this.
 		if ( !isset( $options['embeddings_envs'] ) ) {
@@ -768,7 +767,6 @@ class Meow_MWAI_Core
 			unset( $options['pinecone'] );
 			$needs_update = true;
 		}
-
 		// Support for Multi AI Environments
 		// After June 2024, let's remove this.
 		if ( !isset( $options['ai_envs'] ) ) {
@@ -821,7 +819,6 @@ class Meow_MWAI_Core
 			}
 			$needs_update = true;
 		}
-
 		if ( !empty( $options['openai_apikey'] ) || !empty( $options['openai_azure_apikey'] ) ) {
 			unset( $options['openai_apikey'] );
 			unset( $options['openai_finetunes'] );

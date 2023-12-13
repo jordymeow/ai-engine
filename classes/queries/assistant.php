@@ -35,7 +35,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
     ];
   }
 
-  public function getPromptTokens( $refresh = false ): int {
+  public function get_prompt_tokens( $refresh = false ): int {
     if ( $this->promptTokens && !$refresh ) {
       return $this->promptTokens;
     }
@@ -43,11 +43,11 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
     return $this->promptTokens;
   }
 
-  public function getLastPrompt(): string {
+  public function get_last_prompt(): string {
     if ( empty( $this->messages ) ) {
       return $this->prompt;
     }
-    $last = $this->getLastMessage();
+    $last = $this->get_last_message();
     return $last;
   }
 
@@ -56,16 +56,16 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
    * It can also return the probabilities of alternative tokens at each position.
    * @param string $prompt The prompt to generate completions.
    */
-  public function setPrompt( $prompt ) {
-    parent::setPrompt( $prompt );
-    $this->validateMessages();
+  public function set_prompt( $prompt ) {
+    parent::set_prompt( $prompt );
+    $this->validate_messages();
   }
 
   /**
    * The type of return expected from the API. It can be either null or "json".
    * @param int $maxResults The maximum number of completions.
    */
-  public function setResponseFormat( $responseFormat ) {
+  public function set_response_format( $responseFormat ) {
     if ( !empty( $responseFormat ) && $responseFormat !== 'json' ) {
       throw new Exception( "AI Engine: The response format can only be null or json." );
     }
@@ -77,7 +77,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
    * This returns the prompt if it's not a chat, otherwise it will build a prompt with
    * all the messages nicely formatted.
    */
-  public function getPrompt(): ?string {
+  public function get_prompt(): ?string {
     // In the case it's really just a prompt.
     if ( count( $this->messages ) === 1 ) {
       $first = reset( $this->messages );
@@ -114,19 +114,19 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
    * Only used when the model has a chat mode (and only used in messages).
    * @param string $prompt The messages to generate completions.
    */
-  public function setNewMessage( string $newMessage ): void {
+  public function set_new_message( string $newMessage ): void {
     $this->newMessage = $newMessage;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
-  public function setNewImage( string $newImage ): void {
+  public function set_new_image( string $newImage ): void {
     $this->newImage = $newImage;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
-  public function setNewImageData( string $newImageData ): void {
+  public function set_new_image_data( string $newImageData ): void {
     $this->newImageData = $newImageData;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   public function setAssistantId( string $assistantId ): void {
@@ -143,14 +143,14 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
 
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   /**
    * Similar to the prompt, but use an array of messages instead.
    * @param string $prompt The messages to generate completions.
    */
-  public function setMessages( array $messages ) {
+  public function set_messages( array $messages ) {
     return;
     $messages = array_map( function( $message ) {
       if ( is_array( $message ) ) {
@@ -164,10 +164,10 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
       }
     }, $messages );
     $this->messages = $messages;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
-  public function getLastMessage() {
+  public function get_last_message() {
     if ( !empty( $this->messages ) ) {
       $lastMessageIndex = count( $this->messages ) - 1;
       $lastMessage = $this->messages[$lastMessageIndex];
@@ -185,19 +185,15 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
     return null;
   }
 
-  public function getMessages() {
-    return $this->messages;
-  }
-
   // Function that adds a message just before the last message
-  public function injectContext( string $content ): void {
+  public function inject_context( string $content ): void {
     if ( !empty( $this->messages ) ) {
       $lastMessageIndex = count( $this->messages ) - 1;
       $lastMessage = $this->messages[$lastMessageIndex];
       $this->messages[$lastMessageIndex] = [ 'role' => 'system', 'content' => $content ];
       array_push( $this->messages, $lastMessage );
     }
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   private function getImageURL( $image ) {
@@ -209,7 +205,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
     }
   }
 
-  private function validateMessages(): void {
+  private function validate_messages(): void {
     // Messages should end with either the prompt or, if exists, the newMessage.
     $message = empty( $this->newMessage ) ? $this->prompt : $this->newMessage;
     $content = $message;
@@ -238,44 +234,44 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   }
 
   // Based on the params of the query, update the attributes
-  public function injectParams( array $params ): void
+  public function inject_params( array $params ): void
   {
     // Those are for the keys passed directly by the shortcode.
-    $params = $this->convertKeys( $params );
+    $params = $this->convert_keys( $params );
 
     if ( !empty( $params['model'] ) ) {
-			$this->setModel( $params['model'] );
+			$this->set_model( $params['model'] );
 		}
     if ( !empty( $params['prompt'] ) ) {
-      $this->setPrompt( $params['prompt'] );
+      $this->set_prompt( $params['prompt'] );
     }
     if ( !empty( $params['messages'] ) ) {
-      $this->setMessages( $params['messages'] );
+      $this->set_messages( $params['messages'] );
     }
     if ( !empty( $params['newMessage'] ) ) {
-      $this->setNewMessage( $params['newMessage'] );
+      $this->set_new_message( $params['newMessage'] );
     }
     if ( !empty( $params['maxResults'] ) ) {
-			$this->setMaxResults( $params['maxResults'] );
+			$this->set_max_results( $params['maxResults'] );
 		}
 		if ( !empty( $params['env'] ) ) {
-			$this->setEnv( $params['env'] );
+			$this->set_env( $params['env'] );
 		}
 		if ( !empty( $params['session'] ) ) {
-			$this->setSession( $params['session'] );
+			$this->set_session( $params['session'] );
 		}
     // Should add the params related to Open AI and Azure
     if ( !empty( $params['service'] ) ) {
-			$this->setService( $params['service'] );
+			$this->set_service( $params['service'] );
 		}
     if ( !empty( $params['apiKey'] ) ) {
-			$this->setApiKey( $params['apiKey'] );
+			$this->set_api_key( $params['apiKey'] );
 		}
     if ( !empty( $params['botId'] ) ) {
-      $this->setBotId( $params['botId'] );
+      $this->set_bot_id( $params['botId'] );
     }
     if ( !empty( $params['envId'] ) ) {
-      $this->setEnvId( $params['envId'] );
+      $this->set_env_id( $params['envId'] );
     }
     if ( !empty( $params['chatId'] ) ) {
       $this->setChatId( $params['chatId'] );
@@ -287,7 +283,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
       $this->setThreadId( $params['threadId'] );
     }
     if ( !empty( $params['responseFormat'] ) ) {
-      $this->setResponseFormat( $params['responseFormat'] );
+      $this->set_response_format( $params['responseFormat'] );
     }
   }
 }

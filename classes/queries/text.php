@@ -10,16 +10,14 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public ?string $newMessage = null;
   public ?string $newImage = null;
   public ?string $newImageData = null;
-  public ?string $promptEnding = null;
-  public bool $casuallyFineTuned = false;
   public ?string $responseFormat = null;
   public ?int $promptTokens = null;
   
   public function __construct( ?string $prompt = '', int $maxTokens = 1024,
     string $model = MWAI_FALLBACK_MODEL ) {
     parent::__construct( $prompt );
-    $this->setModel( $model );
-    $this->setMaxTokens( $maxTokens );
+    $this->set_model( $model );
+    $this->set_max_tokens( $maxTokens );
   }
 
   #[\ReturnTypeWillChange]
@@ -40,13 +38,11 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       'env' => $this->env,
       'envId' => $this->envId,
       'service' => $this->service,
-      'promptEnding' => $this->promptEnding,
-      'stop' => $this->stop,
-      'casuallyFineTuned' => $this->casuallyFineTuned,
+      'stop' => $this->stop
     ];
   }
 
-  public function getPromptTokens( $refresh = false ): int {
+  public function get_prompt_tokens( $refresh = false ): int {
     if ( $this->promptTokens && !$refresh ) {
       return $this->promptTokens;
     }
@@ -54,18 +50,18 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     return $this->promptTokens;
   }
 
-  public function getLastPrompt(): string {
+  public function get_last_prompt(): string {
     if ( empty( $this->messages ) ) {
       return $this->prompt;
     }
-    $last = $this->getLastMessage();
+    $last = $this->get_last_message();
     return $last;
   }
 
   /**
    * Make sure the maxTokens is not greater than the model's context length.
    */
-  public function finalChecks() {
+  public function final_checks() {
     if ( empty( $this->model )  ) { return; }
 
     // Make sure the number of messages is not too great.
@@ -80,46 +76,14 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       if ( !empty( $context ) ) {
         array_unshift( $this->messages, $context );
       }
-
-      // NOTE: If nobody complains about this, we can probably get rid of everything
-      // related to the casuallyFineTuned. This was added on November 13th, 2023.
-      if ( $this->casuallyFineTuned ) {
-        error_log( 'AI Engine: The casuallyFineTuned parameter is deprecated.' );
-      }
     }
-
-    // NOTE: Removed the checks related to the MaxTokens (as of November 8th)
-    // Let's see if we can remove this completely.
-
-    // Make sure the max tokens are respected.
-    // $realMax = 4096;
-    // $finetuneFamily = preg_match('/^([a-zA-Z]{0,32}):/', $this->model, $matches );
-    // $finetuneFamily = ( isset( $matches ) && count( $matches ) > 0 ) ? $matches[1] : 'N/A';
-    // $foundModel = null;
-    // $openai_models = Meow_MWAI_Engines_OpenAI::get_openai_models();
-    // foreach ( $openai_models as $currentModel ) {
-    //   if ( $currentModel['model'] === $this->model || $currentModel['family'] === $finetuneFamily ) {
-    //     $foundModel = $currentModel['name'];
-    //     $realMax = $currentModel['maxTokens'];
-    //     break;
-    //   }
-    // }
-
-    // $estimatedTokens = $this->getPromptTokens();
-    // if ( !empty( $realMax ) && $estimatedTokens > $realMax ) {
-    //   throw new Exception( "AI Engine: The prompt is too long! It contains about $estimatedTokens tokens (estimation). The $foundModel model only accepts a maximum of $realMax tokens. " );
-    // }
-    // $realMax = (int)($realMax - $estimatedTokens) - 16;
-    // if ( $this->maxTokens > $realMax ) {
-    //   $this->maxTokens = $realMax;
-    // }
   }
 
   /**
    * ID of the model to use.
    * @param string $model ID of the model to use.
    */
-  public function setModel( string $model ) {
+  public function set_model( string $model ) {
     $this->model = $model;
     $this->mode = 'completion';
     $found = false;
@@ -149,16 +113,16 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * It can also return the probabilities of alternative tokens at each position.
    * @param string $prompt The prompt to generate completions.
    */
-  public function setPrompt( $prompt ) {
-    parent::setPrompt( $prompt );
-    $this->validateMessages();
+  public function set_prompt( $prompt ) {
+    parent::set_prompt( $prompt );
+    $this->validate_messages();
   }
 
   /**
    * The type of return expected from the API. It can be either null or "json".
    * @param int $maxResults The maximum number of completions.
    */
-  public function setResponseFormat( $responseFormat ) {
+  public function set_response_format( $responseFormat ) {
     if ( !empty( $responseFormat ) && $responseFormat !== 'json' ) {
       throw new Exception( "AI Engine: The response format can only be null or json." );
     }
@@ -170,7 +134,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * This returns the prompt if it's not a chat, otherwise it will build a prompt with
    * all the messages nicely formatted.
    */
-  public function getPrompt(): ?string {
+  public function get_prompt(): ?string {
     // In the case it's really just a prompt.
     if ( count( $this->messages ) === 1 ) {
       $first = reset( $this->messages );
@@ -182,15 +146,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $prompt = "";
     if ( $first && $first['role'] === 'system' ) {
       $prompt = $first['content'] . "\n\n";
-    }
-
-    // Casually Fine-Tuned or Prompt-Ending
-    if ( !empty( $this->promptEnding ) ) {
-      $last = end( $this->messages );
-      if ( $last && $last['role'] === 'user' ) {
-        $prompt = $last['content'] . $this->promptEnding;
-      }
-      return $prompt;
     }
 
     // Standard Completion
@@ -216,31 +171,31 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * Only used when the model has a chat mode (and only used in messages).
    * @param string $prompt The messages to generate completions.
    */
-  public function setNewMessage( string $newMessage ): void {
+  public function set_new_message( string $newMessage ): void {
     $this->newMessage = $newMessage;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
-  public function setNewImage( string $newImage ): void {
+  public function set_new_image( string $newImage ): void {
     $this->newImage = $newImage;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
-  public function setNewImageData( string $newImageData ): void {
+  public function set_new_image_data( string $newImageData ): void {
     $this->newImageData = $newImageData;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   public function replace( $search, $replace ) {
     $this->prompt = str_replace( $search, $replace, $this->prompt );
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   /**
    * Similar to the prompt, but use an array of messages instead.
    * @param string $prompt The messages to generate completions.
    */
-  public function setMessages( array $messages ) {
+  public function set_messages( array $messages ) {
     $messages = array_map( function( $message ) {
       if ( is_array( $message ) ) {
         return [ 'role' => $message['role'], 'content' => $message['content'] ];
@@ -253,10 +208,10 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       }
     }, $messages );
     $this->messages = $messages;
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
-  public function getLastMessage() {
+  public function get_last_message() {
     if ( !empty( $this->messages ) ) {
       $lastMessageIndex = count( $this->messages ) - 1;
       $lastMessage = $this->messages[$lastMessageIndex];
@@ -274,19 +229,15 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     return null;
   }
 
-  public function getMessages() {
-    return $this->messages;
-  }
-
   // Function that adds a message just before the last message
-  public function injectContext( string $content ): void {
+  public function inject_context( string $content ): void {
     if ( !empty( $this->messages ) ) {
       $lastMessageIndex = count( $this->messages ) - 1;
       $lastMessage = $this->messages[$lastMessageIndex];
       $this->messages[$lastMessageIndex] = [ 'role' => 'system', 'content' => $content ];
       array_push( $this->messages, $lastMessage );
     }
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   /**
@@ -295,7 +246,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    */
   public function setContext( string $context ): void {
     $this->context = apply_filters( 'mwai_ai_context', $context, $this );
-    $this->validateMessages();
+    $this->validate_messages();
   }
 
   private function getImageURL( $image ) {
@@ -308,7 +259,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   }
 
 
-  private function validateMessages(): void {
+  private function validate_messages(): void {
     // Messages should end with either the prompt or, if exists, the newMessage.
     $message = empty( $this->newMessage ) ? $this->prompt : $this->newMessage;
     $content = $message;
@@ -354,7 +305,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * Most models have a context length of 2048 tokens (except for the newest models, which support 4096).
    * @param float $prompt The maximum number of tokens.
    */
-  public function setMaxTokens( int $maxTokens ): void {
+  public function set_max_tokens( int $maxTokens ): void {
     $this->maxTokens = $maxTokens;
   }
 
@@ -363,7 +314,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * Try 0.9 for more creative applications, and 0 for ones with a well-defined reply.
    * @param float $temperature The temperature.
    */
-  public function setTemperature( float $temperature ): void {
+  public function set_temperature( float $temperature ): void {
     $temperature = floatval( $temperature );
     if ( $temperature > 1 ) {
       $temperature = 1;
@@ -374,83 +325,78 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $this->temperature = round( $temperature, 2 );
   }
 
-  public function setMaxSentences( int $maxSentences ): void {
+  public function set_max_sentences( int $maxSentences ): void {
     if ( !empty( $maxSentences ) ) {
       $this->maxSentences = intval( $maxSentences );
-      $this->validateMessages();
+      $this->validate_messages();
     }
   }
 
-  public function setStop( string $stop ): void {
+  public function set_stop( string $stop ): void {
     $this->stop = $stop;
   }
 
   // Based on the params of the query, update the attributes
-  public function injectParams( array $params ): void
+  public function inject_params( array $params ): void
   {
     // Those are for the keys passed directly by the shortcode.
-    $params = $this->convertKeys( $params );
+    $params = $this->convert_keys( $params );
 
     $acceptedValues = [ true, 1, '1' ];
     if ( !empty( $params['model'] ) ) {
-			$this->setModel( $params['model'] );
-		}
-    if ( !empty( $params['casuallyFineTuned'] ) && in_array( $params['casuallyFineTuned'], $acceptedValues, true ) ) {
-      $this->promptEnding = "\n\n###\n\n";
-      $this->stop = "\n\n";
-      $this->casuallyFineTuned = true;
+			$this->set_model( $params['model'] );
 		}
     if ( !empty( $params['prompt'] ) ) {
-      $this->setPrompt( $params['prompt'] );
+      $this->set_prompt( $params['prompt'] );
     }
     if ( !empty( $params['context'] ) ) {
       $this->setContext( $params['context'] );
     }
     if ( !empty( $params['messages'] ) ) {
-      $this->setMessages( $params['messages'] );
+      $this->set_messages( $params['messages'] );
     }
     if ( !empty( $params['newMessage'] ) ) {
-      $this->setNewMessage( $params['newMessage'] );
+      $this->set_new_message( $params['newMessage'] );
     }
     if ( !empty( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
-			$this->setMaxTokens( intval( $params['maxTokens'] ) );
+			$this->set_max_tokens( intval( $params['maxTokens'] ) );
 		}
     if ( !empty( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
-      $this->setMaxSentences( intval( $params['maxMessages'] ) );
+      $this->set_max_sentences( intval( $params['maxMessages'] ) );
     }
     if ( !empty( $params['maxSentences'] ) && intval( $params['maxSentences'] ) > 0 ) {
-      $this->setMaxSentences( intval( $params['maxSentences'] ) );
+      $this->set_max_sentences( intval( $params['maxSentences'] ) );
     }
 		if ( !empty( $params['temperature'] ) ) {
-			$this->setTemperature( $params['temperature'] );
+			$this->set_temperature( $params['temperature'] );
 		}
 		if ( !empty( $params['stop'] ) ) {
-			$this->setStop( $params['stop'] );
+			$this->set_stop( $params['stop'] );
 		}
     if ( !empty( $params['maxResults'] ) ) {
-			$this->setMaxResults( $params['maxResults'] );
+			$this->set_max_results( $params['maxResults'] );
 		}
 		if ( !empty( $params['env'] ) ) {
-			$this->setEnv( $params['env'] );
+			$this->set_env( $params['env'] );
 		}
 		if ( !empty( $params['session'] ) ) {
-			$this->setSession( $params['session'] );
+			$this->set_session( $params['session'] );
 		}
     // Should add the params related to Open AI and Azure
     if ( !empty( $params['service'] ) ) {
-			$this->setService( $params['service'] );
+			$this->set_service( $params['service'] );
 		}
     if ( !empty( $params['apiKey'] ) ) {
-			$this->setApiKey( $params['apiKey'] );
+			$this->set_api_key( $params['apiKey'] );
 		}
     if ( !empty( $params['botId'] ) ) {
-      $this->setBotId( $params['botId'] );
+      $this->set_bot_id( $params['botId'] );
     }
     if ( !empty( $params['envId'] ) ) {
-      $this->setEnvId( $params['envId'] );
+      $this->set_env_id( $params['envId'] );
     }
     if ( !empty( $params['responseFormat'] ) ) {
-      $this->setResponseFormat( $params['responseFormat'] );
+      $this->set_response_format( $params['responseFormat'] );
     }
   }
 }
