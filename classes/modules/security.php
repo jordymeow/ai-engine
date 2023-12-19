@@ -44,7 +44,7 @@ class Meow_MWAI_Modules_Security {
         return $ok;
       }
     }
-    $text = $query->get_last_prompt();
+    $text = $query->get_message();
     foreach ( $this->banned_words as $word ) {
       if ( stripos( $text, $word ) !== false ) {
         error_log( "AI Engine blocked word: $word" );

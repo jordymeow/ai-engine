@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.0.8
+// Previous: 2.0.8
+// Current: 2.0.9
 
 const { useState, useEffect } = wp.element;
 import Styled from 'styled-components';
@@ -35,7 +35,6 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
   const [shortcodeText, setShortcodeText] = useState('');
 
   useEffect(() => {
-
     if (!currentChatbot) {
       setShortcodeHtml(null);
       setShortcodeText(null);
@@ -47,7 +46,7 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
     if (isCustom) {
       for (const key in currentChatbot) {
         if (currentChatbot[key] === undefined || currentChatbot[key] === null ||
-          key === 'botId' || key === 'name' || key === 'maxSentences' ||
+          key === 'botId' || key === 'name' || key === 'maxMessages' ||
           currentChatbot[key] === '' || (defaultChatbot && defaultChatbot[key] === currentChatbot[key])) {
           continue;
         }
@@ -64,9 +63,7 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
         if (value && typeof value === 'string' && value.includes(']')) {
           value = value.replace(/\]/g, '&#93;');
         }
-  
         const newKey = key.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`);
-  
         params.push(`${newKey}="${value}"`);
       }
       shortcode = '[mwai_chatbot' + (params.length ? ` ${params.join(' ')}` : '') + ']';
@@ -96,7 +93,11 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
       alert("Clipboard is not enabled (only works with https).");
       return;
     }
-    await navigator.clipboard.writeText(shortcode);
+    try {
+      await navigator.clipboard.writeText(shortcodeText);
+    } catch (e) {
+      alert("Failed to copy to clipboard.");
+    }
     setCopyMessage('Copied!');
     setTimeout(() => {
       setCopyMessage(null);

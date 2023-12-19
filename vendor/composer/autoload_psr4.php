@@ -6,5 +6,4 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Rahul900day\\Gpt3Encoder\\' => array($vendorDir . '/rahul900day/gpt-3-encoder/src'),
 );

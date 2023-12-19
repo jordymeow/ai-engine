@@ -6,20 +6,6 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit84db5b27c255bfe02c1711de17b0450f
 {
-    public static $prefixLengthsPsr4 = array (
-        'R' => 
-        array (
-            'Rahul900day\\Gpt3Encoder\\' => 24,
-        ),
-    );
-
-    public static $prefixDirsPsr4 = array (
-        'Rahul900day\\Gpt3Encoder\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/rahul900day/gpt-3-encoder/src',
-        ),
-    );
-
     public static $prefixesPsr0 = array (
         'P' => 
         array (
@@ -37,8 +23,6 @@ class ComposerStaticInit84db5b27c255bfe02c1711de17b0450f
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit84db5b27c255bfe02c1711de17b0450f::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit84db5b27c255bfe02c1711de17b0450f::$prefixDirsPsr4;
             $loader->prefixesPsr0 = ComposerStaticInit84db5b27c255bfe02c1711de17b0450f::$prefixesPsr0;
             $loader->classMap = ComposerStaticInit84db5b27c255bfe02c1711de17b0450f::$classMap;
 

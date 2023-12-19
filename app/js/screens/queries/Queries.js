@@ -1,5 +1,5 @@
-// Previous: 2.0.0
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.0.9
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ import i18n from '@root/i18n';
 const logsColumns = [
   { accessor: 'id', visible: false },
   { accessor: 'time', title: 'Time', width: '80px', sortable: true },
-  { accessor: 'env',  title: 'Env', width: '90px',
+  { accessor: 'scope',  title: 'Scope', width: '90px',
     filters: {
       type: 'checkbox',
       options: [
@@ -64,7 +64,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
   });
 
   useEffect(() => {
-    setLogsQueryParams({ ...logsQueryParams, filters: filters });
+    setLogsQueryParams(prev => ({ ...prev, filters: filters }));
   }, [filters]);
 
   const logsTotal = useMemo(() => {
@@ -73,10 +73,9 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => a.created_at - b.created_at).map(x => {
+    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       const time = tableDateTimeFormatter(x.time);
       const user = tableUserIPFormatter(x.userId, x.ip);
-
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;
       if (x.price >= 0.001) {
@@ -89,7 +88,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         jsxSimplifiedPrice = <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>;
       }
 
-      const envName = options?.ai_envs?.find(v => v.id === x.apiSrv)?.name || x.apiSrv;
+      const envName = options?.ai_envs?.find(v => v.id === x.envId)?.name || x.envId;
 
       let model = <div>
         <span title={x.model}>{getModelName(x.model)}{x.mode === 'assistant' && <i> (Assistant)</i>}</span><br />
@@ -98,7 +97,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
       return {
         id: x.id,
-        env: <div>{x.env}<br /><small>{x.session}</small></div>,
+        scope: <div>{x.scope}<br /><small>{x.session}</small></div>,
         user: user,
         model: model,
         units: <div style={{ textAlign: 'right' }}>{x.units}<br /><small>{x.type}</small></div>,
@@ -149,7 +148,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-          setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
+          setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
         }}
         filters={filters}
         onFilterChange={(accessor, value) => {
@@ -170,7 +169,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         <div style={{ flex: 'auto' }} />
         <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
           total={logsTotal} onClick={page => { 
-            setLogsQueryParams({ ...logsQueryParams, page });
+            setLogsQueryParams(prev => ({ ...prev, page }));
           }}
         />
       </div>

@@ -1,12 +1,16 @@
 <?php
 
 class Meow_MWAI_Engines_Core {
-  private $core = null;
-  private $openai = null;
+  protected $core = null;
+  public $env = null;
+  public $envId = null;
+  public $envType = null;
 
-  public function __construct( $core ) {
+  public function __construct( $core, $env ) {
     $this->core = $core;
-    $this->openai = new Meow_MWAI_Engines_OpenAI( $this->core );
+    $this->env = $env;
+    $this->envId = $env['id'];
+    $this->envType = $env['type'];
   }
 
   public function run( $query, $streamCallback = null ) {
@@ -20,7 +24,7 @@ class Meow_MWAI_Engines_Core {
     }
 
     // Allow to modify the query before it is sent. It should not be a Meow_MWAI_Query_Embed.
-    if ( !($query instanceof Meow_MWAI_Query_Embed) ) {
+    if ( !( $query instanceof Meow_MWAI_Query_Embed ) ) {
       $query = apply_filters( 'mwai_ai_query', $query );
     }
 
@@ -28,10 +32,9 @@ class Meow_MWAI_Engines_Core {
     $query->final_checks();
 
     // Run the query
-    // Only OpenAI is handled for now, so we send all the queries there.
     $reply = null;
     if ( $query instanceof Meow_MWAI_Query_Text ) {
-      $reply = $this->openai->run_completion_query( $query, $streamCallback );
+      $reply = $this->run_completion_query( $query, $streamCallback );
     }
     else if ( $query instanceof Meow_MWAI_Query_Assistant ) {
       $reply = null;
@@ -41,13 +44,13 @@ class Meow_MWAI_Engines_Core {
       }
     }
     else if ( $query instanceof Meow_MWAI_Query_Embed ) {
-      $reply = $this->openai->run_embedding_query( $query );
+      $reply = $this->run_embedding_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
-      $reply = $this->openai->run_images_query( $query );
+      $reply = $this->run_images_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      $reply = $this->openai->run_transcribe_query( $query );
+      $reply = $this->run_transcribe_query( $query );
     }
     else {
       throw new Exception( 'Unknown query type.' );
@@ -57,5 +60,25 @@ class Meow_MWAI_Engines_Core {
     $reply = apply_filters( 'mwai_ai_reply', $reply, $query );
 
     return $reply;
+  }
+
+  public function run_completion_query( Meow_MWAI_Query_Base $query, $streamCallback = null ) {
+    throw new Exception( 'Not implemented.' );
+  }
+
+  public function run_embedding_query( Meow_MWAI_Query_Base $query ) {
+    throw new Exception( 'Not implemented.' );
+  }
+
+  public function run_images_query( Meow_MWAI_Query_Base $query ) {
+    throw new Exception( 'Not implemented.' );
+  }
+
+  public function run_transcribe_query( Meow_MWAI_Query_Base $query ) {
+    throw new Exception( 'Not implemented.' );
+  }
+
+  public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
+    throw new Exception( 'Not implemented.' );
   }
 }

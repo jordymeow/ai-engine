@@ -1,5 +1,5 @@
-// Previous: 1.9.88
-// Current: 1.9.93
+// Previous: 1.9.93
+// Current: 2.0.9
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -52,7 +52,6 @@ const ContentGenerator = () => {
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const { template, setTemplate, clearTemplate, jsxTemplates } = useTemplates('contentGenerator');
-  const { completionModels } = useModels(options);
   const bulkTasks = useNekoTasks();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState();
@@ -78,10 +77,14 @@ const ContentGenerator = () => {
   const sectionsPromptFormat = template?.sectionsPromptFormat ?? "";
   const contentPromptFormat = template?.contentPromptFormat ?? "";
   const excerptPromptFormat = template?.excerptPromptFormat ?? "";
+  const envId = template?.envId ?? "";
   const temperature = template?.temperature ?? 0.6;
   const maxTokens = template?.maxTokens ?? 2048;
   const topicsAreTitles = template?.topicsAreTitles ?? false;
   const noSections = !sectionsPromptFormat || !sectionsCount;
+
+  const { completionModels } = useModels(options, envId || null);
+  const aiEnvironments = options?.ai_envs || [];
 
   const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
     useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
@@ -90,7 +93,35 @@ const ContentGenerator = () => {
     setTemplate(x => ({ ...x, [property]: value }));
   };
 
-  const titleMemo = useMemo(() => getSeoMessage(title), [title]);
+  const title = template?.title ?? "";
+  const sections = template?.sections ?? "";
+  const mode = template?.mode ?? 'single';
+  const topic = template?.topic ?? "";
+  const topics = template?.topics ?? "";
+  const model = template?.model ?? options?.fallback_model ?? null;
+  const sectionsCount = template?.sectionsCount ?? 2;
+  const paragraphsCount = template?.paragraphsCount ?? 3;
+  const writingStyle = template?.writingStyle ?? "creative";
+  const writingTone = template?.writingTone ?? "cheerful";
+  const titlePromptFormat = template?.titlePromptFormat ?? "";
+  const sectionsPromptFormat = template?.sectionsPromptFormat ?? "";
+  const contentPromptFormat = template?.contentPromptFormat ?? "";
+  const excerptPromptFormat = template?.excerptPromptFormat ?? "";
+  const envId = template?.envId ?? "";
+  const temperature = template?.temperature ?? 0.6;
+  const maxTokens = template?.maxTokens ?? 2048;
+  const topicsAreTitles = template?.topicsAreTitles ?? false;
+  const noSections = !sectionsPromptFormat || !sectionsCount;
+
+  const { completionModels } = useModels(options, envId || null);
+  const aiEnvironments = options?.ai_envs || [];
+
+  const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
+    useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
+  
+  const setTemplateProperty = (value, property) => {
+    setTemplate(x => ({ ...x, [property]: value }));
+  };
 
   useEffect(() => {
     const freshTopicsArray = topics.split('\n').map(x => x.trim()).filter(x => !!x);
@@ -122,7 +153,7 @@ const ContentGenerator = () => {
     if (template?.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
+  }, [isCustom, currentLanguage, currentHumanLanguage]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -133,16 +164,16 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   };
 
-  const lookForInFormat = (str, arr) => { return !!arr.find(item => item.includes(str)); };
+  const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); };
 
   const formInputs = useMemo(() => {
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
-      language: lookForInFormat('{LANGUAGE}', arr),
-      writingStyle: lookForInFormat('{WRITING_STYLE}', arr),
-      writingTone: lookForInFormat('{WRITING_TONE}', arr),
-      sectionsCount: lookForInFormat('{SECTIONS_COUNT}', arr),
-      paragraphsCount: lookForInFormat('{PARAGRAPHS_PER_SECTION}', arr),
+      language: lookFor('{LANGUAGE}', arr),
+      writingStyle: lookFor('{WRITING_STYLE}', arr),
+      writingTone: lookFor('{WRITING_TONE}', arr),
+      sectionsCount: lookFor('{SECTIONS_COUNT}', arr),
+      paragraphsCount: lookFor('{PARAGRAPHS_PER_SECTION}', arr),
     };
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
@@ -208,7 +239,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setContent(x => "");
+    setContent('');
     let prompt = contentPromptFormat.replace('{TITLE}', inTitle);
     prompt = prompt.replace('{SECTIONS}', inSections);
     prompt = prompt.replace('{TOPIC}', inTopic);
@@ -234,7 +265,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setExcerpt(x => "");
+    setExcerpt('');
     let prompt = excerptPromptFormat.replace('{TITLE}', inTitle);
     prompt = prompt.replace('{TOPIC}', inTopic);
     prompt = finalizePrompt(prompt);
@@ -249,7 +280,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(prev => ({ ...prev, all: new Date() }));
+    setRunTimes(x => ({ ...x, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -265,19 +296,19 @@ const ContentGenerator = () => {
         setTemplateProperty(freshTitle, 'title');
 
         if (!noSections) {
-          setRunTimes(prev => ({ ...prev, sections: new Date() }));
+          setRunTimes(x => ({ ...x, sections: new Date() }));
           freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          setRunTimes(prev => ({ ...prev, sections: null }));
+          await setRunTimes(x => ({ ...x, sections: null }));
         }
 
         if (freshSections || noSections) {
-          setRunTimes(prev => ({ ...prev, content: new Date() }));
+          await setRunTimes(x => ({ ...x, content: new Date() }));
           freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          setRunTimes(prev => ({ ...prev, content: null }));
+          await setRunTimes(x => ({ ...x, content: null }));
           if (freshContent) {
-            setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
+            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            setRunTimes(prev => ({ ...prev, excerpt: null }));
+            await setRunTimes(x => ({ ...x, excerpt: null }));
           }
         }
       }
@@ -420,7 +451,7 @@ const ContentGenerator = () => {
             <h2 style={{ marginTop: 0 }}>Title</h2>
             <NekoInput name="title" disabled={isBusy} value={title}
               onChange={setTemplateProperty} />
-            {titleMemo && <div className="information">Advice: {titleMemo}</div>}
+            {titleMessage && <div className="information">Advice: {titleMessage}</div>}
 
             {sectionsPromptFormat && <>
               <NekoSpacer />
@@ -510,7 +541,7 @@ const ContentGenerator = () => {
             <NekoSpacer line={true} height={40} />
 
             <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
-              onChange={(e) => setPostType(e.target.value)} value={postType}>
+              onChange={setPostType} value={postType}>
               {postTypes?.map(postType => 
                 <NekoOption key={postType.type} value={postType.type} label={postType.name} />
               )}
@@ -532,7 +563,7 @@ const ContentGenerator = () => {
           <StyledSidebar>
             <h2 style={{ marginTop: 0 }}>{i18n.CONTENT_GENERATOR.CONTENT_PARAMS}</h2>
 
-            {!(formInputs.language || formInputs.writingStyle || formInputs.writingTone) &&
+            {!formInputs.language && !formInputs.writingStyle && !formInputs.writingTone &&
               <div style={{ fontSize: 11, lineHeight: '14px' }}>
                 {i18n.CONTENT_GENERATOR.CONTENT_PARAMS_INTRO}
               </div>
@@ -577,9 +608,9 @@ const ContentGenerator = () => {
             {showPostParams && <>
               <label>{i18n.COMMON.POST_TYPE}:</label>
               <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
-                onChange={(e) => setPostType(e.target.value)} value={postType}>
-                {postTypes?.map(pt => 
-                  <NekoOption key={pt.type} value={pt.type} label={pt.name} />
+                onChange={setPostType} value={postType}>
+                {postTypes?.map(postType => 
+                  <NekoOption key={postType.type} value={postType.type} label={postType.name} />
                 )}
               </NekoSelect>
             </>}
@@ -595,22 +626,30 @@ const ContentGenerator = () => {
               </NekoButton>
             </StyledTitleWithButton>
             {showModelParams && <>
-              <label>{i18n.COMMON.TEMPERATURE}:</label>
-              <NekoInput name="temperature" value={temperature} type="number"
-                onChange={(e) => setTemplateProperty(parseFloat(e.target.value))} 
-                onBlur={(e) => setTemplateProperty(parseFloat(e.target.value))}
-                description={i18n.HELP.TEMPERATURE} />
-              <label>{i18n.COMMON.MAX_TOKENS}:</label>
-              <NekoInput name="maxTokens" value={maxTokens} type="number"
-                onChange={(e) => setTemplateProperty(parseInt(e.target.value))}
-                onBlur={(e) => setTemplateProperty(parseInt(e.target.value))}
-                description={i18n.HELP.MAX_TOKENS} />
+
+              <label>{i18n.COMMON.ENVIRONMENT}:</label>
+              <NekoSelect scrolldown name="envId"
+                value={envId ?? ""} onChange={setTemplateProperty}>
+                {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
+                <NekoOption value={""} label={"None"}></NekoOption>
+              </NekoSelect>
+
               <label>{i18n.COMMON.MODEL}:</label>
               <NekoSelect name="model" value={model}
                 description={i18n.CONTENT_GENERATOR.MODEL_HELP}
-                scrolldown={true} onChange={(e) => setTemplateProperty(e.target.value)}>
+                scrolldown={true} onChange={setTemplateProperty}>
                 {completionModels.map(x => <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>)}
               </NekoSelect>
+
+              <label>{i18n.COMMON.TEMPERATURE}:</label>
+              <NekoInput name="temperature" value={temperature} type="number"
+                onChange={setTemplateProperty} onBlur={setTemplateProperty}
+                description={i18n.HELP.TEMPERATURE} />
+
+              <label>{i18n.COMMON.MAX_TOKENS}:</label>
+              <NekoInput name="maxTokens" value={maxTokens} type="number"
+                onChange={setTemplateProperty} onBlur={setTemplateProperty}
+                description={i18n.HELP.MAX_TOKENS} />
             </>}
           </StyledSidebar>
 
@@ -629,16 +668,16 @@ const ContentGenerator = () => {
               </p>
               <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_TITLE)}</label>
               <NekoTextArea disabled={isBusy} name="titlePromptFormat"
-                value={titlePromptFormat} onChange={(e) => setTemplateProperty(e.target.value)}  />
+                value={titlePromptFormat} onChange={setTemplateProperty}  />
               <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_SECTIONS)}</label>
               <NekoTextArea disabled={isBusy} name="sectionsPromptFormat"
-                value={sectionsPromptFormat} onChange={(e) => setTemplateProperty(e.target.value)}  />
+                value={sectionsPromptFormat} onChange={setTemplateProperty}  />
               <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_CONTENT)}</label>
               <NekoTextArea disabled={isBusy} name="contentPromptFormat"
-                value={contentPromptFormat} onChange={(e) => setTemplateProperty(e.target.value)}  />
+                value={contentPromptFormat} onChange={setTemplateProperty}  />
               <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_EXCERPT)}</label>
               <NekoTextArea disabled={isBusy} name="excerptPromptFormat"
-                value={excerptPromptFormat} onChange={(e) => setTemplateProperty(e.target.value)}  />
+                value={excerptPromptFormat} onChange={setTemplateProperty}  />
             </>}
           </StyledSidebar>
 

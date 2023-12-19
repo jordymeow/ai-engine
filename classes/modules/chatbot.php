@@ -7,7 +7,9 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', '
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'mode', 'contentAware', 'context',
+// TODO: Actually, 'env' is being replaced by 'scope', so we need to really remove it from here
+// after, February 2024.
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'scope', 'mode', 'contentAware', 'context',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId',
 	'model', 'temperature', 'maxTokens', 'contextMaxLength',
 	'maxResults', 'apiKey', 'service'
@@ -149,7 +151,7 @@ class Meow_MWAI_Modules_Chatbot {
 					$newParams[$key] = $value;
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
-				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
+				$params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 				$query->inject_params( $params );
 			}
 			else {
@@ -166,7 +168,7 @@ class Meow_MWAI_Modules_Chatbot {
 					$newParams[$key] = $value;
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
-				$params['env'] = empty( $params['env'] ) ? 'chatbot' : $params['env'];
+				$params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 				$query->inject_params( $params );
 
 				// Support for Uploaded Image
@@ -174,11 +176,11 @@ class Meow_MWAI_Modules_Chatbot {
 					$remote_upload = $this->core->get_option( 'image_remote_upload' );
 					if ( $remote_upload === 'data' ) {
 						$data = $this->core->files->get_base64_data( $newImageId );
-						$query->set_new_image_data( $data );
+						$query->set_image_data( $data );
 					}
 					else {
 						$url = $this->core->files->get_url( $newImageId );
-						$query->set_new_image( $url );
+						$query->set_image( $url );
 					}
 				}
 
@@ -195,7 +197,7 @@ class Meow_MWAI_Modules_Chatbot {
 				// Moderation
 				if ( $this->core->get_option( 'shortcode_chat_moderation' ) ) {
 					global $mwai;
-					$isFlagged = $mwai->moderationCheck( $query->prompt );
+					$isFlagged = $mwai->moderationCheck( $query->get_message() );
 					if ( $isFlagged ) {
 						throw new Exception( 'Sorry, your message has been rejected by moderation.' );
 					}
@@ -205,7 +207,7 @@ class Meow_MWAI_Modules_Chatbot {
 				if ( $query->mode === 'chat' || $query->mode === 'assistant' ) {
 					$context = $this->core->retrieve_context( $params, $query );
 					if ( !empty( $context ) ) {
-						$query->inject_context( $context['content'] );
+						$query->set_context( $context['content'] );
 					}
 				}
 			}
@@ -228,7 +230,8 @@ class Meow_MWAI_Modules_Chatbot {
 				ob_end_flush();
 			}
 
-			$reply = $this->core->ai->run( $query, $streamCallback );
+			$engine = Meow_MWAI_Engines_Factory::get( $this->core, $query->envId );
+			$reply = $engine->run( $query, $streamCallback );
 			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {

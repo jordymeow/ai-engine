@@ -3,8 +3,6 @@
 require_once( MWAI_PATH . '/vendor/autoload.php' );
 require_once( MWAI_PATH . '/constants/init.php' );
 
-use Rahul900day\Gpt3Encoder\Encoder;
-
 define( 'MWAI_IMG_WAND', MWAI_URL . '/images/wand.png' );
 define( 'MWAI_IMG_WAND_HTML', "<img style='height: 22px; margin-bottom: -5px; margin-right: 8px;'
   src='" . MWAI_IMG_WAND . "' alt='AI Wand' />" );
@@ -17,7 +15,6 @@ class Meow_MWAI_Core
 	public $is_rest = false;
 	public $is_cli = false;
 	public $site_url = null;
-	public $ai = null;
 	public $files = null;
 	private $option_name = 'mwai_options';
 	private $themes_option_name = 'mwai_themes';
@@ -27,14 +24,10 @@ class Meow_MWAI_Core
 	public $chatbot = null;
 	public $discussions = null;
 
-	// Cached
-	private $options = null;
-
 	public function __construct() {
 		$this->site_url = get_site_url();
 		$this->is_rest = MeowCommon_Helpers::is_rest();
 		$this->is_cli = defined( 'WP_CLI' );
-		$this->ai = new Meow_MWAI_Engines_Core( $this );
 		$this->files = new Meow_MWAI_Modules_Files( $this );
 
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
@@ -96,6 +89,20 @@ class Meow_MWAI_Core
 		return apply_filters( 'mwai_allow_public_api', $logged_in, $feature, $extra );
 	}
 
+	#endregion
+
+	#region AI-Related Helpers
+	function run_query( $query, $streamCallback = null ) {
+		$hasEnvId = !empty( $query->envId );
+		$envId = $hasEnvId ? $query->envId : $this->get_option( 'ai_default_env' );
+		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
+		if ( !$hasEnvId && !$query->model ) {
+			$model = $this->get_option( 'ai_default_model' );
+			$query->set_model( $model );	
+		}
+		$reply = $engine->run( $query, $streamCallback );
+		return $reply;
+	}
 	#endregion
 
 	#region Text-Related Helpers
@@ -600,17 +607,17 @@ class Meow_MWAI_Core
 					$chatbot[$key] = $value;
 				}
 			}
-			// TODO: After September 2023, let's remove this if statement.
-			if ( isset( $chatbot['chatId'] ) ) {
-				$chatbot['botId'] = $chatbot['chatId'];
-				unset( $chatbot['chatId'] );
-				$hasChanges = true;
-			}
-			// TODO: After September 2023, let's remove this if statement.
-			if ( empty( $chatbot['botId'] ) && $chatbot['name'] === 'default' ) {
-				$chatbot['botId'] = sanitize_title( $chatbot['name'] );
-				$hasChanges = true;
-			}
+			// After September 2023, let's remove this if statement.
+			// if ( isset( $chatbot['chatId'] ) ) {
+			// 	$chatbot['botId'] = $chatbot['chatId'];
+			// 	unset( $chatbot['chatId'] );
+			// 	$hasChanges = true;
+			// }
+			// After September 2023, let's remove this if statement.
+			// if ( empty( $chatbot['botId'] ) && $chatbot['name'] === 'default' ) {
+			// 	$chatbot['botId'] = sanitize_title( $chatbot['name'] );
+			// 	$hasChanges = true;
+			// }
 		}
 		if ( $hasChanges ) {
 			update_option( $this->chatbots_option_name, $chatbots );
@@ -706,10 +713,10 @@ class Meow_MWAI_Core
 		}
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
-		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_openai_models();
+		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_models();
 		$options['fallback_model'] = MWAI_FALLBACK_MODEL;
 
-		$this->options = $options;
+		//$this->options = $options;
 		return $options;
 	}
 

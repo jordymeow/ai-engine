@@ -288,7 +288,7 @@ class Meow_MWAI_Rest
 			}
 
 			// Process Reply
-			$reply = $this->core->ai->run( $query, $streamCallback );
+			$reply = $this->core->run_query( $query, $streamCallback );
 			$restRes = [
 				'success' => true,
 				'data' => $reply->result,
@@ -317,7 +317,7 @@ class Meow_MWAI_Rest
 			$prompt = $params['prompt'];
 			$query = new Meow_MWAI_Query_Image( $prompt );
 			$query->inject_params( $params );
-			$reply = $this->core->ai->run( $query );
+			$reply = $this->core->run_query( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->results, 'usage' => $reply->usage ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -341,12 +341,7 @@ class Meow_MWAI_Rest
 			// NOTE: As soon as we have a wide range of usages and possibilities,
 			// let's refactor this into a nice and extensible UI/API.
 			$query = new Meow_MWAI_Query_Text( "", 1024 );
-			$query->set_env( 'admin-tools' );
-			// TODO: We should also use the envId (as the model belongs to it)
-			$model = $this->core->get_option( 'ai_default_model' );
-			if ( !empty( $model ) ) {
-				$query->set_model( $model );
-			}
+			$query->set_scope( 'admin-tools' );
 			$mode = 'replace';
 
 			$language = "";
@@ -357,20 +352,20 @@ class Meow_MWAI_Rest
 			}
 
 			if ( $action === 'correctText' ) {
-				$query->set_prompt( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.{$keepLanguage}\n\n" . $text );
+				$query->set_message( "Correct the typos and grammar mistakes in this text without altering its content. Return only the corrected text, without explanations or additional content.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'enhanceText' ) {
-				$query->set_prompt( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.{$keepLanguage}\n\n" . $text );
+				$query->set_message( "Enhance this text by eliminating redundancies, utilizing a more suitable vocabulary, and refining its structure. Provide only the revised text, without explanations or any additional content.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'longerText' ) {
-				$query->set_prompt( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.{$keepLanguage}\n\n" . $text );
+				$query->set_message( "Expand the subsequent text to a minimum of three times its original length, integrating relevant and accurate information to enrich its content. If the text is a story, amplify its charm by elaborating on essential aspects, enhancing readability, and creating a sense of engagement for the reader. Maintain consistency in tone and vocabulary throughout the expansion process.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'shorterText' ) {
-				$query->set_prompt( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.{$keepLanguage}\n\n" . $text );
+				$query->set_message( "Condense the following text by reducing its length to half, while retaining the core elements of the original narrative. Focus on maintaining the essence of the story and its key details.{$keepLanguage}\n\n" . $text );
 			}
 			else if ( $action === 'suggestSynonyms' ) {
 				$mode = 'suggest';
-				$query->set_prompt( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.{$keepLanguage}\n\n" . $selectedText );
+				$query->set_message( "Provide a synonym or rephrase the given word or sentence while retaining the original meaning and preserving the initial and final punctuation. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided.{$keepLanguage}\n\n" . $selectedText );
 				$query->set_temperature( 1 );
 				$query->set_max_results( 5 );
 			}
@@ -384,19 +379,19 @@ class Meow_MWAI_Rest
 				throw new Exception( 'Not implemented yet.' );
 			}
 			else if ( $action === 'translateText' ) {
-				$query->set_prompt( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
+				$query->set_message( "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n" . $text );
 			}
 			else if ( $action === 'suggestExcerpts' ) {
 				$text = $this->core->get_post_content( $postId );
-				$query->set_prompt( "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.{$keepLanguage}\n\n" . $text );
+				$query->set_message( "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.{$keepLanguage}\n\n" . $text );
 				$query->set_max_results( 5 );
 			}
 			else if ( $action === 'suggestTitles' ) {
 				$text = $this->core->get_post_content( $postId );
-				$query->set_prompt( "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.{$keepLanguage}\n\n" . $text );
+				$query->set_message( "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.{$keepLanguage}\n\n" . $text );
 				$query->set_max_results( 5 );
 			}
-			$reply = $this->core->ai->run( $query );
+			$reply = $this->core->run_query( $query );
 
 			// If it's an image, let's add it to the Media Library and return it.
 			if ( $action === 'generateImage' ) {
@@ -445,13 +440,13 @@ class Meow_MWAI_Rest
 				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
 			}
 			$query = new Meow_MWAI_Query_Text( $prompt, 2048 );
-			$query->set_env( 'admin-tools' );
+			$query->set_scope( 'admin-tools' );
 			// TODO: We should also use the envId (as the model belongs to it)
 			$model = $this->core->get_option( 'ai_default_model' );
 			if ( !empty( $model ) ) {
 				$query->set_model( $model );
 			}
-			$reply = $this->core->ai->run( $query );
+			$reply = $this->core->run_query( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -546,7 +541,7 @@ class Meow_MWAI_Rest
 	function rest_openai_files_get() {
 		try {
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$files = $openai->list_files();
 			return new WP_REST_Response([ 'success' => true, 'files' => $files ], 200 );
 		}
@@ -572,7 +567,7 @@ class Meow_MWAI_Rest
 		try {
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
 			$legacy = isset( $_GET['legacy'] ) ? $_GET['legacy'] === 'true' : false;
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$finetunes = $openai->list_deleted_finetunes( $legacy );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
@@ -586,7 +581,7 @@ class Meow_MWAI_Rest
 		try {
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
 			$legacy = isset( $_GET['legacy'] ) ? $_GET['legacy'] === 'true' : false;
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$finetunes = $openai->list_finetunes( $legacy );
 			return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
 		}
@@ -602,7 +597,7 @@ class Meow_MWAI_Rest
 			$envId = $params['envId'];;
 			$filename = sanitize_text_field( $params['filename'] );
 			$data = $params['data'];
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$file = $openai->upload_file( $filename, $data );
 			return new WP_REST_Response([ 'success' => true, 'file' => $file ], 200 );
 		}
@@ -617,7 +612,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$envId = $params['envId'];;
 			$fileId = $params['fileId'];
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$openai->delete_file( $fileId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
@@ -632,7 +627,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$envId = $params['envId'];;
 			$finetuneId = $params['finetuneId'];
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$openai->cancel_finetune( $finetuneId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
@@ -647,7 +642,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$envId = $params['envId'];;
 			$modelId = $params['modelId'];
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$openai->delete_finetune( $modelId );
 			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
@@ -662,7 +657,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$envId = $params['envId'];;
 			$fileId = $params['fileId'];
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$data = $openai->download_file( $fileId );
 			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
 		}
@@ -683,7 +678,7 @@ class Meow_MWAI_Rest
 				"nEpochs" => $params['nEpochs'],
 				"batchSize" => $params['batchSize']
 			];
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$finetune = $openai->run_finetune( $fileId, $model, $suffix, $hyperparams );
 			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
 		}
@@ -699,7 +694,7 @@ class Meow_MWAI_Rest
 			if ( $transient ) {
 				return new WP_REST_Response([ 'success' => true, 'incidents' => $transient ], 200 );
 			}
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core );
 			$incidents = $openai->get_incidents();
 			set_transient( 'mwai_openai_incidents', $incidents, 60 * 10 );
 			return new WP_REST_Response([ 'success' => true, 'incidents' => $incidents ], 200 );
@@ -865,7 +860,7 @@ class Meow_MWAI_Rest
 			if ( !$text ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => 'Text not found.' ], 404 );
 			}
-			$openai = new Meow_MWAI_Engines_OpenAI( $this->core, $envId );
+			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$results = $openai->moderate( $text );
 			return new WP_REST_Response([ 'success' => true, 'results' => $results ], 200 );
 		}
@@ -880,8 +875,8 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$query = new Meow_MWAI_Query_Transcribe();
 			$query->inject_params( $params );
-			$query->set_env('admin-tools');
-			$reply = $this->core->ai->run( $query );
+			$query->set_scope('admin-tools');
+			$reply = $this->core->run_query( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
 		}
 		catch ( Exception $e ) {

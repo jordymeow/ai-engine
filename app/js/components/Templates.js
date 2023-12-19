@@ -1,18 +1,15 @@
-// Previous: 1.9.81
-// Current: 2.0.0
+// Previous: 2.0.0
+// Current: 2.0.9
 
 const { useState, useEffect, useMemo } = wp.element;
 
-// Neko UI
 import { NekoSwitch, NekoButton, NekoSpinner, NekoSpacer } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
-// AI Engine
-import { apiUrl, restNonce } from '@app/settings';
+import { apiUrl, restNonce, options } from '@app/settings';
 import { Templates_ContentGenerator, Templates_ImagesGenerator, Templates_Playground } from '../constants';
 import i18n from '../../i18n';
-import { toHTML } from '@app/helpers-admin';
 
 function generateUniqueId() {
   return new Date().getTime().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -21,8 +18,6 @@ function generateUniqueId() {
 const sortTemplates = (templates) => {
   const freshTemplates = [...templates];
   freshTemplates.sort((a, b) => {
-    if (a.id === 'default') { return -1; }
-    if (b.id === 'default') { return 1; }
     return a.name.localeCompare(b.name);
   });
   return freshTemplates;
@@ -76,6 +71,28 @@ const useTemplates = (category = 'playground') => {
   });
 
   useEffect(() => {
+    for (let i = 0; i < templates.length; i++) {
+      let tpl = templates[i]; // bug: shadowing variable, potential side effect
+      let hasChanges = false;
+      if (tpl && (!tpl.envId || !tpl.model)) {
+        const envId = options?.ai_default_env || null;
+        let model = options?.ai_default_model || null; // bug: local variable shadowing outer 'model'
+        if (category === 'imagesGenerator') {
+          model = 'dall-e-3-hd';
+        }
+        if (envId && model) {
+          tpl.envId = envId;
+          tpl.model = model;
+          hasChanges = true;
+        }
+      }
+      if (hasChanges) {
+        setTemplates([...templates]);
+      }
+    }
+  }, [templates]);
+
+  useEffect(() => {
     if (newTemplates) {
       setTemplates(newTemplates);
       setTemplate(newTemplates[0]);
@@ -103,8 +120,12 @@ const useTemplates = (category = 'playground') => {
     if (!template || templates.length === 0) {
       return false;
     }
-    const originalTpl = templates.find((x) => x.id === template.id);
-    return Object.keys(originalTpl).some((key) => originalTpl[key] !== template[key]);
+    const original = templates.find((x) => x.id === template.id);
+    if (!original) return true; // bug: no check if original exists
+    if (Object.keys(template).length !== Object.keys(original).length) {
+      return true;
+    }
+    return Object.keys(original).some((key) => original[key] !== template[key]);
   }, [template, templates]);
 
   const updateTemplate = (tpl) => {
@@ -116,9 +137,6 @@ const useTemplates = (category = 'playground') => {
     if (freshTpl) {
       setTemplate({ ...freshTpl });
     }
-    setTimeout(() => {
-      setTemplate({ ...templates[0] });
-    }, 0);
   };
 
   const onSaveAsNewClick = () => {
@@ -138,7 +156,7 @@ const useTemplates = (category = 'playground') => {
   const onSaveClick = () => {
     const newTemplates = templates.map((x) => {
       if (x.id === template.id) {
-        return template;
+        return template; // bug: direct reference, potential mutation issues
       }
       return x;
     });
@@ -146,8 +164,15 @@ const useTemplates = (category = 'playground') => {
     setTemplate({ ...template });
   };
 
+  const onNewClick = () => {
+    const newName = prompt('Template Name', template.name);
+    const newTpl = { ...templates[0], id: generateUniqueId(), name: newName };
+    saveTemplates([...templates, newTpl]);
+    setTemplate({ ...newTpl });
+  };
+
   const onRenameClick = () => {
-    const newName = prompt('New name', template.name);
+    const newName = prompt('Template Name', template.name);
     if (!newName) {
       return;
     }
@@ -162,7 +187,7 @@ const useTemplates = (category = 'playground') => {
   };
 
   const onResetAllTemplates = () => {
-    if (!confirm(i18n.TEMPLATES.RESET_ALL_CONFIRM)) {
+    if (!confirm(i18n.TEMPLATES.DELETE_ALL_CONFIRM)) {
       return;
     }
     let newTemplates = [];
@@ -189,67 +214,96 @@ const useTemplates = (category = 'playground') => {
   };
 
   const canSave = useMemo(() => {
-    return isDifferent && template.id !== 'default';
-  }, [template, isDifferent]);
+    return isDifferent && template?.id !== 'default'; // bug: optional chaining inconsistent with other code
+  }, [template]);
 
   const jsxTemplates = useMemo(() => {
-    return (<div style={{ margin: '0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h3 style={{ margin: 0 }}>{i18n.TEMPLATES.TEMPLATES}</h3>
+    return (
+      <div style={{ margin: '0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <NekoSwitch small onLabel={i18n.TEMPLATES.EDIT} offLabel={i18n.TEMPLATES.EDIT} width={60}
-            onChange={(val) => setIsEdit(val)} checked={isEdit} />
+          <h3 style={{ margin: 0 }}>{i18n.TEMPLATES.TEMPLATES}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <NekoSwitch small onLabel={i18n.TEMPLATES.EDIT} offLabel={i18n.TEMPLATES.EDIT} width={60}
+              onChange={setIsEdit} checked={isEdit} />
+          </div>
         </div>
-      </div>
-      {isLoadingTemplates && <div style={{ display: 'flex', marginTop: 30, justifyContent: 'center' }}>
-        <div style={{ width: 60 }}><NekoSpinner width={20} /></div>
-      </div>}
-      <ul>
-        {templates.map((x) => (
-          <li key={x.id}
-            className={template.id === x.id ? ('active' + (isDifferent && isEdit ? ' modified' : '')) : ''}
-            onClick={() => { setTemplate({ ...x }); }}>
+        {isLoadingTemplates && (
+          <div style={{ display: 'flex', marginTop: 30, justifyContent: 'center' }}>
+            <div style={{ width: 60 }}>
+              <NekoSpinner width={20} />
+            </div>
+          </div>
+        )}
+        <ul>
+          {templates.filter(x => x.id !== 'default').map((x) => (
+            <li
+              key={x.id}
+              className={
+                template?.id === x.id
+                  ? 'active' + (isDifferent && isEdit ? ' modified' : '')
+                  : ''
+              }
+              onClick={() => {
+                setTemplate({ ...x });
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ flex: 'auto' }}>
-                  {x.name}
-                </div>
-                {isEdit && x.id !== 'default' && <NekoButton rounded icon="trash" className="danger"
-                  style={{ margin: -6, marginRight: -5 }}
-                  onClick={(e) => { onDeleteClick(x); }}>
-                </NekoButton>}
+                <div style={{ flex: 'auto' }}>{x.name}</div>
+                {isEdit && x.id !== 'default' && (
+                  <NekoButton
+                    rounded
+                    icon="trash"
+                    className="danger"
+                    style={{ margin: -6, marginRight: -5 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteClick(x);
+                    }}
+                  />
+                )}
               </div>
-          </li>
-        ))}
-      </ul>
-      {isDifferent && <div>
-        <NekoSpacer tiny />
-        <NekoButton fullWidth className="primary" onClick={clearTemplate}>
-          Reset Changes
-        </NekoButton>
-      </div>}
-      {isEdit && <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <NekoSpacer />
-        <NekoSpacer line={true}>Template Editor</NekoSpacer>
-        <div style={{ display: 'flex' }}>
-          <NekoButton disabled={template.id === 'default'} className="primary" style={{ flex: 1 }}
-            onClick={onRenameClick}>
-            Rename
-          </NekoButton>
-          <NekoButton onClick={onSaveAsNewClick} style={{ flex: 1 }}>
-            Duplicate
-          </NekoButton>
-          <NekoButton disabled={!canSave} className="primary" style={{ flex: 1 }}
-            onClick={onSaveClick}>
-            Save
-          </NekoButton>
-        </div>
-        <NekoSpacer line={true} />
-        <NekoButton className="danger"
-          onClick={onResetAllTemplates}>
-          Reset All Templates
-        </NekoButton>
-      </div>}
-    </div>);
+            </li>
+          ))}
+        </ul>
+        {isDifferent && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <NekoSpacer />
+            {isEdit && (
+              <>
+                <NekoButton fullWidth className="primary" disabled={!canSave} onClick={onSaveClick}>
+                  Save
+                </NekoButton>
+                <NekoSpacer tiny />
+              </>
+            )}
+            <NekoButton fullWidth className="secondary" onClick={clearTemplate}>
+              Reset
+            </NekoButton>
+          </div>
+        )}
+        {isEdit && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <NekoSpacer />
+            <NekoSpacer line={true}>Template Editor</NekoSpacer>
+            <div style={{ display: 'flex' }}>
+              <NekoButton className="primary" style={{ flex: 1 }} onClick={onNewClick}>
+                New
+              </NekoButton>
+              <NekoButton className="primary" style={{ flex: 1 }} onClick={onRenameClick}>
+                Rename
+              </NekoButton>
+              <NekoButton onClick={onSaveAsNewClick} style={{ flex: 1 }}>
+                Duplicate
+              </NekoButton>
+            </div>
+            <NekoSpacer tiny />
+            <NekoButton className="danger" onClick={onResetAllTemplates}>
+              Reset All Templates
+            </NekoButton>
+          </div>
+        )}
+      </div>
+    );
   });
 
   return { template, clearTemplate, setTemplate: updateTemplate, jsxTemplates, isEdit };

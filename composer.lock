@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2f3fac895cc81e97b0d47d3d222da0af",
+    "content-hash": "f493960dbf3229f8998effb35c5e910d",
     "packages": [
         {
             "name": "erusev/parsedown",
@@ -55,72 +55,6 @@
                 "source": "https://github.com/erusev/parsedown/tree/1.7.x"
             },
             "time": "2019-12-30T22:54:17+00:00"
-        },
-        {
-            "name": "rahul900day/gpt-3-encoder",
-            "version": "1.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/RahulDey12/gpt-3-encoder.git",
-                "reference": "bb1a827397e616e531473f22484456daf89a6059"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/RahulDey12/gpt-3-encoder/zipball/bb1a827397e616e531473f22484456daf89a6059",
-                "reference": "bb1a827397e616e531473f22484456daf89a6059",
-                "shasum": ""
-            },
-            "require": {
-                "ext-mbstring": "*",
-                "php": "^8.0"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.5",
-                "pestphp/pest": "^1.22",
-                "phpstan/phpstan": "^1.10",
-                "rector/rector": "^0.15.21",
-                "symfony/var-dumper": "^6.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Rahul900day\\Gpt3Encoder\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Rahul Dey",
-                    "email": "rahul900day@gmail.com"
-                }
-            ],
-            "description": "GPT-3-Encoder is a PHP implementation of OpenAI's original python encoder/decoder.",
-            "keywords": [
-                "GPT-2-Encoder",
-                "GPT-2-Tokenizer",
-                "GPT-3",
-                "GPT-3-Encoder",
-                "GPT-3-Tokenizer",
-                "decoder",
-                "encoder",
-                "gpt-2",
-                "php",
-                "tokenizer"
-            ],
-            "support": {
-                "issues": "https://github.com/RahulDey12/gpt-3-encoder/issues",
-                "source": "https://github.com/RahulDey12/gpt-3-encoder/tree/1.0.1"
-            },
-            "funding": [
-                {
-                    "url": "https://ko-fi.com/rahul900day",
-                    "type": "ko_fi"
-                }
-            ],
-            "time": "2023-03-11T19:00:35+00:00"
         }
     ],
     "packages-dev": [],
@@ -131,5 +65,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

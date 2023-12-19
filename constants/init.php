@@ -13,7 +13,6 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'textInputMaxLength' => 512,
 	'textCompliance' => '',
 	'startSentence' => "Hi! How can I help you?",
-	'maxSentences' => 15,
 	'themeId' => 'chatgpt',
 	'window' => false,
 	'icon' => '',
@@ -35,6 +34,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	// AI Parameters
 	'model' => MWAI_FALLBACK_MODEL,
 	'temperature' => 0.8,
+	'maxMessages' => 15,
 	'maxTokens' => 1024,
 	'maxResults' => 1,
 	'apiKey' => null,
@@ -105,7 +105,7 @@ define( 'MWAI_OPTIONS', [
 
 	// General Settings for OpenAI
 	'fallback_model' => MWAI_FALLBACK_MODEL,
-	'openai_models' => Meow_MWAI_Engines_OpenAI::get_openai_models(),
+	'openai_models' => Meow_MWAI_Engines_OpenAI::get_models(),
 	'openai_usage' => [],
 
 	// Settings for Images

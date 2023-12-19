@@ -1,5 +1,5 @@
-// Previous: 1.9.97
-// Current: 2.0.3
+// Previous: 2.0.3
+// Current: 2.0.9
 
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
@@ -52,10 +52,9 @@ const FormSubmitBlock = (props) => {
 
   const embeddingsEnvs = options.embeddings_envs || [];
   const embeddingsEnv = useMemo(() => {
-    const freshEnvironment = embeddingsEnvs.find(e => e.id === embeddingsEnvId) || null;
-    return freshEnvironment;
+    const env = embeddingsEnvs.find(e => e.id === embeddingsEnvId);
+    return env ? env : null;
   }, [embeddingsEnvs, embeddingsEnvId]);
-
   const indexes = useMemo(() => embeddingsEnv?.indexes || [], [embeddingsEnv]);
   const namespaces = useMemo(() => embeddingsEnv?.namespaces || [], [embeddingsEnv]);
 
@@ -64,15 +63,37 @@ const FormSubmitBlock = (props) => {
   const currentModel = getModel(model);
 
   const aiEnvironment = useMemo(() => {
-    const freshEnvironment = aiEnvs.find(e => e.id === aiEnvId) || null;
-    return freshEnvironment;
+    const env = aiEnvs.find(e => e.id === aiEnvId);
+    return env ? env : null;
   }, [aiEnvs, aiEnvId]);
 
   const allAssistants = aiEnvironment?.assistants || [];
   const assistant = useMemo(() => {
-    const freshAssistant = allAssistants.find(e => e.id === assistantId) || null;
-    return freshAssistant;
+    const assist = allAssistants.find(e => e.id === assistantId);
+    return assist ? assist : null;
   }, [allAssistants, assistantId]);
+
+  useEffect(() => {
+    if (model && model !== 'dall-e' && modelOptions && modelOptions.length > 0) {
+      const modelOption = modelOptions.find(m => m.value === model);
+      if (!modelOption) {
+        const defaultModel = modelOptions.find(m => m.value === options?.ai_default_model);
+        if (defaultModel) {
+          setAttributes({ model: defaultModel.value });
+        }
+        else {
+          setAttributes({ model: modelOptions[0].value });
+        }
+      }
+    }
+  }, [model, modelOptions]);
+
+  useEffect(() => {
+    if (assistant && assistant.model && assistant.model !== model) {
+      console.log('Setting model to assistant model', assistant.model);
+      setAttributes({ model: assistant.model });
+    }
+  }, [assistant, model]);
 
   useEffect(() => {
     if (!id) {
@@ -92,7 +113,7 @@ const FormSubmitBlock = (props) => {
     else {
       setAttributes({ placeholders: [] });
     }
-  }, [prompt]);
+  }, [prompt, placeholders]);
 
   useEffect(() => {
     if (!isAssistant) {
@@ -198,12 +219,12 @@ const FormSubmitBlock = (props) => {
                 onChange={value => setAttributes({ model: value })}
               />}
             <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-              onChange={value => setAttributes({ temperature: parseFloat(value) })} // Potential bug: if value is empty string, parseFloat returns NaN
+              onChange={value => setAttributes({ temperature: parseFloat(value) })} 
               type="number" step="0.1" min="0" max="1"
               help={i18n.HELP.TEMPERATURE}
             />
             <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-              onChange={value => setAttributes({ maxTokens: parseInt(value) })} // Potential bug: parseInt may return NaN if value is not a number
+              onChange={value => setAttributes({ maxTokens: parseInt(value) })} 
               type="number" step="16" min="32" max="4096"
               help={<TokensInfo model={currentModel} maxTokens={maxTokens} />}
             />

@@ -1,7 +1,6 @@
 {
   "require": {
-    "erusev/parsedown": "^1.7",
-    "rahul900day/gpt-3-encoder": "^1.0"
+    "erusev/parsedown": "^1.7"
   },
   "config": {
     "platform-check": false

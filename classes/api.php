@@ -85,9 +85,9 @@ class Meow_MWAI_API {
 			$params = $request->get_params();
 			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
-			$env = isset( $params['env'] ) ? $params['env'] : 'public-api';
-			if ( !empty( $env ) ) {
-				$options['env'] = $env;
+			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
+			if ( !empty( $scope ) ) {
+				$options['scope'] = $scope;
 			}
 			if ( empty( $prompt ) ) {
 				throw new Exception( 'The prompt is required.' );
@@ -107,9 +107,9 @@ class Meow_MWAI_API {
 			$url = isset( $params['url'] ) ? $params['url'] : '';
 			$path = isset( $params['path'] ) ? $params['path'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
-			$env = isset( $params['env'] ) ? $params['env'] : 'public-api';
-			if ( !empty( $env ) ) {
-				$options['env'] = $env;
+			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
+			if ( !empty( $scope ) ) {
+				$options['scope'] = $scope;
 			}
 			if ( empty( $prompt ) ) {
 				throw new Exception( 'The prompt is required.' );
@@ -130,9 +130,9 @@ class Meow_MWAI_API {
 			$params = $request->get_params();
 			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
-			$env = isset( $params['env'] ) ? $params['env'] : 'public-api';
-			if ( !empty( $env ) ) {
-				$options['env'] = $env;
+			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
+			if ( !empty( $scope ) ) {
+				$options['scope'] = $scope;
 			}
 			if ( empty( $prompt ) ) {
 				throw new Exception( 'The prompt is required.' );
@@ -178,21 +178,21 @@ class Meow_MWAI_API {
 		$preferURL = $remote_upload === 'url';
 
 		if ( $preferURL && $url ) {
-			$query->set_new_image( $url );
+			$query->set_image( $url );
 		}
 		else if ( !$preferURL && !empty( $path ) ) {
 			$data = base64_encode( file_get_contents( $path ) );
-			$query->set_new_image_data( $data );
+			$query->set_image_data( $data );
 		}
 		else if ( $url ) {
-			$query->set_new_image( $url );
+			$query->set_image( $url );
 		}
 		else if ( !empty($path ) ) {
 			$data = base64_encode( file_get_contents( $path ) );
-			$query->set_new_image_data( $data );
+			$query->set_image_data( $data );
 		}
 
-		$reply = $mwai_core->ai->run( $query );
+		$reply = $mwai_core->run_query( $query );
 		return $reply->result;
 	}
 
@@ -229,7 +229,7 @@ class Meow_MWAI_API {
     global $mwai_core;
 		$query = new Meow_MWAI_Query_Text( $prompt );
 		$query->inject_params( $params );
-		$reply = $mwai_core->ai->run( $query );
+		$reply = $mwai_core->run_query( $query );
 		return $reply->result;
 	}
 
@@ -250,7 +250,7 @@ class Meow_MWAI_API {
 		$query->inject_params( $params );
 		$query->set_response_format( 'json' );
 		$query->set_model( MWAI_FALLBACK_MODEL_JSON );
-		$reply = $mwai_core->ai->run( $query );
+		$reply = $mwai_core->run_query( $query );
 		try {
 			$json = json_decode( $reply->result, true );
 			return $json;
@@ -269,7 +269,7 @@ class Meow_MWAI_API {
 	 */
 	public function moderationCheck( $text ) {
 		global $mwai_core;
-		$openai = new Meow_MWAI_Engines_OpenAI( $mwai_core );
+		$openai = Meow_MWAI_Engines_Factory::get_openai( $mwai_core );
 		$res = $openai->moderate( $text );
 		if ( !empty( $res ) && !empty( $res['results'] ) ) {
 			return (bool)$res['results'][0]['flagged'];

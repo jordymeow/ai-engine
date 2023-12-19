@@ -1,5 +1,5 @@
-// Previous: 1.8.2
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 2.0.9
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -37,7 +37,6 @@ const StyledTextArea = Styled(NekoTextArea)`
 const Dashboard = () => {
   const { template, setTemplate, jsxTemplates } = useTemplates('playground');
   const [ completion, setCompletion ] = useState("");
-  const { completionModels } = useModels(options);
   const { addUsage, jsxUsageCosts } = UsageCosts(options);
   const [ busy, setBusy ] = useState(false);
   const [ continuousEntry, setContinuousEntry ] = useState('');
@@ -48,8 +47,12 @@ const Dashboard = () => {
   const model = template?.model ?? "gpt-3.5-turbo";
   const mode = template?.mode ?? "query";
   const temperature = template?.temperature ?? 1;
+  const envId = template?.envId ?? "";
   const stopSequence = template?.stopSequence ?? "";
   const maxTokens = template?.maxTokens ?? 2048;
+
+  const { completionModels } = useModels(options, envId || null);
+  const aiEnvironments = options?.ai_envs || [];
 
   const setTemplateProperty = (value, property) => {
     setTemplate({ ...template, [property]: value });
@@ -77,11 +80,9 @@ const Dashboard = () => {
     setStartTime(new Date());
     try {
       const stop = stopSequence.replace(/\\n/g, '\n');
-      const streamCallback = stream ? (content) => {
+      const streamCallback = !stream ? null : (content) => {
         setCompletion(content);
-        // Adding a delay to simulate streaming latency
-        setTimeout(() => {}, 10);
-      } : null;
+      };
       const res = await mwaiFetch(`${apiUrl}/ai/completions`, { 
         env: 'playground',
         session: session,
@@ -111,7 +112,7 @@ const Dashboard = () => {
     catch (err) {
       setError(err.message);
     }
-    setStartTime(undefined);
+    setStartTime();
     setBusy(false);
   };
 
@@ -136,7 +137,6 @@ const Dashboard = () => {
           <StyledSidebar>
             {jsxTemplates}
           </StyledSidebar>
-
         </NekoColumn>
 
         <NekoColumn style={{ flex: 3 }}>
@@ -144,15 +144,15 @@ const Dashboard = () => {
           <StyledSidebar>
 
             {mode !== 'continuous' && <>
-              <StyledTextArea rows={12} onChange={e => setPrompt(e.target.value)} value={prompt} />
+              <StyledTextArea rows={12} onChange={setPrompt} value={prompt} />
             </>}
 
             {mode === 'continuous' && <>
-              <StyledTextArea rows={18} onChange={e => setPrompt(e.target.value)} value={prompt} />
+              <StyledTextArea rows={18} onChange={setPrompt} value={prompt} />
               <div style={{ display: 'flex' }}>
                 <span className="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={e => setContinuousEntry(e.target.value)}
+                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
                   onEnter={onPushContinuousEntry} disabled={busy} />
               </div>
             </>}
@@ -181,29 +181,38 @@ const Dashboard = () => {
 
           <StyledSidebar>
             <h3>{i18n.COMMON.SETTINGS}</h3>
+
+            <label>{i18n.COMMON.ENVIRONMENT}:</label>
+            <NekoSelect scrolldown name="envId"
+              value={envId ?? ""} onChange={setTemplateProperty}>
+              {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
+              <NekoOption value={""} label={"None"}></NekoOption>
+            </NekoSelect>
+
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect name="model" value={model} scrolldown={true} onChange={e => setTemplateProperty(e.target.value, 'model')}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
               {completionModels.map((x) => (
-                <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
+                <NekoOption value={x.model} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
+
             <label>{i18n.COMMON.TEMPERATURE}:</label>
             <NekoInput name="temperature" value={temperature} type="number"
-              onChange={e => setTemplateProperty(parseFloat(e.target.value), 'temperature')} description={<>
-                <span style={{ color: (temperature >= 0 && temperature <= 1) ? 'inherit' : 'red' }}>
+              onChange={value => setTemplateProperty(parseFloat(value), 'temperature')} description={<>
+                <span style={{ color: temperature >= 0 && temperature <= 1 ? 'inherit' : 'red' }}>
                   {i18n.HELP.TEMPERATURE}
                 </span>
               </>} />
             <label>{i18n.COMMON.MAX_TOKENS}:</label>
             <NekoInput name="maxTokens" value={maxTokens} type="number"
-              onChange={e => setTemplateProperty(parseInt(e.target.value), 'maxTokens')} description={<>
+              onChange={value => setTemplateProperty(parseInt(value), 'maxTokens')} description={<>
                 <span>
                   {i18n.HELP.MAX_TOKENS}
                 </span>
               </>} />
             <label>{i18n.COMMON.STOP_SEQUENCE}:</label>
             <NekoInput name="stopSequence" value={stopSequence} type="text"
-              onChange={e => setTemplateProperty(e.target.value, 'stopSequence')} description={<>
+              onChange={setTemplateProperty} description={<>
                 <span>
                   {i18n.HELP.STOP_SEQUENCE}
                 </span>
@@ -218,10 +227,10 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
-        onRequestClose={() => { setError(undefined); }}
+      <NekoModal isOpen={error}
+        onRequestClose={() => { setError(); }}
         okButton={{
-          onClick: () => { setError(undefined); }
+          onClick: () => { setError(); }
         }}
         title="Error"
         content={<p>{error}</p>}

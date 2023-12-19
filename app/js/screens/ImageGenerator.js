@@ -1,5 +1,5 @@
-// Previous: 1.9.97
-// Current: 1.9.98
+// Previous: 1.9.98
+// Current: 2.0.9
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -54,7 +54,6 @@ const ImageGenerator = () => {
   const currentModel = getModel(template?.model);
   const [taskQueue, setTaskQueue] = useState([]);
 
-  // Results
   const [urls, setUrls] = useState([]);
   const [selectedUrl, setSelectedUrl] = useState();
   const [title, setTitle] = useState('');
@@ -66,7 +65,6 @@ const ImageGenerator = () => {
   const urlIndex = useMemo(() => urls.indexOf(selectedUrl), [selectedUrl, urls]);
   const prompt = template?.prompt;
 
-  const [currentImageNumber, setCurrentImageNumber] = useState(0);
   const [totalImagesToGenerate, setTotalImagesToGenerate] = useState(1);
   const [totalTasks, setTotalTasks] = useState(0);
   const [processedTasks, setProcessedTasks] = useState(0);
@@ -172,6 +170,8 @@ const ImageGenerator = () => {
       if (err.name !== 'AbortError') {
         console.error(err);
         setError(err.message + (taskQueue.length > 1 ? ' The other tasks will continue.' : ''));
+        setTaskQueue(queue => queue.slice(1));
+        setTotalTasks(totalTasks => totalTasks - 1);
       }
     }
     finally {
@@ -184,7 +184,6 @@ const ImageGenerator = () => {
       processQueue();
     }
   }, [taskQueue, busy]);
-  
 
   const clearImages = () => {
     setUrls([]);
@@ -225,14 +224,12 @@ const ImageGenerator = () => {
       <AiNekoHeader title={i18n.COMMON.IMAGES_GENERATOR} />
 
       <NekoWrapper>
-        
         <NekoColumn fullWidth>
           <OptionsCheck options={options} />
 
           <NekoTypo p style={{ marginTop: 0, marginBottom: 0 }}>
             This will also be available in the Post Editor soon. If you have any idea or request, please join us on the <a target="_blank" href="https://wordpress.org/support/plugin/ai-engine/" rel="noreferrer">Support Forum</a>! 🎵
           </NekoTypo>
-
         </NekoColumn>
 
         <NekoColumn>
@@ -242,7 +239,6 @@ const ImageGenerator = () => {
         </NekoColumn>
 
         <NekoColumn style={{ flex: 3 }}>
-
           <NekoProgress busy={busy} value={processedTasks} max={totalTasks}
             onStopClick={() => {
               abortController.abort();
@@ -257,17 +253,13 @@ const ImageGenerator = () => {
           <NekoSpacer />
 
           <NekoContainer>
-
             {selectedUrl && <>
-
               <StyledTitleWithButton style={{ paddingBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <NekoButton disabled={urlIndex < 1 || busy} onClick={() => onGoBack()}>
                     &lt;
                   </NekoButton>
-                  <NekoButton onClick={() => setSelectedUrl()}>
-                    Back to Results
-                  </NekoButton>
+                  <NekoButton onClick={() => setSelectedUrl()}>Back to Results</NekoButton>
                   <NekoButton disabled={urlIndex >= urls.length - 1 || busy} onClick={() => onGoNext()}>
                     &gt;
                   </NekoButton>
@@ -314,70 +306,54 @@ const ImageGenerator = () => {
                   </>}
                 </div>
               </div>
-
             </>}
-
             {!selectedUrl && <>
               <StyledTitleWithButton>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <NekoButton disabled={!prompt} isBusy={busy} onClick={addToQueue}>
-                    Generate
-                  </NekoButton>
+                  <NekoButton disabled={!prompt} isBusy={busy} onClick={addToQueue}>Generate</NekoButton>
                   <NekoSelect scrolldown id="totalImagesToGenerate" name="totalImagesToGenerate"
                     style={{ marginLeft: 10, marginRight: 10, width: 120 }}
                     value={totalImagesToGenerate} onChange={value => setTotalImagesToGenerate(value)}>
-                    {ImagesCount.map((count) => {
-                      return <NekoOption key={count} id={count} value={count}
-                        label={`${count} ${count > 1 ? 'Images' : 'Image'}`}
-                      />;
-                    })}
+                    {ImagesCount.map((count) => (
+                      <NekoOption key={count} id={count} value={count} label={`${count} ${count > 1 ? 'Images' : 'Image'}`} />
+                    ))}
                   </NekoSelect>
-                  {busy && <NekoButton disabled={!prompt} onClick={addToQueue}>
-                    Add to Queue
-                  </NekoButton>}
-                  {urls.length > 0 && <NekoButton onClick={clearImages}>
-                    Clear
-                  </NekoButton>}
+                  {busy && <NekoButton disabled={!prompt} onClick={addToQueue}>Add to Queue</NekoButton>}
+                  {urls.length > 0 && <NekoButton onClick={clearImages}>Clear</NekoButton>}
                 </div>
               </StyledTitleWithButton>
               <NekoSpacer />
               <NekoTextArea value={prompt} onChange={setPrompt} />
               <StyledGallery>
                 {urls.map(url => <img src={url} onClick={() => setSelectedUrl(url)} />)}
-                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(x => <div key={x} className="empty-image" />)}
+                {[...Array(Math.max(3 - urls.length, 0)).keys()].map(() => <div className="empty-image" />)}
               </StyledGallery>
             </>}
-
           </NekoContainer>
-            
         </NekoColumn>
-
         <NekoColumn>
           <NekoContainer style={{ marginBottom: 25 }}>
             <h2 style={{ marginTop: 0 }}>Template</h2>
             <label>{i18n.COMMON.ENVIRONMENT}:</label>
             <NekoSpacer tiny />
-            <NekoSelect scrolldown name="envId"
-              value={template?.envId ?? ""} onChange={setTemplateProperty}>
+            <NekoSelect scrolldown name="envId" value={template?.envId ?? ""} onChange={setTemplateProperty}>
               {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
               <NekoOption value={""} label={"None"}></NekoOption>
             </NekoSelect>
             <NekoSpacer tiny />
             <label>{i18n.COMMON.MODEL}:</label>
             <NekoSpacer tiny />
-            <NekoSelect scrolldown name="model"
-              value={template?.model} onChange={setTemplateProperty}>
+            <NekoSelect scrolldown name="model" value={template?.model} onChange={setTemplateProperty}>
               {imageModels.map((x) => (
-                <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
+                <NekoOption key={x.model} value={x.model} label={x.name} />
               ))}
             </NekoSelect>
             <NekoSpacer tiny />
             <label>{i18n.COMMON.RESOLUTION}:</label>
             <NekoSpacer tiny />
-            <NekoSelect scrolldown name="resolution"
-              value={template?.resolution} onChange={setTemplateProperty}>
-              {currentModel?.options.map((x) => (
-                <NekoOption key={x.option} value={x.option} label={x.option}></NekoOption>
+            <NekoSelect scrolldown name="resolution" value={template?.resolution} onChange={setTemplateProperty}>
+              {currentModel?.options?.map((x) => (
+                <NekoOption key={x.option} value={x.option} label={x.option} />
               ))}
             </NekoSelect>
             {currentModel?.model?.startsWith('dall-e-3') && <>
@@ -385,24 +361,21 @@ const ImageGenerator = () => {
               <label>{i18n.COMMON.STYLE}:</label>
               <NekoSpacer tiny />
               <NekoSelect scrolldown name="style" value={currentStyle} onChange={setTemplateProperty}>
-                <NekoOption key={'none'} value={null} label={'None'}></NekoOption>
-                <NekoOption key={'natural'} value={'natural'} label={'Natural'}></NekoOption>
-                <NekoOption key={'vivid'} value={'vivid'} label={'Vivid'}></NekoOption>
+                <NekoOption key={'none'} value={null} label={'None'} />
+                <NekoOption key={'natural'} value={'natural'} label={'Natural'} />
+                <NekoOption key={'vivid'} value={'vivid'} label={'Vivid'} />
               </NekoSelect>
             </>}
           </NekoContainer>
-
           <NekoContainer style={{ marginBottom: 25 }}>
             <h2 style={{ marginTop: 0 }}>Settings</h2>
             <NekoCheckbox id="continuous_mode" label="Continuous" value="1" checked={continuousMode}
               description="New images will be added to the already generated images."
-              onChange={(val) => setContinuousMode(val)} />
+              onChange={setContinuousMode} />
           </NekoContainer>
         </NekoColumn>
-
       </NekoWrapper>
-
-      <NekoModal isOpen={!!error}
+      <NekoModal isOpen={error}
         onRequestClose={() => { setError(); }}
         okButton={{
           onClick: () => { setError(); },
@@ -410,9 +383,6 @@ const ImageGenerator = () => {
         title="Error"
         content={<p>{error}</p>}
       />
-      
     </NekoPage>
   );
 };
-
-export default ImageGenerator;
