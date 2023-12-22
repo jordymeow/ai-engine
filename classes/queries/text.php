@@ -11,9 +11,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public int $maxTokens = 1024;
   public ?string $stop = null;
   public ?string $responseFormat = null;
-
-  // Statistics
-  public ?int $promptTokens = null;
   
   public function __construct( ?string $message = '', ?int $maxTokens = null, string $model = null ) {
     parent::__construct( $message );
@@ -43,14 +40,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       'envId' => $this->envId,
       'stop' => $this->stop
     ];
-  }
-
-  public function get_message_tokens( $refresh = false ): int {
-    if ( $this->promptTokens && !$refresh ) {
-      return $this->promptTokens;
-    }
-    $this->promptTokens = Meow_MWAI_Core::estimate_tokens( $this->messages );
-    return $this->promptTokens;
   }
 
   /**
@@ -85,7 +74,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
    * The maximum number of tokens to generate in the completion.
    * The token count of your prompt plus max_tokens cannot exceed the model's context length.
    * Most models have a context length of 2048 tokens (except for the newest models, which support 4096).
-   * @param float $prompt The maximum number of tokens.
+   * @param float $maxTokens The maximum number of tokens.
    */
   public function set_max_tokens( int $maxTokens ): void {
     $this->maxTokens = $maxTokens;

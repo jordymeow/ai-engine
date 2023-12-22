@@ -74,9 +74,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     return $this->message;
   }
 
-  public function get_last_message(): string {
-    error_log( 'AI Engine: get_last_message() is deprecated. Please use get_message() instead.' );
-    return $this->message;
+  public function get_in_tokens(): int {
+    $in_tokens = Meow_MWAI_Core::estimate_tokens( $this->messages, $this->message );
+    return $in_tokens;
   }
 
   /**
@@ -112,20 +112,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function set_model( string $model ) {
     $this->model = $model;
     $this->mode = 'chat';
-    $found = false;
-    $openai_models = Meow_MWAI_Engines_OpenAI::get_models();
-    foreach ( $openai_models as $currentModel ) {
-      if ( $currentModel['model'] === $this->model ) {
-        if ( isset( $currentModel['mode'] ) ) {
-          $this->mode = $currentModel['mode'];
-        }
-        $found = true;
-        break;
-      }
-    }
-    if ( !$found ) {
-      throw new Exception( "AI Engine: The model '$model' is not supported." );
-    }
   }
 
   public function get_model() {
@@ -156,7 +142,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   /**
    * Similar to the prompt, but use an array of messages instead.
-   * @param string $prompt The messages to generate completions.
+   * @param string $messages The messages to generate completions.
    */
   public function set_messages( array $messages ) {
     $messages = array_map( function( $message ) {
@@ -257,35 +243,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
       $newParams[$newKey] = $value;
     }
     return $newParams;
-  }
-
-  // Quick and dirty token estimation
-  // Let's keep this synchronized with Helpers in JS
-  protected function estimate_tokens( $promptOrMessages ): int
-  {
-    $text = "";
-    // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    if ( is_array( $promptOrMessages ) ) {
-      foreach ( $promptOrMessages as $message ) {
-        $role = $message['role'];
-        $content = $message['content'];
-        if ( is_array( $content ) ) {
-          foreach ( $content as $subMessage ) { 
-            if ( $subMessage['type'] === 'text' ) {
-              $text .= $subMessage['text'];
-            }
-          }
-        }
-        else {
-          $text .= "=#=$role\n$content=#=\n";
-        }
-      }
-    }
-    else {
-      $text = $promptOrMessages;
-    }
-    $tokens = 0;
-    return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $this->model );
   }
 
   public function toJson() {

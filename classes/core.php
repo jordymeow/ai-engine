@@ -93,16 +93,35 @@ class Meow_MWAI_Core
 
 	#region AI-Related Helpers
 	function run_query( $query, $streamCallback = null ) {
-		$hasEnvId = !empty( $query->envId );
-		$envId = $hasEnvId ? $query->envId : $this->get_option( 'ai_default_env' );
+		$envId = !empty( $query->envId ) ? $query->envId : $this->get_option( 'ai_default_env' );
 		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
-		if ( !$hasEnvId && !$query->model ) {
-			$model = $this->get_option( 'ai_default_model' );
-			$query->set_model( $model );	
+		if ( !$engine->retrieve_model_info( $query->model ) ) {
+			if ( $query instanceof Meow_MWAI_Query_Text ) {
+				$this->set_if_empty_defaults( $query, 'ai_default_env', 'ai_default_model' );
+			}
+			if ( $query instanceof Meow_MWAI_Query_Embed ) {
+				$this->set_if_empty_defaults( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
+			}
+			else if ( $query instanceof Meow_MWAI_Query_Image ) {
+				$this->set_if_empty_defaults( $query, 'ai_images_default_env', 'ai_images_default_model' );
+			}
+			else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
+				$this->set_if_empty_defaults( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
+			}
+			$engine = Meow_MWAI_Engines_Factory::get( $this, $query->envId );
 		}
-		$reply = $engine->run( $query, $streamCallback );
-		return $reply;
+		return $engine->run( $query, $streamCallback );
 	}
+	
+	private function set_if_empty_defaults( $query, $envOption, $modelOption ) {
+		$defaultEnv = $this->get_option( $envOption );
+		$defaultModel = $this->get_option( $modelOption );
+		if ( empty( $defaultEnv ) || empty( $defaultModel ) ) {
+			throw new Exception( 'AI Engine: The default environment and model are not set.' );
+		}
+		$query->set_env_id( $defaultEnv );
+		$query->set_model( $defaultModel );
+	}	
 	#endregion
 
 	#region Text-Related Helpers
@@ -438,42 +457,37 @@ class Meow_MWAI_Core
 
 	// Quick and dirty token estimation
   // Let's keep this synchronized with Helpers in JS
-  static function estimate_tokens( $promptOrMessages, $model = null ): int
-  {
+  static function estimate_tokens( ...$args ): int {
     $text = "";
-    // https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    if ( is_array( $promptOrMessages ) ) {
-      foreach ( $promptOrMessages as $message ) {
-        $role = $message['role'];
-        $content = $message['content'];
-        if ( is_array( $content ) ) {
-          foreach ( $content as $subMessage ) { 
-            if ( $subMessage['type'] === 'text' ) {
-              $text .= $subMessage['text'];
-            }
-          }
-        }
-        else {
-          $text .= "=#=$role\n$content=#=\n";
-        }
-      }
+    foreach ( $args as $arg ) {
+			if ( is_array( $arg ) ) {
+				foreach ( $arg as $message ) {
+					$text .= isset( $message['content']['text'] ) ? $message['content']['text'] : "";
+					$text .= isset( $message['content'] ) && is_string( $message['content'] ) ? $message['content'] : "";
+				}
+			}
+			else if ( is_string( $arg ) ) {
+				$text .= $arg;
+			}
     }
-    else {
-      $text = $promptOrMessages;
+    $averageTokenLength = 4;
+    $words = preg_split( '/\s+/', trim( $text ) );
+    $tokenCount = 0;
+    foreach ( $words as $word ) {
+      $tokenCount += ceil( strlen( $word ) / $averageTokenLength );
     }
-    $tokens = 0;
-    return apply_filters( 'mwai_estimate_tokens', (int)$tokens, $text, $model );
-  }
+    return apply_filters( 'mwai_estimate_tokens', $tokenCount, $text );
+	}
 
-  public function record_tokens_usage( $model, $prompt_tokens, $completion_tokens = 0 ) {
-    if ( !is_numeric( $prompt_tokens ) ) {
-      throw new Exception( 'Record usage: prompt_tokens is not a number.' );
+  public function record_tokens_usage( $model, $in_tokens, $out_tokens = 0 ) {
+    if ( !is_numeric( $in_tokens ) ) {
+      throw new Exception( 'AI Engine: in_tokens must be a number.' );
     }
-    if ( !is_numeric( $completion_tokens ) ) {
-      $completion_tokens = 0;
+    if ( !is_numeric( $out_tokens ) ) {
+      $out_tokens = 0;
     }
     if ( !$model ) {
-      throw new Exception( 'Record usage: model is missing.' );
+      throw new Exception( 'AI Engine: model is required.' );
     }
     $usage = $this->get_option( 'openai_usage' );
     $month = date( 'Y-m' );
@@ -481,29 +495,25 @@ class Meow_MWAI_Core
       $usage[$month] = array();
     }
     if ( !isset( $usage[$month][$model] ) ) {
-      $usage[$month][$model] = array(
-        'prompt_tokens' => 0,
-        'completion_tokens' => 0,
-        'total_tokens' => 0
-      );
+      $usage[$month][$model] = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
     }
-    $usage[$month][$model]['prompt_tokens'] += $prompt_tokens;
-    $usage[$month][$model]['completion_tokens'] += $completion_tokens;
-    $usage[$month][$model]['total_tokens'] += $prompt_tokens + $completion_tokens;
+    $usage[$month][$model]['prompt_tokens'] += $in_tokens;
+    $usage[$month][$model]['completion_tokens'] += $out_tokens;
+    $usage[$month][$model]['total_tokens'] += $in_tokens + $out_tokens;
     $this->update_option( 'openai_usage', $usage );
     return [
-      'prompt_tokens' => $prompt_tokens,
-      'completion_tokens' => $completion_tokens,
-      'total_tokens' => $prompt_tokens + $completion_tokens
+      'prompt_tokens' => $in_tokens,
+      'completion_tokens' => $out_tokens,
+      'total_tokens' => $in_tokens + $out_tokens
     ];
   }
 
 	public function record_audio_usage( $model, $seconds ) {
 		if ( !is_numeric( $seconds ) ) {
-			throw new Exception( 'Record usage: seconds is not a number.' );
+			throw new Exception( 'AI Engine: seconds must be a number.' );
 		}
 		if ( !$model ) {
-			throw new Exception( 'Record usage: model is missing.' );
+			throw new Exception( 'AI Engine: model is required.' );
 		}
 		$usage = $this->get_option( 'openai_usage' );
 		$month = date( 'Y-m' );
@@ -511,15 +521,11 @@ class Meow_MWAI_Core
 			$usage[$month] = array();
 		}
 		if ( !isset( $usage[$month][$model] ) ) {
-			$usage[$month][$model] = array(
-				'seconds' => 0
-			);
+			$usage[$month][$model] = array( 'seconds' => 0 );
 		}
 		$usage[$month][$model]['seconds'] += $seconds;
 		$this->update_option( 'openai_usage', $usage );
-		return [
-			'seconds' => $seconds
-		];
+		return [ 'seconds' => $seconds ];
 	}
 
   public function record_images_usage( $model, $resolution, $images ) {
@@ -532,10 +538,7 @@ class Meow_MWAI_Core
       $usage[$month] = array();
     }
     if ( !isset( $usage[$month][$model] ) ) {
-      $usage[$month][$model] = array(
-        'resolution' => array(),
-        'images' => 0
-      );
+      $usage[$month][$model] = array( 'resolution' => array(), 'images' => 0 );
     }
     if ( !isset( $usage[$month][$model]['resolution'][$resolution] ) ) {
       $usage[$month][$model]['resolution'][$resolution] = 0;
@@ -543,10 +546,7 @@ class Meow_MWAI_Core
     $usage[$month][$model]['resolution'][$resolution] += $images;
     $usage[$month][$model]['images'] += $images;
     $this->update_option( 'openai_usage', $usage );
-    return [
-      'resolution' => $resolution,
-      'images' => $images
-    ];
+    return [ 'resolution' => $resolution, 'images' => $images ];
   }
 
 	#endregion
@@ -629,10 +629,6 @@ class Meow_MWAI_Core
 		$chatbots = $this->get_chatbots();
 		foreach ( $chatbots as $chatbot ) {
 			if ( $chatbot['botId'] === (string)$botId ) {
-				// Somehow, the default was set to "openai" when creating a new chatbot, but that overrided
-				// the default value in the Settings. It should be always empty here (except if we add this
-				// into the Settings of the chatbot).
-				$chatbot['service'] = null;
 				return $chatbot;
 			}
 		}
@@ -713,7 +709,7 @@ class Meow_MWAI_Core
 		}
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
-		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_models();
+		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_models_static();
 		$options['fallback_model'] = MWAI_FALLBACK_MODEL;
 
 		//$this->options = $options;
@@ -914,7 +910,9 @@ class Meow_MWAI_Core
 	}
 
 	function reset_options() {
-		return $this->update_options( MWAI_OPTIONS );
+		//return $this->update_options( MWAI_OPTIONS );
+		delete_option( $this->option_name );
+		return $this->get_all_options( true );
 	}
 	#endregion
 }

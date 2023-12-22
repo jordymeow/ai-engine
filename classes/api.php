@@ -63,16 +63,16 @@ class Meow_MWAI_API {
 		try {
 			$params = $request->get_params();
 			$botId = isset( $params['botId'] ) ? $params['botId'] : '';
-			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			$chatId = isset( $params['chatId'] ) ? $params['chatId'] : null;
 			$params = null;
 			if ( !empty( $chatId ) ) {
 				$params = array( 'chatId' => $chatId );
 			}
-			if ( empty( $botId ) || empty( $prompt ) ) {
+			if ( empty( $botId ) || empty( $message ) ) {
 				throw new Exception( 'The botId and prompt are required.' );
 			}
-			$reply = $this->simpleChatbotQuery( $botId, $prompt, $params );
+			$reply = $this->simpleChatbotQuery( $botId, $message, $params );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
@@ -83,16 +83,16 @@ class Meow_MWAI_API {
 	public function rest_simpleTextQuery( $request ) {
 		try {
 			$params = $request->get_params();
-			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
 			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
 			if ( !empty( $scope ) ) {
 				$options['scope'] = $scope;
 			}
-			if ( empty( $prompt ) ) {
+			if ( empty( $message ) ) {
 				throw new Exception( 'The prompt is required.' );
 			}
-			$reply = $this->simpleTextQuery( $prompt, $options );
+			$reply = $this->simpleTextQuery( $message, $options );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
@@ -103,7 +103,7 @@ class Meow_MWAI_API {
 	public function rest_simpleVisionQuery( $request ) {
 		try {
 			$params = $request->get_params();
-			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			$url = isset( $params['url'] ) ? $params['url'] : '';
 			$path = isset( $params['path'] ) ? $params['path'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
@@ -111,13 +111,13 @@ class Meow_MWAI_API {
 			if ( !empty( $scope ) ) {
 				$options['scope'] = $scope;
 			}
-			if ( empty( $prompt ) ) {
+			if ( empty( $message ) ) {
 				throw new Exception( 'The prompt is required.' );
 			}
 			if ( empty( $url ) && empty( $path ) ) {
 				throw new Exception( 'The url or path is required.' );
 			}
-			$reply = $this->simpleVisionQuery( $prompt, $url, $path, $options );
+			$reply = $this->simpleVisionQuery( $message, $url, $path, $options );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
@@ -128,16 +128,16 @@ class Meow_MWAI_API {
 	public function rest_simpleJsonQuery( $request ) {
 		try {
 			$params = $request->get_params();
-			$prompt = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
 			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
 			if ( !empty( $scope ) ) {
 				$options['scope'] = $scope;
 			}
-			if ( empty( $prompt ) ) {
+			if ( empty( $message ) ) {
 				throw new Exception( 'The prompt is required.' );
 			}
-			$reply = $this->simpleJsonQuery( $prompt, $options );
+			$reply = $this->simpleJsonQuery( $message, $options );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
@@ -162,18 +162,28 @@ class Meow_MWAI_API {
 	/**
 	 * Executes a vision query.`
 	 *
-	 * @param string $prompt The prompt for the AI.
+	 * @param string $message The prompt for the AI.
 	 * @param string $url The URL of the image to analyze.
 	 * @param string|null $path The path to the image file. If provided, the image data will be read from this file.
 	 * @param array $params Additional parameters for the AI query.
 	 *
 	 * @return string The result of the AI query.
 	 */
-	public function simpleVisionQuery( $prompt, $url, $path = null, $params = [] ) {
+	public function simpleVisionQuery( $message, $url, $path = null, $params = [] ) {
 		global $mwai_core;
-		$query = new Meow_MWAI_Query_Text( $prompt );
+		$ai_vision_default_env = $this->core->get_option( 'ai_vision_default_env' );
+		$ai_vision_default_model = $this->core->get_option( 'ai_vision_default_model' );
+		if ( empty( $ai_vision_default_model ) ) {
+			$ai_vision_default_model = MWAI_FALLBACK_MODEL_VISION;
+		}
+		$query = new Meow_MWAI_Query_Text( $message );
+		if ( !empty( $ai_vision_default_env ) ) {
+			$query->set_env_id( $ai_vision_default_env );
+		}
+		if ( !empty( $ai_vision_default_model ) ) {
+			$query->set_model( $ai_vision_default_model );
+		}
 		$query->inject_params( $params );
-		$query->set_model( MWAI_FALLBACK_MODEL_VISION );
 		$remote_upload = $this->core->get_option( 'image_remote_upload' );
 		$preferURL = $remote_upload === 'url';
 
@@ -201,33 +211,33 @@ class Meow_MWAI_API {
 	 * It will use the discussion if chatId is provided in the parameters.
 	 * 
 	 * @param string $botId The ID of the chatbot.
-	 * @param string $prompt The prompt for the AI.
+	 * @param string $message The prompt for the AI.
 	 * @param array $params Additional parameters for the AI query.
 	 * 
 	 * @return string The result of the AI query.
 	 */
-	public function simpleChatbotQuery( $botId, $prompt, $params = [] ) {
+	public function simpleChatbotQuery( $botId, $message, $params = [] ) {
 		if ( !isset( $params['messages'] ) && isset( $params['chatId'] ) ) {
 			$discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
 			if ( !empty( $discussion ) ) {
 				$params['messages'] = $discussion->messages;
 			}
 		}
-		$data = $this->chatbot_module->chat_submit( $botId, $prompt, $params );
+		$data = $this->chatbot_module->chat_submit( $botId, $message, $params );
 		return $data['reply'];
 	}
 
 	/**
 	 * Executes a text query.
 	 * 
-	 * @param string $prompt The prompt for the AI.
+	 * @param string $message The prompt for the AI.
 	 * @param array $params Additional parameters for the AI query.
 	 * 
 	 * @return string The result of the AI query.
 	 */
-  public function simpleTextQuery( $prompt, $params = [] ) {
+  public function simpleTextQuery( $message, $params = [] ) {
     global $mwai_core;
-		$query = new Meow_MWAI_Query_Text( $prompt );
+		$query = new Meow_MWAI_Query_Text( $message );
 		$query->inject_params( $params );
 		$reply = $mwai_core->run_query( $query );
 		return $reply->result;
@@ -236,20 +246,30 @@ class Meow_MWAI_API {
 	/**
 	 * Executes a query that will have to return a JSON result.
 	 * 
-	 * @param string $prompt The prompt for the AI.
+	 * @param string $message The prompt for the AI.
 	 * @param array $params Additional parameters for the AI query.
 	 * 
 	 * @return array The result of the AI query.
 	 */
-	public function simpleJsonQuery( $prompt, $url = null, $path = null, $params = [] ) {
+	public function simpleJsonQuery( $message, $url = null, $path = null, $params = [] ) {
 		if ( !empty( $url ) || !empty( $path ) ) {
 			throw new Exception( 'The url and path are not supported yet by the simpleJsonQuery.' );
 		} 
 		global $mwai_core;
-		$query = new Meow_MWAI_Query_Text( $prompt . "\nYour reply must be a formatted JSON." );
+		$query = new Meow_MWAI_Query_Text( $message . "\nYour reply must be a formatted JSON." );
 		$query->inject_params( $params );
 		$query->set_response_format( 'json' );
-		$query->set_model( MWAI_FALLBACK_MODEL_JSON );
+		$ai_json_default_env = $mwai_core->get_option( 'ai_json_default_env' );
+		$ai_json_default_model = $mwai_core->get_option( 'ai_json_default_model' );
+		if ( !empty( $ai_json_default_env ) ) {
+			$query->set_env_id( $ai_json_default_env );
+		}
+		if ( !empty( $ai_json_default_model ) ) {
+			$query->set_model( $ai_json_default_model );
+		}
+		else {
+			$query->set_model( MWAI_FALLBACK_MODEL_JSON );
+		}
 		$reply = $mwai_core->run_query( $query );
 		try {
 			$json = json_decode( $reply->result, true );

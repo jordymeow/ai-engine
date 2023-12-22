@@ -61,6 +61,10 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_OpenAI( $core, $env );
       return $engine;
     }
+    else if ( $env['type'] === 'openrouter' ) {
+      $engine = new Meow_MWAI_Engines_OpenRouter( $core, $env );
+      return $engine;
+    }
     throw new Exception( "AI Engine: Unknown engine type ({$env['type']})." );
   }
 

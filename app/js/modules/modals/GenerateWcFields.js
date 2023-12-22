@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 2.0.2
+// Previous: 2.0.2
+// Current: 2.1.0
 
 /* eslint-disable no-undef */
 // React & Vendor Libs
@@ -31,7 +31,7 @@ const GenerateWcFields = (props) => {
 
   useEffect(() => {
     const titleField = document.getElementById('title');
-    if (titleField && isOpen) {
+    if (titleField) {
       setUserEntry(titleField.value);
     }
   }, [isOpen]);
@@ -53,19 +53,7 @@ const GenerateWcFields = (props) => {
         productInfo.keywords = line.replace("TAGS:", "").trim().split(", ");
       }
     });
-
-    if (!productInfo.description) {
-      productInfo.description = "";
-    }
-    if (!productInfo.shortDescription) {
-      productInfo.shortDescription = "";
-    }
-    if (!productInfo.seoTitle) {
-      productInfo.seoTitle = "";
-    }
-    if (!productInfo.keywords) {
-      productInfo.keywords = [];
-    }
+  
     return productInfo;
   }
 
@@ -76,9 +64,7 @@ const GenerateWcFields = (props) => {
     const res = await nekoFetch(`${apiUrl}/ai/completions`, {
       method: 'POST',
       nonce: restNonce,
-      json: { maxTokens: 512,
-        temperature: 0.8,
-        model: options.ai_default_model,
+      json: {
         env: 'admin-tools',
         session,
         prompt
@@ -91,8 +77,6 @@ const GenerateWcFields = (props) => {
       setShortDesc(info.shortDescription);
       setSeoTitle(info.seoTitle);
       setTags(info.keywords.join(", "));
-    } else {
-      setError(true); 
     }
   };
 
@@ -100,7 +84,8 @@ const GenerateWcFields = (props) => {
     const titleField = document.getElementById('title');
     if (titleField) {
       titleField.value = seoTitle;
-    } else {
+    }
+    else {
       alert("The title cannot be written (the field could not be found).");
     }
   };
@@ -109,7 +94,8 @@ const GenerateWcFields = (props) => {
     const contentField = tinyMCE.get('content');
     if (contentField) {
       contentField.setContent(desc);
-    } else {
+    }
+    else {
       alert("The content cannot be written (the field could not be found).");
     }
   };
@@ -118,7 +104,8 @@ const GenerateWcFields = (props) => {
     const contentField = tinyMCE.get('excerpt');
     if (contentField) {
       contentField.setContent(shortDesc);
-    } else {
+    }
+    else {
       alert("The content cannot be written (the field could not be found).");
     }
   };
@@ -127,12 +114,13 @@ const GenerateWcFields = (props) => {
     const tagsField = document.getElementById('new-tag-product_tag');
     if (tagsField) {
       tagsField.value = tags;
-    } else {
+    }
+    else {
       alert("The tags cannot be written (the field could not be found).");
     }
   };
 
-  const writeAllClose = async () => {
+  const writeAllCLose = async () => {
     onUseTitle();
     onUseDesc();
     onUseShortDesc();
@@ -142,7 +130,7 @@ const GenerateWcFields = (props) => {
 
   const cleanClose = async () => {
     onClose();
-    setError(false);
+    setError(null);
     setBusy(false);
   };
 
@@ -153,7 +141,7 @@ const GenerateWcFields = (props) => {
         content={<StyledForm>
           <label>Define your product:</label>
           <NekoTextArea disabled={busy} name="userEntry" value={userEntry} rows={3}
-            onChange={setUserEntry} style={{ flex: 'auto' }} placeholder="What's your product?">  
+            onChange={(e) => setUserEntry(e.target.value)} style={{ flex: 'auto' }} placeholder="What's your product?">  
           </NekoTextArea>
           <div className="form-row">
             <div style={{ flex: 'auto' }}>
@@ -169,7 +157,7 @@ const GenerateWcFields = (props) => {
               {'Write'}
             </NekoButton>
           </div>
-          <NekoInput disabled={busy} value={seoTitle} onChange={e => setSeoTitle(e.target.value)} />
+          <NekoInput disabled={busy} value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} />
           <div className="form-row-label">
             <label>Description</label>
             <NekoButton small disabled={!desc} onClick={onUseDesc}
@@ -177,7 +165,7 @@ const GenerateWcFields = (props) => {
               {'Write'}
             </NekoButton>
           </div>
-          <NekoTextArea disabled={busy} rows={4} value={desc} onChange={e => setDesc(e.target.value)} />
+          <NekoTextArea disabled={busy} rows={4} value={desc} onChange={(e) => setDesc(e.target.value)} />
           <div className="form-row-label">
             <label>Short Description</label>
             <NekoButton small disabled={!shortDesc} onClick={onUseShortDesc}
@@ -185,7 +173,7 @@ const GenerateWcFields = (props) => {
               {'Write'}
             </NekoButton>
           </div>
-          <NekoTextArea disabled={busy} rows={4} value={shortDesc} onChange={e => setShortDesc(e.target.value)} />
+          <NekoTextArea disabled={busy} rows={4} value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} />
           <div className="form-row-label">
             <label>Product Tags</label>
             <NekoButton small disabled={!tags} onClick={onUseTags}
@@ -193,11 +181,11 @@ const GenerateWcFields = (props) => {
               {'Write'}
             </NekoButton>
           </div>
-          <NekoInput small disabled={busy} value={tags} onChange={e => setTags(e.target.value)} />
+          <NekoInput small disabled={busy} value={tags} onChange={(e) => setTags(e.target.value)} />
         </StyledForm>}
         okButton={{
           label: "Write all fields",
-          onClick: writeAllClose
+          onClick: writeAllCLose
         }}
       />
     </NekoWrapper>

@@ -6,10 +6,6 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   public ?string $imageUrl = null;
   public ?string $imageData = null;
 
-  // Statistics
-  public ?int $promptTokens = null;
-  public ?int $completionTokens = null;
-
   // Assistant
   public ?string $chatId = null;
   public ?string $assistantId = null;
@@ -34,14 +30,6 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
       'assistantId' => $this->assistantId,
       'threadId' => $this->threadId
     ];
-  }
-
-  public function get_message_tokens( $refresh = false ): int {
-    if ( $this->promptTokens && !$refresh ) {
-      return $this->promptTokens;
-    }
-    $this->promptTokens = Meow_MWAI_Core::estimate_tokens( $this->messages );
-    return $this->promptTokens;
   }
 
   public function set_image( string $imageUrl ): void {

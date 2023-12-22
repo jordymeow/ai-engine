@@ -1,5 +1,5 @@
-// Previous: 1.9.81
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 2.1.0
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -12,12 +12,11 @@ import { isRegistered } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
 import { StyledSidebar } from "@app/styles/StyledSidebar";
 
-const UsageCosts = (options) => {
-  const { calculatePrice } = useModels(options, null, true);
+const UsageCosts = (calculatePrice) => {
   const [sessionCost, setSessionCost] = useState(0);
   const [lastCost, setLastCost] = useState(0);
 
-  const onResetUsage = () => {
+  const onReset_usage = () => {
     setSessionCost(0);
     setLastCost(0);
   };
@@ -41,7 +40,7 @@ const UsageCosts = (options) => {
       <div>Last Request: <span style={{ float: 'right' }}>${lastCost.toFixed(4)}</span></div>
       <NekoSpacer height={30} />
       <p style={{ fontSize: 12, lineHeight: 1.2, color: 'var(--neko-dark-gray)' }}>{sentence}</p>
-      <NekoButton fullWidth onClick={onResetUsage}>Reset Usage</NekoButton>
+      <NekoButton fullWidth onClick={onReset_usage}>Reset Usage</NekoButton>
     </StyledSidebar>);
   }, [sessionCost, lastCost]);
 

@@ -195,7 +195,7 @@ class Meow_MWAI_Modules_Discussions {
     if ( !empty( $customId ) ) {
       $botId = $customId;
     }
-    $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->prompt;
+    $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->get_message();
     //$chatId = hash( 'sha256', $userIp . $userId . $clientChatId );
     $this->check_db();
     $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $chatId ) );

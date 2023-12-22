@@ -1,9 +1,12 @@
-// Previous: 1.9.92
-// Current: 2.0.2
+// Previous: 2.0.2
+// Current: 2.1.0
+
+const { useCallback, useMemo, useState } = wp.element;
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, 
   NekoCollapsableCategories, NekoCollapsableCategory,
-  NekoSelect, NekoOption } from '@neko-ui';
+  NekoSelect, NekoOption, nekoFetch } from '@neko-ui';
+import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers-admin';
 
@@ -57,7 +60,11 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, options })
 
 function AIEnvironmentsSettings({ options, environments, updateEnvironment, updateOption, busy }) {
 
+  const [ loading, setLoading ] = useState(false);
+
   const addNewEnvironment = () => {
+    //alert("Coming soon! Please give us a bit of time to beta test this.");
+    //return;
     const newEnv = {
       name: 'New Environment',
       type: 'openai', 
@@ -76,10 +83,45 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     updateOption(updatedEnvironments, 'ai_envs');
   };
 
+  const getDescription = useCallback(env => {
+    if (env.type === 'openai') {
+      return toHTML(i18n.HELP.OPENAI_API_KEY);
+    }
+    if (env.type === 'azure') {
+      return toHTML(i18n.HELP.AZURE_API_KEY);
+    }
+    if (env.type === 'openrouter') {
+      return toHTML(i18n.HELP.OPENROUTER_API_KEY);
+    }
+    return '';
+  }, []);
+
+  const openRouterModels = useMemo(() => {
+    return options?.openrouter_models ?? [];
+  }, [options]);
+
+  const fetchOpenRouterModels = useCallback(async (envId) => {
+    try {
+      setLoading(true);
+      const res = await nekoFetch(`${apiUrl}/ai/models`, { method: 'POST', nonce: restNonce, json: { envId } });
+      // BUG: Not resetting loading in case of error before the catch block
+      let freshModels = res?.models;
+      if (!freshModels) {
+        throw new Error('Could not fetch models.');
+      }
+      updateOption(freshModels, 'openrouter_models');
+    }
+    catch (err) {
+      alert(err.message);
+      console.log(err);
+      // BUG: loading state remains true if error occurs
+    }
+  }, []);
+
   return (
-    <div style={{ padding: '0px 10px 15px 10px', marginTop: 13, marginBottom: 5}}>
+    <div style={{ padding: '0px 10px 5px 10px', marginTop: 13, marginBottom: 5 }}>
       <NekoTypo h2 style={{ color: 'white', marginBottom: 15 }}>Environments for AI</NekoTypo>
-      <NekoTabs inversed keepTabOnReload={true} style={{ marginTop: -5 }} action={
+      <NekoTabs inversed style={{ marginTop: -5 }} action={
         <NekoButton rounded className="primary-block" icon='plus' onClick={addNewEnvironment} />}>
         {environments.map((env) => (
           <NekoTab key={env.id} title={env.name} busy={busy}>
@@ -94,12 +136,13 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                 onChange={value => updateEnvironment(env.id, { type: value })}>
                 <NekoOption value="openai" label="OpenAI" />
                 <NekoOption value="azure" label="Azure (OpenAI)" />
+                <NekoOption value="openrouter" label="OpenRouter" />
               </NekoSelect>
             </NekoSettings>
             
             <NekoSettings title={i18n.COMMON.API_KEY}>
               <NekoInput  name="apikey" value={env.apikey}
-                description={toHTML(env.type === 'openai' ? i18n.HELP.OPENAI_API_KEY : i18n.HELP.AZURE_API_KEY)}
+                description={getDescription(env)}
                 onFinalChange={value => updateEnvironment(env.id, { apikey: value })} 
               />
             </NekoSettings>
@@ -112,7 +155,19 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
               </NekoSettings>
             </>}
 
-            <NekoCollapsableCategories keepState="embeddingsEnvs">
+            <NekoCollapsableCategories keepState="environmentCategories">
+
+              {env.type === 'openrouter' &&
+                <NekoCollapsableCategory title={i18n.COMMON.MODELS}>
+                  <p>
+                    There are currently <b>{openRouterModels.length}</b> models available. OpenRouter models need to be refresh regularly. This button will fetch the latest models and their prices. 
+                  </p>
+                  <NekoButton fullWidth className="primary" isBusy={loading}
+                    onClick={() => fetchOpenRouterModels(env.id)}>
+                    {i18n.COMMON.REFRESH_MODELS}
+                  </NekoButton>
+                </NekoCollapsableCategory>
+              }
 
               {env.type === 'azure' && 
                 <NekoCollapsableCategory title={i18n.COMMON.OPENAI_AZURE_DEPLOYMENTS}>

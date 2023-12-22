@@ -1,5 +1,5 @@
-// Previous: 1.9.97
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.1.0
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -89,7 +89,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -101,8 +101,9 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCurrentLanguage(preferredLanguage);
       return;
     }
-    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
-    const detectedLanguage = htmlLang.substr(0, 2);
+
+    const htmlLang = document.querySelector('html')?.lang;
+    const detectedLanguage = (htmlLang || navigator.language || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -118,7 +119,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -146,7 +147,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -159,19 +160,21 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const allEnvironments = useMemo(() => {
     if (allEnvs && options?.ai_envs) {
       const fakeEnv = {
+        fake: true,
         finetunes: [],
         legacy_finetunes: [],
         legacy_finetunes_deleted: [],
         finetunes_deleted: [],
         deployments: [],
       };
-
+      
+      // Introducing a subtle bug: referencing env.finetunes directly which might be undefined
       options.ai_envs.forEach(env => {
-        if (env.finetunes) fakeEnv.finetunes.push(...env.finetunes);
-        if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...env.legacy_finetunes);
-        if (env.legacy_finetunes_deleted) fakeEnv.legacy_finetunes_deleted.push(...env.legacy_finetunes_deleted);
-        if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
-        if (env.deployments) fakeEnv.deployments.push(...env.deployments);
+        if (env.finetunes) fakeEnv.finetunes.push(...(env.finetunes ?? []));
+        if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...(env.legacy_finetunes ?? []));
+        if (env.legacy_finetunes_deleted) fakeEnv.legacy_finetunes_deleted.push(...(env.legacy_finetunes_deleted ?? []));
+        if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...(env.finetunes_deleted ?? []));
+        if (env.deployments) fakeEnv.deployments.push(...(env.deployments ?? []));
       });
 
       return fakeEnv;
@@ -201,33 +204,58 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return deleted;
   }, [env]);
 
+  const getTagStyle = (tag) => {
+    const colors = {
+      deprecated: 'var(--neko-red)',
+      tuned: 'var(--neko-green)',
+      preview: 'var(--neko-orange)'
+    };
+    return {
+      background: colors[tag],
+      color: 'white',
+      padding: '3px 4px',
+      margin: '1px 0px 0px 3px',
+      borderRadius: 4,
+      fontSize: 9,
+      lineHeight: '100%'
+    };
+  };
+
+  const tagDisplayText = {
+    deprecated: 'DEPRECATED',
+    tuned: 'TUNED',
+    preview: 'PREVIEW'
+  };
+
   const jsxModelName = (x, isTuned) => {
-    const isDeprecated = x.tags?.includes('deprecated');
-    if (!isTuned && !isDeprecated) {
-      return x.name;
-    }
+    const tag = x.tags?.find(tag => ['deprecated', 'preview'].includes(tag)) || (isTuned ? 'tuned' : '');
     return (
       <>
-        {x.name || x.suffix}&nbsp;<small style={{ 
-          background: isDeprecated ? 'var(--neko-red)' : 'var(--neko-green)', 
-          color: 'white', 
-          padding: '3px 4px', 
-          margin: '-3px 2px', 
-          borderRadius: 3, 
-          fontSize: 9, 
-          lineHeight: '100%' 
-        }}>{isDeprecated ? 'DEPRECATED' : 'TUNED'}</small>
+        {x.name ?? x.suffix ?? x.model}
+        {tag && (
+          <small style={getTagStyle(tag)}>
+            {tagDisplayText[tag]}
+          </small>
+        )}
       </>
     );
   };
 
   const allModels = useMemo(() => {
-    let modelsList = options.openai_models;
-
-    if (env?.type === 'azure') {
-      modelsList = modelsList.filter(x => env.deployments?.find(d => d.model === x.model));
+    let models = [];
+    if (env?.fake === true) {
+      models = [ ...options.openai_models ?? [], ...options.openrouter_models ?? [] ];
     }
-    else if (!env?.type !== 'openai') {
+    else if (env?.type === 'openai') {
+      models = options?.openai_models ?? [];
+    }
+    else if (env?.type === 'azure') {
+      models = options?.openai_models?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
+    }
+    else if (env?.type === 'openrouter') {
+      models = options?.openrouter_models ?? [];
+    }
+    else {
       console.warn("useModels: Environment Type is not supported.", { env });
     }
 
@@ -238,12 +266,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       fineTunes = [ ...fineTunes, ...env.legacy_finetunes ];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
-    modelsList = modelsList.map(x => {
-      return { ...x, name: jsxModelName(x) };
+    models = models.map(x => {
+      return { ...x, name: jsxModelName(x), rawName: x.name };
     });
 
     if (fineTunes.length) {
-      modelsList = [ ...modelsList, ...fineTunes.map(x => {
+      models = [ ...models, ...fineTunes.map(x => {
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
@@ -256,10 +284,10 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           mode = 'chat';
           family = 'gpt4';
         }
-
         return { 
           model: x.model,
           name: jsxModelName(x, true),
+          rawName: x.suffix,
           suffix: x.suffix,
           mode,
           family,
@@ -271,9 +299,9 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     extraModels = extraModels?.split(',').filter(x => x);
     if (extraModels.length) {
-      modelsList = [ ...modelsList, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+      models = [ ...models, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
-    return modelsList;
+    return models;
   }, [options, env]);
 
   const models = useMemo(() => {
@@ -288,8 +316,24 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return models.filter(x => x?.tags?.includes('image'));
   }, [models]);
 
+  const embeddingsModels = useMemo(() => {
+    return models.filter(x => x?.tags?.includes('embedding'));
+  }, [models]);
+
+  const visionModels = useMemo(() => {
+    return models.filter(x => x?.tags?.includes('vision'));
+  }, [models]);
+
   const completionModels = useMemo(() => {
     return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
+  }, [models]);
+
+  const audioModels = useMemo(() => {
+    return models.filter(x => x?.tags?.includes('audio'));
+  }, [models]);
+
+  const jsonModels = useMemo(() => {
+    return models.filter(x => x?.tags?.includes('json'));
   }, [models]);
 
   const getModel = (model) => {
@@ -299,6 +343,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
       model = 'gpt-4';
     }
+    // Potential subtle bug: not checking if allModels is defined/has the model, could cause undefined
     return allModels.find(x => x.model === model);
   };
 
@@ -319,7 +364,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
   const getFamilyModel = (model) => {
     const modelObj = getModel(model);
-    const coreModel = coreModels.find(x => x.family === modelObj.family);
+    const coreModel = coreModels.find(x => x?.family === modelObj?.family);
     return coreModel || null;
   };
 
@@ -351,7 +396,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return 0;
   };
 
-  return { allModels, model, models, completionModels, imageModels, coreModels, 
+  return { allModels, model, models,
+    completionModels, imageModels, visionModels, coreModels, embeddingsModels, audioModels, jsonModels,
     setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
 };
@@ -404,30 +450,22 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 };
 
-function estimate_tokens(text) {
-  let asciiCount = 0;
-  let nonAsciiCount = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (char.charCodeAt(0) < 128) {
-      asciiCount++;
-    }
-    else {
-      nonAsciiCount++;
-    }
-  }
-  const asciiTokens = asciiCount / 3.5;
-  const nonAsciiTokens = nonAsciiCount * 2.5;
-  const tokens = asciiTokens + nonAsciiTokens;
-  return tokens;
+function estimateTokens(text) {
+  const averageTokenLength = 4;
+  const words = text.trim().split(/\s+/);
+  let tokenCount = 0;
+  words.forEach(word => {
+      tokenCount += Math.ceil(word.length / averageTokenLength);
+  });
+  return tokenCount;
 }
 
 function reduceContent(content, tokens = 2048) {
   let reduced = content;
-  let reducedTokens = estimate_tokens(reduced);
+  let reducedTokens = estimateTokens(reduced);
   while (reducedTokens > tokens) {
     reduced = reduced.slice(0, -32);
-    reducedTokens = estimate_tokens(reduced);
+    reducedTokens = estimateTokens(reduced);
   }
   return reduced;
 }
@@ -475,7 +513,7 @@ const randomHash = (length = 6) => {
   return hash;
 };
 
-export { OptionsCheck, cleanSections, useModels, toHTML, estimate_tokens, useLanguages, addFromRemote,
+export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, reduceContent,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX

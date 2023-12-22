@@ -1,5 +1,5 @@
-// Previous: 1.9.88
-// Current: 2.0.9
+// Previous: 2.0.9
+// Current: 2.1.0
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -18,7 +18,6 @@ import { OutputHandler, mwaiFetch, mwaiHandleRes } from "@app/helpers";
 
 const StyledTextArea = Styled(NekoTextArea)`
   .neko-textarea-container {
-  
     textarea {
       color: white;
       font-size: 13px;
@@ -26,7 +25,6 @@ const StyledTextArea = Styled(NekoTextArea)`
       font-family: monospace;
       background: #333d4e;
       border: none;
-
       &:focus {
         background-color: #333d4e;
       }
@@ -37,7 +35,6 @@ const StyledTextArea = Styled(NekoTextArea)`
 const Dashboard = () => {
   const { template, setTemplate, jsxTemplates } = useTemplates('playground');
   const [ completion, setCompletion ] = useState("");
-  const { addUsage, jsxUsageCosts } = UsageCosts(options);
   const [ busy, setBusy ] = useState(false);
   const [ continuousEntry, setContinuousEntry ] = useState('');
   const [ startTime, setStartTime ] = useState();
@@ -51,7 +48,8 @@ const Dashboard = () => {
   const stopSequence = template?.stopSequence ?? "";
   const maxTokens = template?.maxTokens ?? 2048;
 
-  const { completionModels } = useModels(options, envId || null);
+  const { calculatePrice, completionModels } = useModels(options, envId || null);
+  const { addUsage, jsxUsageCosts } = UsageCosts(calculatePrice);
   const aiEnvironments = options?.ai_envs || [];
 
   const setTemplateProperty = (value, property) => {
@@ -75,19 +73,25 @@ const Dashboard = () => {
     }
   }, [template]);
 
+  // const onReset_usage = () => {
+  //   setSessionCost(0);
+  //   setLastCost(0);
+  // }
+
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
     setStartTime(new Date());
     try {
       const stop = stopSequence.replace(/\\n/g, '\n');
-      const streamCallback = !stream ? null : (content) => {
+      const streamCallback = stream ? (content) => {
         setCompletion(content);
-      };
+      } : null;
       const res = await mwaiFetch(`${apiUrl}/ai/completions`, { 
         env: 'playground',
         session: session,
         prompt: promptToUse,
         temperature,
+        envId: envId,
         model,
         maxTokens: maxTokens,
         stop: stop,
@@ -103,8 +107,7 @@ const Dashboard = () => {
       console.log("Completions", { prompt: promptToUse, result: finalRes });
       if (mode === 'continuous') {
         setPrompt(promptToUse + '\n' + finalRes.data + '\n');
-      }
-      else {
+      } else {
         setCompletion(finalRes.data);
       }
       addUsage(model, finalRes?.usage?.prompt_tokens || 0, finalRes?.usage?.completion_tokens || 0);
@@ -112,7 +115,7 @@ const Dashboard = () => {
     catch (err) {
       setError(err.message);
     }
-    setStartTime();
+    setStartTime(null);
     setBusy(false);
   };
 
@@ -227,7 +230,7 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
+      <NekoModal isOpen={Boolean(error)}
         onRequestClose={() => { setError(); }}
         okButton={{
           onClick: () => { setError(); }

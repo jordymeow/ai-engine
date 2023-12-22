@@ -1,5 +1,5 @@
-// Previous: 1.9.85
-// Current: 2.0.2
+// Previous: 2.0.2
+// Current: 2.1.0
 
 const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
@@ -34,9 +34,7 @@ function BlockAIWand() {
   const selectedBlock = useSelect((select) => select('core/block-editor').getSelectedBlock(), []);
 
   if (!selectedBlock) { return null; }
-  if (selectedBlock.name !== 'core/paragraph') {
-    return null;
-  }
+  if (selectedBlock.name !== 'core/paragraph') { return null; }
 
   const applyFadeOutStyle = (element) => {
     element.style.opacity = 0.15;
@@ -53,7 +51,7 @@ function BlockAIWand() {
   };
 
   useEffect(() => {
-    if (!selectedBlock?.clientId) { return; }  
+    if (!selectedBlock?.clientId) { return; }
     const blockElement = document.getElementById('block-' + selectedBlock.clientId);
     if (!blockElement) {
       console.warn("AI Engine: Could not find block element.");
@@ -61,8 +59,7 @@ function BlockAIWand() {
     }
     if (busy) {
       applyFadeOutStyle(blockElement);
-    }
-    else {
+    } else {
       applyNormalStyle(blockElement);
     }
   }, [busy, selectedBlock]);
@@ -87,13 +84,13 @@ function BlockAIWand() {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const selectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
-    if (!selectedBlock) { return; }
-    const blockContent = selectedBlock.attributes.content;
-    const startOffset = getSelectionStart() ? getSelectionStart().offset : 0;
-    const endOffset = getSelectionEnd() ? getSelectionEnd().offset : 0;
+    const selectedBlockInEditor = wp.data.select('core/block-editor').getSelectedBlock();
+    if (!selectedBlockInEditor) { return; }
+    const blockContent = selectedBlockInEditor.attributes.content;
+    const startOffset = getSelectionStart().offset;
+    const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlockInEditor.clientId, { content: updatedContent });
   };
 
   const updateText = (text) => {
@@ -106,7 +103,8 @@ function BlockAIWand() {
     replaceText(text);
   };
 
-  const contentAttr = selectedBlock.attributes.content;
+  const { attributes } = selectedBlock;
+  const { content } = attributes;
   const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
@@ -117,17 +115,14 @@ function BlockAIWand() {
     setBusy(true);
     setBlockStyle();
     document.activeElement.blur();
-    const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, { 
-      method: 'POST',
-      nonce: restNonce,
-      json: { action, data: { postId, text: contentAttr, selectedText } }
-    });
-    resetBlockStyle();
-    setBusy(false);
-    if (!res.success) {
-      throw new Error(res.message);
-    }
-    else {
+    try {
+      const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, { 
+        method: 'POST',
+        nonce: restNonce,
+        json: { action, data: { postId, text: content, selectedText } }
+      });
+      resetBlockStyle();
+      setBusy(false);
       const { mode, result, results } = res.data;
       if (mode === 'replace') {
         updateText(result);
@@ -147,6 +142,11 @@ function BlockAIWand() {
         });
         wp.data.dispatch('core/block-editor').insertBlock(block, blockIndex + 1);
       }
+    } catch (err) {
+      resetBlockStyle();
+      setBusy(false);
+      alert("Error: " + err.message);
+      console.log("ERROR", err);
     }
   };
 
@@ -229,10 +229,35 @@ function BlockAIWand() {
   </>);
 }
 
+// Paragraph Block: Menu
+
+// const doOnClick = () => {
+//   alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
+// };
+
+// const MWAI_Block_AI_Actions = () => (
+//   <>
+//     <PluginBlockSettingsMenuItem
+//       allowedBlocks={['core/paragraph']}
+//       icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
+//       label={<> {__('Enhance text')}</>}
+//       onClick={doOnClick}
+//     />
+//     <PluginBlockSettingsMenuItem
+//       allowedBlocks={['core/paragraph']}
+//       icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
+//       label={<> {__('Translate text')}</>}
+//       onClick={doOnClick}
+//     />
+//   </>
+// );
+
+// Document Settings: Panel
+
 const MWAI_DocumentSettings = () => {
   const suggestionsEnabled = options?.module_suggestions;
-  const [postForTitle, setPostForTitle] = useState(null);
-  const [postForExcerpt, setPostForExcerpt] = useState(null);
+  const [postForTitle, setPostForTitle] = useState();
+  const [postForExcerpt, setPostForExcerpt] = useState();
 
   const onTitlesModalOpen = () => {
     const { getCurrentPost } = wp.data.select("core/editor");
@@ -270,7 +295,6 @@ const MWAI_DocumentSettings = () => {
             <AiIcon icon="wand" style={{ marginRight: 8 }} /> Excerpts
           </Button>
         </div>
-
         <NekoUI>
           <NekoWrapper>
             <GenerateTitlesModal post={postForTitle} onTitleClick={onTitleClick} onClose={setPostForTitle} />
@@ -285,10 +309,17 @@ const MWAI_DocumentSettings = () => {
 
 const BlockFeatures = () => {
 
+  // This goes into the sidebar
   registerPlugin('ai-engine-document-settings', {
     render: MWAI_DocumentSettings
   });
 
+  // This goes in the context menu of the block toolbar
+  // registerPlugin('ai-engine-ai-wand', {
+  //   render: MWAI_Block_AI_Actions
+  // });
+
+  // This goes in the block toolbar directly
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',
     tagName: 'mwai',

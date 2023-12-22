@@ -11,8 +11,7 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', '
 // after, February 2024.
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'scope', 'mode', 'contentAware', 'context',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId',
-	'model', 'temperature', 'maxTokens', 'contextMaxLength',
-	'maxResults', 'apiKey', 'service'
+	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey'
 ] );
 
 // Params for the discussions (front and server)
@@ -204,18 +203,18 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 
 				// Awareness & Embeddings
-				if ( $query->mode === 'chat' || $query->mode === 'assistant' ) {
+				// TODO: We probably don't need to limit the context...
+				//if ( $query->mode === 'chat' || $query->mode === 'assistant' ) {
 					$context = $this->core->retrieve_context( $params, $query );
 					if ( !empty( $context ) ) {
 						$query->set_context( $context['content'] );
 					}
-				}
+				//}
 			}
 
 			// Process Query
 			if ( $stream ) { 
 				$streamCallback = function( $reply ) {
-					//$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
 					$raw = $reply;
 					$this->stream_push( [ 'type' => 'live', 'data' => $raw ] );
 					if (  ob_get_level() > 0 ) {
@@ -225,13 +224,13 @@ class Meow_MWAI_Modules_Chatbot {
 				};
 				header( 'Cache-Control: no-cache' );
 				header( 'Content-Type: text/event-stream' );
-				header( 'X-Accel-Buffering: no' ); // This is useful to disable buffering in nginx through headers.
+				// This is useful to disable buffering in nginx through headers.
+				header( 'X-Accel-Buffering: no' );
 				ob_implicit_flush( true );
 				ob_end_flush();
 			}
 
-			$engine = Meow_MWAI_Engines_Factory::get( $this->core, $query->envId );
-			$reply = $engine->run( $query, $streamCallback );
+			$reply = $this->core->run_query( $query, $streamCallback );
 			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {
@@ -241,7 +240,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 			$restRes = [
 				'reply' => $rawText,
-				'images' => $reply->getType() === 'images' ? $reply->results : null,
+				'images' => $reply->get_type() === 'images' ? $reply->results : null,
 				'usage' => $reply->usage
 			];
 

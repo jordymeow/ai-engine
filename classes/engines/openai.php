@@ -2,11 +2,17 @@
 
 class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 {
-  // Server Settings (OpenAI / Azure)
-  private $apiKey = null;
-  private $endpoint = null;
+  // Base (OpenAI)
+  protected $apiKey = null;
+  protected $endpoint = null;
+
+  // Azure
   private $azureDeployments = null;
   private $azureApiVersion = 'api-version=2023-12-01-preview';
+
+  // Response
+  protected $inModel = null;
+  protected $inId = null;
 
   // Streaming
   private $streamTemporaryBuffer = "";
@@ -14,7 +20,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   private $streamContent = "";
   private $streamFunctionCall = null;
   private $streamCallback = null;
-  private $streamedTokens = 0;
 
   public function __construct( $core, $env )
   {
@@ -22,7 +27,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     $this->set_environment();
   }
 
-  private function set_environment() {
+  protected function set_environment() {
     $env = $this->env;
     $this->apiKey = $env['apikey'];
     if ( $this->envType === 'openai' ) {
@@ -47,15 +52,24 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     throw new Exception( 'Unknown deployment for model: ' . $model );
   }
 
-  private function get_service_name() {
+  protected function get_service_name() {
     return $this->envType === 'azure' ? 'Azure' : 'OpenAI';
   }
 
   // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
   function check_for_error( $data ) {
-    if ( strpos( $data, '"error"' ) !== false ) {
-      $json = json_decode( $data, true );
-      if ( json_last_error() === JSON_ERROR_NONE ) {
+    if ( strpos( $data, 'error' ) === false ) {
+      return;
+    }
+    if ( strpos( $data, 'data: ' ) === 0 ) {
+      $jsonPart = substr( $data, strlen( 'data: ' ) );
+    }
+    else {
+      $jsonPart = $data;
+    }
+    $json = json_decode( $jsonPart, true );
+    if ( json_last_error() === JSON_ERROR_NONE ) {
+      if ( isset( $json['error'] ) ) {
         $error = $json['error'];
         $code = $error['code'];
         $message = $error['message'];
@@ -179,6 +193,16 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
           if ( json_last_error() === JSON_ERROR_NONE ) {
             $content = null;
+
+            // Get additional data from the JSON
+            if ( isset( $json['model'] ) ) {
+              $this->inModel = $json['model'];
+            }
+            if ( isset( $json['id'] ) ) {
+              $this->inId = $json['id'];
+            }
+
+            // Get the content
             if ( isset( $json['choices'][0]['text'] ) ) {
               $content = $json['choices'][0]['text'];
             }
@@ -198,7 +222,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
               }
             }
             if ( $content !== null && $content !== "" ) {
-              $this->streamedTokens += count( explode( " ", $content ) );
               $this->streamContent .= $content;
               call_user_func( $this->streamCallback, $content );
             }
@@ -212,7 +235,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     });
   }
 
-  private function build_headers( $query ) {
+  protected function build_headers( $query ) {
+    if ( $query->apiKey ) {
+      $this->apiKey = $query->apiKey;
+    }
+    if ( empty( $this->apiKey ) ) {
+      throw new Exception( 'No API Key provided. Please visit the Settings.' );
+    }
     $headers = array(
       'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
@@ -223,9 +252,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $headers;
   }
 
-  private function build_options( $headers, $json = null, $forms = null ) {
-
-    // Build body
+  protected function build_options( $headers, $json = null, $forms = null, $method = 'POST' ) {
     $body = null;
     if ( !empty( $forms ) ) {
       $boundary = wp_generate_password ( 24, false );
@@ -235,16 +262,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     else if ( !empty( $json ) ) {
       $body = json_encode( $json );
     }
-
-    // Build options
     $options = array(
       'headers' => $headers,
-      'method' => 'POST',
+      'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
       'sslverify' => false
     );
-
     return $options;
   }
 
@@ -268,22 +292,17 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $headersRes = wp_remote_retrieve_headers( $res );
       $headers = $headersRes->getAll();
 
-      // If Headers contains multipart/form-data then we don't need to decode the response
-      if ( strpos( $options['headers']['Content-Type'], 'multipart/form-data' ) !== false ) {
-        return [
-          'stream' => false,
-          'headers' => $headers,
-          'data' => $response
-        ];
+      // Check if Content-Type is 'multipart/form-data' or 'text/plain'
+      // If so, we don't need to decode the response
+      $normalizedHeaders = array_change_key_case( $headers, CASE_LOWER );
+      $resContentType = $normalizedHeaders['content-type'] ?? '';
+      if ( strpos( $resContentType, 'multipart/form-data' ) !== false || strpos( $resContentType, 'text/plain' ) !== false ) {
+        return [ 'stream' => false, 'headers' => $headers, 'data' => $response ];
       }
 
       $data = json_decode( $response, true );
       $this->handle_response_errors( $data );
-
-      return [
-        'headers' => $headers,
-        'data' => $data
-      ];
+      return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
       error_log( $e->getMessage() );
@@ -335,8 +354,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $this->check_for_error( $data );
       $usage = $this->core->record_audio_usage( $query->model, $audioData['length'] );
       $reply = new Meow_MWAI_Reply( $query );
-      $reply->setUsage( $usage );
-      $reply->setChoices( $data );
+      $reply->set_usage( $usage );
+      $reply->set_choices( $data );
       return $reply;
     }
     catch ( Exception $e ) {
@@ -367,8 +386,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $usage = $data['usage'];
       $this->core->record_tokens_usage( $query->model, $usage['prompt_tokens'] );
       $reply = new Meow_MWAI_Reply( $query );
-      $reply->setUsage( $usage );
-      $reply->setChoices( $data['data'] );
+      $reply->set_usage( $usage );
+      $reply->set_choices( $data['data'] );
       return $reply;
     }
     catch ( Exception $e ) {
@@ -378,7 +397,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
   }
 
-  public function run_completion_query( $query, $streamCallback = null ) {
+  public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
     if ( !is_null( $streamCallback ) ) {
       $this->streamCallback = $streamCallback;
       add_action( 'http_api_curl', array( $this, 'stream_handler' ), 10, 3 );
@@ -446,35 +465,33 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $res = $this->run_query( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
 
-      // Streamed data
-      $prompt_tokens = $query->get_message_tokens();
+      $returned_id = null;
+      $returned_model = $this->inModel;
+      $returned_in_tokens = null;
+      $returned_out_tokens = null;
+      $returned_choices = [];
+
       if ( !is_null( $streamCallback ) ) {
+        // Streamed data
         if ( empty( $this->streamContent ) ) {
           $json = json_decode( $this->streamBuffer, true );
           if ( isset( $json['error']['message'] ) ) {
             throw new Exception( $json['error']['message'] );
           }
-          // We can't do this, otherwise the Function Calling will not work...
-          //throw new Exception( 'No content received from OpenAI.' );
         }
-        $data = [
-          'model' => $query->model,
-          'usage' => [
-            'prompt_tokens' => $prompt_tokens,
-            'completion_tokens' => $this->streamedTokens
-          ],
-          'choices' => [
-            [ 
-              'message' => [ 
-                'content' => $this->streamContent,
-                'function_call' => $this->streamFunctionCall
-              ]
+        $returned_id = $this->inId;
+        $returned_model = $this->inModel ? $this->inModel : $query->model;
+        $returned_choices = [
+          [ 
+            'message' => [ 
+              'content' => $this->streamContent,
+              'function_call' => $this->streamFunctionCall
             ]
-          ],
+          ]
         ];
       }
-      // Regular data
       else {
+        // Regular data
         $data = $res['data'];
         if ( empty( $data ) ) {
           throw new Exception( 'No content received (res is null).' );
@@ -483,20 +500,22 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           error_log( print_r( $data, 1 ) );
           throw new Exception( 'Invalid response (no model information).' );
         }
+        $returned_id = $data['id'];
+        $returned_model = $data['model'];
+        $returned_in_tokens = isset( $data['usage']['prompt_tokens'] ) ? $data['usage']['prompt_tokens'] : null;
+        $returned_out_tokens = isset( $data['usage']['completion_tokens'] ) ? $data['usage']['completion_tokens'] : null;
+        $returned_choices = $data['choices'];
       }
       
-      try {
-        $usage = $this->core->record_tokens_usage( 
-          $data['model'], 
-          $data['usage']['prompt_tokens'],
-          $data['usage']['completion_tokens']
-        );
+      // Set the results.
+      $reply->set_choices( $returned_choices );
+      if ( !empty( $returned_id ) ) {
+        $reply->set_id( $returned_id );
       }
-      catch ( Exception $e ) {
-        error_log( $e->getMessage() );
-      }
-      $reply->setUsage( $usage );
-      $reply->setChoices( $data['choices'] );
+
+      // Handle tokens.
+      $this->handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens );
+
       return $reply;
     }
     catch ( Exception $e ) {
@@ -505,6 +524,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $message = "From $service: " . $e->getMessage();
       throw new Exception( $message );
     }
+  }
+
+  public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens ) {
+    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens : $reply->get_in_tokens( $query );
+    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens : $reply->get_out_tokens();
+    $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
+    $reply->set_usage( $usage );
   }
 
   // Request to DALL-E API
@@ -540,21 +566,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $data = $res['data'];
       $choices = [];
       if ( $this->envType === 'azure' ) {
-        // Azure returns... that ;)
         foreach ( $data['data'] as $entry ) {
           $choices[] = [ 'url' => $entry['url'] ];
         }
       }
       else {
-        // OpenAI returns an array of URLs
         $choices = $data['data'];
       }
 
       $reply = new Meow_MWAI_Reply( $query );
       $usage = $this->core->record_images_usage( $model, $resolution, $query->maxResults );
-      $reply->setUsage( $usage );
-      $reply->setChoices( $choices );
-      $reply->setType( 'images' );
+      $reply->set_usage( $usage );
+      $reply->set_choices( $choices );
+      $reply->set_type( 'images' );
 
       // Convert the URLs into Markdown.
       $reply->result = "";
@@ -888,8 +912,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
   }
 
-  static public function get_models() {
+  public function get_models() {
     return apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
+  }
+
+  static public function get_models_static() {
+    return MWAI_OPENAI_MODELS;
   }
 
   private function calculate_price( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
@@ -901,8 +929,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $finetune = true;
     }
 
-    $openai_models = Meow_MWAI_Engines_OpenAI::get_models();
-    foreach ( $openai_models as $currentModel ) {
+    $models = $this->get_models();
+    foreach ( $models as $currentModel ) {
       if ( $currentModel['model'] === $modelFamily || ( $finetune && $currentModel['family'] === $modelFamily ) ) {
         if ( $currentModel['type'] === 'image' ) {
           if ( !$option ) {
@@ -957,8 +985,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
         $finetune = true;
       }
-      $inUnits = $reply->get_message_tokens();
-      $outUnits = $reply->getCompletionTokens();
+      $inUnits = $reply->get_in_tokens( $query );
+      $outUnits = $reply->get_out_tokens();
       return $this->calculate_price( $model, $inUnits, $outUnits, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Image' ) ) {
@@ -969,11 +997,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Transcribe' ) ) {
       $model = 'whisper';
-      $units = $reply->getUnits();
+      $units = $reply->get_units();
       return $this->calculate_price( $model, 0, $units, $option, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
-      $units = $reply->getTotalTokens();
+      $units = $reply->get_total_tokens();
       return $this->calculate_price( $model, 0, $units, $option, $finetune );
     }
     error_log("AI Engine: Cannot calculate price for $model.");

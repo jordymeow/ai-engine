@@ -1,11 +1,13 @@
-// Previous: 1.9.88
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 2.1.0
 
 /* eslint-disable no-undef */
 /* eslint-disable no-console */
+// React & Vendor Libs
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, 
   NekoSelect, NekoOption, NekoProgress, NekoTextArea } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
@@ -25,7 +27,7 @@ const DatasetEditor = ({ options, setMessages }) => {
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
     queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
   });
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
 
   const createEntriesFromRaw = (rawData) => {
@@ -51,17 +53,15 @@ const DatasetEditor = ({ options, setMessages }) => {
         messages = [];
       }
     }
-
     if (messages.length) {
       entries.push({ messages });
     }
-
     return entries;
   };
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId || undefined);
+    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
     let error = null;
     let rawData = null;
     const content = resContent?.content;
@@ -72,23 +72,19 @@ const DatasetEditor = ({ options, setMessages }) => {
       alert(resContent.message);
       error = resContent.message;
     }
-    else if (content && content.length < 64) {
+    else if (content?.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
     }
     else {
-      finalPrompt = finalPrompt.replace('{CONTENT}', content || '');
-      finalPrompt = finalPrompt.replace('{URL}', url || '');
-      finalPrompt = finalPrompt.replace('{TITLE}', title || '');
+      finalPrompt = finalPrompt.replace('{CONTENT}', content);
+      finalPrompt = finalPrompt.replace('{URL}', url);
+      finalPrompt = finalPrompt.replace('{TITLE}', title);
       const res = await nekoFetch(`${apiUrl}/ai/completions`, {
         method: 'POST',
         json: {
           env: 'admin-tools',
           session,
-          prompt: finalPrompt,
-          temperature: 0.8,
-          model: options.ai_default_model,
-          maxTokens: 2048,
-          stop: ''
+          prompt: finalPrompt
         },
         signal: signal,
         nonce: restNonce
@@ -101,9 +97,9 @@ const DatasetEditor = ({ options, setMessages }) => {
         throw new Error(res.message ?? "Unknown error, check your console logs.");
       }
       rawData = res?.data;
-      if (res?.usage?.total_tokens !== undefined) {
+      if (res?.usage?.total_tokens) {
         tokens = res.usage.total_tokens;
-        setTotalTokens(t => t + res.usage.total_tokens);
+        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
       }
     }
     if (signal?.aborted) {
@@ -117,7 +113,7 @@ const DatasetEditor = ({ options, setMessages }) => {
 
   const cancelledByUser = () => {
     console.log('User aborted.');
-    setQuickBusy(false);
+    setBusy(false);
     bulkTasks.reset();
   };
 
@@ -125,10 +121,13 @@ const DatasetEditor = ({ options, setMessages }) => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr, 10);
+    let startOffset = parseInt(startOffsetStr, 10);
+    if (isNaN(startOffset)) {
+      startOffset = 0;
+    }
     const tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetStr && !isNaN(startOffset) && offset < startOffset) {
+      if (startOffsetStr && offset < startOffset) {
         return { success: true };
       }
       const result = await runProcess(offset, null, signal);
@@ -146,14 +145,13 @@ const DatasetEditor = ({ options, setMessages }) => {
   const onSingleGenerateClick = async () => {
     try {
       setTotalTokens(0);
-      const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
-      if (postIdInput === null) {
+      const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
+      if (postId === null) {
         return;
       }
-      const postId = postIdInput.trim();
       setQuickBusy('singleGenerate');
       const result = await runProcess(0, postId);
-      if (!result.entries || result.entries.length === 0) {
+      if (!result.entries || !result.entries.length) {
         alert("No entries were generated. Check the console for more information.");
       }
       else {
@@ -186,12 +184,12 @@ const DatasetEditor = ({ options, setMessages }) => {
         </div>
         <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
           style={{ width: 100, marginLeft: 10 }} onChange={(e) => setPostType(e.target.value)} value={postType}>
-          {postTypes?.map(pt => 
-            <NekoOption key={pt.type} value={pt.type} label={pt.name} />
+          {postTypes?.map(postTypeOption => 
+            <NekoOption key={postTypeOption.type} value={postTypeOption.type} label={postTypeOption.name} />
           )}
         </NekoSelect>
         <NekoProgress busy={bulkTasks.busy} style={{ marginLeft: 10, flex: 'auto' }}
-          value={bulkTasks.value} max={bulkTasks.max} onStopClick={() => bulkTasks.stop()} />
+          value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingLeft: 10 }}>
           Tokens: {totalTokens}
         </div>

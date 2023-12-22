@@ -4,9 +4,73 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   // Base models:
+	[
+		"model" => "gpt-4-1106-preview",
+		"name" => "GPT-4 Turbo",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'preview', 'json']
+	],
+	[
+		"model" => "gpt-4-vision-preview",
+		"name" => "GPT-4 Turbo with Vision",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'preview', 'json']
+	],
+	[ 
+		"model" => "gpt-4",
+		"name" => "GPT-4",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.03,
+			"out" => 0.06,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 8192,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat']
+	],
+	[ 
+		"model" => "gpt-4-32k",
+		"name" => "GPT-4 32k",
+		"family" => "gpt4-32k",
+		"price" => [
+			"in" => 0.06,
+			"out" => 0.12,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 32768,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat']
+	],
 	[ 
 		"model" => "gpt-3.5-turbo",
-		"name" => "turbo",
+		"name" => "GPT-3.5 Turbo",
 		"family" => "turbo",
 		"price" => [
 			"in" => 0.0015,
@@ -25,7 +89,7 @@ define( 'MWAI_OPENAI_MODELS', [
 	[ 
 		"model" => "gpt-3.5-turbo-16k",
 		"description" => "Offers 4 times the context length of gpt-3.5-turbo at twice the price.",
-		"name" => "turbo-16k",
+		"name" => "GPT-3.5 Turbo 16k",
 		"family" => "turbo",
 		"price" => [
 			"in" => 0.003,
@@ -33,78 +97,14 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096 * 4,
+		"maxTokens" => 16385,
 		"mode" => "chat",
 		"finetune" => false,
 		"tags" => ['core', 'chat', '16k']
 	],
-	[ 
-		"model" => "gpt-4",
-		"name" => "gpt-4",
-		"family" => "gpt4",
-		"price" => [
-			"in" => 0.03,
-			"out" => 0.06,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 8192,
-		"mode" => "chat",
-		"finetune" => false,
-		"tags" => ['core', 'chat']
-	],
-	[
-		"model" => "gpt-4-vision-preview",
-		"name" => "GPT-4 Turbo (Vision)",
-		"family" => "gpt4",
-		"price" => [
-			"in" => 0.01,
-			"out" => 0.03,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
-		"maxCompletionTokens" => 4096,
-		"maxContextualTokens" => 128000,
-		"mode" => "chat",
-		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'preview', 'json']
-	],
-	[
-		"model" => "gpt-4-1106-preview",
-		"name" => "GPT-4 Turbo",
-		"family" => "gpt4",
-		"price" => [
-			"in" => 0.01,
-			"out" => 0.03,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
-		"maxCompletionTokens" => 4096,
-		"maxContextualTokens" => 128000,
-		"mode" => "chat",
-		"finetune" => false,
-		"tags" => ['core', 'chat', 'preview', 'json']
-	],
-	[ 
-		"model" => "gpt-4-32k",
-		"name" => "gpt-4-32k",
-		"family" => "gpt4-32k",
-		"price" => [
-			"in" => 0.06,
-			"out" => 0.12,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 32768,
-		"mode" => "chat",
-		"finetune" => false,
-		"tags" => ['core', 'chat']
-	],
 	[
 		"model" => "gpt-3.5-turbo-instruct",
-		"name" => "turbo-instruct",
+		"name" => "GPT-3.5 Turbo Instruct",
 		"family" => "turbo-instruct",
 		"price" => [
 			"in" => 0.0015,
@@ -117,14 +117,12 @@ define( 'MWAI_OPENAI_MODELS', [
 			"in" => 0.03,
 			"out" => 0.06,
 		],
-		"maxTokens" => 4096, // TODO: We shouldn't have this here anymore, it should be only a setting
-		"maxCompletionTokens" => null, // TODO: Because we only have a maxContextual...
-		"maxContextualTokens" => 4096,
+		"maxTokens" => 4096,
 		"tags" => ['core', 'chat', '4k']
 	],
   [
 		"model" => "text-davinci-003",
-		"name" => "davinci-003",
+		"name" => "GPT-3 Davinci-003",
 		"family" => "davinci",
 		"price" => 0.02,
 		"type" => "token",
@@ -138,7 +136,7 @@ define( 'MWAI_OPENAI_MODELS', [
 	],
   [
 		"model" => "text-curie-001",
-		"name" => "curie-001",
+		"name" => "GPT-3 Curie-001",
 		"family" => "curie",
 		"price" => 0.002,
 		"type" => "token",
@@ -152,7 +150,7 @@ define( 'MWAI_OPENAI_MODELS', [
 	],
   [
 		"model" => "text-babbage-001",
-		"name" => "babbage-001",
+		"name" => "GPT-3 Babbage-001",
 		"family" => "babbage",
 		"price" => 0.0005,
 		"type" => "token",
@@ -161,20 +159,6 @@ define( 'MWAI_OPENAI_MODELS', [
 		"mode" => "completion",
 		"finetune" => [
 			"price" => 0.0024
-		],
-		"tags" => ['core', 'legacy-finetune', 'deprecated']
-	],
-  [
-		"model" => "text-ada-001",
-		"name" => "ada-001",
-		"family" => "ada",
-		"price" => 0.0004,
-		"type" => "token",
-		"unit" => 1 / 1000,
-		"maxTokens" => 2048,
-		"mode" => "completion",
-		"finetune" => [
-			"price" => 0.0016
 		],
 		"tags" => ['core', 'legacy-finetune', 'deprecated']
 	],
@@ -251,7 +235,7 @@ define( 'MWAI_OPENAI_MODELS', [
 	// Embedding models:
 	[
 		"model" => "text-embedding-ada-002",
-		"name" => "ada-002",
+		"name" => "Embedding Ada-002",
 		"family" => "ada",
 		"price" => 0.0004,
 		"type" => "token",
@@ -263,7 +247,7 @@ define( 'MWAI_OPENAI_MODELS', [
 	// Audio Models:
 	[
 		"model" => "whisper-1",
-		"name" => "whisper-1",
+		"name" => "Whisper",
 		"family" => "whisper",
 		"price" => 0.00001,
 		"type" => "second",

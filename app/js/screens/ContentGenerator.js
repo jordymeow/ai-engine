@@ -1,5 +1,5 @@
-// Previous: 1.9.93
-// Current: 2.0.9
+// Previous: 2.0.9
+// Current: 2.1.0
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -63,6 +63,7 @@ const ContentGenerator = () => {
   const [topicsArray, setTopicsArray] = useState([]);
   const [createdPosts, setCreatedPosts] = useState([]);
   const [runTimes, setRunTimes] = useState({});
+  // Bug: title is used before definition
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
@@ -82,38 +83,9 @@ const ContentGenerator = () => {
   const maxTokens = template?.maxTokens ?? 2048;
   const topicsAreTitles = template?.topicsAreTitles ?? false;
   const noSections = !sectionsPromptFormat || !sectionsCount;
-
-  const { completionModels } = useModels(options, envId || null);
-  const aiEnvironments = options?.ai_envs || [];
-
-  const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
-    useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
   
-  const setTemplateProperty = (value, property) => {
-    setTemplate(x => ({ ...x, [property]: value }));
-  };
-
-  const title = template?.title ?? "";
-  const sections = template?.sections ?? "";
-  const mode = template?.mode ?? 'single';
-  const topic = template?.topic ?? "";
-  const topics = template?.topics ?? "";
-  const model = template?.model ?? options?.fallback_model ?? null;
-  const sectionsCount = template?.sectionsCount ?? 2;
-  const paragraphsCount = template?.paragraphsCount ?? 3;
-  const writingStyle = template?.writingStyle ?? "creative";
-  const writingTone = template?.writingTone ?? "cheerful";
-  const titlePromptFormat = template?.titlePromptFormat ?? "";
-  const sectionsPromptFormat = template?.sectionsPromptFormat ?? "";
-  const contentPromptFormat = template?.contentPromptFormat ?? "";
-  const excerptPromptFormat = template?.excerptPromptFormat ?? "";
-  const envId = template?.envId ?? "";
-  const temperature = template?.temperature ?? 0.6;
-  const maxTokens = template?.maxTokens ?? 2048;
-  const topicsAreTitles = template?.topicsAreTitles ?? false;
-  const noSections = !sectionsPromptFormat || !sectionsCount;
-
-  const { completionModels } = useModels(options, envId || null);
+  const { completionModels, calculatePrice } = useModels(options, envId || null);
+  const { addUsage, jsxUsageCosts } = UsageCosts(calculatePrice);
   const aiEnvironments = options?.ai_envs || [];
 
   const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
@@ -144,13 +116,13 @@ const ContentGenerator = () => {
     if (!template) {
       return;
     }
-    if (!isCustom && template?.customLanguage) {
+    if (!isCustom && template.customLanguage) {
       setTemplateProperty(null, 'customLanguage');
     }
-    if (isCustom && template?.customLanguage !== currentHumanLanguage) {
+    if (isCustom && template.customLanguage !== currentHumanLanguage) {
       setTemplateProperty(currentHumanLanguage, 'customLanguage');
     }
-    if (template?.language !== currentLanguage) {
+    if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
   }, [isCustom, currentLanguage, currentHumanLanguage]);
@@ -164,9 +136,8 @@ const ContentGenerator = () => {
       .replace('{SECTIONS_COUNT}', sectionsCount);
   };
 
-  const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); };
-
   const formInputs = useMemo(() => {
+    const lookFor = (str, arr) => { return !!arr.find(item => item.includes(str)); };
     const arr = [titlePromptFormat, sectionsPromptFormat, contentPromptFormat, excerptPromptFormat];
     return {
       language: lookFor('{LANGUAGE}', arr),
@@ -178,18 +149,19 @@ const ContentGenerator = () => {
   }, [titlePromptFormat, sectionsPromptFormat, contentPromptFormat,
     excerptPromptFormat, sectionsCount, paragraphsCount]);
 
-  const onSubmitPrompt = async (promptToUse, maxTokensParam = 2048, isBulk = false) => {
+  const onSubmitPrompt = async (promptToUse, maxTokens = 2048, isBulk = false) => {
     try {
       const res = await nekoFetch(`${apiUrl}/ai/completions`, { 
         method: 'POST',
         nonce: restNonce,
         json: { 
           env: 'admin-tools',
+          envId: envId || null,
+          model: model || null,
           session: session,
           prompt: promptToUse,
           temperature,
-          maxTokens: maxTokensParam,
-          model 
+          maxTokens
         } });
       addUsage(model, res?.usage?.prompt_tokens || 0, res?.usage?.completion_tokens || 0);
       let data = res.data.trim();
@@ -239,7 +211,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setContent('');
+    setContent(x => "");
     let prompt = contentPromptFormat.replace('{TITLE}', inTitle);
     prompt = prompt.replace('{SECTIONS}', inSections);
     prompt = prompt.replace('{TOPIC}', inTopic);
@@ -265,7 +237,7 @@ const ContentGenerator = () => {
       return;
     }
     setBusy(true);
-    setExcerpt('');
+    setExcerpt(x => "");
     let prompt = excerptPromptFormat.replace('{TITLE}', inTitle);
     prompt = prompt.replace('{TOPIC}', inTopic);
     prompt = finalizePrompt(prompt);
@@ -273,14 +245,14 @@ const ContentGenerator = () => {
     if (freshExcerpt) {
       setExcerpt(x => freshExcerpt);
     }
-    console.log("Excerpt:", { prompt, excerpt: freshExcerpt });
+    console.log("Excerpt:", { prompt, excerpt: freshExcerp });
     setBusy(false);
     return freshExcerpt;
   };
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(x => ({ ...x, all: new Date() }));
+    setRunTimes(() => ({ ...runTimes, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -638,7 +610,7 @@ const ContentGenerator = () => {
               <NekoSelect name="model" value={model}
                 description={i18n.CONTENT_GENERATOR.MODEL_HELP}
                 scrolldown={true} onChange={setTemplateProperty}>
-                {completionModels.map(x => <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>)}
+                {completionModels.map(x => <NekoOption value={x.model} label={x.name}></NekoOption>)}
               </NekoSelect>
 
               <label>{i18n.COMMON.TEMPERATURE}:</label>

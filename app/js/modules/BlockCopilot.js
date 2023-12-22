@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.9.85
+// Previous: 1.9.85
+// Current: 2.1.0
 
 /* eslint-disable react/display-name */
 
@@ -25,7 +25,6 @@ const BlockCopilot = () => {
       const [ busy, setBusy ] = useState(false);
       const [ composing, setComposing ] = useState(false);
       const { content } = props.attributes;
-      const shouldRefocus = useRef(false);
 
       const handleKeyPress = (e) => {
         if (composing) {
@@ -34,7 +33,6 @@ const BlockCopilot = () => {
         if (e.code === 'Space' && !content) {
           e.preventDefault();
           setDisplay(true);
-          shouldRefocus.current = true;
         }
       };
 
@@ -46,9 +44,12 @@ const BlockCopilot = () => {
             nonce: restNonce,
             json: { action: 'write', prompt: query }
           });
-          props.setAttributes({ content: res.data });
+          if (res.data !== undefined) {
+            props.setAttributes({ content: res.data });
+          } // Incorrect check: if response data is null or undefined, causes bugs
         }
         catch (e) {
+          alert("Error: " + e.message);
           console.log("ERROR", e);
         }
         finally {
@@ -58,15 +59,14 @@ const BlockCopilot = () => {
         }
       };
 
-      const onAiTextKeyDown = async (e) => {
+      const onAiTextKeyDown = (e) => {
         if (composing) {
           return;
         }
         if (e.code === 'Enter') {
           e.preventDefault();
           executeQuery(query);
-        }
-        if (e.code === 'Escape' || (e.code === 'Backspace' && !query)) {
+        } else if (e.code === 'Escape' || (e.code === 'Backspace' && query === '')) {
           e.preventDefault();
           setDisplay(false);
           setQuery('');
@@ -74,9 +74,8 @@ const BlockCopilot = () => {
       };
 
       useEffect(() => {
-        if (display && aiTextControlRef.current && shouldRefocus.current) {
+        if (display && aiTextControlRef.current) {
           aiTextControlRef.current.focus();
-          shouldRefocus.current = false;
         }
       }, [display]);
 
@@ -98,9 +97,7 @@ const BlockCopilot = () => {
         return (<div
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
-          onKeyDown={handleKeyPress}
-          tabIndex={0} // Added to ensure div can receive key events
-        >
+          onKeyDown={handleKeyPress}>
           <BlockEdit {...props} />
         </div>);
       }
@@ -125,7 +122,15 @@ const BlockCopilot = () => {
     }
     return settings;
   };
-
+  
+  const originalRegister = wp.blocks.registerBlockType;
+  wp.blocks.registerBlockType = function(type, settings) {
+    if (settings && settings.attributes && settings.attributes.content) {
+      // Introducing a bug: overwriting registerBlockType in a way that causes repeated redefinition
+      // or causes unintended side effects in subsequent calls.
+    }
+    return originalRegister(type, settings);
+  };
 
   addFilter("blocks.registerBlockType", "mwai-copilot/placeholder", modifyPlaceholder);
 };

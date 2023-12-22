@@ -67,6 +67,11 @@ class Meow_MWAI_Rest
 			) );
 
 			// AI Endpoints
+			register_rest_route( $this->namespace, '/ai/models', array(
+				'methods' => 'POST',
+				'permission_callback' => [ $this->core, 'can_access_features' ],
+				'callback' => [ $this, 'rest_ai_models' ],
+			) );
 			register_rest_route( $this->namespace, '/ai/completions', array(
 				'methods' => 'POST',
 				'permission_callback' => [ $this->core, 'can_access_features' ],
@@ -260,11 +265,26 @@ class Meow_MWAI_Rest
 		return $this->createValidationResult();
 	}
 
+	function rest_ai_models( $request ) {
+		try {
+			$params = $request->get_json_params();
+			$envId = $params['envId'];
+			$engine = Meow_MWAI_Engines_Factory::get( $this->core, $envId );
+			$models = $engine->retrieve_models();
+			return new WP_REST_Response([ 'success' => true, 'models' => $models ], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+		}
+	}
+
 	function rest_ai_completions( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$prompt = $params['prompt'];
-			$query = new Meow_MWAI_Query_Text( $prompt );
+			// TODO: This should not be prompt, but message, we should have a look
+			$message = $params['prompt'];
+			$query = new Meow_MWAI_Query_Text( $message );
 			$query->inject_params( $params );
 
 			// Handle streaming
@@ -314,8 +334,8 @@ class Meow_MWAI_Rest
 	function rest_ai_images( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$prompt = $params['prompt'];
-			$query = new Meow_MWAI_Query_Image( $prompt );
+			$message = $params['prompt'];
+			$query = new Meow_MWAI_Query_Image( $message );
 			$query->inject_params( $params );
 			$reply = $this->core->run_query( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->results, 'usage' => $reply->usage ], 200 );
@@ -435,11 +455,11 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$action = sanitize_text_field( $params['action'] );
-			$prompt = sanitize_text_field( $params['prompt'] );
-			if ( empty( $action ) || empty( $prompt ) ) {
+			$message = sanitize_text_field( $params['prompt'] );
+			if ( empty( $action ) || empty( $message ) ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
 			}
-			$query = new Meow_MWAI_Query_Text( $prompt, 2048 );
+			$query = new Meow_MWAI_Query_Text( $message, 2048 );
 			$query->set_scope( 'admin-tools' );
 			// TODO: We should also use the envId (as the model belongs to it)
 			$model = $this->core->get_option( 'ai_default_model' );
@@ -889,10 +909,10 @@ class Meow_MWAI_Rest
 		try {
 			global $mwai;
 			$params = $request->get_json_params();
-			$prompt = !empty( $params['prompt'] ) ? $params['prompt'] : null;
+			$message = !empty( $params['prompt'] ) ? $params['prompt'] : null;
 			$url = !empty( $params['url'] ) ? $params['url'] : null;
 			$path = !empty( $params['path'] ) ? $params['path'] : null;
-			$result = $mwai->simpleVisionQuery( $prompt, $url, $path );
+			$result = $mwai->simpleVisionQuery( $message, $url, $path );
 			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -905,8 +925,8 @@ class Meow_MWAI_Rest
 		try {
 			global $mwai;
 			$params = $request->get_json_params();
-			$prompt = !empty( $params['prompt'] ) ? $params['prompt'] : null;
-			$result = $mwai->simpleJsonQuery( $prompt );
+			$message = !empty( $params['prompt'] ) ? $params['prompt'] : null;
+			$result = $mwai->simpleJsonQuery( $message );
 			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
 		}
 		catch ( Exception $e ) {

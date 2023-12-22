@@ -1,5 +1,5 @@
-// Previous: 2.0.5
-// Current: 2.0.6
+// Previous: 2.0.6
+// Current: 2.1.0
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { nekoFetch, useNekoTasks, useNekoColors } from '@neko-ui';
 import i18n from '@root/i18n';
 import { apiUrl, restNonce, session } from '@app/settings';
 import { retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, addFromRemote,
-  DEFAULT_INDEX, DEFAULT_VECTOR, reduceContent, estimate_tokens, useModels } from '@app/helpers-admin';
+  DEFAULT_INDEX, DEFAULT_VECTOR, reduceContent, estimateTokens, useModels } from '@app/helpers-admin';
 import { retrievePostTypes } from '@app/requests';
 import AddModifyModal from './AddModifyModal';
 import ExportModal from './ExportModal';
@@ -65,9 +65,9 @@ const StatusIcon = ({ id, status, includeText = false, title = null }) => {
 
 const setLocalSettings = ({ environmentId, index, namespace }) => {
   const settings = {
-    environmentId: environmentId ?? null,
-    index: index ?? null,
-    namespace: namespace ?? null,
+    environmentId: environmentId || null,
+    index: index || null,
+    namespace: namespace || null,
   };
   localStorage.setItem('mwai-admin-embeddings', JSON.stringify(settings));
 };
@@ -152,26 +152,26 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   });
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(false);
+    setBusy(null);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
     const currentSyncEnv = embeddingsSettings.syncPostsEnv ?? {};
     return currentSyncEnv.envId !== environmentId || currentSyncEnv.dbIndex !== index ||
       currentSyncEnv.dbNS !== namespace;
-  }, [embeddingsSettings.syncPostsEnv, environmentId, index, namespace]);
+  });
 
   const syncPostsEnvName = useMemo(() => {
-    const currentSyncEnv = embeddingsSettings.syncPostsEnv ?? {};
+    const currentSyncEnv = embeddingsSettings?.syncPostsEnv ?? {};
     const currentEnvironment = environments.find(e => e.id === currentSyncEnv.envId) || null;
     return currentEnvironment?.name ?? null;
-  }, [environment, embeddingsSettings.syncPostsEnv, environments]);
+  }, [environments, embeddingsSettings]);
 
   useEffect(() => {
     if ((environment?.server === 'gcp-starter' || !index) && namespace) {
@@ -187,11 +187,11 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       }
     });
     setLocalSettings({ environmentId, index, namespace });
-  }, [index, namespace, environment, environmentId, search]);
+  }, [index, namespace]);
 
   useEffect(() => {
     const freshSearch = mode === 'edit' ? null : "";
-    setSearch(mode === 'edit' ? null : "");
+    setSearch(freshSearch);
     setQueryParams({ ...queryParams,
       filters: { ...queryParams.filters, search: freshSearch },
       sort: { accessor: (mode === 'edit' ? 'created' : 'score'), by: 'desc' }, page: 1, limit: 20
@@ -205,7 +205,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         syncPostStatus: ['publish']
       });
     }
-  }, [embeddingsSettings.syncPostTypes, embeddingsSettings.syncPostStatus]);
+  }, [embeddingsSettings?.syncPostTypes, embeddingsSettings?.syncPostStatus]);
 
   const onAddIndex = async () => {
     setBusy('addIndex');
@@ -272,8 +272,8 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   };
 
   const onResetSearch = async () => {
-    setSearch(null);
-    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search: null } });
+    setSearch('');
+    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search: '' } });
   };
 
   const onAddEmbedding = async (inEmbedding = embeddingModal, skipBusy = false) => {
@@ -420,7 +420,12 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try {
+            data = JSON.parse(fileContent);
+          } catch (e) {
+            console.error(e);
+            data = [];
+          }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -434,7 +439,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
               return null;
             }
             
-          });
+          }).filter(x => x !== null);
         }
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
@@ -508,7 +513,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
   };
 
   const vectorsTotal = useMemo(() => {
-    return vectorsData?.total ?? 0;
+    return vectorsData?.total || 0;
   }, [vectorsData]);
 
   const vectorsRows = useMemo(() => {
@@ -583,14 +588,12 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     const excerpt = resContent?.excerpt ?? null;
     const checksum = resContent?.checksum ?? null;
     const language = resContent?.language ?? "english";
-    postId = resContent?.postId ?? null;
+    postId = resContent?.postId ? parseInt(resContent?.postId) : null;
     if (!resContent.success) {
       throw new Error(resContent.message);
     }
-
     console.log("* Post ID " + postId);
-
-    const estimatedTokens = estimate_tokens(content);
+    const estimatedTokens = estimateTokens(content);
     if (estimatedTokens > assistantsModelMaxTokens || estimatedTokens > 8191) {
       content = reduceContent(content, assistantsModelMaxTokens);
       console.warn(`Too much content. Reduced it to approximatively ${assistantsModelMaxTokens} tokens.`, { 
@@ -600,7 +603,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         afterLength: content.length
       });
     }
-
     const embeddings = await onGetEmbeddingsForRef(postId, true, signal);
     if (content.length < 64) {
       if (embeddings.length > 0) {
@@ -608,20 +610,25 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         console.warn("Content is too short. Embeddings deleted.", { content });
       }
       else {
-        console.warn("Content is too short. Skipped.", { content });
+        console.warn("Content is too short. Skipping.", { content });
       }
       return false;
-    } else if (embeddings.length > 1) {
+    }
+    else if (embeddings.length > 1) {
       alert(`Multiple embeddings for one single post are not handled yet. Please delete the embeddings related to ${postId} manually.`);
       return false;
-    } else if (embeddings.length === 1) {
+    }
+    // EXISTING EMBEDDING
+    else if (embeddings.length === 1) {
       const embedding = embeddings[0];
       if (embedding.refChecksum === checksum && !embeddingsSettings.forceRecreate) {
         console.log(`Embedding exists with same content.`, { embedding });
-      } else {
+      }
+      else {
         if (embedding.refChecksum === checksum) {
           console.log(`Embedding exists with same content (but force re-create).`);
-        } else {
+        }
+        else {
           console.log(`Embedding exists with different content.`, { 
             current: embedding.content,
             new: content
@@ -635,11 +642,12 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
           return false; 
         }
         if (!await onModifyEmbedding({ ...embedding, content: embeddingContent,
-          refChecksum: checksum }, true, signal)) { // Wrong param order (should be four params)
+          refChecksum: checksum }, true, signal)) {
           return false; 
         }
       }
-    } else {
+    }
+    else {
       const post = { postId, content, title, url, excerpt, checksum, language };
       const embeddingContent = await rewriteContent(post, language, signal);
       if (!embeddingContent || embeddingContent.length < 64) {
@@ -649,7 +657,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
       }
       const embedding = { ...DEFAULT_VECTOR, title, content: embeddingContent,
         type: 'postId', refId: postId, refChecksum: checksum, behavior: 'context' };
-      if (!await onAddEmbedding(embedding, true, signal)) { // Wrong param order (should be four params)
+      if (!await onAddEmbedding(embedding, true, signal)) {
         return false;
       }
       console.log(`Embeddings added!`, { embedding });
@@ -685,7 +693,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
     finished = false;
     params.limit = 20;
-    params.page = 0;
+    params.page = 1; // MADE CHANGE HERE: PREVIOUSLY 0
     while (!finished) {
       const res = await retrieveVectors(params);
       if (res.vectors.length < params.limit) {
@@ -697,7 +705,6 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
     vectors = vectors.map(x => x.dbId);
 
     console.log("Local vectors retrieved.", { vectors });
-
     const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x.dbId));
 
     console.log("Vectors to pull from Vector DB to AI Engine.", { vectorsToPull });
@@ -729,9 +736,10 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
         await runProcess(offset, null, signal);
         return { success: true };
       });
-    } else {
-      const postIds = vectorsData?.vectors?.filter(x => selectedIds.includes(x.id))
-        .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null) ?? [];
+    }
+    else {
+      const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id))
+        .map(x => x.type === 'postId' ? x.refId : null).filter(x => x !== null);
       tasks = postIds.map(postId => async (signal) => {
         await runProcess(0, postId, signal);
         return { success: true };
@@ -903,7 +911,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
             An embedding is a textual piece of data (sentence, paragraph, a whole article) that has been converted by OpenAI into a vector. Vectors can then be used to find the most relevant data for a given query. In this dashboard, you can create embeddings, and they will be synchronized with <a target="_blank" href="https://www.pinecone.io/" rel="noreferrer">Pinecone</a>, a very fast and affordable vector database.
           </p>
           <p>
-            You can switch from EDIT to AI SEARCH and you will be able to query the database, and get your content, with a score. You can edit the content and it will be synchronized with Pinecone. Then make your content perfect so that the results are satisfying! You can use Sync and Sync One, it will go through your posts and create the embeddings if they don&apos;t exist yet, or update them if they do.
+            You can switch from EDIT to AI SEARCH and you will be able to query the database, and get your content, with a score. You can edit the content and it will be synchronized with Pinecone. Then make your content perfect so that the results are satisfying! You can use Sync and Sync One, it will go through your posts and create the embeddings if they don't exist yet, or update them if they do.
           </p>
           <p>
             Both the chatbots and the AI Forms can use embeddings to enrich their answers.
@@ -983,6 +991,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
 
             <div style={{ display: 'flex', alignItems: 'center' }}>
 
+              {/* Total Posts + Post Type Select */}
               <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                 style={{ width: 100 }} onChange={setPostType} value={postType}>
                 {postTypes?.map(postType => 
@@ -990,6 +999,7 @@ const Embeddings = ({ options, updateEnvironment, updateOption }) => {
                 )}
               </NekoSelect>
 
+              {/* Actions for All Posts */}
               <NekoButton fullWidth className="primary" style={{ marginLeft: 10 }}
                 disabled={isBusy || !index} isBusy={busy === 'bulkPushAll'}
                 onClick={() => onBulkPushClick(true)}>

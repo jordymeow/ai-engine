@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.9
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,17 +82,22 @@ Languages: English.
 
 == Changelog ==
 
+= 2.1.0 (2023/12/22) =
+* Add: Support for OpenRouter, which give you access currently to 73 models.
+* Update: Additional streamlining of the codebase.
+* Update: Default AI environments for every type of query.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.0.9 (2023/12/19) =
 * Update: Streamlined the entire codebase, much cleaner, renamed a lot of things, and made it more consistent.
 * Fix: Many little fixes here and there, too many to list.
-* 🚀 Absolutely [click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most! Next are the new engines.
 
 = 2.0.8 (2023/12/14) =
 * Update: The UI related to the Settings has been improved.
 * Update: The overall code was refactored and cleaned, to allow the next features.
 * Add: Context Max Length was added in the Chatbot Settings, and will override the one in the Settings.
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.0.7 (2023/12/07) =
 * Fix: Various fixes related to the internal APIs.

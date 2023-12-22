@@ -37,8 +37,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'maxMessages' => 15,
 	'maxTokens' => 1024,
 	'maxResults' => 1,
-	'apiKey' => null,
-	'service' => 'openai'
+	'apiKey' => null
 ] );
 
 define( 'MWAI_LANGUAGES', [
@@ -105,7 +104,7 @@ define( 'MWAI_OPTIONS', [
 
 	// General Settings for OpenAI
 	'fallback_model' => MWAI_FALLBACK_MODEL,
-	'openai_models' => Meow_MWAI_Engines_OpenAI::get_models(),
+	'openai_models' => Meow_MWAI_Engines_OpenAI::get_models_static(),
 	'openai_usage' => [],
 
 	// Settings for Images
