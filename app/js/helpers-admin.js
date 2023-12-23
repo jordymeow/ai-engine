@@ -1,5 +1,5 @@
-// Previous: 2.0.5
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.1.1
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -89,7 +89,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom, startLanguage]);
+  }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -102,8 +102,8 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       return;
     }
 
-    const htmlLang = document.querySelector('html')?.lang;
-    const detectedLanguage = (htmlLang || navigator.language || navigator.userLanguage).substr(0, 2);
+    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
+    const detectedLanguage = htmlLang.substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -119,7 +119,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -147,7 +147,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -156,6 +156,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
   const envId = overrideDefaultEnvId ? overrideDefaultEnvId : options?.ai_default_env;
+  const aiEnvs = options?.ai_envs ?? [];
 
   const allEnvironments = useMemo(() => {
     if (allEnvs && options?.ai_envs) {
@@ -167,20 +168,19 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         finetunes_deleted: [],
         deployments: [],
       };
-      
-      // Introducing a subtle bug: referencing env.finetunes directly which might be undefined
-      options.ai_envs.forEach(env => {
-        if (env.finetunes) fakeEnv.finetunes.push(...(env.finetunes ?? []));
-        if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...(env.legacy_finetunes ?? []));
-        if (env.legacy_finetunes_deleted) fakeEnv.legacy_finetunes_deleted.push(...(env.legacy_finetunes_deleted ?? []));
-        if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...(env.finetunes_deleted ?? []));
-        if (env.deployments) fakeEnv.deployments.push(...(env.deployments ?? []));
+
+      aiEnvs.forEach(env => {
+        if (env.finetunes) fakeEnv.finetunes.push(...env.finetunes);
+        if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...env.legacy_finetunes);
+        if (env.legacy_finetunes_deleted) fakeEnv.legacy_finetunes_deleted.push(...env.legacy_finetunes_deleted);
+        if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
+        if (env.deployments) fakeEnv.deployments.push(...env.deployments);
       });
 
       return fakeEnv;
     }
     return null;
-  }, [options.ai_envs, allEnvs]);
+  }, [aiEnvs, allEnvs]);
 
   const env = useMemo(() => {
     if (allEnvs) return allEnvironments;
@@ -190,11 +190,11 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     const selectedEnv = options?.ai_envs?.find(x => x.id === envId);
     if (!selectedEnv) {
-      console.warn(`useModels: Environment with ID ${envId} could not be resolved.`, { envs: options.ai_envs, envId });
+      console.warn(`useModels: Environment with ID ${envId} could not be resolved.`, { envs: aiEnvs, envId });
       return null;
     }
     return selectedEnv;
-  }, [options.ai_envs, envId, allEnvs, allEnvironments]);
+  }, [aiEnvs, envId, allEnvs, allEnvironments]);
 
   const deletedFineTunes = useMemo(() => {
     let deleted = env?.finetunes_deleted || [];
@@ -259,7 +259,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       console.warn("useModels: Environment Type is not supported.", { env });
     }
 
-    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
+    let extraModelsArr = extraModelsStr.split(',').filter(x => x);
     let fineTunes = env?.finetunes ?? [];
     
     if (Array.isArray(env?.legacy_finetunes)) {
@@ -297,9 +298,9 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         };
       })];
     }
-    extraModels = extraModels?.split(',').filter(x => x);
-    if (extraModels.length) {
-      models = [ ...models, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
+    extraModelsArr = extraModelsArr.filter(x => x);
+    if (extraModelsArr.length) {
+      models = [ ...models, ...extraModelsArr.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
     return models;
   }, [options, env]);
@@ -307,6 +308,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
+
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -343,7 +345,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
       model = 'gpt-4';
     }
-    // Potential subtle bug: not checking if allModels is defined/has the model, could cause undefined
     return allModels.find(x => x.model === model);
   };
 
@@ -455,7 +456,7 @@ function estimateTokens(text) {
   const words = text.trim().split(/\s+/);
   let tokenCount = 0;
   words.forEach(word => {
-      tokenCount += Math.ceil(word.length / averageTokenLength);
+    tokenCount += Math.ceil(word.length / averageTokenLength);
   });
   return tokenCount;
 }

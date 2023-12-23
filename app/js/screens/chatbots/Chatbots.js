@@ -1,5 +1,5 @@
-// Previous: 2.0.6
-// Current: 2.0.8
+// Previous: 2.0.8
+// Current: 2.1.1
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +10,7 @@ import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoToolbar, NekoSpacer,
 import { pluginUrl, restUrl, userData, restNonce, session, stream,
   themes as initThemes, chatbots as initChatbots } from '@app/settings';
 import i18n from '@root/i18n';
-import { retrieveChatbots, retrieveThemes, update_chatbots } from '@app/requests';
+import { retrieveChatbots, retrieveThemes, updateChatbots } from '@app/requests';
 import ChatbotParams from '@app/screens/chatbots/Params';
 import Themes from '@app/screens/chatbots/Themes';
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
@@ -54,7 +54,6 @@ const Chatbots = (props) => {
       const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
       return chatbot;
     }
-    return null;
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
@@ -63,41 +62,43 @@ const Chatbots = (props) => {
       setCurrentChatbot(chatbot?.botId);
       return chatbot;
     }
-    return null;
-  }, [chatbots, currentBotId]);
+  }, [chatbots, currentBotId, chatbots]);
 
   const currentTheme = useMemo(() => {
     if (themes && currentChatbot) {
       const chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
-      if (chatTheme) return chatTheme;
+      return chatTheme;
     }
     return themes.find(theme => theme.themeId === 'chatgpt');
   }, [currentChatbot, themes, chatbots]);
 
   const updateChatbotParams = async (value, id) => {
+
     if ( id === 'botId' && value === 'default' ) {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
+
     if ( id === 'botId' && value === '' ) {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if ( id === 'botId' && chatbots && chatbots.find(x => x.botId === value) ) {
+
+    if ( id === 'botId' && chatbots.find(x => x.botId === value) ) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-    if (id === 'botId' && value !== currentChatbot.id) {
-      setCurrentBotId(value);
+
+    if (id === 'botId' && value !== currentChatbot[id] ) {
+      setCurrentChatbot(value);
     }
+
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    if (botIndex !== -1) {
-      newChatbots[botIndex] = newParams;
-    }
-    newChatbots = await update_chatbots(newChatbots);
+    newChatbots[botIndex] = newParams;
+    newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
@@ -114,7 +115,7 @@ const Chatbots = (props) => {
     setBusyAction(true);
     const newName = 'New Chatbot';
     const newChatId = 'chatbot-' + randomHash();
-    const newChatbots = await update_chatbots([...chatbots, {
+    const newChatbots = await updateChatbots([...chatbots, {
       ...defaults, botId: newChatId, name: newName,
       envId: options?.ai_default_env,
       model: options?.ai_default_model,
@@ -127,7 +128,7 @@ const Chatbots = (props) => {
     setBusyAction(true);
     let newChatbots = [...chatbots.filter(x => x.botId !== currentChatbot.botId)];
     setCurrentBotId('default');
-    newChatbots = await update_chatbots(newChatbots);
+    newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
@@ -136,10 +137,8 @@ const Chatbots = (props) => {
     setBusyAction(true);
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    if (botIndex !== -1) {
-      newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
-    }
-    newChatbots = await update_chatbots(newChatbots);
+    newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };

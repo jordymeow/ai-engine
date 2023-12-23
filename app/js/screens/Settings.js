@@ -1,5 +1,5 @@
-// Previous: 2.0.8
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.1.1
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -29,6 +29,7 @@ import EmbeddingsEnvironmentsSettings from './embeddings/Environments';
 import AIEnvironmentsSettings from './ai/Environments';
 import Transcription from './misc/Transcription';
 import Assistants from './assistants/Assistants';
+import { retrieveChatbots, retrieveOptions, retrieveThemes, updateChatbots, updateThemes } from '@app/requests';
 
 const retrieveIncidents = async () => {
   const res = await nekoFetch(`${apiUrl}/openai/incidents`, { nonce: restNonce });
@@ -57,6 +58,7 @@ const defaultEnvironmentSections = [
 ];
 
 function useDefaultEnvironments(aiEnvs, options, updateOptions) {
+
   const performChecks = async () => {
     let updatesNeeded = false;
     let newOptions = { ...options };
@@ -170,11 +172,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const response = await nekoFetch(`${apiUrl}/settings/list`, {
-        method: 'GET',
-        nonce: restNonce
-      });
-      setOptions(response.options);
+      const optionsData = retrieveOptions();
+      setOptions(optionsData);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -251,22 +250,77 @@ const Settings = () => {
     }
     setBusyAction(true);
     try {
-      const response = await nekoFetch(`${apiUrl}/settings/reset`, { method: 'POST', nonce: restNonce });
-      setOptions(response.options);
+      await nekoFetch(`${apiUrl}/settings/reset`, { method: 'POST', nonce: restNonce });
+      alert("Settings reset. The page will now reload to reflect the changes.");
+      window.location.reload();
     }
     catch (err) {
-      console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ? { message: err.message } : { err });
-      if (err.message) {
-        setError(<>
-          <div>{i18n.ERROR.UPDATING_OPTIONS}</div>
-          <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
-        </>);
-      }
+      alert("Error while resetting settings. Please check your console.");
+      console.log(err);
     }
     finally {
       setBusyAction(false);
     }
   };
+
+  const onExportSettings = async () => {
+    setBusyAction('exportSettings');
+    try {
+      const chatbots = await retrieveChatbots();
+      const themes = await retrieveThemes();
+      const optionsData = await retrieveOptions();
+      const data = { chatbots, themes, options: optionsData };
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
+      link.setAttribute('download', filename);
+      link.click();
+    }
+    catch (err) {
+      alert("Error while exporting settings. Please check your console.");
+      console.log(err);
+    }
+    finally {
+      setBusyAction(false);
+    }
+  };
+
+  const onImportSettings = async () => {
+    setBusyAction('importSettings');
+    try {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'application/json';
+      fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const data = JSON.parse(e.target.result);
+          const { chatbots, themes, options: importedOptions } = data;
+          await updateChatbots(chatbots);
+          await updateThemes(themes);
+          await updateOptions(importedOptions);
+          alert("Settings imported. The page will now reload to reflect the changes.");
+          window.location.reload();
+        };
+        reader.readAsText(file);
+      };
+      fileInput.click();
+    }
+    catch (err) {
+      alert("Error while importing settings. Please check your console.");
+      console.log(err);
+    }
+    finally {
+      setBusyAction(false);
+    }
+  }
 
   useDefaultEnvironments(ai_envs, options, updateOptions);
 
@@ -906,9 +960,19 @@ const jsxAIEnvironmentEmbeddingsDefault = <>
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title={i18n.COMMON.MAINTENANCE} className="primary">
+
+                    <NekoButton className="blue" onClick={onExportSettings}>
+                      Export Settings
+                    </NekoButton>
+
+                    <NekoButton className="danger" onClick={onImportSettings}>
+                      Import Settings
+                    </NekoButton>
+
                     <NekoButton className="danger" onClick={onResetSettings}>
                       Reset Settings
                     </NekoButton>
+
                   </NekoBlock>
 
                 </NekoColumn>

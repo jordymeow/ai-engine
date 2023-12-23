@@ -1,5 +1,5 @@
-// Previous: 2.0.0
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.1.1
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -15,7 +15,7 @@ const retrievePostTypes = async () => {
 
 const retrievePostsCount = async (postType) => {
   const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`, { nonce: restNonce });
-  return res?.count ? parseInt(res?.count) : null;
+  return res?.count ? parseInt(res?.count) : 0;
 };
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
@@ -29,7 +29,7 @@ const retrieveFiles = async (envId = null) => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.files?.data;
+  return res?.files?.data || [];
 };
 
 const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
@@ -37,7 +37,7 @@ const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.finetunes;
+  return res?.finetunes || [];
 };
 
 const retrieveModels = async () => {
@@ -45,7 +45,7 @@ const retrieveModels = async () => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.models;
+  return res?.models || [];
 };
 
 const retrieveFineTunes = async (envId = null, legacy = false) => {
@@ -53,7 +53,7 @@ const retrieveFineTunes = async (envId = null, legacy = false) => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.finetunes;
+  return res?.finetunes || [];
 };
 
 const retrieveChatbots = async () => {
@@ -61,23 +61,28 @@ const retrieveChatbots = async () => {
   if (!res.success) {
     throw new Error(res?.message);
   }
-  return res?.chatbots;
+  return res?.chatbots || [];
 };
 
-const update_chatbots = async (chatbots) => {
+const updateChatbots = async (chatbots) => {
   const res = await nekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', nonce: restNonce, json: { chatbots } });
   if (!res.success) {
     throw new Error(res?.message);
   }
-  return res?.chatbots;
+  return res?.chatbots || [];
 };
 
 const retrieveThemes = async () => {
   const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'GET', nonce: restNonce });
-  return res?.themes;
+  return res?.themes || [];
 };
 
-const update_themes = async (themes) => {
+const retrieveOptions = async () => {
+  const res = await nekoFetch(`${apiUrl}/settings/options`, { method: 'GET', nonce: restNonce });
+  return res?.options || [];
+};
+
+const updateThemes = async (themes) => {
   const themeIds = [];
   for (let i = 0; i < themes.length; i++) {
     let themeId = themes[i].themeId;
@@ -93,7 +98,7 @@ const update_themes = async (themes) => {
   }
 
   const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
-  return res?.themes;
+  return res?.themes || [];
 };
 
 const retrieveAssistants = async (envId) => {
@@ -101,9 +106,9 @@ const retrieveAssistants = async (envId) => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.assistants;
+  return res?.assistants || [];
 }
 
 export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, 
-  retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants,
-  retrieveChatbots, retrieveThemes, update_chatbots, update_themes };
+  retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
+  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };

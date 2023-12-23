@@ -18,7 +18,7 @@ class Meow_MWAI_Rest
 				'permission_callback' => [ $this->core, 'can_access_settings' ],
 				'callback' => [ $this, 'rest_settings_update' ],
 			) );
-			register_rest_route( $this->namespace, '/settings/list', array(
+			register_rest_route( $this->namespace, '/settings/options', array(
 				'methods' => 'GET',
 				'permission_callback' => [ $this->core, 'can_access_settings' ],
 				'callback' => [ $this, 'rest_settings_list' ],

@@ -5,26 +5,26 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Add AI into WordPress! Chatbot (ChatGPT), content and images generators, copilot, model training and much more! Highly customizable, sleek UI. You will love it!
 
 == Description ==
-Create your own chatbot like ChatGPT, generate content or images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track OpenAI usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, WooCommerce product fields, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
+Create your own chatbot, craft content and images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track statistic and usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, WooCommerce product fields, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
 
 Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more tutorial and information, check the official website: [AI Engine](https://meowapps.com/ai-engine/). Thank you!
 
 == Features ==
 
-* Models: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc
-* Add a ChatGPT chatbot (or an images creation bot) to your website easily
+* OpenAI: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc
+* OpenRouter: Claude, Gemini, Mistral, GPTs, etc
+* Add easily an ChatGPT-like chatbot to your website
 * Generate fresh and engaging content for your site
-* Use the AI Copilot to help you brainstorm ideas and write faster
-* Explore the AI Playground for a variety of tools like translation, correction, SEO, etc
-* Create templates for everything you do, to save time and be more productive
-* Fullscreen, popup, and window modes for the chatbot
+* Use the AI Copilot to help you tweak your content, build images, and more
+* Explore the AI Playground for a variety of tools (translation, correction, SEO, etc)
+* Create templates for everything you do, to be more productive
 * Train your AI to make it better at specific tasks
 * Moderation AI for various tasks
 * Quickly brainstorm new titles and excerpts for your posts
@@ -33,19 +33,19 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 * Embeddings to add more context to your chatbot based on your data
 * Keep track of your OpenAI usage with built-in statistics
 * Internal API for you to play with
-* Upcoming features are already in the works, and it will be surprising!
+* And a lot more, just play with it! 💫
 
-== Chatbot: Your own ChatGPT ==
+== Chatbot ==
 
 Are you interested in integrating AI-powered chat functionality to your website? Our chatbot can assist you with that! Although it appears simple, the possibilities are limitless, with a variety of parameters and concepts to explore. Visit our [official documentation](https://meowapps.com/ai-engine/) for more information.
 
 Take your AI capabilities to the next level with finetuning and embeddings. By reusing your website's content and other pertinent information, you can train your AI to better cater to your target audience. AI Engine makes this process simple and straightforward with its user-friendly interface. If you'd like to learn more about finetuning, check out our article: [How to Train an AI Model](https://meowapps.com/wordpress-chatbot-finetuned-model-ai/).
 
-== Your AI Copilot ==
+== AI Copilot ==
 
 In the WordPress editor, hit space and type your question! AI Copilot offers many suggestions to help you think and write quickly. Use the wand symbol to fix your text, translate it, shorten or lengthen it, and find alternative words. 
 
-== Generate Content, Images & More ==
+== Generate Content & Images ==
 
 Simply adjust the parameters to your preference, customize the prompts, and discover the results. You can save your parameters as templates for future use, generate content in bulk, and even produce images. The AI Playground also enables you to create your own custom use cases, such as swiftly acquiring recipes based on your refrigerator's contents or quickly drafting restaurant reviews. With AI Engine, the possibilities are endless, and you can personalize the user interface to suit your needs.
 
@@ -82,10 +82,11 @@ Languages: English.
 
 == Changelog ==
 
-= 2.1.0 (2023/12/22) =
+= 2.1.1 (2023/12/23) =
 * Add: Support for OpenRouter, which give you access currently to 73 models.
-* Update: Additional streamlining of the codebase.
-* Update: Default AI environments for every type of query.
+* Add: Default AI environments for each type of query.
+* Add: Reset, Export and Import of your AI Engine settings.
+* Update: Huge streamlining of the codebase.
 * 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

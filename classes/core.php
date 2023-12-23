@@ -910,7 +910,8 @@ class Meow_MWAI_Core
 	}
 
 	function reset_options() {
-		//return $this->update_options( MWAI_OPTIONS );
+		delete_option( $this->themes_option_name );
+		delete_option( $this->chatbots_option_name );
 		delete_option( $this->option_name );
 		return $this->get_all_options( true );
 	}

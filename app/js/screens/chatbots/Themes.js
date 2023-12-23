@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.1.1
 
 const { useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
 
 import { themes as initThemes } from '@app/settings';
-import { retrieveThemes, update_themes } from '@app/requests';
+import { retrieveThemes, updateThemes } from '@app/requests';
 import Theme from './Theme';
 import { randomHash } from '@app/helpers-admin';
 
@@ -34,7 +34,7 @@ const Themes = (props) => {
       let newThemes = [...themes];
       const themeIndex = newThemes.findIndex(x => x.themeId === currentTheme.themeId);
       newThemes[themeIndex] = newParams;
-      const updatedThemes = await update_themes(newThemes);
+      const updatedThemes = await updateThemes(newThemes);
       queryClient.setQueryData(['themes'], updatedThemes);
     }
     catch (e) {
@@ -46,7 +46,7 @@ const Themes = (props) => {
   const addNewTheme = async () => {
     setBusy(true);
     try {
-      const newThemes = await update_themes([...themes, {
+      const newThemes = await updateThemes([...themes, {
         type: 'css',
         name: 'New Theme',
         themeId: 'theme-' + randomHash(),
@@ -66,7 +66,7 @@ const Themes = (props) => {
     const newThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
     const firstTheme = newThemes[0];
     onSwitchTheme(firstTheme.themeId);
-    await update_themes(newThemes);
+    await updateThemes(newThemes);
     await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
@@ -79,10 +79,11 @@ const Themes = (props) => {
       type: newThemes[themeIndex].type,
       name: newThemes[themeIndex].name,
       themeId: newThemes[themeIndex].themeId,
-      settings: [],
+      settings: [], 
       style: ""
     };
-    await update_themes(newThemes);
+    await updateThemes(newThemes);
+    // Bug: missing queryClient.setQueryData call here causes cache inconsistency
     await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
