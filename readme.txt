@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.1
+Stable tag: 2.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
 
-= 2.1.1 (2023/12/23) =
+= 2.1.2 (2023/12/23) =
 * Add: Support for OpenRouter, which give you access currently to 73 models.
 * Add: Default AI environments for each type of query.
 * Add: Reset, Export and Import of your AI Engine settings.

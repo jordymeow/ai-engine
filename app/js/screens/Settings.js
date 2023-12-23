@@ -1,5 +1,5 @@
-// Previous: 2.1.0
-// Current: 2.1.1
+// Previous: 2.1.1
+// Current: 2.1.2
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -78,7 +78,7 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions) {
           }
         }
         else {
-          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
+          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined || newOptions[modelKey] !== null) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
@@ -162,18 +162,18 @@ const Settings = () => {
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['incidents'], queryFn: retrieveIncidents
   });
-  const accidentsPastDay = useMemo(() => incidents?.filter(x => {
+  const incidentsFiltered = useMemo(() => incidents?.filter(x => {
     const incidentDate = new Date(x.date);
     return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
-  }).length, [incidents]);
+  }), [incidents]);
 
   const busy = busyAction;
 
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsData = retrieveOptions();
-      setOptions(optionsData);
+      const optionsResp = await retrieveOptions();
+      setOptions(optionsResp);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -266,10 +266,10 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbots = await retrieveChatbots();
-      const themes = await retrieveThemes();
-      const optionsData = await retrieveOptions();
-      const data = { chatbots, themes, options: optionsData };
+      const chatbotsResp = await retrieveChatbots();
+      const themesResp = await retrieveThemes();
+      const optionsResp = await retrieveOptions();
+      const data = { chatbots: chatbotsResp, themes: themesResp, options: optionsResp };
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -286,7 +286,7 @@ const Settings = () => {
     finally {
       setBusyAction(false);
     }
-  };
+  }
 
   const onImportSettings = async () => {
     setBusyAction('importSettings');
@@ -301,13 +301,18 @@ const Settings = () => {
         }
         const reader = new FileReader();
         reader.onload = async (e) => {
-          const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options: importedOptions } = data;
-          await updateChatbots(chatbots);
-          await updateThemes(themes);
-          await updateOptions(importedOptions);
-          alert("Settings imported. The page will now reload to reflect the changes.");
-          window.location.reload();
+          try {
+            const data = JSON.parse(e.target.result);
+            const { chatbots, themes, options } = data;
+            await updateChatbots(chatbots);
+            await updateThemes(themes);
+            await updateOptions(options);
+            alert("Settings imported. The page will now reload to reflect the changes.");
+            window.location.reload();
+          } catch (parseErr) {
+            alert("Invalid JSON file.");
+            console.log(parseErr);
+          }
         };
         reader.readAsText(file);
       };
@@ -385,8 +390,7 @@ const Settings = () => {
 
   const jsxStatistics = 
     <NekoSettings title={<>{i18n.COMMON.STATISTICS}</>}>
-      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1"
-        checked={module_statistics} requirePro={true} isPro={isRegistered}
+      <NekoCheckboxnome="module_statistics" label={i18n.COMMON.ENABLE} value="1" checked={module_statistics} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.STATISTICS_HELP}
         onChange={updateOption} />
     </NekoSettings>;
@@ -710,7 +714,7 @@ const Settings = () => {
     <MonthlyUsage options={options} />
   </div>;
 
-  const jsxIncidentsIcon = accidentsPastDay > 0 ? <NekoIcon
+  const jsxIncidentsIcon = incidentsFiltered?.length > 0 ? <NekoIcon
     style={{ marginLeft: 5, marginRight: -5, display: 'inline' }} width="16"
     icon="alert" variant="warning" />
     : null;
@@ -1051,13 +1055,13 @@ const jsxAIEnvironmentEmbeddingsDefault = <>
 
       </NekoWrapper>
 
-      <NekoModal isOpen={error}
+      <NekoModal isOpen={!!error}
         title={i18n.COMMON.ERROR}
         content={error}
-        onRequestClose={() => setError(false)}
+        onRequestClose={() => setError(null)}
         okButton={{
           label: "Close",
-          onClick: () => setError(false)
+          onClick: () => setError(null)
         }}
       />
 
