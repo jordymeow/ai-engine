@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.2
+Stable tag: 2.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,12 +18,12 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Features ==
 
-* OpenAI: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc
-* OpenRouter: Claude, Gemini, Mistral, GPTs, etc
+* OpenAI: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc...
+* OpenRouter: Claude, Gemini, Mistral, GPTs, etc...
 * Add easily an ChatGPT-like chatbot to your website
 * Generate fresh and engaging content for your site
 * Use the AI Copilot to help you tweak your content, build images, and more
-* Explore the AI Playground for a variety of tools (translation, correction, SEO, etc)
+* Explore the AI Playground for a variety of tools (translation, correction, SEO, etc...)
 * Create templates for everything you do, to be more productive
 * Train your AI to make it better at specific tasks
 * Moderation AI for various tasks
@@ -82,14 +82,19 @@ Languages: English.
 
 == Changelog ==
 
+= 2.1.3 (2023/12/27) =
+* Add: Option to store the generated images automatically instead of using the temporary URLs created by the models.
+* Fix: Handle and display errors with the assistants.
+* Fix: Focus issues in the input fields.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.1.2 (2023/12/23) =
 * Add: Support for OpenRouter, which give you access currently to 73 models.
 * Add: Default AI environments for each type of query.
 * Add: Reset, Export and Import of your AI Engine settings.
 * Update: Huge streamlining of the codebase.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.0.9 (2023/12/19) =
 * Update: Streamlined the entire codebase, much cleaner, renamed a lot of things, and made it more consistent.

@@ -31,4 +31,10 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 		}
   }
 
+	public function final_checks() {
+		parent::final_checks();
+		// Since DALL-E 3 only support 1 image, we force it. I guess it will be the same for other models.
+		$this->maxResults = 1;
+	}
+
 }

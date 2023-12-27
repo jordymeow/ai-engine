@@ -28,6 +28,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
       'Authorization' => 'Bearer ' . $this->apiKey,
       'HTTP-Referer' => $site_url,
       'X-Title' => $site_name,
+      'User-Agent' => 'AI Engine',
     );
     return $headers;
   }
@@ -52,31 +53,48 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
     // This is how to retrieve the exact number of tokens used with OpenRouter.
     // However, it doesn't work with streaming and it slows the request.
 
-    // if ( !empty( $reply->id ) ) {
-    //   $url = 'https://openrouter.ai/api/v1/generation?id=' . $reply->id;
-    //   $headers = $this->build_headers( $query );
-    //   // Remove HTTP-Referer, Content-Type, and X-Title from the headers
-    //   unset( $headers['HTTP-Referer'] );
-    //   unset( $headers['Content-Type'] );
-    //   unset( $headers['X-Title'] );
-    //   $options = $this->build_options( $headers, null, null, 'GET' );
-    //   try {
-    //     $res = $this->run_query( $url, $options, false );
-    //     if ( isset( $res['data']['data'] ) ) {
-    //       $data = $res['data']['data'];
-    //       $returned_model = $data['model'];
-    //       $returned_in_tokens = $data['tokens_prompt'];
-    //       $returned_out_tokens = $data['tokens_completion'];
-    //       // $price = $res['usage'];
-    //       $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
-    //       $reply->set_usage( $usage );
-    //       return;
-    //     }
-    //   }
-    //   catch ( Exception $e ) {
-    //     error_log( $e->getMessage() );
-    //   }
-    // }
+    if ( !empty( $reply->id ) ) {
+      $url = 'https://openrouter.ai/api/v1/generation?id=' . $reply->id;
+      try {
+
+        // This is the CURL way
+        // $ch = curl_init();
+        // curl_setopt( $ch, CURLOPT_URL, $url );
+        // curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        // curl_setopt( $ch, CURLOPT_HTTPHEADER, [ 'Authorization: Bearer ' . $this->apiKey ] );
+        // curl_setopt( $ch, CURLOPT_USERAGENT, 'AI Engine' );
+        // $res = curl_exec( $ch );
+        // curl_close( $ch );
+        // $res = json_decode( $res, true );
+
+        // This is the WordPress way
+        // It currently doesn't work with OpenRouter (for mysterious reasons)
+        // $res = wp_remote_get( $url, array(
+        //   'headers' => array(
+        //     'Authorization' => 'Bearer ' . $this->apiKey,
+        //     'User-Agent' => 'AI Engine',
+        //   ),
+        //   'sslverify' => false,
+        //   'user-agent' => 'AI Engine',
+        //   'timeout' => 30,
+        //   'blocking' => false,
+        // ) );
+
+        if ( isset( $res['data'] ) ) {
+          $data = $res['data'];
+          $returned_model = $data['model'];
+          $returned_in_tokens = $data['tokens_prompt'];
+          $returned_out_tokens = $data['tokens_completion'];
+          $price = $res['usage'];
+          $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
+          $reply->set_usage( $usage );
+          return;
+        }
+      }
+      catch ( Exception $e ) {
+        error_log( $e->getMessage() );
+      }
+    }
 
     $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
     $reply->set_usage( $usage );

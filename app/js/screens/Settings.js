@@ -1,5 +1,5 @@
-// Previous: 2.1.1
-// Current: 2.1.2
+// Previous: 2.1.2
+// Current: 2.1.3
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -78,7 +78,7 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions) {
           }
         }
         else {
-          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined || newOptions[modelKey] !== null) {
+          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined && newOptions[envKey] !== false || newOptions[modelKey] !== null && newOptions[modelKey] !== undefined && newOptions[modelKey] !== false) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
@@ -162,10 +162,10 @@ const Settings = () => {
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['incidents'], queryFn: retrieveIncidents
   });
-  const incidentsFiltered = useMemo(() => incidents?.filter(x => {
+  const accidentsPastDay = useMemo(() => incidents?.filter(x => {
     const incidentDate = new Date(x.date);
     return incidentDate > new Date(Date.now() - 24 * 60 * 60 * 1000);
-  }), [incidents]);
+  }).length, [incidents]);
 
   const busy = busyAction;
 
@@ -266,18 +266,18 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbotsResp = await retrieveChatbots();
-      const themesResp = await retrieveThemes();
-      const optionsResp = await retrieveOptions();
-      const data = { chatbots: chatbotsResp, themes: themesResp, options: optionsResp };
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const today = new Date();
-      const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
-      link.setAttribute('download', filename);
-      link.click();
+    const chatbots = await retrieveChatbots();
+    const themes = await retrieveThemes();
+    const optionsResp = await retrieveOptions();
+    const data = { chatbots, themes, options: optionsResp };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date();
+    const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
+    link.setAttribute('download', filename);
+    link.click();
     }
     catch (err) {
       alert("Error while exporting settings. Please check your console.");
@@ -286,7 +286,7 @@ const Settings = () => {
     finally {
       setBusyAction(false);
     }
-  }
+  };
 
   const onImportSettings = async () => {
     setBusyAction('importSettings');
@@ -301,18 +301,13 @@ const Settings = () => {
         }
         const reader = new FileReader();
         reader.onload = async (e) => {
-          try {
-            const data = JSON.parse(e.target.result);
-            const { chatbots, themes, options } = data;
-            await updateChatbots(chatbots);
-            await updateThemes(themes);
-            await updateOptions(options);
-            alert("Settings imported. The page will now reload to reflect the changes.");
-            window.location.reload();
-          } catch (parseErr) {
-            alert("Invalid JSON file.");
-            console.log(parseErr);
-          }
+          const data = JSON.parse(e.target.result);
+          const { chatbots, themes, options: importedOptions } = data;
+          await updateChatbots(chatbots);
+          await updateThemes(themes);
+          await updateOptions(importedOptions);
+          alert("Settings imported. The page will now reload to reflect the changes.");
+          window.location.reload();
         };
         reader.readAsText(file);
       };
@@ -390,7 +385,8 @@ const Settings = () => {
 
   const jsxStatistics = 
     <NekoSettings title={<>{i18n.COMMON.STATISTICS}</>}>
-      <NekoCheckboxnome="module_statistics" label={i18n.COMMON.ENABLE} value="1" checked={module_statistics} requirePro={true} isPro={isRegistered}
+      <NekoCheckbox name="module_statistics" label={i18n.COMMON.ENABLE} value="1"
+        checked={module_statistics} requirePro={true} isPro={isRegistered}
         description={i18n.COMMON.STATISTICS_HELP}
         onChange={updateOption} />
     </NekoSettings>;
@@ -482,17 +478,6 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  // const jsxLegacyForms =
-  //   <NekoSettings title={i18n.COMMON.LEGACY_FORMS}>
-  //     <NekoCheckboxGroup max="1">
-  //       <NekoCheckbox name="shortcode_forms_legacy" label={`${i18n.COMMON.ENABLE}`} value="1"
-  //         requirePro={true} isPro={isRegistered}
-  //         checked={shortcode_forms_legacy}
-  //         description="Don't use the Legacy Forms. It's deprecated and will be removed in the future. Only enable if you have issues with the new forms."
-  //         onChange={updateOption} />
-  //     </NekoCheckboxGroup>
-  //   </NekoSettings>;
-
   const jsxStream =
     <NekoSettings title={i18n.COMMON.STREAMING}>
       <NekoCheckboxGroup max="1">
@@ -559,8 +544,33 @@ const Settings = () => {
 
   const jsxImageExpiration =
     <NekoSettings title="Expiration">
-      <NekoSelect scrolldown name="image_expires" value={options?.image_expires ?? null} onChange={updateOption}
-        description="The images will be deleted after a certain amount of time.">
+      <NekoSelect scrolldown name="image_expires" value={options?.image_expires ?? 'never'} onChange={updateOption}
+        description="The images uploaded will be deleted after a certain amount of time.">
+        <NekoOption key={1 * 60 * 60} value={1 * 60 * 60} label="1 hour"></NekoOption>
+        <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></NekoOption>
+        <NekoOption key={24 * 60 * 60} value={24 * 60 * 60} label="1 day"></NekoOption>
+        <NekoOption key={7 * 24 * 60 * 60} value={7 * 24 * 60 * 60} label="1 week"></NekoOption>
+        <NekoOption key={30 * 24 * 60 * 60} value={30 * 24 * 60 * 60} label="1 month"></NekoOption>
+        <NekoOption key={'Never'} value={'never'} label="Never"></NekoOption>
+      </NekoSelect>
+    </NekoSettings>;
+
+  const jsxImageLocalDownload =
+    <NekoSettings title="Local Download">
+      <NekoSelect scrolldown name="image_local_download" value={options?.image_local_download ?? null}
+        onChange={updateOption}
+        description="Images can be stored either in the filesystem or in the Media Library.">
+        <NekoOption key={null} value={null} label="None"></NekoOption>
+        <NekoOption key='uploads' value='uploads' label="Filesystem"></NekoOption>
+        <NekoOption key='library' value='library' label="Media Library"></NekoOption>
+      </NekoSelect>
+    </NekoSettings>;
+
+  const jsxImageExpirationDownload =
+    <NekoSettings title="Expiration">
+      <NekoSelect scrolldown name="image_expires_download" value={options?.image_expires_download ?? 'never'}
+        onChange={updateOption}
+        description="The download images will be deleted after a certain amount of time.">
         <NekoOption key={1 * 60 * 60} value={1 * 60 * 60} label="1 hour"></NekoOption>
         <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></NekoOption>
         <NekoOption key={24 * 60 * 60} value={24 * 60 * 60} label="1 day"></NekoOption>
@@ -714,7 +724,7 @@ const Settings = () => {
     <MonthlyUsage options={options} />
   </div>;
 
-  const jsxIncidentsIcon = incidentsFiltered?.length > 0 ? <NekoIcon
+  const jsxIncidentsIcon = accidentsPastDay > 0 ? <NekoIcon
     style={{ marginLeft: 5, marginRight: -5, display: 'inline' }} width="16"
     icon="alert" variant="warning" />
     : null;
@@ -1004,9 +1014,13 @@ const jsxAIEnvironmentEmbeddingsDefault = <>
                   </NekoBlock>}
 
                   <NekoBlock busy={busy} title={i18n.COMMON.IMAGES} className="primary">
+                    <p><b>User Upload</b></p>
                     {jsxImageLocalUpload}
                     {jsxImageRemoteUpload}
                     {jsxImageExpiration}
+                    <p><b>AI Generated</b></p>
+                    {jsxImageLocalDownload}
+                    {options?.image_local_download !== null && jsxImageExpirationDownload}
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title={i18n.COMMON.ADMIN_TOOLS} className="primary">
@@ -1055,13 +1069,13 @@ const jsxAIEnvironmentEmbeddingsDefault = <>
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
+      <NekoModal isOpen={error}
         title={i18n.COMMON.ERROR}
         content={error}
-        onRequestClose={() => setError(null)}
+        onRequestClose={() => setError(false)}
         okButton={{
           label: "Close",
-          onClick: () => setError(null)
+          onClick: () => setError(false)
         }}
       />
 

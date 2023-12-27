@@ -1,14 +1,24 @@
-// Previous: 2.0.6
-// Current: 2.0.7
+// Previous: 2.0.7
+// Current: 2.1.3
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
-import TextAreaAutosize from 'react-textarea-autosize';
+import Markdown from 'markdown-to-jsx';
 
 import { useModClasses, useChrono, useSpeechRecognition, Microphone, ImageUpload } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from '@app/chatbot/ChatbotReply';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
 import ChatbotInput from './ChatbotInput';
+
+const markdownOptions = {
+  overrides: {
+    a: {
+      props: {
+        target: "_blank",
+      },
+    },
+  }
+};
 
 const ChatbotUI = (props) => {
   const { theme, style } = props;
@@ -34,8 +44,6 @@ const ChatbotUI = (props) => {
 
   const isImageUploading = !!uploadedImage?.uploadProgress;
 
-  // #region Client-Side API
-
   const refState = useRef(state);
   useEffect(() => {
     refState.current = state;
@@ -60,10 +68,6 @@ const ChatbotUI = (props) => {
       }
       else if (task.action === 'open') {
         setOpen(true);
-        setTimeout(() => {
-          setTasks(tasks => tasks.slice(1));
-        }, 50);
-        return;
       }
       else if (task.action === 'close') {
         setOpen(false);
@@ -111,8 +115,6 @@ const ChatbotUI = (props) => {
     }
   }, []);
 
-  // #endregion
-
   useEffect(() => {
     if (busy) {
       startChrono();
@@ -136,7 +138,7 @@ const ChatbotUI = (props) => {
   }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current;
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
     
     if (forcedText) {
       onSubmit(forcedText);
@@ -210,7 +212,7 @@ const ChatbotUI = (props) => {
           )}
         </div>
         {error && <div className={modCss('mwai-error')} onClick={() => resetError()}>
-          {error}
+          <Markdown options={markdownOptions}>{error}</Markdown>
         </div>}
         <div className={modCss('mwai-input')}>
           <ChatbotInput 

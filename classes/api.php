@@ -191,7 +191,12 @@ class Meow_MWAI_API {
 			$query->set_image( $url );
 		}
 		else if ( !$preferURL && !empty( $path ) ) {
-			$data = base64_encode( file_get_contents( $path ) );
+			$binary = file_get_contents( $path );
+			// Check if there is an error and what
+			if ( $binary === false ) {
+				throw new Exception( 'The file could not be read.' );
+			}
+			$data = base64_encode( $binary );
 			$query->set_image_data( $data );
 		}
 		else if ( $url ) {

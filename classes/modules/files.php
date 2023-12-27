@@ -140,70 +140,95 @@ class Meow_MWAI_Modules_Files {
 		) );
 	}
 
-  public function rest_upload() {
+  public function commit_file( $path, $target = 'uploads', $expiry = 'never', $filename = null ) {
     require_once( ABSPATH . 'wp-admin/includes/image.php' );
     require_once( ABSPATH . 'wp-admin/includes/file.php' );
     require_once( ABSPATH . 'wp-admin/includes/media.php' );
-    $file = $_FILES['file'];
-    $error = null;
-    if ( empty( $file ) ) {
-			return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
-    }
 
-    // File validation by WordPress Media Library
-    $fileTypeCheck = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
-    if ( !$fileTypeCheck['type'] ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
-    }
-
-    $local_upload = $this->core->get_option( 'image_local_upload' );
-    $image_expires_seconds = $this->core->get_option( 'image_expires' );
-    $expires = ( empty( $image_expires_seconds ) || $image_expires_seconds === 'never' ) ? null : 
-      date( 'Y-m-d H:i:s', time() + $image_expires_seconds );
+    $expires = ( $expiry === 'never' || empty( $expiry ) ) ? null : date( 'Y-m-d H:i:s', time() + intval( $expiry ) );
     $fileId = null;
     $url = null;
-    if ( $local_upload === 'uploads' ) {
-      if ( !$this->check_db() ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'Could not create database table.' ], 500 );
-      }
-      $extension = pathinfo( $file['name'], PATHINFO_EXTENSION );
-      $randomFileName = wp_generate_password( 20, false ) . '.' . $extension;
-      $upload_dir = wp_upload_dir();
-      $path = $upload_dir['path'] . '/' . $randomFileName;
-      $filename = wp_unique_filename( $upload_dir['path'], $randomFileName );
-      $path = $upload_dir['path'] . '/' . $filename;
-      if ( !move_uploaded_file( $file['tmp_name'], $path ) ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'Could not move the file.' ], 500 );
-      }
-      $url = $upload_dir['url'] . '/' . $filename;
-      $fileId = md5( $url );
-      $this->wpdb->insert( $this->table_files, [
-        'fileId' => $fileId,
-        'type' => 'image',
-        'status' => 'uploaded',
-        'created' => date( 'Y-m-d H:i:s' ),
-        'updated' => date( 'Y-m-d H:i:s' ),
-        'expires' => $expires,
-        'path' => $path,
-        'url' => $url
-      ]);
+    if ( empty( $filename ) ) {
+      $parsed_url = parse_url( $path, PHP_URL_PATH );
+      $filename = basename( $parsed_url );
+      $extension = pathinfo( $filename, PATHINFO_EXTENSION );
+      $filename =  md5( $filename . date( 'Y-m-d-H-i-s' ) ) . '.' . $extension;
     }
-    else if ( $local_upload === 'library' ) {
-      $id = media_handle_upload( 'file', 0 );
+    else {
+      $filename = basename( $filename );
+    }
+    $unique_filename = wp_unique_filename( wp_upload_dir()['path'], $filename );
+    $destination = wp_upload_dir()['path'] . '/' . $unique_filename;
+
+    if ( $target === 'uploads' ) {
+          if ( !$this->check_db() ) {
+            throw new Exception('Could not create database table.');
+        }
+        if ( !copy( $path, $destination ) ) {
+            throw new Exception('Could not move the file.');
+        }
+        $url = wp_upload_dir()['url'] . '/' . $unique_filename;
+        $fileId = md5( $url );
+        $this->wpdb->insert( $this->table_files, [
+            'fileId' => $fileId,
+            'type' => 'image',
+            'status' => 'uploaded',
+            'created' => date( 'Y-m-d H:i:s' ),
+            'updated' => date( 'Y-m-d H:i:s' ),
+            'expires' => $expires,
+            'path' => $destination,
+            'url' => $url
+        ]);
+    }
+    else if ( $target === 'library' ) {
+      if ( filter_var( $path, FILTER_VALIDATE_URL ) ) {
+        $tmp = download_url( $path );
+        if ( is_wp_error( $tmp ) ) {
+            throw new Exception( $tmp->get_error_message() );
+        }
+        $file_array = [ 'name' => $unique_filename, 'tmp_name' => $tmp ];
+      }
+      else {
+        $file_array = [ 'name' => $unique_filename, 'tmp_name' => $path ];
+      }
+      $id = media_handle_sideload( $file_array, 0 );
       if ( is_wp_error( $id ) ) {
-        $error = $id->get_error_message();
-        return new WP_REST_Response([ 'success' => false, 'message' => $error ], 500);
+          throw new Exception($id->get_error_message());
       }
       $url = wp_get_attachment_url( $id );
       $fileId = md5( $url );
       update_post_meta( $id, '_mwai_file_id', $fileId );
       update_post_meta( $id, '_mwai_file_expires', $expires );
     }
-    return new WP_REST_Response( [
-			'success' => true,
-			'data' => [ 'id' => $fileId, 'url' => $url ]
-    ], 200 );
-	}
+
+    return $fileId;
+  }
+
+  public function rest_upload() {
+    if ( empty( $_FILES['file'] ) ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
+    }
+    $file = $_FILES['file'];
+
+    $fileTypeCheck = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
+    if ( !$fileTypeCheck['type'] ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
+    }
+
+    $local_upload = $this->core->get_option( 'image_local_upload' );
+    $image_expires_seconds = $this->core->get_option( 'image_expires' );
+
+    try {
+        $fileId = $this->commit_file( $file['tmp_name'], $local_upload, $image_expires_seconds, $file['name'] );
+        $url = $this->get_url( $fileId );
+        return new WP_REST_Response( [
+            'success' => true,
+            'data' => [ 'id' => $fileId, 'url' => $url ]
+        ], 200 );
+    } catch ( Exception $e ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
 
   #endregion
 

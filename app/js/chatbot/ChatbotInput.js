@@ -1,5 +1,5 @@
-// Previous: 2.0.6
-// Current: 2.0.7
+// Previous: 2.0.7
+// Current: 2.1.3
 
 const { useRef, useImperativeHandle } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -30,6 +30,9 @@ const ChatbotInput = React.forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     focusInput: () => {
       inputRef.current?.focus();
+    },
+    currentElement: () => {
+      return inputRef.current
     }
   }));
 
