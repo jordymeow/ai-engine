@@ -24,22 +24,43 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
-    return [
-      'class' => get_class( $this ),
+    $json = [
+      'instructions' => $this->instructions,
       'message' => $this->message,
-      'context' => $this->context,
-      'messages' => $this->messages,
-      'imageUrl' => $this->imageUrl,
-      'mode' => $this->mode,
-      'model' => $this->model,
-      'maxTokens' => $this->maxTokens,
-      'temperature' => $this->temperature,
-      'maxMessages' => $this->maxMessages,
-      'session' => $this->session,
-      'scope' => $this->scope,
-      'envId' => $this->envId,
-      'stop' => $this->stop
+
+      'context' => [
+        'messages' => $this->messages
+      ],
+
+      'ai' => [
+        'model' => $this->model,
+        'maxTokens' => $this->maxTokens,
+        'temperature' => $this->temperature,
+      ],
+
+      'system' => [
+        'class' => get_class( $this ),
+        'envId' => $this->envId,
+        'mode' => $this->mode,
+        'scope' => $this->scope,
+        'session' => $this->session,
+        'maxMessages' => $this->maxMessages,
+      ]
     ];
+
+    if ( !empty( $this->context ) ) {
+      $json['context']['context'] = $this->context;
+    }
+
+    if ( !empty( $this->imageUrl ) || !empty( $this->imageData ) ) {
+      $json['context']['hasImage'] = true;
+    }
+
+    if ( !empty( $this->imageUrl ) ) {
+      $json['context']['imageUrl'] = $this->imageUrl;
+    }
+
+    return $json;
   }
 
   /**

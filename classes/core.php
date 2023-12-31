@@ -709,7 +709,7 @@ class Meow_MWAI_Core
 		}
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
-		$options['openai_models'] = Meow_MWAI_Engines_OpenAI::get_models_static();
+		$options['openai_models'] = apply_filters( 'mwai_openai_models', Meow_MWAI_Engines_OpenAI::get_models_static() );
 		$options['fallback_model'] = MWAI_FALLBACK_MODEL;
 
 		//$this->options = $options;

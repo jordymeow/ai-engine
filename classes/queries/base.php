@@ -44,16 +44,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
-    return [
-      'class' => get_class( $this ),
-      'message' => $this->message,
-      'mode' => $this->mode,
-      'model' => $this->model,
-      'scope' => $this->scope,
-      'envId' => $this->envId,
-      'session' => $this->session,
-      'maxResults' => $this->maxResults
-    ];
+    return [];
   }
 
   public function add_function( Meow_MWAI_Query_Function $function ): void {

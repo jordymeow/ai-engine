@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.3
+Stable tag: 2.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,12 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.1.4 (2023/12/31) =
+* Fix: Custom models (added via mwai_openai_models) weren't shown in the UI.
+* Fix: Remove a few PHP warnings.
+* Update: Enhanced the structure of the data in the Queries browser.
+* 🎉 Last release of 2023! Happy new year everyone, and see you in 2024 for a lot of fun with AI! 💫
 
 = 2.1.3 (2023/12/27) =
 * Add: Option to store the generated images automatically instead of using the temporary URLs created by the models.

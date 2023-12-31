@@ -19,17 +19,40 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     return [
-      'class' => get_class( $this ),
       'message' => $this->message,
-      'imageUrl' => $this->imageUrl,
-      'model' => $this->model,
-      'session' => $this->session,
-      'scope' => $this->scope,
-      'envId' => $this->envId,
-      'chatId' => $this->chatId,
-      'assistantId' => $this->assistantId,
-      'threadId' => $this->threadId
+
+      'ai' => [
+        'model' => $this->model,
+        'assistantId' => $this->assistantId,
+        'threadId' => $this->threadId,
+      ],
+
+      'context' => [
+      ],
+
+      'system' => [
+        'class' => get_class( $this ),
+        'envId' => $this->envId,
+        'mode' => $this->mode,
+        'scope' => $this->scope,
+        'session' => $this->session,
+        'chatId' => $this->chatId,
+      ]
     ];
+
+    if ( !empty( $this->context ) ) {
+      $json['context']['context'] = $this->context;
+    }
+
+    if ( !empty( $this->imageUrl ) || !empty( $this->imageData ) ) {
+      $json['context']['hasImage'] = true;
+    }
+
+    if ( !empty( $this->imageUrl ) ) {
+      $json['context']['imageUrl'] = $this->imageUrl;
+    }
+
+    return $json;
   }
 
   public function set_image( string $imageUrl ): void {

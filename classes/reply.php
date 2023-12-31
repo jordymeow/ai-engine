@@ -18,10 +18,12 @@ class Meow_MWAI_Reply implements JsonSerializable {
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     return [
-      'class' => get_class( $this ),
       'result' => $this->result,
       'results' => $this->results,
-      'usage' => $this->usage
+      'usage' => $this->usage,
+      'system' => [
+        'class' => get_class( $this ),
+      ]
     ];
   }
 
