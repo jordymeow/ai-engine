@@ -34,6 +34,8 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   // Extra Parameters (used by specific services, or for statistics, etc)
   public array $extraParams = [];
 
+  #region Constructors, Serialization
+
   public function __construct( $message = '' ) {
     global $mwai_core;
     if ( is_string( $message ) ) {
@@ -44,8 +46,33 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
-    return [];
+    $json = [
+      'message' => $this->message,
+
+      'ai' => [
+        'model' => $this->model,
+      ],
+
+      'system' => [
+        'class' => get_class( $this ),
+        'envId' => $this->envId,
+        'mode' => $this->mode,
+        'scope' => $this->scope,
+        'session' => $this->session,
+        'maxMessages' => $this->maxMessages,
+      ]
+    ];
+
+    if ( !empty( $this->context ) ) {
+      $json['context']['context'] = $this->context;
+    }
+
+    return $json;
   }
+
+  #endregion
+
+  #region Functions
 
   public function add_function( Meow_MWAI_Query_Function $function ): void {
     $this->functions[] = $function;
@@ -57,9 +84,15 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     $this->functionCall = "auto";
   }
 
+  #endregion
+
+  #region Helpers
+
   public function replace( $search, $replace ) {
     $this->message = str_replace( $search, $replace, $this->message );
   }
+
+  #endregion
 
   public function get_message(): string {
     return $this->message;

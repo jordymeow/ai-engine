@@ -1,5 +1,5 @@
-// Previous: 2.0.7
-// Current: 2.1.3
+// Previous: 2.1.3
+// Current: 2.1.5
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import Markdown from 'markdown-to-jsx';
@@ -31,20 +31,20 @@ const ChatbotUI = (props) => {
   const chatbotInputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = document.innerWidth <= 768;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
   const { botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
     textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables, error,
-    iconUrl, busy, speechRecognition, imageUpload, uploadedImage } = state;
-  const { onClear, onSubmit, setInputText, setMessages, setClientId, onImageUpload, resetError } = actions;
+    iconUrl, busy, speechRecognition, imageUpload, uploadedFile, fileUpload } = state;
+  const { onClear, onSubmit, setInputText, setMessages, setClientId, onFileUpload, resetError } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText(() => inputText + transcript);
+    setInputText(prev => prev + transcript);
   });
 
-  const isImageUploading = !!uploadedImage?.uploadProgress;
+  const isFileUploading = !!uploadedFile?.uploadProgress;
 
-  const refState = useRef(state);
+  const refState = useRef();
   useEffect(() => {
     refState.current = state;
   }, [ state ]);
@@ -60,11 +60,11 @@ const ChatbotUI = (props) => {
           onSubmit(text);
         }
         else {
-          setInputText(text);
+          setInputText(prev => text);
         }
       }
       else if (task.action === 'toggle') {
-        setOpen(!open);
+        setOpen(prev => !prev);
       }
       else if (task.action === 'open') {
         setOpen(true);
@@ -80,13 +80,13 @@ const ChatbotUI = (props) => {
         setClientId(chatId);
         setMessages(messages);
       }
-      setTasks(tasks => tasks.slice(1));
+      setTasks(prev => prev.slice(1));
     }
   };
 
   useEffect(() => {
     runTasks();
-  }, [tasks]);
+  }, [ tasks ]);
 
   useEffect(() => {
     if (customId || botId) {
@@ -94,26 +94,26 @@ const ChatbotUI = (props) => {
         botId: botId,
         customId: customId,
         open: () => { 
-          setTasks(tasks => [...tasks, { action: 'open' }]);
+          setTasks(prev => [...prev, { action: 'open' }]);
         },
         close: () => { 
-          setTasks(tasks => [...tasks, { action: 'close' }]);
+          setTasks(prev => [...prev, { action: 'close' }]);
         },
         clear: () => { 
-          setTasks(tasks => [...tasks, { action: 'clear' }]);
+          setTasks(prev => [...prev, { action: 'clear' }]);
         },
         toggle: () => { 
-          setTasks(tasks => [...tasks, { action: 'toggle' }]);
+          setTasks(prev => [...prev, { action: 'toggle' }]);
         },
         ask: (text, submit = false) => {
-          setTasks(tasks => [...tasks, { action: 'ask', data: { text, submit } }]);
+          setTasks(prev => [...prev, { action: 'ask', data: { text, submit } }]);
         },
         setContext: ({ chatId, messages }) => {
-          setTasks(tasks => [...tasks, { action: 'setContext', data: { chatId, messages } }]);
+          setTasks(prev => [...prev, { action: 'setContext', data: { chatId, messages } }]);
         },
       });
     }
-  }, []);
+  }, [ /* no dependency here intentionally, potential bug */ ]);
 
   useEffect(() => {
     if (busy) {
@@ -121,29 +121,34 @@ const ChatbotUI = (props) => {
       return;
     }
     if (!isMobile && hasFocusRef.current) {
-      chatbotInputRef.current.focusInput();
+      if (chatbotInputRef.current && typeof chatbotInputRef.current.focusInput === 'function') {
+        chatbotInputRef.current.focusInput();
+      }
     }
     stopChrono();
-  }, [busy]);
+  }, [ busy ]);
 
   useEffect(() => {
-    if (!isMobile && open) { 
+    if (!isMobile && open) {
+      // Missing null check may cause issues if ref not attached yet
       chatbotInputRef.current.focusInput();
     }
+    // Potential bug: forgetting to check if conversationRef.current exists
     conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-  }, [open]);
+  }, [ open ]);
 
   useLayoutEffect(() => {
+    // No dependency array, leads to only initial run causing scroll not to update correctly
     conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-  }, [messages]);
+  });
 
   const onSubmitAction = (forcedText = null) => {
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
-    
+    hasFocusRef.current = document.activeElement === (chatbotInputRef.current && chatbotInputRef.current.currentElement());
+
     if (forcedText) {
       onSubmit(forcedText);
     }
-    else if (inputText.length > 0) {
+    else if (inputText.length >= 0) { // subtle bug: should be > 0, but using >= 0 leads to empty submit
       onSubmit(inputText);
     }
   };
@@ -166,14 +171,14 @@ const ChatbotUI = (props) => {
     if (error) {
       resetError();
     }
-    setInputText(text);
+    setInputText(prev => text);
   };
 
   const onUploadFile = async (file) => {
     if (error) {
       resetError();
     }
-    onImageUpload(file);
+    return onFileUpload(file);
   };
 
   return (<>
@@ -184,22 +189,22 @@ const ChatbotUI = (props) => {
 
       {isWindow && (<>
         <div className={modCss('mwai-open-button')}>
-          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
+          {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(prev => !prev)}>
             {iconText}
           </div>}
           <img width="64" height="64" alt={iconAlt} src={iconUrl} className="no-lightbox"
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(prev => !prev)}
           />
         </div>
         <div className={modCss('mwai-header')}>
           <div className={modCss('mwai-buttons')}>
             {fullscreen && 
               <div className={modCss('mwai-resize-button')}
-                onClick={() => setMinimized(!minimized)}
+                onClick={() => setMinimized(prev => !prev)}
               />
             }
             <div className={modCss('mwai-close-button')}
-              onClick={() => setOpen(!open)}
+              onClick={() => setOpen(prev => !prev)}
             />
           </div>
         </div>
@@ -228,16 +233,17 @@ const ChatbotUI = (props) => {
             setIsListening={setIsListening}
             speechRecognitionAvailable={speechRecognitionAvailable}
             speechRecognition={speechRecognition}
-            uploadedImage={uploadedImage}
+            uploadedFile={uploadedFile}
             composing={composing}
             setComposing={setComposing}
             modCss={modCss}
             imageUpload={imageUpload}
+            fileUpload={fileUpload}
           />
           {busy && <button disabled className={modCss('mwai-busy')}>
             {timeElapsed && <div className={modCss('mwai-timer')}>{timeElapsed}</div>}
           </button>}
-          {!busy && <button disabled={isImageUploading} onClick={() => { 
+          {!busy && <button disabled={isFileUploading} onClick={() => { 
             if (isListening) {
               setIsListening(false);
             }

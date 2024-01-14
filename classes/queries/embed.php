@@ -22,4 +22,35 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
 			$this->mode = 'embedding';
 		}
   }
+
+	#[\ReturnTypeWillChange]
+  public function jsonSerialize() {
+    $json = [
+      'instructions' => $this->instructions,
+      'message' => $this->message,
+
+      'context' => [
+        'messages' => $this->messages
+      ],
+
+      'ai' => [
+        'model' => $this->model,
+      ],
+
+      'system' => [
+        'class' => get_class( $this ),
+        'envId' => $this->envId,
+        'mode' => $this->mode,
+        'scope' => $this->scope,
+        'session' => $this->session,
+        'maxMessages' => $this->maxMessages,
+      ]
+    ];
+
+    if ( !empty( $this->context ) ) {
+      $json['context']['context'] = $this->context;
+    }
+
+    return $json;
+  }
 }

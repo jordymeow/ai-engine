@@ -3,15 +3,18 @@
 class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializable {
 
   // Core Content
-  public ?string $imageUrl = null;
-  public ?string $imageData = null;
-  
+  public ?string $file = null;
+  public ?string $fileType = null; // refId, url, data
+  public ?string $filePurpose = null; // assistant, vision
+
   // Parameters
   public float $temperature = 0.8;
   public int $maxTokens = 1024;
   public ?string $stop = null;
   public ?string $responseFormat = null;
   
+  #region Constructors, Serialization
+
   public function __construct( ?string $message = '', ?int $maxTokens = null, string $model = null ) {
     parent::__construct( $message );
     if ( !empty( $model ) ) {
@@ -25,12 +28,12 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     $json = [
-      'instructions' => $this->instructions,
+      //'instructions' => $this->instructions,
       'message' => $this->message,
 
-      'context' => [
-        'messages' => $this->messages
-      ],
+      // 'context' => [
+      //   'messages' => $this->messages
+      // ],
 
       'ai' => [
         'model' => $this->model,
@@ -52,16 +55,50 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       $json['context']['context'] = $this->context;
     }
 
-    if ( !empty( $this->imageUrl ) || !empty( $this->imageData ) ) {
-      $json['context']['hasImage'] = true;
-    }
-
-    if ( !empty( $this->imageUrl ) ) {
-      $json['context']['imageUrl'] = $this->imageUrl;
+    if ( !empty( $this->file ) ) {
+      $json['context']['hasFile'] = true;
+      if ( $this->fileType === 'url' ) {
+        $json['context']['fileUrl'] = $this->file;
+      }
     }
 
     return $json;
   }
+
+  #endregion
+
+  #region File Handling
+
+  public function set_file( string $file, string $fileType = null, string $filePurpose = null ): void {
+    if ( !empty( $fileType ) && $fileType !== 'refId' && $fileType !== 'url' && $fileType !== 'data' ) {
+      throw new Exception( "AI Engine: The file type can only be refId, url or data." );
+    }
+    if ( !empty( $filePurpose ) && $filePurpose !== 'assistant-in' && $filePurpose !== 'vision' ) {
+      throw new Exception( "AI Engine: The file purpose can only be assistant or vision." );
+    }
+    $this->file = $file;
+    $this->fileType = $fileType;
+    $this->filePurpose = $filePurpose;
+  }
+
+  public function get_file_url() {
+    if ( $this->fileType === 'url' ) {
+      return $this->file;
+    }
+    else if ( $this->fileType === 'data' ) {
+      return "data:image/jpeg;base64,{$this->file}";
+    }
+    else if ( $this->fileType === 'refId' ) {
+      throw new Exception( "AI Engine: The file type refId is not supported yet." );
+    }
+    else {
+      return null;
+    }
+  }
+
+  #endregion
+
+  #region Parameters
 
   /**
    * The type of return expected from the API. It can be either null or "json".
@@ -72,23 +109,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       throw new Exception( "AI Engine: The response format can only be null or json." );
     }
     $this->responseFormat = $responseFormat;
-  }
-
-  public function set_image( string $imageUrl ): void {
-    $this->imageUrl = $imageUrl;
-  }
-
-  public function set_image_data( string $imageData ): void {
-    $this->imageData = $imageData;
-  }
-
-  public function get_image_url() {
-    if ( !empty( $this->imageUrl ) ) {
-      return $this->imageUrl;
-    }
-    if ( !empty( $this->imageData ) ) {
-      return "data:image/jpeg;base64,{$this->imageData}";
-    }
   }
 
   /**
@@ -121,6 +141,10 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $this->stop = $stop;
   }
 
+  #endregion
+
+  #region Inject Params
+
   // Based on the params of the query, update the attributes
   public function inject_params( array $params ): void
   {
@@ -140,4 +164,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       $this->set_response_format( $params['responseFormat'] );
     }
   }
+
+  #endregion
 }

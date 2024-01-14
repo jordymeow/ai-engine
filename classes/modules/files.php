@@ -6,12 +6,14 @@ class Meow_MWAI_Modules_Files {
 	private $namespace = 'mwai-ui/v1';
   private $db_check = false;
   private $table_files = null;
+  private $table_filemeta = null;
 
   public function __construct( $core ) {
 		global $wpdb;
 		$this->core = $core;
     $this->wpdb = $wpdb;
     $this->table_files = $this->wpdb->prefix . 'mwai_files';
+    $this->table_filemeta = $this->wpdb->prefix . 'mwai_filemeta';
 		add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
     if ( !wp_next_scheduled( 'mwai_files_cleanup' ) ) {
       wp_schedule_event( time(), 'hourly', 'mwai_files_cleanup' );
@@ -32,36 +34,40 @@ class Meow_MWAI_Modules_Files {
       'meta_value' => $current_time,
       'meta_compare' => '<'
     ] );
-    $fileIds = [];
+    $fileRefs = [];
     foreach ( $expired_files as $file ) {
-      $fileIds[] = $file->fileId;
+      $fileRefs[] = $file->refId;
     }
     foreach ( $expired_posts as $post ) {
-      $fileIds[] = get_post_meta( $post->ID, '_mwai_file_id', true );
+      $fileRefs[] = get_post_meta( $post->ID, '_mwai_file_id', true );
     }
-    $this->files_processed( $fileIds );
+    $this->delete_expired_files( $fileRefs );
   }
 
-  public function files_processed( $fileIds ) {
-    if ( !is_array( $fileIds ) ) {
-      $fileIds = [ $fileIds ];
+  public function delete_expired_files( $fileRefs ) {
+
+    // Give a chance to other process to delete the files (for example, in the case of files hosted by Assistants)
+    $fileRefs = apply_filters( 'mwai_files_delete', $fileRefs );
+
+    if ( !is_array( $fileRefs ) ) {
+      $fileRefs = [ $fileRefs ];
     }
-    foreach ( $fileIds as $fileId ) {
+    foreach ( $fileRefs as $refId ) {
       $file = null;
       if ( $this->check_db() ) {
         $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
           FROM $this->table_files
-          WHERE fileId = %s", $fileId
+          WHERE refId = %s", $refId
         ) );
-      }
+      } 
       if ( $file ) {
-        $this->wpdb->delete( $this->table_files, [ 'fileId' => $fileId ] );
+        $this->wpdb->delete( $this->table_files, [ 'refId' => $refId ] );
         if ( file_exists( $file->path ) ) {
           unlink( $file->path );
         }
       }
       else {
-        $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $fileId ] );
+        $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $refId ] );
         if ( $posts ) {
           foreach ( $posts as $post ) {
             wp_delete_attachment( $post->ID, true );
@@ -71,19 +77,19 @@ class Meow_MWAI_Modules_Files {
     }
   }
 
-  public function get_path( $fileId ) {
+  public function get_path( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
       $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
         FROM $this->table_files
-        WHERE fileId = %s", $fileId
+        WHERE refId = %s", $refId
       ) );
     }
     if ( $file ) {
       return $file->path;
     }
     else {
-      $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $fileId ] );
+      $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $refId ] );
       if ( $posts ) {
         foreach ( $posts as $post ) {
           return get_attached_file( $post->ID );
@@ -93,8 +99,8 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
-  public function get_base64_data( $fileId ) {
-    $path = $this->get_path( $fileId );
+  public function get_base64_data( $refId ) {
+    $path = $this->get_path( $refId );
     if ( $path ) {
       $content = file_get_contents( $path );
       $data = base64_encode( $content );
@@ -103,19 +109,28 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
-  public function get_url( $fileId ) {
+  public function get_data( $refId ) {
+    $path = $this->get_path( $refId );
+    if ( $path ) {
+      $content = file_get_contents( $path );
+      return $content;
+    }
+    return null;
+  }
+
+  public function get_url( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
       $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
         FROM $this->table_files
-        WHERE fileId = %s", $fileId
+        WHERE refId = %s", $refId
       ) );
     }
     if ( $file ) {
       return $file->url;
     }
     else {
-      $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $fileId ] );
+      $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $refId ] );
       if ( $posts ) {
         foreach ( $posts as $post ) {
           return wp_get_attachment_url( $post->ID );
@@ -133,6 +148,11 @@ class Meow_MWAI_Modules_Files {
 			'callback' => array( $this, 'rest_upload' ),
 			'permission_callback' => array( $this->core, 'check_rest_nonce' )
 		) );
+    register_rest_route( $this->namespace, '/files/list', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_list' ),
+			'permission_callback' => array( $this->core, 'check_rest_nonce' )
+		) );
     register_rest_route( $this->namespace, '/files/delete', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_delete' ),
@@ -140,13 +160,80 @@ class Meow_MWAI_Modules_Files {
 		) );
 	}
 
-  public function commit_file( $path, $target = 'uploads', $expiry = 'never', $filename = null ) {
+
+  /* 
+  * Record a new file in the Files database.
+  * This doesn't handle the upload or anything.
+  */
+  public function commit_file( $fileInfo ) {
+    if ( !$this->check_db() ) {
+      throw new Exception( 'Could not create database table.' );
+    }
+    $now = date( 'Y-m-d H:i:s' );
+    if ( empty( $fileInfo['refId'] ) ) {
+      if ( !empty( $fileInfo['url'] ) ) {
+        $fileInfo['redId'] = $this->generate_refId( $fileInfo['url'] );
+      }
+      else {
+        throw new Exception( 'File ID (or URL) is required.' );
+      }
+    }
+    $success = $this->wpdb->insert( $this->table_files, [
+      'refId' => $fileInfo['refId'],
+      'envId' => empty( $fileInfo['envId'] ) ? null : $fileInfo['envId'],
+      'userId' => empty( $fileInfo['userId'] ) ? $this->core->get_user_id() : $fileInfo['userId'],
+      'purpose' => empty( $fileInfo['purpose'] ) ? null : $fileInfo['purpose'],
+      'type' => empty( $fileInfo['type'] ) ? null : $fileInfo['type'],
+      'status' => empty( $fileInfo['status'] ) ? null : $fileInfo['status'],
+      'created' => empty( $fileInfo['created'] ) ? $now : $fileInfo['created'],
+      'updated' => empty( $fileInfo['updated'] ) ? $now : $fileInfo['updated'],
+      'expires' => empty( $fileInfo['expires'] ) ? null : $fileInfo['expires'],
+      'path' => empty( $fileInfo['path'] ) ? null : $fileInfo['path'],
+      'url' => empty( $fileInfo['url'] ) ? null : $fileInfo['url']
+    ] );
+    // check for error
+    if ( !$success ) {
+      throw new Exception( 'Error while adding file in the DB (' . $this->wpdb->last_error . ')' );
+    }
+    return $this->wpdb->insert_id;
+  }
+
+  // Generate a refId from a URL or random, and make sure it's unique
+  public function generate_refId( $url = null ) {
+    $refId = null;
+    if ( $url ) {
+      $refId = md5( $url );
+      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+        FROM $this->table_files
+        WHERE refId = %s", $refId
+      ) );
+      if ( $file ) {
+        $refId = md5( $url . date( 'Y-m-d H:i:s' ) );
+      }
+    }
+    else {
+      $refId = md5( date( 'Y-m-d H:i:s' ) );
+    }
+    return $refId;
+  }
+
+  public function upload_file( $path, $filename = null, $purpose = null,
+    $metadata = null, $envId = null, $target = null, $expiry = null ) {
     require_once( ABSPATH . 'wp-admin/includes/image.php' );
     require_once( ABSPATH . 'wp-admin/includes/file.php' );
     require_once( ABSPATH . 'wp-admin/includes/media.php' );
 
+    $target = empty( $target ) ? $this->core->get_option( 'image_local_upload' ) : $target;
+    $expiry = empty( $expiry ) ? $this->core->get_option( 'image_expires' ) : $expiry;
+    if ( $purpose === 'assistant-in' || $purpose === 'assistant-out' ) {
+      // If it's an upload for an assistant, it's better to avoid having the file in the Media Library
+      // (and therefore, to only have it in the uploads folder) and to have it to never expire.
+      $target = 'uploads';
+      $expiry = null;
+    }
+
     $expires = ( $expiry === 'never' || empty( $expiry ) ) ? null : date( 'Y-m-d H:i:s', time() + intval( $expiry ) );
-    $fileId = null;
+    $refId = null;
     $url = null;
     if ( empty( $filename ) ) {
       $parsed_url = parse_url( $path, PHP_URL_PATH );
@@ -161,24 +248,33 @@ class Meow_MWAI_Modules_Files {
     $destination = wp_upload_dir()['path'] . '/' . $unique_filename;
 
     if ( $target === 'uploads' ) {
-          if ( !$this->check_db() ) {
-            throw new Exception('Could not create database table.');
+      if ( !$this->check_db() ) {
+        throw new Exception( 'Could not create database table.' );
+      }
+      if ( !copy( $path, $destination ) ) {
+        throw new Exception( 'Could not move the file.' );
+      }
+      $url = wp_upload_dir()['url'] . '/' . $unique_filename;
+      $refId = $this->generate_refId( $url );
+      $now = date( 'Y-m-d H:i:s' );
+      $fileId = $this->commit_file( [
+        'refId' => $refId,
+        'envId' => $envId,
+        'purpose' => $purpose,
+        'type' => 'image',
+        'status' => 'uploaded',
+        'created' => $now,
+        'updated' => $now,
+        'expires' => $expires,
+        'path' => $destination,
+        'url' => $url
+      ] );
+      if ( $metadata && is_array( $metadata ) ) {
+        foreach ( $metadata as $metaKey => $metaValue ) {
+          $this->add_metadata( $fileId, $metaKey, $metaValue );
         }
-        if ( !copy( $path, $destination ) ) {
-            throw new Exception('Could not move the file.');
-        }
-        $url = wp_upload_dir()['url'] . '/' . $unique_filename;
-        $fileId = md5( $url );
-        $this->wpdb->insert( $this->table_files, [
-            'fileId' => $fileId,
-            'type' => 'image',
-            'status' => 'uploaded',
-            'created' => date( 'Y-m-d H:i:s' ),
-            'updated' => date( 'Y-m-d H:i:s' ),
-            'expires' => $expires,
-            'path' => $destination,
-            'url' => $url
-        ]);
+      }
+      
     }
     else if ( $target === 'library' ) {
       if ( filter_var( $path, FILTER_VALIDATE_URL ) ) {
@@ -193,40 +289,275 @@ class Meow_MWAI_Modules_Files {
       }
       $id = media_handle_sideload( $file_array, 0 );
       if ( is_wp_error( $id ) ) {
-          throw new Exception($id->get_error_message());
+        throw new Exception( $id->get_error_message() );
       }
       $url = wp_get_attachment_url( $id );
-      $fileId = md5( $url );
-      update_post_meta( $id, '_mwai_file_id', $fileId );
+      $refId = md5( $url );
+      update_post_meta( $id, '_mwai_file_id', $refId );
       update_post_meta( $id, '_mwai_file_expires', $expires );
     }
 
-    return $fileId;
+    return $refId;
+  }
+
+  public function add_metadata( $fileId, $metaKey, $metaValue ) {
+    $data = [
+      'file_id' => $fileId,
+      'meta_key' => $metaKey,
+      'meta_value' => $metaValue
+    ];
+    $res = $this->wpdb->insert( $this->table_filemeta, $data );
+    if ( $res === false ) {
+      error_log( "AI Engine: Error while writing files metadata (" . $this->wpdb->last_error . ")" );
+      return false;
+    }
+    return $this->wpdb->insert_id;
+  }
+
+  public function update_refId( $fileId, $refId ) {
+    if ( $this->check_db() ) {
+      $this->wpdb->update( $this->table_files, [ 'refId' => $refId ], [ 'id' => $fileId ] );
+    }
+  }
+
+  public function update_envId( $fileId, $envId ) {
+    if ( $this->check_db() ) {
+      $this->wpdb->update( $this->table_files, [ 'envId' => $envId ], [ 'id' => $fileId ] );
+    }
+  }
+
+  public function get_metadata( $refId, $fileId = null ) {
+    if ( !$fileId ) {
+      $fileId = $this->get_id_from_refId( $refId );
+    }
+    if ( $fileId ) {
+      $sql = $this->wpdb->prepare( "SELECT * FROM $this->table_filemeta WHERE file_id = %d", $fileId );
+      $metadata = $this->wpdb->get_results( $sql, ARRAY_A );
+      $meta = [];
+      foreach ( $metadata as $metaItem ) {
+        $meta[$metaItem['meta_key']] = $metaItem['meta_value'];
+      }
+      return $meta;
+    }
+    return null;
+  }
+
+  public function search( $userId = null, $purpose = null, $metadata = [], $envId ) {
+    list( $sql, $params ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, true );
+    $finalQuery = $this->wpdb->prepare( $sql, $params );
+    $files = $this->wpdb->get_results( $finalQuery, ARRAY_A );
+    foreach ( $files as &$file ) {
+      $file['metadata'] = $this->get_metadata( $file['refId'] );
+    }
+    return $files;
+  }
+
+  public function list( $userId = null, $purpose = null, $metadata = [], $envId, $limit = 10, $offset = 0 )
+  {
+    list( $countSql, $countParams ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, false );
+    $total = $this->wpdb->get_var( $this->wpdb->prepare( $countSql, $countParams ) );
+
+    list( $fileSql, $fileParams ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, true );
+    if ( $limit ) {
+      $fileSql .= " LIMIT %d";
+      $fileParams[] = $limit;
+    }
+    if ( $offset ) {
+      $fileSql .= " OFFSET %d";
+      $fileParams[] = $offset;
+    }
+    $files = $this->wpdb->get_results( $this->wpdb->prepare( $fileSql, $fileParams ), ARRAY_A );
+    foreach ( $files as &$file ) {
+      $file['metadata'] = $this->get_metadata( $file['refId'] );
+    }
+    return [ 'files' => $files, 'total' => $total ];
+  }
+
+  private function _buildQuery( $userId, $purpose, $metadata, $envId, $selectStar ) {
+    $sql = $selectStar ? "SELECT * FROM $this->table_files WHERE 1=1" : "SELECT COUNT(*) FROM $this->table_files WHERE 1=1";
+    $params = [];
+
+    // Based on the old "search" function
+    $actualUserId = $this->core->get_user_id();
+    $canAdmin = $this->core->can_access_settings();
+    if ( $userId !== $actualUserId ) {
+      if ( !$canAdmin ) {
+        throw new Exception( 'You are not allowed to access files from another user.' );
+      }
+    }
+    if ( $userId ) {
+      $sql .= " AND userId = %d";
+      $params[] = $userId;
+    }
+    if ( $purpose ) {
+      if ( is_array( $purpose ) ) {
+        $sql .= " AND (";
+        foreach ( $purpose as $p ) {
+          $sql .= " purpose = %s OR";
+          $params[] = $p;
+        }
+        $sql = rtrim( $sql, 'OR' );
+        $sql .= ")";
+      }
+      else {
+        $sql .= " AND purpose = %s";
+        $params[] = $purpose;
+      }
+    }
+    if ( $metadata ) {
+      foreach ( $metadata as $metaKey => $metaValue ) {
+        $sql .= " AND EXISTS ( SELECT * FROM $this->table_filemeta
+          WHERE file_id = $this->table_files.id AND meta_key = %s AND meta_value = %s )";
+        $params[] = $metaKey;
+        $params[] = $metaValue;
+      }
+    }
+    if ( $envId ) {
+      $sql .= " AND envId = %s";
+      $params[] = $envId;
+    }
+    $sql .= " ORDER BY updated DESC";
+    return [ $sql, $params ];
+  }
+
+  // public function search( $userId = null, $purpose = null, $metadata = [], $limit = 10, $offset = 0 ) {
+  //   $sql = "SELECT * FROM $this->table_files WHERE 1=1";
+  //   $actualUserId = $this->core->get_user_id();
+  //   $canAdmin = $this->core->can_access_settings();
+  //   if ( $userId !== $actualUserId ) {
+  //     if ( !$canAdmin ) {
+  //       throw new Exception( 'You are not allowed to access files from another user.' );
+  //     }
+  //   }
+  //   if ( $userId ) {
+  //     $sql .= $this->wpdb->prepare( " AND userId = %d", $userId );
+  //   }
+  //   if ( $purpose ) {
+  //     if ( is_array( $purpose ) ) {
+  //       $sql .= " AND (";
+  //       foreach ( $purpose as $p ) {
+  //         $sql .= $this->wpdb->prepare( " purpose = %s OR", $p );
+  //       }
+  //       $sql = rtrim( $sql, 'OR' );
+  //       $sql .= ")";
+  //     }
+  //     else {
+  //       $sql .= $this->wpdb->prepare( " AND purpose = %s", $purpose );
+  //     }
+  //   }
+  //   if ( $metadata ) {
+  //     foreach ( $metadata as $metaKey => $metaValue ) {
+  //       $sql .= $this->wpdb->prepare( " AND EXISTS ( SELECT * FROM $this->table_filemeta
+  //         WHERE file_id = $this->table_files.id AND meta_key = %s AND meta_value = %s )",
+  //         $metaKey, $metaValue
+  //       );
+  //     }
+  //   }
+  //   $sql .= " ORDER BY updated DESC";
+  //   if ( $limit ) {
+  //     $sql .= $this->wpdb->prepare( " LIMIT %d", $limit );
+  //   }
+  //   if ( $offset ) {
+  //     $sql .= $this->wpdb->prepare( " OFFSET %d", $offset );
+  //   }
+  //   $files = $this->wpdb->get_results( $sql, ARRAY_A );
+
+  //   // Add metadata
+  //   foreach ( $files as &$file ) {
+  //     $file['metadata'] = $this->get_metadata( $file['refId'] );
+  //   }
+
+  //   return $files;
+  // }
+
+  public function get_id_from_refId( $refId ) {
+    $file = null;
+    if ( $this->check_db() ) {
+      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+        FROM $this->table_files
+        WHERE refId = %s", $refId
+      ) );
+    }
+    if ( $file ) {
+      return $file->id;
+    }
+    return null;
+  }
+
+  public function add_metadata_from_refId( $refId, $metaKey, $metaValue ) {
+    $fileId = $this->get_id_from_refId( $refId );
+    if ( $fileId ) {
+      return $this->add_metadata( $fileId, $metaKey, $metaValue );
+    }
+    return false;
+  }
+
+  public function rest_list( $request ) {
+    $params = $request->get_json_params();
+    $userId = empty( $params['userId'] ) ? null : $params['userId'];
+    $envId = empty( $params['envId'] ) ? null : $params['envId'];
+    $purpose = empty( $params['purpose'] ) ? null : $params['purpose'];
+    $metadata = empty( $params['metadata'] ) ? null : json_decode( $params['metadata'], true );
+    $limit = empty( $params['limit'] ) ? 10 : intval( $params['limit'] );
+    $offset = empty( $params['page'] ) ? 0 : ( intval( $params['page'] ) - 1) * $limit;
+    $files = $this->list( $userId, $purpose, $metadata, $envId, $limit, $offset );
+    return new WP_REST_Response( [ 'success' => true, 'data' => $files ], 200 );
+  }
+
+  public function rest_delete( $request ) {
+    $params = $request->get_json_params();
+    $fileIds = empty( $params['files'] ) ? [] : $params['files'];
+    $this->delete_files( $fileIds );
+    return new WP_REST_Response( [ 'success' => true ], 200 );
+  }
+
+  public function delete_files( $fileIds ) {
+    $query = "SELECT refId, path FROM $this->table_files WHERE id IN (";
+    $params = [];
+    foreach ( $fileIds as $fileId ) {
+      $query .= "%s,";
+      $params[] = $fileId;
+    }
+    $query = rtrim( $query, ',' );
+    $query .= ")";
+    $files = $this->wpdb->get_results( $this->wpdb->prepare( $query, $params ), ARRAY_A );
+    $refIds = apply_filters( 'mwai_files_delete', array_column( $files, 'refId' ) );
+    foreach ( $files as $file ) {
+      if ( in_array( $file['refId'], $refIds ) ) {
+        $this->wpdb->delete( $this->table_files, [ 'refId' => $file['refId'] ] );
+        if ( file_exists( $file['path'] ) ) {
+          unlink( $file['path'] );
+        }
+      }
+    }
   }
 
   public function rest_upload() {
     if ( empty( $_FILES['file'] ) ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
     }
     $file = $_FILES['file'];
-
+    $purpose = empty( $_POST['purpose'] ) ? null : $_POST['purpose'];
+    $metadata = empty( $_POST['metadata'] ) ? null : json_decode( $_POST['metadata'], true );
+    $envId = empty( $_POST['envId'] ) ? null : $_POST['envId'];
+    if ( !$purpose ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Purpose is required.' ], 400 );
+    }
     $fileTypeCheck = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
     if ( !$fileTypeCheck['type'] ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
     }
 
-    $local_upload = $this->core->get_option( 'image_local_upload' );
-    $image_expires_seconds = $this->core->get_option( 'image_expires' );
-
     try {
-        $fileId = $this->commit_file( $file['tmp_name'], $local_upload, $image_expires_seconds, $file['name'] );
-        $url = $this->get_url( $fileId );
-        return new WP_REST_Response( [
-            'success' => true,
-            'data' => [ 'id' => $fileId, 'url' => $url ]
-        ], 200 );
-    } catch ( Exception $e ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+      $refId = $this->upload_file( $file['tmp_name'], $file['name'], $purpose, $metadata, $envId );
+      $url = $this->get_url( $refId );
+      return new WP_REST_Response( [
+        'success' => true,
+        'data' => [ 'id' => $refId, 'url' => $url ]
+      ], 200 );
+    }
+    catch ( Exception $e ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
 
@@ -238,36 +569,79 @@ class Meow_MWAI_Modules_Files {
     $charset_collate = $this->wpdb->get_charset_collate();
     $sql = "CREATE TABLE $this->table_files (
       id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-      fileId VARCHAR(64) NOT NULL,
+      refId VARCHAR(64) NOT NULL,
+      envId VARCHAR(128) NULL,
+      userId BIGINT(20) UNSIGNED NULL,
       type VARCHAR(32) NULL,
       status VARCHAR(32) NULL,
+      purpose VARCHAR(32) NULL,
       created DATETIME NOT NULL,
       updated DATETIME NOT NULL,
       expires DATETIME NULL,
-      path TEXT NOT NULL,
+      path TEXT NULL,
       url TEXT NULL,
-      metadata TEXT NULL,
       PRIMARY KEY (id),
-      UNIQUE KEY unique_file_id (fileId)
+      UNIQUE KEY unique_file_id (refId)
     ) $charset_collate;";
+
+    $sqlFileMeta = "CREATE TABLE $this->table_filemeta (
+      meta_id BIGINT(20) NOT NULL AUTO_INCREMENT,
+      file_id BIGINT(20) NOT NULL,
+      meta_key varchar(255) NULL,
+      meta_value longtext NULL,
+      PRIMARY KEY  (meta_id)
+    ) $charset_collate;";
+
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
     dbDelta( $sql );
+    dbDelta( $sqlFileMeta );
   }
   
   function check_db() {
     if ( $this->db_check ) {
       return true;
     }
+
+    // Check if table_files exists
     $sql = $this->wpdb->prepare( "SHOW TABLES LIKE %s", $this->table_files );
-    $table_exists = strtolower( $this->wpdb->get_var( $sql )) === strtolower( $this->table_files );
-    if ( !$table_exists ) {
-      $this->create_db();
-      $table_exists = strtolower( $this->wpdb->get_var( $sql ) ) === strtolower( $this->table_files );
+    $table_files_exists = strtolower( $this->wpdb->get_var( $sql )) === strtolower( $this->table_files );
+
+    // Check if table_filemeta exists
+    $sqlMeta = $this->wpdb->prepare( "SHOW TABLES LIKE %s", $this->table_filemeta );
+    $table_filemeta_exists = strtolower( $this->wpdb->get_var( $sqlMeta )) === strtolower( $this->table_filemeta );
+
+    // If either table does not exist, create them
+    if ( !$table_files_exists || !$table_filemeta_exists ) {
+        $this->create_db();
     }
-    $this->db_check = $table_exists;
+
+    // Update db_check for both tables
+    $this->db_check = $table_files_exists && $table_filemeta_exists;
+
+    // LATER: REMOVE THIS AFTER MARCH 2024
+    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'userId'" );
+    if ( !$this->db_check ) {
+      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN userId BIGINT(20) UNSIGNED NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN purpose VARCHAR(32) NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN path TEXT NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN metadata" );
+      $this->db_check = true;
+    }
+    // LATER: REMOVE THIS AFTER MARCH 2024
+    $this->db_check = $this->db_check && !$this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'fileId'" );
+    if ( !$this->db_check ) {
+      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN refId VARCHAR(64) NOT NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN fileId" );
+      $this->db_check = true;
+    }
+    // LATER: REMOVE THIS AFTER MARCH 2024
+    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'envId'" );
+    if ( !$this->db_check ) {
+      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN envId VARCHAR(128) NULL" );
+      $this->db_check = true;
+    }
     return $this->db_check;
   }
 
   #endregion
-  
 }

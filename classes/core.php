@@ -206,7 +206,7 @@ class Meow_MWAI_Core
  	#region Image-Related Helpers
 	function download_image( $url ) {
 		$args = array( 'timeout' => 60, );
-		$response = wp_remote_get( $url, $args );
+		$response = wp_safe_remote_get( $url, $args );
 		if ( is_wp_error( $response ) ) {
 			throw new Exception( $response->get_error_message() );
 		}
@@ -218,6 +218,12 @@ class Meow_MWAI_Core
 	}
 
 	public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null ) {
+		$file_type = wp_check_filetype( $url, null );
+		$allowed_types = get_allowed_mime_types();
+		if ( !$file_type || !in_array( $file_type['type'], $allowed_types ) ) {
+			throw new Exception( 'Invalid file type.' );
+		}
+		$extension = $file_type['ext'];
 		$image_data = $this->download_image( $url );
 		if ( !$image_data ) {
 			throw new Exception( 'Could not download the image.' );
@@ -226,14 +232,17 @@ class Meow_MWAI_Core
 		if ( empty( $filename ) ) {
 			$filename = basename( $url );
 			$filename = sanitize_file_name( $filename );
+			$extension = pathinfo( $filename, PATHINFO_EXTENSION );
+			if ( empty( $extension ) ) {
+				$extension = $file_type['ext'];
+			}
 			if ( strlen( $filename ) > 32 ) {
-				$filename = $this->get_random_id( 16 ) . '.jpg';
+				$filename = $this->get_random_id( 16 ) . '.' . $extension;
 			}
 			if ( strpos( $filename, '.' ) === false ) {
-				$filename .= '.jpg';
+				$filename .= '.' . $extension;
 			}
 		}
-		$wp_filetype = wp_check_filetype( $filename );
 		if ( wp_mkdir_p( $upload_dir['path'] ) ) {
 			$file = $upload_dir['path'] . '/' . $filename;
 		}
@@ -252,7 +261,7 @@ class Meow_MWAI_Core
 		// Write the file
 		file_put_contents( $file, $image_data );
 		$attachment = [
-			'post_mime_type' => $wp_filetype['type'],
+			'post_mime_type' => $file_type['type'],
 			'post_title' => $title ?? '',
 			'post_content' => $description ?? '',
 			'post_excerpt' => $caption ?? '',

@@ -406,7 +406,7 @@
   opacity: 0.5;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -414,7 +414,7 @@
   cursor: pointer;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload svg {
   fill: var(--mwai-fontColor);
   width: 34px;
   height: 34px;
@@ -424,32 +424,32 @@
   transition: opacity 0.3s ease-out;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload[active=true] svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload[active=true] svg {
   opacity: 1;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-image-upload[disabled] svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload[disabled] svg {
   opacity: 0;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload {
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload {
   margin-left: 5px;
   margin-right: -12px;
   z-index: 100;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload svg {
   width: 42px;
   height: 42px;
   padding: 5px;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload span {
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload span {
   position: absolute;
   font-size: 55%;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-image-upload.mwai-enabled svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload.mwai-enabled svg {
   opacity: 1;
   filter: none;
 }
@@ -479,6 +479,10 @@
 
 .mwai-chat .mwai-gallery img {
   width: 100%;
+}
+
+.mwai-text img {
+  max-width: 100%;
 }
 
 .mwai-open-button {

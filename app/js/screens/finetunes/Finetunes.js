@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.1.5
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
 import DatasetEditor from '@app/screens/finetunes/DatasetsEditor';
 import i18n from '@root/i18n';
-import { retrieveFiles, retrieveFineTunes } from '@app/requests';
+import { retrieveFilesFromOpenAI, retrieveFineTunes } from '@app/requests';
 import { retrieveDeletedFineTunes } from '@app/requests';
 
 const builderColumnsEasy = [
@@ -144,7 +144,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const { isFetching: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
     queryKey: ['datasets-' + envId],
     enabled: datasetsQueryEnabled,
-    queryFn: () => retrieveFiles(envId)
+    queryFn: () => retrieveFilesFromOpenAI(envId)
   });
 
   const { models, model, setModel, getModel, isFineTunedModel } = useModels(options, envId);
@@ -367,8 +367,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onDeleteDataRow = (row, messageRow) => {
     const updatedEntries = [...entries];
-    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
-    setEntries(updatedEntries);
+    if (updatedEntries[row - 1]?.messages) {
+      updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+      setEntries(updatedEntries);
+    }
   };
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
@@ -427,7 +429,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       return {
         row: currentRow,
         messages: <EditableMessages
-          entries={entries}
           messages={messages}
           currentRow={currentRow}
           onUpdateDataRow={onUpdateDataRow}
@@ -685,7 +686,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1;
+    const month = date.getMonth() + 1; 
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -771,7 +772,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             };
           });
         }
-
         data = data.filter(x => x);
         const hasMessages = data.every(x => x?.messages);
         if (!hasMessages) {
@@ -869,7 +869,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
     <NekoContainer style={{ margin: 10 }}>
       {isModeTrain && section === 'finetunes' && <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>{toHTML(i18n.FINETUNING.MODELS_INTRO)}</div>
           <NekoQuickLinks value={modelFilter} onChange={value => { setModelFilter(value); }}>
             <NekoLink title="Current" value='current' count={currentModelsCount ?? '-'} />
@@ -929,18 +929,16 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           emptyMessage={<>You can import a file, or create manually each entry by clicking <b>Add</b>.</>}
         />
         <NekoSpacer />
-        {!expert && (
-          <>
-            <div className="mwai-builder-col">
-              <label>{i18n.COMMON.CONTEXT}:</label>
-              <NekoTextArea id="context" name="context" rows={2}
-                description={i18n.FINETUNING.CONTEXT_DESCRIPTION}
-                value={context} onBlur={updateContext} onEnter={updateContext}
-              />
-            </div>
-            <NekoSpacer />
-          </>
-        )}
+        {!expert && dataSection === 'editor' && <>
+          <div className="mwai-builder-col">
+            <label>{i18n.COMMON.CONTEXT}:</label>
+            <NekoTextArea id="context" name="context" rows={2}
+              description={i18n.FINETUNING.CONTEXT_DESCRIPTION}
+              value={context} onBlur={updateContext} onEnter={updateContext}
+            />
+          </div>
+          <NekoSpacer />
+        </>}
         <div style={{ display: 'flex' }}>
           <NekoButton disabled={!totalRows} onClick={onResetBuilder} className="danger">
             Reset Entries
@@ -954,18 +952,17 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         </div>
         <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
 
-        {dataSection === 'generator' && (
-          <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-            Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
-          </NekoMessage>
-        )}
+        {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
+          Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
+        </NekoMessage>}
 
-        {dataSection === 'editor' && (
+        {dataSection === 'editor' && <>
           <p>
             You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">case studies</a>. Please also check my <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
           </p>
-        )}
+        </>}
       </>}
+
       <NekoModal isOpen={errorModal}
         title="Error"
         onRequestClose={() => setErrorModal()}
@@ -1016,23 +1013,21 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank" rel="noreferrer">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
           <NekoSpacer line height={20} />
           <NekoCheckbox label="Enable HyperParams" checked={hyperParams} onChange={setHyperParams} />
-          {hyperParams && (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                <label style={{ marginRight: 5 }}>Number of Epochs:</label>
-                <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
-                <label style={{ marginRight: 5 }}>Batch Size:</label>
-                <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                <label style={{ marginRight: 5 }}>Learning Rate Multiplier:</label>
-                <NekoInput style={{ marginRight: 5 }} value={learningRateMultiplier}
-                  onChange={setLearningRateMultiplier} type="number" />
-                <label style={{ marginRight: 5 }}>Prompt Loss Weight:</label>
-                <NekoInput value={promptLossWeight} onChange={setPromptLossWeight} type="number" />
-              </div>
-            </>
-          )}
+          {hyperParams && <>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <label style={{ marginRight: 5 }}>Number of Epochs:</label>
+              <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
+              <label style={{ marginRight: 5 }}>Batch Size:</label>
+              <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <label style={{ marginRight: 5 }}>Learning Rate Multiplier:</label>
+              <NekoInput style={{ marginRight: 5 }} value={learningRateMultiplier}
+                onChange={setLearningRateMultiplier} type="number" />
+              <label style={{ marginRight: 5 }}>Prompt Loss Weight:</label>
+              <NekoInput value={promptLossWeight} onChange={setPromptLossWeight} type="number" />
+            </div>
+          </>}
         </>
         }
       />

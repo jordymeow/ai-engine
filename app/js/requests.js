@@ -1,9 +1,9 @@
-// Previous: 2.0.5
-// Current: 2.1.1
+// Previous: 2.1.1
+// Current: 2.1.5
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
-import { apiUrl, restNonce } from '@app/settings';
+import { apiUrl, restUrl, restNonce } from '@app/settings';
 
 const retrievePostTypes = async () => {
   const res = await nekoFetch(`${apiUrl}/helpers/post_types`, { nonce: restNonce });
@@ -15,7 +15,7 @@ const retrievePostTypes = async () => {
 
 const retrievePostsCount = async (postType) => {
   const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`, { nonce: restNonce });
-  return res?.count ? parseInt(res?.count) : 0;
+  return res?.count ? parseInt(res?.count) : null;
 };
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
@@ -24,20 +24,38 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   return res;
 };
 
-const retrieveFiles = async (envId = null) => {
+const deleteFiles = async (files) => {
+  const res = await nekoFetch(`${restUrl}/mwai-ui/v1/files/delete`, { nonce: restNonce, method: 'POST', json: { files } });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res;
+};
+
+const retrieveFilesFromOpenAI = async (envId = null) => {
   const res = await nekoFetch(`${apiUrl}/openai/files/list?envId=${envId}`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.files?.data || [];
+  return res?.files?.data;
 };
+
+const retrieveFiles = async ({ userId = null, purpose = null, metadata = null, envId = null, limit = 10, page = 0 }) => {
+  const res = await nekoFetch(`${restUrl}/mwai-ui/v1/files/list`, { nonce: restNonce, method: 'POST',
+    json: { userId, purpose, metadata, envId, limit, page }
+  });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res?.data;
+}
 
 const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
   const res = await nekoFetch(`${apiUrl}/openai/finetunes/list_deleted?envId=${envId}&legacy=${legacy}`, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.finetunes || [];
+  return res?.finetunes;
 };
 
 const retrieveModels = async () => {
@@ -45,7 +63,7 @@ const retrieveModels = async () => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.models || [];
+  return res?.models;
 };
 
 const retrieveFineTunes = async (envId = null, legacy = false) => {
@@ -53,7 +71,7 @@ const retrieveFineTunes = async (envId = null, legacy = false) => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.finetunes || [];
+  return res?.finetunes;
 };
 
 const retrieveChatbots = async () => {
@@ -61,7 +79,7 @@ const retrieveChatbots = async () => {
   if (!res.success) {
     throw new Error(res?.message);
   }
-  return res?.chatbots || [];
+  return res?.chatbots;
 };
 
 const updateChatbots = async (chatbots) => {
@@ -69,17 +87,17 @@ const updateChatbots = async (chatbots) => {
   if (!res.success) {
     throw new Error(res?.message);
   }
-  return res?.chatbots || [];
+  return res?.chatbots;
 };
 
 const retrieveThemes = async () => {
   const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'GET', nonce: restNonce });
-  return res?.themes || [];
+  return res?.themes;
 };
 
 const retrieveOptions = async () => {
   const res = await nekoFetch(`${apiUrl}/settings/options`, { method: 'GET', nonce: restNonce });
-  return res?.options || [];
+  return res?.options;
 };
 
 const updateThemes = async (themes) => {
@@ -98,7 +116,7 @@ const updateThemes = async (themes) => {
   }
 
   const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
-  return res?.themes || [];
+  return res?.themes;
 };
 
 const retrieveAssistants = async (envId) => {
@@ -106,9 +124,10 @@ const retrieveAssistants = async (envId) => {
   if (!res.success) {
     throw new Error(res.message);
   }
-  return res?.assistants || [];
+  return res?.assistants;
 }
 
-export { retrievePostTypes, retrievePostsCount, retrievePostContent, retrieveFiles, 
+export { retrievePostTypes, retrievePostsCount, retrievePostContent,
+  retrieveFilesFromOpenAI, retrieveFiles, deleteFiles,
   retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
   retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };

@@ -3,14 +3,17 @@
 class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSerializable {
   
   // Core Content
-  public ?string $imageUrl = null;
-  public ?string $imageData = null;
+  public ?string $file = null;
+  public ?string $fileType = null; // refId, url, data
+  public ?string $filePurpose = null; // assistant, vision
 
-  // Assistant
+  // Parameters
   public ?string $chatId = null;
   public ?string $assistantId = null;
   public ?string $threadId = null;
   
+  #region Constructors, Serialization
+
   public function __construct( ?string $message = '' ) {
     parent::__construct( $message );
     $this->mode = "assistant"; 
@@ -44,33 +47,50 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
       $json['context']['context'] = $this->context;
     }
 
-    if ( !empty( $this->imageUrl ) || !empty( $this->imageData ) ) {
-      $json['context']['hasImage'] = true;
-    }
-
-    if ( !empty( $this->imageUrl ) ) {
-      $json['context']['imageUrl'] = $this->imageUrl;
+    if ( !empty( $this->file ) ) {
+      $json['context']['hasFile'] = true;
+      if ( $this->fileType === 'url' ) {
+        $json['context']['fileUrl'] = $this->file;
+      }
     }
 
     return $json;
   }
 
-  public function set_image( string $imageUrl ): void {
-    $this->imageUrl = $imageUrl;
+  #endregion
+
+  #region File Handling
+
+  public function set_file( string $file, string $fileType = null, string $filePurpose = null ): void {
+    if ( !empty( $fileType ) && $fileType !== 'refId' && $fileType !== 'url' && $fileType !== 'data' ) {
+      throw new Exception( "AI Engine: The file type can only be refId, url or data." );
+    }
+    if ( !empty( $filePurpose ) && $filePurpose !== 'assistant-in' && $filePurpose !== 'vision' ) {
+      throw new Exception( "AI Engine: The file purpose can only be assistant or vision." );
+    }
+    $this->file = $file;
+    $this->fileType = $fileType;
+    $this->filePurpose = $filePurpose;
   }
 
-  public function set_image_data( string $imageData ): void {
-    $this->imageData = $imageData;
+  public function get_file_url() {
+    if ( $this->fileType === 'url' ) {
+      return $this->file;
+    }
+    else if ( $this->fileType === 'data' ) {
+      return "data:image/jpeg;base64,{$this->file}";
+    }
+    else if ( $this->fileType === 'refId' ) {
+      throw new Exception( "AI Engine: The file type refId is not supported yet." );
+    }
+    else {
+      return null;
+    }
   }
 
-  public function get_image_url() {
-    if ( !empty( $this->imageUrl ) ) {
-      return $this->imageUrl;
-    }
-    if ( !empty( $this->imageData ) ) {
-      return "data:image/jpeg;base64,{$this->imageData}";
-    }
-  }
+  #endregion
+
+  #region Parameters
 
   public function setAssistantId( string $assistantId ): void {
     $this->assistantId = $assistantId;
@@ -83,6 +103,10 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   public function setThreadId( string $threadId ): void {
     $this->threadId = $threadId;
   }
+
+  #endregion
+
+  #region Inject Params
 
   // Based on the params of the query, update the attributes
   public function inject_params( array $params ): void
@@ -103,4 +127,6 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
       $this->setThreadId( $params['threadId'] );
     }
   }
+
+  #endregion
 }

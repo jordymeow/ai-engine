@@ -73,6 +73,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
         //   'headers' => array(
         //     'Authorization' => 'Bearer ' . $this->apiKey,
         //     'User-Agent' => 'AI Engine',
+        //     'Accept' => 'application/json',
         //   ),
         //   'sslverify' => false,
         //   'user-agent' => 'AI Engine',

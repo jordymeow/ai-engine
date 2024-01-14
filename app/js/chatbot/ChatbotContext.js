@@ -1,5 +1,5 @@
-// Previous: 2.0.5
-// Current: 2.0.6
+// Previous: 2.0.6
+// Current: 2.1.5
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 
@@ -27,7 +27,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ messages, setMessages ] = useState([]);
   const [ chatId, setChatId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
-  const [ uploadedImage, setUploadedImage ] = useState({
+  const [ uploadedFile, setUploadedFile ] = useState({
     localFile: null,
     uploadedId: null,
     uploadedUrl: null,
@@ -38,13 +38,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ serverReply, setServerReply ] = useState();
 
   const { stream = false, botId, customId, userData, sessionId, contextId, restNonce, pluginUrl, restUrl, debugMode, typewriter = false, speechRecognition = false, speechSynthesis = false } = system;
+
   const startSentence = params.startSentence?.trim() ?? "";
 
   const processedParams = processParameters(params);
   let { aiName, userName } = processedParams;
   const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     guestName, window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
-    icon, iconText, iconAlt, iconPosition, imageUpload } = processedParams;
+    icon, iconText, iconAlt, iconPosition, imageUpload, fileUpload } = processedParams;
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
@@ -66,18 +67,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     if (!localStorageKey) {
       return;
     }
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify({
-        chatId: chatId,
-        messages: messages
-      }, getCircularReplacer()));
-    } catch (e) {
-      // Silently handle storage errors
-    }
+    localStorage.setItem(localStorageKey, JSON.stringify({
+      chatId: chatId,
+      messages: messages
+    }, getCircularReplacer()));
   };
 
-  const resetUploadedImage = () => {
-    setUploadedImage({
+  const resetUploadedFile = () => {
+    setUploadedFile({
       localFile: null,
       uploadedId: null,
       uploadedUrl: null,
@@ -90,7 +87,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const resetMessages = () => {
-    resetUploadedImage();
+    resetUploadedFile();
     if (startSentence) {
       const freshMessages = [{
         id: randomStr(),
@@ -107,25 +104,25 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    let chatHistory;
     if (localStorageKey) {
-      const stored = localStorage.getItem(localStorageKey);
-      if (stored) {
-        chatHistory = JSON.parse(stored);
+      chatHistory = localStorage.getItem(localStorageKey);
+      if (chatHistory) {
+        chatHistory = JSON.parse(chatHistory);
         setMessages(chatHistory.messages);
         setChatId(chatHistory.chatId);
         return;
       }
     }
     resetMessages();
-  }, [botId]);
+  }, [botId, localStorageKey]);
 
   useEffect(() => {
     initChatbot();
   }, [botId]);
   
   useEffect(() => {
-    if (!serverReply || serverReply.finalized) {
+    if (!serverReply) {
       return;
     }
     setBusy(false);
@@ -133,10 +130,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverReply.success) {
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-        freshMessages.splice(freshMessages.indexOf(lastMessage), 1);
+      if (lastMessage?.role === 'assistant' && lastMessage.isQuerying) {
+        freshMessages.pop();
       }
-      freshMessages.splice(freshMessages.indexOf(lastMessage), 1);
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -149,14 +146,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage?.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply);
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
-    } else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+    } else if (lastMessage?.role === 'assistant' && lastMessage.isStreaming) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply);
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -178,7 +175,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverReply ]);
+  }, [ serverReply, messages ]);
 
   const onClear = useCallback(async () => {
     await setChatId(randomStr());
@@ -187,7 +184,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId]);
+  }, [botId, localStorageKey]);
 
   const onSubmit = async (textQuery) => {
     if (busy) {
@@ -201,7 +198,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
     setBusy(true);
     setInputText('');
-    resetUploadedImage();
+    resetUploadedFile();
+
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -209,7 +207,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       who: rawUserName,
       timestamp: new Date().getTime(),
     }];
+
     saveMessages(bodyMessages);
+
     const freshMessageId = randomStr();
     const freshMessages = [...bodyMessages, {
       id: freshMessageId,
@@ -220,7 +220,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
     }];
+
     setMessages(freshMessages);
+
     const body = {
       botId: botId,
       customId: customId,
@@ -229,7 +231,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       contextId: contextId,
       messages: messages,
       newMessage: textQuery,
-      newImageId: uploadedImage?.uploadedId,
+      newFileId: uploadedFile?.uploadedId,
       stream,
       ...atts
     };
@@ -239,13 +241,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       const streamCallback = stream ? (content) => {
         setMessages(prevMessages => {
-          const updatedMessages = [...prevMessages];
-          const lastMsg = updatedMessages[updatedMessages.length - 1];
+          const msgCopy = [...prevMessages];
+          const lastMsg = msgCopy[msgCopy.length - 1];
           if (lastMsg && lastMsg.id === freshMessageId) {
             lastMsg.content = content;
             lastMsg.timestamp = new Date().getTime();
           }
-          return updatedMessages;
+          return msgCopy;
         });
       } : null;
 
@@ -254,8 +256,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
       if (!data.success && data.message) {
         setError(data.message);
-        freshMessages.splice(freshMessages.indexOf(freshMessages[freshMessages.length - 1]), 1);
-        freshMessages.splice(freshMessages.indexOf(freshMessages[freshMessages.length - 1]), 1);
+        // Remove the last two messages: user query and loading indicator
+        if (freshMessages.length >= 2) {
+          freshMessages.pop();
+          freshMessages.pop();
+        }
         setMessages(freshMessages);
         saveMessages(freshMessages);
         setBusy(false);
@@ -265,26 +270,27 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setServerReply(data);
     }
     catch (err) {
-      console.error("An error happened in the handling of the chatbot response.", { err });
+      console.error("An error occurred during chatbot response handling.", { err });
       setBusy(false);
     }
   };
 
-  const onImageUpload = async (file) => {
+  const onFileUpload = async (file) => {
     try {
-      if (file === null) {
-        resetUploadedImage();
+      if (!file) {
+        resetUploadedFile();
         return;
       }
+      const params = imageUpload ? { type: 'image', purpose: 'vision' } : { type: 'document', purpose: 'assistant-in' };
       const res = await mwaiFetchUpload(`${restUrl}/mwai-ui/v1/files/upload`, file, restNonce, (progress) => {
-        setUploadedImage({ localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress });
-      });
-      setUploadedImage({ localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null });
+        setUploadedFile({ localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress });
+      }, params);
+      setUploadedFile({ localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null });
     }
     catch (error) {
-      console.error('onImageUpload Error', error);
+      console.error('onFileUpload Error', error);
       setError(error.message || 'An unknown error occurred');
-      resetUploadedImage();
+      resetUploadedFile();
     }
   };
 
@@ -298,7 +304,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     resetError,
     onClear,
     onSubmit,
-    onImageUpload
+    onFileUpload
   };
 
   const state = {
@@ -317,7 +323,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     modCss,
     localMemory,
     imageUpload,
-    uploadedImage,
+    uploadedFile,
+    fileUpload,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, aiName, userName, guestName,
     isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, cssVariables, iconUrl
   };

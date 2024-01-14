@@ -1,5 +1,5 @@
-// Previous: 2.0.3
-// Current: 2.0.5
+// Previous: 2.0.5
+// Current: 2.1.5
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -154,7 +154,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embeddings.id}>
+        {embeddings.map(embedding => <div key={embedding.id}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -164,19 +164,25 @@ const Message = ({ message }) => {
 }
 
 const chatsColumns = [
-  { accessor: 'updated', title: 'Time', width: '80px', sortable: true },
-  { accessor: 'user', title: 'User', width: '85px', 
+  { 
+    accessor: 'updated', title: 'Time', width: '80px', sortable: true
+  },
+  { 
+    accessor: 'user', title: 'User', width: '85px', 
     filters: {
       type: 'text',
       description: i18n.HELP.USER_FILTER
     },
   },
-  { accessor: 'preview', title: i18n.COMMON.PREVIEW,
+  { 
+    accessor: 'preview', title: i18n.COMMON.PREVIEW,
     filters: {
       type: 'text'
     },
   },
-  { accessor: 'messages', title: '#', width: '45px' },
+  { 
+    accessor: 'messages', title: '#', width: '45px'
+  },
 ];
 
 const retrieveDiscussions = async (chatsQueryParams) => {
@@ -219,7 +225,7 @@ const Discussions = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const messages = JSON.parse(x.messages);
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
@@ -279,7 +285,7 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats ? selectedChats.map(x => x.chatId) : [];
+      const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -292,7 +298,7 @@ const Discussions = () => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
-          total={chatsTotal} onClick={page => { 
+          total={chatsTotal} onClick={(page) => { 
             setChatsQueryParams({ ...chatsQueryParams, page });
           }}
         />
@@ -301,11 +307,8 @@ const Discussions = () => {
   }, [ chatsQueryParams, chatsTotal ]);
 
   return (<>
-
     <NekoWrapper>
-
       <NekoColumn minimal style={{ flex: 2 }}>
-
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
@@ -322,7 +325,6 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
-
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
@@ -342,7 +344,6 @@ const Discussions = () => {
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
-
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
@@ -354,26 +355,16 @@ const Discussions = () => {
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
-
         </NekoBlock>
-
       </NekoColumn>
-
       <NekoColumn minimal style={{ flex: 1 }}>
-
-        <NekoBlock className="primary" title="Selected Discussion" action={<>
-        </>}>
-
+        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
-
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
-
         </NekoBlock>
-
-        {!!discussion && <NekoBlock className="primary" title="Information" action={<>
-        </>}>
+        {!!discussion && <NekoBlock className="primary" title="Information" action={<></>}>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -410,11 +401,8 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{discussion?.updated}</div>
           </div>
-
-        </NekoBlock>}
-
+        </NekoBlock>
       </NekoColumn>
-
     </NekoWrapper>
   </>);
 }

@@ -1,9 +1,9 @@
-// Previous: 2.0.7
-// Current: 2.1.3
+// Previous: 2.1.3
+// Current: 2.1.5
 
 const { useRef, useImperativeHandle } = wp.element;
 import TextAreaAutosize from 'react-textarea-autosize';
-import { Microphone, ImageUpload } from '@app/chatbot/helpers';
+import { Microphone, ChatUpload } from '@app/chatbot/helpers';
 
 const ChatbotInput = React.forwardRef((props, ref) => {
   const {  onTypeText, onSubmitAction, onUploadFile,
@@ -11,19 +11,20 @@ const ChatbotInput = React.forwardRef((props, ref) => {
     busy, modCss,
     isListening, setIsListening,
     speechRecognitionAvailable, speechRecognition,
-    imageUpload, uploadedImage,
+    fileUpload, imageUpload, uploadedFile,
     composing, setComposing
    } = props;
+
   const inputRef = useRef();
-  const imageUploadRef = useRef();
+  const fileUploadRef = useRef();
+
   const handleDrop = (event) => {
     event.preventDefault();
     event.stopPropagation();
     if (busy) return;
     const files = event.dataTransfer.files;
     if (files.length) {
-      //console.log(imageUploadRef);
-      imageUploadRef.current.handleExternalFile(files[0]);
+      fileUploadRef.current.handleExternalFile(files[0]);
     }
   };
 
@@ -44,14 +45,15 @@ const ChatbotInput = React.forwardRef((props, ref) => {
     <div className={modCss('mwai-input-text')}
       onDrop={handleDrop}
       onDragOver={handleDragOver}>
-      {imageUpload && 
-        <ImageUpload className={modCss('mwai-image-upload', { 
-          'mwai-enabled': uploadedImage?.uploadedId,
-          'mwai-busy': uploadedImage?.localFile && !uploadedImage?.uploadedId,
+      {(imageUpload || fileUpload) && 
+        <ChatUpload className={modCss('mwai-file-upload', { 
+            'mwai-enabled': uploadedFile?.uploadedId,
+            'mwai-busy': uploadedFile?.localFile && !uploadedFile?.uploadedId,
           })}
+          type={imageUpload ? 'vision' : 'assistant'}
           disabled={busy}
-          ref={imageUploadRef}
-          uploadedImage={uploadedImage}
+          ref={fileUploadRef}
+          uploadedFile={uploadedFile}
           onUploadFile={onUploadFile}
         />
       }

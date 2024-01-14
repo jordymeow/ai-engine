@@ -122,8 +122,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
 
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.
-    $imageUrl = $query->get_image_url();
-    if ( !empty( $imageUrl ) ) {
+    $fileUrl = $query->get_file_url();
+    if ( !empty( $fileUrl ) ) {
       $messages[] = [ 
         'role' => 'user',
         'content' => [
@@ -133,7 +133,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           ],
           [
             "type" => "image_url",
-            "image_url" => [ "url" => $imageUrl ]
+            "image_url" => [ "url" => $fileUrl ]
           ]
         ]
       ];
@@ -582,12 +582,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
       // Transfer the images to the local server if needed.
       $localDownload = $this->core->get_option( 'image_local_download' );
-      $expiresDownload = $this->core->get_option( 'image_expires_download' );
-
-      // if $localDownload is either uploads or library
       if ( $localDownload === 'uploads' || $localDownload === 'library' ) {
         foreach ( $reply->results as &$result ) {
-          $fileId = $this->core->files->commit_file( $result, $localDownload, $expiresDownload );
+          $fileId = $this->core->files->upload_file( $result, null, 'generated', [
+            'query_envId' => $query->envId,
+            'query_session' => $query->session,
+            'query_model' => $query->model,
+          ], $query->envId );
           $fileUrl = $this->core->files->get_url( $fileId );
           $result = $fileUrl;
         }
@@ -751,10 +752,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $result;
   }
 
-  public function upload_file( $filename, $data )
+  public function upload_file( $filename, $data, $purpose = 'fine-tune' )
   {
     $result = $this->execute('POST', '/files', null, [
-      'purpose' => 'fine-tune',
+      'purpose' => $purpose,
       'data' => $data,
       'file' => $filename
     ] );
@@ -781,9 +782,27 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $this->execute( 'DELETE', '/models/' . $modelId );
   }
 
-  public function download_file( $fileId )
-  {
-    return $this->execute( 'GET', '/files/' . $fileId . '/content', null, null, false );
+  public function download_file( $fileId, $newFile = null ) {
+    $fileInfo = $this->execute( 'GET', '/files/' . $fileId, null, null, false );
+    $fileInfo = json_decode( (string)$fileInfo, true );
+    $filename = $fileInfo['filename'];
+    $extension = pathinfo( $filename, PATHINFO_EXTENSION );
+    if ( empty( $newFile ) ) {
+      include_once( ABSPATH . 'wp-admin/includes/file.php' );
+      $tempFile = wp_tempnam( $filename );
+      if ( !$tempFile ) {
+        $tempFile = tempnam( sys_get_temp_dir(), 'download_' );
+      }
+      if ( pathinfo( $tempFile, PATHINFO_EXTENSION ) != $extension ) {
+        $newFile = $tempFile . '.' . $extension;
+      }
+      else {
+        $newFile = $tempFile;
+      }
+    }
+    $data = $this->execute( 'GET', '/files/' . $fileId . '/content', null, null, false );
+    file_put_contents( $newFile, $data );
+    return $newFile;
   }
 
   public function run_finetune( $fileId, $model, $suffix, $hyperparams = [], $legacy = false )

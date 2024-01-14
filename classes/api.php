@@ -188,7 +188,7 @@ class Meow_MWAI_API {
 		$preferURL = $remote_upload === 'url';
 
 		if ( $preferURL && $url ) {
-			$query->set_image( $url );
+			$query->set_file( $url, 'url', 'vision' );
 		}
 		else if ( !$preferURL && !empty( $path ) ) {
 			$binary = file_get_contents( $path );
@@ -197,14 +197,14 @@ class Meow_MWAI_API {
 				throw new Exception( 'The file could not be read.' );
 			}
 			$data = base64_encode( $binary );
-			$query->set_image_data( $data );
+			$query->set_file( $data, 'data', 'vision' );
 		}
 		else if ( $url ) {
-			$query->set_image( $url );
+			$query->set_file( $url, 'url', 'vision' );
 		}
 		else if ( !empty($path ) ) {
 			$data = base64_encode( file_get_contents( $path ) );
-			$query->set_image_data( $data );
+			$query->set_file( $data, 'data', 'vision' );
 		}
 
 		$reply = $mwai_core->run_query( $query );

@@ -262,7 +262,7 @@
 				}
 			}
 
-			.mwai-microphone, .mwai-image-upload {
+			.mwai-microphone, .mwai-file-upload {
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -291,10 +291,10 @@
 				}
 			}
 
-			.mwai-image-upload {
+			.mwai-file-upload {
 				margin-left: 5px;
 				margin-right: -5px;
-
+				
 				svg {
 					width: 42px;
 					height: 42px;
