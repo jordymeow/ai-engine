@@ -1,5 +1,5 @@
-// Previous: 1.9.94
-// Current: 1.9.95
+// Previous: 1.9.95
+// Current: 2.1.6
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoSpacer,
   NekoCollapsableCategories, NekoCollapsableCategory,
@@ -80,6 +80,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
                 <NekoOption value="us-west4-gcp-free" label="us-west4-gcp-free" />
                 <NekoOption value="us-east-1-aws" label="us-east-1-aws" />
                 <NekoOption value="us-west-1-aws" label="us-west-1-aws" />
+                <NekoOption value="us-west-2-aws" label="us-west-2-aws" />
                 <NekoOption value="us-central1-gcp" label="us-central1-gcp" />
                 <NekoOption value="northamerica-northeast1-gcp" label="northamerica-northeast1-gcp" />
                 <NekoOption value="eu-west1-gcp" label="eu-west1-gcp" />

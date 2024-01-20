@@ -593,13 +593,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           $result = $fileUrl;
         }
       }
-
-      // Convert the URLs into Markdown.
-      $reply->result = "";
-      foreach ( $reply->results as $result ) {
-        $reply->result .= "![Image]($result)\n";
-      }
-
+      $reply->result = $reply->results[0];
       return $reply;
     }
     catch ( Exception $e ) {

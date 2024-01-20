@@ -3,6 +3,11 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     die;
 }
 
+function mwai_remove_crons() {
+	$timestamp = wp_next_scheduled( 'mwai_files_cleanup' );
+	wp_unschedule_event( $timestamp, 'mwai_files_cleanup' );
+}
+
 function mwai_remove_database() {
 	global $wpdb;
 	$table_name1 = $wpdb->prefix . "mwai_chats";

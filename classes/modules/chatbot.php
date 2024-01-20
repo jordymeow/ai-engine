@@ -257,7 +257,7 @@ class Meow_MWAI_Modules_Chatbot {
 				ob_end_flush();
 			}
 
-			$reply = $this->core->run_query( $query, $streamCallback );
+			$reply = $this->core->run_query( $query, $streamCallback, true );
 			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {

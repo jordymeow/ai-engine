@@ -19,11 +19,26 @@ class Meow_MWAI_API {
 		if ( !$public_api ) {
 			return;
 		}
+
+		register_rest_route( 'mwai/v1', '/simpleAuthCheck', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'rest_simpleAuthCheck' ),
+			'permission_callback' => function( $request ) {
+				return $this->core->can_access_public_api( 'simpleAuthCheck', $request );
+			},
+		) );
 		register_rest_route( 'mwai/v1', '/simpleTextQuery', array(
 			'methods' => 'POST',
 			'callback' => array( $this, 'rest_simpleTextQuery' ),
 			'permission_callback' => function( $request ) {
 				return $this->core->can_access_public_api( 'simpleTextQuery', $request );
+			},
+		) );
+		register_rest_route( 'mwai/v1', '/simpleImageQuery', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'rest_simpleImageQuery' ),
+			'permission_callback' => function( $request ) {
+				return $this->core->can_access_public_api( 'simpleImageQuery', $request );
 			},
 		) );
 		register_rest_route( 'mwai/v1', '/simpleVisionQuery', array(
@@ -59,18 +74,36 @@ class Meow_MWAI_API {
 		}
 	}
 
+	public function rest_simpleAuthCheck( $request ) {
+		try {
+			$params = $request->get_params();
+			$current_user = wp_get_current_user();
+			$current_email = $current_user->user_email;
+			return new WP_REST_Response([ 'success' => true, 'data' => [ 
+				'type' => 'email',
+				'value' => $current_email
+			] ], 200 );
+		}
+		catch (Exception $e) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
 	public function rest_simpleChatbotQuery( $request ) {
 		try {
 			$params = $request->get_params();
 			$botId = isset( $params['botId'] ) ? $params['botId'] : '';
-			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['message'] ) ? $params['message'] : '';
+			if ( empty( $message ) ) {
+				$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			}
 			$chatId = isset( $params['chatId'] ) ? $params['chatId'] : null;
 			$params = null;
 			if ( !empty( $chatId ) ) {
 				$params = array( 'chatId' => $chatId );
 			}
 			if ( empty( $botId ) || empty( $message ) ) {
-				throw new Exception( 'The botId and prompt are required.' );
+				throw new Exception( 'The botId and message are required.' );
 			}
 			$reply = $this->simpleChatbotQuery( $botId, $message, $params );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
@@ -80,19 +113,50 @@ class Meow_MWAI_API {
 		}
 	}
 
+
 	public function rest_simpleTextQuery( $request ) {
 		try {
 			$params = $request->get_params();
-			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['message'] ) ? $params['message'] : '';
+			if ( empty( $message ) ) {
+				$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			}
 			$options = isset( $params['options'] ) ? $params['options'] : [];
 			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
 			if ( !empty( $scope ) ) {
 				$options['scope'] = $scope;
 			}
 			if ( empty( $message ) ) {
-				throw new Exception( 'The prompt is required.' );
+				throw new Exception( 'The message is required.' );
 			}
 			$reply = $this->simpleTextQuery( $message, $options );
+			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
+		}
+		catch (Exception $e) {
+			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
+		}
+	}
+
+	public function rest_simpleImageQuery( $request ) {
+		try {
+			$params = $request->get_params();
+			$message = isset( $params['message'] ) ? $params['message'] : '';
+			if ( empty( $message ) ) {
+				$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			}
+			$options = isset( $params['options'] ) ? $params['options'] : [];
+			$resolution = isset( $params['resolution'] ) ? $params['resolution'] : '';
+			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
+			if ( !empty( $scope ) ) {
+				$options['scope'] = $scope;
+			}
+			if ( empty( $message ) ) {
+				throw new Exception( 'The message is required.' );
+			}
+			if ( !empty( $resolution ) ) {
+				$options['resolution'] = $resolution;
+			}
+			$reply = $this->simpleImageQuery( $message, $options );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
@@ -103,7 +167,10 @@ class Meow_MWAI_API {
 	public function rest_simpleVisionQuery( $request ) {
 		try {
 			$params = $request->get_params();
-			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['message'] ) ? $params['message'] : '';
+			if ( empty( $message ) ) {
+				$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			}
 			$url = isset( $params['url'] ) ? $params['url'] : '';
 			$path = isset( $params['path'] ) ? $params['path'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
@@ -112,7 +179,7 @@ class Meow_MWAI_API {
 				$options['scope'] = $scope;
 			}
 			if ( empty( $message ) ) {
-				throw new Exception( 'The prompt is required.' );
+				throw new Exception( 'The message is required.' );
 			}
 			if ( empty( $url ) && empty( $path ) ) {
 				throw new Exception( 'The url or path is required.' );
@@ -128,14 +195,17 @@ class Meow_MWAI_API {
 	public function rest_simpleJsonQuery( $request ) {
 		try {
 			$params = $request->get_params();
-			$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			$message = isset( $params['message'] ) ? $params['message'] : '';
+			if ( empty( $message ) ) {
+				$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+			}
 			$options = isset( $params['options'] ) ? $params['options'] : [];
 			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
 			if ( !empty( $scope ) ) {
 				$options['scope'] = $scope;
 			}
 			if ( empty( $message ) ) {
-				throw new Exception( 'The prompt is required.' );
+				throw new Exception( 'The message is required.' );
 			}
 			$reply = $this->simpleJsonQuery( $message, $options );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
@@ -243,6 +313,14 @@ class Meow_MWAI_API {
   public function simpleTextQuery( $message, $params = [] ) {
     global $mwai_core;
 		$query = new Meow_MWAI_Query_Text( $message );
+		$query->inject_params( $params );
+		$reply = $mwai_core->run_query( $query );
+		return $reply->result;
+	}
+
+	public function simpleImageQuery( $message, $params = [] ) {
+		global $mwai_core;
+		$query = new Meow_MWAI_Query_Image( $message );
 		$query->inject_params( $params );
 		$reply = $mwai_core->run_query( $query );
 		return $reply->result;

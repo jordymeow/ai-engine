@@ -92,10 +92,13 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region AI-Related Helpers
-	function run_query( $query, $streamCallback = null ) {
-		$envId = !empty( $query->envId ) ? $query->envId : $this->get_option( 'ai_default_env' );
+	function run_query( $query, $streamCallback = null, $markdown = false ) {
+
+		$envId = !empty( $query->envId ) ? $query->envId : null;
 		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
-		if ( !$engine->retrieve_model_info( $query->model ) ) {
+
+		// If the engine is not set, we need to set it to the default one.
+		if ( !$envId || !$engine->retrieve_model_info( $query->model ) ) {
 			if ( $query instanceof Meow_MWAI_Query_Text ) {
 				$this->set_if_empty_defaults( $query, 'ai_default_env', 'ai_default_model' );
 			}
@@ -110,7 +113,21 @@ class Meow_MWAI_Core
 			}
 			$engine = Meow_MWAI_Engines_Factory::get( $this, $query->envId );
 		}
-		return $engine->run( $query, $streamCallback );
+
+		// Let's run the query.
+		$reply = $engine->run( $query, $streamCallback );
+		
+		// Let's allow to modify the reply before it is sent.
+		if ( $markdown ) {
+			if ( $query instanceof Meow_MWAI_Query_Image ) {
+				$reply->result = "";
+				foreach ( $reply->results as $result ) {
+					$reply->result .= "![Image]($result)\n";
+				}
+			}
+		}
+
+		return $reply;
 	}
 	
 	private function set_if_empty_defaults( $query, $envOption, $modelOption ) {
