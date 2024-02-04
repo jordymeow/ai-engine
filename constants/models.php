@@ -5,7 +5,7 @@
 define( 'MWAI_OPENAI_MODELS', [
   // Base models:
 	[
-		"model" => "gpt-4-1106-preview",
+		"model" => "gpt-4-turbo-preview",
 		"name" => "GPT-4 Turbo",
 		"family" => "gpt4",
 		"price" => [
@@ -19,7 +19,41 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'preview', 'json']
+		"tags" => ['core', 'chat', 'json', 'preview']
+	],
+	[
+		"model" => "gpt-4-0125-preview",
+		"name" => "GPT-4 Turbo (0125)",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'json', 'preview']
+	],
+	[
+		"model" => "gpt-4-1106-preview",
+		"name" => "GPT-4 Turbo (1106)",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'json', 'preview']
 	],
 	[
 		"model" => "gpt-4-vision-preview",
@@ -36,7 +70,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'preview', 'json']
+		"tags" => ['core', 'chat', 'vision', 'json', 'preview']
 	],
 	[ 
 		"model" => "gpt-4",
@@ -73,7 +107,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"name" => "GPT-3.5 Turbo",
 		"family" => "turbo",
 		"price" => [
-			"in" => 0.0015,
+			"in" => 0.001,
 			"out" => 0.002,
 		],
 		"type" => "token",
@@ -122,7 +156,7 @@ define( 'MWAI_OPENAI_MODELS', [
 	],
   [
 		"model" => "text-davinci-003",
-		"name" => "GPT-3 Davinci-003",
+		"name" => "GPT-3 DaVinci-003",
 		"family" => "davinci",
 		"price" => 0.02,
 		"type" => "token",
@@ -234,15 +268,37 @@ define( 'MWAI_OPENAI_MODELS', [
   ],
 	// Embedding models:
 	[
-		"model" => "text-embedding-ada-002",
-		"name" => "Embedding Ada-002",
-		"family" => "ada",
-		"price" => 0.0004,
+		"model" => "text-embedding-3-small",
+		"name" => "Embedding 3-Small",
+		"family" => "text-embedding",
+		"price" => 0.00002,
 		"type" => "token",
 		"unit" => 1 / 1000,
 		"mode" => "embedding",
 		"finetune" => false,
-		"tags" => ['core', 'embedding'],
+		"tags" => ['core', 'embedding', '1536-dimensions'],
+	],
+	[
+		"model" => "text-embedding-3-large",
+		"name" => "Embedding 3-Large",
+		"family" => "text-embedding",
+		"price" => 0.00013,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"mode" => "embedding",
+		"finetune" => false,
+		"tags" => ['core', 'embedding', '3072-dimensions'],
+	],
+	[
+		"model" => "text-embedding-ada-002",
+		"name" => "Embedding Ada-002",
+		"family" => "text-embedding",
+		"price" => 0.0001,
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"mode" => "embedding",
+		"finetune" => false,
+		"tags" => ['core', 'embedding', '1536-dimensions'],
 	],
 	// Audio Models:
 	[

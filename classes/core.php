@@ -93,7 +93,6 @@ class Meow_MWAI_Core
 
 	#region AI-Related Helpers
 	function run_query( $query, $streamCallback = null, $markdown = false ) {
-
 		$envId = !empty( $query->envId ) ? $query->envId : null;
 		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
 
@@ -234,8 +233,21 @@ class Meow_MWAI_Core
 		return $output;
 	}
 
-	public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null ) {
-		$file_type = wp_check_filetype( $url, null );
+	/**
+	 * Add an image from a URL to the Media Library.
+	 * @param string $url The URL of the image to be downloaded.
+	 * @param string $filename The filename of the image, if not set, it will be the basename of the URL.
+	 * @param string $title The title of the image.
+	 * @param string $description The description of the image.
+	 * @param string $caption The caption of the image.
+	 * @param string $alt The alt text of the image.
+	 * @return int The attachment ID of the image.
+	 */
+	public function add_image_from_url( $url, $filename = null, $title = null,
+		$description = null, $caption = null, $alt = null ) {
+		$path_parts = pathinfo( parse_url( $url, PHP_URL_PATH ) );
+		$url_filename = $path_parts['basename'];
+		$file_type = wp_check_filetype( $url_filename, null );
 		$allowed_types = get_allowed_mime_types();
 		if ( !$file_type || !in_array( $file_type['type'], $allowed_types ) ) {
 			throw new Exception( 'Invalid file type.' );
@@ -246,14 +258,15 @@ class Meow_MWAI_Core
 			throw new Exception( 'Could not download the image.' );
 		}
 		$upload_dir = wp_upload_dir();
+
+		// If filename is not set or starts with 'generated_', we will generate a new filename.
 		if ( empty( $filename ) ) {
-			$filename = basename( $url );
-			$filename = sanitize_file_name( $filename );
+			$filename = sanitize_file_name( $url_filename );
 			$extension = pathinfo( $filename, PATHINFO_EXTENSION );
 			if ( empty( $extension ) ) {
 				$extension = $file_type['ext'];
 			}
-			if ( strlen( $filename ) > 32 ) {
+			if ( strlen( $filename ) > 32 || strlen( $filename ) < 4 || strpos( $filename, 'generated_' ) === 0 ) {
 				$filename = $this->get_random_id( 16 ) . '.' . $extension;
 			}
 			if ( strpos( $filename, '.' ) === false ) {
@@ -661,7 +674,17 @@ class Meow_MWAI_Core
 		return null;
 	}
 
-	function get_environment( $envId ) {
+	function get_embeddings_env( $envId ) {
+		$envs = $this->get_option( 'embeddings_envs' );
+		foreach ( $envs as $env ) {
+			if ( $env['id'] === $envId ) {
+				return $env;
+			}
+		}
+		return null;
+	}
+
+	function get_ai_env( $envId ) {
 		$envs = $this->get_option( 'ai_envs' );
 		foreach ( $envs as $env ) {
 			if ( $env['id'] === $envId ) {
@@ -672,7 +695,7 @@ class Meow_MWAI_Core
 	}
 
 	function get_assistant( $envId, $assistantId ) {
-		$env = $this->get_environment( $envId );
+		$env = $this->get_ai_env( $envId );
 		if ( !$env ) {
 			return null;
 		}

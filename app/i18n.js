@@ -227,6 +227,8 @@ i18n.COMMON = {
   AUDIO: __( 'Audio', 'ai-engine' ),
   JSON: __( 'JSON', 'ai-engine' ),
   FILES: __( 'Files', 'ai-engine' ),
+  AI_ENVIRONMENT: __( 'AI Environment', 'ai-engine' ),
+  OVERRIDE_DEFAULTS: __( 'Override Defaults', 'ai-engine' ),
 };
 
 i18n.FORMS = {

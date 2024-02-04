@@ -74,7 +74,7 @@ class Meow_MWAI_Engines_Core {
 
   public function final_checks( Meow_MWAI_Query_Base $query ) {
     $query->final_checks();
-    $found = false;
+    //$found = false;
 
      // Check if the model is available, except if it's an assistant
     if ( !( $query instanceof Meow_MWAI_Query_Assistant ) ) {
@@ -90,16 +90,17 @@ class Meow_MWAI_Engines_Core {
         $query->mode = $model_info['mode'];
       }
 
-      if ( !$found && ( $query instanceof Meow_MWAI_Query_Embed ) ) {
-        $ai_embeddings_default_env = $this->core->get_option( 'ai_embeddings_default_env' );
-        $ai_embeddings_default_model = $this->core->get_option( 'ai_embeddings_default_model' );
-        if ( empty( $ai_embeddings_default_env ) || empty( $ai_embeddings_default_model ) ) {
-          throw new Exception( 'AI Engine: The default environment and model for embeddings are not set.' );
-        }
-        $query->set_env_id( $ai_embeddings_default_env );
-        $query->set_model( $ai_embeddings_default_model );
-        $found = true;
-      }
+      // TODO: I am not sure this is actually useful, and it breaks the mechanics of picking a model.
+      // if ( !$found && ( $query instanceof Meow_MWAI_Query_Embed ) ) {
+      //   $ai_embeddings_default_env = $this->core->get_option( 'ai_embeddings_default_env' );
+      //   $ai_embeddings_default_model = $this->core->get_option( 'ai_embeddings_default_model' );
+      //   if ( empty( $ai_embeddings_default_env ) || empty( $ai_embeddings_default_model ) ) {
+      //     throw new Exception( 'AI Engine: The default environment and model for embeddings are not set.' );
+      //   }
+      //   $query->set_env_id( $ai_embeddings_default_env );
+      //   $query->set_model( $ai_embeddings_default_model );
+      //   $found = true;
+      // }
     }
   }
 

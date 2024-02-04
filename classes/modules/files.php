@@ -62,6 +62,7 @@ class Meow_MWAI_Modules_Files {
       } 
       if ( $file ) {
         $this->wpdb->delete( $this->table_files, [ 'refId' => $refId ] );
+        $this->wpdb->delete( $this->table_filemeta, [ 'file_id' => $file->id ] );
         if ( file_exists( $file->path ) ) {
           unlink( $file->path );
         }
@@ -352,7 +353,8 @@ class Meow_MWAI_Modules_Files {
     return $files;
   }
 
-  public function list( $userId = null, $purpose = null, $metadata = [], $envId, $limit = 10, $offset = 0 )
+  public function list( $userId = null, $purpose = null, $metadata = [],
+    $envId = null, $limit = 10, $offset = 0 )
   {
     list( $countSql, $countParams ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, false );
     $total = $this->wpdb->get_var( $this->wpdb->prepare( $countSql, $countParams ) );

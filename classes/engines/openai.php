@@ -579,16 +579,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $reply->set_usage( $usage );
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
-
-      // Transfer the images to the local server if needed.
-      $localDownload = $this->core->get_option( 'image_local_download' );
-      if ( $localDownload === 'uploads' || $localDownload === 'library' ) {
+      
+      if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
         foreach ( $reply->results as &$result ) {
           $fileId = $this->core->files->upload_file( $result, null, 'generated', [
             'query_envId' => $query->envId,
             'query_session' => $query->session,
             'query_model' => $query->model,
-          ], $query->envId );
+          ], $query->envId, $query->localDownload, $query->localDownloadExpiry );
           $fileUrl = $this->core->files->get_url( $fileId );
           $result = $fileUrl;
         }

@@ -1,5 +1,5 @@
-// Previous: 2.1.2
-// Current: 2.1.3
+// Previous: 2.1.3
+// Current: 2.1.7
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -78,7 +78,7 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions) {
           }
         }
         else {
-          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined && newOptions[envKey] !== false || newOptions[modelKey] !== null && newOptions[modelKey] !== undefined && newOptions[modelKey] !== false) {
+          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
@@ -172,8 +172,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsResp = await retrieveOptions();
-      setOptions(optionsResp);
+      const options = await retrieveOptions();
+      setOptions(options);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -268,8 +268,8 @@ const Settings = () => {
     try {
     const chatbots = await retrieveChatbots();
     const themes = await retrieveThemes();
-    const optionsResp = await retrieveOptions();
-    const data = { chatbots, themes, options: optionsResp };
+    const options = await retrieveOptions();
+    const data = { chatbots, themes, options };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -286,7 +286,7 @@ const Settings = () => {
     finally {
       setBusyAction(false);
     }
-  };
+  }
 
   const onImportSettings = async () => {
     setBusyAction('importSettings');
@@ -302,10 +302,10 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options: importedOptions } = data;
+          const { chatbots, themes, options } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(importedOptions);
+          await updateOptions(options);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -622,7 +622,7 @@ const Settings = () => {
   const jsxAIEnvironmentModelEmbeddingsDefault =
     <NekoSettings title={i18n.COMMON.MODEL}>
       <NekoSelect scrolldown name="ai_embeddings_default_model"
-        value={ai_embeddings_default_model} onChange={updateShortcodeParams}>
+        value={ai_embeddings_default_model} onChange={updateOption}>
         {embeddingsModels.map((x) => (
           <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
         ))}
@@ -740,15 +740,15 @@ const Settings = () => {
     </NekoSettings>
   </>;
 
-const jsxAIEnvironmentEmbeddingsDefault = <>
-  <NekoSpacer height={5} />
-  <NekoSettings title={i18n.COMMON.ENVIRONMENT}>
-    <NekoSelect scrolldown name="ai_embeddings_default_env" value={ai_embeddings_default_env} onChange={updateOption}>
-      {ai_envs.map((x) => (
-        <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
-      ))}
-    </NekoSelect>
-  </NekoSettings>
+  const jsxAIEnvironmentEmbeddingsDefault = <>
+    <NekoSpacer height={5} />
+    <NekoSettings title={i18n.COMMON.ENVIRONMENT}>
+      <NekoSelect scrolldown name="ai_embeddings_default_env" value={ai_embeddings_default_env} onChange={updateOption}>
+        {ai_envs.map((x) => (
+          <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
+        ))}
+      </NekoSelect>
+    </NekoSettings>
   </>;
 
   const jsxAIEnvironmentVisionDefault = <>
@@ -957,7 +957,7 @@ const jsxAIEnvironmentEmbeddingsDefault = <>
                   </div>
 
                   {module_embeddings && <>
-                    <EmbeddingsEnvironmentsSettings busy={busy}
+                    <EmbeddingsEnvironmentsSettings busy={busy} options={options}
                       environments={embeddings_envs} 
                       updateEnvironment={updateVectorDbEnvironment}
                       updateOption={updateOption}

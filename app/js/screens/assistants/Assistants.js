@@ -1,5 +1,5 @@
-// Previous: 2.0.0
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.1.7
 
 // React & Vendor Libs
 import { useState, useEffect, useMemo } from 'react';
@@ -71,6 +71,23 @@ const fileColumns = [
   }
 ];
 
+const getLocalSettings = () => {
+  const localSettingsJSON = localStorage.getItem('mwai-admin-assistants');
+  try {
+    return JSON.parse(localSettingsJSON);
+  }
+  catch (e) {
+    return {};
+  }
+};
+
+const setLocalSettings = ({ envId }) => {
+  const settings = {
+    envId: envId || null
+  };
+  localStorage.setItem('mwai-admin-assistants', JSON.stringify(settings));
+};
+
 const Assistants = ({ options, refreshOptions }) => {
   const queryClient = useQueryClient();
   const [ errorModal, setErrorModal ] = useState(null);
@@ -94,6 +111,18 @@ const Assistants = ({ options, refreshOptions }) => {
     limit: 10
   });
   const queryParamsChecksum = JSON.stringify(filesQueryParams);
+
+  useEffect(() => {
+    const localSettings = getLocalSettings();
+    const defaultEnvId = localSettings?.envId ?? null;
+    if (defaultEnvId) {
+      setEnvId(defaultEnvId);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLocalSettings({ envId });
+  }, [envId]);
 
   useEffect(() => {
     setFilesQueryParams(prev => ({ ...prev, envId }));
@@ -156,7 +185,8 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    return dataFiles?.files.map(file => ({
+    if (!dataFiles?.files) return [];
+    return dataFiles.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
@@ -211,7 +241,7 @@ const Assistants = ({ options, refreshOptions }) => {
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [modelFilter, deletedAssistants, allAssistants, helper]);
+  }, [modelFilter, deletedAssistants, allAssistants]);
 
   const busy = busyAction;
 
@@ -232,7 +262,6 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [ filesQueryParams, fileTotal ]);
 
   return (<NekoWrapper>    
-
     <NekoColumn fullWidth minimal style={{ margin: 8 }}>
       
       <NekoTabs inversed currentTab={section}
@@ -267,8 +296,8 @@ const Assistants = ({ options, refreshOptions }) => {
           <NekoTable busy={isBusyFiles || busy}
             data={fileRows} columns={fileColumns}
             selectedItems={selectedIds}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
+            onSelect={ids => { setSelectedIds(prev => [...prev, ...ids]) }}
+            onUnselect={ids => { setSelectedIds(prev.filter(x => !ids.includes(x))) }}
             emptyMessage={i18n.NO_FILES_YET}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -277,9 +306,7 @@ const Assistants = ({ options, refreshOptions }) => {
           </div>
         </NekoTab>
       </NekoTabs>
-
     </NekoColumn>
-
     <NekoColumn fullWidth minimal>
       <NekoBlock className="primary">
         <NekoTypo p>{toHTML(i18n.HELP.ASSISTANTS_INTRO)}</NekoTypo>
@@ -287,9 +314,7 @@ const Assistants = ({ options, refreshOptions }) => {
           {toHTML(i18n.HELP.ASSISTANTS_WARNINGS)}
         </NekoMessage>
       </NekoBlock>
-
       <NekoSpacer tiny />
-
       {errorModal && (
         <NekoModal isOpen={!!errorModal}
           title="Error"
@@ -301,7 +326,6 @@ const Assistants = ({ options, refreshOptions }) => {
           content={<p>{errorModal?.message}</p>}
         />
       )}
-
     </NekoColumn>
   </NekoWrapper>);
 };

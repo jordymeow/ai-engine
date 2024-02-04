@@ -1,5 +1,5 @@
-// Previous: 1.9.82
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 2.1.7
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -26,16 +26,14 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const matches = (content.match(/```/g) || []).length;
   if (matches % 2 !== 0) {
     content += "\n```";
-  }
-  else if (message.isStreaming) {
+  } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
   useEffect(() => { 
     if (!isLongProcess) {
       onRendered();
-    }
-    else if (isLongProcess && !isQuerying && !isStreaming) {
+    } else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -66,12 +64,12 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
         <span>
-          {content.split('\n').map((line, index, array) => 
+          {isUser && content.split('\n').map((line, index, array) => (
             <>
               {line}
               {index === array.length - 1 ? null : <br />}
             </>
-          )}
+          ))}
           {!isUser && <Markdown options={markdownOptions}>{content}</Markdown>}
         </span>
       </span>
@@ -89,10 +87,10 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); });
+  useEffect(() => { onRendered(); }, []);
 
   const handleImageError = (index) => {
-    const placeholderImage = "https://via.placeholder.com/600?text=Image+Gone";
+    const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
     setImages(prevImages => prevImages.map((img, i) => i === index ? placeholderImage : img));
   };
 
@@ -223,8 +221,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
             const classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            }
-            else {
+            } else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
@@ -239,15 +236,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
-  
+
     if (message.role === 'assistant') {
-  
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
-      }
-      else if (typewriter && !message.isStreaming) {
+      } else if (typewriter && !message.isStreaming) {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
@@ -256,13 +251,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-  
+
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-  
+
     return (
       <div><i>Unhandled role.</i></div>
     );

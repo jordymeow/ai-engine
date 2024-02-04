@@ -392,6 +392,9 @@ class Meow_MWAI_Rest
 			else if ( $action === 'generateImage' ) {
 				$mode = 'insert';
 				$query = new Meow_MWAI_Query_Image( "Generate an image that is relevant to the following text:\n\n" . $text );
+				 // We do not need the images to be downloaded (if set by the options) because it will be 
+				 // downloaded and added anyway to the Media Library.
+				$query->set_local_download( null );
 			}
 			else if ( $action === 'suggestImages' ) {
 				$mode = 'suggest';
@@ -461,10 +464,13 @@ class Meow_MWAI_Rest
 			}
 			$query = new Meow_MWAI_Query_Text( $message, 2048 );
 			$query->set_scope( 'admin-tools' );
-			// TODO: We should also use the envId (as the model belongs to it)
 			$model = $this->core->get_option( 'ai_default_model' );
+			$env = $this->core->get_option( 'ai_default_env' );
 			if ( !empty( $model ) ) {
 				$query->set_model( $model );
+			}
+			if ( !empty( $env ) ) {
+				$query->set_env_id( $env );
 			}
 			$reply = $this->core->run_query( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
