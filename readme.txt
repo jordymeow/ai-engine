@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.7
+Stable tag: 2.1.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,11 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.1.8 (2024/02/08) =
+* Fix: Resolved an issue with additional_instructions.
+* Add: Support for set_instructions in queries used by assistants.
+* Update: Reviewed and updated default parameters for embeddings search.
 
 = 2.1.7 (2024/02/04) =
 * Add: Enhanced embeddings handling, including fixes, automatic EnvID mismatch resolution, and support for new models.
