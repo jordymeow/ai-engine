@@ -1,11 +1,11 @@
-=== AI Engine: Chatbots, Generators, Assistants, GPT 4 and more! ===
+=== AI Engine ===
 Contributors: TigrouMeow
 Tags: ai, gpt, openai, chatbot, copilot, chatgpt
 Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.8
+Stable tag: 2.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
 
-= 2.1.8 (2024/02/08) =
+= 2.1.9 (2024/02/08) =
 * Fix: Resolved an issue with additional_instructions.
 * Add: Support for set_instructions in queries used by assistants.
 * Update: Reviewed and updated default parameters for embeddings search.
