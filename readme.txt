@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.9
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,16 @@ Languages: English.
 
 == Changelog ==
 
+= 2.2.0 (2024/02/24) =
+* Add: Support for Google Gemini.
+* Add: Support for OpenAI's Organization ID.
+* Fix: Avoid issues related to low limits related to embeddings searches.
+* Fix: A few other minor issues fixed.
+* Fix: Retrieve all assistants, without any limit.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.1.9 (2024/02/08) =
 * Fix: Resolved an issue with additional_instructions.
 * Add: Support for set_instructions in queries used by assistants.
@@ -92,9 +102,6 @@ Languages: English.
 * Add: Implemented additional_instructions for contextual guidance in assistants and memory for default EnvID.
 * Fix: Corrected issues with image downloading from URLs and Local Download functionality.
 * Update: Streamlined embeddings environment with support for context and updates to models and vectors table.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.1.6 (2024/01/20) =
 * Update: Pinecone servers.

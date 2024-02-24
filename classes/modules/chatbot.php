@@ -133,6 +133,11 @@ class Meow_MWAI_Modules_Chatbot {
 				error_log("AI Engine: No chatbot was found for this query.");
 				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
+
+			$textInputMaxLength = $chatbot['textInputMaxLength'] ?? null;
+			if ( $textInputMaxLength && strlen( $newMessage ) > (int)$textInputMaxLength ) {
+				throw new Exception( 'Sorry, your query has been rejected.' );
+			}
 			
 			// Create QueryText
 			$context = null;

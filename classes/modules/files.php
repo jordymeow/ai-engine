@@ -343,7 +343,7 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
-  public function search( $userId = null, $purpose = null, $metadata = [], $envId ) {
+  public function search( $userId = null, $purpose = null, $metadata = [], $envId = null ) {
     list( $sql, $params ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, true );
     $finalQuery = $this->wpdb->prepare( $sql, $params );
     $files = $this->wpdb->get_results( $finalQuery, ARRAY_A );

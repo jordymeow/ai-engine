@@ -59,14 +59,14 @@ define ( 'MWAI_LIMITS', [
 		'creditType' => 'queries',
 		'timeFrame' => 'day',
 		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit.",
+		'overLimitMessage' => "You have reached the limit (check the Queries Tab > Limits > Guests).",
 	],
 	'users' => [
 		'credits' => 10,
 		'creditType' => 'price',
 		'timeFrame' => 'month',
 		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit.",
+		'overLimitMessage' => "You have reached the limit (check the Queries Tab > Limits > Users).",
 		'ignoredUsers' => "administrator,editor",
 	],
 	'system' => [

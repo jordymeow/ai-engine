@@ -168,6 +168,7 @@ i18n.COMMON = {
   DELETE: __( 'Delete', 'ai-engine' ),
   DELETE_ALL: __( 'Delete All', 'ai-engine' ),
   DELETE_SELECTED: __( 'Delete Selected', 'ai-engine' ),
+  OPENAI_ORGANIZATION_ID: __( 'Organization ID', 'ai-engine' ),
   OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
   OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENT_NAME: __( 'Deployment Name', 'ai-engine' ),
@@ -229,6 +230,9 @@ i18n.COMMON = {
   FILES: __( 'Files', 'ai-engine' ),
   AI_ENVIRONMENT: __( 'AI Environment', 'ai-engine' ),
   OVERRIDE_DEFAULTS: __( 'Override Defaults', 'ai-engine' ),
+  REGION: __( 'Region', 'ai-engine' ),
+  PROJECT_ID: __( 'Project ID', 'ai-engine' ),
+  
 };
 
 i18n.FORMS = {
@@ -267,6 +271,7 @@ i18n.HELP = {
   PUBLIC_API: __( 'Enable the Public REST API. By default, it will be accessible to everyone.', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
   OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
+  OPENAI_ORGANIZATION_ID: __( 'You can link this environment to an <a href="https://platform.openai.com/account/organization" target="_blank">Organization</a>. This is optional.', 'ai-engine' ),
   AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
   OPENROUTER_API_KEY: __( 'You can get your API Keys in your <a href="https://openrouter.ai/keys" target="_blank">OpenRouter Account</a>.', 'ai-engine' ),
   QDRANT: __( 'Use the code <b>#AIENGINE5</b> when you <a href="https://qdrant.to/cloud" target="_blank">Create a Qdrant Account</a>. You will get 5% off.', 'ai-engine' ),

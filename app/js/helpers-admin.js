@@ -1,5 +1,5 @@
-// Previous: 2.1.0
-// Current: 2.1.1
+// Previous: 2.1.1
+// Current: 2.2.0
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -101,9 +101,8 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCurrentLanguage(preferredLanguage);
       return;
     }
-
     const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
-    const detectedLanguage = htmlLang.substr(0, 2);
+    const detectedLanguage = (htmlLang).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -119,7 +118,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -255,12 +254,14 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     else if (env?.type === 'openrouter') {
       models = options?.openrouter_models ?? [];
     }
+    else if (env?.type === 'google') {
+      models = options?.google_models ?? [];
+    }
     else {
       console.warn("useModels: Environment Type is not supported.", { env });
     }
 
-    let extraModelsStr = typeof options?.extra_models === 'string' ? options?.extra_models : "";
-    let extraModelsArr = extraModelsStr.split(',').filter(x => x);
+    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = env?.finetunes ?? [];
     
     if (Array.isArray(env?.legacy_finetunes)) {
@@ -298,9 +299,9 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         };
       })];
     }
-    extraModelsArr = extraModelsArr.filter(x => x);
-    if (extraModelsArr.length) {
-      models = [ ...models, ...extraModelsArr.map(x => ({ id: x, model: x, description: "Extra" })) ];
+    extraModels = extraModels?.split(',').filter(x => x);
+    if (extraModels.length) {
+      models = [ ...models, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
     }
     return models;
   }, [options, env]);
@@ -456,7 +457,7 @@ function estimateTokens(text) {
   const words = text.trim().split(/\s+/);
   let tokenCount = 0;
   words.forEach(word => {
-    tokenCount += Math.ceil(word.length / averageTokenLength);
+      tokenCount += Math.ceil(word.length / averageTokenLength);
   });
   return tokenCount;
 }

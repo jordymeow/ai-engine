@@ -107,8 +107,8 @@ define( 'MWAI_OPENAI_MODELS', [
 		"name" => "GPT-3.5 Turbo",
 		"family" => "turbo",
 		"price" => [
-			"in" => 0.001,
-			"out" => 0.002,
+			"in" => 0.0005,
+			"out" => 0.0015,
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
@@ -313,4 +313,3 @@ define( 'MWAI_OPENAI_MODELS', [
 		"tags" => ['core', 'audio'],
 	]
 ]);
-

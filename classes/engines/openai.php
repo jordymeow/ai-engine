@@ -5,6 +5,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   // Base (OpenAI)
   protected $apiKey = null;
   protected $endpoint = null;
+  protected $organizationId = null;
 
   // Azure
   private $azureDeployments = null;
@@ -32,6 +33,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     $this->apiKey = $env['apikey'];
     if ( $this->envType === 'openai' ) {
       $this->endpoint = apply_filters( 'mwai_openai_endpoint', 'https://api.openai.com/v1', $this->env );
+      $this->organizationId = isset( $env['organizationId'] ) ? $env['organizationId'] : null;
     }
     else if ( $this->envType === 'azure' ) {
       $this->endpoint = isset( $env['endpoint'] ) ? $env['endpoint'] : null;
@@ -246,6 +248,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
     );
+    if ( $this->organizationId ) {
+      $headers['OpenAI-Organization'] = $this->organizationId;
+    }
     if ( $this->envType === 'azure' ) {
       $headers = array( 'Content-Type' => 'application/json', 'api-key' => $this->apiKey );
     }
@@ -889,13 +894,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   public function execute( $method, $url, $query = null, $formFields = null, $json = true, $extraHeaders = null )
   {
     $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $this->apiKey . "\r\n";
+    if ( $this->organizationId ) {
+      $headers .= "OpenAI-Organization: " . $this->organizationId . "\r\n";
+    }
     $body = $query ? json_encode( $query ) : null;
     if ( !empty( $formFields ) ) {
       $boundary = wp_generate_password( 24, false );
-      $headers  = [
+      $headers = [
         'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
         'Authorization' => 'Bearer ' . $this->apiKey
       ];
+      if ( $this->organizationId ) {
+        $headers['OpenAI-Organization'] = $this->organizationId;
+      }
       $body = $this->build_form_body( $formFields, $boundary );
     }
 
