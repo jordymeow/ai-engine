@@ -1,5 +1,5 @@
-// Previous: 2.0.5
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.2.1
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -101,12 +101,29 @@ const StyledMessageWrapper = styled.div`
   }
 `;
 
+const options = {
+  overrides: {
+    object: {
+      component: ({ children, ...props }) => {
+        const textContent = `<object ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</object>`;
+        return textContent;
+      },
+    },
+    script: {
+      component: ({ children, ...props }) => {
+        const textContent = `<script ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</script>`;
+        return textContent;
+      },
+    },
+  }
+};
+
 const StyledMessage = ({ content }) => {
   const [processedContent, setProcessedContent] = useState(content || '');
 
   useEffect(() => {
     if (content) {
-      handleDeadUrls(content);
+      cleanMessage(content);
     }
   }, [content]);
 
@@ -119,26 +136,27 @@ const StyledMessage = ({ content }) => {
     });
   };
 
-  const handleDeadUrls = async (markdownContent) => {
-    const regex = /!\[.*?\]\((.*?)\)/g;
+  const cleanMessage = async (markdownContent) => {
     let newContent = markdownContent;
+    const regex = /!\[.*?\]\((.*?)\)/g;
     let match;
-
+    const matches = [];
     while ((match = regex.exec(markdownContent)) !== null) {
+      matches.push(match);
+    }
+    for (let match of matches) {
       const imageUrl = match[1];
       const isImageAvailable = await checkImageURL(imageUrl);
-      
       if (!isImageAvailable) {
         const placeholder = `<div class="mwai-dead-image">Image not available</div>`;
         newContent = newContent.replace(match[0], placeholder);
       }
     }
-
     setProcessedContent(newContent);
   };
   return (
     <StyledMessageWrapper>
-      <Markdown>{processedContent}</Markdown>
+      <Markdown options={options}>{processedContent}</Markdown>
     </StyledMessageWrapper>
   );
 };
@@ -216,7 +234,7 @@ const Discussions = () => {
   });
 
   useEffect(() => {
-    setChatsQueryParams({ ...chatsQueryParams, filters: filters });
+    setChatsQueryParams(prev => ({ ...prev, filters: filters }));
   }, [filters]);
 
   const chatsTotal = useMemo(() => {
@@ -225,7 +243,7 @@ const Discussions = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
       const messages = JSON.parse(x.messages);
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
@@ -285,7 +303,7 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
+      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -298,8 +316,8 @@ const Discussions = () => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
-          total={chatsTotal} onClick={(page) => { 
-            setChatsQueryParams({ ...chatsQueryParams, page });
+          total={chatsTotal} onClick={page => { 
+            setChatsQueryParams(prev => ({ ...prev, page }));
           }}
         />
       </div>
@@ -307,8 +325,11 @@ const Discussions = () => {
   }, [ chatsQueryParams, chatsTotal ]);
 
   return (<>
+
     <NekoWrapper>
+
       <NekoColumn minimal style={{ flex: 2 }}>
+
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
@@ -325,10 +346,11 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
+
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
-              setChatsQueryParams({ ...chatsQueryParams, sort: { accessor, by } });
+              setChatsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
             }}
             filters={filters}
             onFilterChange={(accessor, value) => {
@@ -344,6 +366,7 @@ const Discussions = () => {
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
+
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
@@ -355,16 +378,26 @@ const Discussions = () => {
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
+
         </NekoBlock>
+
       </NekoColumn>
+
       <NekoColumn minimal style={{ flex: 1 }}>
-        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
+
+        <NekoBlock className="primary" title="Selected Discussion" action={<>
+        </>}>
+
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
+
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
+
         </NekoBlock>
-        {!!discussion && <NekoBlock className="primary" title="Information" action={<></>}>
+
+        {!!discussion && <NekoBlock className="primary" title="Information" action={<>
+        </>}>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -401,8 +434,11 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{discussion?.updated}</div>
           </div>
-        </NekoBlock>
+
+        </NekoBlock>}
+
       </NekoColumn>
+
     </NekoWrapper>
   </>);
 }

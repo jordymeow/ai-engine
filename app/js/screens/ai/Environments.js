@@ -1,9 +1,9 @@
-// Previous: 2.1.0
-// Current: 2.2.0
+// Previous: 2.2.0
+// Current: 2.2.1
 
 const { useCallback, useMemo, useState } = wp.element;
 
-import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, 
+import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoCheckbox,
   NekoCollapsableCategories, NekoCollapsableCategory, NekoMessage, NekoSpacer,
   NekoSelect, NekoOption, nekoFetch } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
@@ -42,8 +42,7 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, options })
           <NekoSelect style={{ flex: 1, marginLeft: 10 }}
             scrolldown id="model" name="model"
             value={deployment['model']}
-            onChange={(value) => updateDeployments(index, 'model', value)}
-          >
+            onChange={(value) => updateDeployments(index, 'model', value)}>
             {options?.openai_models?.map((x) => (
               <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
             ))}
@@ -58,13 +57,96 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, options })
   );
 };
 
+const CustomModels = ({ updateEnvironment, environmentId, customModels, options }) => {
+
+  const updateCustomModels = (index, field, value) => {
+    const freshCustomModels = JSON.parse(JSON.stringify(customModels));
+    freshCustomModels[index][field] = value;
+    updateEnvironment(environmentId, { customModels: freshCustomModels });
+  };
+
+  const addCustomModel = () => {
+    const freshCustomModels = [...customModels, { name: '', apiUrl: '', tags: ['core', 'chat'] }];
+    updateEnvironment(environmentId, { customModels: freshCustomModels });
+  };
+
+  const removeCustomModel = (index) => {
+    const freshCustomModels = [...customModels];
+    freshCustomModels.splice(index, 1);
+    updateEnvironment(environmentId, { customModels: freshCustomModels });
+  };
+
+  return (
+    <NekoSettings title={i18n.COMMON.HUGGINGFACE_MODELS} style={{ marginTop: 10 }}>
+      {customModels.map((customModel, index) => (
+        <div key={index} style={{ display: 'flex', flexDirection: 'column', marginBottom: 10 }}>
+          <div key={index} style={{ display: 'flex', marginBottom: 2 }}>
+            <NekoInput style={{ flex: 1 }}
+              value={customModel['name']}
+              placeholder={i18n.COMMON.HUGGINGFACE_MODEL_NAME}
+              onBlur={(value) => updateCustomModels(index, 'name', value)}
+              onEnter={(value) => updateCustomModels(index, 'name', value)}
+            />
+            <NekoInput style={{ flex: 2, marginLeft: 5 }}
+              value={customModel['apiUrl']}
+              placeholder={i18n.COMMON.HUGGINGFACE_MODEL_URL}
+              onBlur={(value) => updateCustomModels(index, 'apiUrl', value)}
+              onEnter={(value) => updateCustomModels(index, 'apiUrl', value)}
+            />
+            <NekoButton rounded isSmall style={{ marginLeft: 5, height: 30 }}
+              icon="trash" onClick={() => removeCustomModel(index)}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <span style={{ marginRight: 5 }}>Image Model</span>
+            <NekoCheckbox style={{ marginTop: !index ? 5 : 0, marginRight: 10 }}
+              disabled={true}
+              checked={customModel['tags']?.includes('image')}
+              onChange={(value) => {
+                const freshCustomModels = JSON.parse(JSON.stringify(customModels));
+                if (!freshCustomModels[index]['tags']) {
+                  freshCustomModels[index]['tags'] = ['core', 'chat'];
+                }
+                if (value) {
+                  freshCustomModels[index]['tags'].push('image');
+                }
+                else {
+                  freshCustomModels[index]['tags'] = freshCustomModels[index]['tags'].filter(x => x !== 'image');
+                }
+                updateEnvironment(environmentId, { customModels: freshCustomModels });
+              }}
+            />
+            <span style={{ marginRight: 5 }}>Vision Model</span>
+            <NekoCheckbox style={{ marginTop: !index ? 5 : 0, marginRight: 33 }}
+              disabled={true}
+              checked={customModel['tags']?.includes('vision')}
+              onChange={(value) => {
+                const freshCustomModels = JSON.parse(JSON.stringify(customModels));
+                if (!freshCustomModels[index]['tags']) {
+                  freshCustomModels[index]['tags'] = ['core', 'chat'];
+                }
+                if (value) {
+                  freshCustomModels[index]['tags'].push('vision');
+                }
+                else {
+                  freshCustomModels[index]['tags'] = freshCustomModels[index]['tags'].filter(x => x !== 'vision');
+                }
+                updateEnvironment(environmentId, { customModels: freshCustomModels });
+              }}
+            />
+          </div>
+        </div>
+      ))}
+      <NekoButton fullWidth icon="plus" onClick={addCustomModel} />
+    </NekoSettings>
+  );
+};
+
 function AIEnvironmentsSettings({ options, environments, updateEnvironment, updateOption, busy }) {
 
   const [ loading, setLoading ] = useState(false);
 
   const addNewEnvironment = () => {
-    //alert("Coming soon! Please give us a bit of time to beta test this.");
-    //return;
     const newEnv = {
       name: 'New Environment',
       type: 'openai', 
@@ -93,6 +175,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     if (env.type === 'openrouter') {
       return toHTML(i18n.HELP.OPENROUTER_API_KEY);
     }
+
     return '';
   }, []);
 
@@ -104,8 +187,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     return options?.google_models ?? [];
   }, [options]);
 
-  console.log({ openRouterModels, googleModels });
-
   const fetchModels = useCallback(async (envId, envType) => {
     try {
       setLoading(true);
@@ -114,7 +195,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
         nonce: restNonce,
         json: { envId }
       });
-      // BUG: Forgetting to set loading to false in case of error before throw
+      setLoading(false);
       let freshModels = res?.models;
       if (!freshModels) {
         throw new Error('Could not fetch models.');
@@ -124,8 +205,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     catch (err) {
       alert(err.message);
       console.log(err);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -149,6 +228,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                 <NekoOption value="azure" label="Azure (OpenAI)" />
                 <NekoOption value="google" label="Google" />
                 <NekoOption value="openrouter" label="OpenRouter" />
+                <NekoOption value="huggingface" label="Hugging Face" />
               </NekoSelect>
             </NekoSettings>
             
@@ -178,16 +258,21 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             {env.type === 'google' && <>
               <NekoSettings title={i18n.COMMON.REGION}>
                 <NekoInput name="region" value={env.region}
-                  //description={toHTML(i18n.HELP.REGION)}
                   onFinalChange={value => updateEnvironment(env.id, { region: value })} />
               </NekoSettings>
               <NekoSettings title={i18n.COMMON.PROJECT_ID}>
                 <NekoInput name="projectId" value={env.projectId}
-                  //description={toHTML(i18n.HELP.PROJECT_ID)}
                   onFinalChange={value => updateEnvironment(env.id, { projectId: value })} />
               </NekoSettings>
               <NekoMessage variant="danger">
                 Compared to OpenAI, Google's Gemini is less stable and clearly in beta, with limitations like single-message processing (in the case of Vision) and frequent unclear errors. Let's discuss about Gemini on <a href="https://discord.gg/bHDGh38" target="_blank">Discord</a>.
+              </NekoMessage>
+              <NekoSpacer />
+            </>}
+
+            {env.type === 'huggingface' && <>
+              <NekoMessage variant="danger">
+                Support for Hugging Face is experimental and may not work as expected. Also, AI Engine is ready for Image and Vision but Hugging Face is not (hence the disabled checkboxes). Let's discuss about Hugging Face on <a href="https://discord.gg/bHDGh38" target="_blank">Discord</a>.
               </NekoMessage>
               <NekoSpacer />
             </>}
@@ -213,6 +298,18 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                 <NekoCollapsableCategory title={i18n.COMMON.OPENAI_AZURE_DEPLOYMENTS}>
                   <Deployments 
                     deployments={env.deployments ?? []} 
+                    environmentId={env.id}
+                    updateEnvironment={updateEnvironment}
+                    options={options}
+                  />
+                </NekoCollapsableCategory>
+              }
+
+              {env.type === 'huggingface' &&
+                <NekoCollapsableCategory title={i18n.COMMON.HUGGINGFACE_MODELS}>
+                  <p>Browse the <a href="https://huggingface.co/models" target="_blank">Models on Hugging Face</a>. Use the Deploy button (Inference API Serverless) in order to get the API URL. Paste it below with the name of your choice and you're done!</p>
+                  <CustomModels 
+                    customModels={env.customModels ?? []}
                     environmentId={env.id}
                     updateEnvironment={updateEnvironment}
                     options={options}

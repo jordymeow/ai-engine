@@ -69,6 +69,10 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_Google( $core, $env );
       return $engine;
     }
+    else if ( $env['type'] === 'huggingface' ) {
+      $engine = new Meow_MWAI_Engines_HuggingFace( $core, $env );
+      return $engine;
+    }
     throw new Exception( "AI Engine: Unknown engine type ({$env['type']})." );
   }
 

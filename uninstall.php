@@ -6,6 +6,10 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 function mwai_remove_crons() {
 	$timestamp = wp_next_scheduled( 'mwai_files_cleanup' );
 	wp_unschedule_event( $timestamp, 'mwai_files_cleanup' );
+	$timestamp = wp_next_scheduled( 'mwai_tasks_internal_run' );
+	wp_unschedule_event( $timestamp, 'mwai_tasks_internal_run' );
+	$timestamp = wp_next_scheduled( 'mwai_tasks_internal_dev_run' );
+	wp_unschedule_event( $timestamp, 'mwai_tasks_internal_dev_run' );
 }
 
 function mwai_remove_database() {

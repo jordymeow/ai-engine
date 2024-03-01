@@ -1,5 +1,5 @@
-// Previous: 2.1.1
-// Current: 2.2.0
+// Previous: 2.2.0
+// Current: 2.2.1
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -83,13 +83,12 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     if (startCustom) {
       setIsCustom(true);
       setCustomLanguage(startCustom);
-    }
-    else {
+    } else {
       setIsCustom(false);
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -99,10 +98,10 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-      return;
     }
-    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
-    const detectedLanguage = (htmlLang).substr(0, 2);
+
+    const detectedLanguage = (document.querySelector('html').lang || navigator.language
+      || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -118,7 +117,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -132,13 +131,20 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   const jsxLanguageSelector = useMemo(() => {
     return (
       <>
-        {isCustom && <NekoInput name="customLanguage" disabled={disabled}
+        {isCustom && <NekoInput 
+          name="customLanguage" 
+          disabled={disabled}
           onReset={() => { setIsCustom(false); }}
           description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={customLanguage} onChange={setCustomLanguage} />}
-        {!isCustom && <NekoSelect scrolldown name="language" disabled={disabled} 
+          value={customLanguage} 
+          onChange={setCustomLanguage} />}
+        {!isCustom && <NekoSelect 
+          scrolldown 
+          name="language" 
+          disabled={disabled} 
           description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={currentLanguage} onChange={onChange}>
+          value={currentLanguage} 
+          onChange={onChange}>
           {languages.map((lang) => {
             return <NekoOption key={lang.value} value={lang.value} label={lang.label} />;
           })}
@@ -146,7 +152,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, languages, isCustom, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -175,7 +181,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
         if (env.deployments) fakeEnv.deployments.push(...env.deployments);
       });
-
       return fakeEnv;
     }
     return null;
@@ -244,20 +249,28 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     let models = [];
     if (env?.fake === true) {
       models = [ ...options.openai_models ?? [], ...options.openrouter_models ?? [] ];
-    }
-    else if (env?.type === 'openai') {
+    } else if (env?.type === 'openai') {
       models = options?.openai_models ?? [];
-    }
-    else if (env?.type === 'azure') {
+    } else if (env?.type === 'azure') {
       models = options?.openai_models?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
-    }
-    else if (env?.type === 'openrouter') {
+    } else if (env?.type === 'openrouter') {
       models = options?.openrouter_models ?? [];
-    }
-    else if (env?.type === 'google') {
+    } else if (env?.type === 'google') {
       models = options?.google_models ?? [];
-    }
-    else {
+    } else if (env?.type === 'huggingface') {
+      models = env?.customModels?.map(x => {
+        let tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
+        let mode = tags.includes('image') ? 'image' : 'chat';
+        return {
+          model: x.name,
+          name: x.name,
+          mode: mode,
+          tags: tags,
+          options: [],
+        };
+      }) ?? [];
+      console.log('Hugging Face', { models, env });
+    } else {
       console.warn("useModels: Environment Type is not supported.", { env });
     }
 
@@ -281,8 +294,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
-        }
-        else if (x.model.includes('ft:gpt-4')) {
+        } else if (x.model.includes('ft:gpt-4')) {
           mode = 'chat';
           family = 'gpt4';
         }
@@ -309,7 +321,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
-
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -340,10 +351,9 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   }, [models]);
 
   const getModel = (model) => {
-    if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
+    if (['gpt-3.5-turbo-0301', 'gpt-35-turbo', 'gpt-3.5-turbo-0613'].includes(model)) {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
+    } else if (['gpt-4-0314', 'gpt-4-0613'].includes(model)) {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -384,7 +394,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object' && price !== null) {
@@ -422,7 +431,7 @@ const retrieveVectors = async (queryParams) => {
     return [];
   }
 
-  if (!queryParams.filters.envId || !queryParams.filters.dbIndex) {
+  if (!queryParams.filters?.envId || !queryParams.filters?.dbIndex) {
     return { total: 0, vectors: [] };
   }
 
@@ -446,9 +455,24 @@ const retrievePostsCount = async (postType, postStatus = 'publish') => {
   return res?.count ? parseInt(res?.count) : null;
 };
 
+const retrievePostsIds = async (postType, postStatus = 'publish') => {
+  const res = await nekoFetch(`${apiUrl}/helpers/posts_ids?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
+  return res?.postIds || [];
+}
+
 const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus = 'publish') => {
   const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`, 
     { nonce: restNonce });
+  return res;
+};
+
+const synchronizeEmbedding = async ({ vectorId, postId }, signal = null) => {
+  const res = await nekoFetch(`${apiUrl}/vectors/sync`, { 
+    nonce: restNonce,
+    method: 'POST',
+    json: { vectorId, postId },
+    signal
+  });
   return res;
 };
 
@@ -517,6 +541,7 @@ const randomHash = (length = 6) => {
 
 export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, reduceContent,
+  synchronizeEmbedding, retrievePostsIds,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
 };

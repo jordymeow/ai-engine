@@ -173,6 +173,9 @@ i18n.COMMON = {
   OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENT_NAME: __( 'Deployment Name', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENTS: __( 'Deployments', 'ai-engine' ),
+  HUGGINGFACE_MODELS: __( 'Models', 'ai-engine' ),
+  HUGGINGFACE_MODEL_NAME: __( 'Name', 'ai-engine' ),
+  HUGGINGFACE_MODEL_URL: __( 'API URL', 'ai-engine' ),
   THEME: __( 'Theme', 'ai-engine' ),
   THEMES: __( 'Themes', 'ai-engine' ),
   BANNED_WORDS: __( 'Banned Words', 'ai-engine' ),
@@ -232,7 +235,7 @@ i18n.COMMON = {
   OVERRIDE_DEFAULTS: __( 'Override Defaults', 'ai-engine' ),
   REGION: __( 'Region', 'ai-engine' ),
   PROJECT_ID: __( 'Project ID', 'ai-engine' ),
-  
+  BEARER_TOKEN: __( 'Bearer Token', 'ai-engine' ),
 };
 
 i18n.FORMS = {
@@ -268,7 +271,7 @@ i18n.HELP = {
   STREAMING: __( 'The AI\'s response will appear as it\'s being created. Be cautious: this feature\'s ability to manage statistics, limits, and filters is still in its beta phase.', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Enable syntax highlighting for the code blocks.', 'ai-engine' ),
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
-  PUBLIC_API: __( 'Enable the Public REST API. By default, it will be accessible to everyone.', 'ai-engine' ),
+  PUBLIC_API: __( 'Enable the Public REST API.', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
   OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   OPENAI_ORGANIZATION_ID: __( 'You can link this environment to an <a href="https://platform.openai.com/account/organization" target="_blank">Organization</a>. This is optional.', 'ai-engine' ),
@@ -278,6 +281,7 @@ i18n.HELP = {
   ASSISTANTS: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks.', 'ai-engine' ),
   ASSISTANTS_INTRO: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks. To create them, head to the <a href="https://beta.openai.com/assistants" target="_blank">OpenAI Assistants</a> dashboard, then <b>Refresh Assistants</b> here. You can use an assistant in your chatbots by switching the <b>Mode</b> to <b>Assistant</b>.', 'ai-engine' ),
   ASSISTANTS_WARNINGS: __( 'Assistants are also <a href="https://platform.openai.com/docs/api-reference/assistants" target="_blank">in beta</a>, both for OpenAI and AI Engine. OpenAI did not add streaming support for them yet. Pricing is still quite unclear and <a href="https://openai.com/pricing" target="_blank">tricky</a>. AI Engine can only perform an estimation. If you want to discuss assistants with other users, visit the <a href="https://discord.gg/bHDGh38" target="_blank">Meow Apps Discord Server</a>.', 'ai-engine' ),
+  BEARER_TOKEN: __( 'The Public API will be usable by using this Bearer Token. If not set, you will need to <a href="https://meowapps.com/ai-engine/api/#public-rest-api" target="_blank">build your own authentication</a> by using the <i>mwai_allow_public_api</i> filter.', 'ai-engine' ), 
 };
 
 i18n.SETTINGS = {

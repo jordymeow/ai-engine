@@ -37,7 +37,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       // $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://{$this->region}-aiplatform.googleapis.com/v1/projects/{$this->projectId}/locations/{$this->region}/publishers/google", $this->env );
 
       // Generative Language API (less issues with auth)
-      $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://generativelanguage.googleapis.com/v2", $this->env );
+      $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://generativelanguage.googleapis.com/v1", $this->env );
     }
     else {
       throw new Exception( 'Unknown environment type: ' . $this->envType );

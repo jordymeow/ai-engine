@@ -1,8 +1,7 @@
-// Previous: 2.1.3
-// Current: 2.1.7
+// Previous: 2.1.7
+// Current: 2.2.1
 
 const { useMemo, useState, useEffect } = wp.element;
-
 import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, 
   NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
@@ -78,7 +77,7 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions) {
           }
         }
         else {
-          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
+          if (newOptions[envKey] !== null && newOptions[modelKey] !== null) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
@@ -268,8 +267,8 @@ const Settings = () => {
     try {
     const chatbots = await retrieveChatbots();
     const themes = await retrieveThemes();
-    const options = await retrieveOptions();
-    const data = { chatbots, themes, options };
+    const optionsData = await retrieveOptions();
+    const data = { chatbots, themes, options: optionsData };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -278,15 +277,13 @@ const Settings = () => {
     const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
     link.setAttribute('download', filename);
     link.click();
-    }
-    catch (err) {
+    } catch (err) {
       alert("Error while exporting settings. Please check your console.");
       console.log(err);
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
-  }
+  };
 
   const onImportSettings = async () => {
     setBusyAction('importSettings');
@@ -302,25 +299,23 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options } = data;
+          const { chatbots, themes, options: importedOptions } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(options);
+          await updateOptions(importedOptions);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
         reader.readAsText(file);
       };
       fileInput.click();
-    }
-    catch (err) {
+    } catch (err) {
       alert("Error while importing settings. Please check your console.");
       console.log(err);
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
-  }
+  };
 
   useDefaultEnvironments(ai_envs, options, updateOptions);
 
@@ -328,7 +323,7 @@ const Settings = () => {
     if (currentModel?.mode !== 'chat' && !!shortcodeParams.embeddings_index) {
       updateShortcodeParams('', 'embeddings_index');
     }
-  }, [shortcodeParams]);
+  }, [shortcodeParams, currentModel]);
 
   const updateShortcodeParams = async (value, id) => {
     const newParams = { ...shortcodeParams, [id]: value };
@@ -478,6 +473,17 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
+  // const jsxLegacyForms =
+  //   <NekoSettings title={i18n.COMMON.LEGACY_FORMS}>
+  //     <NekoCheckboxGroup max="1">
+  //       <NekoCheckbox name="shortcode_forms_legacy" label={`${i18n.COMMON.ENABLE}`} value="1"
+  //         requirePro={true} isPro={isRegistered}
+  //         checked={shortcode_forms_legacy}
+  //         description="Don't use the Legacy Forms. It's deprecated and will be removed in the future. Only enable if you have issues with the new forms."
+  //         onChange={updateOption} />
+  //     </NekoCheckboxGroup>
+  //   </NekoSettings>;
+
   const jsxStream =
     <NekoSettings title={i18n.COMMON.STREAMING}>
       <NekoCheckboxGroup max="1">
@@ -522,6 +528,13 @@ const Settings = () => {
       <NekoCheckbox name="public_api" label={i18n.COMMON.ENABLE} value="1" checked={public_api}
         description={i18n.HELP.PUBLIC_API}
         onChange={updateOption} />
+    </NekoSettings>;
+
+  const jsxBearerToken =
+    <NekoSettings title={i18n.COMMON.BEARER_TOKEN}>
+      <NekoInput name="public_api_bearer_token" value={options?.public_api_bearer_token}
+        description={toHTML(i18n.HELP.BEARER_TOKEN)}
+        onBlur={updateOption} />
     </NekoSettings>;
 
   const jsxImageLocalUpload =
@@ -1035,6 +1048,7 @@ const Settings = () => {
                     {jsxResolveShortcodes}
                     {jsxContextMaxTokens}
                     {jsxPublicAPI}
+                    {jsxBearerToken}
                     {jsxDevTools}
                     {jsxCleanUninstall}
                   </NekoBlock>

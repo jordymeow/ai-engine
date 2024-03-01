@@ -16,6 +16,7 @@ class Meow_MWAI_Core
 	public $is_cli = false;
 	public $site_url = null;
 	public $files = null;
+	public $tasks = null;
 	private $option_name = 'mwai_options';
 	private $themes_option_name = 'mwai_themes';
 	private $chatbots_option_name = 'mwai_chatbots';
@@ -29,6 +30,7 @@ class Meow_MWAI_Core
 		$this->is_rest = MeowCommon_Helpers::is_rest();
 		$this->is_cli = defined( 'WP_CLI' );
 		$this->files = new Meow_MWAI_Modules_Files( $this );
+		$this->tasks = new Meow_MWAI_Modules_Tasks( $this );
 
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
 		add_action( 'wp_register_script', array( $this, 'register_scripts' ) );
@@ -353,6 +355,13 @@ class Meow_MWAI_Core
 
 	// Get the UserID from the data, or from the current user
   function get_user_id( $data = null ) {
+		// TODO: Not sure if that's the best way, but we should probably use an admin user as a fallback for CRON.
+		if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+			$admin = get_users( [ 'role' => 'administrator' ] );
+			if ( !empty( $admin ) ) {
+				return $admin[0]->ID;
+			}
+		}
     if ( isset( $data ) && isset( $data['userId'] ) ) {
       return (int)$data['userId'];
     }
@@ -364,6 +373,14 @@ class Meow_MWAI_Core
     }
     return null;
   }
+
+	function get_admin_user() {
+		$admin = get_users( [ 'role' => 'administrator' ] );
+		if ( !empty( $admin ) ) {
+			return $admin[0];
+		}
+		return null;
+	}
 
 	function get_user_data() {
 		$user = wp_get_current_user();
@@ -418,7 +435,8 @@ class Meow_MWAI_Core
 
 	public function check_rest_nonce( $request ) {
     $nonce = $request->get_header( 'X-WP-Nonce' );
-    return wp_verify_nonce( $nonce, 'wp_rest' );
+    $rest_nonce = wp_verify_nonce( $nonce, 'wp_rest' );
+		return apply_filters( 'mwai_rest_authorized', $rest_nonce, $request );
   }
 
 	function get_random_id( $length = 8, $excludeIds = [] ) {
@@ -471,8 +489,14 @@ class Meow_MWAI_Core
 	}
 
 	function get_post( $post ) {
+		if ( is_numeric( $post ) ) {
+			$post = get_post( $post );
+		}
 		if ( is_object( $post ) ) {
 			$post = (array)$post;
+		}
+		if ( !is_array( $post ) ) {
+			return null;
 		}
 		$language = $this->get_post_language( $post['ID'] );
 		$content = $this->get_post_content( $post['ID'] );
@@ -481,12 +505,12 @@ class Meow_MWAI_Core
 		$url = get_permalink( $post['ID'] );
 		$checksum = wp_hash( $content . $title . $url );
 		return [
-			'postId' => $post['ID'],
+			'postId' => (int)$post['ID'],
 			'title' => $title,
 			'content' => $content,
 			'excerpt' => $excerpt,
 			'url' => $url,
-			'language' => $language,
+			'language' => $language ?? 'english',
 			'checksum' => $checksum,
 		];
 	}

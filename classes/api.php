@@ -4,20 +4,23 @@ class Meow_MWAI_API {
 	public $core;
 	private $chatbot_module;
 	private $discussions_module;
+	private $bearer_token;
 
 	public function __construct( $chatbot_module, $discussions_module ) {
 		global $mwai_core;
 		$this->core = $mwai_core;
 		$this->chatbot_module = $chatbot_module;
 		$this->discussions_module = $discussions_module;
-		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+		add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 	}
 
 	#region REST API
 	function rest_api_init() {
 		$public_api = $this->core->get_option( 'public_api' );
-		if ( !$public_api ) {
-			return;
+		if ( !$public_api ) { return; }
+		$this->bearer_token = $this->core->get_option( 'public_api_bearer_token' );
+		if ( !empty( $this->bearer_token ) ) {
+			add_filter( 'mwai_allow_public_api', [ $this, 'auth_via_bearer_token' ], 10, 3 );
 		}
 
 		register_rest_route( 'mwai/v1', '/simpleAuthCheck', array(
@@ -87,6 +90,20 @@ class Meow_MWAI_API {
 		catch (Exception $e) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
+	}
+
+	public function auth_via_bearer_token( $allow, $feature, $extra ) {
+		if ( !empty( $extra ) && !empty( $extra->get_header( 'Authorization' ) ) ) {    
+			$token = $extra->get_header( 'Authorization' );
+			$token = str_replace( 'Bearer ', '', $token );
+			if ( $token === $this->bearer_token ) {
+				// We set the current user to the first admin.
+				$admin = $this->core->get_admin_user();
+				wp_set_current_user( $admin->ID, $admin->user_login );
+				return true;
+			}
+		}
+		return $allow;
 	}
 
 	public function rest_simpleChatbotQuery( $request ) {

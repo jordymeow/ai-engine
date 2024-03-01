@@ -1,15 +1,15 @@
 === AI Engine ===
 Contributors: TigrouMeow
-Tags: ai, gpt, openai, chatbot, copilot, chatgpt
+Tags: ai, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Add AI into WordPress! Chatbot (ChatGPT), content and images generators, copilot, model training and much more! Highly customizable, sleek UI. You will love it!
+AI for WordPress. Chatbot, Content/Image Generator, CoPilot, Finetuning, Internal API, GPT, Gemini, etc! Sleek UI and ultra-customizable.
 
 == Description ==
 Create your own chatbot, craft content and images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track statistic and usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, WooCommerce product fields, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
@@ -81,6 +81,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+ 
+= 2.2.1 (2024/03/01) =
+* Add: Support for Hugging Face.
+* Add: Automatically update the outdated embeddings in background.
+* Fix: A few lightweight security issues were handled.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.2.0 (2024/02/24) =
 * Add: Support for Google Gemini.
@@ -88,9 +96,6 @@ Languages: English.
 * Fix: Avoid issues related to low limits related to embeddings searches.
 * Fix: A few other minor issues fixed.
 * Fix: Retrieve all assistants, without any limit.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.1.9 (2024/02/08) =
 * Fix: Resolved an issue with additional_instructions.

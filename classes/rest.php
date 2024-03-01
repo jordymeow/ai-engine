@@ -140,6 +140,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => [ $this->core, 'can_access_features' ],
 				'callback' => [ $this, 'rest_helpers_count_posts' ],
 			) );
+			register_rest_route( $this->namespace, '/helpers/posts_ids', array(
+				'methods' => 'GET',
+				'permission_callback' => [ $this->core, 'can_access_features' ],
+				'callback' => [ $this, 'rest_helpers_posts_ids' ],
+			) );
 			register_rest_route( $this->namespace, '/helpers/post_types', array(
 				'methods' => 'GET',
 				'permission_callback' => [ $this->core, 'can_access_features' ],
@@ -740,6 +745,26 @@ class Meow_MWAI_Rest
 			$count = wp_count_posts( $postType );
 			$count = array_sum( array_intersect_key( (array)$count, array_flip( $postStatus ) ) );
 			return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+		}
+	}
+
+	function rest_helpers_posts_ids( $request ) {
+		try {
+			$params = $request->get_query_params();
+			$postType = $params['postType'];
+			$postStatus = $params['postStatus'];
+			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $postStatus ) : [ 'publish' ];
+			$posts = get_posts( [
+				'posts_per_page' => -1,
+				'post_type' => $postType,
+				'post_status' => $postStatus,
+				'fields' => 'ids'
+			] );
+			return new WP_REST_Response([ 'success' => true, 'postIds' => $posts ], 200 );
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

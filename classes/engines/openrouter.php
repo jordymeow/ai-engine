@@ -11,12 +11,12 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
   protected function set_environment() {
     $env = $this->env;
     $this->apiKey = $env['apikey'];
-    if ( $this->envType === 'openrouter' ) {
-      $this->endpoint = apply_filters( 'mwai_openrouter_endpoint', 'https://openrouter.ai/api/v1', $this->env );
-    }
-    else {
-      throw new Exception( 'Unknown environment type: ' . $this->envType );
-    }
+  }
+
+  protected function build_url( $query, $endpoint = null ) {
+    $endpoint = apply_filters( 'mwai_openrouter_endpoint', 'https://openrouter.ai/api/v1', $this->env );
+    $url = parent::build_url( $query, $endpoint );
+    return $url;
   }
 
   protected function build_headers( $query ) {
