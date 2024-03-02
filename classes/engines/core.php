@@ -89,19 +89,84 @@ class Meow_MWAI_Engines_Core {
       if ( isset( $model_info['mode'] ) ) {
         $query->mode = $model_info['mode'];
       }
-
-      // TODO: I am not sure this is actually useful, and it breaks the mechanics of picking a model.
-      // if ( !$found && ( $query instanceof Meow_MWAI_Query_Embed ) ) {
-      //   $ai_embeddings_default_env = $this->core->get_option( 'ai_embeddings_default_env' );
-      //   $ai_embeddings_default_model = $this->core->get_option( 'ai_embeddings_default_model' );
-      //   if ( empty( $ai_embeddings_default_env ) || empty( $ai_embeddings_default_model ) ) {
-      //     throw new Exception( 'AI Engine: The default environment and model for embeddings are not set.' );
-      //   }
-      //   $query->set_env_id( $ai_embeddings_default_env );
-      //   $query->set_model( $ai_embeddings_default_model );
-      //   $found = true;
-      // }
     }
+  }
+
+  // Streamline the messages:
+// - Concatenate consecutive model messages into a single message for the model role
+// - Make sure the first message is a user message
+// - Make sure the last message is a user message
+protected function streamline_messages( $messages, $systemRole = 'assistant', $messageType = 'content' )
+{
+    $processedMessages = [];
+    $lastRole = '';
+    $concatenatedText = '';
+
+    // Determine the way to access message content based on messageType
+    $getContent = function( $message ) use ( $messageType ) {
+      if ( $messageType == 'parts' ) {
+        return $message['parts'][0]['text'];
+      }
+      else { // Default to 'content'
+        return $message['content'];
+      }
+    };
+
+    // Set content to a message depending on the messageType
+    $setContent = function( &$message, $content ) use ( $messageType ) {
+      if ( $messageType == 'parts' ) {
+        $message['parts'] = [['text' => $content]];
+      }
+      else { // Default to 'content'
+        $message['content'] = $content;
+      }
+    };
+
+    // Concatenate consecutive model messages into a single message for the model role
+    foreach ( $messages as $message ) {
+      if ( $message['role'] == $systemRole ) {
+        if ( $lastRole == $systemRole ) {
+          $concatenatedText .= "\n" . $getContent( $message );
+        }
+        else {
+          if ( $concatenatedText !== '' ) {
+            $newMessage = [ 'role' => $systemRole ];
+            $setContent( $newMessage, $concatenatedText );
+            $processedMessages[] = $newMessage;
+          }
+          $concatenatedText = $getContent( $message );
+        }
+      }
+      else {
+        if ( $lastRole == $systemRole ) {
+            $newMessage = [ 'role' => $systemRole ];
+            $setContent( $newMessage, $concatenatedText );
+            $processedMessages[] = $newMessage;
+            $concatenatedText = '';
+        }
+        $processedMessages[] = $message;
+      }
+      $lastRole = $message['role'];
+    }
+    if ( $lastRole == $systemRole && $concatenatedText !== '' ) {
+      $newMessage = [ 'role' => $systemRole ];
+      $setContent( $newMessage, $concatenatedText );
+      $processedMessages[] = $newMessage;
+    }
+
+    // Make sure the last message is a user message, if not, throw an exception
+    if ( end( $processedMessages )['role'] !== 'user' ) {
+      throw new Exception( 'The last message must be a user message.' );
+    }
+
+    // Make sure the first message is a user message, if not, add an empty user message
+    if ( $processedMessages[0]['role'] !== 'user' ) {
+      $newMessage = [ 'role' => 'user' ];
+      $setContent( $newMessage, '' );
+      array_unshift( $processedMessages, $newMessage );
+    }
+
+    return $processedMessages;
   }
 
   public function get_models() {

@@ -16,7 +16,21 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_OpenAI
     }
   }
 
-  protected function build_body( $query, $streamCallback = null ) {
+  protected function build_messages( $query ) {
+    $messages = parent::build_messages( $query );
+
+    // If the role is not either "user" or "assistant", we need to set it to "assistant".
+    foreach ( $messages as &$message ) {
+      if ( !in_array( $message['role'], array( 'user', 'assistant' ) ) ) {
+        $message['role'] = 'assistant';
+      }
+    }
+
+    $messages = $this->streamline_messages( $messages );
+    return $messages;
+  }
+
+  protected function build_body( $query, $streamCallback = null, $extra = null ) {
     $body = parent::build_body( $query, $streamCallback );
     // To use "Text Generation Inference" (OpenAI's API) with HuggingFace, we need to specify TGI as the model.
     $body['model'] = 'tgi';

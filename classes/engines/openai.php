@@ -54,11 +54,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     if ( strpos( $data, 'error' ) === false ) {
       return;
     }
-    if ( strpos( $data, 'data: ' ) === 0 ) {
-      $jsonPart = substr( $data, strlen( 'data: ' ) );
-    }
-    else {
-      $jsonPart = $data;
+    $data = trim( $data );
+    $jsonPart = $data;
+    if ( strpos( $jsonPart, 'data:' ) === 0 ) {
+      $jsonPart = trim( substr( $jsonPart, strlen( 'data:' ) ) );
     }
     $json = json_decode( $jsonPart, true );
     if ( json_last_error() === JSON_ERROR_NONE ) {
@@ -102,7 +101,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $prompt;
   }
 
-  private function build_messages( $query ) {
+  protected function build_messages( $query ) {
     $messages = [];
 
     // First, we need to add the first message (the instructions).
@@ -188,7 +187,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
         if ( strpos( $line, 'data:' ) === 0 ) {
           $line = substr( $line, 5 );
-          $json = json_decode( $line, true );
+          $json = json_decode( trim( $line ), true );
 
           if ( json_last_error() === JSON_ERROR_NONE ) {
             $content = null;
@@ -234,7 +233,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     });
   }
 
-  protected function build_body( $query, $streamCallback = null ) {
+  protected function build_body( $query, $streamCallback = null, $extra = null ) {
     if ( $query instanceof Meow_MWAI_Query_Text ) {
       $body = array(
         "model" => $query->model,
@@ -270,13 +269,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      $audioData = $this->get_audio( $query->url );
       $body = array( 
         'prompt' => $query->message,
         'model' => $query->model,
         'response_format' => 'text',
         'file' => basename( $query->url ),
-        'data' => $audioData['data']
+        'data' => $extra
       );
       return $body;
     }
@@ -487,7 +485,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       throw new Exception( 'Invalid URL for transcription.' );
     }
 
-    $body = $this->build_body( $query );
+    $audioData = $this->get_audio( $query->url );
+    $body = $this->build_body( $query, null, $audioData );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );
     $options = $this->build_options( $headers, null, $body );

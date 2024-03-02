@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,8 +18,8 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Features ==
 
-* OpenAI: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc...
-* OpenRouter: Claude, Gemini, Mistral, GPTs, etc...
+* OpenAI: GPT-4 Turbo, GPT-4 Vision, GPT-3.5 Turbo, GPT-3, etc.
+* OpenRouter, Google Gemini, Hugging Face
 * Add easily an ChatGPT-like chatbot to your website
 * Generate fresh and engaging content for your site
 * Use the AI Copilot to help you tweak your content, build images, and more
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
  
-= 2.2.1 (2024/03/01) =
+= 2.2.2 (2024/03/02) =
 * Add: Support for Hugging Face.
 * Add: Automatically update the outdated embeddings in background.
 * Fix: A few lightweight security issues were handled.

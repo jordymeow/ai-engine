@@ -66,70 +66,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     }
   }
 
-  // Process messages to concatenate consecutive model messages as it is required by Google's API
-  private function streamline_messages($messages)
-  {
-      $processedMessages = [];
-      $lastRole = '';
-      $concatenatedText = '';
-  
-      foreach ($messages as $message) {
-          if ($message['role'] == 'model') {
-              if ($lastRole == 'model') {
-                  // Concatenate text if previous message was also 'model'
-                  $concatenatedText .= "\n" . $message['parts'][0]['text']; // Assume there's always at least one part
-              } else {
-                  // If this is the first 'model' message after a 'user' message or if it's the very first message
-                  if ($concatenatedText !== '') {
-                      // Add the previous 'model' concatenated text before starting a new one
-                      $processedMessages[] = [
-                          'role' => 'model',
-                          'parts' => [['text' => $concatenatedText]]
-                      ];
-                  }
-                  $concatenatedText = $message['parts'][0]['text'];
-              }
-          }
-          else {
-              if ($lastRole == 'model') {
-                  // Add the last concatenated 'model' text before adding a 'user' message
-                  $processedMessages[] = [
-                      'role' => 'model',
-                      'parts' => [['text' => $concatenatedText]]
-                  ];
-                  // Reset concatenated text for 'model' messages
-                  $concatenatedText = '';
-              }
-              // Add 'user' message
-              $processedMessages[] = $message;
-          }
-          $lastRole = $message['role'];
-      }
-  
-      // After loop: add any remaining concatenated 'model' text
-      if ($lastRole == 'model' && $concatenatedText !== '') {
-          $processedMessages[] = [
-              'role' => 'model',
-              'parts' => [['text' => $concatenatedText]]
-          ];
-      }
-
-      // Make sure the last message is a user message, if not, throw an exception
-      if (end($processedMessages)['role'] !== 'user') {
-          throw new Exception('The last message must be a user message.');
-      }
-
-      // Make sure the first message is a user message, if not, add an empty user message
-      if ($processedMessages[0]['role'] !== 'user') {
-          array_unshift($processedMessages, [
-              'role' => 'user',
-              'parts' => [['text' => '']]
-          ]);
-      }
-  
-      return $processedMessages;
-  }
-
   private function build_messages( $query ) {
     $messages = [];
 
@@ -203,7 +139,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     }
 
     // Streamline the messages
-    $messages = $this->streamline_messages( $messages );
+    $messages = $this->streamline_messages( $messages, 'model', 'parts' );
 
     return $messages;
   }
