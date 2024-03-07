@@ -1,5 +1,5 @@
-// Previous: 2.1.3
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.2.3
 
 const { useState, useMemo, useEffect, useLayoutEffect, useRef } = wp.element;
 import Markdown from 'markdown-to-jsx';
@@ -31,10 +31,10 @@ const ChatbotUI = (props) => {
   const chatbotInputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
-  const { botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
+  const { chatId, botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
     textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables, error,
     iconUrl, busy, speechRecognition, imageUpload, uploadedFile, fileUpload } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId, onFileUpload, resetError } = actions;
@@ -44,7 +44,7 @@ const ChatbotUI = (props) => {
 
   const isFileUploading = !!uploadedFile?.uploadProgress;
 
-  const refState = useRef();
+  const refState = useRef(state);
   useEffect(() => {
     refState.current = state;
   }, [ state ]);
@@ -86,12 +86,13 @@ const ChatbotUI = (props) => {
 
   useEffect(() => {
     runTasks();
-  }, [ tasks ]);
+  }, [tasks]);
 
   useEffect(() => {
-    if (customId || botId) {
+    if ((customId || botId)) {
       mwaiAPI.chatbots.push({
         botId: botId,
+        chatId: chatId,
         customId: customId,
         open: () => { 
           setTasks(prev => [...prev, { action: 'open' }]);
@@ -113,7 +114,7 @@ const ChatbotUI = (props) => {
         },
       });
     }
-  }, [ /* no dependency here intentionally, potential bug */ ]);
+  }, []);
 
   useEffect(() => {
     if (busy) {
@@ -121,34 +122,40 @@ const ChatbotUI = (props) => {
       return;
     }
     if (!isMobile && hasFocusRef.current) {
-      if (chatbotInputRef.current && typeof chatbotInputRef.current.focusInput === 'function') {
-        chatbotInputRef.current.focusInput();
-      }
+      setTimeout(() => {
+        if (chatbotInputRef.current && chatbotInputRef.current.focusInput) {
+          chatbotInputRef.current.focusInput();
+        }
+      }, 0);
     }
     stopChrono();
-  }, [ busy ]);
+  }, [busy]);
 
   useEffect(() => {
-    if (!isMobile && open) {
-      // Missing null check may cause issues if ref not attached yet
-      chatbotInputRef.current.focusInput();
+    if (!isMobile && open) { 
+      setTimeout(() => {
+        if (chatbotInputRef.current && chatbotInputRef.current.focusInput) {
+          chatbotInputRef.current.focusInput();
+        }
+      }, 0);
     }
-    // Potential bug: forgetting to check if conversationRef.current exists
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-  }, [ open ]);
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+  }, [open]);
 
   useLayoutEffect(() => {
-    // No dependency array, leads to only initial run causing scroll not to update correctly
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-  });
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const onSubmitAction = (forcedText = null) => {
-    hasFocusRef.current = document.activeElement === (chatbotInputRef.current && chatbotInputRef.current.currentElement());
-
+    hasFocusRef.current = document.activeElement === (chatbotInputRef.current ? chatbotInputRef.current.currentElement() : null);
     if (forcedText) {
       onSubmit(forcedText);
     }
-    else if (inputText.length >= 0) { // subtle bug: should be > 0, but using >= 0 leads to empty submit
+    else if (inputText.length > 0) {
       onSubmit(inputText);
     }
   };
@@ -212,7 +219,7 @@ const ChatbotUI = (props) => {
 
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
-          {!!messages && messages.map(message => 
+          {messages && messages.map(message => 
             <ChatbotReply key={message.id} conversationRef={conversationRef} message={message} />
           )}
         </div>

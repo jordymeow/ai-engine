@@ -61,12 +61,16 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_OpenAI( $core, $env );
       return $engine;
     }
-    else if ( $env['type'] === 'openrouter' ) {
-      $engine = new Meow_MWAI_Engines_OpenRouter( $core, $env );
-      return $engine;
-    }
     else if ( $env['type'] === 'google' ) {
       $engine = new Meow_MWAI_Engines_Google( $core, $env );
+      return $engine;
+    }
+    else if ( $env['type'] === 'anthropic' ) {
+      $engine = new Meow_MWAI_Engines_Anthropic( $core, $env );
+      return $engine;
+    }
+    else if ( $env['type'] === 'openrouter' ) {
+      $engine = new Meow_MWAI_Engines_OpenRouter( $core, $env );
       return $engine;
     }
     else if ( $env['type'] === 'huggingface' ) {

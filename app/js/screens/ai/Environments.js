@@ -1,5 +1,5 @@
-// Previous: 2.2.0
-// Current: 2.2.1
+// Previous: 2.2.1
+// Current: 2.2.3
 
 const { useCallback, useMemo, useState } = wp.element;
 
@@ -80,7 +80,7 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels, options 
     <NekoSettings title={i18n.COMMON.HUGGINGFACE_MODELS} style={{ marginTop: 10 }}>
       {customModels.map((customModel, index) => (
         <div key={index} style={{ display: 'flex', flexDirection: 'column', marginBottom: 10 }}>
-          <div key={index} style={{ display: 'flex', marginBottom: 2 }}>
+          <div style={{ display: 'flex', marginBottom: 2 }}>
             <NekoInput style={{ flex: 1 }}
               value={customModel['name']}
               placeholder={i18n.COMMON.HUGGINGFACE_MODEL_NAME}
@@ -107,10 +107,9 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels, options 
                 if (!freshCustomModels[index]['tags']) {
                   freshCustomModels[index]['tags'] = ['core', 'chat'];
                 }
-                if (value) {
+                if (value && !freshCustomModels[index]['tags'].includes('image')) {
                   freshCustomModels[index]['tags'].push('image');
-                }
-                else {
+                } else {
                   freshCustomModels[index]['tags'] = freshCustomModels[index]['tags'].filter(x => x !== 'image');
                 }
                 updateEnvironment(environmentId, { customModels: freshCustomModels });
@@ -125,10 +124,9 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels, options 
                 if (!freshCustomModels[index]['tags']) {
                   freshCustomModels[index]['tags'] = ['core', 'chat'];
                 }
-                if (value) {
+                if (value && !freshCustomModels[index]['tags'].includes('vision')) {
                   freshCustomModels[index]['tags'].push('vision');
-                }
-                else {
+                } else {
                   freshCustomModels[index]['tags'] = freshCustomModels[index]['tags'].filter(x => x !== 'vision');
                 }
                 updateEnvironment(environmentId, { customModels: freshCustomModels });
@@ -147,6 +145,8 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
   const [ loading, setLoading ] = useState(false);
 
   const addNewEnvironment = () => {
+    //alert("Coming soon! Please give us a bit of time to beta test this.");
+    //return;
     const newEnv = {
       name: 'New Environment',
       type: 'openai', 
@@ -175,7 +175,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     if (env.type === 'openrouter') {
       return toHTML(i18n.HELP.OPENROUTER_API_KEY);
     }
-
     return '';
   }, []);
 
@@ -227,6 +226,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                 <NekoOption value="openai" label="OpenAI" />
                 <NekoOption value="azure" label="Azure (OpenAI)" />
                 <NekoOption value="google" label="Google" />
+                <NekoOption value="anthropic" label="Anthropic" />
                 <NekoOption value="openrouter" label="OpenRouter" />
                 <NekoOption value="huggingface" label="Hugging Face" />
               </NekoSelect>
@@ -258,10 +258,12 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             {env.type === 'google' && <>
               <NekoSettings title={i18n.COMMON.REGION}>
                 <NekoInput name="region" value={env.region}
+                  //description={toHTML(i18n.HELP.REGION)}
                   onFinalChange={value => updateEnvironment(env.id, { region: value })} />
               </NekoSettings>
               <NekoSettings title={i18n.COMMON.PROJECT_ID}>
                 <NekoInput name="projectId" value={env.projectId}
+                  //description={toHTML(i18n.HELP.PROJECT_ID)}
                   onFinalChange={value => updateEnvironment(env.id, { projectId: value })} />
               </NekoSettings>
               <NekoMessage variant="danger">

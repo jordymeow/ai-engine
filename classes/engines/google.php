@@ -13,11 +13,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
   protected $inId = null;
 
   // Streaming
-  private $streamTemporaryBuffer = "";
-  private $streamBuffer = "";
-  private $streamContent = "";
   private $streamFunctionCall = null;
-  private $streamCallback = null;
 
   public function __construct( $core, $env )
   {
@@ -144,73 +140,21 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     return $messages;
   }
 
-  /*
-    This used to be in the core.php, but since it's relative to OpenAI, it's better to have it here.
-  */
+  protected function stream_data_handler( $json ) {
+    $content = null;
 
-  public function stream_handler( $handle, $args, $url ) {
-    curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, false );
-    curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, false );
+    // Get the content
+    if ( isset( $json['candidates'][0]['content']['parts'][0]['text'] ) ) {
+      $content = $json['candidates'][0]['content']['parts'][0]['text'];
+    }
 
-    // Maybe we could get some info from headers, as for now, there is only the model.
-    // curl_setopt( $handle, CURLOPT_HEADERFUNCTION, function( $curl, $headerLine ) {
-    //   $line = trim( $headerLine );
-    //   return strlen( $headerLine );
-    // });
+    // Avoid some endings
+    $endings = [ "<|im_end|>", "</s>" ];
+    if ( in_array( $content, $endings ) ) {
+      $content = null;
+    }
 
-    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) {
-      $length = strlen( $data );
-
-      // FOR DEBUG:
-      // preg_match_all( '/"content":"(.*?)"/', $data, $matches );
-      // $contents = $matches[1];
-      // foreach ( $contents as $content ) {
-      //   error_log( "Content: $content" );
-      // }
-
-      // Error Management
-      $this->check_for_error( $data );
-
-      // Bufferize the unfinished stream (if it's the case)
-      $this->streamTemporaryBuffer .= $data;
-      $this->streamBuffer .= $data;
-      $lines = explode( "\n", $this->streamTemporaryBuffer );
-      if ( substr( $this->streamTemporaryBuffer, -1 ) !== "\n" ) {
-        $this->streamTemporaryBuffer = array_pop( $lines );
-      }
-      else {
-        $this->streamTemporaryBuffer = "";
-      }
-
-      foreach ( $lines as $line ) {
-        if ( $line === "" ) {
-          continue;
-        }
-        if ( strpos( $line, 'data: ' ) === 0 ) {
-          $line = substr( $line, 6 );
-          $json = json_decode( $line, true );
-
-          if ( json_last_error() === JSON_ERROR_NONE ) {
-            $content = null;
-            // Get the content
-            if ( isset( $json['candidates'][0]['content']['parts'][0]['text'] ) ) {
-              $content = $json['candidates'][0]['content']['parts'][0]['text'];
-            }
-            // else if ( isset( $json['candidates'][0]['delta']['content'] ) ) {
-            //   $content = $json['candidates'][0]['delta']['content'];
-            // }
-            if ( $content !== null && $content !== "" ) {
-              $this->streamContent .= $content;
-              call_user_func( $this->streamCallback, $content );
-            }
-          }
-          else {
-            $this->streamTemporaryBuffer .= $line . "\n";
-          }
-        }
-      }
-      return $length;
-    });
+    return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
 
   protected function build_headers( $query ) {

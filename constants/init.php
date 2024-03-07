@@ -104,8 +104,11 @@ define( 'MWAI_OPTIONS', [
 
 	// General Settings for OpenAI
 	'fallback_model' => MWAI_FALLBACK_MODEL,
-	'openai_models' => Meow_MWAI_Engines_OpenAI::get_models_static(),
+	'openai_models' => null,
 	'openai_usage' => [],
+
+	// General Settings for Anthropic
+	'anthropic_models' => null,
 
 	// Settings for Images
 	'image_local_upload' => 'uploads',

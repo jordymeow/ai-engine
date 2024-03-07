@@ -15,11 +15,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   protected $inId = null;
 
   // Streaming
-  private $streamTemporaryBuffer = "";
-  private $streamBuffer = "";
-  private $streamContent = "";
   private $streamFunctionCall = null;
-  private $streamCallback = null;
 
   public function __construct( $core, $env )
   {
@@ -30,6 +26,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   protected function set_environment() {
     $env = $this->env;
     $this->apiKey = $env['apikey'];
+    
+    if ( isset( $env['organizationId'] ) ) {
+      $this->organizationId = $env['organizationId'];
+    }
     if ( $this->envType === 'azure' ) {
       $this->azureDeployments = isset( $env['deployments'] ) ? $env['deployments'] : [];
       $this->azureDeployments[] = [ 'model' => 'dall-e', 'name' => 'dall-e' ];
@@ -47,33 +47,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   protected function get_service_name() {
     return $this->envType === 'azure' ? 'Azure' : 'OpenAI';
-  }
-
-  // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
-  function check_for_error( $data ) {
-    if ( strpos( $data, 'error' ) === false ) {
-      return;
-    }
-    $data = trim( $data );
-    $jsonPart = $data;
-    if ( strpos( $jsonPart, 'data:' ) === 0 ) {
-      $jsonPart = trim( substr( $jsonPart, strlen( 'data:' ) ) );
-    }
-    $json = json_decode( $jsonPart, true );
-    if ( json_last_error() === JSON_ERROR_NONE ) {
-      if ( isset( $json['error'] ) ) {
-        $error = $json['error'];
-        if ( isset( $error['message'] ) && isset( $error['code'] ) ) {
-          $code = $error['code'];
-          $message = $error['message'];
-          throw new Exception( "Error $code: $message" );
-        }
-        if ( is_string( $error ) ) {
-          throw new Exception( "Error: $error" );
-        }
-        throw new Exception( "Unknown error." );
-      }
-    }
   }
 
   private function build_prompt( $query ) {
@@ -141,96 +114,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
 
     return $messages;
-  }
-
-  /*
-    This used to be in the core.php, but since it's relative to OpenAI, it's better to have it here.
-  */
-
-  public function stream_handler( $handle, $args, $url ) {
-    curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, false );
-    curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, false );
-
-    // Maybe we could get some info from headers, as for now, there is only the model.
-    // curl_setopt( $handle, CURLOPT_HEADERFUNCTION, function( $curl, $headerLine ) {
-    //   $line = trim( $headerLine );
-    //   return strlen( $headerLine );
-    // });
-
-    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) {
-      $length = strlen( $data );
-
-      // FOR DEBUG:
-      // preg_match_all( '/"content":"(.*?)"/', $data, $matches );
-      // $contents = $matches[1];
-      // foreach ( $contents as $content ) {
-      //   error_log( "Content: $content" );
-      // }
-
-      // Error Management
-      $this->check_for_error( $data );
-
-      // Bufferize the unfinished stream (if it's the case)
-      $this->streamTemporaryBuffer .= $data;
-      $this->streamBuffer .= $data;
-      $lines = explode( "\n", $this->streamTemporaryBuffer );
-      if ( substr( $this->streamTemporaryBuffer, -1 ) !== "\n" ) {
-        $this->streamTemporaryBuffer = array_pop( $lines );
-      }
-      else {
-        $this->streamTemporaryBuffer = "";
-      }
-
-      foreach ( $lines as $line ) {
-        if ( $line === "" ) {
-          continue;
-        }
-        if ( strpos( $line, 'data:' ) === 0 ) {
-          $line = substr( $line, 5 );
-          $json = json_decode( trim( $line ), true );
-
-          if ( json_last_error() === JSON_ERROR_NONE ) {
-            $content = null;
-
-            // Get additional data from the JSON
-            if ( isset( $json['model'] ) ) {
-              $this->inModel = $json['model'];
-            }
-            if ( isset( $json['id'] ) ) {
-              $this->inId = $json['id'];
-            }
-
-            // Get the content
-            if ( isset( $json['choices'][0]['text'] ) ) {
-              $content = $json['choices'][0]['text'];
-            }
-            else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
-              $content = $json['choices'][0]['delta']['content'];
-            }
-            else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
-              $function_call = $json['choices'][0]['delta']['function_call'];
-              if ( empty( $this->streamFunctionCall ) ) {
-                $this->streamFunctionCall = [ 'name' => "", 'arguments' => "" ];
-              }
-              if ( isset( $function_call['name'] ) ) {
-                $this->streamFunctionCall['name'] .= $function_call['name'];
-              }
-              if ( isset( $function_call['arguments'] ) ) {
-                $this->streamFunctionCall['arguments'] .= $function_call['arguments'];
-              }
-            }
-            if ( $content !== null && $content !== "" && $content !== "<|im_end|>" ) {
-              $this->streamContent .= $content;
-              call_user_func( $this->streamCallback, $content );
-            }
-          }
-          else {
-            $this->streamTemporaryBuffer .= $line . "\n";
-          }
-        }
-      }
-      return $length;
-    });
   }
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
@@ -412,6 +295,46 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $options;
   }
 
+  protected function stream_data_handler( $json ) {
+    $content = null;
+
+    // Get additional data from the JSON
+    if ( isset( $json['model'] ) ) {
+      $this->inModel = $json['model'];
+    }
+    if ( isset( $json['id'] ) ) {
+      $this->inId = $json['id'];
+    }
+
+    // Get the content
+    if ( isset( $json['choices'][0]['text'] ) ) {
+      $content = $json['choices'][0]['text'];
+    }
+    else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
+      $content = $json['choices'][0]['delta']['content'];
+    }
+    else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
+      $function_call = $json['choices'][0]['delta']['function_call'];
+      if ( empty( $this->streamFunctionCall ) ) {
+        $this->streamFunctionCall = [ 'name' => "", 'arguments' => "" ];
+      }
+      if ( isset( $function_call['name'] ) ) {
+        $this->streamFunctionCall['name'] .= $function_call['name'];
+      }
+      if ( isset( $function_call['arguments'] ) ) {
+        $this->streamFunctionCall['arguments'] .= $function_call['arguments'];
+      }
+    }
+
+    // Avoid some endings
+    $endings = [ "<|im_end|>", "</s>" ];
+    if ( in_array( $content, $endings ) ) {
+      $content = null;
+    }
+
+    return empty( $content ) ? null : $content;
+  }
+
   public function run_query( $url, $options, $isStream = false ) {
     try {
       $options['stream'] = $isStream;
@@ -486,7 +409,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
 
     $audioData = $this->get_audio( $query->url );
-    $body = $this->build_body( $query, null, $audioData );
+    $body = $this->build_body( $query, null, $audioData['data'] );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );
     $options = $this->build_options( $headers, null, $body );
@@ -498,7 +421,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( empty( $data ) ) {
         throw new Exception( 'Invalid data for transcription.' );
       }
-      $this->check_for_error( $data );
       $usage = $this->core->record_audio_usage( $query->model, $audioData['length'] );
       $reply = new Meow_MWAI_Reply( $query );
       $reply->set_usage( $usage );
@@ -541,7 +463,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
     if ( !is_null( $streamCallback ) ) {
       $this->streamCallback = $streamCallback;
-      add_action( 'http_api_curl', array( $this, 'stream_handler' ), 10, 3 );
+      add_action( 'http_api_curl', [ $this, 'stream_handler' ], 10, 3 );
     }
     if ( $query->mode !== 'chat' && $query->mode !== 'completion' ) {
       throw new Exception( 'Unknown mode for query: ' . $query->mode );

@@ -46,13 +46,16 @@ class Meow_MWAI_Modules_Security {
     }
     $text = $query->get_message();
     foreach ( $this->banned_words as $word ) {
-      if ( stripos( $text, $word ) !== false ) {
+      // Use preg_quote to escape any special characters in the word
+      // This is necessary to safely include $word in the regex pattern
+      $pattern = '/\b' . preg_quote( $word, '/' ) . '\b/i';
+      if ( preg_match( $pattern, $text ) ) {
         error_log( "AI Engine blocked word: $word" );
         throw new Exception( "Your query has been rejected." );
       }
     }
     return $ok;
-  }
+  }  
 
   function ip_in_range( $ip, $range ) {
     if ( strpos( $range, '/' ) === false ) {

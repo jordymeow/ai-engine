@@ -96,6 +96,18 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     }
   }
 
+  // TODO: Those file-related methods should be checked and streaminled.
+  // It's used by OpenAI, OpenRouter and Anthropic.
+  public function get_file_data() {
+    if ( $this->fileType === 'url' ) {
+      $data = file_get_contents( $this->file );
+      return base64_encode( $data );
+    }
+    else if ( $this->fileType === 'data' ) {
+      return $this->file;
+    }
+  }
+
   #endregion
 
   #region Parameters

@@ -6,6 +6,13 @@ class Meow_MWAI_Engines_Core {
   public $envId = null;
   public $envType = null;
 
+  // Streaming
+  protected $streamCallback = null;
+  protected $streamTemporaryBuffer = "";
+  protected $streamBuffer = "";
+  protected $streamHeaders = [];
+  protected $streamContent = "";
+
   public function __construct( $core, $env ) {
     $this->core = $core;
     $this->env = $env;
@@ -93,11 +100,11 @@ class Meow_MWAI_Engines_Core {
   }
 
   // Streamline the messages:
-// - Concatenate consecutive model messages into a single message for the model role
-// - Make sure the first message is a user message
-// - Make sure the last message is a user message
-protected function streamline_messages( $messages, $systemRole = 'assistant', $messageType = 'content' )
-{
+  // - Concatenate consecutive model messages into a single message for the model role
+  // - Make sure the first message is a user message
+  // - Make sure the last message is a user message
+  protected function streamline_messages( $messages, $systemRole = 'assistant', $messageType = 'content' )
+  {
     $processedMessages = [];
     $lastRole = '';
     $concatenatedText = '';
@@ -167,6 +174,114 @@ protected function streamline_messages( $messages, $systemRole = 'assistant', $m
     }
 
     return $processedMessages;
+  }
+
+  // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
+  function stream_error_check( $data ) {
+    if ( strpos( $data, 'error' ) === false ) {
+      return;
+    }
+    $data = trim( $data );
+    $jsonPart = $data;
+    if ( strpos( $jsonPart, 'data:' ) === 0 ) {
+      $jsonPart = trim( substr( $jsonPart, strlen( 'data:' ) ) );
+    }
+    $json = json_decode( $jsonPart, true );
+    if ( json_last_error() === JSON_ERROR_NONE ) {
+      if ( isset( $json['error'] ) ) {
+        $error = $json['error'];
+        $code = null;
+        $type = null;
+        $message = null;
+        if ( isset( $error['message'] ) ) {
+          $message = $error['message'];
+        }
+        else if ( is_string( $error ) ) {
+          throw new Exception( "Error: $error" );
+        }
+        else {
+          throw new Exception( "Unknown error (stream_error_check)." );
+        }
+        if ( isset( $error['code'] ) ) {
+          $code = $error['code'];
+        }
+        if ( isset( $error['type'] ) ) {
+          $type = $error['type'];
+        }
+        $errorMessage = "Error: $message";
+        if ( !is_null( $code ) ) {
+          $errorMessage .= " ($code)";
+        }
+        if ( !is_null( $type ) ) {
+          $errorMessage .= " ($type)";
+        }
+        throw new Exception( $errorMessage );
+      }
+      else if ( isset( $json['type'] ) && $json['type'] === 'error' ) {
+        $type = $json['error']['type'];
+        $message = $json['error']['message'];
+        throw new Exception( "Error: $message ($type)" );
+      }
+    }
+  }
+
+  public function stream_handler( $handle, $args, $url ) {
+    curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, false );
+    curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, false );
+
+    // TODO: This is breaking the response. We need to find a way to handle the headers.
+    // curl_setopt( $handle, CURLOPT_HEADERFUNCTION, function ( $curl, $header ) {
+    //   $length = strlen( $header );
+    //   $this->streamHeaders[] = $header;
+    //   $this->stream_header_handler( $header );
+    //   return $length;
+    // });
+
+    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) {
+      $length = strlen( $data );
+
+      // Error Management
+      $this->stream_error_check( $data );
+
+      // Bufferize the unfinished stream (if it's the case)
+      $this->streamTemporaryBuffer .= $data;
+      $this->streamBuffer .= $data;
+      $lines = explode( "\n", $this->streamTemporaryBuffer );
+      if ( substr( $this->streamTemporaryBuffer, -1 ) !== "\n" ) {
+        $this->streamTemporaryBuffer = array_pop( $lines );
+      }
+      else {
+        $this->streamTemporaryBuffer = "";
+      }
+
+      foreach ( $lines as $line ) {
+        if ( $line === "" ) { continue; }
+        if ( strpos( $line, 'data:' ) === 0 ) {
+          $line = trim( substr( $line, 5 ) );
+          $json = json_decode( trim( $line ), true );
+
+          if ( json_last_error() === JSON_ERROR_NONE ) {
+            $content = $this->stream_data_handler( $json );
+            if ( !is_null( $content ) ) {
+              $this->streamContent .= $content;
+              call_user_func( $this->streamCallback, $content );
+            }
+          }
+          else if ( $line !== '[DONE]' && !empty( $line ) ) {
+            $this->streamTemporaryBuffer .= $line . "\n";
+          }
+        }
+      }
+      return $length;
+    });
+  }
+
+  protected function stream_header_handler( $header ) {
+    
+  }
+
+  protected function stream_data_handler( $json ) {
+    throw new Exception( 'Not implemented.' );
   }
 
   public function get_models() {

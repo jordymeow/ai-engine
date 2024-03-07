@@ -14,7 +14,7 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
     $this->mode = "generation"; // could be generation, edit, variation
 		global $mwai_core;
 		$this->localDownload = $mwai_core->get_option( 'image_local_download' );
-		$this->localDownloadExpiry = $mwai_core->get_option( 'image_expires' );
+		$this->localDownloadExpiry = $mwai_core->get_option( 'image_expires_download' );
   }
 
 	#endregion

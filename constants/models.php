@@ -313,3 +313,38 @@ define( 'MWAI_OPENAI_MODELS', [
 		"tags" => ['core', 'audio'],
 	]
 ]);
+
+define ( 'MWAI_ANTHROPIC_MODELS', [
+	[
+		"model" => "claude-3-opus-20240229",
+		"name" => "Claude-3 Opus",
+		"family" => "claude",
+		"price" => [
+			"in" => 0.015,
+			"out" => 0.075,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 200000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision']
+	],
+	[
+		"model" => "claude-3-sonnet-20240229",
+		"name" => "Claude-3 Sonnet",
+		"family" => "claude",
+		"price" => [
+			"in" => 0.003,
+			"out" => 0.015,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 200000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision']
+	]
+]);

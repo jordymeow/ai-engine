@@ -401,7 +401,7 @@ i18n.FINETUNING = {
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
-  AUTO_SYNC_POSTS: __( 'Auto Sync Posts', 'ai-engine' ),
+  AUTO_SYNC_POSTS: __( 'Auto-Sync Posts', 'ai-engine' ),
   AUTO_SYNC_POSTS_DESCRIPTION: __( 'Embeddings will be created, updated or removed based on the activity related to your posts.', 'ai-engine' ),
   REWRITE_CONTENT: __( 'Rewrite Content', 'ai-engine' ),
   REWRITE_CONTENT_DESCRIPTION: __( 'Shorten and improve the content for your embedding using the default model.', 'ai-engine' ),

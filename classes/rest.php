@@ -255,21 +255,6 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	function createValidationResult( $result = true, $message = null) {
-		$message = $message ? $message : __( 'OK', 'ai-engine' );
-		return [ 'result' => $result, 'message' => $message ];
-	}
-
-	function validate_updated_option( $option_name ) {
-		$option_checkbox = get_option( 'mwai_option_checkbox', false );
-		$option_text = get_option( 'mwai_option_text', 'Default' );
-		if ( $option_checkbox === '' )
-			update_option( 'mwai_option_checkbox', false );
-		if ( $option_text === '' )
-			update_option( 'mwai_option_text', 'Default' );
-		return $this->createValidationResult();
-	}
-
 	function rest_ai_models( $request ) {
 		try {
 			$params = $request->get_json_params();
