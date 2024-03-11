@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.2.53
+Stable tag: 2.2.54
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
  
-= 2.2.53 (2024/03/10) =
+= 2.2.54 (2024/03/12) =
 * Note: Please backup your website before making this update.
 * Update: Huge overhaul of the embeddings system. It's now much more powerful, flexible and reliable. 
 * Add: Export Discussions to JSON.
