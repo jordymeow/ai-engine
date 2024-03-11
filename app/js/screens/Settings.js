@@ -1,7 +1,8 @@
-// Previous: 2.1.7
-// Current: 2.2.1
+// Previous: 2.2.1
+// Current: 2.2.4
 
 const { useMemo, useState, useEffect } = wp.element;
+
 import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, 
   NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
@@ -56,7 +57,7 @@ const defaultEnvironmentSections = [
   { envKey: 'ai_json_default_env', modelKey: 'ai_json_default_model', defaultModel: 'gpt-4-1106-preview' }
 ];
 
-function useDefaultEnvironments(aiEnvs, options, updateOptions) {
+function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels) {
 
   const performChecks = async () => {
     let updatesNeeded = false;
@@ -77,13 +78,27 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions) {
           }
         }
         else {
-          if (newOptions[envKey] !== null && newOptions[modelKey] !== null) {
+          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
           }
         }
-      }      
+      }
+
+      if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
+        let dimensions = newOptions?.ai_embeddings_default_dimensions || null;
+        if (dimensions !== null) {
+          const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
+          if (!model?.dimensions.includes(dimensions)) {
+            let newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
+            if (newDimensions !== null) {
+              newOptions.ai_embeddings_default_dimensions = newDimensions;
+              updatesNeeded = true;
+            }
+          }
+        }
+      }
     });
     if (updatesNeeded) {
       await updateOptions(newOptions);
@@ -158,6 +173,11 @@ const Settings = () => {
   const { embeddingsModels } = useModels(options, options?.ai_embeddings_default_env);
 
   const currentModel = getModel(shortcodeParams.model);
+
+  const defaultEmbeddingsModel = useMemo(() => {
+    return embeddingsModels.find(x => x.model === ai_embeddings_default_model);
+  }, [embeddingsModels, ai_embeddings_default_model]);
+
   const { isLoading: isLoadingIncidents, data: incidents } = useQuery({
     queryKey: ['incidents'], queryFn: retrieveIncidents
   });
@@ -171,8 +191,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const options = await retrieveOptions();
-      setOptions(options);
+      const optionsData = await retrieveOptions();
+      setOptions(optionsData);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -265,22 +285,24 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-    const chatbots = await retrieveChatbots();
-    const themes = await retrieveThemes();
-    const optionsData = await retrieveOptions();
-    const data = { chatbots, themes, options: optionsData };
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const today = new Date();
-    const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
-    link.setAttribute('download', filename);
-    link.click();
-    } catch (err) {
+      const chatbotsData = await retrieveChatbots();
+      const themesData = await retrieveThemes();
+      const optionsData = await retrieveOptions();
+      const data = { chatbots: chatbotsData, themes: themesData, options: optionsData };
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
+      link.setAttribute('download', filename);
+      link.click();
+    }
+    catch (err) {
       alert("Error while exporting settings. Please check your console.");
       console.log(err);
-    } finally {
+    }
+    finally {
       setBusyAction(false);
     }
   };
@@ -299,31 +321,33 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options: importedOptions } = data;
+          const { chatbots, themes, options } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(importedOptions);
+          await updateOptions(options);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
         reader.readAsText(file);
       };
       fileInput.click();
-    } catch (err) {
+    }
+    catch (err) {
       alert("Error while importing settings. Please check your console.");
       console.log(err);
-    } finally {
+    }
+    finally {
       setBusyAction(false);
     }
-  };
+  }
 
-  useDefaultEnvironments(ai_envs, options, updateOptions);
+  useDefaultEnvironments(ai_envs, options, updateOptions, embeddingsModels);
 
   useEffect(() => {
     if (currentModel?.mode !== 'chat' && !!shortcodeParams.embeddings_index) {
       updateShortcodeParams('', 'embeddings_index');
     }
-  }, [shortcodeParams, currentModel]);
+  }, [shortcodeParams]);
 
   const updateShortcodeParams = async (value, id) => {
     const newParams = { ...shortcodeParams, [id]: value };
@@ -472,17 +496,6 @@ const Settings = () => {
           onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;
-
-  // const jsxLegacyForms =
-  //   <NekoSettings title={i18n.COMMON.LEGACY_FORMS}>
-  //     <NekoCheckboxGroup max="1">
-  //       <NekoCheckbox name="shortcode_forms_legacy" label={`${i18n.COMMON.ENABLE}`} value="1"
-  //         requirePro={true} isPro={isRegistered}
-  //         checked={shortcode_forms_legacy}
-  //         description="Don't use the Legacy Forms. It's deprecated and will be removed in the future. Only enable if you have issues with the new forms."
-  //         onChange={updateOption} />
-  //     </NekoCheckboxGroup>
-  //   </NekoSettings>;
 
   const jsxStream =
     <NekoSettings title={i18n.COMMON.STREAMING}>
@@ -639,6 +652,19 @@ const Settings = () => {
         {embeddingsModels.map((x) => (
           <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
         ))}
+      </NekoSelect>
+    </NekoSettings>;
+
+  const jsxAIEnvironmentDimensionsEmbeddingsDefault =
+    <NekoSettings title={i18n.COMMON.DIMENSIONS}>
+      <NekoSelect scrolldown name="ai_embeddings_default_dimensions"
+        value={options?.ai_embeddings_default_dimensions || null} onChange={updateOption}>
+        {defaultEmbeddingsModel?.dimensions.map((x, i) => (
+          <NekoOption key={x} value={x}
+            label={i === defaultEmbeddingsModel.dimensions.length - 1 ? `${x} (Default)` : x}
+          />
+        ))}
+        <NekoOption key={null} value={null} label="Not Set"></NekoOption>
       </NekoSelect>
     </NekoSettings>;
 
@@ -954,6 +980,7 @@ const Settings = () => {
                       <NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS} busy={busy}>
                         {jsxAIEnvironmentEmbeddingsDefault}
                         {jsxAIEnvironmentModelEmbeddingsDefault}
+                        {jsxAIEnvironmentDimensionsEmbeddingsDefault}
                       </NekoTab>
 
                       <NekoTab key="audio" title={i18n.COMMON.AUDIO} busy={busy}>

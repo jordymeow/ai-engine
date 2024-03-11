@@ -166,7 +166,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     if ( !empty( $params['maxTokens'] ) && intval( $params['maxTokens'] ) > 0 ) {
 			$this->set_max_tokens( intval( $params['maxTokens'] ) );
 		}
-		if ( !empty( $params['temperature'] ) ) {
+		if ( isset( $params['temperature'] ) && $params['temperature'] !== '' ) {
 			$this->set_temperature( $params['temperature'] );
 		}
 		if ( !empty( $params['stop'] ) ) {

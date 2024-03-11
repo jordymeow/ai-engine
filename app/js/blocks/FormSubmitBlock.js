@@ -1,7 +1,6 @@
-// Previous: 2.1.0
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.2.4
 
-```javascript
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -45,7 +44,7 @@ const saveFormField = (props) => {
   return <div {...blockProps}>{shortcode}</div>;
 };
 
-const FormSubmitBlock = props => {
+const FormSubmitBlock = (props) => {
   const blockProps = useBlockProps();
   const { attributes: {
     id, label, prompt, model, temperature, maxTokens, aiEnvId, embeddingsEnvId, index, namespace,
@@ -80,32 +79,32 @@ const FormSubmitBlock = props => {
     if ((aiEnvId || model) && !aiEnvironment) {
       setAttributes({ aiEnvId: null, model: null });
     }
-  }, [aiEnvId]);
+  }, [aiEnvId, model, aiEnvironment]);
 
   useEffect(() => {
     if ((embeddingsEnvId || index || namespace) && !embeddingsEnv) {
       setAttributes({ embeddingsEnvId: null, index: null, namespace: null });
     }
-  }, [embeddingsEnvId]);
+  }, [embeddingsEnvId, index, namespace, embeddingsEnv]);
 
   useEffect(() => {
     if (assistant && assistant.model && assistant.model !== model) {
       setAttributes({ model: assistant.model });
     }
-  }, [assistant]);
+  }, [assistant, model, setAttributes]);
 
   useEffect(() => {
     if (!isAssistant) {
       setAttributes({ assistantId: '' });
     }
-  }, [isAssistant]);
+  }, [isAssistant, setAttributes]);
 
   useEffect(() => {
     if (!id) {
       const newId = Math.random().toString(36).substr(2, 9);
       setAttributes({ id: 'mwai-' + newId });
     }
-  }, [id]);
+  }, [id, setAttributes]);
 
   useEffect(() => {
     const matches = prompt.match(/{([^}]+)}/g);
@@ -114,11 +113,10 @@ const FormSubmitBlock = props => {
       if (freshPlaceholders.join(',') !== placeholders.join(',')) {
         setAttributes({ placeholders: freshPlaceholders });
       }
-    }
-    else {
+    } else {
       setAttributes({ placeholders: [] });
     }
-  }, [prompt]);
+  }, [prompt, setAttributes]);
 
   const fieldsCount = useMemo(() => {
     return placeholders ? placeholders.length : 0;
@@ -143,7 +141,7 @@ const FormSubmitBlock = props => {
     const freshResolutions = currentModel?.options?.map(x => ({ label: x.option, value: x.option })) || [];
     freshResolutions.unshift({ label: 'None', value: '' });
     return freshResolutions;
-  }, [currentModel]);
+  }, [currentModel, isImage]);
 
   const indexOptions = useMemo(() => {
     const freshIndexes = indexes.map(index => ({ label: index.name, value: index.name }));
@@ -197,53 +195,53 @@ const FormSubmitBlock = props => {
       </div>
       <InspectorControls>
         <PanelBody title={i18n.COMMON.OUTPUT}>
-          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={value => setAttributes({ label: value })} />
+          <TextControl label={i18n.COMMON.LABEL} value={label} onChange={(value) => setAttributes({ label: value })} />
           <TextareaControl label={i18n.COMMON.PROMPT} value={prompt}
-            onChange={value => setAttributes({ prompt: value })}
+            onChange={(value) => setAttributes({ prompt: value })}
             help={i18n.FORMS.PROMPT_INFO} />
           <TextControl label={i18n.FORMS.OUTPUT_ELEMENT} value={outputElement}
-            onChange={value => setAttributes({ outputElement: value })}
+            onChange={(value) => setAttributes({ outputElement: value })}
             help={i18n.FORMS.OUTPUT_ELEMENT_INFO} />
         </PanelBody>
 
         <PanelBody title={i18n.COMMON.MODEL_PARAMS}>
           {aiEnvs && aiEnvs.length > 0 &&
             <SelectControl label={i18n.COMMON.ENVIRONMENT} value={aiEnvId} options={aiEnvironmentOptions}
-              onChange={value => setAttributes({ aiEnvId: value })} />
+              onChange={(value) => setAttributes({ aiEnvId: value })} />
           }
           {aiEnvs && aiEnvs.length > 0 &&
             <CheckboxControl label="Assistant Mode" checked={isAssistant}
-              onChange={value => setAttributes({ isAssistant: value })}
+              onChange={(value) => setAttributes({ isAssistant: value })}
             />
           }
 
           {isAssistant && allAssistants && allAssistants.length > 0 && <>
             <SelectControl label={i18n.COMMON.ASSISTANT} value={assistantId} options={assistantOptions}
-              onChange={value => setAttributes({ assistantId: value })} />
+              onChange={(value) => setAttributes({ assistantId: value })} />
           </>}
 
           {!isAssistant && <>
             {models && models.length > 0 &&
               <SelectControl label={i18n.COMMON.MODEL} value={model} options={modelOptions}
-                onChange={value => setAttributes({ model: value })}
+                onChange={(value) => setAttributes({ model: value })}
               />}
             {!isImage && <>
               <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-                onChange={value => setAttributes({ temperature: parseFloat(value) })} 
+                onChange={(value) => setAttributes({ temperature: parseFloat(value) })} 
                 type="number" step="0.1" min="0" max="1"
                 help={i18n.HELP.TEMPERATURE}
               />
-              <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens} 
-                onChange={value => setAttributes({ maxTokens: parseInt(value) })} 
+              <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
+                onChange={(value) => setAttributes({ maxTokens: parseInt(value) })} 
                 type="number" step="16" min="32" max="4096"
                 help={<TokensInfo model={currentModel} maxTokens={maxTokens}
-                  onRecommendedClick={value => setAttributes({ maxTokens: value })}
+                  onRecommendedClick={(value) => setAttributes({ maxTokens: value })} 
                 />}
               />
             </>}
             {isImage && <>
               <SelectControl label={i18n.COMMON.RESOLUTION} value={resolution} options={resolutionOptions}
-                onChange={value => setAttributes({ resolution: value })} />
+                onChange={(value) => setAttributes({ resolution: value })} />
             </>}
           </>}
 
@@ -253,25 +251,26 @@ const FormSubmitBlock = props => {
           <PanelBody title={i18n.COMMON.CONTEXT_PARAMS}>
             {embeddingsEnvs && embeddingsEnvs.length > 0 &&
               <SelectControl label={i18n.COMMON.EMBEDDINGS_ENV} value={embeddingsEnvId} options={embeddingsEnvironmentOptions}
-                disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
-                onChange={value => setAttributes({ embeddingsEnvId: value })} />
+                disabled={!embeddingsEnvironmentOptions?.length}
+                onChange={(value) => setAttributes({ embeddingsEnvId: value })} />
             }
             {indexes && indexes.length > 0 &&
               <SelectControl label={i18n.COMMON.EMBEDDINGS_INDEX} value={index} options={indexOptions}
-                disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
-                onChange={value => setAttributes({ index: value })} />
+                disabled={!embeddingsEnvironmentOptions?.length}
+                onChange={(value) => setAttributes({ index: value })} />
             }
             {embeddingsEnv?.type === 'pinecone' && namespaces && namespaces.length > 0 &&
               <SelectControl label={i18n.COMMON.NAMESPACE} value={namespace} options={namespaceOptions}
-                disabled={!embeddingsEnvironmentOptions?.length || currentModel?.mode !== 'chat'}
-                onChange={value => setAttributes({ namespace: value })} />
+                disabled={!embeddingsEnvironmentOptions?.length}
+                onChange={(value) => setAttributes({ namespace: value })} />
             }
           </PanelBody>
         </>}
 
         <PanelBody title={i18n.COMMON.SYSTEM}>
-          <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
+          <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
         </PanelBody>
+
       </InspectorControls>
     </>
   );
@@ -280,6 +279,7 @@ const FormSubmitBlock = props => {
 const createSubmitBlock = () => {
   registerBlockType('ai-engine/form-submit', {
     title: 'AI Form Submit',
+    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
@@ -356,4 +356,3 @@ const createSubmitBlock = () => {
 };
 
 export default createSubmitBlock;
-```

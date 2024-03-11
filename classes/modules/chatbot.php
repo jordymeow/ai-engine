@@ -235,13 +235,10 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 
 				// Awareness & Embeddings
-				// TODO: We probably don't need to limit the context...
-				//if ( $query->mode === 'chat' || $query->mode === 'assistant' ) {
 					$context = $this->core->retrieve_context( $params, $query );
-					if ( !empty( $context ) ) {
-						$query->set_context( $context['content'] );
-					}
-				//}
+				if ( !empty( $context ) ) {
+					$query->set_context( $context['content'] );
+				}
 			}
 
 			// Process Query

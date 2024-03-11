@@ -313,12 +313,8 @@ class Meow_MWAI_Core
 	function retrieve_context( $params, $query ) {
 		$contextMaxLength = $params['contextMaxLength'] ?? $this->get_option( 'context_max_length', 4096 );
     $embeddingsEnvId = $params['embeddingsEnvId'] ?? null;
-    $embeddingsIndex = $params['embeddingsIndex'] ?? null;
-    $embeddingsNamespace = $params['embeddingsNamespace'] ?? null;    
 		$context = apply_filters( 'mwai_context_search', [], $query, [
-			'embeddingsEnvId' => $embeddingsEnvId,
-			'embeddingsIndex' => $embeddingsIndex,
-			'embeddingsNamespace' => $embeddingsNamespace
+			'embeddingsEnvId' => $embeddingsEnvId
 		]);
 		if ( empty( $context ) ) {
 			return null;

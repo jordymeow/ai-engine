@@ -1,5 +1,5 @@
-// Previous: 2.0.5
-// Current: 2.0.9
+// Previous: 2.0.9
+// Current: 2.2.4
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -59,12 +59,11 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
     filters: filters, sort: { accessor: 'time', by: 'desc' }, page: 1, limit: 20
   });
   const { isFetching: isFetchingLogs, data: logsData } = useQuery({
-    queryKey: ['logs', logsQueryParams], queryFn: () => retrieveLogs(logsQueryParams),
-    keepPreviousData: true
+    queryKey: ['logs', logsQueryParams], queryFn: () => retrieveLogs(logsQueryParams)
   });
 
   useEffect(() => {
-    setLogsQueryParams(prev => ({ ...prev, filters: filters }));
+    setLogsQueryParams({ ...logsQueryParams, filters: filters });
   }, [filters]);
 
   const logsTotal = useMemo(() => {
@@ -76,6 +75,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
     return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       const time = tableDateTimeFormatter(x.time);
       const user = tableUserIPFormatter(x.userId, x.ip);
+
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;
       if (x.price >= 0.001) {
@@ -148,7 +148,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-          setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+          setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
         }}
         filters={filters}
         onFilterChange={(accessor, value) => {
@@ -169,7 +169,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         <div style={{ flex: 'auto' }} />
         <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
           total={logsTotal} onClick={page => { 
-            setLogsQueryParams(prev => ({ ...prev, page }));
+            setLogsQueryParams({ ...logsQueryParams, page });
           }}
         />
       </div>

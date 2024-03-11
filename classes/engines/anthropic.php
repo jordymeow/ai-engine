@@ -145,7 +145,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       $content = null;
     }
 
-    return empty( $content ) ? null : $content;
+    return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
 
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {

@@ -276,7 +276,8 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000,
 		"mode" => "embedding",
 		"finetune" => false,
-		"tags" => ['core', 'embedding', '1536-dimensions'],
+		"dimensions" => [ 512, 1536 ],
+		"tags" => ['core', 'embedding'],
 	],
 	[
 		"model" => "text-embedding-3-large",
@@ -287,7 +288,8 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000,
 		"mode" => "embedding",
 		"finetune" => false,
-		"tags" => ['core', 'embedding', '3072-dimensions'],
+		"dimensions" => [ 256, 1024, 3072 ],
+		"tags" => ['core', 'embedding'],
 	],
 	[
 		"model" => "text-embedding-ada-002",
@@ -298,7 +300,8 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000,
 		"mode" => "embedding",
 		"finetune" => false,
-		"tags" => ['core', 'embedding', '1536-dimensions'],
+		"dimensions" => [ 1536 ],
+		"tags" => ['core', 'embedding'],
 	],
 	// Audio Models:
 	[

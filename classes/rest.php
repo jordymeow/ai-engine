@@ -691,8 +691,8 @@ class Meow_MWAI_Rest
 			$model = $params['model'];
 			$suffix = $params['suffix'];
 			$hyperparams = [
-				"nEpochs" => $params['nEpochs'],
-				"batchSize" => $params['batchSize']
+				"nEpochs" => isset( $params['nEpochs'] ) ? $params['nEpochs'] : null,
+				"batchSize" => isset( $params['batchSize'] ) ? $params['batchSize'] : null,
 			];
 			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$finetune = $openai->run_finetune( $fileId, $model, $suffix, $hyperparams );

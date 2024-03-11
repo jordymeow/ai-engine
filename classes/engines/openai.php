@@ -166,6 +166,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( $this->envType === 'azure' ) {
         $body = array( "input" => $query->message );
       }
+      if ( !empty( $query->dimensions ) ) {
+        $body['dimensions'] = $query->dimensions;
+      }
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
@@ -332,7 +335,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $content = null;
     }
 
-    return empty( $content ) ? null : $content;
+    return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
 
   public function run_query( $url, $options, $isStream = false ) {

@@ -1,5 +1,5 @@
-// Previous: 1.9.81
-// Current: 1.9.92
+// Previous: 1.9.92
+// Current: 2.2.4
 
 import { useModels } from "@app/helpers-admin";
 
@@ -12,7 +12,7 @@ const UsageDetails = ({ month, usageData }) => {
   
   return <li>
     <strong style={{ marginLeft: 5, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>
-      🗓️ {month} ({usageData[month].totalPrice.toFixed(2)}$) 
+      🗓️ {month} ({usageData[month] ? usageData[month].totalPrice.toFixed(2) : '0.00'}$) 
       <span style={{ marginLeft: 5 }}>
         {isExpanded ? '🔽' : '🔼'}
       </span>
@@ -48,8 +48,8 @@ const MonthlyUsage = ({ options }) => {
           const modelUsage = monthUsage[model];
           const modelObj = getModel(model);
           if (modelObj) {
-            let inUnits = null;
-            let outUnits = null;
+            let inUnits = 0;
+            let outUnits = 0;
             let isAudio = false;
             let isImage = false;
             if (modelObj.type === 'image') {
@@ -69,7 +69,8 @@ const MonthlyUsage = ({ options }) => {
             usageData[month].data.push({ name: getModelName(model), isImage, isAudio, inUnits, outUnits, price });
           }
           else if (month === currentMonth) {
-            console.warn(`Cannot find price for model ${model}.`);
+            // TODO: Maybe we should do this better.
+            //console.warn(`Cannot find price for model ${model}.`);
           }
         });
       });
@@ -92,7 +93,7 @@ const MonthlyUsage = ({ options }) => {
   }, [ openai_usage, models ]);
 
   return (<>
-    {!!openai_usage && Object.keys(openai_usage).length > 0 && jsxUsage}
+    {!!openai_usage && Object.keys(openai_usage).length && jsxUsage}
   </>);
 };
 

@@ -1,5 +1,5 @@
-// Previous: 2.1.5
-// Current: 2.1.7
+// Previous: 2.1.7
+// Current: 2.2.4
 
 // React & Vendor Libs
 import { useState, useEffect, useMemo } from 'react';
@@ -125,13 +125,12 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [envId]);
 
   useEffect(() => {
-    setFilesQueryParams(prev => ({ ...prev, envId }));
+    setFilesQueryParams({ ...filesQueryParams, envId });
   }, [envId]);
 
   const { isFetching: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
     queryKey: ['assistants-files', queryParamsChecksum],
     enabled: section === 'files',
-    keepPreviousData: true,
     staleTime: 1000 * 60 * 5,
     queryFn: () => retrieveFiles(filesQueryParams),
   });
@@ -185,7 +184,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    if (!dataFiles?.files) return [];
+    if (!dataFiles) return [];
     return dataFiles.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
@@ -255,13 +254,14 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
+          total={fileTotal} onClick={page => { setFilesQueryParams({ ...filesQueryParams, page }) }}
         />
       </div>
     </div>);
   }, [ filesQueryParams, fileTotal ]);
 
   return (<NekoWrapper>    
+
     <NekoColumn fullWidth minimal style={{ margin: 8 }}>
       
       <NekoTabs inversed currentTab={section}
@@ -296,8 +296,8 @@ const Assistants = ({ options, refreshOptions }) => {
           <NekoTable busy={isBusyFiles || busy}
             data={fileRows} columns={fileColumns}
             selectedItems={selectedIds}
-            onSelect={ids => { setSelectedIds(prev => [...prev, ...ids]) }}
-            onUnselect={ids => { setSelectedIds(prev.filter(x => !ids.includes(x))) }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
             emptyMessage={i18n.NO_FILES_YET}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -306,7 +306,9 @@ const Assistants = ({ options, refreshOptions }) => {
           </div>
         </NekoTab>
       </NekoTabs>
+
     </NekoColumn>
+
     <NekoColumn fullWidth minimal>
       <NekoBlock className="primary">
         <NekoTypo p>{toHTML(i18n.HELP.ASSISTANTS_INTRO)}</NekoTypo>
@@ -314,7 +316,9 @@ const Assistants = ({ options, refreshOptions }) => {
           {toHTML(i18n.HELP.ASSISTANTS_WARNINGS)}
         </NekoMessage>
       </NekoBlock>
+
       <NekoSpacer tiny />
+
       {errorModal && (
         <NekoModal isOpen={!!errorModal}
           title="Error"
@@ -326,6 +330,7 @@ const Assistants = ({ options, refreshOptions }) => {
           content={<p>{errorModal?.message}</p>}
         />
       )}
+
     </NekoColumn>
   </NekoWrapper>);
 };

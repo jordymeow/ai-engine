@@ -1,18 +1,22 @@
-// Previous: 2.1.5
-// Current: 2.2.1
+// Previous: 2.2.1
+// Current: 2.2.4
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import Markdown from 'markdown-to-jsx';
 
+// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
+// AI Engine
 import i18n from '@root/i18n';
 import { apiUrl, restNonce } from '@app/settings';
-import { tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
+import { retrieveDiscussions, tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
+import ExportModal from './ExportModal';
 
 const StyledContext = styled.div`
   font-size: 12px;
@@ -140,11 +144,7 @@ const StyledMessage = ({ content }) => {
     let newContent = markdownContent;
     const regex = /!\[.*?\]\((.*?)\)/g;
     let match;
-    const matches = [];
     while ((match = regex.exec(markdownContent)) !== null) {
-      matches.push(match);
-    }
-    for (let match of matches) {
       const imageUrl = match[1];
       const isImageAvailable = await checkImageURL(imageUrl);
       if (!isImageAvailable) {
@@ -203,12 +203,6 @@ const chatsColumns = [
   },
 ];
 
-const retrieveDiscussions = async (chatsQueryParams) => {
-  chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
-  return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
-}
-
 const deleteDiscussions = async (chatIds = []) => {
   const res = await nekoFetch(`${apiUrl}/discussions/delete`, { nonce: restNonce, method: 'POST', json: { chatIds } });
   return res;
@@ -216,6 +210,7 @@ const deleteDiscussions = async (chatIds = []) => {
 
 const Discussions = () => {
   const queryClient = useQueryClient();
+  const [ modal, setModal ] = useState({ type: null, data: null });
   const [ busyAction, setBusyAction ] = useState(false);
   const [ autoRefresh, setAutoRefresh ] = useState(false);
   const [ filters, setFilters ] = useState(() => {
@@ -226,19 +221,20 @@ const Discussions = () => {
   const [ selectedIds, setSelectedIds ] = useState([]);
 
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
-    filters: filters, sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
+    filters: filters,
+    sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
   });
   const { isFetching: isFetchingChats, data: chatsData } = useQuery({
     queryKey: ['chats', chatsQueryParams], queryFn: () => retrieveDiscussions(chatsQueryParams),
-    keepPreviousData: true, refetchInterval: autoRefresh ? 1000 * 5 : null
+    refetchInterval: autoRefresh ? 1000 * 5 : null
   });
 
   useEffect(() => {
-    setChatsQueryParams(prev => ({ ...prev, filters: filters }));
+    setChatsQueryParams({ ...chatsQueryParams, filters: filters });
   }, [filters]);
 
   const chatsTotal = useMemo(() => {
-    return chatsData?.total || 0;
+    return chatsData?.total ?? 0;
   }, [chatsData]);
 
   const chatsRows = useMemo(() => {
@@ -303,7 +299,7 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
+      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -317,9 +313,13 @@ const Discussions = () => {
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
           total={chatsTotal} onClick={page => { 
-            setChatsQueryParams(prev => ({ ...prev, page }));
+            setChatsQueryParams({ ...chatsQueryParams, page });
           }}
         />
+        <NekoButton className="primary" style={{ marginLeft: 5 }}
+          onClick={() => { setModal({ type: 'export', data: {} }); }}>
+          {i18n.COMMON.EXPORT}
+        </NekoButton>
       </div>
     </div>);
   }, [ chatsQueryParams, chatsTotal ]);
@@ -346,11 +346,10 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
-
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
-              setChatsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+              setChatsQueryParams({ ...chatsQueryParams, sort: { accessor, by } });
             }}
             filters={filters}
             onFilterChange={(accessor, value) => {
@@ -363,7 +362,7 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { setSelectedIds([id]) }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
 
@@ -440,6 +439,9 @@ const Discussions = () => {
       </NekoColumn>
 
     </NekoWrapper>
+
+    <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
+
   </>);
 }
 

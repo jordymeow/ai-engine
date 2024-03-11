@@ -1,7 +1,9 @@
 <?php
 
 class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
-  
+
+  public ?int $dimensions = null;
+
   public function __construct( $messageOrQuery = null ) {
 		if ( is_a( $messageOrQuery, 'Meow_MWAI_Query_Text' ) || is_a( $messageOrQuery, 'Meow_MWAI_Query_Assistant' ) ) {
 			$lastMessage = $messageOrQuery->get_message();
@@ -21,23 +23,31 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
     global $mwai_core;
     $ai_embeddings_default_env = $mwai_core->get_option( 'ai_embeddings_default_env' );
 		$ai_embeddings_default_model = $mwai_core->get_option( 'ai_embeddings_default_model' );
+    $ai_embeddings_default_dimensions = $mwai_core->get_option( 'ai_embeddings_default_dimensions' );
     $this->set_env_id( $ai_embeddings_default_env );
     $this->set_model( $ai_embeddings_default_model );
+    if ( $ai_embeddings_default_dimensions ) {
+      $this->set_dimensions( $ai_embeddings_default_dimensions );
+    }
     $this->mode = 'embedding';
+  }
+
+  /**
+   * Set the dimensions for the embedding model
+   * @param int $dimensions
+   */
+  public function set_dimensions( $dimensions ) {
+    $this->dimensions = $dimensions;
   }
 
 	#[\ReturnTypeWillChange]
   public function jsonSerialize() {
     $json = [
-      'instructions' => $this->instructions,
       'message' => $this->message,
-
-      'context' => [
-        'messages' => $this->messages
-      ],
 
       'ai' => [
         'model' => $this->model,
+        'dimensions' => $this->dimensions,
       ],
 
       'system' => [
@@ -45,8 +55,7 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
         'envId' => $this->envId,
         'mode' => $this->mode,
         'scope' => $this->scope,
-        'session' => $this->session,
-        'maxMessages' => $this->maxMessages,
+        'session' => $this->session
       ]
     ];
 

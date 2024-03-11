@@ -128,8 +128,10 @@ i18n.COMMON = {
   PINECONE_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://app.pinecone.io/organizations/keys" target="_blank">Pinecone Account</a>.', 'ai-engine' ),
   QDRANT_APIKEY_HELP: __( 'You can get your API Keys in your <a href="https://cloud.qdrant.io/accounts/" target="_blank">Qdrant Account</a>.', 'ai-engine' ),
   SERVER: __( 'Server', 'ai-engine' ),
-  PINECONE_SERVER_HELP: __( 'The region which was set for your account.', 'ai-engine' ),
+  PINECONE_SERVER_HELP: __( 'The URL of your host (check your Indexes).', 'ai-engine' ),
+  PINECONE_NAMESPACE_HELP: __( 'The namespace is used to separate the data from other data. This allows you to use the same server/index on more than one website. This is optional.', 'ai-engine' ),
   QDRANT_SERVER_HELP: __( 'The URL of your cluster (known as Cluster URL).', 'ai-engine' ),
+  QDRANT_COLLECTION_HELP: __( 'The collection keeps data apart so you can use one cluster for many websites. If there\'s no collection, Qdrant makes one with 1536 dimensions and uses cosine similarity.', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
   USAGE_COSTS: __( 'Usage Costs', 'ai-engine' ),
   TRANSCRIPTION: __( 'Transcription', 'ai-engine' ),
@@ -236,6 +238,10 @@ i18n.COMMON = {
   REGION: __( 'Region', 'ai-engine' ),
   PROJECT_ID: __( 'Project ID', 'ai-engine' ),
   BEARER_TOKEN: __( 'Bearer Token', 'ai-engine' ),
+  DIMENSIONS: __( 'Dimensions', 'ai-engine' ),
+  MIN_SCORE: __( 'Min Score', 'ai-engine' ),
+  MAX_SELECT: __( 'Max Results', 'ai-engine' ),
+  QDRANT_COLLECTION: __( 'Collection', 'ai-engine' ),
 };
 
 i18n.FORMS = {
@@ -281,7 +287,11 @@ i18n.HELP = {
   ASSISTANTS: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks.', 'ai-engine' ),
   ASSISTANTS_INTRO: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks. To create them, head to the <a href="https://beta.openai.com/assistants" target="_blank">OpenAI Assistants</a> dashboard, then <b>Refresh Assistants</b> here. You can use an assistant in your chatbots by switching the <b>Mode</b> to <b>Assistant</b>.', 'ai-engine' ),
   ASSISTANTS_WARNINGS: __( 'Assistants are also <a href="https://platform.openai.com/docs/api-reference/assistants" target="_blank">in beta</a>, both for OpenAI and AI Engine. OpenAI did not add streaming support for them yet. Pricing is still quite unclear and <a href="https://openai.com/pricing" target="_blank">tricky</a>. AI Engine can only perform an estimation. If you want to discuss assistants with other users, visit the <a href="https://discord.gg/bHDGh38" target="_blank">Meow Apps Discord Server</a>.', 'ai-engine' ),
-  BEARER_TOKEN: __( 'The Public API will be usable by using this Bearer Token. If not set, you will need to <a href="https://meowapps.com/ai-engine/api/#public-rest-api" target="_blank">build your own authentication</a> by using the <i>mwai_allow_public_api</i> filter.', 'ai-engine' ), 
+  BEARER_TOKEN: __( 'The Public API will be usable by using this Bearer Token. If not set, you will need to <a href="https://meowapps.com/ai-engine/api/#public-rest-api" target="_blank">build your own authentication</a> by using the <i>mwai_allow_public_api</i> filter.', 'ai-engine' ),
+  NO_EMBEDDINGS_RESULTS: __( 'No results for this search. Make sure the Minimum Score is not too high.', 'ai-engine' ),
+  NO_EMBEDDINGS_ROWS: __( 'No embeddings yet in this environment.', 'ai-engine' ),
+  MIN_SCORE: __( 'The minimum score the embeddings need to have to be returned. Between 0 and 100 and defaults to 35.', 'ai-engine' ),
+  MAX_SELECT: __( 'The maximum number of embeddings to return and to use as context. Between 1 and 100 and defaults to 10.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {
@@ -401,6 +411,7 @@ i18n.FINETUNING = {
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
+  SYNC_POSTS: __( 'Sync Posts', 'ai-engine' ),
   AUTO_SYNC_POSTS: __( 'Auto-Sync Posts', 'ai-engine' ),
   AUTO_SYNC_POSTS_DESCRIPTION: __( 'Embeddings will be created, updated or removed based on the activity related to your posts.', 'ai-engine' ),
   REWRITE_CONTENT: __( 'Rewrite Content', 'ai-engine' ),

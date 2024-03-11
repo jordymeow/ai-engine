@@ -1,11 +1,13 @@
-// Previous: 1.9.91
+// Previous: none
 // Current: 2.2.4
 
+// React & Vendor Libs
 const { useState } = wp.element;
 import Papa from 'papaparse';
 
+// NekoUI
 import { NekoButton, NekoModal, NekoProgress } from '@neko-ui';
-import { retrieveVectors } from '@app/helpers-admin';
+import { retrieveDiscussions } from '@app/helpers-admin';
 
 function downloadAsFile(data, filename) {
   const blob = new Blob([data], { type: 'text/plain;charset=utf-8;' });
@@ -21,23 +23,23 @@ const ExportModal = ({ modal, setModal }) => {
   const [ busy, setBusy ] = useState(false);
   const [ total, setTotal ] = useState(0);
   const [ count, setCount ] = useState(0);
-  const modalData = modal?.data;
 
   const exportJSON = async () => {
     try {
       setBusy(true);
-      const vectors = await retrieveAllVectors();
-      const json = JSON.stringify(vectors, null, 2);
+      const discussions = await retrieveAllDiscussions();
+      const json = JSON.stringify(discussions, null, 2);
       const date = new Date();
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       const day = date.getDate();
-      downloadAsFile(json, `vectors-${year}-${month}-${day}.json`);
-      setTimeout(() => { setTotal(0); }, 1500);
+      downloadAsFile(json, `discussions-${year}-${month}-${day}.json`);
+      
+      setTimeout(() => { setTotal(0); }, 1000);
     }
     catch (err) {
       console.error(err);
-      alert("An error occured while exporting vectors. Check your console.");
+      alert("An error occured while exporting discussions. Check your console.");
     }
     finally {
       setBusy(false);
@@ -47,52 +49,57 @@ const ExportModal = ({ modal, setModal }) => {
   const exportCSV = async () => {
     try {
       setBusy(true);
-      const vectors = await retrieveAllVectors();
-      const csv = Papa.unparse(vectors);
+      const discussions = await retrieveAllDiscussions();
+      const csv = Papa.unparse(discussions);
       const date = new Date();
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       const day = date.getDate();
-      downloadAsFile(csv, `vectors-${year}-${month}-${day}.csv`);
-      setTimeout(() => { setTotal(0); }, 1500);
+      downloadAsFile(csv, `discussions-${year}-${month}-${day}.csv`);
+      setTimeout(() => { setTotal(0); }, 1000);
     }
     catch (err) {
       console.error(err);
-      alert("An error occured while exporting vectors. Check your console.");
+      alert("An error occured while exporting discussions. Check your console.");
     }
     finally {
       setBusy(false);
     }
   };
 
-  const retrieveAllVectors = async () => {
+  const retrieveAllDiscussions = async () => {
     let finished = false;
     const params = { page: 1, limit: 20,
-      filters: { 
-        envId: modalData.envId,
-        dbIndex: modalData.dbIndex,
-        dbNS: modalData.dbNS,
-      }
+      filters: {}
     };
-    let vectors = [];
+    let discussions = [];
+    let iterationCount = 0;
     
     while (!finished) {
-      const res = await retrieveVectors(params);
-      if (res.vectors.length < 2) {
+      const res = await retrieveDiscussions(params);
+      if (res.chats.length < 2) {
         finished = true;
       }
       setTotal(prev => res.total);
-      vectors = vectors.concat(res.vectors);
-      setCount(prev => vectors.length);
+      
+      res.chats.forEach(chat => {
+        chat.messages = JSON.parse(chat.messages);
+        chat.extra = JSON.parse(chat.extra);
+      });
+    
+      discussions = discussions.concat(res.chats);
+      setCount(prev => discussions.length);
       params.page++;
+      iterationCount++;
+      if (iterationCount > 999) break;
     }
 
-    return vectors;
+    return discussions;
   };
 
   return (<>
     <NekoModal isOpen={modal?.type === 'export'}
-      title="Export Embeddings"
+      title="Export Discussions"
       onRequestClose={() => setModal(null)}
       okButton={{
         label: "Close",
@@ -100,7 +107,7 @@ const ExportModal = ({ modal, setModal }) => {
         onClick: () => setModal(null)
       }}
       customButtons={<>
-        <NekoButton onClick={exportCSV} disabled={busy}>Export CSV</NekoButton>
+        {/* <NekoButton onClick={exportCSV} disabled={busy}>Export CSV</NekoButton> */}
         <NekoButton onClick={exportJSON} disabled={busy}>Export JSON</NekoButton>
       </>}
       content={<>

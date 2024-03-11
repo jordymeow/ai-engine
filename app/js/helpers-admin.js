@@ -1,5 +1,5 @@
-// Previous: 2.2.1
-// Current: 2.2.3
+// Previous: 2.2.3
+// Current: 2.2.4
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -24,11 +24,6 @@ const DEFAULT_VECTOR = {
   refId: null,
   type: ENTRY_TYPES.MANUAL,
   behavior: ENTRY_BEHAVIORS.CONTEXT,
-};
-
-const DEFAULT_INDEX = {
-  name: '',
-  podType: 'p2',
 };
 
 const OptionsCheck = ({ options }) => {
@@ -83,7 +78,8 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     if (startCustom) {
       setIsCustom(true);
       setCustomLanguage(startCustom);
-    } else {
+    }
+    else {
       setIsCustom(false);
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
@@ -98,9 +94,11 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
-    const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage || '';
-    const detectedLanguage = htmlLang.substr(0, 2);
+
+    const detectedLanguage = (document.querySelector('html').lang || navigator.language
+      || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -116,7 +114,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -144,12 +142,15 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, customLanguage, isCustom, disabled, languages]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
 };
 
+// This hook allows to retrieve the models and their info based on the environment.
+// If no environment is given, the default OpenAI models are returned.
+// If allEnvs is true, all the models are returned, from every environment.
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
   const envId = overrideDefaultEnvId ? overrideDefaultEnvId : options?.ai_default_env;
@@ -287,15 +288,20 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     });
 
     if (fineTunes.length) {
+
+      // Add the finetuned models
       models = [ ...models, ...fineTunes.map(x => {
+
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
 
+        // Handle new finetuned models
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
-        } else if (x.model.includes('ft:gpt-4')) {
+        }
+        else if (x.model.includes('ft:gpt-4')) {
           mode = 'chat';
           family = 'gpt4';
         }
@@ -355,7 +361,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const getModel = (model) => {
     if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
       model = 'gpt-3.5-turbo';
-    } else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
+    }
+    else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
       model = 'gpt-4';
     }
     return allModels.find(x => x.model === model);
@@ -406,7 +413,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     if (priceIn && priceOut) {
       return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
-    console.warn("Price not found for model", model);
     return 0;
   };
 
@@ -428,13 +434,19 @@ const addFromRemote = async (queryParams, signal) => {
   return res;
 };
 
+const retrieveDiscussions = async (chatsQueryParams) => {
+  chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
+  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
+  return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
+}
+
 const retrieveVectors = async (queryParams) => {
   const isSearch = queryParams?.filters?.search !== null;
   if (queryParams?.filters?.search === "") {
     return [];
   }
 
-  if (!queryParams.filters.envId || !queryParams.filters.dbIndex) {
+  if (!queryParams.filters.envId) {
     return { total: 0, vectors: [] };
   }
 
@@ -469,35 +481,15 @@ const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus 
   return res;
 };
 
-const synchronizeEmbedding = async ({ vectorId, postId }, signal = null) => {
+const synchronizeEmbedding = async ({ vectorId, postId, envId }, signal = null) => {
   const res = await nekoFetch(`${apiUrl}/vectors/sync`, { 
     nonce: restNonce,
     method: 'POST',
-    json: { vectorId, postId },
+    json: { vectorId, postId, envId },
     signal
   });
   return res;
 };
-
-function estimateTokens(text) {
-  const averageTokenLength = 4;
-  const words = text.trim().split(/\s+/);
-  let tokenCount = 0;
-  words.forEach(word => {
-    tokenCount += Math.ceil(word.length / averageTokenLength);
-  });
-  return tokenCount;
-}
-
-function reduceContent(content, tokens = 2048) {
-  let reduced = content;
-  let reducedTokens = estimateTokens(reduced);
-  while (reducedTokens > tokens) {
-    reduced = reduced.slice(0, -32);
-    reducedTokens = estimateTokens(reduced);
-  }
-  return reduced;
-}
 
 function tableDateTimeFormatter(value) {
   let time = new Date(value);
@@ -542,9 +534,9 @@ const randomHash = (length = 6) => {
   return hash;
 };
 
-export { OptionsCheck, cleanSections, useModels, toHTML, estimateTokens, useLanguages, addFromRemote,
-  retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, reduceContent,
-  synchronizeEmbedding, retrievePostsIds,
+export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
+  retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent,
+  synchronizeEmbedding, retrievePostsIds, retrieveDiscussions,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash,
-  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, DEFAULT_INDEX
+  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR
 };

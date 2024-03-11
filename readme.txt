@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.2.3
+Stable tag: 2.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,14 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.4 (2024/03/10) =
+* Add: Export Discussions to JSON.
+* Update: Huge overhaul of the embeddings system. It's now much more powerful, flexible and reliable.
+* Fix: Minor issues.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.2.3 (2024/03/07) =
 * Add: Support for Anthropic, its latest models of Claude with Vision.
 * Add: The chatId is now available in the Chatbot JS API.
@@ -96,9 +104,6 @@ Languages: English.
 * Add: Support for Hugging Face.
 * Add: Automatically update the outdated embeddings in background.
 * Fix: A few lightweight security issues were handled.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.2.0 (2024/02/24) =
 * Add: Support for Google Gemini.
