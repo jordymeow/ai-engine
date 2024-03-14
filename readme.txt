@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.2.56
+Stable tag: 2.2.57
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,15 +82,21 @@ Languages: English.
 
 == Changelog ==
  
-= 2.2.56 (2024/03/12) =
+= 2.2.57 (2024/03/14) =
 * Note: Please backup your website before making this update.
-* Update: Huge overhaul of the embeddings system. It's now much more powerful, flexible and reliable. 
+* Fix: Rewrite Content in Embeddings was not working properly.
+* Fix: Avoid weird error about the model not being the same when empty.
+* Fix: Improved the embeddings system upgrade process.
+* Update: Extra sanitization of the replies from OpenAI Assistants.
 * Add: Handle (multi) function calls with OpenAI assistants (via mwai_ai_function filter).
 * Add: Export Discussions to JSON.
 * Fix: Minor issues.
 * 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
 * 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
+= 2.2.4 (2024/03/12) =
+* Update: Huge overhaul of the embeddings system. It's now much more powerful, flexible and reliable. 
 
 = 2.2.3 (2024/03/07) =
 * Add: Support for Anthropic, its latest models of Claude with Vision.

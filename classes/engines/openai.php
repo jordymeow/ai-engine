@@ -352,7 +352,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
       $responseCode = wp_remote_retrieve_response_code( $res );
       if ( $responseCode === 404 ) {
-        throw new Exception( 'The model\'s API URL was not found.' ); 
+        throw new Exception( 'The model\'s API URL was not found: ' . $url );
       }
       if ( $responseCode === 400 ) {
         $message = wp_remote_retrieve_body( $res );

@@ -29,8 +29,6 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'mode' => 'chat',
 	'contentAware' => false,
 	'embeddingsEnvId' => '',
-	'embeddingsIndex' => '',
-	'embeddingsNamespace' => null,
 	// AI Parameters
 	'model' => MWAI_FALLBACK_MODEL,
 	'temperature' => 0.8,

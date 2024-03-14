@@ -739,10 +739,15 @@ class Meow_MWAI_Core
 	}
 
 	function update_chatbots( $chatbots ) {
+		$deprecatedFields = [ 'env', 'embeddingsIndex', 'embeddingsNamespace', 'service' ];
 		$htmlFields = [ 'textCompliance', 'aiName', 'userName', 'startSentence' ];
 		$whiteSpacedFields = [ 'context' ];
 		foreach ( $chatbots as &$chatbot ) {
 			foreach ( $chatbot as $key => &$value ) {
+				if ( in_array( $key, $deprecatedFields ) ) {
+					unset( $chatbot[$key] );
+					continue;
+				}
 				if ( in_array( $key, $htmlFields ) ) {
 					$value = wp_kses_post( $value );
 				}
@@ -754,8 +759,11 @@ class Meow_MWAI_Core
 				}
 			}
 		}
-
-		update_option( $this->chatbots_option_name, $chatbots );
+		if ( !update_option( $this->chatbots_option_name, $chatbots ) ) {
+			error_log( 'AI Engine: Could not update chatbots.' );
+			$chatbots = get_option( $this->chatbots_option_name, [] );
+			return $chatbots;
+		}
 		return $chatbots;
 	}
 
