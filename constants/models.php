@@ -349,5 +349,21 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"mode" => "chat",
 		"finetune" => false,
 		"tags" => ['core', 'chat', 'vision']
-	]
+	],
+	[
+		"model" => "claude-3-haiku-20240307",
+		"name" => "Claude-3 Haiku",
+		"family" => "claude",
+		"price" => [
+			"in" => 0.00025,
+			"out" => 0.00125,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 200000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision']
+	],
 ]);

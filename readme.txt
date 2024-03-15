@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.2.57
+Stable tag: 2.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,10 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.6 (2024/03/16) =
+* Add: Support for the new Claude Haiku model from Anthropic.
+* Info: Please check the previous changelog as the previous updates were quite important.
+
 = 2.2.57 (2024/03/14) =
 * Note: Please backup your website before making this update.
 * Fix: Rewrite Content in Embeddings was not working properly.
