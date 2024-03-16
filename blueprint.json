@@ -1,0 +1,30 @@
+{
+  "landingPage": "\/wp-admin\/admin.php?page=mwai_settings",
+  "preferredVersions": {
+      "php": "8.0",
+      "wp": "latest"
+  },
+  "phpExtensionBundles": [
+      "kitchen-sink"
+  ],
+  "features": {
+      "networking": true
+  },
+  "steps": [
+      {
+          "step": "installPlugin",
+          "pluginZipFile": {
+              "resource": "url",
+              "url": "https:\/\/downloads.wordpress.org\/plugin\/ai-engine.2.2.60.zip"
+          },
+          "options": {
+              "activate": true
+          }
+      },
+      {
+          "step": "login",
+          "username": "admin",
+          "password": "password"
+      }
+  ]
+}

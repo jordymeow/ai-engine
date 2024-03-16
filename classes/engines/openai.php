@@ -166,7 +166,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( $this->envType === 'azure' ) {
         $body = array( "input" => $query->message );
       }
-      if ( !empty( $query->dimensions ) ) {
+      // Dimensions are only supported by v3 models
+      if ( !empty( $query->dimensions ) && strpos( $query->model, 'ada-002' ) === false ) {
         $body['dimensions'] = $query->dimensions;
       }
       return $body;
@@ -457,10 +458,23 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $message = $e->getMessage();
+      $error = $this->try_decode_error( $message );
+      if ( !is_null( $error ) ) {
+        $message = $error;
+      }
+      error_log( $message );
       $service = $this->get_service_name();
-      throw new Exception( "From $service: " . $e->getMessage() );
+      throw new Exception( "From $service: " . $message );
     }
+  }
+
+  public function try_decode_error( $data ) {
+    $json = json_decode( $data, true );
+    if ( isset( $json['error']['message'] ) ) {
+      return $json['error']['message'];
+    }
+    return null;
   }
 
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
@@ -490,9 +504,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !is_null( $streamCallback ) ) {
         // Streamed data
         if ( empty( $this->streamContent ) ) {
-          $json = json_decode( $this->streamBuffer, true );
-          if ( isset( $json['error']['message'] ) ) {
-            throw new Exception( $json['error']['message'] );
+          $error = $this->try_decode_error( $this->streamBuffer );
+          if ( !is_null( $error ) ) {
+            throw new Exception( $error );
           }
         }
         $returned_id = $this->inId;
