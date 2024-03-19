@@ -222,6 +222,37 @@ class Meow_MWAI_Core
 	#endregion
 
  	#region Image-Related Helpers
+	function get_mime_type( $file ) {
+		$mimeType = null;
+
+		// Let's try to use mime_content_type if the function exists
+		if ( function_exists( 'mime_content_type' ) ) {
+			$mimeType = mime_content_type( $file );
+		}
+
+		// Otherwise, let's check the file extension (which can actually also be an URL)
+		if ( !$mimeType ) {
+			$extension = pathinfo( $file, PATHINFO_EXTENSION );
+			$extension = strtolower( $extension );
+			$mimeTypes = [
+				'jpg' => 'image/jpeg',
+				'jpeg' => 'image/jpeg',
+				'png' => 'image/png',
+				'gif' => 'image/gif',
+				'webp' => 'image/webp',
+				'bmp' => 'image/bmp',
+				'tiff' => 'image/tiff',
+				'tif' => 'image/tiff',
+				'svg' => 'image/svg+xml',
+				'ico' => 'image/x-icon',
+				'pdf' => 'application/pdf',
+			];
+			$mimeType = isset( $mimeTypes[$extension] ) ? $mimeTypes[$extension] : null;
+		}
+
+		return $mimeType;
+	}
+
 	function download_image( $url ) {
 		$args = array( 'timeout' => 60, );
 		$response = wp_safe_remote_get( $url, $args );
@@ -538,7 +569,7 @@ class Meow_MWAI_Core
     return apply_filters( 'mwai_estimate_tokens', $tokenCount, $text );
 	}
 
-  public function record_tokens_usage( $model, $in_tokens, $out_tokens = 0 ) {
+  public function record_tokens_usage( $model, $in_tokens, $out_tokens = 0, $returned_price = null ) {
     if ( !is_numeric( $in_tokens ) ) {
       throw new Exception( 'AI Engine: in_tokens must be a number.' );
     }
@@ -560,11 +591,15 @@ class Meow_MWAI_Core
     $usage[$month][$model]['completion_tokens'] += $out_tokens;
     $usage[$month][$model]['total_tokens'] += $in_tokens + $out_tokens;
     $this->update_option( 'openai_usage', $usage );
-    return [
+    $usageInfo = [
       'prompt_tokens' => $in_tokens,
       'completion_tokens' => $out_tokens,
-      'total_tokens' => $in_tokens + $out_tokens
+      'total_tokens' => $in_tokens + $out_tokens,
     ];
+		if ( $returned_price !== null ) {
+			$usageInfo['price'] = $returned_price;
+		}
+		return $usageInfo;
   }
 
 	public function record_audio_usage( $model, $seconds ) {

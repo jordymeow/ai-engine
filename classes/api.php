@@ -279,19 +279,20 @@ class Meow_MWAI_API {
 		}
 		else if ( !$preferURL && !empty( $path ) ) {
 			$binary = file_get_contents( $path );
-			// Check if there is an error and what
 			if ( $binary === false ) {
 				throw new Exception( 'The file could not be read.' );
 			}
 			$data = base64_encode( $binary );
-			$query->set_file( $data, 'data', 'vision' );
+			$mimeType = $this->core->get_mime_type( $path );
+			$query->set_file( $data, 'data', 'vision', $mimeType );
 		}
 		else if ( $url ) {
 			$query->set_file( $url, 'url', 'vision' );
 		}
 		else if ( !empty($path ) ) {
 			$data = base64_encode( file_get_contents( $path ) );
-			$query->set_file( $data, 'data', 'vision' );
+			$mimeType = $this->core->get_mime_type( $path );
+			$query->set_file( $data, 'data', 'vision', $mimeType );
 		}
 
 		$reply = $mwai_core->run_query( $query );
@@ -379,7 +380,9 @@ class Meow_MWAI_API {
 			throw new Exception( 'The result is not a valid JSON.' );
 		}
 	}
+	#endregion
 
+	#region Standard API
 	/**
 	 * Checks if a text is safe or not.
 	 * 
@@ -394,6 +397,33 @@ class Meow_MWAI_API {
 		if ( !empty( $res ) && !empty( $res['results'] ) ) {
 			return (bool)$res['results'][0]['flagged'];
 		}
+	}
+	#endregion
+
+	#region Standard API (No REST API)
+
+	/**
+	 * Checks the status of the AI environments.
+	 * 
+	 * @return array The types of environments that are available.
+	 */
+	public function checkStatus() {
+		$env_types = [];
+		$ai_envs = $this->core->get_option( 'ai_envs' );
+		if ( empty( $ai_envs ) ) {
+			throw new Exception( 'There are no AI environments yet.' );
+		}
+		foreach ( $ai_envs as $env ) {
+			if ( !empty( $env['apikey'] ) ) {
+				if ( !in_array( $env['type'], $env_types ) ) {
+					$env_types[] = $env['type'];
+				}
+			}
+		}
+		if ( empty( $env_types ) ) {
+			throw new Exception( 'There are no AI environments with an API key yet.' );
+		}
+		return $env_types;
 	}
 	#endregion
 }

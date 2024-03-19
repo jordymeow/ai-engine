@@ -39,12 +39,21 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
     return $headers;
   }
 
+  public function final_checks( Meow_MWAI_Query_Base $query ) {
+    // TODO: We skip this completely. Not sure final_checks are useful. Max Message should be handed in build_messages(), etc. Let's take care of the other engines as well.
+  }
+
   protected function build_messages( $query ) {
     $messages = [];
 
     // Then, if any, we need to add the 'messages', they are already formatted.
     foreach ( $query->messages as $message ) {
       $messages[] = $message;
+    }
+
+    // Handle the maxMessages
+    if ( !empty( $query->maxMessages ) ) {
+      $messages = array_slice( $messages, -$query->maxMessages );
     }
 
     // If the first message is not a 'user' role, we remove it.
@@ -55,7 +64,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
     // Finally, we need to add the message
     // If there is a file (image), we need to sent the data (not the URL, as it's not supported by Anthropic yet).
     $fileUrl = $query->get_file_url();
+
     if ( !empty( $fileUrl ) ) {
+      // Currently, Claude supports the base64 source type for images, and the image/jpeg, image/png, image/gif, and image/webp media types: https://docs.anthropic.com/claude/reference/messages-examples#vision.
+      $mime = $query->get_file_mime_type();
       $messages[] = [ 
         'role' => 'user',
         'content' => [
@@ -67,7 +79,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
             "type" => "image",
             "source" => [
               "type" => "base64",
-              "media_type" => "image/jpeg",
+              "media_type" => $mime,
               "data" => $query->get_file_data()
             ]
           ]
@@ -222,9 +234,16 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       return $reply;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $error = $e->getMessage();
+      $json = json_decode( $error, true );
+      if ( json_last_error() === JSON_ERROR_NONE ) {
+        if ( isset( $json['error'] ) && isset( $json['error']['message'] ) ) {
+          $error = $json['error']['message'];
+        }
+      }
+      error_log( $error );
       $service = $this->get_service_name();
-      $message = "From $service: " . $e->getMessage();
+      $message = "From $service: " . $error;
       throw new Exception( $message );
     }
   }
@@ -234,64 +253,22 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
   }
 
   public function get_models() {
-    return apply_filters( 'mwai_openai_models', MWAI_ANTHROPIC_MODELS );
+    return apply_filters( 'mwai_anthropic_models', MWAI_ANTHROPIC_MODELS );
   }
 
   static public function get_models_static() {
     return MWAI_ANTHROPIC_MODELS;
   }
 
-  public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens ) {
-    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens : $reply->get_in_tokens( $query );
-    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens : $reply->get_out_tokens();
-
-    // This is how to retrieve the exact number of tokens used with Anthropic.
-    // However, it doesn't work with streaming and it slows the request.
-
+  public function handle_tokens_usage( $reply, $query, $returned_model,
+    $returned_in_tokens, $returned_out_tokens, $returned_price = null ) {
+    $returned_in_tokens = !is_null( $returned_in_tokens ) ?
+      $returned_in_tokens : $reply->get_in_tokens( $query );
+    $returned_out_tokens = !is_null( $returned_out_tokens ) ?
+      $returned_out_tokens : $reply->get_out_tokens();
     if ( !empty( $reply->id ) ) {
-      $url = 'https://anthropic.ai/api/v1/generation?id=' . $reply->id;
-      try {
-
-        // This is the CURL way
-        // $ch = curl_init();
-        // curl_setopt( $ch, CURLOPT_URL, $url );
-        // curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        // curl_setopt( $ch, CURLOPT_HTTPHEADER, [ 'Authorization: Bearer ' . $this->apiKey ] );
-        // curl_setopt( $ch, CURLOPT_USERAGENT, 'AI Engine' );
-        // $res = curl_exec( $ch );
-        // curl_close( $ch );
-        // $res = json_decode( $res, true );
-
-        // This is the WordPress way
-        // It currently doesn't work with Anthropic (for mysterious reasons)
-        // $res = wp_remote_get( $url, array(
-        //   'headers' => array(
-        //     'Authorization' => 'Bearer ' . $this->apiKey,
-        //     'User-Agent' => 'AI Engine',
-        //     'Accept' => 'application/json',
-        //   ),
-        //   'sslverify' => false,
-        //   'user-agent' => 'AI Engine',
-        //   'timeout' => 30,
-        //   'blocking' => false,
-        // ) );
-
-        if ( isset( $res['data'] ) ) {
-          $data = $res['data'];
-          $returned_model = $data['model'];
-          $returned_in_tokens = $data['tokens_prompt'];
-          $returned_out_tokens = $data['tokens_completion'];
-          $price = $res['usage'];
-          $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
-          $reply->set_usage( $usage );
-          return;
-        }
-      }
-      catch ( Exception $e ) {
-        error_log( $e->getMessage() );
-      }
+      // Would be cool to retrieve the usage from the API, but it's not possible.
     }
-
     $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
     $reply->set_usage( $usage );
   }

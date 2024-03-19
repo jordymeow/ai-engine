@@ -46,50 +46,38 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
     return $this->core->get_option( 'openrouter_models' );
   }
 
-  public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens ) {
-    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens : $reply->get_in_tokens( $query );
-    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens : $reply->get_out_tokens();
+  public function handle_tokens_usage( $reply, $query, $returned_model,
+    $returned_in_tokens, $returned_out_tokens, $returned_price = null ) {
 
-    // This is how to retrieve the exact number of tokens used with OpenRouter.
-    // However, it doesn't work with streaming and it slows the request.
+    // If streaming is not enabled, we probably have all the data we need
+    $everything_is_set = !is_null( $returned_model ) && !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens );
 
-    if ( !empty( $reply->id ) ) {
+    // Clean up the data
+    $returned_in_tokens = !is_null( $returned_in_tokens ) ?
+      $returned_in_tokens : $reply->get_in_tokens( $query );
+    $returned_out_tokens = !is_null( $returned_out_tokens ) ?
+      $returned_out_tokens : $reply->get_out_tokens();
+    $returned_price = !is_null( $returned_price ) ?
+      $returned_price : $reply->get_price();
+
+    // If everything is not set, we can make a request to get the usage data
+    if ( !empty( $reply->id ) && !$everything_is_set ) {
       $url = 'https://openrouter.ai/api/v1/generation?id=' . $reply->id;
       try {
-
-        // This is the CURL way
-        // $ch = curl_init();
-        // curl_setopt( $ch, CURLOPT_URL, $url );
-        // curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        // curl_setopt( $ch, CURLOPT_HTTPHEADER, [ 'Authorization: Bearer ' . $this->apiKey ] );
-        // curl_setopt( $ch, CURLOPT_USERAGENT, 'AI Engine' );
-        // $res = curl_exec( $ch );
-        // curl_close( $ch );
-        // $res = json_decode( $res, true );
-
-        // This is the WordPress way
-        // It currently doesn't work with OpenRouter (for mysterious reasons)
-        // $res = wp_remote_get( $url, array(
-        //   'headers' => array(
-        //     'Authorization' => 'Bearer ' . $this->apiKey,
-        //     'User-Agent' => 'AI Engine',
-        //     'Accept' => 'application/json',
-        //   ),
-        //   'sslverify' => false,
-        //   'user-agent' => 'AI Engine',
-        //   'timeout' => 30,
-        //   'blocking' => false,
-        // ) );
-
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, $url );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [ 'Authorization: Bearer ' . $this->apiKey ] );
+        curl_setopt( $ch, CURLOPT_USERAGENT, 'AI Engine' );
+        $res = curl_exec( $ch );
+        curl_close( $ch );
+        $res = json_decode( $res, true );
         if ( isset( $res['data'] ) ) {
           $data = $res['data'];
           $returned_model = $data['model'];
           $returned_in_tokens = $data['tokens_prompt'];
           $returned_out_tokens = $data['tokens_completion'];
-          $price = $res['usage'];
-          $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
-          $reply->set_usage( $usage );
-          return;
+          $returned_price = $data['total_cost'];
         }
       }
       catch ( Exception $e ) {
@@ -97,12 +85,24 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
       }
     }
 
-    $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
+    // Record the usage
+    $usage = $this->core->record_tokens_usage(
+      $returned_model,
+      $returned_in_tokens,
+      $returned_out_tokens,
+      $returned_price
+    );
+
+    // Set the usage in the reply
     $reply->set_usage( $usage );
   }
 
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
-    return parent::get_price( $query, $reply );
+    $price = $reply->get_price();
+    if ( is_null( $price ) ) {
+      $price = parent::get_price( $query, $reply );
+    }
+    return $price;
   }
 
   public function retrieve_models() {

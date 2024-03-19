@@ -202,11 +202,13 @@ class Meow_MWAI_Modules_Chatbot {
 						$remote_upload = $this->core->get_option( 'image_remote_upload' );
 						if ( $remote_upload === 'data' ) {
 							$data = $this->core->files->get_base64_data( $newFileId );
-							$query->set_file( $data, 'data', 'vision' );
+							$mimeType = $this->core->files->get_mime_type( $newFileId );
+							$query->set_file( $data, 'data', 'vision', $mimeType );
 						}
 						else {
 							$url = $this->core->files->get_url( $newFileId );
-							$query->set_file( $url, 'url', 'vision' );
+							$mimeType = $this->core->files->get_mime_type( $newFileId );
+							$query->set_file( $url, 'url', 'vision', $mimeType );
 						}
 						$fileId = $this->core->files->get_id_from_refId( $newFileId );
 						$this->core->files->update_envId( $fileId, $query->envId );

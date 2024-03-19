@@ -5,6 +5,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   // Core Content
   public ?string $file = null;
   public ?string $fileType = null; // refId, url, data
+  public ?string $mimeType = 'image/jpeg';
   public ?string $filePurpose = null; // assistant, vision
 
   // Parameters
@@ -69,12 +70,16 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   #region File Handling
 
-  public function set_file( string $file, string $fileType = null, string $filePurpose = null ): void {
+  public function set_file( string $file, string $fileType = null,
+    string $filePurpose = null, string $mimeType = null ) : void {
     if ( !empty( $fileType ) && $fileType !== 'refId' && $fileType !== 'url' && $fileType !== 'data' ) {
       throw new Exception( "AI Engine: The file type can only be refId, url or data." );
     }
     if ( !empty( $filePurpose ) && $filePurpose !== 'assistant-in' && $filePurpose !== 'vision' ) {
       throw new Exception( "AI Engine: The file purpose can only be assistant or vision." );
+    }
+    if ( !empty( $mimeType ) ) {
+      $this->mimeType = $mimeType;
     }
     $this->file = $file;
     $this->fileType = $fileType;
@@ -106,6 +111,10 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     else if ( $this->fileType === 'data' ) {
       return $this->file;
     }
+  }
+
+  public function get_file_mime_type() {
+    return $this->mimeType;
   }
 
   #endregion

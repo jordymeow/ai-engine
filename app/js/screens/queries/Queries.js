@@ -1,11 +1,11 @@
-// Previous: 2.0.9
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.2.62
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { nekoFetch } from '@neko-ui';
-import { NekoTable, NekoPaging, NekoBlock, NekoButton } from '@neko-ui';
+import { NekoTable, NekoPaging, NekoBlock, NekoButton, NekoMessage } from '@neko-ui';
 import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers-admin';
 
 import { apiUrl, restNonce, options } from '@app/settings';
@@ -58,12 +58,12 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
   const [ logsQueryParams, setLogsQueryParams ] = useState({
     filters: filters, sort: { accessor: 'time', by: 'desc' }, page: 1, limit: 20
   });
-  const { isFetching: isFetchingLogs, data: logsData } = useQuery({
+  const { isFetching: isFetchingLogs, data: logsData, error: logsError } = useQuery({
     queryKey: ['logs', logsQueryParams], queryFn: () => retrieveLogs(logsQueryParams)
   });
 
   useEffect(() => {
-    setLogsQueryParams({ ...logsQueryParams, filters: filters });
+    setLogsQueryParams(prev => ({ ...prev, filters: filters }));
   }, [filters]);
 
   const logsTotal = useMemo(() => {
@@ -125,6 +125,16 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
     setBusyAction(false);
   };
 
+  const emptyMessage = useMemo(() => {
+    if (logsError?.message) {
+      return <NekoMessage variant="danger" style={{ margin: "5px 5px" }}>
+        <b>{logsError.message}</b><br />
+        <small>Check your Console Logs and PHP Error Logs for more information.</small>
+      </NekoMessage>;
+    }
+    return null;
+  }, [logsError]);
+
   return (<>
     <NekoBlock className="primary" title={i18n.COMMON.QUERIES} action={<>
       <div>
@@ -148,8 +158,9 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-          setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
+          setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
         }}
+        emptyMessage={emptyMessage}
         filters={filters}
         onFilterChange={(accessor, value) => {
           const freshFilters = [
@@ -169,10 +180,21 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         <div style={{ flex: 'auto' }} />
         <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
           total={logsTotal} onClick={page => { 
-            setLogsQueryParams({ ...logsQueryParams, page });
+            setLogsQueryParams(prev => ({ ...prev, page }));
           }}
         />
       </div>
+    </NekoBlock>
+
+    <NekoBlock className="primary" title="Information">
+      <p>
+        <b>
+          Prices and tokens counts aren't accurate in many cases.
+        </b>
+      </p>
+      <p>
+        For more information, check this: <a href="https://www.notion.so/meowarts/Cost-Usage-Calculation-d5ce4917d77f4939b232b20d0082368a?pvs=4" target="_blank">Cost & Usage Calculation</a>. You are also always welcome to discuss about it in the <a href="https://discord.gg/bHDGh38" target="_blank">Discord Server</a>.
+      </p>
     </NekoBlock>
 
   </>);

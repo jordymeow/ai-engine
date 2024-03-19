@@ -327,8 +327,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
         // Not much information from Google's API :(
         $returned_id = null;
         $returned_model = $query->model;
-        $returned_in_tokens = 0;
-        $returned_out_tokens = 0;
+        $returned_in_tokens = null;
+        $returned_out_tokens = null;
 
         // We should return the candidates formatted as OpenAI does it.
         $returned_choices = [];
@@ -360,10 +360,17 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     }
   }
 
-  public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens ) {
-    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens : $reply->get_in_tokens( $query );
-    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens : $reply->get_out_tokens();
-    $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
+  public function handle_tokens_usage( $reply, $query, $returned_model,
+    $returned_in_tokens, $returned_out_tokens ) {
+    $returned_in_tokens = !is_null( $returned_in_tokens ) ?
+      $returned_in_tokens : $reply->get_in_tokens( $query );
+    $returned_out_tokens = !is_null( $returned_out_tokens ) ?
+      $returned_out_tokens : $reply->get_out_tokens();
+    $usage = $this->core->record_tokens_usage(
+      $returned_model,
+      $returned_in_tokens,
+      $returned_out_tokens
+    );
     $reply->set_usage( $usage );
   }
 

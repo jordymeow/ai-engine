@@ -499,6 +499,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $returned_model = $this->inModel;
       $returned_in_tokens = null;
       $returned_out_tokens = null;
+      $returned_price = null;
       $returned_choices = [];
 
       if ( !is_null( $streamCallback ) ) {
@@ -532,8 +533,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
         $returned_id = $data['id'];
         $returned_model = $data['model'];
-        $returned_in_tokens = isset( $data['usage']['prompt_tokens'] ) ? $data['usage']['prompt_tokens'] : null;
-        $returned_out_tokens = isset( $data['usage']['completion_tokens'] ) ? $data['usage']['completion_tokens'] : null;
+        $returned_in_tokens = isset( $data['usage']['prompt_tokens'] ) ?
+          $data['usage']['prompt_tokens'] : null;
+        $returned_out_tokens = isset( $data['usage']['completion_tokens'] ) ?
+          $data['usage']['completion_tokens'] : null;
+        $returned_price = isset( $data['usage']['total_cost'] ) ?
+          $data['usage']['total_cost'] : null;
         $returned_choices = $data['choices'];
       }
       
@@ -544,7 +549,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       }
 
       // Handle tokens.
-      $this->handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens );
+      $this->handle_tokens_usage( 
+        $reply, $query,
+        $returned_model,
+        $returned_in_tokens,
+        $returned_out_tokens,
+        $returned_price
+      );
 
       return $reply;
     }
@@ -556,10 +567,20 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
   }
 
-  public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens ) {
-    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens : $reply->get_in_tokens( $query );
-    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens : $reply->get_out_tokens();
-    $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
+  public function handle_tokens_usage( $reply, $query, $returned_model,
+    $returned_in_tokens, $returned_out_tokens, $returned_price = null ) {
+    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens :
+      $reply->get_in_tokens( $query );
+    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens :
+      $reply->get_out_tokens();
+    $returned_price = !is_null( $returned_price ) ? $returned_price :
+      $reply->get_price();
+    $usage = $this->core->record_tokens_usage(
+      $returned_model,
+      $returned_in_tokens,
+      $returned_out_tokens,
+      $returned_price
+    );
     $reply->set_usage( $usage );
   }
 

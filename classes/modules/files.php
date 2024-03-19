@@ -110,6 +110,18 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
+  public function get_mime_type( $refId ) {
+    $path = $this->get_path( $refId );
+    if ( $path ) {
+      return $this->core->get_mime_type( $path );
+    }
+    $url = $this->get_url( $refId );
+    if ( $url ) {
+      return $this->core->get_mime_type( $url );
+    }
+    return null;
+  }
+
   public function get_data( $refId ) {
     $path = $this->get_path( $refId );
     if ( $path ) {

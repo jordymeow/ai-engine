@@ -4,7 +4,12 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $id = null;
   public $result = '';
   public $results = [];
-  public $usage = [ 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 ];
+  public $usage = [ 
+    'prompt_tokens' => 0,
+    'completion_tokens' => 0,
+    'total_tokens' => 0,
+    'price' => null,
+  ];
   public $query = null;
   public $type = 'text';
 
@@ -57,6 +62,14 @@ class Meow_MWAI_Reply implements JsonSerializable {
       $out_tokens = Meow_MWAI_Core::estimate_tokens( $this->result );
     }
     return $out_tokens;
+  }
+
+  public function get_price() {
+    // If it's not set return null, but it can be 0
+    if ( !isset( $this->usage['price'] ) ) {
+      return null;
+    }
+    return $this->usage['price'];
   }
 
   public function get_units() {

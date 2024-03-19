@@ -1,5 +1,5 @@
-// Previous: 2.2.1
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.2.62
 
 // React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import Markdown from 'markdown-to-jsx';
 
 // NekoUI
-import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper,
+import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
@@ -105,16 +105,19 @@ const StyledMessageWrapper = styled.div`
   }
 `;
 
+// Instead of a tag, write the object as raw HTML
 const options = {
   overrides: {
     object: {
       component: ({ children, ...props }) => {
+        // Convert children and props to string to display as plain text
         const textContent = `<object ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</object>`;
         return textContent;
       },
     },
     script: {
       component: ({ children, ...props }) => {
+        // Convert children and props to string to display as plain text
         const textContent = `<script ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</script>`;
         return textContent;
       },
@@ -141,13 +144,16 @@ const StyledMessage = ({ content }) => {
   };
 
   const cleanMessage = async (markdownContent) => {
-    let newContent = markdownContent;
+
+    // Handle dead image URLs
     const regex = /!\[.*?\]\((.*?)\)/g;
+    let newContent = markdownContent;
     let match;
     while ((match = regex.exec(markdownContent)) !== null) {
       const imageUrl = match[1];
       const isImageAvailable = await checkImageURL(imageUrl);
       if (!isImageAvailable) {
+        // Replace dead URL with a placeholder or a custom message
         const placeholder = `<div class="mwai-dead-image">Image not available</div>`;
         newContent = newContent.replace(match[0], placeholder);
       }
@@ -220,11 +226,12 @@ const Discussions = () => {
   });
   const [ selectedIds, setSelectedIds ] = useState([]);
 
+  // useQuery
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
     filters: filters,
     sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
   });
-  const { isFetching: isFetchingChats, data: chatsData } = useQuery({
+  const { isFetching: isFetchingChats, data: chatsData, error: chatsError } = useQuery({
     queryKey: ['chats', chatsQueryParams], queryFn: () => retrieveDiscussions(chatsQueryParams),
     refetchInterval: autoRefresh ? 1000 * 5 : null
   });
@@ -234,7 +241,7 @@ const Discussions = () => {
   }, [filters]);
 
   const chatsTotal = useMemo(() => {
-    return chatsData?.total ?? 0;
+    return chatsData?.total || 0;
   }, [chatsData]);
 
   const chatsRows = useMemo(() => {
@@ -244,6 +251,8 @@ const Discussions = () => {
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
       const formattedUpdated = tableDateTimeFormatter(x.updated);
+      // We do this (the check in extra) to support the discussions data before May 18th
+      // Same with the .text that should be removed (we use .content)
       const user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
       const userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
       const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
@@ -299,7 +308,7 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
+      const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -324,6 +333,16 @@ const Discussions = () => {
     </div>);
   }, [ chatsQueryParams, chatsTotal ]);
 
+  const emptyMessage = useMemo(() => {
+    if (chatsError?.message) {
+      return <NekoMessage variant="danger" style={{ margin: "5px 5px" }}>
+        <b>{chatsError.message}</b><br />
+        <small>Check your Console Logs and PHP Error Logs for more information.</small>
+      </NekoMessage>;
+    }
+    return null;
+  }, [chatsError]);
+
   return (<>
 
     <NekoWrapper>
@@ -346,11 +365,13 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
+
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
               setChatsQueryParams({ ...chatsQueryParams, sort: { accessor, by } });
             }}
+            emptyMessage={emptyMessage}
             filters={filters}
             onFilterChange={(accessor, value) => {
               const freshFilters = [
@@ -362,12 +383,12 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { setSelectedIds([id]) }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids ]) }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
