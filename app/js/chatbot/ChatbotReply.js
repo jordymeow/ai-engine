@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 2.1.7
+// Previous: 2.1.7
+// Current: 2.2.63
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -47,6 +47,14 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
             target: "_blank",
           },
         },
+        img: {
+          props: {
+            onError: (e) => {
+              e.target.src = "https://placehold.co/600x200?text=Expired+Image";
+            },
+            className: modCss('mwai-image'),
+          },
+        }
       }
     };
     return options;
@@ -64,13 +72,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
       <span className={modCss('mwai-name')}>{name}</span>
       <span className={modCss('mwai-text')}>
         <span>
-          {isUser && content.split('\n').map((line, index, array) => (
-            <>
-              {line}
-              {index === array.length - 1 ? null : <br />}
-            </>
-          ))}
-          {!isUser && <Markdown options={markdownOptions}>{content}</Markdown>}
+          <Markdown options={markdownOptions}>{content}</Markdown>
         </span>
       </span>
       {copyButton && <CopyButton content={message.content} modCss={modCss} />}
@@ -104,7 +106,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
         <div className={modCss('mwai-gallery')}>
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img key={index} src={image} onError={() => handleImageError(index)} />
+              <img src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -238,6 +240,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
     }
 
     if (message.role === 'assistant') {
+
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
@@ -264,5 +267,5 @@ const ChatbotReply = ({ message, conversationRef }) => {
   }, [ message, conversationRef, isImages, typewriter ]);
 
   return output;
-  
+
 };

@@ -19,7 +19,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview']
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions']
 	],
 	[
 		"model" => "gpt-4-0125-preview",
@@ -36,7 +36,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview']
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions']
 	],
 	[
 		"model" => "gpt-4-1106-preview",
@@ -53,7 +53,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview']
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions']
 	],
 	[
 		"model" => "gpt-4-vision-preview",
@@ -85,7 +85,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxTokens" => 8192,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat']
+		"tags" => ['core', 'chat', 'functions']
 	],
 	[ 
 		"model" => "gpt-4-32k",
@@ -118,7 +118,7 @@ define( 'MWAI_OPENAI_MODELS', [
 			"in" => 0.03,
 			"out" => 0.06,
 		],
-		"tags" => ['core', 'chat', '4k', 'finetune']
+		"tags" => ['core', 'chat', '4k', 'finetune', 'functions']
 	],
 	[ 
 		"model" => "gpt-3.5-turbo-16k",

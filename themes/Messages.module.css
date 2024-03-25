@@ -54,11 +54,11 @@
   display: none;
 }
 
-.mwai-chat .mwai-conversation .mwai-reply *:first-child {
+.mwai-chat .mwai-conversation .mwai-reply * > p:first-child {
   margin-top: 0px;
 }
 
-.mwai-chat .mwai-conversation .mwai-reply *:last-child {
+.mwai-chat .mwai-conversation .mwai-reply * > p:last-child {
   margin-bottom: 0px;
 }
 
@@ -122,12 +122,16 @@
   flex: auto;
 }
 
-.mwai-chat .mwai-text *:first-child {
-  margin-top: 0;
+.mwai-chat .mwai-text .mwai-image {
+  display: block;
+  max-width: 250px;
+  height: auto;
+  margin: 0 0 10px 0;
+  border-radius: var(--mwai-borderRadius);
 }
 
-.mwai-chat .mwai-text *:last-child {
-  margin-bottom: 0;
+.mwai-chat .mwai-text > span > p > *:first-child {
+  margin-top: 0;
 }
 
 .mwai-chat .mwai-text a {

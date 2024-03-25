@@ -316,7 +316,7 @@ class Meow_MWAI_API {
 				$params['messages'] = $discussion->messages;
 			}
 		}
-		$data = $this->chatbot_module->chat_submit( $botId, $message, $params );
+		$data = $this->chatbot_module->chat_submit( $botId, $message, null, $params );
 		return $data['reply'];
 	}
 

@@ -1,8 +1,7 @@
-// Previous: 2.1.5
-// Current: 2.2.3
+// Previous: 2.2.3
+// Current: 2.2.63
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
-
 import { useModClasses, formatAiName, formatUserName,
   processParameters, is_url } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
@@ -37,13 +36,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  // System Parameters
+  const { mode } = theme?.settings || {}; // Bug: mode is used but not defined consistently
+  
   const stream = system.stream || false;
   const botId = system.botId;
   const customId = system.customId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; 
+  const contextId = system.contextId;
   const restNonce = system.restNonce;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -53,7 +53,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
   const processedParams = processParameters(params);
   let { aiName, userName } = processedParams;
   const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
@@ -119,20 +118,20 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const initChatbot = useCallback(() => {
     let chatHistory = [];
     if (localStorageKey) {
-      let storedData = localStorage.getItem(localStorageKey);
-      if (storedData) {
-        chatHistory = JSON.parse(storedData);
+      chatHistory = localStorage.getItem(localStorageKey);
+      if (chatHistory) {
+        chatHistory = JSON.parse(chatHistory);
         setMessages(chatHistory.messages);
         setChatId(chatHistory.chatId);
         return;
       }
     }
     resetMessages();
-  }, [botId, localStorageKey, resetMessages]);
+  }, [botId]);
 
   useEffect(() => {
     initChatbot();
-  }, [botId, initChatbot]);
+  }, [botId]);
   
   useEffect(() => {
     if (!serverReply) {
@@ -146,9 +145,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage && lastMessage.role === 'user') {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -186,15 +183,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         timestamp: new Date().getTime(),
       };
       if (serverReply.images) {
-        // Intentional bug: forgot to assign images to newMessage
-        // newMessage.images = serverReply.images; // Commented out to introduce bug
+        newMessage.images = serverReply.images;
       }
       freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
   }, [ serverReply, messages ]);
-
+  
   const onClear = useCallback(async () => {
     await setChatId(randomStr());
     if (localStorageKey) {
@@ -202,23 +198,33 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId, localStorageKey, resetMessages]);
-
+  }, [botId]);
+  
   const onSubmit = async (textQuery) => {
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
     }
+
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
+
+    let currentFile = uploadedFile;
+    let currentImageUrl = uploadedFile?.uploadedUrl;
+
+    let textDisplay = textQuery;
+    if (currentImageUrl) {
+      textDisplay = `![Uploaded Image](${currentImageUrl})\n${textQuery}`;
+    }
+
     setBusy(true);
     setInputText('');
     resetUploadedFile();
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
-      content: textQuery,
+      content: textDisplay,
       who: rawUserName,
       timestamp: new Date().getTime(),
     }];
@@ -242,7 +248,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       contextId: contextId,
       messages: messages,
       newMessage: textQuery,
-      newFileId: uploadedFile?.uploadedId,
+      newFileId: currentFile?.uploadedId,
       stream,
       ...atts
     };
@@ -252,17 +258,19 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
-          const copyMsgs = [...messages];
-          const lastMsg = copyMsgs[copyMsgs.length - 1];
-          if (lastMsg && lastMsg.id === freshMessageId) {
-            lastMsg.content = content;
-            lastMsg.timestamp = new Date().getTime();
+          const freshMessages = [...messages];
+          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
+          if (lastMessage && lastMessage.id === freshMessageId) {
+            lastMessage.content = content;
+            lastMessage.timestamp = new Date().getTime();
           }
-          return copyMsgs;
+          return freshMessages;
         });
       };
+
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
+
       if (!data.success && data.message) {
         setError(data.message);
         freshMessages.pop();
@@ -272,10 +280,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setBusy(false);
         return;
       }
+
       setServerReply(data);
     }
     catch (err) {
-      console.error("Error in chatbot response handling.", { err });
+      console.error("An error happened in the handling of the chatbot response.", { err });
       setBusy(false);
     }
   };

@@ -115,7 +115,7 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 	}
 
-	public function chat_submit( $botId, $newMessage, $newFileId, $params = [], $stream = false ) {
+	public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false ) {
 		try {
 			$chatbot = null;
 			$customId = $params['customId'] ?? null;

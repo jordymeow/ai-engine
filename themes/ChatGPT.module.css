@@ -257,15 +257,23 @@
   font-size: var(--mwai-fontSize);
 }
 
+.mwai-chat .mwai-reply .mwai-text .mwai-image {
+  display: block;
+  max-width: 250px;
+  height: auto;
+  margin: 0 0 10px 0;
+  border-radius: var(--mwai-borderRadius);
+}
+
 .mwai-chat .mwai-reply .mwai-text * {
   font-size: var(--mwai-fontSize);
 }
 
-.mwai-chat .mwai-reply .mwai-text *:first-child {
+.mwai-chat .mwai-reply .mwai-text > span > *:first-child {
   margin-top: 0;
 }
 
-.mwai-chat .mwai-reply .mwai-text *:last-child {
+.mwai-chat .mwai-reply .mwai-text > span > *:last-child {
   margin-bottom: 0;
 }
 

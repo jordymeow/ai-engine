@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.62
+Stable tag: 2.2.63
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,12 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.63 (2024/03/25) =
+* Add: The chatbot displays the uploaded images.
+* Update: More elegant refresh of the embeddings.
+* Update: If functions are added to query, but the models don't support it, they will be removed rather than causing an error on the API side (an error will be logged).
+* Fix: Issues related to the arguments order in chat_submit.
+
 = 2.2.62 (2024/03/19) =
 * Update: Cleaner handling of tokens and prices.
 * Update: Enhanced the way mime types are handled, that fixes issues with Claude Vision.

@@ -40,7 +40,8 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
   }
 
   public function final_checks( Meow_MWAI_Query_Base $query ) {
-    // TODO: We skip this completely. Not sure final_checks are useful. Max Message should be handed in build_messages(), etc. Let's take care of the other engines as well.
+    // We skip this completely.
+    // maxMessages is handed in build_messages().
   }
 
   protected function build_messages( $query ) {

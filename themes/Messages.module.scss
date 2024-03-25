@@ -51,7 +51,7 @@
 				display: none;
 			}
 
-			& * {
+			& * > p {
 				&:first-child { margin-top: 0px; }
 				&:last-child { margin-bottom: 0px; }
 			}
@@ -117,13 +117,21 @@
 	.mwai-text {
 		flex: auto;
 
-		*:first-child {
+		.mwai-image {
+			display: block;
+			max-width: 250px;
+			height: auto;
+			margin: 0 0 10px 0;
+			border-radius: var(--mwai-borderRadius);
+		}
+
+		> span > p > *:first-child {
 			margin-top: 0;
 		}
 
-		*:last-child {
-			margin-bottom: 0;
-		}
+		// > span > p > *:last-child {
+		// 	margin-bottom: 0;
+		// }
 
 		a {
 			color: #2196f3;
@@ -207,7 +215,7 @@
 			}
 		}
 
-		>* {
+		> * {
 			&:first-child {
 				margin-top: 0;
 

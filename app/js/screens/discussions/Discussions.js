@@ -1,18 +1,15 @@
-// Previous: 2.2.4
-// Current: 2.2.62
+// Previous: 2.2.62
+// Current: 2.2.63
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import Markdown from 'markdown-to-jsx';
 
-// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
-// AI Engine
 import i18n from '@root/i18n';
 import { apiUrl, restNonce } from '@app/settings';
 import { retrieveDiscussions, tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
@@ -105,19 +102,16 @@ const StyledMessageWrapper = styled.div`
   }
 `;
 
-// Instead of a tag, write the object as raw HTML
 const options = {
   overrides: {
     object: {
       component: ({ children, ...props }) => {
-        // Convert children and props to string to display as plain text
         const textContent = `<object ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</object>`;
         return textContent;
       },
     },
     script: {
       component: ({ children, ...props }) => {
-        // Convert children and props to string to display as plain text
         const textContent = `<script ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</script>`;
         return textContent;
       },
@@ -126,13 +120,7 @@ const options = {
 };
 
 const StyledMessage = ({ content }) => {
-  const [processedContent, setProcessedContent] = useState(content || '');
-
-  useEffect(() => {
-    if (content) {
-      cleanMessage(content);
-    }
-  }, [content]);
+  const [ processedContent, setProcessedContent ] = useState(content || '');
 
   const checkImageURL = (url) => {
     return new Promise((resolve) => {
@@ -144,8 +132,6 @@ const StyledMessage = ({ content }) => {
   };
 
   const cleanMessage = async (markdownContent) => {
-
-    // Handle dead image URLs
     const regex = /!\[.*?\]\((.*?)\)/g;
     let newContent = markdownContent;
     let match;
@@ -153,13 +139,19 @@ const StyledMessage = ({ content }) => {
       const imageUrl = match[1];
       const isImageAvailable = await checkImageURL(imageUrl);
       if (!isImageAvailable) {
-        // Replace dead URL with a placeholder or a custom message
         const placeholder = `<div class="mwai-dead-image">Image not available</div>`;
         newContent = newContent.replace(match[0], placeholder);
       }
     }
     setProcessedContent(newContent);
   };
+
+  useEffect(() => {
+    if (content) {
+      cleanMessage(content);
+    }
+  }, [content]);
+
   return (
     <StyledMessageWrapper>
       <Markdown options={options}>{processedContent}</Markdown>
@@ -226,7 +218,6 @@ const Discussions = () => {
   });
   const [ selectedIds, setSelectedIds ] = useState([]);
 
-  // useQuery
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
     filters: filters,
     sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
@@ -251,8 +242,6 @@ const Discussions = () => {
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
       const formattedUpdated = tableDateTimeFormatter(x.updated);
-      // We do this (the check in extra) to support the discussions data before May 18th
-      // Same with the .text that should be removed (we use .content)
       const user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
       const userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
       const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
@@ -310,7 +299,9 @@ const Discussions = () => {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
       const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
-      setSelectedIds([]);
+      setSelectedIds(prev => {
+        return prev.filter(x => !selectedChatIds.includes(x));
+      });
     }
     await queryClient.invalidateQueries({ queryKey: ['chats'] });
     queryClient.refetchQueries({ queryKey: ['chats'] });
@@ -383,18 +374,18 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { setSelectedIds([id]) }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
+            onSelect={ids => { setSelectedIds([...selectedIds, ...ids]) }}
+            onUnselect={ids => { setSelectedIds([...selectedIds.filter(x => !ids.includes(x))]) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
               style={{ width: 180 }}
-              onChange={() => setAutoRefresh(!autoRefresh)} />
+              onChange={() => setAutoRefresh(prev => !prev)} />
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>

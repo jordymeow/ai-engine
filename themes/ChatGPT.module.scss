@@ -267,16 +267,24 @@
 			line-height: var(--mwai-lineHeight);
 			color: var(--mwai-fontColor);
 			font-size: var(--mwai-fontSize);
+
+			.mwai-image {
+				display: block;
+				max-width: 250px;
+				height: auto;
+				margin: 0 0 10px 0;
+				border-radius: var(--mwai-borderRadius);
+			}
 	
 			* {
 				font-size: var(--mwai-fontSize);
 			}
 	
-			*:first-child {
+			> span > *:first-child {
 				margin-top: 0;
 			}
 	
-			*:last-child {
+			> span > *:last-child {
 				margin-bottom: 0;
 			}
 	

@@ -137,11 +137,17 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       }
   
       if ( !empty( $query->functions ) ) {
-        if ( strpos( $query->model, 'ft:' ) === 0 ) {
-          throw new Exception( 'OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
+        $model = $this->retrieve_model_info( $query->model );
+        if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
+          error_log( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
         }
-        $body['functions'] = $query->functions;
-        $body['function_call'] = $query->functionCall;
+        else if ( strpos( $query->model, 'ft:' ) === 0 ) {
+          error_log( 'OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
+        }
+        else {
+          $body['functions'] = $query->functions;
+          $body['function_call'] = $query->functionCall;
+        }
       }
       if ( $query->mode === 'chat' ) {
         $body['messages'] = $this->build_messages( $query );
