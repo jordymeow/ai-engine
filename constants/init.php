@@ -24,8 +24,8 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'localMemory' => true,
 	// Chatbot System Parameters
 	'botId' => null,
-	'context' => "Converse as if you were an AI assistant. Be friendly, creative.",
-	'env' => 'chatbot',
+	'instructions' => "Converse as if you were an AI assistant. Be friendly, creative.",
+	'scope' => 'chatbot',
 	'mode' => 'chat',
 	'contentAware' => false,
 	'embeddingsEnvId' => '',
@@ -79,7 +79,6 @@ define ( 'MWAI_LIMITS', [
 
 define( 'MWAI_OPTIONS', [
 	'module_suggestions' => true,
-	'module_woocommerce' => true,
 	'module_forms' => false,
 	'module_blocks' => false,
 	'module_playground' => true,

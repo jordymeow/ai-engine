@@ -48,6 +48,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function jsonSerialize() {
     $json = [
       'message' => $this->message,
+      'instructions' => $this->instructions,
 
       'ai' => [
         'model' => $this->model,
@@ -64,7 +65,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     ];
 
     if ( !empty( $this->context ) ) {
-      $json['context']['context'] = $this->context;
+      $json['context']['content'] = $this->context;
     }
 
     return $json;
@@ -99,7 +100,11 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   }
 
   public function get_in_tokens(): int {
-    $in_tokens = Meow_MWAI_Core::estimate_tokens( $this->messages, $this->message );
+    $in_tokens = Meow_MWAI_Core::estimate_tokens( 
+      $this->messages,
+      $this->message,
+      $this->context ?? ''
+    );
     return $in_tokens;
   }
 
@@ -297,12 +302,17 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['model'] ) ) {
 			$this->set_model( $params['model'] );
 		}
+    // TODO: Remove this condition after July 2024.
     if ( !empty( $params['context'] ) ) {
+      error_log( 'AI Engine: context is deprecated. Please use instructions instead.' );
       $this->set_instructions( $params['context'] );
     }
+    if ( !empty( $params['instructions'] ) ) {
+      $this->set_instructions( $params['instructions'] );
+    }
+    // TODO: Remove this condition after September 2024.
     if ( !empty( $params['prompt'] ) ) {
-      //TODO: At some point, we need to rename prompt into message everywhere in the clients.
-      //error_log( 'AI Engine: prompt is deprecated. Please use message instead.' );
+      error_log( 'AI Engine: prompt is deprecated. Please use message instead.' );
       $this->set_message( $params['prompt'] );
     }
     if ( !empty( $params['message'] ) ) {
@@ -320,9 +330,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['maxResults'] ) ) {
 			$this->set_max_results( $params['maxResults'] );
 		}
-		if ( !empty( $params['env'] ) ) {
-			$this->set_env( $params['env'] );
-		}
+		// if ( !empty( $params['env'] ) ) {
+		// 	$this->set_env( $params['env'] );
+		// }
     if ( !empty( $params['scope'] ) ) {
       $this->set_scope( $params['scope'] );
     }

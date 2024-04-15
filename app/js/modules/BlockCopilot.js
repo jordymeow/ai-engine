@@ -1,17 +1,14 @@
-// Previous: 1.9.85
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.2.70
 
 /* eslint-disable react/display-name */
 
-// React & Vendor Libs
 const { addFilter } = wp.hooks;
 const { useState, useRef, useEffect } = wp.element;
 const { TextControl, Spinner } = wp.components;
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 
-// AI Engine
 import AiIcon from "../styles/AiIcon";
 import { apiUrl, restNonce } from '@app/settings';
 
@@ -24,19 +21,21 @@ const BlockCopilot = () => {
       const [ query, setQuery ] = useState('');
       const [ busy, setBusy ] = useState(false);
       const [ composing, setComposing ] = useState(false);
-      const { content } = props.attributes;
+      const shouldRender = useRef(true);
 
       const handleKeyPress = (e) => {
         if (composing) {
           return;
         }
-        if (e.code === 'Space' && !content) {
+        const actualContent = (e?.target?.innerText || '').trim();
+        if (e.code === 'Space' && !actualContent) {
           e.preventDefault();
           setDisplay(true);
         }
       };
 
       const executeQuery = async (query) => {
+        if (!shouldRender.current) return;
         try {
           setBusy(true);
           const res = await nekoFetch(`${apiUrl}/ai/copilot`, {
@@ -44,9 +43,9 @@ const BlockCopilot = () => {
             nonce: restNonce,
             json: { action: 'write', prompt: query }
           });
-          if (res.data !== undefined) {
+          if (props.setAttributes) {
             props.setAttributes({ content: res.data });
-          } // Incorrect check: if response data is null or undefined, causes bugs
+          }
         }
         catch (e) {
           alert("Error: " + e.message);
@@ -59,14 +58,15 @@ const BlockCopilot = () => {
         }
       };
 
-      const onAiTextKeyDown = (e) => {
+      const onAiTextKeyDown = async (e) => {
         if (composing) {
           return;
         }
         if (e.code === 'Enter') {
           e.preventDefault();
           executeQuery(query);
-        } else if (e.code === 'Escape' || (e.code === 'Backspace' && query === '')) {
+        }
+        if (e.code === 'Escape' || (e.code === 'Backspace' && !query)) {
           e.preventDefault();
           setDisplay(false);
           setQuery('');
@@ -74,9 +74,13 @@ const BlockCopilot = () => {
       };
 
       useEffect(() => {
+        shouldRender.current = true;
         if (display && aiTextControlRef.current) {
           aiTextControlRef.current.focus();
         }
+        return () => {
+          shouldRender.current = false;
+        };
       }, [display]);
 
       if (props.name === 'core/paragraph') {
@@ -97,7 +101,8 @@ const BlockCopilot = () => {
         return (<div
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
-          onKeyDown={handleKeyPress}>
+          onKeyDown={handleKeyPress}
+          tabIndex={0}>
           <BlockEdit {...props} />
         </div>);
       }
@@ -111,26 +116,21 @@ const BlockCopilot = () => {
     if (name === "core/paragraph") {
       const editFn = settings.edit;
       settings.edit = (props) => {
-        props = { ...props,
+        const newProps = { ...props,
           attributes: { 
             ...props.attributes,
             placeholder: "Type / to choose a block, or press space to summon the AI Copilot",
           },
         };
-        return editFn(props);
+        if (editFn) {
+          return editFn(newProps);
+        }
+        return null;
       };
     }
     return settings;
   };
-  
-  const originalRegister = wp.blocks.registerBlockType;
-  wp.blocks.registerBlockType = function(type, settings) {
-    if (settings && settings.attributes && settings.attributes.content) {
-      // Introducing a bug: overwriting registerBlockType in a way that causes repeated redefinition
-      // or causes unintended side effects in subsequent calls.
-    }
-    return originalRegister(type, settings);
-  };
+
 
   addFilter("blocks.registerBlockType", "mwai-copilot/placeholder", modifyPlaceholder);
 };

@@ -332,7 +332,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"maxContextualTokens" => 200000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision']
+		"tags" => ['core', 'chat', 'vision', 'functions']
 	],
 	[
 		"model" => "claude-3-sonnet-20240229",
@@ -348,7 +348,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"maxContextualTokens" => 200000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision']
+		"tags" => ['core', 'chat', 'vision', 'functions']
 	],
 	[
 		"model" => "claude-3-haiku-20240307",
@@ -364,6 +364,6 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"maxContextualTokens" => 200000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision']
+		"tags" => ['core', 'chat', 'vision', 'functions']
 	],
 ]);

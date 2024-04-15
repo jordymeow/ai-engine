@@ -20,7 +20,7 @@ class Meow_MWAI_Engines_Core {
     $this->envType = $env['type'];
   }
 
-  public function run( $query, $streamCallback = null ) {
+  public function run( $query, $streamCallback = null, $maxDepth = 5 ) {
 
     // Check if the query is allowed.
     $limits = $this->core->get_option( 'limits' );
@@ -40,7 +40,7 @@ class Meow_MWAI_Engines_Core {
 
     // Run the query
     $reply = null;
-    if ( $query instanceof Meow_MWAI_Query_Text ) {
+    if ( $query instanceof Meow_MWAI_Query_Text || $query instanceof Meow_MWAI_Query_Feedback ) {
       $reply = $this->run_completion_query( $query, $streamCallback );
     }
     else if ( $query instanceof Meow_MWAI_Query_Assistant ) {
@@ -65,6 +65,52 @@ class Meow_MWAI_Engines_Core {
 
     // Allow to modify the reply before it is sent.
     $reply = apply_filters( 'mwai_ai_reply', $reply, $query );
+
+    // Function Call
+    if ( !empty( $reply->needFeedbacks ) ) {
+
+      // Check if we reached the maximum depth
+      if ( $maxDepth <= 0 ) {
+        throw new Exception( 'AI Engine: There seems to be a loop in the function/tools calls.' );
+      }
+
+      // We should use a feedback query around the original query
+      if ( !($query instanceof Meow_MWAI_Query_Feedback) ) {
+        $query = new Meow_MWAI_Query_Feedback( $reply, $query );
+      }
+
+      // The engine for the model will handle the feedback query nicely
+      // In the case of Anthropic, it's like a "discussion" between the user (= WordPress's AI Engine
+      // and the model (= Anthropic). The feedback is a way to communicate between the two.
+      $feedback_blocks = [];
+      foreach ( $reply->needFeedbacks as $needFeedback ) {
+        $rawMessageKey = md5( serialize( $needFeedback['rawMessage'] ) );
+
+        // Initialize the feedback block for this rawMessage if it hasn't been initialized yet
+        if ( !isset( $feedback_blocks[$rawMessageKey] ) ) {
+          $feedback_blocks[$rawMessageKey] = [ 
+            'rawMessage' => $needFeedback['rawMessage'],
+            'feedbacks' => []
+          ];
+        }
+
+        // Get the value related to this feedback (usually, a function call)
+        $value = apply_filters( 'mwai_ai_feedback', null, $needFeedback );
+
+        // Add the feedback information to the appropriate feedback block
+        $feedback_blocks[$rawMessageKey]['feedbacks'][] = [ 
+          'request' => $needFeedback, // TODO: Meow_MWAI_Feedback_Request
+          'reply' => [ 'value' => $value ] // TODO: Meow_MWAI_Feedback_Reply
+        ];
+      }
+
+      foreach ( $feedback_blocks as $feedback_block ) {
+        $query->add_feedback_block( $feedback_block );
+      }
+
+      // Run the feedback query
+      $reply = $this->run( $query, $streamCallback, $maxDepth - 1 );
+    } 
 
     return $reply;
   }

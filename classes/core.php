@@ -17,6 +17,7 @@ class Meow_MWAI_Core
 	public $site_url = null;
 	public $files = null;
 	public $tasks = null;
+	public $magicWand = null;
 	private $option_name = 'mwai_options';
 	private $themes_option_name = 'mwai_themes';
 	private $chatbots_option_name = 'mwai_chatbots';
@@ -31,6 +32,10 @@ class Meow_MWAI_Core
 		$this->is_cli = defined( 'WP_CLI' );
 		$this->files = new Meow_MWAI_Modules_Files( $this );
 		$this->tasks = new Meow_MWAI_Modules_Tasks( $this );
+
+		if ( $this->get_option( 'module_suggestions' ) ) {
+			$this->magicWand = new Meow_MWAI_Modules_Wand( $this );
+		}
 
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
 		add_action( 'wp_register_script', array( $this, 'register_scripts' ) );
@@ -156,28 +161,46 @@ class Meow_MWAI_Core
 
   // Make sure there are no duplicate sentences, and keep the length under a maximum length.
   function clean_sentences( $text, $maxLength = null ) {
+		// Step 1: Identify URLs and replace them with a placeholder.
+		$urlPattern = '/\bhttps?:\/\/[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|\/))/';
+		preg_match_all($urlPattern, $text, $urls);
+		$urlPlaceholders = array();
+		foreach ($urls[0] as $index => $url) {
+			$placeholder = "{urlPlaceholder" . $index . "}";
+			$text = str_replace($url, $placeholder, $text);
+			$urlPlaceholders[$placeholder] = $url;
+		}
+	
 		$maxLength = (int)($maxLength ? $maxLength : $this->get_option( 'context_max_length', 4096 ));
-		$sentences = preg_split('/(?<=[.?!。．！？])+/u', $text);
-    $hashes = array();
-    $uniqueSentences = array();
-    $total = 0;
-    foreach ( $sentences as $sentence ) {
-      $sentence = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $sentence );
-      $hash = md5( $sentence );
-      if ( !in_array( $hash, $hashes ) ) {
-				$length = strlen( $sentence );
-        if ( $total + $length > $maxLength ) {
-          continue;
-        }
-        $hashes[] = $hash;
-        $uniqueSentences[] = $sentence;
-        $total += $length;
-      }
-    }
-    $freshText = implode( " ", $uniqueSentences );
-    $freshText = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $freshText );
-    return $freshText;
-  }
+		$sentences = preg_split('/(?<=[.?!。．！？])\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+		$hashes = array();
+		$uniqueSentences = array();
+		$total = 0;
+	
+		foreach ( $sentences as $sentence ) {
+			$sentence = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $sentence );
+			$hash = md5( $sentence );
+			if ( !in_array( $hash, $hashes ) ) {
+				$length = mb_strlen( $sentence, 'UTF-8' );
+				if ( $total + $length > $maxLength ) {
+					continue;
+				}
+				$hashes[] = $hash;
+				$uniqueSentences[] = $sentence;
+				$total += $length;
+			}
+		}
+	
+		$freshText = implode( " ", $uniqueSentences );
+	
+		// Step 3: Restore URLs in the final text.
+		foreach ($urlPlaceholders as $placeholder => $url) {
+			$freshText = str_replace($placeholder, $url, $freshText);
+		}
+	
+		$freshText = preg_replace( '/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $freshText );
+		return $freshText;
+	}	
 
 	function get_post_content( $postId ) {
 		$post = get_post( $postId );
@@ -276,29 +299,40 @@ class Meow_MWAI_Core
 	 * @param string $alt The alt text of the image.
 	 * @return int The attachment ID of the image.
 	 */
-	public function add_image_from_url( $url, $filename = null, $title = null,
-		$description = null, $caption = null, $alt = null ) {
+	public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null ) {
 		$path_parts = pathinfo( parse_url( $url, PHP_URL_PATH ) );
 		$url_filename = $path_parts['basename'];
 		$file_type = wp_check_filetype( $url_filename, null );
 		$allowed_types = get_allowed_mime_types();
 		if ( !$file_type || !in_array( $file_type['type'], $allowed_types ) ) {
-			throw new Exception( 'Invalid file type.' );
+			throw new Exception( 'Invalid file type from URL.' );
 		}
+	
+		// Initial extension from URL file name
 		$extension = $file_type['ext'];
+	
+		if ( !empty( $filename ) ) {
+			$custom_file_type = wp_check_filetype( $filename, null );
+			if ( !$custom_file_type || !in_array( $custom_file_type['type'], $allowed_types ) ) {
+				throw new Exception( 'Invalid custom file type.' );
+			}
+			// Use the extension from the custom filename if valid
+			$extension = $custom_file_type['ext'];
+		}
+	
 		$image_data = $this->download_image( $url );
 		if ( !$image_data ) {
 			throw new Exception( 'Could not download the image.' );
 		}
 		$upload_dir = wp_upload_dir();
-
-		// If filename is not set or starts with 'generated_', we will generate a new filename.
+	
+		// Filename handling including 'generated_' prefix scenario
 		if ( empty( $filename ) ) {
 			$filename = sanitize_file_name( $url_filename );
-			$extension = pathinfo( $filename, PATHINFO_EXTENSION );
-			if ( empty( $extension ) ) {
+			if ( empty( $extension ) ) { // This condition might now be redundant
 				$extension = $file_type['ext'];
 			}
+			// Filename length check and prepend if conditions met
 			if ( strlen( $filename ) > 32 || strlen( $filename ) < 4 || strpos( $filename, 'generated_' ) === 0 ) {
 				$filename = $this->get_random_id( 16 ) . '.' . $extension;
 			}
@@ -306,6 +340,8 @@ class Meow_MWAI_Core
 				$filename .= '.' . $extension;
 			}
 		}
+	
+		// Directory and file path handling
 		if ( wp_mkdir_p( $upload_dir['path'] ) ) {
 			$file = $upload_dir['path'] . '/' . $filename;
 		}
@@ -313,16 +349,18 @@ class Meow_MWAI_Core
 			$file = $upload_dir['basedir'] . '/' . $filename;
 		}
 		
-		// Make sure the file is unique, if not, add a number to the end of the file before the extension
+		// Ensure file name uniqueness in the directory
 		$i = 1;
 		$parts = pathinfo( $file );
 		while ( file_exists( $file ) ) {
 			$file = $parts['dirname'] . '/' . $parts['filename'] . '-' . $i . '.' . $parts['extension'];
 			$i++;
 		}
-
-		// Write the file
+	
+		// Writing the file to disk
 		file_put_contents( $file, $image_data );
+	
+		// Attachment and metadata handling in WP
 		$attachment = [
 			'post_mime_type' => $file_type['type'],
 			'post_title' => $title ?? '',
@@ -330,14 +368,14 @@ class Meow_MWAI_Core
 			'post_excerpt' => $caption ?? '',
 			'post_status' => 'inherit'
 		];
-		// Register the file as a Media Library attachment
 		$attachmentId = wp_insert_attachment( $attachment, $file );
 		require_once( ABSPATH . 'wp-admin/includes/image.php' );
 		$attachment_data = wp_generate_attachment_metadata( $attachmentId, $file );
 		wp_update_attachment_metadata( $attachmentId, $attachment_data );
 		update_post_meta( $attachmentId, '_wp_attachment_image_alt', $alt );
+	
 		return $attachmentId;
-	}
+	}	
  	#endregion
 
 	#region Context-Related Helpers
@@ -701,17 +739,11 @@ class Meow_MWAI_Core
 					$chatbot[$key] = $value;
 				}
 			}
-			// After September 2023, let's remove this if statement.
-			// if ( isset( $chatbot['chatId'] ) ) {
-			// 	$chatbot['botId'] = $chatbot['chatId'];
-			// 	unset( $chatbot['chatId'] );
-			// 	$hasChanges = true;
-			// }
-			// After September 2023, let's remove this if statement.
-			// if ( empty( $chatbot['botId'] ) && $chatbot['name'] === 'default' ) {
-			// 	$chatbot['botId'] = sanitize_title( $chatbot['name'] );
-			// 	$hasChanges = true;
-			// }
+			// TODO: After October 2024, let's remove this.
+			if ( isset( $chatbot['context'] ) ) {
+				$chatbot['instructions'] = $chatbot['context'];
+				unset( $chatbot['context'] );
+			}
 		}
 		if ( $hasChanges ) {
 			update_option( $this->chatbots_option_name, $chatbots );
@@ -789,6 +821,18 @@ class Meow_MWAI_Core
 				else if ( in_array( $key, $whiteSpacedFields ) ) {
 					$value = sanitize_textarea_field( $value );
 				}
+				else if ( $key === 'functions' ) {
+					$functions = [];
+					foreach ( $value as $function ) {
+						if ( isset( $function['id'] ) && isset( $function['type'] ) ) {
+							$functions[] = [
+								'id' => sanitize_text_field( $function['id'] ),
+								'type' => sanitize_text_field( $function['type'] ),
+							];
+						}
+					}
+					$value = $functions;
+				}
 				else {
 					$value = sanitize_text_field( $value );
 				}
@@ -830,6 +874,9 @@ class Meow_MWAI_Core
 			Meow_MWAI_Engines_Anthropic::get_models_static()
 		);
 		$options['fallback_model'] = MWAI_FALLBACK_MODEL;
+
+		// Support for functions from Snippet Vault
+		$options['functions'] = apply_filters( 'mwai_functions_list', [] );
 
 		//$this->options = $options;
 		return $options;

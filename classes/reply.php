@@ -13,8 +13,8 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $query = null;
   public $type = 'text';
 
-  // Function Call
-  public $functionCall = null;
+  // This is when models return a message that needs to be executed (functions, tools, etc)
+  public $needFeedbacks = [];
 
   public function __construct( $query = null ) {
     $this->query = $query;
@@ -22,14 +22,28 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
-    return [
-      'result' => $this->result,
-      'results' => $this->results,
+    $isEmbedding = false;
+    $embeddingsDimensions = null;
+    $embedddingsMessage = null;
+    if ( is_array( $this->results ) && count( $this->results ) > 0 ) {
+      $isEmbedding = is_array( $this->results[0] );
+      if ( $isEmbedding ) {
+        $embeddingsDimensions = count( $this->results[0] );
+        $embedddingsMessage = "A $embeddingsDimensions-dimensional embedding was returned.";
+      }
+    }
+    $data = [
+      'result' => $isEmbedding ? $embedddingsMessage : $this->result,
+      'results' => $isEmbedding ? [] : $this->results,
       'usage' => $this->usage,
       'system' => [
         'class' => get_class( $this ),
       ]
     ];
+    if ( !empty( $this->needFeedbacks ) ) {
+      $data['needFeedbacks'] = $this->needFeedbacks;
+    }
+    return $data;
   }
 
   public function set_usage( $usage ) {
@@ -101,12 +115,27 @@ class Meow_MWAI_Reply implements JsonSerializable {
     }, $this->results );
   }
 
+  private function extract_arguments( $funcArgs ) {
+    $finalArgs = [];
+    if ( is_string( $funcArgs ) ) {
+      $arguments = trim( str_replace( "\n", "", $funcArgs ) );
+      if ( substr( $arguments, 0, 1 ) == '{' ) {
+        $arguments = json_decode( $arguments, true );
+        $finalArgs = $arguments;
+      }
+    }
+    else if ( is_array( $funcArgs ) ) {
+      $finalArgs = $funcArgs;
+    }
+    return $finalArgs;
+  }
+
   /**
    * Set the choices from OpenAI as the results.
    * The last (or only) result is set as the result.
    * @param array $choices ID of the model to use.
    */
-  public function set_choices( $choices ) {
+  public function set_choices( $choices, $rawMessage = null) {
     $this->results = [];
     if ( is_array( $choices ) ) {
       foreach ( $choices as $choice ) {
@@ -121,16 +150,53 @@ class Meow_MWAI_Reply implements JsonSerializable {
             $this->result = $content;
           }
 
-          // It's a function call
+          // It's a tool call (OpenAI-style and Anthropic-style)
+          $needFeedbacks = [];
+          if ( isset( $choice['message']['tool_calls'] ) ) {
+            $tools = $choice['message']['tool_calls'];
+            foreach ( $tools as $tool ) {
+              if ( $tool['type'] === 'function' ) {
+                $needFeedbacks[] = [ 
+                  'toolId' => $tool['id'], 
+                  'mode' => 'interactive',
+                  'type' => 'tool_call',
+                  'name' => trim( $tool['function']['name'] ),
+                  'arguments' => $this->extract_arguments( $tool['function']['arguments'] ),
+                  'rawMessage' => $rawMessage ? $rawMessage : $choice['message'],
+                ];
+              }
+            }
+          }
+
+          // If it's a function call (Open-AI style; usually for a final execution)
           if ( isset( $choice['message']['function_call'] ) ) {
             $content = $choice['message']['function_call'];
-            $name = trim( $content['name'] );
-            $arguments = trim( str_replace( "\n", "", $content['arguments'] ) );
-            if ( substr( $arguments, 0, 1 ) == '{' ) {
-              $arguments = json_decode( $arguments, true );
-            }
-            $this->functionCall = [ 'name' => $name, 'arguments' => $arguments ];
+            $needFeedbacks[] = [
+              'toolId' => null,
+              'mode' => 'static',
+              'type' => 'function_call',
+              'name' => trim( $choice['message']['function_call']['name'] ),
+              'arguments' => $this->extract_arguments( $tool['message']['function_call']['arguments'] ),
+              'rawMessage' => $rawMessage ? $rawMessage : $choice['message'],
+            ];
           }
+
+          // Resolve the original function from the query
+          if ( !empty( $needFeedbacks ) ) {
+            foreach ( $needFeedbacks as &$needFeedback ) {
+              if ( $needFeedback['type'] !== 'function_call' && $needFeedback['type'] !== 'tool_call' ) {
+                continue;
+              }
+              foreach ( $this->query->functions as $function ) {
+                if ( $function->name == $needFeedback['name'] ) {
+                  $needFeedback['function'] = $function;
+                  break;
+                }
+              }
+            }
+          }
+
+          $this->needFeedbacks = $needFeedbacks;
         }
 
         // It's text completion

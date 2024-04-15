@@ -1,5 +1,5 @@
-// Previous: 0.8.6
-// Current: 1.3.79
+// Previous: 1.3.79
+// Current: 2.2.70
 
 import Styled from "styled-components";
 import { NekoHeader, NekoButton, NekoIcon } from '@neko-ui';
@@ -44,8 +44,9 @@ const AiButton = Styled(NekoButton)`
 
 const StyledTitleWithButton = Styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: unset;
   align-items: center;
+  justify-content: space-between;
   padding: 0 0 2px 0;
 
   h2 {
@@ -72,38 +73,4 @@ const StyledGallery = Styled.div`
   }
 `;
 
-const StyledForm = Styled.div`
-
-  label {
-    margin-bottom: 5px;
-    display: block;
-  }
-
-  .nui-button {
-    margin-bottom: 5px;
-  }
-
-  .neko-textarea {
-    margin-bottom: 5px;
-  }
-
-  .neko-input {
-    margin-bottom: 5px;
-  }
-
-  .form-row {
-    display: flex;
-    flex-wrap: wrap;
-    .nui-button, .neko-textarea, .neko-input {
-      margin: 0 5px 5px 0;
-    }
-  }
-
-  .form-row-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-`;
-
-export { AiButton, AiNekoHeader, StyledTitleWithButton, StyledGallery, StyledForm }
+export { AiButton, AiNekoHeader, StyledTitleWithButton, StyledGallery }

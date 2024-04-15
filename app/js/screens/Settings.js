@@ -1,5 +1,5 @@
-// Previous: 2.2.1
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.2.70
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -117,7 +117,6 @@ const Settings = () => {
   
   const shortcodeParams = options?.shortcode_chat_params || {};
   const module_suggestions = options?.module_suggestions;
-  const module_woocommerce = options?.module_woocommerce;
   const module_forms = options?.module_forms;
   const module_finetunes = options?.module_finetunes;
   const module_statistics = options?.module_statistics;
@@ -191,8 +190,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsData = await retrieveOptions();
-      setOptions(optionsData);
+      const fetchedOptions = await retrieveOptions();
+      setOptions(fetchedOptions);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -285,18 +284,18 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbotsData = await retrieveChatbots();
-      const themesData = await retrieveThemes();
-      const optionsData = await retrieveOptions();
-      const data = { chatbots: chatbotsData, themes: themesData, options: optionsData };
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const today = new Date();
-      const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
-      link.setAttribute('download', filename);
-      link.click();
+    const chatbots = await retrieveChatbots();
+    const themes = await retrieveThemes();
+    const optionsData = await retrieveOptions();
+    const data = { chatbots, themes, options: optionsData };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date();
+    const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
+    link.setAttribute('download', filename);
+    link.click();
     }
     catch (err) {
       alert("Error while exporting settings. Please check your console.");
@@ -305,7 +304,7 @@ const Settings = () => {
     finally {
       setBusyAction(false);
     }
-  };
+  }
 
   const onImportSettings = async () => {
     setBusyAction('importSettings');
@@ -321,10 +320,10 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options } = data;
+          const { chatbots, themes, options: importedOptions } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(options);
+          await updateOptions(importedOptions);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -347,7 +346,7 @@ const Settings = () => {
     if (currentModel?.mode !== 'chat' && !!shortcodeParams.embeddings_index) {
       updateShortcodeParams('', 'embeddings_index');
     }
-  }, [shortcodeParams]);
+  }, [shortcodeParams, getModel]);
 
   const updateShortcodeParams = async (value, id) => {
     const newParams = { ...shortcodeParams, [id]: value };
@@ -359,9 +358,6 @@ const Settings = () => {
       <NekoCheckboxGroup max="1">
         <NekoCheckbox name="module_suggestions" label={i18n.COMMON.POSTS_SUGGESTIONS} value="1" checked={module_suggestions}
           description={i18n.COMMON.POSTS_SUGGESTIONS_HELP}
-          onChange={updateOption} />
-        <NekoCheckbox name="module_woocommerce" label={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR} value="1" checked={module_woocommerce}
-          description={i18n.COMMON.WOOCOMMERCE_PRODUCT_GENERATOR_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
     </NekoSettings>;

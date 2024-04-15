@@ -29,12 +29,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   #[\ReturnTypeWillChange]
   public function jsonSerialize() {
     $json = [
-      //'instructions' => $this->instructions,
       'message' => $this->message,
-
-      // 'context' => [
-      //   'messages' => $this->messages
-      // ],
+      'instructions' => $this->instructions,
 
       'ai' => [
         'model' => $this->model,
@@ -53,7 +49,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     ];
 
     if ( !empty( $this->context ) ) {
-      $json['context']['context'] = $this->context;
+      $json['context']['content'] = $this->context;
     }
 
     if ( !empty( $this->file ) ) {

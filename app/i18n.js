@@ -80,8 +80,6 @@ i18n.COMMON = {
   POSTS_SUGGESTIONS: __( 'AI Copilot, AI Suggestions, Magic Wands', 'ai-engine' ),
   POSTS_SUGGESTIONS_HELP: __( 'Tools to brainstorm/write faster and better.', 'ai-engine' ),
   GENERATORS: __( 'Generators', 'ai-engine' ),
-  WOOCOMMERCE_PRODUCT_GENERATOR: __( 'WooCommerce Product Generator', 'ai-engine' ),
-  WOOCOMMERCE_PRODUCT_GENERATOR_HELP: __( 'Write all the WooCommerce fields for a given product.', 'ai-engine' ),
   CONTENT_GENERATOR: __( 'Content Generator', 'ai-engine' ),
   CONTENT_GENERATOR_HELP: __( 'Generate articles. Support templates.', 'ai-engine' ),
   IMAGES_GENERATOR: __( 'Images Generator', 'ai-engine' ),
@@ -242,6 +240,8 @@ i18n.COMMON = {
   MIN_SCORE: __( 'Min Score', 'ai-engine' ),
   MAX_SELECT: __( 'Max Results', 'ai-engine' ),
   QDRANT_COLLECTION: __( 'Collection', 'ai-engine' ),
+  INSTRUCTIONS: __( 'Instructions', 'ai-engine' ),
+  FUNCTIONS: __( 'Functions', 'ai-engine' ),
 };
 
 i18n.FORMS = {
@@ -292,6 +292,8 @@ i18n.HELP = {
   NO_EMBEDDINGS_ROWS: __( 'No embeddings yet in this environment.', 'ai-engine' ),
   MIN_SCORE: __( 'The minimum score the embeddings need to have to be returned. Between 0 and 100 and defaults to 35.', 'ai-engine' ),
   MAX_SELECT: __( 'The maximum number of embeddings to return and to use as context. Between 1 and 100 and defaults to 10.', 'ai-engine' ),
+  FUNCTIONS: __( 'Select the functions to make available for the AI model\'s choice. It will use them to enhance responses and perform specific actions. This feature is known as Function Calling or Tools.', 'ai-engine' ),
+  FUNCTIONS_UNAVAILABLE: __( 'There are no functions available. Please use <a href="https://wordpress.org/plugins/snippet-vault/" target="_blank">Snippet Vault</a> to add some. The Pro Version of AI Engine is also required for this feature.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {

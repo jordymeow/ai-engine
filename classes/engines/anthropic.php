@@ -12,6 +12,13 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
     parent::__construct( $core, $env );
   }
 
+  public function reset_stream() {
+    $this->streamContent = null;
+    $this->streamBuffer = null;
+    $this->inModel = null;
+    $this->inId = null;
+  }
+
   protected function set_environment() {
     $env = $this->env;
     $this->apiKey = $env['apikey'];
@@ -19,7 +26,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
 
   protected function build_url( $query, $endpoint = null ) {
     $endpoint = apply_filters( 'mwai_anthropic_endpoint', 'https://api.anthropic.com/v1', $this->env );
-    if ( $query instanceof Meow_MWAI_Query_Text ) {
+    if ( $query instanceof Meow_MWAI_Query_Text || $query instanceof Meow_MWAI_Query_Feedback ) {
       $url = trailingslashit( $endpoint ) . 'messages';
     }
     else {
@@ -34,6 +41,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       'Content-Type' => 'application/json',
       'x-api-key' => $this->apiKey,
       'anthropic-version' => '2023-06-01',
+      'anthropic-beta' => 'tools-2024-04-04',
       'User-Agent' => 'AI Engine',
     );
     return $headers;
@@ -94,8 +102,82 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
     return $messages;
   }
 
+  // Define a function to recursively replace empty arrays with empty stdClass objects
+  // To avoid errors with OpenAI's API
+  private function replaceEmptyArrayWithObject( $item ) {
+    if ( is_array( $item ) ) {
+      if ( empty( $item ) ) {
+        return new stdClass(); // Replace empty array with empty object
+      }
+      foreach ( $item as $key => $value ) {
+        $item[$key] = $this->replaceEmptyArrayWithObject( $value ); // Recurse
+      }
+    }
+    return $item;
+  }
+
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
-    if ( $query instanceof Meow_MWAI_Query_Text ) {
+    if ( $query instanceof Meow_MWAI_Query_Feedback ) {
+      $body = array(
+        "model" => $query->model,
+        "max_tokens" => $query->maxTokens,
+        "temperature" => $query->temperature,
+        "stream" => !is_null( $streamCallback ),
+        "messages" => []
+      );
+
+      // Build the messages
+      $body['messages'][] = [ 'role' => 'user', 'content' => $query->message ];
+
+      if ( !empty( $query->blocks ) ) {
+        foreach ( $query->blocks as $feedback_block ) {
+          $body['messages'][] = [
+            'role' => 'assistant',
+            'content' => $feedback_block['rawMessage']['content']
+          ];
+          foreach ( $feedback_block['feedbacks'] as $feedback ) {
+            $feedbackValue = $feedback['reply']['value'];
+            if ( !is_string( $feedbackValue ) ) {
+              $feedbackValue = json_encode( $feedbackValue );
+            }
+            $body['messages'][] = [
+              'role' => 'user',
+              'content' => [
+                [
+                  'type' => 'tool_result',
+                  'tool_use_id' => $feedback['request']['toolId'],
+                  'content' => $feedbackValue,
+                  'is_error' => false // Cool, Anthropic supports errors!
+                ]
+              ]
+            ];
+          }
+        }
+      }
+
+      // TODO: This WAS COPIED FROM BELOW
+      // Support for functions
+      if ( !empty( $query->functions ) ) {
+        $model = $this->retrieve_model_info( $query->model );
+        if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
+          error_log( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
+        }
+        else {
+          $body['tools'] = [];
+          // Dynamic function: they will interactively enhance the completion (tools).
+          foreach ( $query->functions as $function ) {
+            $body['tools'][] = $function->serializeForAnthropic();
+          }
+          // Static functions: they will be executed at the end of the completion.
+          //$body['function_call'] = $query->functionCall;
+        }
+      }
+
+      // To avoid errors with Anthropic's API, we need to replace empty arrays with empty objects
+      $body = $this->replaceEmptyArrayWithObject( $body );
+      return $body;
+    }
+    else if ( $query instanceof Meow_MWAI_Query_Text ) {
       $body = array(
         "model" => $query->model,
         "max_tokens" => $query->maxTokens,
@@ -119,6 +201,23 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
         }
         $body['system'] = empty( $body['system'] ) ? '' : $body['system'] . "\n\n";
         $body['system'] = $body['system'] . "Context:\n\n" . $query->context;
+      }
+
+      // Support for functions
+      if ( !empty( $query->functions ) ) {
+        $model = $this->retrieve_model_info( $query->model );
+        if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
+          error_log( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
+        }
+        else {
+          $body['tools'] = [];
+          // Dynamic function: they will interactively enhance the completion (tools).
+          foreach ( $query->functions as $function ) {
+            $body['tools'][] = $function->serializeForAnthropic();
+          }
+          // Static functions: they will be executed at the end of the completion.
+          //$body['function_call'] = $query->functionCall;
+        }
       }
 
       $body['messages'] = $this->build_messages( $query );
@@ -167,6 +266,8 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       add_action( 'http_api_curl', [ $this, 'stream_handler' ], 10, 3 );
     }
 
+    $this->reset_stream();
+    $data = null;
     $body = $this->build_body( $query, $streamCallback );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );
@@ -213,24 +314,50 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
         }
         $returned_id = $data['id'];
         $returned_model = $data['model'];
-        $returned_in_tokens = isset( $data['usage']['input_tokens'] ) ? $data['usage']['input_tokens'] : null;
-        $returned_out_tokens = isset( $data['usage']['output_tokens'] ) ? $data['usage']['output_tokens'] : null;
-        // There is only one choice with 
-        $returned_choices = [ [ 
-          'message' => [ 
-            'content' => $data['content'][0]['text'],
-            //'function_call' => $data['choices'][0]['delta']['function_call']
-          ]
-        ] ];
+        $returned_in_tokens = isset( $data['usage']['input_tokens'] ) ?
+          $data['usage']['input_tokens'] : null;
+        $returned_out_tokens = isset( $data['usage']['output_tokens'] ) ?
+          $data['usage']['output_tokens'] : null;
+
+        // We convert this into a format Meow_MWAI_Reply (set_choices) will understand
+        $returned_choices = [];
+        foreach ( $data['content'] as $content ) {
+          if ( $content['type'] === 'tool_use' ) {
+            $returned_choices[] = [ 
+              'message' => [ 
+                'tool_calls' => [
+                  [
+                    'id' => $content['id'],
+                    'type' => 'function',
+                    'function' => [
+                      'name' => $content['name'],
+                      'arguments' => empty( $content['input'] ) ? new stdClass() : $content['input'],
+                    ]
+                  ]
+                
+                ]
+              ]
+            ];
+          }
+          else if ( $content['type'] === 'text' ) {
+            $returned_choices[] = [ 
+              'message' => [ 
+                'content' => $content['text']
+              ]
+            ];
+          }
+        }
       }
       
-      $reply->set_choices( $returned_choices );
+      $reply->set_choices( $returned_choices, $data );
       if ( !empty( $returned_id ) ) {
         $reply->set_id( $returned_id );
       }
 
       // Handle tokens.
-      $this->handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens );
+      $this->handle_tokens_usage( $reply, $query, $returned_model,
+        $returned_in_tokens, $returned_out_tokens
+      );
 
       return $reply;
     }

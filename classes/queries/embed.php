@@ -60,7 +60,7 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
     ];
 
     if ( !empty( $this->context ) ) {
-      $json['context']['context'] = $this->context;
+      $json['context']['content'] = $this->context;
     }
 
     return $json;

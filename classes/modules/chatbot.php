@@ -7,11 +7,9 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', '
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
-// TODO: Actually, 'env' is being replaced by 'scope', so we need to really remove it from here
-// after, February 2024.
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'env', 'scope', 'mode', 'contentAware', 'context',
-	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId',
-	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey'
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context',
+	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions',
+	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions'
 ] );
 
 // Params for the discussions (front and server)
@@ -237,10 +235,13 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 
 				// Awareness & Embeddings
-					$context = $this->core->retrieve_context( $params, $query );
+				$context = $this->core->retrieve_context( $params, $query );
 				if ( !empty( $context ) ) {
 					$query->set_context( $context['content'] );
 				}
+
+				// Function Aware
+				$query = apply_filters( 'mwai_chatbot_query', $query, $params );
 			}
 
 			// Process Query
