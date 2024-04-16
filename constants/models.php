@@ -5,7 +5,7 @@
 define( 'MWAI_OPENAI_MODELS', [
   // Base models:
 	[
-		"model" => "gpt-4-turbo-preview",
+		"model" => "gpt-4-turbo",
 		"name" => "GPT-4 Turbo",
 		"family" => "gpt4",
 		"price" => [
@@ -19,11 +19,45 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview', 'functions']
+		"tags" => ['core', 'chat', 'json', 'vision', 'functions']
+	],
+	[
+		"model" => "gpt-4-turbo-preview",
+		"name" => "GPT-4 Turbo (Preview)",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions', 'deprecated']
+	],
+	[
+		"model" => "gpt-4-turbo-2024-04-09",
+		"name" => "GPT-4 Turbo (2024-04-09)",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.01,
+			"out" => 0.03,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions', 'deprecated']
 	],
 	[
 		"model" => "gpt-4-0125-preview",
-		"name" => "GPT-4 Turbo (0125)",
+		"name" => "GPT-4 Turbo (2024-01-25)",
 		"family" => "gpt4",
 		"price" => [
 			"in" => 0.01,
@@ -36,11 +70,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview', 'functions']
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions', 'deprecated']
 	],
 	[
 		"model" => "gpt-4-1106-preview",
-		"name" => "GPT-4 Turbo (1106)",
+		"name" => "GPT-4 Turbo (2023-11-06)",
 		"family" => "gpt4",
 		"price" => [
 			"in" => 0.01,
@@ -53,11 +87,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview', 'functions']
+		"tags" => ['core', 'chat', 'json', 'preview', 'functions', 'deprecated']
 	],
 	[
 		"model" => "gpt-4-vision-preview",
-		"name" => "GPT-4 Turbo with Vision",
+		"name" => "GPT-4 Turbo Vision (Preview)",
 		"family" => "gpt4",
 		"price" => [
 			"in" => 0.01,
@@ -70,7 +104,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'json', 'preview']
+		"tags" => ['core', 'chat', 'vision', 'json', 'preview', 'deprecated']
 	],
 	[ 
 		"model" => "gpt-4",

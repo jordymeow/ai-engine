@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.70
+Stable tag: 2.2.80
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,12 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.80 (2024/04/17) =
+* Add: New GPT-4 Turbo model (GPT-4 Turbo) which supports Vision, Function Calling, JSON.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.2.70 (2024/04/15) =
 * Add: Support for Function and Tools Calls with OpenAI and Claude, with back-and-forth feedback loop. Models can now get values to functions in you WordPress. The Pro Version of AI Engine also connects to [Snippet Vault](https://wordpress.org/plugins/snippet-vault/) to make this much easier.
 * Update: The WooCommerce Assistant has been moved to [SEO Engine](https://wordpress.org/plugins/seo-engine/). We shouldn't bloat AI Engine with features related to SEO.
@@ -117,9 +123,6 @@ Languages: English.
 * Add: Handle (multi) function calls with OpenAI assistants (via mwai_ai_function filter).
 * Add: Export Discussions to JSON.
 * Fix: Minor issues.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.2.4 (2024/03/12) =
 * Update: Huge overhaul of the embeddings system. It's now much more powerful, flexible and reliable. 
