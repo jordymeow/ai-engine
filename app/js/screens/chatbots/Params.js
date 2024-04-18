@@ -1,8 +1,7 @@
-// Previous: 2.2.56
-// Current: 2.2.70
+// Previous: 2.2.70
+// Current: 2.2.81
 
 const { useMemo, useEffect } = wp.element;
-
 import {
   NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage, NekoTypo,
   NekoColumn, NekoTextArea, NekoButton, NekoCollapsableCategory, NekoCollapsableCategories
@@ -23,12 +22,11 @@ const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options } = props;
   const { completionModels, imageModels, isFineTunedModel, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
-  const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
-  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
+  const isChat = (shortcodeParams.mode ?? 'chat') === 'chat';
+  const isAssistant = (shortcodeParams.mode ?? false) === 'assistant';
+  const isImagesChat = (shortcodeParams.mode ?? false) === 'images';
   const isContentAware = shortcodeParams.contentAware;
-  const contextHasContent = shortcodeParams.content && shortcodeParams.content.includes('{CONTENT}');
-  const chatIcon = shortcodeParams.icon ? shortcodeParams.icon : 'chat-color-green.svg';
+  const chatIcon = shortcodeParams.icon || 'chat-color-green.svg';
   const isCustomURL = chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustomURL ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
   const aiEnvironments = options?.ai_envs || [];
@@ -36,44 +34,48 @@ const ChatbotParams = (props) => {
   const availableFunctions = options?.functions || [];
   const functions = shortcodeParams.functions || [];
 
+  const instructionsHasContent = useMemo(() => {
+    return shortcodeParams.instructions && shortcodeParams.instructions.includes('{CONTENT}');
+  }, [shortcodeParams.instructions]);
+
   const aiEnvironment = useMemo(() => {
-    const freshEnvironment = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
-    return freshEnvironment;
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
+    return env ?? null;
   }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = aiEnvironment?.assistants || [];
   const assistant = useMemo(() => {
-    const freshAssistant = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
-    return freshAssistant;
+    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return assist ?? null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
-  const isFineTuned = isFineTunedModel ? isFineTunedModel(shortcodeParams.model) : false;
+  const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
 
   const environments = options.embeddings_envs || [];
   const environment = useMemo(() => {
-    const freshEnvironment = environments.find(e => e.id === shortcodeParams.embeddingsEnvId) || null;
-    return freshEnvironment;
+    const env = environments.find(e => e.id === shortcodeParams.embeddingsEnvId);
+    return env ?? null;
   }, [environments, shortcodeParams.embeddingsEnvId]);
-  const indexes = useMemo(() => environment?.indexes || [], [environment]);
-  const namespaces = useMemo(() => environment?.namespaces || [], [environment]);
+  const indexes = environment?.indexes || [];
+  const namespaces = environment?.namespaces || [];
 
   const modelSupportsFunctions = useMemo(() => {
-    return currentModel?.tags?.includes('functions') ?? false;
+    return currentModel?.tags?.includes('functions');
   }, [currentModel]);
 
-  const modelSupportsVision= useMemo(() => {
-    return currentModel?.tags?.includes('vision') ?? false;
+  const modelSupportsVision = useMemo(() => {
+    return currentModel?.tags?.includes('vision');
   }, [currentModel]);
 
   const modelSupportImage = useMemo(() => {
-    return currentModel?.tags?.includes('image') ?? false;
+    return currentModel?.tags?.includes('image');
   }, [currentModel]);
 
   useEffect(() => {
     if (modelSupportImage && !shortcodeParams.resolution) {
-      const resolutions = currentModel?.options?.map(x => x.option) ?? [];
-      const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : (resolutions[0] ?? '');
+      const resolutions = currentModel.options?.map(x => x.option) ?? [];
+      const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0] ?? '1024x1024';
       updateShortcodeParams(bestResolution, 'resolution');
     }
 
@@ -121,12 +123,9 @@ const ChatbotParams = (props) => {
   return (<>
     <NekoWrapper>
       <NekoColumn minimal>
-
         <StyledBuilderForm>
-
           <NekoCollapsableCategories keepState="chatbotParams">
             <NekoCollapsableCategory title={i18n.COMMON.CHATBOT}>
-
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.NAME}:</label>
@@ -159,7 +158,7 @@ const ChatbotParams = (props) => {
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col"
-                  style={{ height: shortcodeParams.mode === 'chat' ? 76 : 'inherit' }}>
+                  style={{ height: (shortcodeParams.mode ?? 'chat') === 'chat' ? 76 : 'inherit' }}>
                   <label>{i18n.COMMON.MODE}:</label>
                   <NekoSelect scrolldown id="mode" name="mode"
                     value={shortcodeParams.mode}
@@ -227,7 +226,7 @@ const ChatbotParams = (props) => {
                   <NekoSelect scrolldown name="model"
                     value={shortcodeParams.model} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"Default"}></NekoOption>
-                    {((isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
+                    {(isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -246,7 +245,7 @@ const ChatbotParams = (props) => {
                   <label>{i18n.COMMON.RESOLUTION}:</label>
                   <NekoSelect scrolldown name="resolution"
                     value={shortcodeParams.resolution} onChange={updateShortcodeParams}>
-                    {currentModel.options.map((x) => (
+                    {currentModel.options?.map((x) => (
                       <NekoOption key={x.option} value={x.option} label={x.option}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -330,7 +329,7 @@ const ChatbotParams = (props) => {
                 </div>
               </div>}
 
-              {isContentAware && !contextHasContent &&
+              {isContentAware && !instructionsHasContent &&
                 <NekoMessage variant="danger" style={{ marginTop: 15, padding: '10px 15px' }}>
                   <p>{toHTML(i18n.SETTINGS.ALERT_CONTENTAWARE_BUT_NO_CONTENT)}</p>
                 </NekoMessage>
@@ -341,12 +340,12 @@ const ChatbotParams = (props) => {
             {modelSupportsFunctions && <NekoCollapsableCategory
               title={i18n.COMMON.FUNCTIONS}>
               <p>{toHTML(i18n.HELP.FUNCTIONS)}</p>
-              {!availableFunctions?.length && <NekoMessage variant="danger">
+              {(!availableFunctions || !availableFunctions.length) && <NekoMessage variant="danger">
                 {toHTML(i18n.HELP.FUNCTIONS_UNAVAILABLE)}
               </NekoMessage>}
-              {!!availableFunctions?.length && <div style={{ maxHeight: 200, overflowY: 'auto',
+              {availableFunctions?.length && <div style={{ maxHeight: 200, overflowY: 'auto',
                 border: '1px solid #d1e3f2', marginTop: 10, padding: '5px 6px', borderRadius: 5 }}>
-                {availableFunctions?.map((func) => (
+                {availableFunctions.map((func) => (
                   <NekoCheckbox key={func.snippetId} name="functions" label={func.name}
                     description={func.desc}
                     checked={functions.some(x => x.id === func.snippetId)} value={func.snippetId}
@@ -388,7 +387,7 @@ const ChatbotParams = (props) => {
                   <label>{i18n.COMMON.CONTEXT_MAX_LENGTH}:</label>
                   <NekoInput name="contextMaxLength" type="number" step="1"
                     description={i18n.HELP.CONTEXT_MAX_LENGTH}
-                    value={shortcodeParams.contextMaxLength || options?.context_max_length}
+                    value={shortcodeParams.contextMaxLength ?? options?.context_max_length}
                     onBlur={updateShortcodeParams}
                     onEnter={updateShortcodeParams}
                   />
@@ -558,11 +557,8 @@ const ChatbotParams = (props) => {
                 </NekoButton>
               </div>
             </NekoCollapsableCategory>
-
           </NekoCollapsableCategories>
-
         </StyledBuilderForm>
-
       </NekoColumn>
     </NekoWrapper>
   </>);

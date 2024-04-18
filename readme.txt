@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.80
+Stable tag: 2.2.81
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,9 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.81 (2024/04/17) =
+* Fix: Issue with Content Aware. Besides {CONTENT}, it now also supports {TITLE}, {EXCERPT} and {URL}.
+
 = 2.2.80 (2024/04/17) =
 * Add: New GPT-4 Turbo model (GPT-4 Turbo) which supports Vision, Function Calling, JSON.
 * 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
