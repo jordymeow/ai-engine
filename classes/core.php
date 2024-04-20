@@ -808,6 +808,7 @@ class Meow_MWAI_Core
 	function update_chatbots( $chatbots ) {
 		$deprecatedFields = [ 'env', 'embeddingsIndex', 'embeddingsNamespace', 'service' ];
 		$htmlFields = [ 'textCompliance', 'aiName', 'userName', 'startSentence' ];
+		$keepLineReturnsFields = [ 'instructions' ];
 		$whiteSpacedFields = [ 'context' ];
 		foreach ( $chatbots as &$chatbot ) {
 			foreach ( $chatbot as $key => &$value ) {
@@ -834,7 +835,14 @@ class Meow_MWAI_Core
 					$value = $functions;
 				}
 				else {
+					if ( in_array( $key, $keepLineReturnsFields ) ) {
+						$value = preg_replace( '/\r\n/', "[==LINE_RETURN==]", $value );
+						$value = preg_replace( '/\n/', "[==LINE_RETURN==]", $value );
+					}
 					$value = sanitize_text_field( $value );
+					if ( in_array( $key, $keepLineReturnsFields ) ) {
+						$value = preg_replace( '/\[==LINE_RETURN==\]/', "\n", $value );
+					}
 				}
 			}
 		}

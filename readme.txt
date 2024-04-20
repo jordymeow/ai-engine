@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.90
+Stable tag: 2.2.91
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,10 +82,12 @@ Languages: English.
 
 == Changelog ==
  
-= 2.2.90 (2024/04/20) =
+= 2.2.91 (2024/04/21) =
 * Add: 'Chatbot' column in the 'Discussions' table.
 * Add: Categories for Embeddings Auto-Sync.
 * Update: TextArea for Start Sentence.
+* Fix: Issue with the Forms REST API.
+* Fix: Keep the line returns in the 'Instructions'.
 * Fix: When replying with Function Calling, keep the content and context of the messages.
 * Fix: Issue related to typing spaces within Gutenberg.
 * Fix: Avoid iframe to be executed in the Discussions tab.
