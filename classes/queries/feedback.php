@@ -38,6 +38,12 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
     if ( !empty( $query->functions ) ) {
       $this->set_functions( $query->functions );
     }
+    if ( !empty( $query->instructions ) ) {
+      $this->set_instructions( $query->instructions );
+    }
+    if ( !empty( $query->messages ) ) {
+      $this->set_messages( $query->messages );
+    }
   }
 
   public function add_feedback_block( $block ) {

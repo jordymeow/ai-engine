@@ -1,5 +1,5 @@
-// Previous: 2.2.4
-// Current: 2.2.62
+// Previous: 2.2.62
+// Current: 2.2.90
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -36,8 +36,9 @@ const logsColumns = [
 ];
 
 const retrieveLogs = async (logsQueryParams) => {
-  logsQueryParams.offset = (logsQueryParams.page - 1) * logsQueryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/system/logs/list`, { nonce: restNonce, method: 'POST', json: logsQueryParams });
+  const params = { ...logsQueryParams };
+  params.offset = (params.page - 1) * params.limit;
+  const res = await nekoFetch(`${apiUrl}/system/logs/list`, { nonce: restNonce, method: 'POST', json: params });
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
 };
 
@@ -72,7 +73,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData?.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const time = tableDateTimeFormatter(x.time);
       const user = tableUserIPFormatter(x.userId, x.ip);
 
@@ -102,7 +103,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         model: model,
         units: <div style={{ textAlign: 'right' }}>{x.units}<br /><small>{x.type}</small></div>,
         price: <>{jsxSimplifiedPrice}<br /><small>${x.price}</small></>,
-        time: time
+        time: <div style={{ textAlign: 'right' }}>{time}</div>
       };
     });
   }, [logsData]);
@@ -118,10 +119,12 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
     }
     else {
       await deleteLogs(selectedLogIds);
-      setSelectedLogIds([]);
+      setSelectedLogIds([]); 
     }
-    await queryClient.invalidateQueries({ queryKey: ['logs'] });
-    await queryClient.refetchQueries({ queryKey: ['logs'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['logs'] }),
+      queryClient.refetchQueries({ queryKey: ['logs'] })
+    ]);
     setBusyAction(false);
   };
 
@@ -154,8 +157,12 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
       <NekoTable busy={isFetchingLogs || busyAction}
         onSelectRow={id => { setSelectedLogIds([id]); }}
-        onSelect={ids => { setSelectedLogIds([ ...selectedLogIds, ...ids  ]); }}
-        onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
+        onSelect={ids => { 
+          setSelectedLogIds(prev => Array.from(new Set([ ...prev, ...ids ]))); 
+        }}
+        onUnselect={ids => { 
+          setSelectedLogIds(prev => prev.filter(x => !ids.includes(x))); 
+        }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
           setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
@@ -173,7 +180,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: -5 }}>
-        <NekoButton className="danger" disabled={selectedLogIds.length}
+        <NekoButton className="danger" disabled={selectedLogIds.length === 0}
           onClick={onDeleteSelectedLogs}>
           {i18n.COMMON.DELETE_ALL}
         </NekoButton>

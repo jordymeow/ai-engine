@@ -1,5 +1,5 @@
-// Previous: 2.2.62
-// Current: 2.2.63
+// Previous: 2.2.63
+// Current: 2.2.90
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,9 +11,10 @@ import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessa
 import { nekoFetch } from '@neko-ui';
 
 import i18n from '@root/i18n';
-import { apiUrl, restNonce } from '@app/settings';
+import { apiUrl, restNonce, chatbots as initChatbots } from '@app/settings';
 import { retrieveDiscussions, tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
 import ExportModal from './ExportModal';
+import { retrieveChatbots } from '@app/requests';
 
 const StyledContext = styled.div`
   font-size: 12px;
@@ -116,6 +117,12 @@ const options = {
         return textContent;
       },
     },
+    iframe: {
+      component: ({ children, ...props }) => {
+        const textContent = `<iframe ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</iframe>`;
+        return textContent;
+      },
+    },
   }
 };
 
@@ -179,28 +186,6 @@ const Message = ({ message }) => {
   );
 }
 
-const chatsColumns = [
-  { 
-    accessor: 'updated', title: 'Time', width: '80px', sortable: true
-  },
-  { 
-    accessor: 'user', title: 'User', width: '85px', 
-    filters: {
-      type: 'text',
-      description: i18n.HELP.USER_FILTER
-    },
-  },
-  { 
-    accessor: 'preview', title: i18n.COMMON.PREVIEW,
-    filters: {
-      type: 'text'
-    },
-  },
-  { 
-    accessor: 'messages', title: '#', width: '45px'
-  },
-];
-
 const deleteDiscussions = async (chatIds = []) => {
   const res = await nekoFetch(`${apiUrl}/discussions/delete`, { nonce: restNonce, method: 'POST', json: { chatIds } });
   return res;
@@ -211,6 +196,42 @@ const Discussions = () => {
   const [ modal, setModal ] = useState({ type: null, data: null });
   const [ busyAction, setBusyAction ] = useState(false);
   const [ autoRefresh, setAutoRefresh ] = useState(false);
+
+  const { data: chatbots } = useQuery({
+    queryKey: ['chatbots'], queryFn: retrieveChatbots, initialData: initChatbots
+  });
+
+  const chatsColumns = useMemo(() => {
+    return [
+      { 
+        accessor: 'updated', title: 'Time', width: '80px', sortable: true
+      },
+      { 
+        accessor: 'user', title: 'User', width: '85px', 
+        filters: {
+          type: 'text',
+          description: i18n.HELP.USER_FILTER
+        },
+      },
+      {
+        accessor: 'botId', title: 'Chatbot', width: '85px',
+        filters: { 
+          type: 'select',
+          options: chatbots.map(x => ({ value: x.botId, label: x.name }))
+        },
+      },
+      { 
+        accessor: 'preview', title: i18n.COMMON.PREVIEW,
+        filters: {
+          type: 'text'
+        },
+      },
+      { 
+        accessor: 'messages', title: '#', width: '45px'
+      },
+    ];
+  }, [chatbots]);
+
   const [ filters, setFilters ] = useState(() => {
     return chatsColumns.filter(v => v.filters).map(v => {
       return { accessor: v.accessor, value: null}
@@ -246,9 +267,13 @@ const Discussions = () => {
       const userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
       const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
       const lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
+      const chatbotName = chatbots.find(y => y.botId === x.botId)?.name;
       return {
         id: x.id,
-        chatId: x.chatId,
+        botId: <>
+          <div>{chatbotName}</div>
+          <div><small><i>{x.botId}</i></small></div>
+        </>,
         user: user,
         messages: messages?.length ?? 0,
         preview: <>
@@ -256,8 +281,8 @@ const Discussions = () => {
           <small>{lastExchange}</small>
         </>,
         extra: extra.model,
-        created: formattedCreated,
-        updated: formattedUpdated
+        created: <div style={{ textAlign: 'right' }}>{formattedCreated}</div>,
+        updated: <div style={{ textAlign: 'right' }}>{formattedUpdated}</div>
       };
     });
   }, [chatsData]);
@@ -299,9 +324,7 @@ const Discussions = () => {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
       const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
-      setSelectedIds(prev => {
-        return prev.filter(x => !selectedChatIds.includes(x));
-      });
+      setSelectedIds([]);
     }
     await queryClient.invalidateQueries({ queryKey: ['chats'] });
     queryClient.refetchQueries({ queryKey: ['chats'] });
@@ -333,6 +356,9 @@ const Discussions = () => {
     }
     return null;
   }, [chatsError]);
+
+  const formattedCreated = tableDateTimeFormatter(discussion?.created);
+  const formattedUpdated = tableDateTimeFormatter(discussion?.updated);
 
   return (<>
 
@@ -374,18 +400,18 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { setSelectedIds([id]) }}
-            onSelect={ids => { setSelectedIds([...selectedIds, ...ids]) }}
-            onUnselect={ids => { setSelectedIds([...selectedIds.filter(x => !ids.includes(x))]) }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
               style={{ width: 180 }}
-              onChange={() => setAutoRefresh(prev => !prev)} />
+              onChange={() => setAutoRefresh(!autoRefresh)} />
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
@@ -439,11 +465,11 @@ const Discussions = () => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Created</div>
-            <div>{discussion?.created}</div>
+            <div>{formattedCreated}</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Updated</div>
-            <div>{discussion?.updated}</div>
+            <div>{formattedUpdated}</div>
           </div>
 
         </NekoBlock>}

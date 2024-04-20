@@ -149,6 +149,7 @@ define( 'MWAI_OPTIONS', [
 		'syncPostsEnvId' => null,
 		'syncPostTypes' => ['post', 'page', 'product'],
 		'syncPostStatus' => ['publish'],
+		'syncPostCategories' => [],
 	],
 	'extra_models' => "",
 	'public_api' => false,

@@ -5,7 +5,7 @@ class Meow_MWAI_Query_Function {
   public string $description;
   public array $parameters;
   public string $type;
-  public string $id;
+  public ?string $id;
 
   public function __construct( string $name, string $description,
     array $parameters = [], string $type = 'PHP', string $id = null ) {

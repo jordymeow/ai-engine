@@ -129,28 +129,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   }
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
-    if ( $query instanceof Meow_MWAI_Query_Feedback ) {
-      $body = array(
-        "model" => $query->model,
-        "stream" => !is_null( $streamCallback ),
-        "messages" => []
-      );
-      if ( !empty( $query->blocks ) ) {
-        foreach ( $query->blocks as $feedback_block ) {
-          $body['messages'][] = $feedback_block['rawMessage'];
-          foreach ( $feedback_block['feedbacks'] as $feedback ) {
-            $body['messages'][] = [
-              'tool_call_id' => $feedback['request']['toolId'],
-              "role" => "tool",
-              'name' => $feedback['request']['name'],
-              'content' => $feedback['reply']['value']
-            ];
-          }
-        }
-      }
-      return $body;
-    }
-    else if ( $query instanceof Meow_MWAI_Query_Text ) {
+    if ( $query instanceof Meow_MWAI_Query_Text ) {
       $body = array(
         "model" => $query->model,
         "n" => $query->maxResults,
@@ -197,6 +176,25 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       else if ( $query->mode === 'completion' ) {
         $body['prompt'] = $this->build_prompt( $query );
       }
+
+      // Add the feedback if it's a feedback query.
+      if ( $query instanceof Meow_MWAI_Query_Feedback ) {
+        if ( !empty( $query->blocks ) ) {
+          foreach ( $query->blocks as $feedback_block ) {
+            $body['messages'][] = $feedback_block['rawMessage'];
+            foreach ( $feedback_block['feedbacks'] as $feedback ) {
+              $body['messages'][] = [
+                'tool_call_id' => $feedback['request']['toolId'],
+                "role" => "tool",
+                'name' => $feedback['request']['name'],
+                'content' => $feedback['reply']['value']
+              ];
+            }
+          }
+        }
+        return $body;
+      }
+
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
@@ -586,7 +584,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     try {
       $res = $this->run_query( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
-
+      
       $returned_id = null;
       $returned_model = $this->inModel;
       $returned_in_tokens = null;

@@ -1,5 +1,5 @@
-// Previous: 2.2.3
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.2.90
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -94,7 +94,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-      return;
     }
 
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
@@ -148,9 +147,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     currentHumanLanguage, isCustom };
 };
 
-// This hook allows to retrieve the models and their info based on the environment.
-// If no environment is given, the default OpenAI models are returned.
-// If allEnvs is true, all the models are returned, from every environment.
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
   const envId = overrideDefaultEnvId ? overrideDefaultEnvId : options?.ai_default_env;
@@ -500,7 +496,7 @@ function tableDateTimeFormatter(value) {
   const formattedTime = time.toLocaleTimeString('ja-JP', {
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
-  return <div style={{ textAlign: 'right' }}>{formattedDate}<br /><small>{formattedTime}</small></div>;
+  return <>{formattedDate}<br /><small>{formattedTime}</small></>;
 }
 
 function tableUserIPFormatter(userId, ip) {

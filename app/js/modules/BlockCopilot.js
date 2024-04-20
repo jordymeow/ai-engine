@@ -1,5 +1,5 @@
-// Previous: 2.1.0
-// Current: 2.2.70
+// Previous: 2.2.70
+// Current: 2.2.90
 
 /* eslint-disable react/display-name */
 
@@ -21,29 +21,35 @@ const BlockCopilot = () => {
       const [ query, setQuery ] = useState('');
       const [ busy, setBusy ] = useState(false);
       const [ composing, setComposing ] = useState(false);
-      const shouldRender = useRef(true);
+
+      const { content } = props.attributes;
 
       const handleKeyPress = (e) => {
         if (composing) {
           return;
         }
         const actualContent = (e?.target?.innerText || '').trim();
-        if (e.code === 'Space' && !actualContent) {
+        const localName = e?.target?.localName;
+        if (e.code === 'Space' && !actualContent && localName === 'p') {
           e.preventDefault();
           setDisplay(true);
         }
+        if (e.code === 'Backspace' && !query && display) {
+          e.preventDefault();
+          setDisplay(false);
+          setQuery('');
+        }
       };
 
-      const executeQuery = async (query) => {
-        if (!shouldRender.current) return;
+      const executeQuery = async (queryStr) => {
         try {
           setBusy(true);
           const res = await nekoFetch(`${apiUrl}/ai/copilot`, {
             method: 'POST',
             nonce: restNonce,
-            json: { action: 'write', prompt: query }
+            json: { action: 'write', prompt: queryStr }
           });
-          if (props.setAttributes) {
+          if (res.data !== undefined) {
             props.setAttributes({ content: res.data });
           }
         }
@@ -58,7 +64,7 @@ const BlockCopilot = () => {
         }
       };
 
-      const onAiTextKeyDown = async (e) => {
+      const onAiTextKeyDown = (e) => {
         if (composing) {
           return;
         }
@@ -66,7 +72,12 @@ const BlockCopilot = () => {
           e.preventDefault();
           executeQuery(query);
         }
-        if (e.code === 'Escape' || (e.code === 'Backspace' && !query)) {
+        if (e.code === 'Escape') {
+          e.preventDefault();
+          setDisplay(false);
+          setQuery('');
+        }
+        if (e.code === 'Backspace' && !query) {
           e.preventDefault();
           setDisplay(false);
           setQuery('');
@@ -74,39 +85,41 @@ const BlockCopilot = () => {
       };
 
       useEffect(() => {
-        shouldRender.current = true;
         if (display && aiTextControlRef.current) {
           aiTextControlRef.current.focus();
         }
-        return () => {
-          shouldRender.current = false;
-        };
       }, [display]);
 
       if (props.name === 'core/paragraph') {
         if (display) {
-          return (<div style={{ position: 'relative' }}>
-            <TextControl ref={aiTextControlRef}
-              label={<><AiIcon icon="wand" style={{ marginBottom: -4 }} />AI Copilot</>}
-              value={query} disabled={busy}
-              placeholder="Write about..."
-              onChange={(value) => setQuery(value)}
-              onKeyDown={onAiTextKeyDown}
-              onCompositionStart={() => setComposing(true)}
-              onCompositionEnd={() => setComposing(false)}
-            />
-            {busy && <Spinner style={{ position: 'absolute', top: 30, right: 0 }} />}
-          </div>);
+          return (
+            <div style={{ position: 'relative' }}>
+              <TextControl
+                ref={aiTextControlRef}
+                label={<><AiIcon icon="wand" style={{ marginBottom: -4 }} />AI Copilot</>}
+                value={query}
+                disabled={busy}
+                placeholder="Write about..."
+                onChange={(value) => setQuery(value)}
+                onKeyDown={onAiTextKeyDown}
+                onCompositionStart={() => setComposing(true)}
+                onCompositionEnd={() => setComposing(false)}
+              />
+              {busy && <Spinner style={{ position: 'absolute', top: 30, right: 0 }} />}
+            </div>
+          );
         }
-        return (<div
-          onCompositionStart={() => setComposing(true)}
-          onCompositionEnd={() => setComposing(false)}
-          onKeyDown={handleKeyPress}
-          tabIndex={0}>
-          <BlockEdit {...props} />
-        </div>);
+        return (
+          <div
+            onCompositionStart={() => setComposing(true)}
+            onCompositionEnd={() => setComposing(false)}
+            onKeyDown={handleKeyPress}
+          >
+            <BlockEdit {...props} />
+          </div>
+        );
       }
-      return (<BlockEdit {...props} />);
+      return <BlockEdit {...props} />;
     };
   };
 
@@ -116,21 +129,18 @@ const BlockCopilot = () => {
     if (name === "core/paragraph") {
       const editFn = settings.edit;
       settings.edit = (props) => {
-        const newProps = { ...props,
-          attributes: { 
+        props = {
+          ...props,
+          attributes: {
             ...props.attributes,
             placeholder: "Type / to choose a block, or press space to summon the AI Copilot",
           },
         };
-        if (editFn) {
-          return editFn(newProps);
-        }
-        return null;
+        return editFn(props);
       };
     }
     return settings;
   };
-
 
   addFilter("blocks.registerBlockType", "mwai-copilot/placeholder", modifyPlaceholder);
 };

@@ -264,6 +264,7 @@ i18n.HELP = {
   BANNED_IPS: __( 'Block access from specified IP addresses or ranges using CIDR notation; separate with commas.', 'ai-engine' ),
   POST_TYPES: __( 'Enable for these post types; separate with commas.', 'ai-engine' ),
   POST_STATUS: __( 'Enable for these post statuses (publish, draft, future, private, etc); separate with commas.', 'ai-engine' ),
+  POST_CATEGORIES: __( 'Enable for these categories (slugs); separate with commas. If none, it will be enabled for all.', 'ai-engine' ),
   CONTEXT_MAX_LENGTH: __( 'Truncate the context (Content-Aware, Embeddings, etc) to make sure it is below this number of characters.', 'ai-engine' ),
   MAX_MESSAGES: __( 'Maximum number of historical messages that is sent to the AI model.', 'ai-engine' ),
   INPUT_MAX_LENGTH: __( 'Maximum number of characters that can be input by the user.', 'ai-engine' ),

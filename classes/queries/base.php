@@ -152,7 +152,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * @param string $instructions The instructions.
    */
   public function set_instructions( string $instructions ): void {
-    // TODO: Is now called instructions. After March 2024, let's remove this, and keep only the last line.
     $this->instructions = apply_filters( 'mwai_ai_context', $instructions, $this );
     if ( $this->instructions !== $instructions ) {
       error_log( 'AI Engine: mwai_ai_context filter is deprecated. Please use mwai_ai_instructions instead.' );
