@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.91
+Stable tag: 2.2.92
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
  
-= 2.2.91 (2024/04/21) =
+= 2.2.92 (2024/04/21) =
 * Add: 'Chatbot' column in the 'Discussions' table.
 * Add: Categories for Embeddings Auto-Sync.
 * Update: TextArea for Start Sentence.
@@ -92,6 +92,7 @@ Languages: English.
 * Fix: Issue related to typing spaces within Gutenberg.
 * Fix: Avoid iframe to be executed in the Discussions tab.
 * Fix: And a few other minor issues.
+* Fix: Avoid issues with nonce.
 
 = 2.2.81 (2024/04/17) =
 * Fix: Issue with Content Aware. Besides {CONTENT}, it now also supports {TITLE}, {EXCERPT} and {URL}.

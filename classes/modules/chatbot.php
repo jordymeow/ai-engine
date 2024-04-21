@@ -518,6 +518,9 @@ class Meow_MWAI_Modules_Chatbot {
 
 	function clean_params( &$params ) {
 		foreach ( $params as $param => $value ) {
+			if ( $param === 'restNonce' ) {
+				continue;
+			}
 			if ( empty( $value ) || is_array( $value ) ) {
 				continue;
 			}
