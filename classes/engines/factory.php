@@ -58,7 +58,7 @@ class Meow_MWAI_Engines_Factory {
     }
     $env = self::get_env_from_id( $core, $envId );
     if ( $env['type'] === 'openai' || $env['type'] === 'azure' ) {
-      $engine = new Meow_MWAI_Engines_OpenAI( $core, $env );
+      $engine = Meow_MWAI_Engines_OpenAI::create( $core, $env );
       return $engine;
     }
     else if ( $env['type'] === 'google' ) {
@@ -82,7 +82,7 @@ class Meow_MWAI_Engines_Factory {
 
   public static function get_openai( $core, $envId = null ) : Meow_MWAI_Engines_OpenAI {
     $env = self::get_env_from_type( $core, [ 'openai', 'azure '], $envId );
-    $engine = new Meow_MWAI_Engines_OpenAI( $core, $env );
+    $engine = Meow_MWAI_Engines_OpenAI::create( $core, $env );
     return $engine;
   }
 

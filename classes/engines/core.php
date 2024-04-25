@@ -44,7 +44,8 @@ class Meow_MWAI_Engines_Core {
       $reply = $this->run_completion_query( $query, $streamCallback );
     }
     else if ( $query instanceof Meow_MWAI_Query_Assistant ) {
-      $reply = null;
+      $reply = $this->run_assistant_query( $query, $streamCallback );
+      // TODO: This filter is useless with Assistants v2
       $reply = apply_filters( 'mwai_ai_query_assistant', $reply, $query );
       if ( $reply === null ) {
         throw new Exception( 'Assistants are not supported in this version of AI Engine.' );
@@ -340,6 +341,10 @@ class Meow_MWAI_Engines_Core {
 
   public function run_completion_query( Meow_MWAI_Query_Base $query, $streamCallback = null ) : Meow_MWAI_Reply {
     throw new Exception( 'Not implemented.' );
+  }
+
+  public function run_assistant_query( Meow_MWAI_Query_Assistant $query, $streamCallback = null ) : Meow_MWAI_Reply {
+    throw new Exception( 'Not implemented, or not supported in this version of AI Engine.' );
   }
 
   public function run_embedding_query( Meow_MWAI_Query_Base $query ) {

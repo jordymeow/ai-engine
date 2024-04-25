@@ -476,18 +476,6 @@ class Meow_MWAI_Rest
 		}
 	}
 
-	// function rest_openai_models_get() {
-	// 	try {
-	// 		$openai = new Meow_MWAI_Engines_OpenAI( $this->core );
-	// 		$finetunes = $openai->listModels();
-	// 		return new WP_REST_Response([ 'success' => true, 'finetunes' => $finetunes ], 200 );
-	// 	}
-	// 	catch ( Exception $e ) {
-	// 		$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-	// 		return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
-	// 	}
-	// }
-
 	function rest_openai_deleted_finetunes_get() {
 		try {
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;

@@ -1,5 +1,5 @@
-// Previous: 2.0.8
-// Current: 2.1.1
+// Previous: 2.1.1
+// Current: 2.2.93
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -62,7 +62,7 @@ const Chatbots = (props) => {
       setCurrentChatbot(chatbot?.botId);
       return chatbot;
     }
-  }, [chatbots, currentBotId, chatbots]);
+  }, [chatbots, currentBotId]);
 
   const currentTheme = useMemo(() => {
     if (themes && currentChatbot) {
@@ -74,32 +74,33 @@ const Chatbots = (props) => {
 
   const updateChatbotParams = async (value, id) => {
 
-    if ( id === 'botId' && value === 'default' ) {
+    if (id === 'botId' && value === 'default') {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
-    if ( id === 'botId' && value === '' ) {
+    if (id === 'botId' && value === '') {
       alert("Your chatbot must have an ID.");
       return;
     }
-
-    if ( id === 'botId' && chatbots.find(x => x.botId === value) ) {
+    if (id === 'botId' && chatbots.find(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-
-    if (id === 'botId' && value !== currentChatbot[id] ) {
-      setCurrentChatbot(value);
+    if (id === 'botId' && value !== currentChatbot[id]) {
+      setCurrentBotId(value);
     }
 
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
-    const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    newChatbots[botIndex] = newParams;
-    newChatbots = await updateChatbots(newChatbots);
-    queryClient.setQueryData(['chatbots'], newChatbots);
+    if (currentChatbot) {
+      const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
+      if (botIndex !== -1) {
+        newChatbots[botIndex] = newParams;
+        newChatbots = await updateChatbots(newChatbots);
+        queryClient.setQueryData(['chatbots'], newChatbots);
+      }
+    }
     setBusyAction(false);
   };
 

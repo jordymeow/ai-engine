@@ -493,6 +493,14 @@
   max-width: 100%;
 }
 
+.mwai-text div p:first-child {
+  margin-top: 0;
+}
+
+.mwai-text div p:last-child {
+  margin-bottom: 0;
+}
+
 .mwai-open-button {
   position: absolute;
   right: 0;

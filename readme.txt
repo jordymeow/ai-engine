@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.92
+Stable tag: 2.2.93
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,12 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.93 (2024/04/25) =
+* Add: Streaming with Assistants.
+* Update: Support for Assistants v2.
+* Fix: In some cases, 'Rewrite Content' was ignored.
+* Info: Please remember that the [Assistants API](https://platform.openai.com/docs/assistants/overview) is a beta feature of OpenAI. Expect changes, issues, etc.
+
 = 2.2.92 (2024/04/21) =
 * Add: 'Chatbot' column in the 'Discussions' table.
 * Add: Categories for Embeddings Auto-Sync.
