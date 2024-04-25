@@ -37,11 +37,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   public function __construct( $core, $env )
   {
-    if ( !self::$creating ) {
+    $isOwnClass = get_class( $this ) === 'Meow_MWAI_Engines_OpenAI';
+    if ( $isOwnClass && !self::$creating ) {
       throw new \Exception( "Please use the create() method to instantiate the Meow_MWAI_Engines_OpenAI class." );
     }
-    $this->core = $core;
-    $this->env = $env;
+    parent::__construct( $core, $env );
     $this->set_environment();
   }
 
@@ -274,7 +274,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         $endpoint = isset( $env['endpoint'] ) ? $env['endpoint'] : null;
       }
       else {
-        throw new Exception( 'Endpoing is not defined, and this envType is not known: ' . $this->envType );
+        if ( empty( $this->envType ) ) {
+          throw new Exception( 'Endpoint is not defined, and this envType is not known.' );
+        }
+        throw new Exception( 'Endpoint is not defined, and this envType is not known: ' . $this->envType );
       }
     }
     // Add the base API to the URL

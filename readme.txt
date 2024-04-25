@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.93
+Stable tag: 2.2.94
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,7 +82,7 @@ Languages: English.
 
 == Changelog ==
  
-= 2.2.93 (2024/04/25) =
+= 2.2.94 (2024/04/25) =
 * Add: Streaming with Assistants.
 * Update: Support for Assistants v2.
 * Fix: In some cases, 'Rewrite Content' was ignored.
