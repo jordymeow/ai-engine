@@ -265,6 +265,20 @@
   border-radius: var(--mwai-borderRadius);
 }
 
+.mwai-chat .mwai-reply .mwai-text .mwai-filename {
+  display: flex;
+  font-style: italic;
+  text-decoration: none;
+  align-items: center;
+  font-size: 90%;
+}
+
+.mwai-chat .mwai-reply .mwai-text .mwai-filename svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+}
+
 .mwai-chat .mwai-reply .mwai-text * {
   font-size: var(--mwai-fontSize);
 }

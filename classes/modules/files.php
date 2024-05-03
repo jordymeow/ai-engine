@@ -131,6 +131,31 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
+  public function get_info( $refId ) {
+    $info = null;
+    if ( $this->check_db() ) {
+      $info = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+        FROM $this->table_files
+        WHERE refId = %s", $refId
+      ), ARRAY_A );
+    }
+    if ( !$info ) {
+      $posts = get_posts( [ 'post_type' => 'attachment', 'meta_key' => '_mwai_file_id', 'meta_value' => $refId ] );
+      if ( $posts ) {
+        $post = $posts[0];
+        $info = [
+          'refId' => $refId,
+          'url' => wp_get_attachment_url( $post->ID ),
+          'path' => get_attached_file( $post->ID )
+        ];
+      }
+    }
+    if ( $info ) {
+      $info['metadata'] = $this->get_metadata( $refId );
+    }
+    return $info;
+  }
+
   public function get_url( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
@@ -238,12 +263,13 @@ class Meow_MWAI_Modules_Files {
 
     $target = empty( $target ) ? $this->core->get_option( 'image_local_upload' ) : $target;
     $expiry = empty( $expiry ) ? $this->core->get_option( 'image_expires' ) : $expiry;
-    if ( $purpose === 'assistant-in' || $purpose === 'assistant-out' ) {
-      // If it's an upload for an assistant, it's better to avoid having the file in the Media Library
-      // (and therefore, to only have it in the uploads folder) and to have it to never expire.
-      $target = 'uploads';
-      $expiry = null;
-    }
+
+    // if ( $purpose === 'assistant-in' || $purpose === 'assistant-out' ) {
+    //   // If it's an upload for an assistant, it's better to avoid having the file in the Media Library
+    //   // (and therefore, to only have it in the uploads folder) and to have it to never expire.
+    //   $target = 'uploads';
+    //   $expiry = null;
+    // }
 
     $expires = ( $expiry === 'never' || empty( $expiry ) ) ? null : date( 'Y-m-d H:i:s', time() + intval( $expiry ) );
     $refId = null;
@@ -332,6 +358,8 @@ class Meow_MWAI_Modules_Files {
       $this->wpdb->update( $this->table_files, [ 'refId' => $refId ], [ 'id' => $fileId ] );
     }
   }
+
+  
 
   public function update_envId( $fileId, $envId ) {
     if ( $this->check_db() ) {

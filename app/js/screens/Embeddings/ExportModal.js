@@ -1,11 +1,13 @@
-// Previous: 1.9.91
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.2.95
 
 const { useState } = wp.element;
 import Papa from 'papaparse';
 
 import { NekoButton, NekoModal, NekoProgress } from '@neko-ui';
 import { retrieveVectors } from '@app/helpers-admin';
+
+import { mwaiStringify } from '@app/helpers';
 
 function downloadAsFile(data, filename) {
   const blob = new Blob([data], { type: 'text/plain;charset=utf-8;' });
@@ -27,13 +29,13 @@ const ExportModal = ({ modal, setModal }) => {
     try {
       setBusy(true);
       const vectors = await retrieveAllVectors();
-      const json = JSON.stringify(vectors, null, 2);
+      const json = mwaiStringify(vectors, 2);
       const date = new Date();
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       const day = date.getDate();
       downloadAsFile(json, `vectors-${year}-${month}-${day}.json`);
-      setTimeout(() => { setTotal(0); }, 1500);
+      setTimeout(() => { setTotal(0); }, 1000);
     }
     catch (err) {
       console.error(err);
@@ -54,7 +56,7 @@ const ExportModal = ({ modal, setModal }) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       downloadAsFile(csv, `vectors-${year}-${month}-${day}.csv`);
-      setTimeout(() => { setTotal(0); }, 1500);
+      setTimeout(() => { setTotal(0); }, 1000);
     }
     catch (err) {
       console.error(err);
@@ -81,10 +83,13 @@ const ExportModal = ({ modal, setModal }) => {
       if (res.vectors.length < 2) {
         finished = true;
       }
-      setTotal(prev => res.total);
+      setTotal(() => res.total);
       vectors = vectors.concat(res.vectors);
-      setCount(prev => vectors.length);
+      setCount(() => vectors.length);
       params.page++;
+      if (vectors.length >= res.total) {
+        finished = true;
+      }
     }
 
     return vectors;

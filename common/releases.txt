@@ -1,0 +1,25 @@
+Releases of the Meow Commmon has to be carefully made, and version_compare
+should be used when big changes are made.
+
+= 3.9 (2024/04/25) =
+* is_beaver_builder()
+
+= 3.8 (2023/12/08) =
+* Fixed the texts, simplified the UI.
+
+= 3.7 (2021/11/24) =
+* Added Database Cleaner in the dashboard.
+
+= 3.6 (2021/09/22) =
+* Premium classes are now separated.
+
+= 3.5 (2021/08/31) =
+* Better security.
+* New images.
+
+= 3.4 (2021/08/05) =
+* Sanitize and escaping.
+
+= 3.3 (2020/12/19) =
+* is_cornerstone_builder()
+* is_pagebuilder_request()

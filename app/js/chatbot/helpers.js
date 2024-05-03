@@ -1,5 +1,5 @@
-// Previous: 2.0.6
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.2.95
 
 const { useState, useMemo, useEffect, useRef, useImperativeHandle } = wp.element;
 
@@ -79,6 +79,16 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
     WebkitAnimation: active ? "pulse 2s infinite" : ""
   };
 
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = pulsarAnimation;
+    document.head.appendChild(styleSheet);
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
+
   return (
     <div active={active ? "true" : "false"} disabled={disabled} {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"
@@ -152,7 +162,7 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, disabled, sty
         dangerouslySetInnerHTML={{ __html: type === 'vision' ? svgPicturePath : svgFilePath }}
       />
       <span>
-        {uploadedFile?.uploadProgress && `${Math.round(uploadedFile.uploadProgress)}%`}
+        {uploadedFile.uploadProgress && `${Math.round(uploadedFile.uploadProgress)}%`}
       </span>
       {/* Hidden file input */}
       <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
@@ -273,11 +283,13 @@ function useChrono() {
 function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, modCss) {
   if (!userName) {
     if (userData) {
+      // Gravatar
       userName = <div className={modCss(['mwai-avatar'])}>
         <img src={userData.AVATAR_URL} />
       </div>;
     }
     else {
+      // Default avatar
       userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
         <img src={`${pluginUrl}/images/avatar-user.svg`} />
       </div>;
@@ -372,7 +384,7 @@ const useSpeechRecognition = (onResult) => {
       if (isAndroid) {
         const diff = transcript.slice(lastTranscript.length);
         lastTranscript = transcript;
-        onResult(lastTranscript);
+        onResult(diff);
       }
       else {
         onResult(transcript);
@@ -380,6 +392,7 @@ const useSpeechRecognition = (onResult) => {
     };
 
     if (isListening) {
+      recognition.removeEventListener('result', handleResult);
       recognition.addEventListener('result', handleResult);
       recognition.start();
     } else {
@@ -396,6 +409,6 @@ const useSpeechRecognition = (onResult) => {
 };
 
 export { useModClasses, is_url, handlePlaceholders, useInterval,
-  useSpeechRecognition, Microphone, ChatUpload, 
+  useSpeechRecognition, Microphone, ChatUpload, svgFilePath, svgPicturePath,
   useChrono, formatUserName, formatAiName, processParameters
 };

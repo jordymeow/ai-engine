@@ -1,9 +1,10 @@
-// Previous: 2.2.63
-// Current: 2.2.90
+// Previous: 2.2.90
+// Current: 2.2.95
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
+
 import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoTextArea, NekoInput, NekoToolbar, NekoTypo,
   NekoTable, NekoPaging, NekoMessage, NekoSpacer, NekoSwitch, NekoBlock, NekoCheckbox, NekoUploadDropArea, NekoTabs, NekoTab, NekoWrapper, NekoColumn, NekoIcon } from '@neko-ui';
 import { nekoFetch, useNekoTasks, useNekoColors } from '@neko-ui';
@@ -12,6 +13,7 @@ import i18n from '@root/i18n';
 import { apiUrl, restNonce } from '@app/settings';
 import { retrieveVectors, retrieveRemoteVectors, retrievePostsCount, addFromRemote,
   synchronizeEmbedding, retrievePostsIds, DEFAULT_VECTOR, useModels } from '@app/helpers-admin';
+import { mwaiStringify } from '@app/helpers';
 import { retrievePostTypes } from '@app/requests';
 import AddModifyModal from './AddModifyModal';
 import ExportModal from './ExportModal';
@@ -62,8 +64,8 @@ const StatusIcon = ({ id, status, includeText = false, title = null }) => {
 };
 
 const setLocalSettings = ({ environmentId }) => {
-  const settings = { environmentId: environmentId || null };
-  localStorage.setItem('mwai-admin-embeddings', JSON.stringify(settings));
+  const settings = {　environmentId: environmentId || null　};
+  localStorage.setItem('mwai-admin-embeddings', mwaiStringify(settings));
 };
 
 const getLocalSettings = () => {
@@ -108,13 +110,13 @@ const Embeddings = ({ options, updateOption }) => {
       return allModels.getModel(environment.ai_embeddings_model);
     }
     return allModels.getModel(options.ai_embeddings_default_model);
-  }, [environment, options]);
+  }, [environment, options.ai_embeddings_default_model]);
 
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
-    queryKey: ['postsCount-' + postType + '-' + embeddingsSettings?.syncPostStatus ?? 'publish'],
+    queryKey: ['postsCount-' + postType + '-' + (embeddingsSettings?.syncPostStatus ?? 'publish')],
     queryFn: () => retrievePostsCount(postType, embeddingsSettings?.syncPostStatus ?? 'publish'),
   });
 
@@ -129,13 +131,13 @@ const Embeddings = ({ options, updateOption }) => {
 
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(false);
+    setBusy(null);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
@@ -153,19 +155,19 @@ const Embeddings = ({ options, updateOption }) => {
   }, [embeddingsSettings.syncPostsEnvId]);
 
   useEffect(() => {
-    setQueryParams(prev => ({ ...prev, 
+    setQueryParams({ ...queryParams, 
       filters: { envId: environmentId, search, debugMode }
-    }));
+    });
     setLocalSettings({ environmentId });
-  }, [environmentId, debugMode, search]);
+  }, [environmentId, debugMode]);
 
   useEffect(() => {
     const freshSearch = mode === 'edit' ? null : "";
     setSearch(mode === 'edit' ? null : "");
-    setQueryParams(prev => ({ ...prev,
-      filters: { ...prev.filters, search: freshSearch },
+    setQueryParams({ ...queryParams,
+      filters: { ...queryParams.filters, search: freshSearch },
       sort: { accessor: (mode === 'edit' ? 'created' : 'score'), by: 'desc' }, page: 1, limit: 20
-    }));
+    });
   }, [mode]);
 
   useEffect(() => {
@@ -199,15 +201,15 @@ const Embeddings = ({ options, updateOption }) => {
       queryClient.invalidateQueries({ queryKey: ['vectors'] });
       return;
     }
-    setQueryParams(prev => ({ ...prev, filters: { ...prev.filters, search } }));
+    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search } });
   };
 
-  const onResetSearch = () => {
-    setSearch('');
-    setQueryParams(prev => ({ ...prev, filters: { ...prev.filters, search: '' } }));
+  const onResetSearch = async () => {
+    setSearch("");
+    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search: "" } });
   };
 
-  const onAddEmbedding = async (inEmbedding = modal.data, skipBusy = false) => {
+  const onAddEmbedding = async (inEmbedding = embeddingModal, skipBusy = false) => {
     if (!skipBusy) {
       setBusy('addEmbedding');
     }
@@ -220,7 +222,8 @@ const Embeddings = ({ options, updateOption }) => {
         json: { vector }
       });
       updateVectorsData(freshVector?.vector, true);
-      setModal({ type: null, data: null });
+      setEmbeddingModal(false);
+      console.log("Embedding Added", inEmbedding);
     }
     catch (err) {
       console.error(err);
@@ -234,7 +237,7 @@ const Embeddings = ({ options, updateOption }) => {
     return true;
   };
 
-  const onModifyEmbedding = async (inEmbedding = modal.data, skipBusy) => {
+  const onModifyEmbedding = async (inEmbedding = embeddingModal, skipBusy) => {
     if (!skipBusy) {
       setBusy('addEmbedding');
     }
@@ -245,11 +248,17 @@ const Embeddings = ({ options, updateOption }) => {
         json: { vector }
       });
       updateVectorsData(freshVector?.vector);
-      setModal({ type: null, data: null });
+      setEmbeddingModal(false);
+      console.log("Embeddings updated.", freshVector);
     }
     catch (err) {
       console.error(err);
       throw new Error(err.message ?? "Unknown error, check your console logs.");
+    }
+    finally {
+      if (!skipBusy) {
+        setBusy(false);
+      }
     }
     return true;
   };
@@ -299,13 +308,9 @@ const Embeddings = ({ options, updateOption }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          try {
-            data = JSON.parse(fileContent);
-          } catch {
-            console.error('Invalid JSON');
-            data = [];
-          }
-        } else if (isJsonl) {
+          data = JSON.parse(fileContent);
+        }
+        else if (isJsonl) {
           const lines = fileContent.split('\n');
           data = lines.map(x => {
             x = x.trim();
@@ -316,8 +321,9 @@ const Embeddings = ({ options, updateOption }) => {
               console.error(e);
               return null;
             }
-          }).filter(x => x);
-        } else if (isCsv) {
+          });
+        }
+        else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
           console.log('The CSV for Embeddings Import was loaded.', data);
@@ -331,7 +337,7 @@ const Embeddings = ({ options, updateOption }) => {
           console.warn('Empty line: ', findEmpty);
         }
         setModal({ type: 'import',
-          data: { importVectors: cleanData, envId: environmentId }
+          data: {　importVectors: cleanData,　envId: environmentId,　}
         });
       };
       reader.readAsText(file);
@@ -382,7 +388,7 @@ const Embeddings = ({ options, updateOption }) => {
         subType = x.subType.toUpperCase();
       }
 
-      const modelName = allModels.getModel(x.model)?.name ?? x.model;
+      const modelName = useModels(options, false, true).getModel(x.model)?.name ?? x.model;
       const isDifferentModel = x.model && x.model !== embeddingsModel?.model;
       const isDifferentEnv = x.envId !== environmentId;
       const envName = environments.find(e => e.id === x.envId)?.name;
@@ -427,7 +433,7 @@ const Embeddings = ({ options, updateOption }) => {
         </>
       };
     });
-  }, [mode, vectorsData, isBusy, embeddingsModel, environmentId, environments, allModels, colors]);
+  }, [mode, vectorsData, isBusy, embeddingsModel, environmentId, environments, options, colors]);
 
   const onSynchronizeEmbedding = async (vectorId) => {
     setBusy('syncEmbedding');
@@ -450,10 +456,12 @@ const Embeddings = ({ options, updateOption }) => {
         }
         return vector;
       });
+
       if (!wasUpdated && isAdd) {
         updatedVectors = [freshVector, ...updatedVectors];
         currentVectorsData.total += 1;
       }
+
       const { accessor, by } = queryParams.sort;
       updatedVectors.sort((a, b) => {
         if (by === 'asc') {
@@ -462,14 +470,17 @@ const Embeddings = ({ options, updateOption }) => {
           return b[accessor] - a[accessor];
         }
       });
+
       const { page, limit } = queryParams;
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
       const paginatedVectors = updatedVectors.slice(startIndex, endIndex);
+
       const updatedVectorsData = {
         ...currentVectorsData,
         vectors: paginatedVectors,
       };
+
       queryClient.setQueryData(['vectors', queryParams], updatedVectorsData);
     }
   };
@@ -498,9 +509,10 @@ const Embeddings = ({ options, updateOption }) => {
       params.page++;
     }
     console.log("Remote vectors retrieved.", { remoteVectors });
+
     finished = false;
     params.limit = 20;
-    params.page = 0;
+    params.page = 0; // Potential bug: should be 1 to align with pagination logic
     while (!finished) {
       const res = await retrieveVectors(params);
       if (res.vectors.length < params.limit) {
@@ -510,20 +522,26 @@ const Embeddings = ({ options, updateOption }) => {
       params.page++;
     }
     vectors = vectors.map(x => x.dbId);
+
     console.log("Local vectors retrieved.", { vectors });
+
     const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x));
+
     console.log("Vectors to pull from Vector DB to AI Engine.", { vectorsToPull });
+   
     if (!vectorsToPull.length) {
       setBusy(false);
       alert(`${remoteVectors.length} vectors were pulled from the remote database. They are already synchronized with the local database.`);
       return;
     }
+
     const tasks = vectorsToPull.map(dbId => async (signal) => {
       await addFromRemote({ envId: environmentId, dbId: dbId }, signal);
       await queryClient.invalidateQueries({ queryKey: ['vectors'] });
       return { success: true };
     });
     await bulkTasks.start(tasks);
+
     setBusy(false);
     alert("All done! For more information, check the console (Chrome Developer Tools).");
     bulkTasks.reset();
@@ -538,12 +556,14 @@ const Embeddings = ({ options, updateOption }) => {
         await runProcess(null, postId, signal);
         return { success: true };
       });
-    } else {
-      const postIds = vectorsData?.vectors.filter(x => selectedIds.includes(x.id)) || [];
+    }
+    else {
+      const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id));
       tasks = postIds.map(vector => async (signal) => {
         if (vector.type === 'postId') {
           await runProcess(vector.id, null, signal);
-        } else if (vector.type === 'manual') {
+        }
+        else if (vector.type === 'manual') {
           await onModifyEmbedding(vector, signal);
         }
         return { success: true };
@@ -579,7 +599,7 @@ const Embeddings = ({ options, updateOption }) => {
           setEnvironmentId(value);
         }}>
         {environments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
-        {!environments.length && <NekoOption value={null} label="None" />}
+        {!environments?.length && <NekoOption value={null} label="None" />}
       </NekoSelect>
     </div>
   </>, [environment, environments, isBusy]);
@@ -669,13 +689,13 @@ const Embeddings = ({ options, updateOption }) => {
           <NekoTable busy={isBusy}
             sort={queryParams.sort}
             onSortChange={(accessor, by) => {
-              setQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+              setQueryParams({ ...queryParams, sort: { accessor, by } });
             }}
             emptyMessage={emptyMessage}
             data={vectorsRows} columns={columns} 
             onSelectRow={id => { setSelectedIds([id]); }}
-            onSelect={ids => { setSelectedIds(prev => Array.from(new Set([...prev, ...ids]))); }}
-            onUnselect={ids => { setSelectedIds(prev => prev.filter(x => !ids.includes(x))); }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
             selectedItems={selectedIds}
           />
 
@@ -693,7 +713,7 @@ const Embeddings = ({ options, updateOption }) => {
 
             <NekoPaging currentPage={queryParams.page} limit={queryParams.limit}
               total={vectorsTotal} onClick={page => { 
-                setQueryParams(prev => ({ ...prev, page }));
+                setQueryParams({ ...queryParams, page });
               }}
             />
             <NekoButton className="primary" style={{ marginLeft: 5 }} disabled={!environment}
@@ -748,7 +768,7 @@ const Embeddings = ({ options, updateOption }) => {
 
               <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>
                 <NekoButton fullWidth className="secondary" disabled={!environment || isBusy}
-                  onClick={() => ref.current.click()}>
+                  onClick={() => ref.current.click() }>
                   Import CSV or JSON
                 </NekoButton>
               </NekoUploadDropArea>
@@ -757,15 +777,13 @@ const Embeddings = ({ options, updateOption }) => {
 
               <div style={{ display: 'flex', alignItems: 'center' }}>
 
-                {/* Total Posts + Post Type Select */}
                 <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                   style={{ width: 100 }} onChange={setPostType} value={postType}>
-                  {postTypes?.map(pt => 
-                    <NekoOption key={pt.type} value={pt.type} label={pt.name} />
+                  {postTypes?.map(postType => 
+                    <NekoOption key={postType.type} value={postType.type} label={postType.name} />
                   )}
                 </NekoSelect>
 
-                {/* Actions for All Posts */}
                 <NekoButton fullWidth className="primary" style={{ marginLeft: 10 }}
                   disabled={!environment || isBusy} isBusy={busy === 'bulkPushAll'}
                   onClick={() => onBulkPushClick(true)}>
@@ -889,7 +907,8 @@ const Embeddings = ({ options, updateOption }) => {
     <ExportModal modal={modal} setModal={setModal} busy={busy} />
 
     <ImportModal modal={modal} setModal={setModal} busy={busy}
-      onAddEmbedding={onAddEmbedding} onModifyEmbedding={onModifyEmbedding} />
+      onAddEmbedding={onAddEmbedding} onModifyEmbedding={onModifyEmbedding} 
+    />
 
     {bulkTasks.TasksErrorModal}
 

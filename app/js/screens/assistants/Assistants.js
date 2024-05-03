@@ -1,18 +1,19 @@
-// Previous: 2.1.7
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.2.95
 
 // React & Vendor Libs
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // NekoUI Components
-import { NekoTable, NekoMessage, NekoButton, NekoSelect, NekoOption, NekoWrapper, NekoColumn,
-  NekoTabs, NekoTab, NekoModal, NekoSpacer, NekoBlock, NekoTypo, NekoPaging } from '@neko-ui';
+import { NekoTable, NekoMessage, NekoButton, NekoSelect, NekoOption, NekoWrapper, NekoColumn, NekoIcon,
+  NekoTabs, NekoTab, NekoModal, NekoSpacer, NekoBlock, NekoTypo, NekoPaging, useNekoColors } from '@neko-ui';
 import i18n from '@root/i18n';
 
 import { deleteFiles, retrieveFiles } from '@app/requests';
 import { retrieveAssistants } from '@app/requests';
 import { toHTML } from '@app/helpers-admin';
+import { mwaiStringify } from '@app/helpers';
 
 const assistantColumns = [
   {
@@ -85,7 +86,7 @@ const setLocalSettings = ({ envId }) => {
   const settings = {
     envId: envId || null
   };
-  localStorage.setItem('mwai-admin-assistants', JSON.stringify(settings));
+  localStorage.setItem('mwai-admin-assistants', mwaiStringify(settings));
 };
 
 const Assistants = ({ options, refreshOptions }) => {
@@ -97,6 +98,7 @@ const Assistants = ({ options, refreshOptions }) => {
   const [ modelFilter, setModelFilter ] = useState('all');
   const [ section, setSection ] = useState('assistants');
   const [ selectedIds, setSelectedIds ] = useState([]);
+  const { colors } = useNekoColors();
 
   const environment = useMemo(() => environments.find(x => x.id === envId), [envId, environments]);
   const deletedAssistants = environment?.assistants_deleted || [];
@@ -110,7 +112,7 @@ const Assistants = ({ options, refreshOptions }) => {
     page: 1,
     limit: 10
   });
-  const queryParamsChecksum = JSON.stringify(filesQueryParams);
+  const queryParamsChecksum = mwaiStringify(filesQueryParams);
 
   useEffect(() => {
     const localSettings = getLocalSettings();
@@ -184,8 +186,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    if (!dataFiles) return [];
-    return dataFiles.files.map(file => ({
+    return dataFiles?.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
@@ -232,15 +233,32 @@ const Assistants = ({ options, refreshOptions }) => {
         `${assistant.instructions.slice(0, 100)}...` : assistant.instructions,
       parameters: <>
         <ul style={{ margin: 0, padding: 0 }}>
-          <li style={{ margin: 0 }}>Model: {assistant.model}</li>
-          <li style={{ margin: 0 }}>Files: {assistant.files_count}</li>
-          <li style={{ margin: 0 }}>Retrieval: {assistant.has_retrieval ? 'Yes' : 'No'}</li>
-          <li style={{ margin: 0 }}>Code Interpreter: {assistant.has_code_interpreter ? 'Yes' : 'No'}</li>
+          <li style={{ margin: 0, display: 'flex' }}>
+            <NekoIcon icon='check' width={16} color={colors.green} />
+            <span style={{ marginLeft: 3 }}>{assistant.model}</span>
+          </li>
+          <li style={{ margin: 0, display: 'flex' }}>
+            <NekoIcon icon={assistant.has_file_search ? 'check' : 'close'} width={16}
+              color={assistant.has_file_search ? colors.green : colors.gray}
+            />
+            <a style={{ marginLeft: 3 }} href={"https://platform.openai.com/docs/assistants/tools/file-search"}
+              target="_blank" rel="noreferrer">File Search</a>
+          </li>
+          <li style={{ margin: 0, display: 'flex' }}>
+            <NekoIcon icon={assistant.has_code_interpreter ? 'check' : 'close'} width={16}
+              color={assistant.has_code_interpreter ? colors.green : colors.gray}
+            />
+            <a style={{ marginLeft: 3 }} href={"https://platform.openai.com/docs/assistants/tools/code-interpreter"}
+              target="_blank" rel="noreferrer">Code Interpreter</a>
+          </li>
         </ul>
+        <p style={{ lineHeight: '11px', margin: '5px 0' }}>
+          <small>Note: AI Engine currently uses the Assistants API v2. Retrieval have been deprecated by OpenAI. More information <a href="https://platform.openai.com/docs/assistants/whats-new" target="_blank" rel="noreferrer">here</a>.</small>
+        </p>
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [modelFilter, deletedAssistants, allAssistants]);
+  }, [modelFilter, deletedAssistants, allAssistants, colors]);
 
   const busy = busyAction;
 

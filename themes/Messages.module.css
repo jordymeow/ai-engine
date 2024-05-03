@@ -130,6 +130,24 @@
   border-radius: var(--mwai-borderRadius);
 }
 
+.mwai-chat .mwai-text .mwai-filename {
+  display: flex;
+  font-style: italic;
+  text-decoration: none;
+  align-items: center;
+  color: var(--mwai-fontColor);
+  font-size: 90%;
+  background: white;
+  border-radius: 5px;
+  padding: 2px 3px;
+}
+
+.mwai-chat .mwai-text .mwai-filename svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+}
+
 .mwai-chat .mwai-text > span > p > *:first-child {
   margin-top: 0;
 }
@@ -387,6 +405,14 @@
 
 .mwai-text img {
   max-width: 100%;
+}
+
+.mwai-text div p:first-child {
+  margin-top: 0;
+}
+
+.mwai-text div p:last-child {
+  margin-bottom: 0;
 }
 
 .mwai-open-button {

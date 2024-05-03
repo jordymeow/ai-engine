@@ -1,16 +1,15 @@
-// Previous: 1.9.84
-// Current: 2.0.3
+// Previous: 2.0.3
+// Current: 2.2.95
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
+import { mwaiStringify } from '@app/helpers';
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
 const { Button, PanelBody, TextControl, SelectControl, CheckboxControl } = wp.components;
 const { useBlockProps, InspectorControls } = wp.blockEditor;
-
-//import { useBlockProps } from '@wordpress/block-editor';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -19,10 +18,9 @@ function capitalizeFirstLetter(string) {
 const saveFormField = (props) => {
   const { attributes: { id, label, type, name, options = [],
     placeholder, rows, defaultValue, maxlength, required } } = props;
-  const encodedOptions = encodeURIComponent(JSON.stringify(options));
+  const encodedOptions = encodeURIComponent(mwaiStringify(options));
   const blockProps = useBlockProps.save();
 
-  // Build shortcode
   let shortcode = '[mwai-form-field';
   if (id) {
     shortcode += ` id="${id}"`;
@@ -59,7 +57,7 @@ const saveFormField = (props) => {
   return <div {...blockProps}>{shortcode}</div>;
 };
 
-const FormFieldBlock = props => {
+const FormFieldBlock = (props) => {
   const { attributes: { id, type, name, options = [], label, placeholder, rows,
     defaultValue, maxlength, required }, setAttributes } = props;
   const blockProps = useBlockProps();
@@ -130,7 +128,6 @@ const FormFieldBlock = props => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <div>{ __( 'Options' ) }</div>
           </div>}>
-				
           {options.map((option, index) => {
             return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
               <div style={{ marginRight: 5 }}>
@@ -164,9 +161,7 @@ const FormFieldBlock = props => {
                   }} />
               </div>
             </div>;
-						
           })}
-
           <Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={() => {
             const newOptions = [...options];
             newOptions.push({ label: '', value: '' });
@@ -185,7 +180,6 @@ const createFormFieldBlock = () => {
   registerBlockType('ai-engine/form-field', {
     apiVersion: 3,
     title: 'AI Form Field',
-    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],

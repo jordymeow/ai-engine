@@ -1,7 +1,7 @@
-// Previous: 2.1.1
-// Current: 2.2.93
+// Previous: 2.2.93
+// Current: 2.2.95
 
-const { useMemo, useState } = wp.element;
+const { useMemo, useEffect, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoToolbar, NekoSpacer,
@@ -73,7 +73,6 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes, chatbots]);
 
   const updateChatbotParams = async (value, id) => {
-
     if (id === 'botId' && value === 'default') {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
@@ -82,14 +81,13 @@ const Chatbots = (props) => {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if (id === 'botId' && chatbots.find(x => x.botId === value)) {
+    if (id === 'botId' && chatbots?.some(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-    if (id === 'botId' && value !== currentChatbot[id]) {
+    if (id === 'botId' && value !== currentChatbot?.botId) {
       setCurrentBotId(value);
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -105,7 +103,7 @@ const Chatbots = (props) => {
   };
 
   const onChangeTab = (_themeIndex, attributes) => {
-    setCurrentBotId(attributes.key);
+    setCurrentChatbot(attributes.key);
   };
 
   const onSwitchTheme = (themeId) => {
@@ -150,7 +148,6 @@ const Chatbots = (props) => {
 
   return (<>
     <NekoWrapper>
-
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
         <NekoToolbar>
             <Shortcode currentChatbot={currentChatbot} />

@@ -1,19 +1,20 @@
-// Previous: 2.2.1
-// Current: 2.2.3
+// Previous: 2.2.3
+// Current: 2.2.95
 
 const { useCallback, useMemo, useState } = wp.element;
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoCheckbox,
   NekoCollapsableCategories, NekoCollapsableCategory, NekoMessage, NekoSpacer,
   NekoSelect, NekoOption, nekoFetch } from '@neko-ui';
-import { apiUrl, restNonce, session } from '@app/settings';
+import { apiUrl, restNonce } from '@app/settings';
+import { mwaiStringify } from '@app/helpers';
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers-admin';
 
 const Deployments = ({ updateEnvironment, environmentId, deployments, options }) => {
 
   const updateDeployments = (index, field, value) => {
-    const freshDeployments = JSON.parse(JSON.stringify(deployments));
+    const freshDeployments = JSON.parse(mwaiStringify(deployments));
     freshDeployments[index][field] = value;
     updateEnvironment(environmentId, { deployments: freshDeployments });
   };
@@ -60,7 +61,7 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, options })
 const CustomModels = ({ updateEnvironment, environmentId, customModels, options }) => {
 
   const updateCustomModels = (index, field, value) => {
-    const freshCustomModels = JSON.parse(JSON.stringify(customModels));
+    const freshCustomModels = JSON.parse(mwaiStringify(customModels));
     freshCustomModels[index][field] = value;
     updateEnvironment(environmentId, { customModels: freshCustomModels });
   };
@@ -103,13 +104,14 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels, options 
               disabled={true}
               checked={customModel['tags']?.includes('image')}
               onChange={(value) => {
-                const freshCustomModels = JSON.parse(JSON.stringify(customModels));
+                const freshCustomModels = JSON.parse(mwaiStringify(customModels));
                 if (!freshCustomModels[index]['tags']) {
                   freshCustomModels[index]['tags'] = ['core', 'chat'];
                 }
-                if (value && !freshCustomModels[index]['tags'].includes('image')) {
+                if (value) {
                   freshCustomModels[index]['tags'].push('image');
-                } else {
+                }
+                else {
                   freshCustomModels[index]['tags'] = freshCustomModels[index]['tags'].filter(x => x !== 'image');
                 }
                 updateEnvironment(environmentId, { customModels: freshCustomModels });
@@ -120,13 +122,14 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels, options 
               disabled={true}
               checked={customModel['tags']?.includes('vision')}
               onChange={(value) => {
-                const freshCustomModels = JSON.parse(JSON.stringify(customModels));
+                const freshCustomModels = JSON.parse(mwaiStringify(customModels));
                 if (!freshCustomModels[index]['tags']) {
                   freshCustomModels[index]['tags'] = ['core', 'chat'];
                 }
-                if (value && !freshCustomModels[index]['tags'].includes('vision')) {
+                if (value) {
                   freshCustomModels[index]['tags'].push('vision');
-                } else {
+                }
+                else {
                   freshCustomModels[index]['tags'] = freshCustomModels[index]['tags'].filter(x => x !== 'vision');
                 }
                 updateEnvironment(environmentId, { customModels: freshCustomModels });
@@ -145,8 +148,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
   const [ loading, setLoading ] = useState(false);
 
   const addNewEnvironment = () => {
-    //alert("Coming soon! Please give us a bit of time to beta test this.");
-    //return;
     const newEnv = {
       name: 'New Environment',
       type: 'openai', 
@@ -174,6 +175,9 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     }
     if (env.type === 'openrouter') {
       return toHTML(i18n.HELP.OPENROUTER_API_KEY);
+    }
+    if (env.type === 'google') {
+      return toHTML(i18n.HELP.GOOGLE_API_KEY);
     }
     return '';
   }, []);
@@ -258,12 +262,10 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             {env.type === 'google' && <>
               <NekoSettings title={i18n.COMMON.REGION}>
                 <NekoInput name="region" value={env.region}
-                  //description={toHTML(i18n.HELP.REGION)}
                   onFinalChange={value => updateEnvironment(env.id, { region: value })} />
               </NekoSettings>
               <NekoSettings title={i18n.COMMON.PROJECT_ID}>
                 <NekoInput name="projectId" value={env.projectId}
-                  //description={toHTML(i18n.HELP.PROJECT_ID)}
                   onFinalChange={value => updateEnvironment(env.id, { projectId: value })} />
               </NekoSettings>
               <NekoMessage variant="danger">

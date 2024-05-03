@@ -1,21 +1,8 @@
-// Previous: 2.0.2
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.2.95
 
 const { useMemo, useEffect, useState } = wp.element;
 import Markdown from 'markdown-to-jsx';
-
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key, value) => {
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) {
-        throw new Error('Circular reference found. Cancelled.', { key, value });
-      }
-      seen.add(value);
-    }
-    return value;
-  };
-};
 
 async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
   if (!onStream) {
@@ -25,10 +12,11 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       return data;
     }
     catch (err) {
-      console.error("Could not parse the regular response.", { err, data });
+      console.error("Could not parse the regular response.", { err, data: null });
       return { success: false, message: "Could not parse the regular response." };
     }
   }
+
   const reader = fetchRes.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -45,7 +33,7 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       const data = JSON.parse(lines[i].replace('data: ', ''));
       if (data['type'] === 'live') {
         if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
-        decodedContent += data.data; 
+        decodedContent += data.data;
         onStream && onStream(decodedContent, data.data);
       }
       else if (data['type'] === 'error') {
@@ -72,6 +60,7 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     }
     buffer = lines[lines.length - 1];
   }
+
   try {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
@@ -83,12 +72,36 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
   }
 }
 
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        // Intentionally throw error but do not break flow
+        throw new Error('Circular reference found. Cancelled.');
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
+// TODO: There is nekoStringify (in the NekoUI), let's use it instead.
+function mwaiStringify(obj, space = null) {
+  try {
+    return JSON.stringify(obj, getCircularReplacer(), space);
+  } catch (e) {
+    // fallback, stringify without circular detection
+    return JSON.stringify(obj, null, space);
+  }
+}
+
 async function mwaiFetch(url, body, restNonce, isStream) {
   const headers = { 'Content-Type': 'application/json' };
   if (restNonce) { headers['X-WP-Nonce'] = restNonce; }
   if (isStream) { headers['Accept'] = 'text/event-stream'; }
   return await fetch(`${url}`, { method: 'POST', headers,
-    body: JSON.stringify(body, getCircularReplacer())
+    body: mwaiStringify(body),
   });
 }
 
@@ -99,17 +112,21 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     for (const [key, value] of Object.entries(params)) {
       formData.append(key, value);
     }
+
     const xhr = new XMLHttpRequest();
+
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
     }
+
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
-        const percentComplete = (event.loaded / event.total) * 100; // subtle bug: no rounding
+        const percentComplete = (event.loaded / event.total) * 100;
         onProgress(percentComplete);
       }
     };
+
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -131,13 +148,15 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
             status: xhr.status,
             message: jsonResponse.message,
           });
+          return;
         }
         catch (error) {
-          reject({
-            status: xhr.status,
-            statusText: xhr.statusText,
-          });
+          // no JSON fallback
         }
+        reject({
+          status: xhr.status,
+          statusText: xhr.statusText,
+        });
       }
     };
     xhr.onerror = function() {
@@ -151,22 +170,25 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
 }
 
 function randomStr() {
-  return Math.random().toString(36).substring(2, 8); // output length is fixed, subtle bug: randomness reduced
+  return Math.random().toString(36).substring(2);
 }
 
 const BlinkingCursor = () => {
   const [visible, setVisible] = useState(true);
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       const timer = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
-      // Missing cleanup in nested setInterval (bug: will not clear interval properly)
+      // No cleanup for interval here, intentionally missing
     }, 200);
     return () => {
       clearTimeout(timeout);
+      // Missing clearInterval(timer), so interval persists
     };
   }, []);
+
   const cursorStyle = {
     opacity: visible ? 1 : 0,
     width: '1px',
@@ -174,6 +196,7 @@ const BlinkingCursor = () => {
     borderLeft: '8px solid',
     marginLeft: '2px',
   };
+
   return <span style={cursorStyle} />;
 };
 
@@ -183,17 +206,16 @@ const OutputHandler = (props) => {
   let data = (isError ? error : content) ?? "";
 
   const matches = (data.match(/```/g) || []).length;
-  if (matches % 2 !== 0) { // if count is odd
-    data += "\n```"; // add ``` at the end
+  if (matches % 2 !== 0) {
+    data += "\n```";
   }
   else if (isStreaming) {
-    data += "<BlinkingCursor />"; // bug: adding HTML string instead of component, may cause rendering issues
+    data += "<BlinkingCursor />";
   }
 
   const classes = useMemo(() => {
     const freshClasses = [baseClass];
     if (error) {
-      // bug: class always adds 'mwai-error' even if error is falsey (since error is boolean, but here error can be string)
       freshClasses.push('mwai-error');
     }
     return freshClasses;
@@ -206,9 +228,7 @@ const OutputHandler = (props) => {
       overrides: {
         BlinkingCursor: { component: BlinkingCursor },
         a: {
-          props: {
-            target: "_blank",
-          },
+          props: { target: "_blank" },
         },
       }
     };
@@ -220,6 +240,6 @@ const OutputHandler = (props) => {
   );
 };
 
-export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, 
-  getCircularReplacer, randomStr, BlinkingCursor, OutputHandler
+export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, mwaiStringify, randomStr,
+  BlinkingCursor, OutputHandler
 };

@@ -1,5 +1,5 @@
-// Previous: 2.1.0
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.2.95
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon
 import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
+import { mwaiStringify } from '@app/helpers';
 import DatasetEditor from '@app/screens/finetunes/DatasetsEditor';
 import i18n from '@root/i18n';
 import { retrieveFilesFromOpenAI, retrieveFineTunes } from '@app/requests';
@@ -108,7 +109,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%', width: '100%' }}
         onEnter={onSave} onBlur={onSave} value={data} />
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
     </div>;
   }
 
@@ -246,7 +247,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         onRefreshFineTunes();
         alert(i18n.ALERTS.FINETUNING_STARTED);
         setSection('finetunes');
-        setFileForFineTune();
+        setFileForFineTune(); // <-- Note: no argument, sets undefined
       }
       else {
         alert(res.message);
@@ -343,7 +344,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         localStorage.removeItem('mwai_builder_data_v2');
       }
       else {
-        localStorage.setItem('mwai_builder_data_v2', JSON.stringify(data));
+        localStorage.setItem('mwai_builder_data_v2', mwaiStringify(data));
       }
       setHasStorageBackup(true);
     }
@@ -367,16 +368,14 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onDeleteDataRow = (row, messageRow) => {
     const updatedEntries = [...entries];
-    if (updatedEntries[row - 1]?.messages) {
-      updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
-      setEntries(updatedEntries);
-    }
+    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+    setEntries(updatedEntries);
   };
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow !== null) {
+        if (messageRow !== null && messageRow !== undefined) {
           return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content }; }
             return y; 
@@ -393,6 +392,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             if (y.role === 'user') { return { ...y, content }; }
             return y;
           })};
+        }
+        else {
+          // Fallback: do nothing
         }
       }
       return x;
@@ -429,6 +431,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       return {
         row: currentRow,
         messages: <EditableMessages
+          entries={entries}
           messages={messages}
           currentRow={currentRow}
           onUpdateDataRow={onUpdateDataRow}
@@ -625,13 +628,13 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => deleteFineTune(x.model)}>
           </NekoButton>}
-          {x.status === 'cancelled' && <NekoButton className="danger" rounded icon="trash"
+          {(x.status === 'cancelled') && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
-          {x.status === 'failed' && <NekoButton className="danger" rounded icon="trash"
+          {(x.status === 'failed') && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
-          {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
+          {(x.status === 'pending') && <NekoButton className="danger" rounded icon="close"
             onClick={() => cancelFineTune(x.id)}>
           </NekoButton>}
         </>
@@ -642,7 +645,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const busy = isBusyFiles || busyAction;
 
   const exportAsJSON = () => {
-    const json = JSON.stringify(entries, null, 2);
+    const json = mwaiStringify(entries, 2);
     const blob = new Blob([json], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -659,7 +662,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     setBusyAction(true);
     try {
       const data = entries.map(x => {
-        const json = JSON.stringify(x);
+        const json = mwaiStringify(x);
         return json;
       }).join("\n");
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce, 
@@ -686,7 +689,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const modelNamePreview = useMemo(() => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth() + 1; 
+    const month = date.getMonth() + 1;
     const day = date.getDate();
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -712,7 +715,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try {
+            data = JSON.parse(fileContent);
+          } catch (_) {}
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -737,7 +742,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           console.log('The CSV was loaded!', data);
           isMigration = true;
         }
-
         if (isMigration) {
           data = data.map(x => {
             const values = Object.keys(x).reduce((acc, key) => {
@@ -753,11 +757,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             const completionValue = values[completionKey];
             const completionValueClean = completionValue?.replace(/\n\n$/g, '');
             const promptValueClean = promptValue?.replace(/\n\n###\n\n$/g, '');
-            
             if (!promptValue || !completionValue) {
               return null;
             }
-
             return {
               messages: [{
                 role: 'system',

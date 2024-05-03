@@ -732,7 +732,11 @@ class Meow_MWAI_Core
 		if ( empty( $chatbots ) ) {
 			$chatbots = [ array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'botId' => 'default' ] ) ];
 		}
+		$hasDefault = false;
 		foreach ( $chatbots as &$chatbot ) {
+			if ( $chatbot['botId'] === 'default' ) {
+				$hasDefault = true;
+			}
 			foreach ( MWAI_CHATBOT_DEFAULT_PARAMS as $key => $value ) {
 				// Use default value if not set.
 				if ( !isset( $chatbot[$key] ) ) {
@@ -744,6 +748,11 @@ class Meow_MWAI_Core
 				$chatbot['instructions'] = $chatbot['context'];
 				unset( $chatbot['context'] );
 			}
+		}
+		if ( !$hasDefault ) {
+			$defaultBot = array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'botId' => 'default' ] );
+			array_unshift( $chatbots, $defaultBot );
+			$hasChanges = true;
 		}
 		if ( $hasChanges ) {
 			update_option( $this->chatbots_option_name, $chatbots );

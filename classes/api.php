@@ -313,7 +313,7 @@ class Meow_MWAI_API {
 		if ( !isset( $params['messages'] ) && isset( $params['chatId'] ) ) {
 			$discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
 			if ( !empty( $discussion ) ) {
-				$params['messages'] = $discussion->messages;
+				$params['messages'] = $discussion['messages'];
 			}
 		}
 		$data = $this->chatbot_module->chat_submit( $botId, $message, null, $params );

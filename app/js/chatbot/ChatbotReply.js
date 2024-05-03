@@ -1,16 +1,24 @@
-// Previous: 2.1.7
-// Current: 2.2.63
+// Previous: 2.2.63
+// Current: 2.2.95
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
 import Markdown from 'markdown-to-jsx';
 
-import { useInterval } from '@app/chatbot/helpers';
+import { svgFilePath, useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { BlinkingCursor } from '@app/helpers';
 import CopyButton from '@app/components/CopyButton';
+
+const LinkContainer = ({ link }) => {
+  return (
+    <a href={link} target="_blank" rel="noopener noreferrer">
+      {link}
+    </a>
+  );
+};
 
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
@@ -24,16 +32,18 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   let content = message.content ?? "";
 
   const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) {
-    content += "\n```";
-  } else if (message.isStreaming) {
+  if (matches % 2 !== 0) { 
+    content += "\n```"; 
+  }
+  else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
   useEffect(() => { 
     if (!isLongProcess) {
       onRendered();
-    } else if (isLongProcess && !isQuerying && !isStreaming) {
+    }
+    else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -49,8 +59,17 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
         },
         img: {
           props: {
-            onError: (e) => {
-              e.target.src = "https://placehold.co/600x200?text=Expired+Image";
+            onError: (e, f) => {
+              const src = e.target.src;
+              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/) != null;
+              if (isImage) {
+                e.target.src = "https://placehold.co/600x200?text=Expired+Image";
+                return;
+              }
+              const filename = src.split('/').pop();
+              const className = modCss('mwai-filename');
+              const svgImage = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">` + svgFilePath + `</svg>`;
+              e.target.outerHTML = `<a href="${src}" target="_blank" rel="noopener noreferrer" class="${className}">${svgImage} ${filename}</a>`;
             },
             className: modCss('mwai-image'),
           },
@@ -66,6 +85,8 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   if (isStreaming && !content) {
     return (<BouncingDots />);
   }
+
+  console.log(content);
 
   return (
     <>
@@ -89,7 +110,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, []);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
@@ -223,7 +244,8 @@ const ChatbotReply = ({ message, conversationRef }) => {
             const classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            } else {
+            }
+            else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
@@ -238,14 +260,15 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
-
+  
     if (message.role === 'assistant') {
-
+  
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
-      } else if (typewriter && !message.isStreaming) {
+      }
+      else if (typewriter && !message.isStreaming) {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
@@ -254,18 +277,20 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-
+  
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-
+  
     return (
       <div><i>Unhandled role.</i></div>
     );
   }, [ message, conversationRef, isImages, typewriter ]);
 
   return output;
-
+  
 };
+
+export default ChatbotReply;

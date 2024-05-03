@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.2.94
+Stable tag: 2.2.95
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,40 +18,27 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Features ==
 
-* OpenAI: GPT 4, GPT 3.5, Vision, and all the others
-* OpenRouter, Anthropic (Claude), Google (Gemini), Hugging Face
-* Add easily an ChatGPT-like chatbot to your website
-* Generate fresh and engaging content for your site
-* Use the AI Copilot to help you tweak your content, build images, and more
-* Explore the AI Playground for a variety of tools (translation, correction, SEO, etc...)
-* Create templates for everything you do, to be more productive
-* Train your AI to make it better at specific tasks
-* Moderation AI for various tasks
-* Quickly brainstorm new titles and excerpts for your posts
-* Quickly write the WooCommerce product fields
-* Speech-to-Text with Whisper API
-* Embeddings to add more context to your chatbot based on your data
-* Keep track of your OpenAI usage with built-in statistics
-* Internal API for you to play with
-* And a lot more, just play with it! 💫
+Unlock the full potential of AI technology on your website with AI Engine. This powerful plugin integrates seamlessly with top AI models from OpenAI, Anthropic, and Google, including GPT-4 and Vision, offering unparalleled versatility and innovation.
 
-== Chatbot ==
+* **Engage with Ease:** Instantly enhance your site's interaction by integrating a ChatGPT-like chatbot. This isn't just any chatbot; it's a gateway to engaging, dynamic conversations that captivate your visitors and keep them coming back for more.
+* **Create and Innovate:** Generate fresh, engaging content effortlessly. Whether you're brainstorming new post ideas or drafting up engaging articles, AI Engine handles it all swiftly—letting you focus on creativity and growth.
+* **Streamline with AI CoPilot:** Directly within the WordPress editor, AI CoPilot is ready to assist. Just hit space, type your query, and watch as it suggests edits, finds synonyms, or translates text. It’s like having a little magic wand for your content!
+* **Explore the AI Playground:** Dive into a world where your ideas come to life. The AI Playground offers a space to experiment with AI capabilities—from creating unique templates to simulating custom scenarios. Imagine drafting restaurant reviews or concocting recipes based on what’s in your fridge—all in moments.
+* **Train Your AI:** Tailor your AI to understand your audience better. With custom training using your website’s own data, your AI becomes more intuitive and responsive, providing a more personalized experience for your visitors.
+* **Keep It Clean:** Use our advanced moderation tools to maintain a friendly and safe environment on your site, ensuring content remains respectful and engaging.
+* **Voice to Text:** Bring accessibility to the forefront with our Speech-to-Text feature powered by Whisper API. It’s easy for users to interact with your website using just their voice.
+* **Smarter Interactions:** With embeddings, your chatbot becomes smarter, understanding the context of interactions better and delivering more relevant responses.
+* **Insightful Analytics:** Keep track of everything with built-in usage statistics. Understand how your AI tools are performing and optimize them for better efficiency and cost-effectiveness.
+* **Extend with APIs:** Our internal API opens up a world of possibilities, allowing you to customize and integrate AI features in ways that best suit your site’s needs.
 
-Are you interested in integrating AI-powered chat functionality to your website? Our chatbot can assist you with that! Although it appears simple, the possibilities are limitless, with a variety of parameters and concepts to explore. Visit our [official documentation](https://meowapps.com/ai-engine/) for more information.
+== Beyond the Features ==
 
-Take your AI capabilities to the next level with finetuning and embeddings. By reusing your website's content and other pertinent information, you can train your AI to better cater to your target audience. AI Engine makes this process simple and straightforward with its user-friendly interface. If you'd like to learn more about finetuning, check out our article: [How to Train an AI Model](https://meowapps.com/wordpress-chatbot-finetuned-model-ai/).
+AI Engine offers its own internal API (including a REST API). This allows you to integrate AI capabilities into your WordPress website, no-coding solutions, and more. The AI Engine is designed to be as flexible as possible, allowing you to customize it to your liking. AI Engine has been officially integrated with many plugins to enhance their functionality. Here are a few examples:
 
-== AI Copilot ==
-
-In the WordPress editor, hit space and type your question! AI Copilot offers many suggestions to help you think and write quickly. Use the wand symbol to fix your text, translate it, shorten or lengthen it, and find alternative words. 
-
-== Generate Content & Images ==
-
-Simply adjust the parameters to your preference, customize the prompts, and discover the results. You can save your parameters as templates for future use, generate content in bulk, and even produce images. The AI Playground also enables you to create your own custom use cases, such as swiftly acquiring recipes based on your refrigerator's contents or quickly drafting restaurant reviews. With AI Engine, the possibilities are endless, and you can personalize the user interface to suit your needs.
-
-== Boost your WordPress with AI ==
-
-AI Engine offers its own internal API that can be utilized by various plugins. For example, [Media File Renamer](https://wordpress.org/plugins/media-file-renamer/) leverages this API to suggest improved filenames for media files. Additionally, [Social Engine](https://wordpress.org/plugins/social-engine/), a plugin that facilitates post-sharing on social media platforms, can also benefit from AI Engine's capabilities to create accompanying text.
+* [Media File Renamer](https://wordpress.org/plugins/media-file-renamer/)
+* [SEO Engine](https://wordpress.org/plugins/seo-engine/)
+* [Social Engine](https://wordpress.org/plugins/social-engine/)
+* [Snippet Vault](https://wordpress.org/plugins/snippet-vault/)
 
 == My Dream for AI ==
 
@@ -59,13 +46,11 @@ I am thrilled about the endless opportunities that AI brings. But, at the same t
 
 I will always advocate this, and I hope you do too 💕
 
-== Open AI ==
-
-The AI Engine utilizes the API from [OpenAI](https://beta.openai.com). This plugin does not gather any information from your OpenAI account except for the number of tokens utilized. The data transmitted to the OpenAI servers primarily consists of the content of your article and the context you specify. The usage shown in the plugin's settings is just for reference. It is important to check your usage on the [OpenAI website](https://platform.openai.com/account/usage) for accurate information. Please also review their [Privacy Policy](https://openai.com/privacy/) and [Terms of Service](https://openai.com/terms/) for further information.
-
 == Disclaimer ==
 
-AI Engine is a plugin that helps users connect their websites to AI services like OpenAI's ChatGPT or Microsoft Azure. Users need their own API key and must follow the rules set by the AI service they choose. By using AI Engine, users agree to watch and manage the content made by the AI and handle any problems or misuse. The developer of AI Engine and related parties are not responsible for any issues or losses caused by using the plugin or AI-generated content. Users should talk to a legal expert and follow the laws in their area. The full disclaimer is [here](https://meowapps.com/ai-engine/disclaimer/).
+AI Engine is a plugin that helps you to connect your websites to AI services. You need your own API keys and must follow the rules set by the AI service you choose. For OpenAI, check their [Terms of Service](https://openai.com/terms/) and [Privacy Policy](https://openai.com/privacy/). It is also important to check your usage on the [OpenAI website](https://platform.openai.com/account/usage) for accurate information. Please do so with other services as well.
+
+The developer of AI Engine and related parties are not responsible for any issues or losses caused by using the plugin or AI-generated content. You should talk to a legal expert and follow the laws and regulations of your country. AI Engine does only store data on your own server, and it is your responsibility to keep it safe. AI Engine's full disclaimer is [here](https://meowapps.com/ai-engine/disclaimer/).
 
 == Compatibility ==
 
@@ -82,6 +67,15 @@ Languages: English.
 
 == Changelog ==
  
+= 2.2.95 (2024/04/25) =
+* Add: Support for File Search and Vector Stores with Assistants v2.
+* Fix: Create the default chatbot if it's missing.
+* Fix: Unicode support for banned words.
+* Fix: Discussions do not need to be enabled for assistants to work.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.2.94 (2024/04/25) =
 * Add: Streaming with Assistants.
 * Update: Support for Assistants v2.
@@ -102,12 +96,7 @@ Languages: English.
 
 = 2.2.81 (2024/04/17) =
 * Fix: Issue with Content Aware. Besides {CONTENT}, it now also supports {TITLE}, {EXCERPT} and {URL}.
-
-= 2.2.80 (2024/04/17) =
 * Add: New GPT-4 Turbo model (GPT-4 Turbo) which supports Vision, Function Calling, JSON.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.2.70 (2024/04/15) =
 * Add: Support for Function and Tools Calls with OpenAI and Claude, with back-and-forth feedback loop. Models can now get values to functions in you WordPress. The Pro Version of AI Engine also connects to [Snippet Vault](https://wordpress.org/plugins/snippet-vault/) to make this much easier.

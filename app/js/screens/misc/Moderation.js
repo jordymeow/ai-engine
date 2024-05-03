@@ -1,9 +1,10 @@
-// Previous: 1.3.81
-// Current: 1.6.76
+// Previous: 1.6.76
+// Current: 2.2.95
 
 // React & Vendor Libs
-const { useState, useEffect, useMemo } = wp.element;
-import { apiUrl, restNonce, session, options } from '@app/settings';
+const { useState } = wp.element;
+import { apiUrl, restNonce } from '@app/settings';
+import { mwaiStringify } from '@app/helpers';
 
 // NekoUI
 import { NekoWrapper, NekoBlock, NekoSpacer, NekoColumn, NekoTextArea, 
@@ -64,7 +65,7 @@ const Moderation = ({ options, updateOption, busy: busyParent }) => {
           <NekoSpacer />
           <label>Results:</label>
           <pre>
-            {JSON.stringify(results, null, 2)}
+            {mwaiStringify(results, 2)}
           </pre>
         </NekoBlock>
       </NekoColumn>

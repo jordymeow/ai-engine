@@ -15,7 +15,7 @@
           "step": "installPlugin",
           "pluginZipFile": {
               "resource": "url",
-              "url": "https:\/\/downloads.wordpress.org\/plugin\/ai-engine.2.2.60.zip"
+              "url": "https:\/\/downloads.wordpress.org\/plugin\/ai-engine.2.2.95.zip"
           },
           "options": {
               "activate": true

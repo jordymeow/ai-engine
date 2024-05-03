@@ -30,8 +30,9 @@ class Meow_MWAI_Engines_Core {
       throw new Exception( $message );
     }
 
-    // Allow to modify the query before it is sent. It should not be a Meow_MWAI_Query_Embed.
-    if ( !( $query instanceof Meow_MWAI_Query_Embed ) ) {
+    // Allow to modify the query before it is sent.
+    // Embedding and Feedback queries are not allowed to be modified.
+    if ( !( $query instanceof Meow_MWAI_Query_Embed ) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
       $query = apply_filters( 'mwai_ai_query', $query );
     }
 

@@ -1,7 +1,8 @@
-// Previous: 2.2.81
-// Current: 2.2.90
+// Previous: 2.2.90
+// Current: 2.2.95
 
 const { useMemo, useEffect } = wp.element;
+
 import {
   NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage, NekoTypo,
   NekoColumn, NekoTextArea, NekoButton, NekoCollapsableCategory, NekoCollapsableCategories
@@ -21,7 +22,7 @@ const chatIcons = ['chat-openai.svg', 'chat-robot-1.svg', 'chat-robot-2.svg', 'c
 const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options } = props;
-  const { completionModels, imageModels, isFineTunedModel, getModel } = useModels(options, shortcodeParams.envId || null);
+  const { completionModels, imageModels, getModel } = useModels(options, shortcodeParams.envId || null);
   const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
   const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
   const isImagesChat = shortcodeParams.mode === 'images' ?? false;
@@ -39,79 +40,60 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
-    return env ?? null;
+    const freshEnvironment = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
+    return freshEnvironment;
   }, [aiEnvironments, shortcodeParams.envId]);
 
-  const allAssistants = aiEnvironment?.assistants ?? [];
+  const allAssistants = aiEnvironment?.assistants || [];
   const assistant = useMemo(() => {
-    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
-    return assist ?? null;
+    const freshAssistant = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
+    return freshAssistant;
   }, [allAssistants, shortcodeParams.assistantId]);
 
-  const isFineTuned = isFineTunedModel(shortcodeParams.model);
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
 
   const environments = options.embeddings_envs || [];
-  const environment = useMemo(() => {
-    const env = environments.find(e => e.id === shortcodeParams.embeddingsEnvId);
-    return env ?? null;
-  }, [environments, shortcodeParams.embeddingsEnvId]);
-  const indexes = useMemo(() => environment?.indexes ?? [], [environment]);
-  const namespaces = useMemo(() => environment?.namespaces ?? [], [environment]);
 
-  const modelSupportsFunctions = useMemo(() => currentModel?.tags?.includes('functions'), [currentModel]);
-  const modelSupportsVision= useMemo(() => currentModel?.tags?.includes('vision'), [currentModel]);
-  const modelSupportImage = useMemo(() => currentModel?.tags?.includes('image'), [currentModel]);
+  const modelSupportsFunctions = useMemo(() => {
+    return currentModel?.tags?.includes('functions');
+  }, [currentModel]);
+
+  const modelSupportsVision= useMemo(() => {
+    return currentModel?.tags?.includes('vision');
+  }, [currentModel]);
+
+  const modelSupportImage = useMemo(() => {
+    return currentModel?.tags?.includes('image');
+  }, [currentModel]);
 
   useEffect(() => {
     if (modelSupportImage && !shortcodeParams.resolution) {
-      const resolutions = currentModel?.options?.map(x => x.option) || [];
+      const resolutions = currentModel.options.map(x => x.option);
       const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
       updateShortcodeParams(bestResolution, 'resolution');
-    }
-
-    if (!modelSupportImage && shortcodeParams.resolution) {
+    } else if (!modelSupportImage && shortcodeParams.resolution) {
       updateShortcodeParams(null, 'resolution');
-    }
-
-    if (modelSupportImage && isChat) {
+    } else if (modelSupportImage && isChat) {
       updateShortcodeParams(null, 'model');
-    }
-
-    if (isAssistant && shortcodeParams.model) {
+    } else if (isAssistant && shortcodeParams.model) {
       updateShortcodeParams(null, 'model');
-    }
-
-    if (!isAssistant && shortcodeParams.assistantId) {
+    } else if (!isAssistant && shortcodeParams.assistantId) {
       updateShortcodeParams(null, 'assistantId');
-    }
-
-    if (shortcodeParams.imageUpload && !modelSupportsVision) {
+    } else if (shortcodeParams.imageUpload && !modelSupportsVision) {
       updateShortcodeParams(null, 'imageUpload');
-    }
-
-    if (shortcodeParams.fileUpload && !isAssistant) {
+    } else if (shortcodeParams.fileUpload && !isAssistant) {
       updateShortcodeParams(null, 'fileUpload');
-    }
-
-    if (shortcodeParams.model && !shortcodeParams.envId) {
+    } else if (shortcodeParams.model && !shortcodeParams.envId) {
       updateShortcodeParams(null, 'model');
-    }
-
-    if (shortcodeParams.envId && !aiEnvironment) {
+    } else if (shortcodeParams.envId && !aiEnvironment) {
       updateShortcodeParams(null, 'envId');
-    }
-
-    if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
+    } else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       updateShortcodeParams(null, 'embeddingsEnvId');
-    }
-
-    if (!modelSupportsFunctions && functions.length) {
+    } else if (!modelSupportsFunctions && functions.length) {
       updateShortcodeParams([], 'functions');
     }
-  }, [shortcodeParams, aiEnvironment, functions, currentModel, modelSupportsFunctions, modelSupportsVision]);
-
+  }, [shortcodeParams]);
+  
   return (<>
     <NekoWrapper>
       <NekoColumn minimal>
@@ -207,7 +189,7 @@ const ChatbotParams = (props) => {
                   <NekoSelect scrolldown name="model"
                     value={shortcodeParams.model} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"Default"}></NekoOption>
-                    {(isImagesChat ? imageModels : completionModels) ?? [].map((x) => (
+                    {((isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -224,7 +206,7 @@ const ChatbotParams = (props) => {
                   <label>{i18n.COMMON.RESOLUTION}:</label>
                   <NekoSelect scrolldown name="resolution"
                     value={shortcodeParams.resolution} onChange={updateShortcodeParams}>
-                    {currentModel.options?.map((x) => (
+                    {currentModel.options.map((x) => (
                       <NekoOption key={x.option} value={x.option} label={x.option}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -345,7 +327,7 @@ const ChatbotParams = (props) => {
                   <label>{i18n.COMMON.CONTEXT_MAX_LENGTH}:</label>
                   <NekoInput name="contextMaxLength" type="number" step="1"
                     description={i18n.HELP.CONTEXT_MAX_LENGTH}
-                    value={shortcodeParams.contextMaxLength ?? options?.context_max_length}
+                    value={shortcodeParams.contextMaxLength || options?.context_max_length}
                     onBlur={updateShortcodeParams}
                     onEnter={updateShortcodeParams}
                   />
@@ -477,6 +459,7 @@ const ChatbotParams = (props) => {
                   </div>}
                 </div>
               </>}
+
             </NekoCollapsableCategory>
             <NekoCollapsableCategory title={i18n.COMMON.SHORTCODES}>
               <Shortcode currentChatbot={shortcodeParams} style={{ marginTop: 10 }} />
@@ -504,4 +487,5 @@ const ChatbotParams = (props) => {
     </NekoWrapper>
   </>);
 };
+
 export default ChatbotParams;

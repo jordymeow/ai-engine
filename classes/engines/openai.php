@@ -946,6 +946,27 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $result;
   }
 
+  public function create_vector_store( $name = null, $expiry = null, $metadata = null ) {
+    $expiryInDays = $expiry ? max( 1, ceil( $expiry / 86400 ) ) : 7;
+    $result = $this->execute( 'POST', '/vector_stores', [
+      'name' => !empty( $name ) ? $name : 'default',
+      'metadata' => $metadata,
+      'expires_after' => [ 
+        'anchor' => 'last_active_at',
+        'days' => $expiryInDays
+      ]
+    ], null, true, [ 'OpenAI-Beta' => 'assistants=v2' ] );
+    return $result['id'];
+  }
+
+  public function add_vector_store_file( $vectorStoreId, $fileId ) {
+    $result = $this->execute( 'POST', '/vector_stores/' . $vectorStoreId . '/files', [
+      'file_id' => $fileId
+    ], null, true, [ 'OpenAI-Beta' => 'assistants=v2' ] );
+    return $result['id'];
+
+  }
+
   public function delete_file( $fileId )
   {
     return $this->execute( 'DELETE', '/files/' . $fileId );

@@ -115,9 +115,9 @@ class Meow_MWAI_Modules_Discussions {
     $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
       FROM $this->table_chats
       WHERE chatId = %s AND botId = %s", $chatId, $botId
-    ) );
+    ), ARRAY_A );
     if ( $chat ) {
-      $chat->messages = json_decode( $chat->messages );
+      $chat['messages'] = json_decode( $chat['messages'] );
       return $chat;
     }
     return null;
@@ -191,6 +191,7 @@ class Meow_MWAI_Modules_Discussions {
     $chatId = isset( $params['chatId'] ) ? $params['chatId'] : $query->session;
     $customId = isset( $params['customId'] ) ? $params['customId'] : null;
     $threadId = $query instanceof Meow_MWAI_Query_Assistant ? $query->threadId : null;
+    $storeId = $query instanceof Meow_MWAI_Query_Assistant ? $query->storeId : null;
 
     if ( !empty( $customId ) ) {
       $botId = $customId;
@@ -221,6 +222,7 @@ class Meow_MWAI_Modules_Discussions {
     if ( $query instanceof Meow_MWAI_Query_Assistant ) {
       $chatExtra['assistantId'] = $query->assistantId;
       $chatExtra['threadId'] = $query->threadId;
+      $chatExtra['storeId'] = $query->storeId;
     }
     if ( $chat ) {
       $chat->messages = json_decode( $chat->messages );
@@ -245,6 +247,7 @@ class Meow_MWAI_Modules_Discussions {
         'botId' => $botId,
         'chatId' => $chatId,
         'threadId' => $threadId,
+        'storeId' => $storeId,
         'created' => date( 'Y-m-d H:i:s' ),
         'updated' => date( 'Y-m-d H:i:s' )
       ];
@@ -284,6 +287,13 @@ class Meow_MWAI_Modules_Discussions {
       $this->db_check = true;
     }
 
+    // LATER: REMOVE THIS AFTER SEPTEMBER 2024
+    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'storeId'" );
+    if ( !$this->db_check ) {
+      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN storeId VARCHAR(64) NULL" );
+      $this->db_check = true;
+    }
+
     return $this->db_check;
   }
 
@@ -298,6 +308,7 @@ class Meow_MWAI_Modules_Discussions {
       botId VARCHAR(64) NULL,
       chatId VARCHAR(64) NOT NULL,
       threadId VARCHAR(64) NULL,
+      storeId VARCHAR(64) NULL,
       created DATETIME NOT NULL,
       updated DATETIME NOT NULL,
       PRIMARY KEY  (id),

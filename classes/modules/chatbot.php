@@ -173,27 +173,64 @@ class Meow_MWAI_Modules_Chatbot {
 				$params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 				$query->inject_params( $params );
 
+				$storeId = null;
+				if ( $mode === 'assistant' ) {
+					$chatId = $params['chatId'] ?? null;
+					if ( !empty( $chatId ) ) {
+						$discussion = $this->core->discussions->get_discussion( $query->botId, $chatId );
+						if ( isset( $discussion['storeId'] ) ) {
+							$storeId = $discussion['storeId'];
+							$query->setStoreId( $storeId );
+						}	
+					}
+				}
+
 				// Support for Uploaded Image
 				if ( !empty( $newFileId ) ) {
 
 					if ( $mode === 'assistant' ) {
-						// This is for Assistant
 						$url = $this->core->files->get_path( $newFileId );
 						$data = $this->core->files->get_data( $newFileId );
 						$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $query->envId );
 						$filename = basename( $url );
+
+						// Upload the file
 						$file = $openai->upload_file( $filename, $data, 'assistants' );
+
+						// Create a store
+						if ( empty( $storeId ) ) {
+							$chatbotName = 'mwai_' . strtolower( !empty( $chatbot['name'] ) ? $chatbot['name'] : 'default' );
+							if ( !empty( $query->chatId ) ) {
+								$chatbotName .= "_" . $query->chatId;
+							}
+							$expiry = $this->core->get_option( 'image_expires' );
+							$metadata = [];
+							if ( !empty( $chatbot['assistantId'] ) ) {
+								$metadata['assistantId'] = $chatbot['assistantId'];
+							}
+							if ( !empty( $query->chatId ) ) {
+								$metadata['chatId'] = $query->chatId;
+							}
+							$storeId = $openai->create_vector_store( $chatbotName, $expiry, $metadata );
+							$query->setStoreId( $storeId );
+						}	
+
+						// Add the file to the store
+						$storeFileId = $openai->add_vector_store_file( $storeId, $file['id'] );
+
+						// Update the local file with the OpenAI RefId, StoreId and StoreFileId
 						$openAiRefId = $file['id'];
 						$internalFileId = $this->core->files->get_id_from_refId( $newFileId );
         		$this->core->files->update_refId( $internalFileId, $openAiRefId );
 						$this->core->files->update_envId( $internalFileId, $query->envId );
+						$this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
+						$this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
 						$newFileId = $openAiRefId;
 						$scope = $params['fileUpload'];
 						if ( $scope === 'discussion' || $scope === 'user' || $scope === 'assistant' ) {
 							$id = $this->core->files->get_id_from_refId( $newFileId );
 							$this->core->files->add_metadata( $id, 'assistant_scope', $scope );
 						}
-						$query->set_file( $openAiRefId, 'refId', 'assistant-in' );
 					}
 					else {
 						// This is for Vision AI
@@ -226,7 +263,9 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 
 				// Moderation
-				if ( $this->core->get_option( 'shortcode_chat_moderation' ) ) {
+				$moderationEnabled = $this->core->get_option( 'module_moderation' ) &&
+					$this->core->get_option( 'shortcode_chat_moderation' );
+				if ( $moderationEnabled ) {
 					global $mwai;
 					$isFlagged = $mwai->moderationCheck( $query->get_message() );
 					if ( $isFlagged ) {

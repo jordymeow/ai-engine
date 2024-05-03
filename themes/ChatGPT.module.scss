@@ -275,6 +275,20 @@
 				margin: 0 0 10px 0;
 				border-radius: var(--mwai-borderRadius);
 			}
+
+			.mwai-filename {
+				display: flex;
+				font-style: italic;
+    		text-decoration: none;
+				align-items: center;
+				font-size: 90%;
+
+				svg {
+					width: 16px;
+					height: 16px;
+					margin-right: 5px;
+				}
+			}
 	
 			* {
 				font-size: var(--mwai-fontSize);

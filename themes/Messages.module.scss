@@ -125,6 +125,24 @@
 			border-radius: var(--mwai-borderRadius);
 		}
 
+		.mwai-filename {
+			display: flex;
+			font-style: italic;
+			text-decoration: none;
+			align-items: center;
+			color: var(--mwai-fontColor);
+			font-size: 90%;
+			background: white;
+			border-radius: 5px;
+			padding: 2px 3px;
+
+			svg {
+				width: 16px;
+				height: 16px;
+				margin-right: 5px;
+			}
+		}
+
 		> span > p > *:first-child {
 			margin-top: 0;
 		}
