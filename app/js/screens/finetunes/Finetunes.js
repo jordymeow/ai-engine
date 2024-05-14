@@ -1,18 +1,19 @@
-// Previous: 2.1.5
-// Current: 2.2.95
+// Previous: 2.2.95
+// Current: 2.3.0
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
 
-import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon,
+import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon, NekoWrapper, NekoColumn,
+  NekoTabs, NekoTab, NekoToolbar, NekoCollapsableCategory, NekoCollapsableCategories,
   NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage,
   NekoLink, NekoQuickLinks, NekoTheme, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
 import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
 import { mwaiStringify } from '@app/helpers';
-import DatasetEditor from '@app/screens/finetunes/DatasetsEditor';
+import Generator from '@app/screens/finetunes/Generator';
 import i18n from '@root/i18n';
 import { retrieveFilesFromOpenAI, retrieveFineTunes } from '@app/requests';
 import { retrieveDeletedFineTunes } from '@app/requests';
@@ -31,7 +32,7 @@ const builderColumnsExpert = [
 ];
 
 const fileColumns = [
-  { accessor: 'status', title: 'Status', sortable: true, width: '100px' },
+  { accessor: 'status', title: 'Status', sortable: true, width: '120px' },
   { accessor: 'id', title: 'ID', width: '120px' },
   { accessor: 'filename', title: 'File' },
   { accessor: 'purpose', title: 'Purpose' },
@@ -41,7 +42,7 @@ const fileColumns = [
 ];
 
 const fineTuneColumns = [
-  { accessor: 'status', title: 'Status', sortable: true, width: '100px' },
+  { accessor: 'status', title: 'Status', sortable: true, width: '120px' },
   { accessor: 'id', title: 'ID', width: '120px' },
   { accessor: 'suffix', title: 'Suffix' },
   { accessor: 'model', title: 'Model' },
@@ -60,22 +61,16 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
   case 'pending':
-    icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-    break;
   case 'running':
     icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
     break;
   case 'succeeded':
-    icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
-    break;
   case 'processed':
     icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
     break;
   case 'failed':
-    icon = <NekoIcon title={status} icon="close" width={24} color={red} />;
-    break;
   case 'cancelled':
-    icon = <NekoIcon title={status} icon="close" width={24} color={orange} />;
+    icon = <NekoIcon title={status} icon="close" width={24} color={red} />;
     break;
   default:
     icon = <NekoIcon title={status} icon="alert" width={24} color={orange} />;
@@ -109,7 +104,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%', width: '100%' }}
         onEnter={onSave} onBlur={onSave} value={data} />
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
     </div>;
   }
 
@@ -126,9 +121,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const [ fileForFineTune, setFileForFineTune ] = useState();
   const [ busyAction, setBusyAction ] = useState(false);
   const [ section, setSection ] = useState('finetunes');
-  const [ dataSection, setDataSection ] = useState('editor');
-  const [ isModeTrain, setIsModeTrain ] = useState(true);
   const [ modelFilter, setModelFilter ] = useState('current');
+  const [ purposeFilter, setPurposeFilter ] = useState('fine-tune');
   const [ suffix, setSuffix ] = useState('meow');
   const [ hyperParams, setHyperParams ] = useState(false);
   const [ nEpochs, setNEpochs ] = useState(4);
@@ -143,9 +137,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const deletedFineTunes = environment?.finetunes_deleted || [];
   const allFineTunes = environment?.finetunes || [];
   const { isFetching: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
-    queryKey: ['datasets-' + envId],
+    queryKey: ['datasets-' + envId + '-' + purposeFilter],
     enabled: datasetsQueryEnabled,
-    queryFn: () => retrieveFilesFromOpenAI(envId)
+    queryFn: () => retrieveFilesFromOpenAI(envId, purposeFilter)
   });
 
   const { models, model, setModel, getModel, isFineTunedModel } = useModels(options, envId);
@@ -170,22 +164,48 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     }
   }, [section]);
 
-  useEffect(() => { errFiles && !errorModal && setErrorModal(errFiles); }, [errFiles]);
+  useEffect(() => { if (errFiles && !errorModal) setErrorModal(errFiles); }, [errFiles]);
 
   const rowsPerPage = 10;
   const [ hasStorageBackup, setHasStorageBackup ] = useState(true);
   const [ currentPage, setCurrentPage ] = useState(1);
   const [ entries, setEntries ] = useState([]);
-  const [ expert, setExpert ] = useState(true);
-  const [ context, setContext ] = useState('You are Chihiro, an AI Assistant. Your primary objective is to assist website visitors by directing them to the appropriate page or succinctly answering their questions with precision.');
+  const [ isExpert, setIsExpert ] = useState(false);
+  const [ instructions, setInstructions ] = useState('You are Chihiro, an AI Assistant. Your primary objective is to assist website visitors by directing them to the appropriate page or succinctly answering their questions with precision.');
   const [ filename, setFilename ] = useState('');
+  const [ isValid, setIsValid ] = useState(false);
+  const [ invalidEntries, setInvalidEntries ] = useState([]);
   const totalRows = useMemo(() => entries.length, [entries]);
+
+  useEffect(() => {
+    if (entries.length === 0) {
+      setIsValid(false);
+      return;
+    }
+    const invalidIndices = entries.map((x, index) => {
+      if (!x.messages || x.messages.length < 3) {
+        return index + 1;
+      }
+      if (x.messages[0].role !== 'system' || x.messages[1].role !== 'user' || x.messages[2].role !== 'assistant') {
+        return index + 1;
+      }
+      for (let i = 3; i < x.messages.length; i++) {
+        if (x.messages[i].role === x.messages[i - 1].role) {
+          return index + 1;
+        }
+      }
+      return null;
+    }).filter(index => index !== null);
+  
+    setInvalidEntries(invalidIndices);
+    setIsValid(invalidIndices.length === 0);
+  }, [entries]);  
 
   const onDeleteRow = (line) => {
     const newData = entries.filter((x, i) => i !== (line - 1));
     setEntries(newData);
     if (newData.length === 0) {
-      updateLocalStorage({ context, entries: [] });
+      updateLocalStorage({ instructions, entries: [] });
     }
   };
 
@@ -247,7 +267,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         onRefreshFineTunes();
         alert(i18n.ALERTS.FINETUNING_STARTED);
         setSection('finetunes');
-        setFileForFineTune(); // <-- Note: no argument, sets undefined
+        setFileForFineTune(null);
       }
       else {
         alert(res.message);
@@ -262,7 +282,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onRefreshFineTunes = async () => {
     setBusyAction('finetunes');
-    if (!allFineTunes.length) {
+    if (allFineTunes.length === 0) {
       await retrieveDeletedFineTunes(envId);
     }
     else {
@@ -287,12 +307,12 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     setFilename(`MEOW-${prefix}.jsonl`);
   };
 
-  const onResetBuilder = (askForConfirmation = true) => {
+  const onClearDataset = (askForConfirmation = true) => {
     if (askForConfirmation && !confirm(i18n.ALERTS.RESET_BUILDER)) {
       return;
     }
     setEntries([]);
-    updateLocalStorage({ context: context, entries: [] });
+    updateLocalStorage({ instructions: instructions, entries: [] });
   };
 
   useEffect(() => {
@@ -301,40 +321,69 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       if (data) {
         const freshData = JSON.parse(data);
         setEntries(freshData.entries);
-        if (freshData.context) {
-          setContext(freshData.context);
+        if (freshData.instructions) {
+          setInstructions(freshData.instructions);
         }
       }
     }
   }, []);
 
-  const fixContextInEntries = (value) => {
+  const rewriteInstructions = (value) => {
     let shouldReplace = false;
+    let shouldAdd = false;
+  
     for (let i = 0; i < entries.length; i++) {
       const currentEntry = entries[i];
-      if (currentEntry.messages && currentEntry.messages.length > 0) {
-        if (currentEntry.messages[0].role === 'system') {
-          if (currentEntry.messages[0].content !== value) {
+      const messages = currentEntry.messages;
+  
+      if (messages && messages.length > 0) {
+        if (messages[0].role === 'system') {
+          if (messages[0].content !== value) {
             if (!shouldReplace) {
-              if (confirm("The context in your data does not match the one in your entries. Do you want to replace it for every entries?")) {
+              if (confirm("The instructions in your data do not match the ones in your entries. Do you want to replace it for every entry?")) {
                 shouldReplace = true;
-              }
-              else {
+              } else {
                 return;
               }
             }
             const newData = [...entries];
             newData[i].messages[0].content = value;
-            setEntries(() => newData);
+            setEntries(newData); // <-- subtle bug: doesn't use callback, but okay
+          }
+        } else {
+          if (!shouldAdd) {
+            if (confirm("Some entries are missing the system role as the first message. Do you want to add it for every entry where it's missing?")) {
+              shouldAdd = true;
+            } else {
+              return;
+            }
+          }
+          const newData = [...entries];
+          newData[i].messages.unshift({ role: 'system', content: value });
+          setEntries(newData);
+        }
+      } else {
+        if (!shouldAdd) {
+          if (confirm("Some entries are missing the system role as the first message. Do you want to add it for every entry where it's missing?")) {
+            shouldAdd = true;
+          } else {
+            return;
           }
         }
+        const newData = [...entries];
+        if (!newData[i].messages) newData[i].messages = [];
+        newData[i].messages = [{ role: 'system', content: value }, ...messages];
+        setEntries(newData);
       }
     }
   };
+  
 
-  const updateContext = (value) => {
-    setContext(value);
-    fixContextInEntries(value);
+  const updateInstructions = (value) => {
+    setInstructions(value);
+    if (!isExpert) {
+      rewriteInstructions(value);
+    }
   };
 
   const updateLocalStorage = (data) => {
@@ -355,46 +404,51 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   useEffect(() => {
-    if (entries && entries?.length > 0) {
-      updateLocalStorage({ context: context, entries });
+    if (entries && entries.length > 0) {
+      updateLocalStorage({ instructions: instructions, entries });
     }
   }, [entries]);
 
   useEffect(() => {
-    if (context && context?.length > 0) {
-      updateLocalStorage({ context: context, entries });
+    if (instructions && instructions.length > 0) {
+      updateLocalStorage({ instructions: instructions, entries });
     }
-  }, [context]);
+  }, [instructions]);
 
   const onDeleteDataRow = (row, messageRow) => {
     const updatedEntries = [...entries];
-    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+    if (updatedEntries[row - 1]) {
+      if (updatedEntries[row - 1].messages && updatedEntries[row - 1].messages.length >= messageRow) {
+        updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+      }
+    }
     setEntries(updatedEntries);
   };
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow !== null && messageRow !== undefined) {
+        if (messageRow !== null) {
+          if (!x.messages) x.messages = [];
           return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content }; }
             return y; 
           })};
         }
-        else if (role === 'assistant') {
-          return { ...x, messages: x.messages.map(y => {
-            if (y.role === 'assistant') { return { ...y, content }; }
-            return y;
-          })};
-        }
-        else if (role === 'user') {
-          return { ...x, messages: x.messages.map(y => {
-            if (y.role === 'user') { return { ...y, content }; }
-            return y;
-          })};
-        }
         else {
-          // Fallback: do nothing
+          // If role === 'assistant', update all assistant messages? Or just last?
+          if (!x.messages) x.messages = [];
+          if (role === 'assistant') {
+            return { ...x, messages: x.messages.map(y => {
+              if (y.role === 'assistant') { return { ...y, content }; }
+              return y;
+            })};
+          } else if (role === 'user') {
+            return { ...x, messages: x.messages.map(y => {
+              if (y.role === 'user') { return { ...y, content }; }
+              return y;
+            })};
+          }
         }
       }
       return x;
@@ -404,17 +458,16 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const builderRows = useMemo(() => {
     let row = (currentPage - 1) * rowsPerPage;
-    const chunkOfBuilderData = entries?.slice((currentPage - 1) * rowsPerPage,
-      ((currentPage - 1) * rowsPerPage) + rowsPerPage);
-
-    return chunkOfBuilderData?.map(x => {
+    const chunkOfBuilderData = entries.slice((currentPage - 1) * rowsPerPage,
+      (currentPage - 1) * rowsPerPage + rowsPerPage);
+    return chunkOfBuilderData.map(x => {
       const currentRow = ++row;
 
       let question = "";
       let answer = "";
       let messages = [];
 
-      if (!expert) {
+      if (!isExpert) {
         const potentialQuestion = x.messages.find(x => x.role === 'user');
         if (potentialQuestion) {
           question = potentialQuestion.content;
@@ -447,12 +500,12 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           </EditableText>,
         actions: 
         <>
-          {expert && <NekoButton rounded icon="plus" onClick={() => addMessage(currentRow)} />}
+          {isExpert && <NekoButton rounded icon="plus" onClick={() => addMessage(currentRow)} />}
           <NekoButton rounded icon="trash" onClick={() => onDeleteRow(currentRow)} />
         </>
       };
     });
-  }, [entries, currentPage, rowsPerPage, expert, onUpdateDataRow, onDeleteDataRow]);
+  }, [entries, currentPage, rowsPerPage, isExpert, onUpdateDataRow, onDeleteDataRow]);
 
   const deleteFile = async (fileId) => {
     setBusyAction(true);
@@ -525,8 +578,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateEnv('finetunes_deleted', [...deletedFineTunes, modelId]);
-        }
-        else {
+        } else {
           alert(res.message);
         }
       }
@@ -566,13 +618,14 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    return dataFiles?.sort((a, b) => b.created_at - a.created_at).map(x => {
+    // Sort the dataFiles by created_at
+    return dataFiles?.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const currentId = x.id;
       const currentFilename = x.filename;
       const createdOn = new Date(x.created_at * 1000);
       const forFineTune = x.purpose === 'fine-tune';
       return {
-        status: <StatusIcon status={(x.status)} includeText />,
+        status: <StatusIcon status={x.status} includeText />,
         id: currentId,
         filename: currentFilename,
         purpose: x.purpose,
@@ -622,19 +675,20 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       const createdOn = new Date(x.createdOn);
       return {
         ...x,
-        status: <StatusIcon status={(x.status)} includeText />,
+        model: x.model || (x.estimatedOn ? <small>Should be finished by {new Date(x.estimatedOn).toLocaleString()}.</small> : ''),
+        status: <StatusIcon status={x.status} includeText />,
         createdOn: <>{createdOn.toLocaleDateString()}<br />{createdOn.toLocaleTimeString()}</>,
         actions:  <>
           {x.status === 'succeeded' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => deleteFineTune(x.model)}>
           </NekoButton>}
-          {(x.status === 'cancelled') && <NekoButton className="danger" rounded icon="trash"
+          {x.status === 'cancelled' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
-          {(x.status === 'failed') && <NekoButton className="danger" rounded icon="trash"
+          {x.status === 'failed' && <NekoButton className="danger" rounded icon="trash"
             onClick={() => removeFineTune(x.id)}>
           </NekoButton>}
-          {(x.status === 'pending') && <NekoButton className="danger" rounded icon="close"
+          {x.status === 'pending' && <NekoButton className="danger" rounded icon="close"
             onClick={() => cancelFineTune(x.id)}>
           </NekoButton>}
         </>
@@ -661,19 +715,15 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = entries.map(x => {
-        const json = mwaiStringify(x);
-        return json;
-      }).join("\n");
+      const dataStr = entries.map(x => mwaiStringify(x)).join("\n");
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce, 
-        json: { envId: envId, filename, data }
+        json: { envId: envId, filename, data: dataStr }
       });
       await refreshFiles();
       if (res.success) {
-        onResetBuilder(false);
+        onClearDataset(false);
         alert(i18n.ALERTS.DATASET_UPLOADED);
         setSection('files');
-        setIsModeTrain(true);
       }
       else {
         alert(res.message);
@@ -695,7 +745,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
     const rawModel = getModel(model);
-    return `${rawModel?.family}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
+    return `${rawModel?.family || ''}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
   }, [suffix, model]);
 
   const onSelectFiles = async (files) => {
@@ -717,7 +767,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         if (isJson) {
           try {
             data = JSON.parse(fileContent);
-          } catch (_) {}
+          } catch(e) {
+            console.error(e);
+            continue;
+          }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -730,7 +783,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
               console.error(e, x);
               return null;
             }
-          });
+          }).filter(x => x);
           const hasMessages = data.every(x => x.messages);
           if (!hasMessages) {
             isMigration = true;
@@ -739,44 +792,39 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         else if (isCsv) {
           const resParse = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
           data = resParse.data;
-          console.log('The CSV was loaded!', data);
+          // console.log('The CSV was loaded!', data);
           isMigration = true;
         }
+
         if (isMigration) {
           data = data.map(x => {
             const values = Object.keys(x).reduce((acc, key) => {
               acc[key.toLowerCase()] = x[key];
               return acc;
             }, {});
-            isMigration = true;
             const promptColumns = ['prompt', 'question', 'q'];
             const completionColumns = ['completion', 'reply', 'a'];
-            const promptKey = promptColumns.find(x => values[x]);
-            const completionKey = completionColumns.find(x => values[x]);
-            const promptValue = values[promptKey];
-            const completionValue = values[completionKey];
-            const completionValueClean = completionValue?.replace(/\n\n$/g, '');
-            const promptValueClean = promptValue?.replace(/\n\n###\n\n$/g, '');
-            if (!promptValue || !completionValue) {
-              return null;
-            }
+            const promptKey = promptColumns.find(k => values[k]);
+            const completionKey = completionColumns.find(k => values[k]);
+            const promptValue = values[promptKey] || '';
+            const completionValue = values[completionKey] || '';
+            const completionValueClean = completionValue.replace(/\n\n$/g, '');
+            const promptValueClean = promptValue.replace(/\n\n###\n\n$/g, '');
+
+            if (!promptValue || !completionValue) return null;
+
             return {
-              messages: [{
-                role: 'system',
-                content: context,
-              }, {
-                role: 'user',
-                content: promptValueClean.trim(),
-              }, {
-                role: 'assistant',
-                content: completionValueClean.trim(),
-              }],
+              messages: [
+                { role: 'system', content: instructions },
+                { role: 'user', content: promptValueClean.trim() },
+                { role: 'assistant', content: completionValueClean.trim() }
+              ],
             };
-          });
+          }).filter(x => x);
         }
-        data = data.filter(x => x);
-        const hasMessages = data.every(x => x?.messages);
-        if (!hasMessages) {
+
+        // Validate data
+        if (!data.every(x => x.messages)) {
           alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
           return;
         }
@@ -787,252 +835,208 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   const addRow = (question = 'Question?', answer = 'Answer.') => {
-    setEntries([...entries, { messages: [{
-      role: 'system',
-      content: context,
-    }, {
-      role: 'user',
-      content: question,
-    }, {
-      role: 'assistant',
-      content: answer,
-    }]
+    setEntries([...entries, {
+      messages: [
+        { role: 'system', content: instructions },
+        { role: 'user', content: question },
+        { role: 'assistant', content: answer }
+      ]
     }]);
   };
 
-  const addMessage = (line, role = 'user', content = 'Hello!') => {
-    const newData = entries.map((x, i) => {
-      if (i === (line - 1)) {
-        return { ...x, messages: [...x.messages, { role, content }] };
-      }
-      return x;
-    });
-    setEntries(newData);
+  const addMessage = (line, role='user', content='Hello!') => {
+    const newEntries = [...entries];
+    if (newEntries[line -1]) {
+      newEntries[line -1].messages = [...(newEntries[line -1].messages || []), { role, content }];
+    }
+    setEntries(newEntries);
+  };
+
+  const handleInvalidEntryClick = (index) => {
+    const page = Math.floor(index / rowsPerPage);
+    setCurrentPage(page + 1);
   };
 
   const ref = useRef(null);
-  const currentModelsCount = allFineTunes?.filter(isCurrent).length;
-  const failedModelsCount = allFineTunes?.filter(isFailed).length;
-  const deletedModelsCount = allFineTunes?.filter(isDeleted).length;
+  const currentModelsCount = allFineTunes?.filter(isCurrent).length || 0;
+  const failedModelsCount = allFineTunes?.filter(isFailed).length || 0;
+  const deletedModelsCount = allFineTunes?.filter(isDeleted).length || 0;
 
-  const jsxEnvironments = useMemo(() => {
-    return (<NekoSelect scrolldown value={envId} onChange={setEnvId} style={{ marginRight: 5 }}>
+  const jsxEnvironments = useMemo(() => (
+    <NekoSelect scrolldown value={envId} onChange={setEnvId} style={{ marginLeft: 5 }}>
       {environments.filter(x => x.type === 'openai').map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
-    </NekoSelect>);
-  }, [envId, environments]);
+    </NekoSelect>
+  ), [envId, environments]);
 
-  return (<>
-    <NekoContainer style={{ margin: '10px 10px 25px 10px' }} contentStyle={{ padding: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <NekoSwitch style={{ marginRight: 10 }}
-          onLabel={i18n.FINETUNING.DATASET_EDITOR} offLabel={i18n.FINETUNING.MODELS_DATASETS} width={165}
-          onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
-          onChange={(val) => { setIsModeTrain(!val); }} checked={!isModeTrain}
-        />
-        {isModeTrain && <NekoQuickLinks value={section} busy={busy}
-          onChange={value => { setSection(value); }}>
-          <NekoLink title={i18n.COMMON.MODELS} value='finetunes' count={fineTuneRows?.length ?? '-'} />
-          <NekoLink title={i18n.COMMON.DATASETS} value='files' count={fileRows?.length ?? '-'} />
-        </NekoQuickLinks>}
-        {isModeTrain && section === 'finetunes' && <>
-          <div style={{ flex: 'auto' }} />
-          {jsxEnvironments}
-          <NekoButton disabled={busyAction} busy={busyAction === 'finetunes'}
-            onClick={onRefreshFineTunes} className="primary">
-            {i18n.COMMON.REFRESH_MODELS}
-          </NekoButton>
-        </>}
-        {isModeTrain && section === 'files' && <>
-          <div style={{ flex: 'auto' }} />
-          {jsxEnvironments}
-          <NekoButton disabled={busyAction} onClick={onRefreshFiles} className="primary">
-            Refresh Datasets
-          </NekoButton>
-        </>}
-        {!isModeTrain && <div style={{ display: 'flex', alignItems: 'center', flex: 'auto' }}>
-          <NekoQuickLinks value={dataSection} onChange={value => { setDataSection(value); }}>
-            <NekoLink title={i18n.FINETUNING.ENTRIES_EDITOR} value='editor' count={entries?.length ?? null} />
-            <NekoLink title={i18n.FINETUNING.ENTRIES_GENERATOR} value='generator' />
-          </NekoQuickLinks>
-          <div style={{ flex: 'auto' }} />
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <label style={{ marginRight: 10 }}>Filename:</label>
-            <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
-              onChange={setFilename} style={{ width: 220, marginRight: 5 }} />
-            {jsxEnvironments}
-            <NekoButton disabled={!totalRows || busyAction} icon="upload"
-              onClick={onUploadDataSet} className="primary">
-              Upload to OpenAI
-            </NekoButton>
-          </div>
-        </div>}
-      </div>
-    </NekoContainer>
+  const jsxInvalidEntries = useMemo(() => {
+    if (invalidEntries.length === 0) return null;
+    const entriesToShow = invalidEntries.slice(0,10).map((index, idx) => (
+      <span key={index} style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => handleInvalidEntryClick(index)}>
+        {index}{idx < invalidEntries.slice(0,10).length -1 ? ', ' : ''}
+      </span>
+    ));
+    if (invalidEntries.length > 10) {
+      return <>Some entries are invalid, for example those ones: {entriesToShow}, and {invalidEntries.length -10} more.</>;
+    }
+    return <>Some entries are invalid, for example those ones: {entriesToShow}</>;
+  }, [invalidEntries]);
 
+  return (
+    <>
+    <NekoWrapper>
+      <NekoColumn fullWidth minimal style={{ margin: 8 }}>
+        <NekoTabs inversed currentTab={section} onChange={(_i, attr) => setSection(attr.key)} action={
+          <>
+            <div style={{ flex: 'auto' }} />
+            {section === 'finetunes' && <>
+              <NekoButton disabled={busyAction} busy={busyAction==='finetunes'} onClick={onRefreshFineTunes} className='secondary'>
+                {i18n.COMMON.REFRESH_MODELS}
+              </NekoButton>
+              {jsxEnvironments}
+            </>}
+            {section === 'files' && <>
+              <NekoButton disabled={busyAction} onClick={onRefreshFiles} className='secondary'>
+                Refresh Files
+              </NekoButton>
+              {jsxEnvironments}
+            </>}
+            {section === 'editor' && <>
+              <label style={{ marginRight: 10 }}>Filename:</label>
+              <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''} onChange={setFilename} style={{ width: 220, marginRight: 5 }} />
+              <NekoButton disabled={!isValid || busyAction} icon='upload' onClick={onUploadDataSet} className='primary'>Upload to OpenAI</NekoButton>
+              {jsxEnvironments}
+            </>}
+          </>
+        }>
+          <NekoTab title={i18n.COMMON.MODELS} key='finetunes'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>{toHTML(i18n.FINETUNING.MODELS_INTRO)}</div>
+              <NekoQuickLinks value={modelFilter} onChange={setModelFilter}>
+                <NekoLink title='Current' value='current' count={currentModelsCount ?? '-'} />
+                <NekoLink title='Failed' value='failed' count={failedModelsCount ?? '-'} />
+                <NekoLink title='Deleted' value='deleted' count={deletedModelsCount ?? '-'} />
+              </NekoQuickLinks>
+            </div>
+            <NekoSpacer />
+            <NekoTable busy={busy} data={builderRows} columns={isExpert ? builderColumnsExpert : builderColumnsEasy} emptyMessage={i18n.FINETUNING.NO_FINETUNES_YET} />
+            <div style={{ marginTop: 5, display: 'flex', justifyContent: 'end', lineHeight: '12px', alignItems: 'center' }}>
+              <NekoButton small disabled={busyAction} busy={busyAction==='clean'} onClick={onCleanFineTunes} className='primary'>{i18n.FINETUNING.CLEAN_MODELS_LIST}</NekoButton>
+              <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
+            </div>
+          </NekoTab>
+          <NekoTab title={i18n.COMMON.FILES} key='files'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>{toHTML(i18n.FINETUNING.FILES_INTRO)}</div>
+              <NekoQuickLinks value={purposeFilter} onChange={setPurposeFilter}>
+                <NekoLink title='Datasets' value='fine-tune' />
+                <NekoLink title='All' value={null} />
+              </NekoQuickLinks>
+            </div>
+            <NekoSpacer />
+            <NekoTable busy={busy} data={fileRows} columns={fileColumns} emptyMessage={<>'You do not have any dataset files yet.'</>} />
+          </NekoTab>
+          <NekoTab title={i18n.FINETUNING.DATASET_EDITOR} key='editor'>
+            {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>{i18n.FINETUNING.HUGE_DATASET_WARNING}</p>}
+            <NekoToolbar style={{ display: 'flex' }}>
+              <NekoButton icon='plus' onClick={() => addRow()} disabled={busyAction}>Add Entry</NekoButton>
+              {isExpert && <NekoButton onClick={() => rewriteInstructions(instructions)} disabled={busyAction}>Rewrite Instructions</NekoButton>}
+              <div style={{ flex: 'auto' }} />
+              <NekoSwitch style={{ marginLeft: 5 }} onLabel='Expert' offLabel='Easy' width={90}
+                onBackgroundColor={colors.purple} offBackgroundColor={colors.green} onChange={setIsExpert} checked={isExpert} />
+              <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept='' style={{ paddingLeft: 5 }}>
+                <NekoButton className='secondary' onClick={() => ref.current.click()}>Import</NekoButton>
+              </NekoUploadDropArea>
+              <NekoButton disabled={!totalRows} onClick={onClearDataset} className='secondary'>Clear</NekoButton>
+            </NekoToolbar>
+            <NekoSpacer />
+            {entries.length > 0 && invalidEntries.length > 0 && <>
+              <NekoMessage variant='danger'>{jsxInvalidEntries}</NekoMessage>
+              <NekoSpacer />
+            </>}
+            <NekoCollapsableCategories keepState='datasetEditor'>
+              <NekoCollapsableCategory title='Dataset'>
+                <NekoSpacer tiny />
+                <div style={{ display: 'flex' }}>
+                  <div style={{ flex: 'auto' }} />
+                  <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows} onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+                </div>
+                <NekoSpacer tiny />
+                <NekoTable busy={busyAction} data={builderRows} columns={isExpert ? builderColumnsExpert : builderColumnsEasy} emptyMessage={<>'You can import a file, or create manually each entry by clicking <b>Add</b>.</>} />
+                <NekoSpacer tiny />
+                <div style={{ display: 'flex' }}>
+                  <div style={{ flex: 'auto' }} />
+                  <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows} onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+                  <NekoButton disabled={!totalRows} style={{ marginLeft: 5 }} onClick={exportAsJSON}>Export as JSON</NekoButton>
+                </div>
+              </NekoCollapsableCategory>
+              <NekoCollapsableCategory title={i18n.COMMON.CONTEXT}>
+                <NekoSpacer />
+                <span>
+                  The instructions are the same for all entries. It is used as the <i>system</i> (and first) message in each conversation. More information <a href='https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset' target='_blank' rel='noreferrer'>here</a>.
+                </span>
+                <NekoSpacer />
+                <NekoTextArea id='instructions' name='instructions' rows={2} value={instructions} onBlur={updateInstructions} onEnter={updateInstructions} />
+              </NekoCollapsableCategory>
+              <NekoCollapsableCategory title='Generator'>
+                <NekoSpacer />
+                <Generator options={options} setMessages={setEntries} />
+                <NekoMessage variant='danger'>
+                  Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a <u>high cost</u>.
+                </NekoMessage>
+              </NekoCollapsableCategory>
+              <NekoCollapsableCategory title='Instructions'>
+                <p>
+                  You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href='https://beta.openai.com/docs/guides/fine-tuning/conditional-generation' target='_blank' rel='noreferrer'>case studies</a>. Please also check the <a href='https://meowapps.com/wordpress-chatbot-finetuned-model-ai/' target='_blank' rel='noreferrer'>simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
+                </p>
+              </NekoCollapsableCategory>
+            </NekoCollapsableCategories>
+          </NekoTab>
+        </NekoTabs>
+      </NekoColumn>
+    </NekoWrapper>
     <NekoContainer style={{ margin: 10 }}>
-      {isModeTrain && section === 'finetunes' && <>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>{toHTML(i18n.FINETUNING.MODELS_INTRO)}</div>
-          <NekoQuickLinks value={modelFilter} onChange={value => { setModelFilter(value); }}>
-            <NekoLink title="Current" value='current' count={currentModelsCount ?? '-'} />
-            <NekoLink title="Failed" value='failed' count={failedModelsCount ?? '-'} />
-            <NekoLink title="Deleted" value='deleted' count={deletedModelsCount ?? '-'} />
-          </NekoQuickLinks>
-        </div>
-        <NekoSpacer />
-        <NekoTable busy={busy}
-          data={fineTuneRows} columns={fineTuneColumns} 
-          emptyMessage={i18n.FINETUNING.NO_FINETUNES_YET}
-        />
-        <div style={{ marginTop: 5, display: 'flex', justifyContent: 'end', lineHeight: '12px',
-          alignItems: 'center' }}>
-          <NekoButton small disabled={busyAction} busy={busyAction === 'clean'}
-            onClick={onCleanFineTunes} className="primary">
-            {i18n.FINETUNING.CLEAN_MODELS_LIST}
-          </NekoButton>
-          <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
-        </div>
-      </>}
-
-      {isModeTrain && section === 'files' && <>
-        <p>{toHTML(i18n.FINETUNING.DATASETS_INTRO)}</p>
-        <NekoTable busy={busy}
-          data={fileRows} columns={fileColumns} 
-          emptyMessage={<>You do not have any dataset files yet.</>}
-        />
-      </>}
-
-      {!isModeTrain && dataSection === 'generator' && <>
-        <DatasetEditor options={options} setMessages={setEntries} />
-      </>}
-
-      {!isModeTrain && dataSection === 'editor' && <>
-        {!hasStorageBackup && <p style={{ color: NekoTheme.red }}>{i18n.FINETUNING.HUGE_DATASET_WARNING}</p>}
-        <div style={{ display: 'flex' }}>
-          <NekoButton icon="plus" onClick={() => addRow()}>Add Entry</NekoButton>
-          <NekoSwitch style={{ marginLeft: 10 }}
-            onLabel={"Expert"} offLabel={"Easy"} width={90}
-            onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
-            onChange={setExpert} checked={expert}
-          />
-          <div style={{ flex: 'auto' }} />
-          <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''} style={{ paddingLeft: 5 }}>
-            <NekoButton className="secondary" onClick={() => ref.current.click() }>
-              Import
-            </NekoButton>
-          </NekoUploadDropArea>
-        </div>
-      </>}
-
-      {!isModeTrain && <>
-        <NekoSpacer />
-        <NekoTable busy={busyAction}
-          data={builderRows} columns={expert ? builderColumnsExpert : builderColumnsEasy}
-          emptyMessage={<>You can import a file, or create manually each entry by clicking <b>Add</b>.</>}
-        />
-        <NekoSpacer />
-        {!expert && dataSection === 'editor' && <>
-          <div className="mwai-builder-col">
-            <label>{i18n.COMMON.CONTEXT}:</label>
-            <NekoTextArea id="context" name="context" rows={2}
-              description={i18n.FINETUNING.CONTEXT_DESCRIPTION}
-              value={context} onBlur={updateContext} onEnter={updateContext}
-            />
+      <NekoModal isOpen={errorModal} title='Error' onRequestClose={() => setErrorModal(false)} okButton={{ label: 'Ok', onClick: () => setErrorModal(false) }} content={<><p>{errorModal?.message}</p></>} />
+      <NekoModal isOpen={fileForFineTune} title='Train a new model' onRequestClose={() => setFileForFineTune(undefined)} okButton={{ label: 'Start', disabled: busyAction, onClick: onStartFineTune }} cancelButton={{ label: 'Close', disabled: busyAction, onClick: () => setFileForFineTune(undefined) }}>
+        <p>Exciting! 🎵 You are about to create your own new model, based on your dataset. You simply need to select a base model, and optionally, to modify the <a href='https://beta.openai.com/docs/guides/fine-tuning/hyperparameters' target='_blank' rel='noreferrer'>hyperparameters</a>. Before starting the process, make sure that:</p>
+        <ul>
+          <li>✅ The dataset is well-defined.</li>
+          <li>✅ You understand <a href='https://openai.com/api/pricing/#faq-fine-tuning-pricing-calculation' target='_blank' rel='noreferrer'>OpenAI pricing</a> about fine-tuning.</li>
+        </ul>
+        <label>Base model:</label>
+        <NekoSpacer height={5} />
+        <NekoSelect value={model} scrolldown={true} onChange={setModel}>
+          {finetunableModels.map(x => (
+            <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
+          ))}
+        </NekoSelect>
+        <NekoSpacer height={5} />
+        <small>For now, the hyperparameters can't be modified - they are set automatically by OpenAI.</small>
+        <NekoSpacer height={10} />
+        <label>Suffix (for new model name):</label>
+        <NekoSpacer height={5} />
+        <NekoInput value={suffix} onChange={setSuffix} />
+        <NekoSpacer height={5} />
+        <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href='https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix' target='_blank' rel='noreferrer'>prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
+        <NekoSpacer line height={20} />
+        <NekoCheckbox label='Enable HyperParams' checked={hyperParams} onChange={setHyperParams} />
+        {hyperParams && <>
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <label style={{ marginRight: 5 }}>Number of Epochs:</label>
+            <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type='number' />
+            <label style={{ marginRight: 5 }}>Batch Size:</label>
+            <NekoInput value={batchSize} onChange={setBatchSize} type='number' />
           </div>
-          <NekoSpacer />
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <label style={{ marginRight: 5 }}>Learning Rate Multiplier:</label>
+            <NekoInput style={{ marginRight: 5 }} value={learningRateMultiplier} onChange={setLearningRateMultiplier} type='number' />
+            <label style={{ marginRight: 5 }}>Prompt Loss Weight:</label>
+            <NekoInput value={promptLossWeight} onChange={setPromptLossWeight} type='number' />
+          </div>
         </>}
-        <div style={{ display: 'flex' }}>
-          <NekoButton disabled={!totalRows} onClick={onResetBuilder} className="danger">
-            Reset Entries
-          </NekoButton>
-          <div style={{ flex: 'auto' }} />
-          <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-            onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
-          <NekoButton disabled={!totalRows} style={{ marginLeft: 5 }} onClick={exportAsJSON}>
-            Export as JSON
-          </NekoButton>
-        </div>
-        <NekoSpacer height={40} line={true} style={{ marginBottom: 0 }} />
-
-        {dataSection === 'generator' && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-          Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a costs (the tokens count is displayed next to the progress bar). Also, please note that for now, for some reason, the model doesn't seem to provide as many questions as we ask (contrary to ChatGPT).
-        </NekoMessage>}
-
-        {dataSection === 'editor' && <>
-          <p>
-            You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">case studies</a>. Please also check my <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
-          </p>
-        </>}
-      </>}
-
-      <NekoModal isOpen={errorModal}
-        title="Error"
-        onRequestClose={() => setErrorModal()}
-        okButton={{
-          label: 'Ok',
-          onClick: () => setErrorModal(),
-        }}
-        content={<>
-          <p>{errorModal?.message}</p>
-        </>}
-      />
-
-      <NekoModal isOpen={fileForFineTune}
-        title="Train a new model"
-        onRequestClose={() => setFileForFineTune()}
-        okButton={{
-          label: 'Start',
-          disabled: busyAction,
-          onClick: onStartFineTune,
-        }}
-        cancelButton={{
-          label: 'Close',
-          disabled: busyAction,
-          onClick: () => setFileForFineTune(),
-        }}
-        content={<>
-          <p>
-            Exciting! 🎵 You are about to create your own new model, based on your dataset. You simply need to select a base model, and optionally, to modify the <a href="https://beta.openai.com/docs/guides/fine-tuning/hyperparameters" target="_blank" rel="noreferrer">hyperparameters</a>. Before starting the process, make sure that:
-          </p>
-          <ul>
-            <li>✅ The dataset is well-defined.</li>
-            <li>✅ You understand <a href="https://openai.com/api/pricing/#faq-fine-tuning-pricing-calculation" target="_blank" rel="noreferrer">OpenAI pricing</a> about fine-tuning.</li>
-          </ul>
-          <label>Base model:</label>
-          <NekoSpacer height={5} />
-          <NekoSelect value={model} scrolldown={true} onChange={setModel}>
-            {finetunableModels.map((x) => (
-              <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
-            ))}
-          </NekoSelect>
-          <NekoSpacer height={5} />
-          <small>For now, the hyperparameters can't be modified - they are set automatically by OpenAI.</small>
-          <NekoSpacer height={10} />
-          <label>Suffix (for new model name):</label>
-          <NekoSpacer height={5} />
-          <NekoInput value={suffix} onChange={setSuffix} />
-          <NekoSpacer height={5} />
-          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank" rel="noreferrer">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
-          <NekoSpacer line height={20} />
-          <NekoCheckbox label="Enable HyperParams" checked={hyperParams} onChange={setHyperParams} />
-          {hyperParams && <>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-              <label style={{ marginRight: 5 }}>Number of Epochs:</label>
-              <NekoInput style={{ marginRight: 5 }} value={nEpochs} onChange={setNEpochs} type="number" />
-              <label style={{ marginRight: 5 }}>Batch Size:</label>
-              <NekoInput value={batchSize} onChange={setBatchSize} type="number" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-              <label style={{ marginRight: 5 }}>Learning Rate Multiplier:</label>
-              <NekoInput style={{ marginRight: 5 }} value={learningRateMultiplier}
-                onChange={setLearningRateMultiplier} type="number" />
-              <label style={{ marginRight: 5 }}>Prompt Loss Weight:</label>
-              <NekoInput value={promptLossWeight} onChange={setPromptLossWeight} type="number" />
-            </div>
-          </>}
-        </>
-        }
-      />
+      </NekoModal>
     </NekoContainer>
-  </>);
+    </>
+  );
 };
+
+export default Finetunes;

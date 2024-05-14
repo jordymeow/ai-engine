@@ -10,6 +10,34 @@ class Meow_MWAI_Rest
 		add_action( 'rest_api_init', array( $this, 'rest_init' ) );
 	}
 
+	/**
+	 * Retrieve the message from the parameters and optionally sanitize it.
+	 *
+	 * @param array &$params The parameters array, passed by reference.
+	 * @param bool $sanitize Whether to sanitize the message using sanitize_text_field.
+	 * @return string The retrieved (and optionally sanitized) message.
+	 */
+	function retrieve_message( &$params, $sanitize = false ) : string {
+		if ( isset( $params['message'] ) ) {
+			$message = $params['message'];
+		}
+		elseif ( isset( $params['prompt'] ) ) {
+			$message = $params['prompt'];
+			unset( $params['prompt'] );
+			$params['message'] = $message;
+			error_log( 'AI Engine: "prompt" is deprecated, please use "message" instead.' );
+		}
+		else {
+			$message = "";
+		}
+
+		if ( $sanitize ) {
+			$message = sanitize_text_field( $message );
+		}
+
+		return $message;
+	}
+
 	function rest_init() {
 		try {
 			// Settings Endpoints
@@ -272,8 +300,7 @@ class Meow_MWAI_Rest
 	function rest_ai_completions( $request ) {
 		try {
 			$params = $request->get_json_params();
-			// TODO: This should not be prompt, but message, we should have a look
-			$message = $params['prompt'];
+			$message = $this->retrieve_message( $params );
 			$query = new Meow_MWAI_Query_Text( $message );
 			$query->inject_params( $params );
 
@@ -324,7 +351,7 @@ class Meow_MWAI_Rest
 	function rest_ai_images( $request ) {
 		try {
 			$params = $request->get_json_params();
-			$message = $params['prompt'];
+			$message = $this->retrieve_message( $params );
 			$query = new Meow_MWAI_Query_Image( $message );
 			$query->inject_params( $params );
 			$reply = $this->core->run_query( $query );
@@ -357,7 +384,7 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_json_params();
 			$action = sanitize_text_field( $params['action'] );
-			$message = sanitize_text_field( $params['prompt'] );
+			$message = $this->retrieve_message( $params, true );
 			if ( empty( $action ) || empty( $message ) ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
 			}
@@ -466,8 +493,9 @@ class Meow_MWAI_Rest
 	function rest_openai_files_get() {
 		try {
 			$envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;
+			$purposeFilter = isset( $_GET['purpose'] ) ? $_GET['purpose'] : null;
 			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
-			$files = $openai->list_files();
+			$files = $openai->list_files( $purposeFilter );
 			return new WP_REST_Response([ 'success' => true, 'files' => $files ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -571,7 +599,8 @@ class Meow_MWAI_Rest
 			$envId = $params['envId'];;
 			$fileId = $params['fileId'];
 			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
-			$data = $openai->download_file( $fileId );
+			$filename = $openai->download_file( $fileId );
+			$data = file_get_contents( $filename );
 			return new WP_REST_Response([ 'success' => true, 'data' => $data ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -622,8 +651,7 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_query_params();
 			$postType = $params['postType'];
-			$postStatus = $params['postStatus'];
-			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $postStatus ) : [ 'publish' ];
+			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $params['postStatus'] ) : [ 'publish' ];
 			$count = wp_count_posts( $postType );
 			$count = array_sum( array_intersect_key( (array)$count, array_flip( $postStatus ) ) );
 			return new WP_REST_Response([ 'success' => true, 'count' => $count ], 200 );
@@ -638,8 +666,7 @@ class Meow_MWAI_Rest
 		try {
 			$params = $request->get_query_params();
 			$postType = $params['postType'];
-			$postStatus = $params['postStatus'];
-			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $postStatus ) : [ 'publish' ];
+			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $params['postStatus'] ) : [ 'publish' ];
 			$posts = get_posts( [
 				'posts_per_page' => -1,
 				'post_type' => $postType,
@@ -659,8 +686,7 @@ class Meow_MWAI_Rest
 			$params = $request->get_query_params();
 			$offset = (int)$params['offset'];
 			$postType = $params['postType'];
-			$postStatus = $params['postStatus'];
-			$postStatus = !empty( $params['postStatus'] ) ? explode( ',', $postStatus ) : [ 'publish' ];
+			$postStatus = isset( $params['postStatus'] ) ? explode( ',', $params['postStatus'] ) : [ 'publish' ];
 			$postId = (int)$params['postId'];
 
 			$post = null;
@@ -822,7 +848,7 @@ class Meow_MWAI_Rest
 		try {
 			global $mwai;
 			$params = $request->get_json_params();
-			$message = !empty( $params['prompt'] ) ? $params['prompt'] : null;
+			$message = $this->retrieve_message( $params );
 			$url = !empty( $params['url'] ) ? $params['url'] : null;
 			$path = !empty( $params['path'] ) ? $params['path'] : null;
 			$result = $mwai->simpleVisionQuery( $message, $url, $path );
@@ -838,7 +864,7 @@ class Meow_MWAI_Rest
 		try {
 			global $mwai;
 			$params = $request->get_json_params();
-			$message = !empty( $params['prompt'] ) ? $params['prompt'] : null;
+			$message = $this->retrieve_message( $params );
 			$result = $mwai->simpleJsonQuery( $message );
 			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
 		}

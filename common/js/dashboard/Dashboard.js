@@ -20,8 +20,8 @@ const CommonApiUrl = `${restUrl}/meow-common/v1`;
 
 const jsxTextStory = 
   <TabText>
-    <NekoTypo p>
-      Meow Apps is a suite of plugins for photography, imaging, optimization, and SEO, run by <a target="_blank" href="https://jordymeow.com">Jordy Meow</a>, a photographer and developer in Japan. The goal is to improve and speed up your website. Learn more at <a href="http://meowapps.com" target="_blank">Meow Apps</a>.
+    <NekoTypo p style={{ lineHeight: '1.5', margin: '0 0 15px 0' }}>
+      Hi! ☀️ Meow Apps isn't your typical plugin suite—it's a passion project led by me, <a target="_blank" href="https://jordymeow.com">Jordy Meow</a>, and a stellar team! 💕 Based in <a target="_blank" href="https://offbeatjapan.org">Japan</a>, we're all about making your WordPress experience smoother and speedier. Our plugins are all about boosting your site's performance and user-friendliness. Ready to level up your WordPress game? Check out <a href="http://meowapps.com" target="_blank">Meow Apps</a> and let's make magic happen! 🌴🙀
     </NekoTypo>
   </TabText>;
 
@@ -101,11 +101,11 @@ const Dashboard = () => {
   }
 
   const jsxHideMeowApps = 
-  <NekoSettings title="Main Menu">
-    <NekoCheckboxGroup max="1">
-      <NekoCheckbox name="meowapps_hide_meowapps" label="Hide (Not Recommended)" description={<NekoTypo p>This will hide the Meow Apps Menu (on the left side) and everything it contains. You can re-enable it through though an option that will be added in Settings &rarr; General.</NekoTypo>} value="1" disabled={busy} checked={hide_meowapps} onChange={updateOption} />
-    </NekoCheckboxGroup>
-  </NekoSettings>;
+    <NekoSettings title="Main Menu">
+      <NekoCheckboxGroup max="1">
+        <NekoCheckbox name="meowapps_hide_meowapps" label="Hide (Not Recommended)" description={<NekoTypo p>This will hide the Meow Apps Menu (on the left side) and everything it contains. You can re-enable it through though an option that will be added in Settings &rarr; General.</NekoTypo>} value="1" disabled={busy} checked={hide_meowapps} onChange={updateOption} />
+      </NekoCheckboxGroup>
+    </NekoSettings>;
 
 
   const jsxForceSSLVerify = 
@@ -126,7 +126,7 @@ const Dashboard = () => {
         <NekoColumn full>
           
           {/* TAB FOR ADVANCED SETTINGS */}
-          <NekoTabs>
+          <NekoTabs keepTabOnReload={true}>
             <NekoTab title='Meow Apps'>
 
               {jsxTextStory}
@@ -135,58 +135,88 @@ const Dashboard = () => {
                 <NekoColumn minimal>
 
                   <StyledPluginBlock title="AI Engine" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/ai-engine/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/ai-engine/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/ai-engine/'>
                         AI Engine
                       </a></h2>
-                      <p>GPT for WordPress. ChatGPT chatbot, image & content generator, finetune/train models, etc. Ultra customizable, extensible, sleek UI. You will love it!</p>
+                      <p className="plugin-actual-desc">
+                        This is the ultimate AI plugin for WordPress. From a chatbot adapted to your needs to an AI that can write your content for you, API, REST, and more.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/ai-engine/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/ai-engine/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Media Cleaner" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/media-cleaner/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/media-cleaner/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/media-cleaner/'>Media Cleaner</a></h2>
-                      <p>Clean your WordPress! Eliminate unused and broken media files. For a faster, and better website.</p>
+                      <p className="plugin-actual-desc">
+                        Is your Media Library bloated, your database heavy, and your website running slow? Media Cleaner will clean your Media Library from the media entries (and files) which aren't used in your website, as well as broken entries.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/media-cleaner/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/media-cleaner/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Database Cleaner" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/database-cleaner/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/database-cleaner/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/database-cleaner/'>Database Cleaner</a></h2>
-                      <p>Not only does Database Cleaner have a user-friendly UI, but it's also equipped to handle large DBs, giving it an edge over other plugins.</p>
+                      <p className="plugin-actual-desc">
+                        Not only does Database Cleaner have a user-friendly UI, but it's also equipped to handle large DBs, giving it an edge over other plugins. It's a must-have for any WordPress site.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/database-cleaner/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/database-cleaner/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Media File Renamer" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/media-file-renamer/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/media-file-renamer/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/media-file-renamer/'>Media File Renamer</a></h2>
-                      <p>Rename and move files directly from the dashboard, manually, automatically or via AI, either individually or in bulk.</p>
+                      <p className="plugin-actual-desc">
+                        Rename and move files directly from the dashboard, manually, automatically or via AI, either individually or in bulk. It's the best way to rename your files.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/media-file-renamer/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/media-file-renamer/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Social Engine" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/social-engine/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/social-engine/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/social-engine/'>Social Engine</a></h2>
-                      <p>Effortlessly schedule and automate the perfect posts for all your networks. Unlimited capabilities and infinite extensibility, for free!</p>
+                      <p className="plugin-actual-desc">
+                        Effortlessly schedule and automate the perfect posts for all your networks. Unlimited capabilities and infinite className="plugin-actual-desc" extensibility, for free!
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/social-engine/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/social-engine/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Meow Analytics" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/meow-analytics/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/meow-analytics/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/meow-analytics/'>Meow Analytics</a></h2>
-                      <p>Google Analytics for your website.</p>
+                      <p className="plugin-actual-desc">
+                        Google Analytics for your website. Simple and fast.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/meow-analytics/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/meow-analytics/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
                   
@@ -194,57 +224,87 @@ const Dashboard = () => {
 
                 <NekoColumn minimal>
 
-                <StyledPluginBlock title="Photo Engine" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/wplr-sync/assets/icon-256x256.png' />
+                  <StyledPluginBlock title="Contact Form Block" className="primary">
+                    <StyledPluginImage src='https://ps.w.org/seo-engine/assets/icon-256x256.png' />
                     <div className="plugin-desc">
-                      <h2><a target='_blank' href='https://wordpress.org/plugins/wplr-sync/'>Photo Engine</a></h2>
-                      <p>Organize your photos in folders and collections.<br />Synchronize with Lightroom.</p>
+                      <h2><a target='_blank' href='https://wordpress.org/plugins/seo-engine/'>SEO Engine</a></h2>
+                      <p className="plugin-actual-desc">
+                        Optimize your content for SEO and for the AI world, with AI assistants... while keeping everything simple and fast, as it should be! ✌️
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/seo-engine/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/seo-engine/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Meow Gallery" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/meow-gallery/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/meow-gallery/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/meow-gallery/'>Meow Gallery</a></h2>
-                      <p>Fast and beautiful gallery with many layouts.</p>
+                      <p className="plugin-actual-desc">
+                        Fast and beautiful galleries with many layouts. Forget the heavy and slow plugins, use the Meow Gallery for a better experience! 💕
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/meow-gallery/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/meow-gallery/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Meow Lightbox" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/meow-lightbox/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/meow-lightbox/assets/icon-256x256.gif' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/meow-lightbox/'>Meow Lightbox</a></h2>
-                      <p>Sleek and performant lightbox with EXIF support.</p>
+                      <p className="plugin-actual-desc">
+                        Sleek and performant lightbox with EXIF support.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/meow-lightbox/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/meow-lightbox/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Perfect Images (Retina)" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/wp-retina-2x/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/wp-retina-2x/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/wp-retina-2x/'>Perfect Images</a></h2>
-                      <p>Manage, Optimize, Replace your images with Perfect Images.</p>
+                      <p className="plugin-actual-desc">
+                        Manage, Optimize, Replace your images with Perfect Images.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/wp-retina-2x/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/wp-retina-2x/'>Meow Apps</a></div>
+                      </p>
+                    </div>
+                  </StyledPluginBlock>
+
+                  <StyledPluginBlock title="Photo Engine" className="primary">
+                    <StyledPluginImage src='https://ps.w.org/wplr-sync/assets/icon-256x256.png' />
+                    <div className="plugin-desc">
+                      <h2><a target='_blank' href='https://wordpress.org/plugins/wplr-sync/'>Photo Engine</a></h2>
+                      <p className="plugin-actual-desc">
+                        Organize your photos in folders and collections. Synchronize with Lightroom. Simplify and speed up your workflow.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/wplr-sync/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/wplr-sync/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 
                   <StyledPluginBlock title="Contact Form Block" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/contact-form-block/assets/icon-256x256.png' />
+                    <StyledPluginImage src='https://ps.w.org/contact-form-block/assets/icon-256x256.png' />
                     <div className="plugin-desc">
                       <h2><a target='_blank' href='https://wordpress.org/plugins/contact-form-block/'>Contact Form Block</a></h2>
-                      <p>Simple and straightforward contact form, in one block.</p>
-                    </div>
-                  </StyledPluginBlock>
-
-                  <StyledPluginBlock title="Contact Form Block" className="primary">
-                    <StyledPluginImage
-                      src='https://ps.w.org/ai-seo/assets/icon-256x256.png' />
-                    <div className="plugin-desc">
-                      <h2><a target='_blank' href='https://wordpress.org/plugins/ai-seo/'>AI-SEO</a></h2>
-                      <p>Optimize your content for SEO. Keep everything simple and fast.</p>
+                      <p className="plugin-actual-desc">
+                        Need a very simple but straightforward contact form? This is the one you need. It's fast, simple, and efficient.
+                      </p>
+                      <p>
+                        <div>Free Version: <a target='_blank' href='https://wordpress.org/plugins/contact-form-block/'>WordPress.org</a></div>
+                        <div>Pro Version: <a target='_blank' href='https://meowapps.com/contact-form-block/'>Meow Apps</a></div>
+                      </p>
                     </div>
                   </StyledPluginBlock>
 

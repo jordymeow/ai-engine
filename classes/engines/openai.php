@@ -171,10 +171,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          error_log( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
+          error_log( 'AI Engine: The model "' . $query->model . '" doesn\'t support Function Calling.' );
         }
         else if ( strpos( $query->model, 'ft:' ) === 0 ) {
-          error_log( 'OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
+          error_log( 'AI Engine: OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
         }
         else {
           $body['tools'] = [];
@@ -689,6 +689,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           throw new Exception( 'No content received (res is null).' );
         }
         if ( !$data['model'] ) {
+          error_log( 'AI Engine: Invalid response (no model information):' );
           error_log( print_r( $data, 1 ) );
           throw new Exception( 'Invalid response (no model information).' );
         }
@@ -724,6 +725,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $service = $this->get_service_name();
       $message = "From $service: " . $e->getMessage();
       throw new Exception( $message );
+    }
+    finally {
+      if ( !is_null( $streamCallback ) ) {
+        remove_action( 'http_api_curl', [ $this, 'stream_handler' ] );
+      }
     }
   }
 
@@ -799,18 +805,21 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   // Check if there are errors in the response from OpenAI, and throw an exception if so.
   protected function handle_response_errors( $data ) {
-    if ( isset( $data['error'] ) ) {
+    if ( isset( $data['error'] ) && !empty( $data['error'] ) ) {
       $message = $data['error']['message'];
       if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
         $message = str_replace( $matches[1], '', $message );
       }
       throw new Exception( $message );
     }
-  }
+  }  
 
-  public function list_files()
+  public function list_files( $purposeFilter = null )
   {
-    return $this->execute( 'GET', '/files' );
+    if ( empty( $purposeFilter ) ) {
+      return $this->execute( 'GET', '/files' );
+    }
+    return $this->execute( 'GET', '/files', [ 'purpose' => $purposeFilter ] );
   }
 
   static function get_suffix_for_model($model)
@@ -901,7 +910,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     $finetunes = array_map( function ( $finetune ) {
       $finetune['suffix'] = SELF::get_suffix_for_model( $finetune['fine_tuned_model'] );
       $finetune['createdOn'] = date( 'Y-m-d H:i:s', $finetune['created_at'] );
-      $finetune['updatedOn'] = date( 'Y-m-d H:i:s', $finetune['updated_at'] );
+      if ( isset( $finetune['estimated_finish'] ) ) {
+        $finetune['estimatedOn'] = date( 'Y-m-d H:i:s', $finetune['estimated_finish'] );
+      }
+      else {
+        $finetune['estimatedOn'] = null;
+      }
+      //$finetune['updatedOn'] = date( 'Y-m-d H:i:s', $finetune['updated_at'] );
       $finetune['base_model'] = $finetune['model'];
       $finetune['model'] = $finetune['fine_tuned_model'];
       unset( $finetune['object'] );
@@ -1129,6 +1144,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           $headers .= "$key: $value\r\n";
         }
       }
+    }
+
+    // If it's a GET, body should be null, and we should append the query to the URL.
+    if ( $method === 'GET' ) {
+      if ( !empty( $query ) ) {
+        $url .= '?' . http_build_query( $query );
+      }
+      $body = null;
     }
 
     $url = 'https://api.openai.com/v1' . $url;

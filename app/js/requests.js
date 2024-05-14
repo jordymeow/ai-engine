@@ -1,5 +1,5 @@
-// Previous: 2.1.1
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.3.0
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -32,8 +32,12 @@ const deleteFiles = async (files) => {
   return res;
 };
 
-const retrieveFilesFromOpenAI = async (envId = null) => {
-  const res = await nekoFetch(`${apiUrl}/openai/files/list?envId=${envId}`, { nonce: restNonce });
+const retrieveFilesFromOpenAI = async (envId = null, purpose = null) => {
+  let url = `${apiUrl}/openai/files/list?envId=${envId}`;
+  if (purpose) {
+    url += `&purpose=${purpose}`;
+  }
+  const res = await nekoFetch(url, { nonce: restNonce });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -114,7 +118,6 @@ const updateThemes = async (themes) => {
     themeIds.push(themeId);
     themes[i].themeId = themeId;
   }
-
   const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
   return res?.themes;
 };

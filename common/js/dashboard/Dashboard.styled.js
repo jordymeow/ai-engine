@@ -28,17 +28,14 @@ const StyledPluginBlock = Styled(NekoBlock)`
   .plugin-desc {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    margin-left: 20px;
+    margin-left: 15px;
   }
 
   .neko-block-content {
     display: flex;
-    padding: 10px;
-    item-align: center;
+    padding: 15px;
 
     h2 {
-      color: #055082;
       font-size: 18px;
       margin: 0;
 
@@ -49,17 +46,23 @@ const StyledPluginBlock = Styled(NekoBlock)`
 
     p {
       margin: 0px;
-      margin-top: 5px;
+      margin-top: 10px;
       font-size: 13px;
-      line-height: 1.2;
+      line-height: 1.5;
+    }
+
+    .plugin-actual-desc {
+      font-size: 13px;
+      font-weight: 500;
     }
   }
 `;
 
 const StyledPluginImage = Styled.img`
-  width: 85px;
-  height: 85px;
-  padding-right: 10px;
+  height: 125px;
+  width: auto;
+  border-radius: 10px;
+  background: lightgray;
 `;
 
 const StyledPhpInfo = Styled.div`

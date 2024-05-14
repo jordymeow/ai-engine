@@ -160,7 +160,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          error_log( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
+          error_log( 'AI Engine: The model "' . $query->model . '" doesn\'t support Function Calling.' );
         }
         else {
           $body['tools'] = [];
@@ -207,7 +207,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          error_log( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
+          error_log( 'AI Engine: The model "' . $query->model . '" doesn\'t support Function Calling.' );
         }
         else {
           $body['tools'] = [];
@@ -309,6 +309,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
           throw new Exception( 'No content received (res is null).' );
         }
         if ( !$data['model'] ) {
+          error_log( 'AI Engine: Invalid response (no model information):' );
           error_log( print_r( $data, 1 ) );
           throw new Exception( 'Invalid response (no model information).' );
         }

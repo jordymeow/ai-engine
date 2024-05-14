@@ -1,5 +1,5 @@
-// Previous: 2.0.9
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.3.0
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -18,6 +18,7 @@ import { OutputHandler, mwaiFetch, mwaiHandleRes } from "@app/helpers";
 
 const StyledTextArea = Styled(NekoTextArea)`
   .neko-textarea-container {
+  
     textarea {
       color: white;
       font-size: 13px;
@@ -25,6 +26,7 @@ const StyledTextArea = Styled(NekoTextArea)`
       font-family: monospace;
       background: #333d4e;
       border: none;
+
       &:focus {
         background-color: #333d4e;
       }
@@ -73,23 +75,18 @@ const Dashboard = () => {
     }
   }, [template]);
 
-  // const onReset_usage = () => {
-  //   setSessionCost(0);
-  //   setLastCost(0);
-  // }
-
   const onSubmitPrompt = async (promptToUse = prompt) => {
     setBusy(true);
     setStartTime(new Date());
     try {
       const stop = stopSequence.replace(/\\n/g, '\n');
-      const streamCallback = stream ? (content) => {
+      const streamCallback = !stream ? null : (content) => {
         setCompletion(content);
-      } : null;
+      };
       const res = await mwaiFetch(`${apiUrl}/ai/completions`, { 
-        env: 'playground',
+        scope: 'playground',
         session: session,
-        prompt: promptToUse,
+        message: promptToUse,
         temperature,
         envId: envId,
         model,
@@ -107,7 +104,8 @@ const Dashboard = () => {
       console.log("Completions", { prompt: promptToUse, result: finalRes });
       if (mode === 'continuous') {
         setPrompt(promptToUse + '\n' + finalRes.data + '\n');
-      } else {
+      }
+      else {
         setCompletion(finalRes.data);
       }
       addUsage(model, finalRes?.usage?.prompt_tokens || 0, finalRes?.usage?.completion_tokens || 0);
@@ -115,7 +113,7 @@ const Dashboard = () => {
     catch (err) {
       setError(err.message);
     }
-    setStartTime(null);
+    setStartTime();
     setBusy(false);
   };
 
@@ -152,7 +150,7 @@ const Dashboard = () => {
 
             {mode === 'continuous' && <>
               <StyledTextArea rows={18} onChange={setPrompt} value={prompt} />
-              <div style={{ display: 'flex' }}>
+              <div style={{ display: 'flex', position: 'relative' }}>
                 <span className="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
                 <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
@@ -230,7 +228,7 @@ const Dashboard = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={Boolean(error)}
+      <NekoModal isOpen={error}
         onRequestClose={() => { setError(); }}
         okButton={{
           onClick: () => { setError(); }

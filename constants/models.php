@@ -5,6 +5,22 @@
 define( 'MWAI_OPENAI_MODELS', [
   // Base models:
 	[
+		"model" => "gpt-4o",
+		"name" => "GPT-4o",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.0050,
+			"out" => 0.0150,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxCompletionTokens" => 8192,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions']
+	],
+	[
 		"model" => "gpt-4-turbo",
 		"name" => "GPT-4 Turbo",
 		"family" => "gpt4",
@@ -14,7 +30,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		//"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
@@ -31,7 +47,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		//"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
@@ -65,7 +81,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		//"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
@@ -82,7 +98,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		//"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
@@ -99,7 +115,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
+		//"maxTokens" => 4096, // We should upgrade to maxCompletionTokens and maxContextualTokens
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
