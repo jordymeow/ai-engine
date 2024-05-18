@@ -267,16 +267,11 @@
 
 .mwai-chat .mwai-reply .mwai-text .mwai-filename {
   display: flex;
-  font-style: italic;
   text-decoration: none;
-  align-items: center;
-  font-size: 90%;
-}
-
-.mwai-chat .mwai-reply .mwai-text .mwai-filename svg {
-  width: 16px;
-  height: 16px;
-  margin-right: 5px;
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  padding: 5px 10px;
+  margin-bottom: 10px;
 }
 
 .mwai-chat .mwai-reply .mwai-text * {
@@ -405,8 +400,12 @@
   overflow: hidden;
 }
 
+.mwai-chat .mwai-input .mwai-input-text.mwai-dragging {
+  filter: brightness(1.2);
+}
+
 .mwai-chat .mwai-input .mwai-input-text textarea {
-  background: var(--mwai-backgroundPrimaryColor);
+  background: inherit;
   color: var(--mwai-fontColor);
   flex: auto;
   padding: var(--mwai-spacing);

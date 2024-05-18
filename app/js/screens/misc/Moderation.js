@@ -1,15 +1,14 @@
-// Previous: 1.6.76
-// Current: 2.2.95
+// Previous: 2.2.95
+// Current: 2.3.1
 
 // React & Vendor Libs
 const { useState } = wp.element;
 import { apiUrl, restNonce } from '@app/settings';
-import { mwaiStringify } from '@app/helpers';
 
 // NekoUI
 import { NekoWrapper, NekoBlock, NekoSpacer, NekoColumn, NekoTextArea, 
   NekoButton, NekoSettings, NekoCheckbox } from '@neko-ui';
-import { nekoFetch } from '@neko-ui';
+import { nekoFetch, nekoStringify } from '@neko-ui';
 import i18n from '@root/i18n';
 
 const Moderation = ({ options, updateOption, busy: busyParent }) => {
@@ -65,7 +64,7 @@ const Moderation = ({ options, updateOption, busy: busyParent }) => {
           <NekoSpacer />
           <label>Results:</label>
           <pre>
-            {mwaiStringify(results, 2)}
+            {nekoStringify(results, 2)}
           </pre>
         </NekoBlock>
       </NekoColumn>

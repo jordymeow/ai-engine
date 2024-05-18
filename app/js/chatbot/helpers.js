@@ -1,5 +1,5 @@
-// Previous: 2.1.5
-// Current: 2.2.95
+// Previous: 2.2.95
+// Current: 2.3.1
 
 const { useState, useMemo, useEffect, useRef, useImperativeHandle } = wp.element;
 
@@ -79,16 +79,6 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
     WebkitAnimation: active ? "pulse 2s infinite" : ""
   };
 
-  useEffect(() => {
-    const styleSheet = document.createElement("style");
-    styleSheet.type = "text/css";
-    styleSheet.innerText = pulsarAnimation;
-    document.head.appendChild(styleSheet);
-    return () => {
-      document.head.removeChild(styleSheet);
-    };
-  }, []);
-
   return (
     <div active={active ? "true" : "false"} disabled={disabled} {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"
@@ -159,7 +149,7 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, disabled, sty
       style={{ cursor: disabled ? 'default' : 'pointer', ...style }}
       {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-        dangerouslySetInnerHTML={{ __html: type === 'vision' ? svgPicturePath : svgFilePath }}
+        dangerouslySetInnerHTML={{ __html: type === 'image' ? svgPicturePath : svgFilePath }}
       />
       <span>
         {uploadedFile.uploadProgress && `${Math.round(uploadedFile.uploadProgress)}%`}
@@ -179,7 +169,9 @@ function useInterval(delay, callback, enabled = true) {
 
   useEffect(() => {
     function tick() {
-      savedCallback.current();
+      if (savedCallback.current) {
+        savedCallback.current();
+      }
     }
     if (delay !== null && enabled) {
       const id = setInterval(tick, delay);
@@ -211,14 +203,14 @@ const useModClasses = (theme) => {
       }
 
       return classNames.map(className => {
-        if (!cssTheme) {
+        if (!cssTheme || !cssTheme[className]) {
+          console.warn(`The class name "${className}" is not defined in the "${theme?.themeId ?? "N/A"}" theme.`);
           return className;
         }
         else if (cssTheme[className]) {
           return `${className} ${cssTheme[className]}`;
         }
         else {
-          console.warn(`The class name "${className}" is not defined in the "${theme?.themeId ?? "N/A"}" theme.`);
           return className;
         }
       }).join(' ');
@@ -283,13 +275,11 @@ function useChrono() {
 function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, modCss) {
   if (!userName) {
     if (userData) {
-      // Gravatar
       userName = <div className={modCss(['mwai-avatar'])}>
         <img src={userData.AVATAR_URL} />
       </div>;
     }
     else {
-      // Default avatar
       userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
         <img src={`${pluginUrl}/images/avatar-user.svg`} />
       </div>;
@@ -341,11 +331,11 @@ const processParameters = (params) => {
   const userName = params.userName?.trim() ?? "";
   const localMemory = Boolean(params.localMemory);
   const imageUpload = Boolean(params.imageUpload);
-  const fileUpload = Boolean(params.fileUpload);
+  const fileSearch = Boolean(params.fileSearch);
 
   return { 
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    window, copyButton, fullscreen, localMemory, imageUpload, fileUpload,
+    window, copyButton, fullscreen, localMemory, imageUpload, fileSearch,
     icon, iconText, iconAlt, iconPosition,
     aiName, userName, guestName
   };
@@ -392,7 +382,6 @@ const useSpeechRecognition = (onResult) => {
     };
 
     if (isListening) {
-      recognition.removeEventListener('result', handleResult);
       recognition.addEventListener('result', handleResult);
       recognition.start();
     } else {

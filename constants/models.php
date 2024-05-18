@@ -14,11 +14,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000,
-		"maxCompletionTokens" => 8192,
+		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'functions']
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
 	],
 	[
 		"model" => "gpt-4-turbo",
@@ -35,7 +35,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'vision', 'functions']
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
 	],
 	[
 		"model" => "gpt-4-turbo-preview",
@@ -52,7 +52,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"mode" => "chat",
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'json', 'preview', 'functions', 'deprecated']
+		"tags" => ['core', 'chat', 'preview', 'functions', 'json', 'deprecated']
 	],
 	[
 		"model" => "gpt-4-turbo-2024-04-09",

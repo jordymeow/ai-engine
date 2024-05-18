@@ -3,10 +3,7 @@
 class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializable {
 
   // Core Content
-  public ?string $file = null;
-  public ?string $fileType = null; // refId, url, data
-  public ?string $mimeType = 'image/jpeg';
-  public ?string $filePurpose = null; // assistant, vision
+  public ?Meow_MWAI_Query_AttachedFile $attachedFile = null;
 
   // Parameters
   public float $temperature = 0.8;
@@ -52,10 +49,10 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       $json['context']['content'] = $this->context;
     }
 
-    if ( !empty( $this->file ) ) {
+    if ( !empty( $this->attachedFile ) ) {
       $json['context']['hasFile'] = true;
-      if ( $this->fileType === 'url' ) {
-        $json['context']['fileUrl'] = $this->file;
+      if ( $this->attachedFile->get_type() === 'url' ) {
+        $json['context']['fileUrl'] = $this->attachedFile->get_url();
       }
     }
 
@@ -66,51 +63,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   #region File Handling
 
-  public function set_file( string $file, string $fileType = null,
-    string $filePurpose = null, string $mimeType = null ) : void {
-    if ( !empty( $fileType ) && $fileType !== 'refId' && $fileType !== 'url' && $fileType !== 'data' ) {
-      throw new Exception( "AI Engine: The file type can only be refId, url or data." );
-    }
-    if ( !empty( $filePurpose ) && $filePurpose !== 'assistant-in' && $filePurpose !== 'vision' ) {
-      throw new Exception( "AI Engine: The file purpose can only be assistant or vision." );
-    }
-    if ( !empty( $mimeType ) ) {
-      $this->mimeType = $mimeType;
-    }
-    $this->file = $file;
-    $this->fileType = $fileType;
-    $this->filePurpose = $filePurpose;
-  }
-
-  public function get_file_url() {
-    if ( $this->fileType === 'url' ) {
-      return $this->file;
-    }
-    else if ( $this->fileType === 'data' ) {
-      return "data:image/jpeg;base64,{$this->file}";
-    }
-    else if ( $this->fileType === 'refId' ) {
-      throw new Exception( "AI Engine: The file type refId is not supported yet." );
-    }
-    else {
-      return null;
-    }
-  }
-
-  // TODO: Those file-related methods should be checked and streaminled.
-  // It's used by OpenAI, OpenRouter and Anthropic.
-  public function get_file_data() {
-    if ( $this->fileType === 'url' ) {
-      $data = file_get_contents( $this->file );
-      return base64_encode( $data );
-    }
-    else if ( $this->fileType === 'data' ) {
-      return $this->file;
-    }
-  }
-
-  public function get_file_mime_type() {
-    return $this->mimeType;
+  public function set_file( Meow_MWAI_Query_AttachedFile $file ): void {
+    $this->attachedFile = $file;
   }
 
   #endregion

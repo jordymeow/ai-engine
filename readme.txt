@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,14 +66,22 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
- 
+
+= 2.3.1 (2024/05/18) =
+* Add: Support for Vision in Assistants v2.
+* Add: Support for Function Calls with OpenAI's Assistants v2.
+* Add: Support for Functions Calls via Streaming with Anthropic.
+* Update: Enhanced the way uploads are handled and displayed in the chatbot.
+* Fix: Issue with finetuned models when used in chatbots.
+* Fix: Many little fixes that troubled some of you on Discord! 😬 I am always checking!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.3.0 (2024/05/14) =
 * Add: Support for GPT-4o (OpenAI).
 * Fix: Improved (and fixed) the finetuning process.
 * Update: Many enhancements and fixes in the code.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.2.95 (2024/04/25) =
 * Add: Support for File Search and Vector Stores with Assistants v2.

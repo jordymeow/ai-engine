@@ -271,30 +271,12 @@ class Meow_MWAI_API {
 			$query->set_model( $ai_vision_default_model );
 		}
 		$query->inject_params( $params );
-		$remote_upload = $this->core->get_option( 'image_remote_upload' );
-		$preferURL = $remote_upload === 'url';
-
-		if ( $preferURL && $url ) {
-			$query->set_file( $url, 'url', 'vision' );
+		if ( !empty( $url ) ) {
+			$query->set_file( Meow_MWAI_Query_AttachedFile::from_url( $url, 'vision' ) );
 		}
-		else if ( !$preferURL && !empty( $path ) ) {
-			$binary = file_get_contents( $path );
-			if ( $binary === false ) {
-				throw new Exception( 'The file could not be read.' );
-			}
-			$data = base64_encode( $binary );
-			$mimeType = $this->core->get_mime_type( $path );
-			$query->set_file( $data, 'data', 'vision', $mimeType );
+		else if ( !empty( $path ) ) {
+			$query->set_file( Meow_MWAI_Query_AttachedFile::from_path( $path, 'vision' ) );
 		}
-		else if ( $url ) {
-			$query->set_file( $url, 'url', 'vision' );
-		}
-		else if ( !empty($path ) ) {
-			$data = base64_encode( file_get_contents( $path ) );
-			$mimeType = $this->core->get_mime_type( $path );
-			$query->set_file( $data, 'data', 'vision', $mimeType );
-		}
-
 		$reply = $mwai_core->run_query( $query );
 		return $reply->result;
 	}

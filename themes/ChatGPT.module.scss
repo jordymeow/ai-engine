@@ -278,16 +278,11 @@
 
 			.mwai-filename {
 				display: flex;
-				font-style: italic;
     		text-decoration: none;
-				align-items: center;
-				font-size: 90%;
-
-				svg {
-					width: 16px;
-					height: 16px;
-					margin-right: 5px;
-				}
+				border: 1px solid var(--mwai-backgroundPrimaryColor);
+				border-radius: var(--mwai-borderRadius);
+				padding: 5px 10px;
+				margin-bottom: 10px;
 			}
 	
 			* {
@@ -421,8 +416,12 @@
 			border-radius: var(--mwai-borderRadius);
 			overflow: hidden;
 
+			&.mwai-dragging {
+				filter: brightness(1.2);
+			}
+
 			textarea {
-				background: var(--mwai-backgroundPrimaryColor);
+				background: inherit;
 				color: var(--mwai-fontColor);
 				flex: auto;
 				padding: var(--mwai-spacing);

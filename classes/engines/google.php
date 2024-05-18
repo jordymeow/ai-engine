@@ -90,42 +90,25 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     }
 
     // Finally, we need to add the message, but if there is an image, we need to add it as a model message.
-    $fileUrl = $query->get_file_url();
-    if ( !empty( $fileUrl ) ) {
-      // If the fileUrl actually is data (starts with "data:")
-      $isData = strpos( $fileUrl, 'data:' ) === 0;
-      if ( $isData ) {
-        $messages[] = [ 
-          'role' => 'user',
-          'parts' => [
-            [
-              "inlineData" => [
-                "mimeType" => "image/jpeg",
-                "data" => $query->file // We need to be careful here to get only the data part
-              ]
-            ],
-            [
-              "text" => $query->get_message()
+    if ( $query->attachedFile) {
+      // Gemini doesn't handle URL uploads, so we need to convert it to base64.
+      //$remote_upload = $this->core->get_option( 'image_remote_upload' );
+      $data = $query->attachedFile->get_base64();
+      //$data = strpos( $data, 'data:' ) === 0;
+      $messages[] = [ 
+        'role' => 'user',
+        'parts' => [
+          [
+            "inlineData" => [
+              "mimeType" => "image/jpeg",
+              "data" => $data // We need to be careful here to get only the data part
             ]
+          ],
+          [
+            "text" => $query->get_message()
           ]
-        ];
-      }
-      else {
-        $messages[] = [ 
-          'role' => 'user',
-          'parts' => [
-            [
-              "fileData" => [
-                "mimeType" => "image/jpeg",
-                "fileUri" => $fileUrl
-              ]
-            ],
-            [
-              "text" => $query->get_message()
-            ]
-          ]
-        ];
-      }
+        ]
+      ];
       // TODO: Gemini doesn't support multiturn chat with Vision...
       // So we only keep the message that goes with the image.
       $messages = array_slice( $messages, -1 );

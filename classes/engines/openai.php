@@ -125,8 +125,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
 
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.
-    $fileUrl = $query->get_file_url();
-    if ( !empty( $fileUrl ) ) {
+    if ( $query->attachedFile ) {
+      $finalUrl = null;
+      $remote_upload = $this->core->get_option( 'image_remote_upload' );
+      if ( $remote_upload === 'url' ) {
+        $finalUrl = $query->attachedFile->get_url();
+      }
+      else {
+        $finalUrl = $query->attachedFile->get_inline_base64_url();
+      }
       $messages[] = [ 
         'role' => 'user',
         'content' => [
@@ -136,7 +143,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           ],
           [
             "type" => "image_url",
-            "image_url" => [ "url" => $fileUrl ]
+            "image_url" => [ 
+              "url" => $finalUrl
+            ]
           ]
         ]
       ];
@@ -370,7 +379,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   // object: "thread.message.delta"
   protected function stream_data_handler( $json ) {
     $content = null;
-
+  
     // Get additional data from the JSON
     if ( isset( $json['model'] ) ) {
       $this->inModel = $json['model'];
@@ -378,89 +387,32 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     if ( isset( $json['id'] ) ) {
       $this->inId = $json['id'];
     }
-    
-    // Assistant: thread.message.delta
-    if ( isset( $json['object'] ) && $json['object'] === 'thread.run' ) {
+  
+    $object = $json['object'] ?? null;
+  
+    if ( $object === 'thread.run' ) {
       $this->inThreadId = $json['thread_id'];
-    }
-    else if ( isset( $json['object'] ) && $json['object'] === 'thread.message.delta' ) {
-      if ( isset( $json['delta']['content'][0]['text']['value'] ) ) {
-        $content = $json['delta']['content'][0]['text']['value'];
+      if ( $json['status'] === 'failed' ) {
+        $error = $json['last_error']['message'] ?? 'The run failed.';
+        throw new Exception( $error );
       }
-      else if ( isset( $json['delta']['content'][0]['text'] ) ) {
-        $content = $json['delta']['content'][0]['text'];
-      }
-      else if ( isset( $json['delta']['content'][0]['type'] ) && $json['delta']['content'][0]['type'] === 'text' ) {
-        $content = $json['delta']['content'][0]['value'];
-      }
-      else if ( isset( $json['delta']['content'][0]['type'] ) && $json['delta']['content'][0]['type'] === 'image' ) {
-        $content = $json['delta']['content'][0]['url'];
-      }
-      else if ( isset( $json['delta']['content'][0]['type'] ) && $json['delta']['content'][0]['type'] === 'function_call' ) {
-        $function_call = $json['delta']['content'][0]['function_call'];
-        if ( empty( $this->streamFunctionCall ) ) {
-          $this->streamFunctionCall = [ 'name' => "", 'arguments' => [] ];
-        }
-        if ( isset( $function_call['name'] ) ) {
-          $this->streamFunctionCall['name'] = $function_call['name'];
-        }
-        if ( isset( $function_call['arguments'] ) ) {
-          // Should be JSON
-          $args = json_decode( $function_call['arguments'], true );
-          $this->streamFunctionCall['arguments'] = $args ?? [];
-        }
-      }
-      else if ( isset( $json['delta']['content'][0]['type'] ) && $json['delta']['content'][0]['type'] === 'tool_call' ) {
-        $tool_call = $json['delta']['content'][0]['tool_call'];
-        $index = isset( $tool_call['index'] ) ? $tool_call['index'] : null;
-        $currentStreamToolCall = null;
-        if ( $index !== null && isset($this->streamToolCalls[$index]) ) {
-          $currentStreamToolCall = &$this->streamToolCalls[$index];
-        }
-        else {
-          $this->streamToolCalls[] = [ 'id' => null, 'type' => null,
-            'function' => [ 'name' => "", 'arguments' => "" ]
-          ];
-          end($this->streamToolCalls);
-          $currentStreamToolCall = &$this->streamToolCalls[key($this->streamToolCalls)];
-        }
-      }
-    }
-    else {
-      if ( isset( $json['choices'][0]['text'] ) ) {
-        $content = $json['choices'][0]['text'];
-      }
-      else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
-        $content = $json['choices'][0]['delta']['content'];
-      }
-      else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
-        $function_call = $json['choices'][0]['delta']['function_call'];
-        if ( empty( $this->streamFunctionCall ) ) {
-          $this->streamFunctionCall = [ 'name' => "", 'arguments' => [] ];
-        }
-        if ( isset( $function_call['name'] ) ) {
-          $this->streamFunctionCall['name'] = $function_call['name'];
-        }
-        if ( isset( $function_call['arguments'] ) ) {
-          // Should be JSON
-          $args = json_decode( $function_call['arguments'], true );
-          $this->streamFunctionCall['arguments'] = $args ?? [];
-        }
-      }
-      else if ( isset( $json['choices'][0]['delta']['tool_calls'] ) ) {
-        $tool_calls = $json['choices'][0]['delta']['tool_calls'];
-        foreach ( $tool_calls as $tool_call ) {
-          $index = isset( $tool_call['index'] ) ? $tool_call['index'] : null;
+    } 
+    else if ( $object === 'thread.run.step.delta' ) {
+      if ( $json['delta']['step_details']['type'] === 'tool_calls' ) {
+        foreach ( $json['delta']['step_details']['tool_calls'] as $tool_call ) {
+          $index = $tool_call['index'] ?? null;
           $currentStreamToolCall = null;
-          if ( $index !== null && isset($this->streamToolCalls[$index]) ) {
+          if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
             $currentStreamToolCall = &$this->streamToolCalls[$index];
-          }
+          } 
           else {
-            $this->streamToolCalls[] = [ 'id' => null, 'type' => null,
+            $this->streamToolCalls[] = [
+              'id' => null,
+              'type' => null,
               'function' => [ 'name' => "", 'arguments' => "" ]
             ];
-            end($this->streamToolCalls);
-            $currentStreamToolCall = &$this->streamToolCalls[key($this->streamToolCalls)];
+            end( $this->streamToolCalls );
+            $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
           }
           if ( !empty( $tool_call['id'] ) ) {
             $currentStreamToolCall['id'] = $tool_call['id'];
@@ -480,6 +432,98 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           $this->streamLastMessage['tool_calls'] = $this->streamToolCalls;
         }
       }
+    } 
+    else if ( $object === 'thread.message.delta' ) {
+      $delta = $json['delta']['content'][0] ?? null;
+      if ( $delta ) {
+        switch ( $delta['type'] ?? null ) {
+          case 'text':
+            $content = $delta['value'] ?? $delta['text'];
+            break;
+          case 'image':
+            $content = $delta['url'];
+            break;
+          case 'function_call':
+            if ( empty( $this->streamFunctionCall ) ) {
+              $this->streamFunctionCall = [ 'name' => "", 'arguments' => [] ];
+            }
+            $this->streamFunctionCall['name'] = $delta['function_call']['name'] ?? $this->streamFunctionCall['name'];
+            if ( isset( $delta['function_call']['arguments'] ) ) {
+              $args = json_decode( $delta['function_call']['arguments'], true );
+              $this->streamFunctionCall['arguments'] = $args ?? [];
+            }
+            break;
+          case 'tool_call':
+            $tool_call = $delta['tool_call'];
+            $index = $tool_call['index'] ?? null;
+            $currentStreamToolCall = null;
+            if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
+              $currentStreamToolCall = &$this->streamToolCalls[$index];
+            } 
+            else {
+              $this->streamToolCalls[] = [
+                'id' => null,
+                'type' => null,
+                'function' => [ 'name' => "", 'arguments' => "" ]
+              ];
+              end( $this->streamToolCalls );
+              $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
+            }
+            break;
+        }
+      }
+    } 
+    else {
+      if ( isset( $json['choices'][0]['text'] ) ) {
+        $content = $json['choices'][0]['text'];
+      } 
+      else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
+        $content = $json['choices'][0]['delta']['content'];
+      } 
+      else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
+        if ( empty( $this->streamFunctionCall ) ) {
+          $this->streamFunctionCall = [ 'name' => "", 'arguments' => [] ];
+        }
+        $this->streamFunctionCall['name'] = $json['choices'][0]['delta']['function_call']['name'] ?? $this->streamFunctionCall['name'];
+        if ( isset( $json['choices'][0]['delta']['function_call']['arguments'] ) ) {
+          $args = json_decode( $json['choices'][0]['delta']['function_call']['arguments'], true );
+          $this->streamFunctionCall['arguments'] = $args ?? [];
+        }
+      } 
+      else if ( isset( $json['choices'][0]['delta']['tool_calls'] ) ) {
+        foreach ( $json['choices'][0]['delta']['tool_calls'] as $tool_call ) {
+          $index = $tool_call['index'] ?? null;
+          $currentStreamToolCall = null;
+          if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
+            $currentStreamToolCall = &$this->streamToolCalls[$index];
+          } 
+          else {
+            $this->streamToolCalls[] = [ 
+              'id' => null,
+              'type' => null,
+              'function' => [ 'name' => "", 'arguments' => "" ]
+            ];
+            end( $this->streamToolCalls );
+            $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
+          }
+          if ( !empty( $tool_call['id'] ) ) {
+            $currentStreamToolCall['id'] = $tool_call['id'];
+          }
+          if ( !empty( $tool_call['type'] ) ) {
+            $currentStreamToolCall['type'] = $tool_call['type'];
+          }
+          if ( isset( $tool_call['function'] ) ) {
+            $function = $tool_call['function'];
+            if ( isset( $function['name'] ) ) {
+              $currentStreamToolCall['function']['name'] .= $function['name'];
+            }
+            if ( isset( $function['arguments'] ) ) {
+              $currentStreamToolCall['function']['arguments'] .= $function['arguments'];
+            }
+          }
+          $this->streamLastMessage['tool_calls'] = $this->streamToolCalls;
+        }
+      } 
       else if ( isset( $json['choices'][0]['delta']['role'] ) ) {
         $this->streamLastMessage = [
           'role' => $json['choices'][0]['delta']['role'],
@@ -487,15 +531,26 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         ];
       }
     }
+  
+    // If content is an array, let's try to convert it into a string. Normally, there would be a 'value' key.
+    if ( is_array( $content ) ) {
+      if ( isset( $content['value'] ) ) {
+        $content = $content['value'];
+      }
+      else {
+        throw new Exception( 'AI Engine: Could not read this: ' . json_encode( $content ) );
+      }
+    }
 
     // Avoid some endings
-    $endings = [ "<|im_end|>", "</s>" ];
+    $endings = [ "", "</s>" ];
     if ( in_array( $content, $endings ) ) {
       $content = null;
     }
-
+  
     return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
+  
 
   public function run_query( $url, $options, $isStream = false ) {
     try {
@@ -839,7 +894,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return 'N/A';
   }
 
-  static function get_finetune_base_model($model)
+  static function get_finetune_base_model( $model )
   {
     // New fine-tuned models
     preg_match("/^ft:([^:]+):/", $model, $matches);
@@ -887,12 +942,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
     return $deleted;
   }
-
-  // public function listModels() {
-  //   $res = $this->execute( 'GET', '/models' );
-  //   // TODO: Not used by the UI.
-  //   throw new Exception( 'Not implemented yet.' );
-  // }
 
   // TODO: This was used to retrieve the fine-tuned models, but not sure this is how we should
   // retrieve all the models since Summer 2023, let's see! WIP.
@@ -1194,7 +1243,29 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   }
 
   public function get_models() {
-    return apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
+    $models =  apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
+    $finetunes = !empty( $this->env['finetunes'] ) ? $this->env['finetunes'] : [];
+    foreach ( $finetunes as $finetune ) {
+      if ( $finetune['status'] !== 'succeeded' ) {
+        continue;
+      }
+      $baseModel = SELF::get_finetune_base_model( $finetune['model'] );
+      if ( !empty( $baseModel ) ) {
+        $model = null;
+        foreach ( $models as $currentModel ) {
+          if ( $currentModel['model'] === $baseModel ) {
+            $model = $currentModel;
+            break;
+          }
+        }
+        if ( !empty( $model ) ) {
+          $model['model'] = $finetune['model'];
+          $model['name'] = SELF::get_suffix_for_model( $finetune['model'] );
+          $models[] = $model;
+        }
+      }
+    }
+    return $models;
   }
 
   static public function get_models_static() {

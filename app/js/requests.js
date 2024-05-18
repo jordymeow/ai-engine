@@ -1,5 +1,5 @@
-// Previous: 2.1.5
-// Current: 2.3.0
+// Previous: 2.3.0
+// Current: 2.3.1
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -118,6 +118,7 @@ const updateThemes = async (themes) => {
     themeIds.push(themeId);
     themes[i].themeId = themeId;
   }
+
   const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
   return res?.themes;
 };
@@ -130,7 +131,17 @@ const retrieveAssistants = async (envId) => {
   return res?.assistants;
 }
 
+const setAssistantFunctions = async (envId, assistantId, functions) => {
+  const res = await nekoFetch(`${apiUrl}/openai/assistants/set_functions`, { method: 'POST', nonce: restNonce,
+    json: { envId, assistantId, functions }
+  });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res;
+}
+
 export { retrievePostTypes, retrievePostsCount, retrievePostContent,
-  retrieveFilesFromOpenAI, retrieveFiles, deleteFiles,
+  retrieveFilesFromOpenAI, retrieveFiles, deleteFiles, setAssistantFunctions,
   retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
   retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };

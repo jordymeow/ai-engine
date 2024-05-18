@@ -245,7 +245,7 @@ class Meow_MWAI_Core
 	#endregion
 
  	#region Image-Related Helpers
-	function get_mime_type( $file ) {
+	static function get_mime_type( $file ) {
 		$mimeType = null;
 
 		// Let's try to use mime_content_type if the function exists
@@ -747,6 +747,13 @@ class Meow_MWAI_Core
 			if ( isset( $chatbot['context'] ) ) {
 				$chatbot['instructions'] = $chatbot['context'];
 				unset( $chatbot['context'] );
+				$hasChanges = true;
+			}
+			// TODO: After October 2024, let's remove this.
+			if ( isset( $chatbot['fileUpload'] ) ) {
+				$chatbot['fileSearch'] = $chatbot['fileUpload'];
+				unset( $chatbot['fileUpload'] );
+				$hasChanges = true;
 			}
 		}
 		if ( !$hasDefault ) {

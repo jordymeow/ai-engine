@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 1.9.96
+// Previous: 1.9.96
+// Current: 2.3.1
 
 const { useState, useEffect } = wp.element;
 import { JsonViewer } from '@textea/json-viewer';
@@ -14,7 +14,7 @@ import { apiUrl, restNonce } from '@app/settings';
 const Transcription = () => {
   const [ url, setUrl ] = useState('');
   const [ content, setContent ] = useState('');
-  const [ prompt, setPrompt ] = useState('');
+  const [ message, setMessage ] = useState('');
   const [ busy, setBusy ] = useState(false);
   const [ tab, setTab ] = useState('imageToText');
   const [ startTime, setStartTime ] = useState(null);
@@ -22,7 +22,7 @@ const Transcription = () => {
   useEffect(() => {
     setUrl('');
     setContent('');
-    setPrompt('');
+    setMessage('');
   }, [ tab ]);
 
   const transcribe = async (type = 'imageToText') => {
@@ -40,13 +40,13 @@ const Transcription = () => {
       alert(`Unknown transcription type: ${type}`);
       return;
     }
-    setBusy(true);
+    setBusy(type);
     setStartTime(Date.now());
     try {
       const res = await nekoFetch(finalApiUrl, { 
         method: 'POST',
         nonce: restNonce,
-        json: { url, prompt }
+        json: { url, message }
       });
       let data = res.data;
       if (data?.error?.message) {
@@ -82,15 +82,15 @@ const Transcription = () => {
             <NekoSpacer />
             <label>Prompt:</label>
             <NekoSpacer tiny />
-            <NekoTextArea rows={2} value={prompt} onChange={setPrompt} />
+            <NekoTextArea rows={2} value={message} onChange={setMessage} />
             <NekoSpacer />
             <NekoButton fullWidth style={{ height: 40 }} disabled={busy} isBusy={busy === 'imageToText'}
               startTime={startTime}
-              onClick={() => { transcribe('imageToText'); }}>
+              onClick={() => { transcribe('imageToText') }}>
               Transcribe Image
             </NekoButton>
             <NekoSpacer tiny />
-            <p>If you are looking for beautiful images to play with this, here are some URLs: <a target="_blank" rel="noopener noreferrer" href="https://offbeatjapan.org">Offbeat Japan</a>, <a target="_blank" rel="noopener noreferrer" href="https://unsplash.com">Unsplash</a>, <a target="_blank" rel="noopener noreferrer" href="https://www.pexels.com">Pexels</a>.</p>
+            <p>If you are looking for beautiful images to play with this, here are some URLs: <a target="_blank" href="https://offbeatjapan.org">Offbeat Japan</a>, <a target="_blank" href="https://unsplash.com">Unsplash</a>, <a target="_blank" href="https://www.pexels.com">Pexels</a>.</p>
           </NekoTab>
 
           <NekoTab title={i18n.COMMON.AUDIO_TO_TEXT} key="audioToText">
@@ -100,11 +100,11 @@ const Transcription = () => {
             <NekoSpacer />
             <label>Prompt:</label>
             <NekoSpacer tiny />
-            <NekoTextArea rows={2} value={prompt} onChange={setPrompt} />
+            <NekoTextArea rows={2} value={message} onChange={setMessage} />
             <NekoSpacer />
             <NekoButton fullWidth style={{ height: 40 }} disabled={busy} isBusy={busy === 'audioToText'}
               startTime={startTime}
-              onClick={() => { transcribe('audioToText'); }}>
+              onClick={() => { transcribe('audioToText') }}>
               Transcribe Audio
             </NekoButton>
           </NekoTab>
@@ -112,11 +112,11 @@ const Transcription = () => {
           <NekoTab title={i18n.COMMON.PROMPT_TO_JSON} key="textToJSON">
             <label>Prompt:</label>
             <NekoSpacer tiny />
-            <NekoTextArea rows={2} value={prompt} onChange={setPrompt} />
+            <NekoTextArea rows={2} value={message} onChange={setMessage} />
             <NekoSpacer />
             <NekoButton fullWidth style={{ height: 40 }} disabled={busy} isBusy={busy === 'textToJSON'}
               startTime={startTime}
-              onClick={() => { transcribe('textToJSON'); }}>
+              onClick={() => { transcribe('textToJSON') }}>
               Query AI
             </NekoButton>
             <NekoSpacer />
@@ -134,7 +134,6 @@ const Transcription = () => {
         </NekoBlock>
       </NekoColumn>
 
-      {/* Shared Transcription Output Block */}
       <NekoColumn minimal>
         <NekoBlock title="Transcription" className="primary">
           <NekoSpacer tiny />
@@ -154,5 +153,3 @@ const Transcription = () => {
     </NekoWrapper>
   );
 };
-
-export default Transcription;

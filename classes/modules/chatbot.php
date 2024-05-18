@@ -3,7 +3,7 @@
 // Params for the chatbot (front and server)
 
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName',
-	'textSend', 'textClear', 'imageUpload', 'fileUpload',
+	'textSend', 'textClear', 'imageUpload', 'fileSearch',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
 ] );
@@ -188,7 +188,10 @@ class Meow_MWAI_Modules_Chatbot {
 				// Support for Uploaded Image
 				if ( !empty( $newFileId ) ) {
 
-					if ( $mode === 'assistant' ) {
+					// Get extension and mime type
+					$isImage = $this->core->files->is_image( $newFileId );			
+
+					if ( $mode === 'assistant' && !$isImage ) {
 						$url = $this->core->files->get_path( $newFileId );
 						$data = $this->core->files->get_data( $newFileId );
 						$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $query->envId );
@@ -226,25 +229,17 @@ class Meow_MWAI_Modules_Chatbot {
 						$this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
 						$this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
 						$newFileId = $openAiRefId;
-						$scope = $params['fileUpload'];
+						$scope = $params['fileSearch'];
 						if ( $scope === 'discussion' || $scope === 'user' || $scope === 'assistant' ) {
 							$id = $this->core->files->get_id_from_refId( $newFileId );
 							$this->core->files->add_metadata( $id, 'assistant_scope', $scope );
 						}
 					}
 					else {
-						// This is for Vision AI
-						$remote_upload = $this->core->get_option( 'image_remote_upload' );
-						if ( $remote_upload === 'data' ) {
-							$data = $this->core->files->get_base64_data( $newFileId );
-							$mimeType = $this->core->files->get_mime_type( $newFileId );
-							$query->set_file( $data, 'data', 'vision', $mimeType );
-						}
-						else {
-							$url = $this->core->files->get_url( $newFileId );
-							$mimeType = $this->core->files->get_mime_type( $newFileId );
-							$query->set_file( $url, 'url', 'vision', $mimeType );
-						}
+						$url = $this->core->files->get_url( $newFileId );
+						$mimeType = $this->core->files->get_mime_type( $newFileId );
+						$query->set_file( Meow_MWAI_Query_AttachedFile::from_url( $url, 'vision', $mimeType ) );
+
 						$fileId = $this->core->files->get_id_from_refId( $newFileId );
 						$this->core->files->update_envId( $fileId, $query->envId );
 						$this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );

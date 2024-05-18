@@ -44,10 +44,8 @@ class Meow_MWAI_Engines_Core {
     if ( $query instanceof Meow_MWAI_Query_Text || $query instanceof Meow_MWAI_Query_Feedback ) {
       $reply = $this->run_completion_query( $query, $streamCallback );
     }
-    else if ( $query instanceof Meow_MWAI_Query_Assistant ) {
+    else if ( $query instanceof Meow_MWAI_Query_Assistant || $query instanceof Meow_MWAI_Query_AssistantFeedback ) {
       $reply = $this->run_assistant_query( $query, $streamCallback );
-      // TODO: This filter is useless with Assistants v2
-      $reply = apply_filters( 'mwai_ai_query_assistant', $reply, $query );
       if ( $reply === null ) {
         throw new Exception( 'Assistants are not supported in this version of AI Engine.' );
       }
@@ -77,8 +75,10 @@ class Meow_MWAI_Engines_Core {
       }
 
       // We should use a feedback query around the original query
-      if ( !($query instanceof Meow_MWAI_Query_Feedback) ) {
-        $query = new Meow_MWAI_Query_Feedback( $reply, $query );
+      if ( !( $query instanceof Meow_MWAI_Query_AssistantFeedback) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
+        $queryClass = $query instanceof Meow_MWAI_Query_Assistant ?
+          Meow_MWAI_Query_AssistantFeedback::class : Meow_MWAI_Query_Feedback::class;
+        $query = new $queryClass( $reply, $reply->query );
       }
 
       // The engine for the model will handle the feedback query nicely
@@ -311,6 +311,14 @@ class Meow_MWAI_Engines_Core {
           if ( json_last_error() === JSON_ERROR_NONE ) {
             $content = $this->stream_data_handler( $json );
             if ( !is_null( $content ) ) {
+
+              // TO CHECK: Not sure why we need to do this to make sure there is a line return in the chatbot
+              // If we don't do this, HuggingFace streams "\n" as a token without anything else, and the
+              // chatbot doesn't display it.
+              if ( $content === "\n" ) {
+                $content = "  \n";
+              }
+
               $this->streamContent .= $content;
               call_user_func( $this->streamCallback, $content );
             }

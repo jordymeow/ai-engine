@@ -162,6 +162,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
                   'type' => 'tool_call',
                   'name' => trim( $tool['function']['name'] ),
                   'arguments' => $this->extract_arguments( $tool['function']['arguments'] ),
+                  // Represent the original message that triggered the function call
                   'rawMessage' => $rawMessage ? $rawMessage : $choice['message'],
                 ];
               }

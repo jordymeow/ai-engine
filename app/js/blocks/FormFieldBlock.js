@@ -1,9 +1,10 @@
-// Previous: 2.0.3
-// Current: 2.2.95
+// Previous: 2.2.95
+// Current: 2.3.1
 
+```jsx
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
-import { mwaiStringify } from '@app/helpers';
+import { nekoStringify } from '@neko-ui';
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
@@ -18,7 +19,7 @@ function capitalizeFirstLetter(string) {
 const saveFormField = (props) => {
   const { attributes: { id, label, type, name, options = [],
     placeholder, rows, defaultValue, maxlength, required } } = props;
-  const encodedOptions = encodeURIComponent(mwaiStringify(options));
+  const encodedOptions = encodeURIComponent(nekoStringify(options));
   const blockProps = useBlockProps.save();
 
   let shortcode = '[mwai-form-field';
@@ -81,7 +82,7 @@ const FormFieldBlock = (props) => {
     <>
       <div {...blockProps}>
         <AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
-          hint={<span className="mwai-pill">{'{'}{name}{'}'}</span>}>
+          hint={<span className="mwai-pill">{'{' + name + '}'}</span>}>
           <div>
             {label}
           </div>
@@ -162,6 +163,7 @@ const FormFieldBlock = (props) => {
               </div>
             </div>;
           })}
+
           <Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={() => {
             const newOptions = [...options];
             newOptions.push({ label: '', value: '' });
@@ -236,3 +238,4 @@ const createFormFieldBlock = () => {
 };
 
 export default createFormFieldBlock;
+```

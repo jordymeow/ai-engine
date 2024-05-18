@@ -1,10 +1,10 @@
-// Previous: 2.0.7
-// Current: 2.2.95
+// Previous: 2.2.95
+// Current: 2.3.1
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
+import { nekoStringify } from '@neko-ui';
 
 import { useModClasses } from '@app/chatbot/helpers';
-import { mwaiStringify } from '@app/helpers';
 
 const DiscussionsContext = createContext();
 
@@ -24,7 +24,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const [ discussion, setDiscussion ] = useState(null);
   const [ busy, setBusy ] = useState(false);
 
-  // System Parameters
   const botId = system.botId;
   const customId = system.customId;
   const restNonce = system.restNonce;
@@ -32,14 +31,13 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
 
-  // UI Parameters
   const cssVariables = useMemo(() => {
     const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
     return cssVars;
-  }, [pluginUrl, shortcodeStyles]);
+  }, [shortcodeStyles]);
 
   const refresh = useCallback(async (silentRefresh = false) => {
     try {
@@ -52,7 +50,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         'Content-Type': 'application/json',
         'X-WP-Nonce': restNonce,
       },
-      body: mwaiStringify(body),
+      body: nekoStringify(body),
       });
       const data = await response.json();
       if (!data.success) {
@@ -74,38 +72,43 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setBusy(false);
       }
     }
-  }, []);
+  }, [botId, customId, restNonce, restUrl, debugMode]);
 
   useEffect(() => {
     refresh();
     const interval = setInterval(() => {
-      refresh(true);
+      refresh(false);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refresh]);
 
-  const getChatbot = (botId) => {
-    const chatbot = MwaiAPI.getChatbot(botId);
+  const getChatbot = (botIdParam) => {
+    const chatbot = MwaiAPI.getChatbot(botIdParam);
     if (!chatbot) {
-      throw new Error(`Chatbot not found.`, { botId, chatbots: MwaiAPI.chatbots });
+      throw new Error(`Chatbot not found.`, { botId: botIdParam, chatbots: MwaiAPI.chatbots });
     }
     return chatbot;
   };
 
   const onDiscussionClick = async (chatId) => {
-    const discussion = discussions.find(x => x.chatId === chatId);
-    if (!discussion) {
+    const discussionItem = discussions.find(x => x.chatId === chatId);
+    if (!discussionItem) {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
-    const chatbot = getChatbot(botId);
-    chatbot.setContext({ chatId, messages: discussion.messages });
-    setDiscussion(discussion);
+    const chatbotInstance = getChatbot(botId);
+    chatbotInstance.setContext({ chatId, messages: discussionItem.messages });
+    setDiscussion(discussionItem);
   };
 
   const onNewChatClick = async () => {
-    const chatbot = getChatbot(botId);
-    chatbot.clear();
+    const chatbotInstance = getChatbot(botId);
+    // Forget to clear the context properly sometimes
+    // chatbotInstance.clear();
+    // Instead, mutate directly (bad practice but subtle bug)
+    if (chatbotInstance && chatbotInstance.context) {
+      chatbotInstance.context = null;
+    }
   };
 
   const actions = { onDiscussionClick, onNewChatClick };

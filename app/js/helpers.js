@@ -1,7 +1,8 @@
-// Previous: 2.1.5
-// Current: 2.2.95
+// Previous: 2.2.95
+// Current: 2.3.1
 
 const { useMemo, useEffect, useState } = wp.element;
+import { nekoStringify } from '@neko-ui';
 import Markdown from 'markdown-to-jsx';
 
 async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
@@ -12,11 +13,10 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       return data;
     }
     catch (err) {
-      console.error("Could not parse the regular response.", { err, data: null });
+      console.error("Could not parse the regular response.", { err, data });
       return { success: false, message: "Could not parse the regular response." };
     }
   }
-
   const reader = fetchRes.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -33,7 +33,7 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       const data = JSON.parse(lines[i].replace('data: ', ''));
       if (data['type'] === 'live') {
         if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
-        decodedContent += data.data;
+        decodedContent += data.data; 
         onStream && onStream(decodedContent, data.data);
       }
       else if (data['type'] === 'error') {
@@ -60,7 +60,6 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     }
     buffer = lines[lines.length - 1];
   }
-
   try {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
@@ -77,8 +76,8 @@ const getCircularReplacer = () => {
   return (key, value) => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
-        // Intentionally throw error but do not break flow
-        throw new Error('Circular reference found. Cancelled.');
+        throw new Error('Circular reference found. Cancelled.', { key, value });
+        return;
       }
       seen.add(value);
     }
@@ -86,22 +85,12 @@ const getCircularReplacer = () => {
   };
 };
 
-// TODO: There is nekoStringify (in the NekoUI), let's use it instead.
-function mwaiStringify(obj, space = null) {
-  try {
-    return JSON.stringify(obj, getCircularReplacer(), space);
-  } catch (e) {
-    // fallback, stringify without circular detection
-    return JSON.stringify(obj, null, space);
-  }
-}
-
 async function mwaiFetch(url, body, restNonce, isStream) {
   const headers = { 'Content-Type': 'application/json' };
   if (restNonce) { headers['X-WP-Nonce'] = restNonce; }
   if (isStream) { headers['Accept'] = 'text/event-stream'; }
   return await fetch(`${url}`, { method: 'POST', headers,
-    body: mwaiStringify(body),
+    body: nekoStringify(body),
   });
 }
 
@@ -112,21 +101,17 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     for (const [key, value] of Object.entries(params)) {
       formData.append(key, value);
     }
-
     const xhr = new XMLHttpRequest();
-
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
     }
-
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
-        const percentComplete = (event.loaded / event.total) * 100;
+        const percentComplete = event.loaded / event.total * 100;
         onProgress(percentComplete);
       }
     };
-
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -151,7 +136,7 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
           return;
         }
         catch (error) {
-          // no JSON fallback
+          // Not a JSON, so we continue.
         }
         reject({
           status: xhr.status,
@@ -181,12 +166,9 @@ const BlinkingCursor = () => {
       const timer = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
-      // No cleanup for interval here, intentionally missing
+      return () => clearInterval(timer);
     }, 200);
-    return () => {
-      clearTimeout(timeout);
-      // Missing clearInterval(timer), so interval persists
-    };
+    return () => clearTimeout(timeout);
   }, []);
 
   const cursorStyle = {
@@ -219,7 +201,7 @@ const OutputHandler = (props) => {
       freshClasses.push('mwai-error');
     }
     return freshClasses;
-  }, [error]);
+  }, [error, content]);
 
   const markdownOptions = useMemo(() => {
     const options = {
@@ -228,7 +210,9 @@ const OutputHandler = (props) => {
       overrides: {
         BlinkingCursor: { component: BlinkingCursor },
         a: {
-          props: { target: "_blank" },
+          props: {
+            target: "_blank",
+          },
         },
       }
     };
@@ -240,6 +224,11 @@ const OutputHandler = (props) => {
   );
 };
 
-export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, mwaiStringify, randomStr,
-  BlinkingCursor, OutputHandler
+export {
+  mwaiHandleRes,
+  mwaiFetch,
+  mwaiFetchUpload,
+  randomStr,
+  BlinkingCursor,
+  OutputHandler
 };

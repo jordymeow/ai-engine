@@ -110,14 +110,23 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
+  public function is_image( $refId ) {
+    $path = $this->get_path( $refId );
+    if ( $path ) {
+      $type = exif_imagetype( $path );
+      return $type !== false;
+    }
+    return false;
+  }
+
   public function get_mime_type( $refId ) {
     $path = $this->get_path( $refId );
     if ( $path ) {
-      return $this->core->get_mime_type( $path );
+      return Meow_MWAI_Core::get_mime_type( $path );
     }
     $url = $this->get_url( $refId );
     if ( $url ) {
-      return $this->core->get_mime_type( $url );
+      return Meow_MWAI_Core::get_mime_type( $url );
     }
     return null;
   }

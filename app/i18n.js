@@ -223,7 +223,7 @@ i18n.COMMON = {
   PLUGIN_DATA_DESCRIPTION: __( "The database and all the options of the plugin will be removed on uninstall.", 'ai-engine' ),
   RESET_LIMITS: __( 'Reset Limits', 'ai-engine' ),
   VISION: __( 'Vision', 'ai-engine' ),
-  FILE_UPLOAD: __( 'File Upload', 'ai-engine' ),
+  FILE_SEARCH: __( 'File Search', 'ai-engine' ),
   PROMPT_TO_JSON: __( 'Prompt ➡ JSON', 'ai-engine' ),
   RESOLUTION: __( 'Resolution', 'ai-engine' ),
   DEFAULT: __( 'Default', 'ai-engine' ),
@@ -314,6 +314,8 @@ i18n.SETTINGS = {
   TYPEWRITER_EFFECT_HELP: __( 'The reply from AI will be typewrited. This delays the final output! Absolutely not recommended. Please use <b>Streaming</b> instead.', 'ai-engine' ),
   CHATBOT_MODERATION_HELP: __( 'If the conversation seems offensive, the chatbot will reject it.', 'ai-engine' ),
   CUSTOM_URL: __( 'Custom URL', 'ai-engine' ),
+  ASSISTANT_NO_FILE_SEARCH: __( 'This assistant does not support File Search. You can activate it on the <a href="https://platform.openai.com/assistants" target="_blank">OpenAI Assistants</a> dashboard. Then, use the Refresh button in the Assistants tab.', 'ai-engine' ),
+  ASSISTANT_FILE_SEARCH: __( 'File Search will be used when the users upload documents. If the user uploads files, those will be handled by AI Vision if the model supports it and if it is enabled.', 'ai-engine' ),
 };
 
 i18n.CHATBOT = {
