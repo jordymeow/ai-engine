@@ -272,10 +272,10 @@ class Meow_MWAI_API {
 		}
 		$query->inject_params( $params );
 		if ( !empty( $url ) ) {
-			$query->set_file( Meow_MWAI_Query_AttachedFile::from_url( $url, 'vision' ) );
+			$query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision' ) );
 		}
 		else if ( !empty( $path ) ) {
-			$query->set_file( Meow_MWAI_Query_AttachedFile::from_path( $path, 'vision' ) );
+			$query->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
 		}
 		$reply = $mwai_core->run_query( $query );
 		return $reply->result;

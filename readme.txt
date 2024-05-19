@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.2
+Stable tag: 2.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,7 @@ Languages: English.
 
 == Changelog ==
 
-= 2.3.2 (2024/05/18) =
+= 2.3.3 (2024/05/19) =
 * Add: Support for Vision in Assistants v2.
 * Add: Support for Function Calls with OpenAI's Assistants v2.
 * Add: Support for Functions Calls via Streaming with Anthropic.

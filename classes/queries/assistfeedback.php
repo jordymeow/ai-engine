@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Query_AssistantFeedback extends Meow_MWAI_Query_Assistant implements JsonSerializable {
+class Meow_MWAI_Query_AssistFeedback extends Meow_MWAI_Query_Assistant implements JsonSerializable {
   
   public $lastReply = null;
   public $originalQuery = null;

@@ -44,7 +44,7 @@ class Meow_MWAI_Engines_Core {
     if ( $query instanceof Meow_MWAI_Query_Text || $query instanceof Meow_MWAI_Query_Feedback ) {
       $reply = $this->run_completion_query( $query, $streamCallback );
     }
-    else if ( $query instanceof Meow_MWAI_Query_Assistant || $query instanceof Meow_MWAI_Query_AssistantFeedback ) {
+    else if ( $query instanceof Meow_MWAI_Query_Assistant || $query instanceof Meow_MWAI_Query_AssistFeedback ) {
       $reply = $this->run_assistant_query( $query, $streamCallback );
       if ( $reply === null ) {
         throw new Exception( 'Assistants are not supported in this version of AI Engine.' );
@@ -75,9 +75,9 @@ class Meow_MWAI_Engines_Core {
       }
 
       // We should use a feedback query around the original query
-      if ( !( $query instanceof Meow_MWAI_Query_AssistantFeedback) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
+      if ( !( $query instanceof Meow_MWAI_Query_AssistFeedback) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
         $queryClass = $query instanceof Meow_MWAI_Query_Assistant ?
-          Meow_MWAI_Query_AssistantFeedback::class : Meow_MWAI_Query_Feedback::class;
+          Meow_MWAI_Query_AssistFeedback::class : Meow_MWAI_Query_Feedback::class;
         $query = new $queryClass( $reply, $reply->query );
       }
 

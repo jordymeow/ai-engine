@@ -3,7 +3,7 @@
 class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializable {
 
   // Core Content
-  public ?Meow_MWAI_Query_AttachedFile $attachedFile = null;
+  public ?Meow_MWAI_Query_DroppedFile $attachedFile = null;
 
   // Parameters
   public float $temperature = 0.8;
@@ -63,7 +63,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   #region File Handling
 
-  public function set_file( Meow_MWAI_Query_AttachedFile $file ): void {
+  public function set_file( Meow_MWAI_Query_DroppedFile $file ): void {
     $this->attachedFile = $file;
   }
 

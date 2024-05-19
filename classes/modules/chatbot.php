@@ -238,7 +238,7 @@ class Meow_MWAI_Modules_Chatbot {
 					else {
 						$url = $this->core->files->get_url( $newFileId );
 						$mimeType = $this->core->files->get_mime_type( $newFileId );
-						$query->set_file( Meow_MWAI_Query_AttachedFile::from_url( $url, 'vision', $mimeType ) );
+						$query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
 						$fileId = $this->core->files->get_id_from_refId( $newFileId );
 						$this->core->files->update_envId( $fileId, $query->envId );
 						$this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );

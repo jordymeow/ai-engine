@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Query_AttachedFile {
+class Meow_MWAI_Query_DroppedFile {
   private $data;
   private $rawData;
   private $type; // Defines what the data is about ('refId', 'url', or 'data')
@@ -11,11 +11,11 @@ class Meow_MWAI_Query_AttachedFile {
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $url );
     }
-    return new Meow_MWAI_Query_AttachedFile( $url, 'url', $purpose, $mimeType );
+    return new Meow_MWAI_Query_DroppedFile( $url, 'url', $purpose, $mimeType );
   }
 
   static function from_data( $data, $purpose, $mimeType = null ) {
-    return new Meow_MWAI_Query_AttachedFile( $data, 'data', $purpose, $mimeType );
+    return new Meow_MWAI_Query_DroppedFile( $data, 'data', $purpose, $mimeType );
   }
 
   static function from_path( $path, $purpose, $mimeType = null ) {
@@ -23,7 +23,7 @@ class Meow_MWAI_Query_AttachedFile {
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $path );
     }
-    return new Meow_MWAI_Query_AttachedFile( $data, 'data', $purpose, $mimeType );
+    return new Meow_MWAI_Query_DroppedFile( $data, 'data', $purpose, $mimeType );
   }
 
   public function __construct( $data, $type, $purpose, $mimeType = null ) {
