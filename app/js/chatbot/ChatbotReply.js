@@ -1,5 +1,5 @@
-// Previous: 2.3.0
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.4
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -41,7 +41,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
-  const [ isLongProcess, setIsLongProcess ] = useState(message.isQuerying || message.isStreaming);
+  const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
@@ -49,16 +49,14 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const matches = (content.match(/```/g) || []).length;
   if (matches % 2 !== 0) {
     content += "\n```";
-  }
-  else if (message.isStreaming) {
+  } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
   useEffect(() => { 
     if (!isLongProcess) {
       onRendered();
-    }
-    else if (isLongProcess && !isQuerying && !isStreaming) {
+    } else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -120,7 +118,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, []);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
@@ -157,13 +155,16 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const content = message.content;
 
   useInterval(200, () => {
-    if (conversationRef.current && !userScrolledUp) {
+    if (!conversationRef?.current) {
+      return;
+    }
+    if (!userScrolledUp) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, !ready);
 
   useEffect(() => {
-    if (!conversationRef.current) {
+    if (!conversationRef?.current) {
       return;
     }
     const handleScroll = () => {
@@ -254,8 +255,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
             const classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            }
-            else {
+            } else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
@@ -270,15 +270,14 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
-  
+
     if (message.role === 'assistant') {
-  
+
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
-      }
-      else if (typewriter && !message.isStreaming) {
+      } else if (typewriter && !message.isStreaming) {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
@@ -287,13 +286,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-  
+
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-  
+
     return (
       <div><i>Unhandled role.</i></div>
     );
@@ -301,5 +300,3 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   return output;
 };
-
-export default ChatbotReply;

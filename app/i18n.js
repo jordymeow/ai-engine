@@ -217,6 +217,8 @@ i18n.COMMON = {
   USER_INTERFACE: __( 'User Interface', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Intro Message', 'ai-engine' ),
   AI_ENVIRONMENT_DEFAULTS: __( 'Default Environments for AI', 'ai-engine' ),
+  ENVIRONMENTS_FOR_AI: __( 'Environments for AI', 'ai-engine' ),
+  ENVIRONMENT_ID: __( 'Environment ID', 'ai-engine' ),
   EMBEDDINGS_ENVIRONMENT_DEFAULT: __( 'Default Embeddings Environment', 'ai-engine' ),
   ENVIRONMENT: __( 'Environment', 'ai-engine' ),
   PLUGIN_DATA: __( 'Plugin Data', 'ai-engine' ),

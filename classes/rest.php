@@ -392,11 +392,11 @@ class Meow_MWAI_Rest
 			$query->set_scope( 'admin-tools' );
 			$model = $this->core->get_option( 'ai_default_model' );
 			$env = $this->core->get_option( 'ai_default_env' );
-			if ( !empty( $model ) ) {
-				$query->set_model( $model );
-			}
 			if ( !empty( $env ) ) {
 				$query->set_env_id( $env );
+			}
+			if ( !empty( $model ) ) {
+				$query->set_model( $model );
 			}
 			$reply = $this->core->run_query( $query );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );

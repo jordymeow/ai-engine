@@ -288,12 +288,13 @@ class Meow_MWAI_Engines_Core {
     curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) {
       $length = strlen( $data );
 
-      // Error Management
-      $this->stream_error_check( $data );
-
       // Bufferize the unfinished stream (if it's the case)
       $this->streamTemporaryBuffer .= $data;
       $this->streamBuffer .= $data;
+
+      // Error Management
+      $this->stream_error_check( $this->streamBuffer );
+
       $lines = explode( "\n", $this->streamTemporaryBuffer );
       if ( substr( $this->streamTemporaryBuffer, -1 ) !== "\n" ) {
         $this->streamTemporaryBuffer = array_pop( $lines );

@@ -298,9 +298,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     // Those are for the keys passed directly by the shortcode.
     $params = $this->convert_keys( $params );
 
-    if ( !empty( $params['model'] ) ) {
-			$this->set_model( $params['model'] );
-		}
     // TODO: Remove this condition after July 2024.
     if ( !empty( $params['context'] ) ) {
       error_log( 'AI Engine: context is deprecated. Please use instructions instead.' );
@@ -329,9 +326,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['maxResults'] ) ) {
 			$this->set_max_results( $params['maxResults'] );
 		}
-		// if ( !empty( $params['env'] ) ) {
-		// 	$this->set_env( $params['env'] );
-		// }
     if ( !empty( $params['scope'] ) ) {
       $this->set_scope( $params['scope'] );
     }
@@ -347,5 +341,8 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['envId'] ) ) {
       $this->set_env_id( $params['envId'] );
     }
+    if ( !empty( $params['model'] ) ) {
+			$this->set_model( $params['model'] );
+		}
   }
 }

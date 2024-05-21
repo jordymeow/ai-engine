@@ -1,5 +1,5 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.4
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -148,8 +148,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
   const [ loading, setLoading ] = useState(false);
 
   const addNewEnvironment = () => {
-    //alert("Coming soon! Please give us a bit of time to beta test this.");
-    //return;
     const newEnv = {
       name: 'New Environment',
       type: 'openai', 
@@ -178,7 +176,9 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     if (env.type === 'openrouter') {
       return toHTML(i18n.HELP.OPENROUTER_API_KEY);
     }
-
+    if (env.type === 'google') {
+      return toHTML(i18n.HELP.GOOGLE_API_KEY);
+    }
     return '';
   }, []);
 
@@ -198,7 +198,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
         nonce: restNonce,
         json: { envId }
       });
-      setLoading(false);
+      // Mistakenly not resetting loading here, potential spinner freeze.
       let freshModels = res?.models;
       if (!freshModels) {
         throw new Error('Could not fetch models.');
@@ -213,7 +213,9 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
   return (
     <div style={{ padding: '0px 10px 5px 10px', marginTop: 13, marginBottom: 5 }}>
-      <NekoTypo h2 style={{ color: 'white', marginBottom: 15 }}>Environments for AI</NekoTypo>
+      <NekoTypo h2 style={{ color: 'white', marginBottom: 15 }}>
+        {i18n.COMMON.ENVIRONMENTS_FOR_AI}
+      </NekoTypo>
       <NekoTabs inversed style={{ marginTop: -5 }} action={
         <NekoButton rounded className="primary-block" icon='plus' onClick={addNewEnvironment} />}>
         {environments.map((env) => (
@@ -320,6 +322,12 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                   />
                 </NekoCollapsableCategory>
               }
+
+              <NekoCollapsableCategory title={i18n.COMMON.ENVIRONMENT_ID}>
+                <p>
+                  The EnvID is "<b>{env.id}</b>".
+                </p>
+              </NekoCollapsableCategory>
 
               <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
                 <div style={{ display: 'flex', marginTop: 10 }}>

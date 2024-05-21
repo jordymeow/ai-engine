@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.3
+Stable tag: 2.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,11 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.3.4 (2024/05/21) =
+* Fix: The "current" issue in the dashboard.
+* Fix: The OpenAI errors received while streaming are now displayed in the chatbot.
+* Add: The Environment ID is now visible in the "Environments for AI".
 
 = 2.3.3 (2024/05/19) =
 * Add: Support for Vision in Assistants v2.
