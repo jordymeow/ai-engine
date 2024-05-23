@@ -81,7 +81,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
         }
       }
       catch ( Exception $e ) {
-        error_log( $e->getMessage() );
+        $this->core->log( '❌ (OpenRouter) ' . $e->getMessage() );
       }
     }
 

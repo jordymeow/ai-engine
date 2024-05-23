@@ -1,28 +1,43 @@
-// Previous: 2.1.5
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.5
 
-const { useRef, useState, useImperativeHandle } = wp.element;
+import React, { useRef, useState, useImperativeHandle } from 'react';
 import TextAreaAutosize from 'react-textarea-autosize';
-import { Microphone, ChatUpload } from '@app/chatbot/helpers';
+import { Microphone } from '@app/chatbot/helpers';
+import ChatUpload from './ChatUpload';
 
 const ChatbotInput = React.forwardRef((props, ref) => {
-  const { onTypeText, onSubmitAction, onUploadFile,
-    inputText, textInputMaxLength, textInputPlaceholder,
-    busy, modCss,
-    isListening, setIsListening,
-    speechRecognitionAvailable, speechRecognition,
-    fileSearch, imageUpload, uploadedFile,
-    composing, setComposing
-   } = props;
-   const [ dragging, setDragging ] = useState(false);
+  const { 
+    onTypeText, onSubmitAction, onUploadFile, inputText, textInputMaxLength, 
+    textInputPlaceholder, busy, modCss, isListening, setIsListening, 
+    speechRecognitionAvailable, speechRecognition, fileSearch, 
+    imageUpload, uploadedFile, composing, setComposing 
+  } = props;
+  
+  const [draggingType, setDraggingType] = useState(false);
 
   const inputRef = useRef();
   const fileSearchRef = useRef();
 
-  const handleDrop = (event) => {
+  useImperativeHandle(ref, () => ({
+    focusInput: () => { inputRef.current?.focus();},
+    currentElement: () => inputRef.current,
+  }));
+
+  const handleDrag = (event, dragState) => {
     event.preventDefault();
     event.stopPropagation();
-    setDragging(false);
+    if (dragState && !draggingType) {
+      const isImage = event.dataTransfer.items[0]?.type?.startsWith('image/');
+      setDraggingType(isImage ? 'image' : 'document');
+    }
+    else if (!dragState && draggingType) {
+      setDraggingType(false);
+    }
+  };
+
+  const handleDrop = (event) => {
+    handleDrag(event, false);
     if (busy) return;
     const files = event.dataTransfer.files;
     if (files.length) {
@@ -30,38 +45,21 @@ const ChatbotInput = React.forwardRef((props, ref) => {
     }
   };
 
-  useImperativeHandle(ref, () => ({
-    focusInput: () => {
-      inputRef.current?.focus();
-    },
-    currentElement: () => {
-      return inputRef.current
-    }
-  }));
-
-  const handleDragEnter = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setDragging(true);
-  }
-
-  const handleDragLeave = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setDragging(false);
-  }
-
   return (
-    <div className={modCss('mwai-input-text', { 'mwai-dragging': dragging })}
+    <div 
+      className={modCss('mwai-input-text', { 'mwai-dragging': draggingType })}
       onDrop={handleDrop}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}>
+      onDragEnter={(event) => handleDrag(event, true)}
+      onDragLeave={(event) => handleDrag(event, false)}
+      onDragOver={(event) => handleDrag(event, true)}>
       {(imageUpload || fileSearch) && 
-        <ChatUpload className={modCss('mwai-file-upload', { 
+        <ChatUpload 
+          className={modCss('mwai-file-upload', { 
             'mwai-enabled': uploadedFile?.uploadedId,
             'mwai-busy': uploadedFile?.localFile && !uploadedFile?.uploadedId,
           })}
-          type={fileSearch ? 'file' : 'image'}
+          modCss={modCss}
+          draggedType={draggingType}
           disabled={busy}
           ref={fileSearchRef}
           uploadedFile={uploadedFile}
@@ -86,7 +84,9 @@ const ChatbotInput = React.forwardRef((props, ref) => {
         onChange={(e) => onTypeText(e.target.value)}
       />
       {speechRecognition && (
-        <Microphone active={isListening} disabled={!speechRecognitionAvailable || busy}
+        <Microphone 
+          active={isListening} 
+          disabled={!speechRecognitionAvailable || busy}
           className={modCss('mwai-microphone')}
           onClick={() => setIsListening(!isListening)}
         />

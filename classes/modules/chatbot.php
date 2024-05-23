@@ -64,17 +64,17 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function basics_security_check( $botId, $customId, $newMessage ) {
 		if ( empty( $newMessage ) ) {
-			error_log("AI Engine: The query was rejected - message was empty.");
+			$this->core->log( "⚠️ The query was rejected - message was empty.");
 			return false;
 		}
 		if ( !$botId && !$customId ) {
-			error_log("AI Engine: The query was rejected - no botId nor id was specified.");
+			$this->core->log( "⚠️ The query was rejected - no botId nor id was specified.");
 			return false;
 		}
 
 		$length = strlen( $newMessage );
 		if ( $length < 1 || $length > ( 4096 * 16 ) ) {
-			error_log("AI Engine: The query was rejected - message was too short or too long.");
+			$this->core->log( "⚠️ The query was rejected - message was too short or too long.");
 			return false;
 		}
 		return true;
@@ -128,7 +128,7 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			if ( !$chatbot ) {
-				error_log("AI Engine: No chatbot was found for this query.");
+				$this->core->log( "⚠️ No chatbot was found for this query.");
 				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
 

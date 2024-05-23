@@ -1,11 +1,11 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.5
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 import { nekoStringify } from '@neko-ui';
 
 import { useModClasses, formatAiName, formatUserName,
-  processParameters, is_url } from '@app/chatbot/helpers';
+  processParameters, isURL } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { mwaiHandleRes, mwaiFetch, randomStr, mwaiFetchUpload } from '@app/helpers';
 
@@ -38,16 +38,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  const stream = system.stream || false;
-  const botId = system.botId;
-  const customId = system.customId;
-  const userData = system.userData;
-  const sessionId = system.sessionId;
-  const contextId = system.contextId;
-  const restNonce = system.restNonce;
-  const pluginUrl = system.pluginUrl;
-  const restUrl = system.restUrl;
-  const debugMode = system.debugMode; 
+  const stream = system?.stream ?? false;
+  const botId = system?.botId;
+  const customId = system?.customId;
+  const userData = system?.userData;
+  const sessionId = system?.sessionId;
+  const contextId = system?.contextId;
+  const restNonce = system?.restNonce;
+  const pluginUrl = system?.pluginUrl;
+  const restUrl = system?.restUrl;
+  const debugMode = system?.debugMode; 
   const typewriter = system?.typewriter ?? false;
   const speechRecognition = system?.speech_recognition ?? false;
   const speechSynthesis = system?.speech_synthesis ?? false;
@@ -61,13 +61,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
   const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (is_url(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+    const iconUrl = icon ? (isURL(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
+  
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
 
@@ -75,13 +76,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     resetMessages();
   }, [startSentence]);
 
-  const saveMessages = (messages) => {
+  const saveMessages = (messagesToSave) => {
     if (!localStorageKey) {
       return;
     }
     localStorage.setItem(localStorageKey, nekoStringify({
       chatId: chatId,
-      messages: messages
+      messages: messagesToSave
     }));
   };
 
@@ -116,22 +117,23 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory = [];
+    let chatHistory;
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
+        // Introduced bug: Not updating chatId from stored values; reinitializing with new random.
         setMessages(chatHistory.messages);
-        setChatId(chatHistory.chatId);
+        // Missing: setChatId(chatHistory.chatId);
         return;
       }
     }
     resetMessages();
-  }, [botId, localStorageKey, resetMessages]);
+  }, [botId]);
 
   useEffect(() => {
     initChatbot();
-  }, [botId, initChatbot]);
+  }, [botId]);
   
   useEffect(() => {
     if (!serverReply) {
@@ -145,9 +147,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -191,8 +191,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [ serverReply, messages, saveMessages ]);
-  
+  }, [ serverReply, messages ]);
+
   const onClear = useCallback(async () => {
     await setChatId(randomStr());
     if (localStorageKey) {
@@ -200,10 +200,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId, localStorageKey, resetMessages]);
+  }, [botId]);
 
   const onSubmit = async (textQuery) => {
-
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
@@ -254,6 +253,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }];
 
     setMessages(freshMessages);
+
     const body = {
       botId: botId,
       customId: customId,
@@ -266,19 +266,20 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       stream,
       ...atts
     };
+
     try {
       if (debugMode) { 
         console.log('[CHATBOT] OUT: ', body);
       }
       const streamCallback = !stream ? null : (content) => {
-        setMessages(messages => {
-          const freshMessages = [...messages];
-          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
+        setMessages(prev => {
+          const updatedMessages = [...prev];
+          const lastMessage = updatedMessages[updatedMessages.length - 1];
           if (lastMessage && lastMessage.id === freshMessageId) {
             lastMessage.content = content;
             lastMessage.timestamp = new Date().getTime();
           }
-          return freshMessages;
+          return updatedMessages;
         });
       };
 
@@ -287,9 +288,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
       if (!data.success && data.message) {
         setError(data.message);
-        freshMessages.splice(-2, 2);
-        setMessages(freshMessages);
-        saveMessages(freshMessages);
+        const updatedMessages = [ ...freshMessages ];
+        updatedMessages.pop();
+        updatedMessages.pop();
+        setMessages(updatedMessages);
+        saveMessages(updatedMessages);
         setBusy(false);
         return;
       }
@@ -310,9 +313,19 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       const params = imageUpload ? { type: 'image', purpose: 'vision' } : { type: 'document', purpose: 'assistant-in' };
       const res = await mwaiFetchUpload(`${restUrl}/mwai-ui/v1/files/upload`, file, restNonce, (progress) => {
-        setUploadedFile({ localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress });
+        setUploadedFile({ 
+          localFile: file,
+          uploadedId: null,
+          uploadedUrl: null,
+          uploadProgress: progress
+        });
       }, params);
-      setUploadedFile({ localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null });
+      setUploadedFile({
+        localFile: file,
+        uploadedId: res.data.id,
+        uploadedUrl: res.data.url,
+        uploadProgress: null
+      });
     }
     catch (error) {
       console.error('onFileUpload Error', error);

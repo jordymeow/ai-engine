@@ -25,7 +25,7 @@ class Meow_MWAI_Rest
 			$message = $params['prompt'];
 			unset( $params['prompt'] );
 			$params['message'] = $message;
-			error_log( 'AI Engine: "prompt" is deprecated, please use "message" instead.' );
+			$this->core->log( '⚠️ "prompt" is deprecated, please use "message" instead.' );
 		}
 		else {
 			$message = "";
@@ -241,7 +241,19 @@ class Meow_MWAI_Rest
 				'methods' => 'GET',
 				'permission_callback' => [ $this->core, 'can_access_settings' ],
 				'callback' => [ $this, 'rest_openai_incidents' ],
-			) );	
+			) );
+
+			// Logging Endpoints
+			register_rest_route( $this->namespace, '/get_logs', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_get_logs' )
+			) );
+			register_rest_route( $this->namespace, '/clear_logs', array(
+				'methods' => 'GET',
+				'permission_callback' => array( $this->core, 'can_access_features' ),
+				'callback' => array( $this, 'rest_clear_logs' )
+			) );
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
@@ -925,4 +937,19 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
+
+	#region Logs
+
+	function rest_get_logs() {
+		$logs = $this->core->get_logs();
+		return new WP_REST_Response( [ 'success' => true, 'data' => $logs ], 200 );
+	}
+
+	function rest_clear_logs() {
+		$this->core->clear_logs();
+		return new WP_REST_Response( [ 'success' => true ], 200 );
+	}
+
+
+	#endregion
 }

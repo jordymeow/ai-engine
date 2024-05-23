@@ -180,10 +180,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          error_log( 'AI Engine: The model "' . $query->model . '" doesn\'t support Function Calling.' );
+          $this->core->log( '⚠️ (OpenAI) The model ' . $query->model . ' doesn\'t support Function Calling.' );
         }
         else if ( strpos( $query->model, 'ft:' ) === 0 ) {
-          error_log( 'AI Engine: OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
+          $this->core->log( '⚠️ (OpenAI) OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
         }
         else {
           $body['tools'] = [];
@@ -600,7 +600,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
       throw $e;
     }
   }
@@ -645,7 +645,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
       $service = $this->get_service_name();
       throw new Exception( "From $service: " . $e->getMessage() );
     }
@@ -676,7 +676,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !is_null( $error ) ) {
         $message = $error;
       }
-      error_log( $message );
+      $this->core->log( '❌ (OpenAI) ' . $message );
       $service = $this->get_service_name();
       throw new Exception( "From $service: " . $message );
     }
@@ -744,8 +744,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           throw new Exception( 'No content received (res is null).' );
         }
         if ( !$data['model'] ) {
-          error_log( 'AI Engine: Invalid response (no model information):' );
-          error_log( print_r( $data, 1 ) );
+          $this->core->log( '❌ (OpenAI) Invalid response (no model information):' );
+          $this->core->log( '❌ (OpenAI) ' . print_r( $data, 1 ) );
           throw new Exception( 'Invalid response (no model information).' );
         }
         $returned_id = $data['id'];
@@ -776,7 +776,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
       $service = $this->get_service_name();
       $message = "From $service: " . $e->getMessage();
       throw new Exception( $message );
@@ -848,7 +848,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
       $service = $this->get_service_name();
       throw new Exception( "From $service: " . $e->getMessage() );
     }
@@ -1232,7 +1232,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $data;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
       throw new Exception( 'From OpenAI: ' . $e->getMessage() );
     }
     finally {
@@ -1286,7 +1286,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( $currentModel['model'] === $modelFamily || ( $finetune && $currentModel['family'] === $modelFamily ) ) {
         if ( $currentModel['type'] === 'image' ) {
           if ( !$option ) {
-            error_log( "AI Engine: Image models require an option." );
+            $this->core->log( "⚠️ (OpenAI) Image models require an option." );
             return null;
           }
           else {
@@ -1322,7 +1322,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
       }
     }
-    error_log( "AI Engine: Invalid model ($modelFamily)." );
+    $this->core->log( "⚠️ (OpenAI) Invalid model ($modelFamily)." );
     return null;
   }
 
@@ -1356,7 +1356,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $units = $reply->get_total_tokens();
       return $this->calculate_price( $model, 0, $units, $option, $finetune );
     }
-    error_log("AI Engine: Cannot calculate price for $model.");
+    $this->core->log( "⚠️ (OpenAI) Cannot calculate price for $model.");
     return null;
   }
 

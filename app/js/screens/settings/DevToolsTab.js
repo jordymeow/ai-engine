@@ -1,5 +1,5 @@
-// Previous: 1.7.9
-// Current: 1.9.93
+// Previous: 1.9.93
+// Current: 2.3.5
 
 /* eslint-disable no-console */
 // React & Vendor Libs
@@ -10,9 +10,11 @@ import { NekoButton, NekoBlock, NekoSettings, NekoCheckbox, NekoColumn, NekoWrap
 
 import i18n from '@root/i18n';
 import { retrievePostContent } from '@app/helpers-admin';
+import { jsxDebugLogsConsole } from '@app/components/LogsReader';
 
 const DevToolsTab = ({ options, updateOption, setOptions }) => {
   const debug_mode = options?.debug_mode;
+  const server_debug_mode = options?.server_debug_mode;
 
   const onGetContentClick = async () => {
     const postId = prompt('Enter the Post ID you want to retrieve the content from.');
@@ -31,9 +33,16 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
   };
 
   const jsxDebugMode =
-    <NekoSettings title={i18n.COMMON.DEBUG_MODE}>
+    <NekoSettings title={i18n.COMMON.CLIENT_DEBUG}>
       <NekoCheckbox name="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
-        description={i18n.COMMON.DEBUG_MODE_HELP}
+        description={i18n.COMMON.CLIENT_DEBUG_HELP}
+        onChange={updateOption} />
+    </NekoSettings>;
+
+  const jsxServerDebugMode =
+    <NekoSettings title={i18n.COMMON.SERVER_DEBUG}>
+      <NekoCheckbox name="server_debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={server_debug_mode}
+        description={i18n.COMMON.SERVER_DEBUG_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
@@ -48,7 +57,10 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
       <NekoColumn minimal>
         <NekoBlock title="Settings" className="primary">
           {jsxDebugMode}
+          {jsxServerDebugMode}
         </NekoBlock>
+
+        {server_debug_mode && jsxDebugLogsConsole()}
       </NekoColumn>
     </NekoWrapper>
   </>);

@@ -1,14 +1,17 @@
-// Previous: 2.2.70
-// Current: 2.2.90
+// Previous: 2.2.90
+// Current: 2.3.5
 
 /* eslint-disable react/display-name */
 
+// React & Vendor Libs
 const { addFilter } = wp.hooks;
 const { useState, useRef, useEffect } = wp.element;
 const { TextControl, Spinner } = wp.components;
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 
+// AI Engine
 import AiIcon from "../styles/AiIcon";
 import { apiUrl, restNonce } from '@app/settings';
 
@@ -34,24 +37,17 @@ const BlockCopilot = () => {
           e.preventDefault();
           setDisplay(true);
         }
-        if (e.code === 'Backspace' && !query && display) {
-          e.preventDefault();
-          setDisplay(false);
-          setQuery('');
-        }
       };
 
-      const executeQuery = async (queryStr) => {
+      const executeQuery = async (query) => {
         try {
           setBusy(true);
           const res = await nekoFetch(`${apiUrl}/ai/copilot`, {
             method: 'POST',
             nonce: restNonce,
-            json: { action: 'write', prompt: queryStr }
+            json: { action: 'write', message: query }
           });
-          if (res.data !== undefined) {
-            props.setAttributes({ content: res.data });
-          }
+          props.setAttributes({ content: res.data });
         }
         catch (e) {
           alert("Error: " + e.message);
@@ -64,7 +60,7 @@ const BlockCopilot = () => {
         }
       };
 
-      const onAiTextKeyDown = (e) => {
+      const onAiTextKeyDown = async (e) => {
         if (composing) {
           return;
         }
@@ -72,12 +68,7 @@ const BlockCopilot = () => {
           e.preventDefault();
           executeQuery(query);
         }
-        if (e.code === 'Escape') {
-          e.preventDefault();
-          setDisplay(false);
-          setQuery('');
-        }
-        if (e.code === 'Backspace' && !query) {
+        if (e.code === 'Escape' || (e.code === 'Backspace' && !query)) {
           e.preventDefault();
           setDisplay(false);
           setQuery('');
@@ -92,34 +83,27 @@ const BlockCopilot = () => {
 
       if (props.name === 'core/paragraph') {
         if (display) {
-          return (
-            <div style={{ position: 'relative' }}>
-              <TextControl
-                ref={aiTextControlRef}
-                label={<><AiIcon icon="wand" style={{ marginBottom: -4 }} />AI Copilot</>}
-                value={query}
-                disabled={busy}
-                placeholder="Write about..."
-                onChange={(value) => setQuery(value)}
-                onKeyDown={onAiTextKeyDown}
-                onCompositionStart={() => setComposing(true)}
-                onCompositionEnd={() => setComposing(false)}
-              />
-              {busy && <Spinner style={{ position: 'absolute', top: 30, right: 0 }} />}
-            </div>
-          );
+          return (<div style={{ position: 'relative' }}>
+            <TextControl ref={aiTextControlRef}
+              label={<><AiIcon icon="wand" style={{ marginBottom: -4 }} />AI Copilot</>}
+              value={query} disabled={busy}
+              placeholder="Write about..."
+              onChange={(value) => setQuery(value)}
+              onKeyDown={onAiTextKeyDown}
+              onCompositionStart={() => setComposing(true)}
+              onCompositionEnd={() => setComposing(false)}
+            />
+            {busy && <Spinner style={{ position: 'absolute', top: 30, right: 0 }} />}
+          </div>);
         }
-        return (
-          <div
-            onCompositionStart={() => setComposing(true)}
-            onCompositionEnd={() => setComposing(false)}
-            onKeyDown={handleKeyPress}
-          >
-            <BlockEdit {...props} />
-          </div>
-        );
+        return (<div
+          onCompositionStart={() => setComposing(true)}
+          onCompositionEnd={() => setComposing(false)}
+          onKeyDown={handleKeyPress}>
+          <BlockEdit {...props} />
+        </div>);
       }
-      return <BlockEdit {...props} />;
+      return (<BlockEdit {...props} />);
     };
   };
 
@@ -127,16 +111,27 @@ const BlockCopilot = () => {
 
   const modifyPlaceholder = (settings, name) => {
     if (name === "core/paragraph") {
-      const editFn = settings.edit;
+      const originalEdit = settings.edit;
       settings.edit = (props) => {
-        props = {
-          ...props,
-          attributes: {
+        let timeoutId = null;
+        const handleChange = (newProps) => {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            newProps = { ...newProps,
+              attributes: { 
+                ...newProps.attributes,
+                placeholder: "Type / to choose a block, or press space to summon the AI Copilot",
+              },
+            };
+            originalEdit(newProps);
+          }, 30);
+        };
+        return originalEdit({ ...props,
+          attributes: { 
             ...props.attributes,
             placeholder: "Type / to choose a block, or press space to summon the AI Copilot",
           },
-        };
-        return editFn(props);
+        });
       };
     }
     return settings;

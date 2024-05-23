@@ -34,7 +34,7 @@
   flex-direction: column;
   overflow: auto;
   max-height: var(--mwai-maxHeight);
-  padding: var(--mwai-spacing);
+  padding: var(--mwai-spacing) var(--mwai-spacing) 0 var(--mwai-spacing);
 }
 
 .mwai-chat .mwai-conversation .mwai-reply {
@@ -282,7 +282,7 @@
   opacity: 0.5;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -290,7 +290,7 @@
   cursor: pointer;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg {
   fill: var(--mwai-fontColor);
   width: 34px;
   height: 34px;
@@ -299,33 +299,60 @@
   transition: opacity 0.3s ease-out;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload[active=true] svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[active=true] svg {
   opacity: 1;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload[disabled] svg {
+.mwai-chat .mwai-input .mwai-input-text .mwai-microphone[disabled] svg {
   opacity: 0;
 }
 
 .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-left: 5px;
-  margin-right: -5px;
+  width: 30px;
+  cursor: pointer;
+  margin-right: -8px;
+  z-index: 100;
 }
 
-.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload svg {
-  width: 42px;
-  height: 42px;
-  padding: 5px;
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload img {
+  width: 100%;
+  height: auto;
+  background-size: cover;
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-idle-idle {
+  filter: brightness(0.5);
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-idle-add {
+  filter: brightness(0.85);
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-image-add, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-image-del, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-image-ok, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-image-up {
+  filter: brightness(1);
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-document-add, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-document-del, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-document-ok, .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-document-up {
+  filter: brightness(1);
+}
+
+.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload .mwai-enabled {
+  filter: saturate(0);
 }
 
 .mwai-chat .mwai-input .mwai-input-text .mwai-file-upload span {
   position: absolute;
-  font-size: 55%;
-}
-
-.mwai-chat .mwai-input .mwai-input-text .mwai-file-upload.enabled svg {
-  opacity: 1;
-  filter: none;
+  font-size: 11px;
+  width: 21px;
+  top: 25px;
+  left: 24px;
+  overflow: hidden;
+  text-align: center;
+  font-weight: bold;
 }
 
 .mwai-chat .mwai-input .mwai-input-text .mwai-microphone svg {
@@ -663,19 +690,6 @@
   top: 32px;
 }
 
-@media (max-width: 760px) {
-  .mwai-chat.mwai-window {
-    width: calc(100% - 40px);
-    z-index: 9999999999;
-  }
-  .mwai-chat .mwai-reply {
-    flex-direction: column;
-  }
-  .mwai-chat .mwai-input {
-    flex-direction: column;
-  }
-}
-
 .mwai-copy-button {
   opacity: 0;
   transition: all 0.3s ease-out;
@@ -827,4 +841,21 @@
   right: 15px;
   left: inherit;
   filter: brightness(0.4);
+}
+
+@media (max-width: 760px) {
+  .mwai-chat.mwai-window {
+    width: calc(100% - 40px);
+    z-index: 9999999999;
+  }
+  .mwai-chat .mwai-input {
+    flex-direction: column;
+  }
+  .mwai-chat .mwai-input .mwai-input-text {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  .mwai-chat .mwai-input button {
+    width: 100%;
+  }
 }

@@ -207,7 +207,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( "❌ (Google) " .  $e->getMessage() );
       throw $e;
     }
   }
@@ -337,7 +337,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      error_log( $e->getMessage() );
+      $this->core->log( "❌ (Google) " . $e->getMessage() );
       $message = "From Google: " . $e->getMessage();
       throw new Exception( $message );
     }

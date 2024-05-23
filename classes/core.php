@@ -389,7 +389,7 @@ class Meow_MWAI_Core
 			return null;
 		}
 		else if ( !isset( $context['content'] ) ) {
-			error_log( "AI Engine: A context without content was returned." );
+			$this->log( "⚠️ A context without content was returned." );
 			return null;
 		}
 		$context['content'] = $this->clean_sentences( $context['content'], $contextMaxLength );
@@ -863,7 +863,7 @@ class Meow_MWAI_Core
 			}
 		}
 		if ( !update_option( $this->chatbots_option_name, $chatbots ) ) {
-			error_log( 'AI Engine: Could not update chatbots.' );
+			$this->log( '⚠️ Could not update chatbots.' );
 			$chatbots = get_option( $this->chatbots_option_name, [] );
 			return $chatbots;
 		}
@@ -1105,6 +1105,93 @@ class Meow_MWAI_Core
 		delete_option( $this->option_name );
 		return $this->get_all_options( true );
 	}
+	#endregion
+
+	#region Logs
+
+	function get_logs() {
+		$log_file_path = $this->get_logs_path();
+
+		if ( !file_exists( $log_file_path ) ) {
+			return "Empty log file.";
+		}
+
+		$content = file_get_contents( $log_file_path );
+		$lines = explode( "\n", $content );
+		$lines = array_filter( $lines );
+		$lines = array_reverse( $lines );
+		$content = implode( "\n", $lines );
+		return $content;
+	}
+
+	function clear_logs() {
+		$logPath = $this->get_logs_path();
+		if ( file_exists( $logPath ) ) {
+			unlink( $logPath );
+		}
+
+		$options = $this->get_all_options();
+		$options['logs_path'] = null;
+		$this->update_options( $options );
+	}
+
+	function get_logs_path() {
+		$uploads_dir = wp_upload_dir();
+		$uploads_dir_path = trailingslashit( $uploads_dir['basedir'] );
+
+		$path = $this->get_option( 'logs_path' );
+
+		if ( $path && file_exists( $path ) ) {
+			// make sure the path is legal (within the uploads directory with the MWAI_PREFIX and log extension)
+			if ( strpos( $path, $uploads_dir_path ) !== 0 || strpos( $path, MWAI_PREFIX ) === false || substr( $path, -4 ) !== '.log' ) {
+				$path = null;
+			} else {
+				return $path;
+			}
+		}
+
+		if ( !$path ) {
+			$path = $uploads_dir_path . MWAI_PREFIX . "_" . $this->random_ascii_chars() . ".log";
+			if ( !file_exists( $path ) ) {
+				touch( $path );
+			}
+			$options = $this->get_all_options();
+			$options['logs_path'] = $path;
+			$this->update_options( $options );
+		}
+
+		return $path;
+	}
+
+	function log( $data = null ) {
+		if ( !$this->get_option( 'server_debug_mode', false ) ) { return false; }
+		$log_file_path = $this->get_logs_path();
+		$fh = @fopen( $log_file_path, 'a' );
+		if ( !$fh ) { return false; }
+		$date = date( "Y-m-d H:i:s" );
+		if ( is_null( $data ) ) {
+			fwrite( $fh, "\n" );
+		}
+		else {
+			fwrite( $fh, "$date: {$data}\n" );
+			//error_log( "[MWAI] $data" );
+		}
+		fclose( $fh );
+		return true;
+	}
+
+	private function random_ascii_chars( $length = 8 ) {
+		$characters = array_merge( range( 'A', 'Z' ), range( 'a', 'z' ), range( '0', '9' ) );
+		$characters_length = count( $characters );
+		$random_string = '';
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$random_string .= $characters[rand(0, $characters_length - 1)];
+		}
+
+		return $random_string;
+	}
+
 	#endregion
 }
 

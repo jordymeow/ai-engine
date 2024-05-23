@@ -5,6 +5,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   // Environment
   public ?string $session = null;
   public string $scope = '';
+  private $core = null;
 
   // Core Content
   public ?string $instructions = null;
@@ -42,6 +43,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
       $this->set_message( $message );
     }
     $this->session = $mwai_core->get_session_id();
+    $this->core = $mwai_core;
   }
 
   #[\ReturnTypeWillChange]
@@ -154,7 +156,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function set_instructions( string $instructions ): void {
     $this->instructions = apply_filters( 'mwai_ai_context', $instructions, $this );
     if ( $this->instructions !== $instructions ) {
-      error_log( 'AI Engine: mwai_ai_context filter is deprecated. Please use mwai_ai_instructions instead.' );
+      $this->core->log( '⚠️ (Base Query) mwai_ai_context filter is deprecated. Please use mwai_ai_instructions instead.' );
     }
     $this->instructions = apply_filters( 'mwai_ai_instructions', $this->instructions, $this );
   }
@@ -300,7 +302,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
     // TODO: Remove this condition after July 2024.
     if ( !empty( $params['context'] ) ) {
-      error_log( 'AI Engine: context is deprecated. Please use instructions instead.' );
+      $this->core->log( '⚠️ (Base Query) context is deprecated. Please use instructions instead.' );
       $this->set_instructions( $params['context'] );
     }
     if ( !empty( $params['instructions'] ) ) {
@@ -308,7 +310,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     }
     // TODO: Remove this condition after September 2024.
     if ( !empty( $params['prompt'] ) ) {
-      error_log( 'AI Engine: prompt is deprecated. Please use message instead.' );
+      $this->core->log( '⚠️ (Base Query) prompt is deprecated. Please use message instead.' );
       $this->set_message( $params['prompt'] );
     }
     if ( !empty( $params['message'] ) ) {

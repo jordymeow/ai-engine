@@ -90,8 +90,13 @@ i18n.COMMON = {
   FORMS_HELP: __( 'Build AI forms. Based on fields, users will be given answers or suggestions.', 'ai-engine' ),
   STATISTICS: __( 'Statistics', 'ai-engine' ),
   STATISTICS_HELP: __( 'Track AI interactions, check statistics, set limits, and more!', 'ai-engine' ),
-  DEBUG_MODE: __( 'Debug Mode', 'ai-engine' ),
-  DEBUG_MODE_HELP: __( 'Debugging information will be displayed in the console.', 'ai-engine' ),
+  CLIENT_DEBUG: __( 'Client Debug', 'ai-engine' ),
+  CLIENT_DEBUG_HELP: __( 'Debugging information will be displayed in the console.', 'ai-engine' ),
+  SERVER_DEBUG: __( 'Server Debug', 'ai-engine' ),
+  SERVER_DEBUG_HELP: __( 'Debugging information from your server will be displayed in a console on this tab.', 'ai-engine' ),
+  LOGS: __( 'Logs', 'ai-engine' ),
+  CLEAR_LOGS: __( 'Clear Logs', 'ai-engine' ),
+  REFRESH_LOGS: __( 'Refresh Logs', 'ai-engine' ),
   API_KEY: __( 'API Key', 'ai-engine' ),
   USAGE_COSTS_HELP: __( 'For the exact amounts, please check your <a href="https://beta.openai.com/account/usage" target="_blank">OpenAI account</a>.', 'ai-engine' ),
   USAGE_COSTS_PRO_HELP: __( 'If you would like to have better control on the amounts, add conditions or set limits to the usage of the AI, consider <a href="https://meowapps.com/ai-engine/" target="_blank">AI Engine Pro</a>.', 'ai-engine' ),
@@ -183,7 +188,7 @@ i18n.COMMON = {
   SECURITY: __( 'Security', 'ai-engine' ),
   POST_TYPES: __( 'Post Types', 'ai-engine' ),
   COPY_BUTTON: __( 'Copy Button', 'ai-engine' ),
-  POPUP_SETTINGS: __( 'Popup Settings', 'ai-engine' ),
+  POPUP: __( 'Popup', 'ai-engine' ),
   AI_AVATAR: __( 'Avatar', 'ai-engine' ),
   SITE_WIDE_CHATBOT: __( 'Site-Wide Chatbot', 'ai-engine' ),
   QUERIES_DATA: __( 'Queries Data', 'ai-engine' ),
@@ -317,7 +322,7 @@ i18n.SETTINGS = {
   CHATBOT_MODERATION_HELP: __( 'If the conversation seems offensive, the chatbot will reject it.', 'ai-engine' ),
   CUSTOM_URL: __( 'Custom URL', 'ai-engine' ),
   ASSISTANT_NO_FILE_SEARCH: __( 'This assistant does not support File Search. You can activate it on the <a href="https://platform.openai.com/assistants" target="_blank">OpenAI Assistants</a> dashboard. Then, use the Refresh button in the Assistants tab.', 'ai-engine' ),
-  ASSISTANT_FILE_SEARCH: __( 'File Search will be used when the users upload documents. If the user uploads files, those will be handled by AI Vision if the model supports it and if it is enabled.', 'ai-engine' ),
+  ASSISTANT_FILE_SEARCH: __( 'File Search will be used when the users upload documents. If the user uploads images, those will be handled by AI Vision if the model supports it and if it is enabled.', 'ai-engine' ),
 };
 
 i18n.CHATBOT = {

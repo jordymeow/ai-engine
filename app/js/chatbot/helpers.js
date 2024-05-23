@@ -1,52 +1,10 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.5
 
-const { useState, useMemo, useEffect, useRef, useImperativeHandle } = wp.element;
+const { useState, useMemo, useEffect, useRef } = wp.element;
 
 import cssChatGPT from '@root/../themes/ChatGPT.module.css';
 import cssMessages from '@root/../themes/Messages.module.css';
-
-const svgPicturePath = `
-<svg fill="none" viewBox="0 0 3335 3335" xmlns="http://www.w3.org/2000/svg">
-<path d="m2834 0h-2333.9c-275.78 0-500.12 224.34-500.12 500.12v2333.9c0 275.78 224.34 500.12 500.12 500.12h2333.9c275.78 0 500.12-224.34 500.12-500.12v-2333.9c0-275.78-224.34-500.12-500.12-500.12z" fill="url(#c)"/>
-<path d="m2539 1961.5c-55.51 28-122.51 42.82-193.89 42.82-148.23 0-292.47-61.05-376.72-159.38l-349.69-406.35c-116.81-136.42-281.48-214.57-451.76-214.57-170.29 0-334.96 78.15-451.6 214.41l-715.34 833.69v561.82c0 275.78 224.34 500.11 500.12 500.11h2333.9c275.78 0 500.12-224.33 500.12-500.11v-1270l-795.11 397.55z" fill="url(#b)"/>
-<path d="m2333.9 1500.3c276.21 0 500.12-223.91 500.12-500.11 0-276.21-223.91-500.12-500.12-500.12-276.2 0-500.11 223.91-500.11 500.12 0 276.2 223.91 500.11 500.11 500.11z" fill="url(#a)"/>
-<defs>
-<linearGradient id="c" x2="3334.1" y1="1667" y2="1667" gradientUnits="userSpaceOnUse">
-<stop stop-color="#BBDEFB" offset="0"/>
-<stop stop-color="#64B5F6" offset="1"/>
-</linearGradient>
-<linearGradient id="b" x2="3334.1" y1="2279.2" y2="2279.2" gradientUnits="userSpaceOnUse">
-<stop stop-color="#42A5F5" offset="0"/>
-<stop stop-color="#1E88E5" offset="1"/>
-</linearGradient>
-<linearGradient id="a" x1="1833.8" x2="2834" y1="1000.2" y2="1000.2" gradientUnits="userSpaceOnUse">
-<stop stop-color="#42A5F5" offset="0"/>
-<stop stop-color="#1E88E5" offset="1"/>
-</linearGradient>
-</defs>
-</svg>
-`;
-
-const svgFilePath = `
-<?xml version="1.0" encoding="UTF-8"?>
-<svg fill="none" viewBox="0 0 3335 3335" xmlns="http://www.w3.org/2000/svg">
-<path d="m2834 0h-2333.9c-275.78 0-500.12 224.34-500.12 500.12v2333.9c0 275.78 224.34 500.12 500.12 500.12h2333.9c275.78 0 500.12-224.34 500.12-500.12v-2333.9c0-275.78-224.34-500.12-500.12-500.12z" fill="url(#a)"/>
-<g clip-path="url(#b)" fill="#2A92EB">
-<path d="m2766.1 567.92c-233.22-233.22-611.33-233.22-844.55-5e-3l-499.12 499.12c-241.24 241.25-218.91 625.64 0 844.55 36.65 36.66 77.21 66.55 120.04 91.1l91.1-91.1c59.75-59.75 38.72-129.61 37.64-180.02-13.11-9.29-25.87-19.34-37.64-31.12-112.34-112.32-117.39-304.89 0-422.27 17.43-17.44 488.53-488.53 499.11-499.11 116.44-116.45 305.83-116.45 422.27 0 116.45 116.45 116.45 305.83 0 422.27l-329.91 329.91c9.54 52.79 66.8 177.83 37.35 384.1 1.43-1.41 3.16-2.32 4.59-3.75l499.12-499.12c233.21-233.22 233.21-611.33 0-844.55z"/>
-<path d="m1950.3 1383.7c-36.66-36.66-77.22-66.55-120.04-91.1l-91.09 91.1c-59.76 59.75-38.73 129.6-37.66 180.01 13.13 9.3 25.88 19.34 37.66 31.12 112.33 112.34 117.38 304.89 0 422.28-17.48 17.47-527.6 527.59-537.8 537.79-116.45 116.45-305.83 116.45-422.28 0-116.45-116.44-116.45-305.83 0-422.27l368.6-368.6c-9.54-52.79-66.8-177.83-37.34-384.1-1.44 1.41-3.17 2.34-4.61 3.76l-537.79 537.81c-233.21 233.22-233.21 611.33 0 844.55 233.22 233.21 611.33 233.21 844.55 0l537.8-537.8c236.76-236.76 223.82-620.73 0-844.55z"/>
-</g>
-<defs>
-<linearGradient id="a" x2="3334.1" y1="1667" y2="1667" gradientUnits="userSpaceOnUse">
-<stop stop-color="#BBDEFB" offset="0"/>
-<stop stop-color="#64B5F6" offset="1"/>
-</linearGradient>
-<clipPath id="b">
-<rect transform="translate(393 393)" width="2548" height="2548" fill="#fff"/>
-</clipPath>
-</defs>
-</svg>
-`;
 
 const Microphone = ({ active, disabled, style, ...rest }) => {
 
@@ -88,78 +46,6 @@ const Microphone = ({ active, disabled, style, ...rest }) => {
   );
 };
 
-const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, disabled, style, type, ...rest }, ref) => {
-  const fileInputRef = useRef();
-
-  // uploadedFile contains .uploadedId, .uploadedUrl, .uploadProgress, and .localFile.
-  // .localFile is the original file object.
-
-  const resetUpload = () => {
-    onUploadFile(null);
-  };
-
-  const handleClick = () => {
-    if (uploadedFile?.localFile) {
-      resetUpload();
-      return;
-    }
-    if (!disabled) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = (event) => {
-    const files = event.target.files;
-    if (files.length > 0) {
-      const file = files[0];
-      onUploadFile(file);
-    }
-  };
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (disabled) {
-      return;
-    }
-
-    const files = event.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      onUploadFile(file);
-    }
-  };
-
-  const handleDragOver = (event) => {
-    event.preventDefault();
-  };
-
-  const handleExternalFile = (file) => {
-    onUploadFile(file);
-  };
-
-  // Expose specific methods to parent components
-  useImperativeHandle(ref, () => ({
-    handleExternalFile
-  }));
-
-  return (
-    <div disabled={disabled} onClick={handleClick} onDrop={handleDrop} onDragOver={handleDragOver}
-      style={{ cursor: disabled ? 'default' : 'pointer', ...style }}
-      {...rest}>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-        dangerouslySetInnerHTML={{ __html: type === 'image' ? svgPicturePath : svgFilePath }}
-      />
-      <span>
-        {uploadedFile.uploadProgress && `${Math.round(uploadedFile.uploadProgress)}%`}
-      </span>
-      {/* Hidden file input */}
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
-    </div>
-  );
-});
-
 function useInterval(delay, callback, enabled = true) {
   const savedCallback = useRef();
 
@@ -169,9 +55,7 @@ function useInterval(delay, callback, enabled = true) {
 
   useEffect(() => {
     function tick() {
-      if (savedCallback.current) {
-        savedCallback.current();
-      }
+      savedCallback.current();
     }
     if (delay !== null && enabled) {
       const id = setInterval(tick, delay);
@@ -198,19 +82,20 @@ const useModClasses = (theme) => {
       }
       if (conditionalClasses) {
         Object.entries(conditionalClasses).forEach(([className, condition]) => {
+          if (!condition) return; 
           if (condition) { classNames.push(className); }
         });
       }
 
       return classNames.map(className => {
-        if (!cssTheme || !cssTheme[className]) {
-          console.warn(`The class name "${className}" is not defined in the "${theme?.themeId ?? "N/A"}" theme.`);
+        if (!cssTheme) {
           return className;
         }
         else if (cssTheme[className]) {
           return `${className} ${cssTheme[className]}`;
         }
         else {
+          console.warn(`The class name "${className}" is not defined in the "${theme?.themeId ?? "N/A"}" theme.`);
           return className;
         }
       }).join(' ');
@@ -220,7 +105,7 @@ const useModClasses = (theme) => {
   return { modCss };
 };
 
-function is_url(url) {
+function isURL(url) {
   return url.indexOf('http') === 0;
 }
 
@@ -253,7 +138,7 @@ function useChrono() {
 
   function stopChrono() {
     clearInterval(intervalIdRef.current);
-    intervalIdRef.current = null;
+    intervalIdRef.current = undefined;
     setTimeElapsed(null);
   }
 
@@ -285,7 +170,7 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, mo
       </div>;
     }
   }
-  else if (is_url(userName)) {
+  else if (isURL(userName)) {
     userName = <div className={modCss(['mwai-avatar'])}>
       <img src={userName} />
     </div>;
@@ -304,7 +189,7 @@ function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
       <img src={`${avatar}`} />
     </div>;
   }
-  else if (is_url(aiName)) {
+  else if (isURL(aiName)) {
     aiName = <div className={modCss('mwai-avatar')}><img src={aiName} /></div>;
   }
   else {
@@ -373,11 +258,20 @@ const useSpeechRecognition = (onResult) => {
 
       if (isAndroid) {
         const diff = transcript.slice(lastTranscript.length);
-        lastTranscript = transcript;
-        onResult(diff);
-      }
-      else {
-        onResult(transcript);
+        if (diff) {
+          lastTranscript = transcript;
+          onResult(diff);
+        }
+      } else {
+        const finalResults = Array.from(event.results)
+          .filter(result => result.isFinal)
+          .map(result => result[0].transcript)
+          .join('');
+        const diff = finalResults.slice(lastTranscript.length);
+        if (diff) {
+          lastTranscript = finalResults;
+          onResult(diff);
+        }
       }
     };
 
@@ -397,7 +291,6 @@ const useSpeechRecognition = (onResult) => {
   return { isListening, setIsListening, speechRecognitionAvailable };
 };
 
-export { useModClasses, is_url, handlePlaceholders, useInterval,
-  useSpeechRecognition, Microphone, ChatUpload, svgFilePath, svgPicturePath,
-  useChrono, formatUserName, formatAiName, processParameters
+export { useModClasses, isURL, handlePlaceholders, useInterval,
+  useSpeechRecognition, Microphone, useChrono, formatUserName, formatAiName, processParameters
 };

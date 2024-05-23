@@ -1,17 +1,20 @@
-// Previous: 2.3.1
-// Current: 2.3.4
+// Previous: 2.3.4
+// Current: 2.3.5
 
+// React & Vendor Libs
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
 import Markdown from 'markdown-to-jsx';
 
-import { svgFilePath, useInterval } from '@app/chatbot/helpers';
+// AI Engine
+import { useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { BlinkingCursor } from '@app/helpers';
 import CopyButton from '@app/components/CopyButton';
 
+// Display a clickable link with additional file information
 const LinkContainer = ({ href, children }) => {
   const { state } = useChatbotContext();
   const { modCss } = state;
@@ -20,7 +23,6 @@ const LinkContainer = ({ href, children }) => {
 
   if (isFile) {
     const filename = href.split('/').pop();
-    const svgImage = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${svgFilePath}</svg>`;
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={modCss('mwai-filename')}>
         <span>✓ {filename}</span>
@@ -35,6 +37,7 @@ const LinkContainer = ({ href, children }) => {
   );
 };
 
+// If isUser, we render the content as-is, otherwise we render it as markdown.
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
@@ -46,17 +49,19 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
-  const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) {
-    content += "\n```";
-  } else if (message.isStreaming) {
+  const matchCount = (content.match(/```/g) || []).length;
+  if (matchCount % 2 !== 0) { // if count is odd
+    content += "\n```"; // add ``` at the end
+  }
+  else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
   useEffect(() => { 
     if (!isLongProcess) {
       onRendered();
-    } else if (isLongProcess && !isQuerying && !isStreaming) {
+    }
+    else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -75,7 +80,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
           props: {
             onError: (e, f) => {
               const src = e.target.src;
-              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/) != null;
+              const isImage = /\.(jpeg|jpg|gif|png)$/.test(src);
               if (isImage) {
                 e.target.src = "https://placehold.co/600x200?text=Expired+Image";
                 return;
@@ -118,7 +123,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); });
+  useEffect(() => { onRendered(); }, []);
 
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
@@ -255,7 +260,8 @@ const ChatbotReply = ({ message, conversationRef }) => {
             const classes = (modCss(oldClass)).split(' ');
             if (classes && classes.length > 1) {
               element.classList.add(classes[1]);
-            } else {
+            }
+            else {
               console.warn('Could not find class for ' + oldClass);
             }
           });
@@ -270,14 +276,15 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
-
+  
     if (message.role === 'assistant') {
-
+  
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
-      } else if (typewriter && !message.isStreaming) {
+      }
+      else if (typewriter && !message.isStreaming) {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
@@ -286,13 +293,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-
+  
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-
+  
     return (
       <div><i>Unhandled role.</i></div>
     );
@@ -300,3 +307,5 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   return output;
 };
+
+export default ChatbotReply;

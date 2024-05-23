@@ -1,9 +1,12 @@
-// Previous: 2.3.0
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.5
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
 import { apiUrl, restUrl, restNonce } from '@app/settings';
+
+
+//#region Posts
 
 const retrievePostTypes = async () => {
   const res = await nekoFetch(`${apiUrl}/helpers/post_types`, { nonce: restNonce });
@@ -23,6 +26,10 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
     { nonce: restNonce });
   return res;
 };
+
+//#endregion
+
+//#region Files
 
 const deleteFiles = async (files) => {
   const res = await nekoFetch(`${restUrl}/mwai-ui/v1/files/delete`, { nonce: restNonce, method: 'POST', json: { files } });
@@ -62,6 +69,38 @@ const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
   return res?.finetunes;
 };
 
+//#endregion
+
+//#region Themes
+
+const retrieveThemes = async () => {
+  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'GET', nonce: restNonce });
+  return res?.themes;
+};
+
+const updateThemes = async (themes) => {
+  const themeIds = [];
+  for (let i = 0; i < themes.length; i++) {
+    let themeId = themes[i].themeId;
+    if (themeIds.includes(themeId)) {
+      let j = 1;
+      while (themeIds.includes(themeId + '-' + j)) {
+        j++;
+      }
+      themeId = themeId + '-' + j;
+    }
+    themeIds.push(themeId);
+    themes[i].themeId = themeId;
+  }
+
+  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
+  return res?.themes;
+};
+
+//#endregion
+
+//#region Chatbots
+
 const retrieveModels = async () => {
   const res = await nekoFetch(`${apiUrl}/openai/models`, { nonce: restNonce });
   if (!res.success) {
@@ -94,35 +133,6 @@ const updateChatbots = async (chatbots) => {
   return res?.chatbots;
 };
 
-const retrieveThemes = async () => {
-  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'GET', nonce: restNonce });
-  return res?.themes;
-};
-
-const retrieveOptions = async () => {
-  const res = await nekoFetch(`${apiUrl}/settings/options`, { method: 'GET', nonce: restNonce });
-  return res?.options;
-};
-
-const updateThemes = async (themes) => {
-  const themeIds = [];
-  for (let i = 0; i < themes.length; i++) {
-    let themeId = themes[i].themeId;
-    if (themeIds.includes(themeId)) {
-      let j = 1;
-      while (themeIds.includes(themeId + '-' + j)) {
-        j++;
-      }
-      themeId = themeId + '-' + j;
-    }
-    themeIds.push(themeId);
-    themes[i].themeId = themeId;
-  }
-
-  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
-  return res?.themes;
-};
-
 const retrieveAssistants = async (envId) => {
   const res = await nekoFetch(`${apiUrl}/openai/assistants/list?envId=${envId}`, { nonce: restNonce });
   if (!res.success) {
@@ -141,7 +151,43 @@ const setAssistantFunctions = async (envId, assistantId, functions) => {
   return res;
 }
 
+//#endregion
+
+//#region Options
+
+const retrieveOptions = async () => {
+  const res = await nekoFetch(`${apiUrl}/settings/options`, { method: 'GET', nonce: restNonce });
+  return res?.options;
+};
+
+//#endregion
+
+//#region Logs
+
+const refreshLogs = async () => {
+  try {
+    const res = await nekoFetch(`${apiUrl}/get_logs`, { nonce: restNonce, method: 'GET' });
+    return res.data;
+  }
+  catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+const clearLogs = async () => {
+  try {
+    await nekoFetch(`${apiUrl}/clear_logs`, { nonce: restNonce });
+  }
+  catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+//#endregion
+
 export { retrievePostTypes, retrievePostsCount, retrievePostContent,
   retrieveFilesFromOpenAI, retrieveFiles, deleteFiles, setAssistantFunctions,
   retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
-  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes };
+  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes,
+  refreshLogs, clearLogs
+};

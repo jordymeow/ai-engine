@@ -154,6 +154,8 @@ define( 'MWAI_OPTIONS', [
 	'extra_models' => "",
 	'public_api' => false,
 	'debug_mode' => true,
+	'server_debug_mode' => true,
+	'logs_path' => null,
 	'intro_message' => true,
 	'resolve_shortcodes' => false,
 	'context_max_length' => 4096,

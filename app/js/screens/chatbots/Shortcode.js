@@ -1,7 +1,7 @@
-// Previous: 2.0.8
-// Current: 2.0.9
+// Previous: 2.0.9
+// Current: 2.3.5
 
-const { useState, useEffect } = wp.element;
+const { useState, useMemo } = wp.element;
 import Styled from 'styled-components';
 
 const StyledShortcode = Styled.div`
@@ -27,80 +27,100 @@ const StyledShortcode = Styled.div`
   .mwai-value {
     color: var(--neko-green);
   }
+
+  .skipped-params {
+    margin-top: 10px;
+    color: #ff4d4f;
+  }
 `;
+
+const sanitizeParamValue = ( value ) => {
+  if ( typeof value !== 'string' ) {
+    return value;
+  }
+
+  return value
+    .replace( /"/g, '&quot;' )
+    .replace( /'/g, '&#039;' )
+    .replace( /\n/g, '\\n' )
+    .replace( /\[/g, '&#91;' )
+    .replace( /\]/g, '&#93;' );
+};
 
 const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }) => {
   const [copyMessage, setCopyMessage] = useState(null);
-  const [shortcodeHtml, setShortcodeHtml] = useState('');
-  const [shortcodeText, setShortcodeText] = useState('');
 
-  useEffect(() => {
+  const shortcodeData = useMemo(() => {
     if (!currentChatbot) {
-      setShortcodeHtml(null);
-      setShortcodeText(null);
-      return;
+      return { shortcodeHtml: null, shortcodeText: null, skipped: [] };
     }
 
     let shortcode;
     let params = [];
+    let skipped = [];
+
     if (isCustom) {
       for (const key in currentChatbot) {
-        if (currentChatbot[key] === undefined || currentChatbot[key] === null ||
-          key === 'botId' || key === 'name' || key === 'maxMessages' ||
-          currentChatbot[key] === '' || (defaultChatbot && defaultChatbot[key] === currentChatbot[key])) {
+        const value = currentChatbot[key];
+        if (
+          value === undefined ||
+          value === null ||
+          key === 'botId' ||
+          key === 'name' ||
+          key === 'maxMessages' ||
+          value === '' ||
+          (defaultChatbot && defaultChatbot[key] === value) ||
+          typeof value === 'object' ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
+          if (typeof value === 'object' && (Array.isArray(value) && value.length !== 0)) {
+            skipped.push(key);
+          }
           continue;
         }
-        let value = currentChatbot[key];
-        if (value && typeof value === 'string' && value.includes('"')) {
-          value = value.replace(/"/g, '\'');
-        }
-        if (value && typeof value === 'string' && value.includes('\n')) {
-          value = value.replace(/\n/g, '\\n');
-        }
-        if (value && typeof value === 'string' && value.includes('[')) {
-          value = value.replace(/\[/g, '&#91;');
-        }
-        if (value && typeof value === 'string' && value.includes(']')) {
-          value = value.replace(/\]/g, '&#93;');
-        }
+
+        const sanitizedValue = sanitizeParamValue(value);
+
         const newKey = key.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`);
-        params.push(`${newKey}="${value}"`);
+        params.push(`${newKey}="${sanitizedValue}"`);
       }
       shortcode = '[mwai_chatbot' + (params.length ? ` ${params.join(' ')}` : '') + ']';
-    }
-    else {
+    } else {
       const currentBotId = currentChatbot.botId ?? 'default';
       params.push(`id="${currentBotId}"`);
       shortcode = `[mwai_chatbot id="${currentBotId}"]`;
     }
 
-    const jsxHTML = <span>
-      [mwai_chatbot {params.map((param, index) => {
-        const [key, value] = param.split('=');
-        return <span key={index}>
-          <span className="mwai-name">{key}</span>=<span className="mwai-value">{value}</span>{index < params.length - 1 ? ' ' : ''}
-        </span>
-      }
-      )}]
-    </span>;
+    const jsxHTML = (
+      <span>
+        [mwai_chatbot{' '}
+        {params.map((param, index) => {
+          const [key, value] = param.split('=');
+          return (
+            <span key={index}>
+              <span className="mwai-name">{key}</span>=<span className="mwai-value">{value}</span>
+              {index < params.length - 1 ? ' ' : ''}
+            </span>
+          );
+        })}
+        ]
+      </span>
+    );
 
-    setShortcodeHtml(jsxHTML);
-    setShortcodeText(shortcode);
-  }, [currentChatbot, isCustom]);
+    return { shortcodeHtml: jsxHTML, shortcodeText: shortcode, skipped };
+  }, [currentChatbot, isCustom, defaultChatbot]);
+
+  const skippedParams = shortcodeData?.skipped ?? [];
 
   const onClick = async () => {
     if (!navigator.clipboard) {
-      alert("Clipboard is not enabled (only works with https).");
+      alert('Clipboard is not enabled (only works with https).');
       return;
     }
-    try {
-      await navigator.clipboard.writeText(shortcodeText);
-    } catch (e) {
-      alert("Failed to copy to clipboard.");
-    }
+    await navigator.clipboard.writeText(shortcodeData.shortcodeText);
     setCopyMessage('Copied!');
     setTimeout(() => {
-      setCopyMessage(null);
+      setCopyMessage('Copied!');
     }, 2000);
   };
 
@@ -111,9 +131,14 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
   return (
     <StyledShortcode {...rest}>
       <pre onClick={onClick}>
-        {!copyMessage && shortcodeHtml}
+        {!copyMessage && shortcodeData.shortcodeHtml}
         {copyMessage && <span>{copyMessage}</span>}
       </pre>
+      {skippedParams.length > 0 && (
+        <div className="skipped-params">
+          Skipped parameters: {skippedParams.join(', ')}
+        </div>
+      )}
     </StyledShortcode>
   );
 };

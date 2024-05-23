@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.4
+Stable tag: 2.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,16 @@ Languages: English.
 
 == Changelog ==
 
+= 2.3.5 (2024/05/24) =
+* Update: New icons and better upload states.
+* Add: Logs for developers.
+* Fix: CSS on mobile, Messages Theme, ChatGPT Theme.
+* Fix: Repetitive characters with speech recognition.
+* Update: Strengthened the shortcode component and included mandatory classes.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.3.4 (2024/05/21) =
 * Fix: The "current" issue in the dashboard.
 * Fix: The OpenAI errors received while streaming are now displayed in the chatbot.
@@ -79,9 +89,6 @@ Languages: English.
 * Update: Enhanced the way uploads are handled and displayed in the chatbot.
 * Fix: Issue with finetuned models when used in chatbots.
 * Fix: Many little fixes that troubled some of you on Discord! 😬 I am always checking!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.3.0 (2024/05/14) =
 * Add: Support for GPT-4o (OpenAI).

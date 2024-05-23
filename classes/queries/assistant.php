@@ -51,6 +51,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
 
     if ( !empty( $this->attachedFile ) ) {
       $json['context']['hasFile'] = true;
+      // Assistant only supports URL for now.
       if ( $this->attachedFile->get_type() === 'url' ) {
         $json['context']['fileUrl'] = $this->attachedFile->get_url();
       }

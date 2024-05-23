@@ -356,7 +356,7 @@ class Meow_MWAI_Modules_Files {
     ];
     $res = $this->wpdb->insert( $this->table_filemeta, $data );
     if ( $res === false ) {
-      error_log( "AI Engine: Error while writing files metadata (" . $this->wpdb->last_error . ")" );
+      $this->core->log( "⚠️ (Files) Error while writing files metadata (" . $this->wpdb->last_error . ")" );
       return false;
     }
     return $this->wpdb->insert_id;

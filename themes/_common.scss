@@ -301,24 +301,3 @@
 .admin-bar .mwai-fullscreen.mwai-window.mwai-open {
 	top: 32px;
 }
-
-// Mobile
-
-@media (max-width: 760px) {
-
-	.mwai-chat {
-
-		&.mwai-window {
-			width: calc(100% - 40px);
-			z-index: 9999999999;
-		}
-
-		.mwai-reply {
-			flex-direction: column;
-		}
-
-		.mwai-input {
-			flex-direction: column;
-		}
-	}
-}
