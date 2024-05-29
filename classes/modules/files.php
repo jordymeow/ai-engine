@@ -111,12 +111,8 @@ class Meow_MWAI_Modules_Files {
   }
 
   public function is_image( $refId ) {
-    $path = $this->get_path( $refId );
-    if ( $path ) {
-      $type = exif_imagetype( $path );
-      return $type !== false;
-    }
-    return false;
+    $info = $this->get_info( $refId );
+    return $info['type'] === 'image';
   }
 
   public function get_mime_type( $refId ) {
@@ -225,6 +221,9 @@ class Meow_MWAI_Modules_Files {
         throw new Exception( 'File ID (or URL) is required.' );
       }
     }
+    if ( empty( $fileInfo['type'] ) ) {
+      $fileInfo['type'] = Meow_MWAI_Core::is_image( $fileInfo['url'] ) ? 'image' : 'file';
+    }
     $success = $this->wpdb->insert( $this->table_files, [
       'refId' => $fileInfo['refId'],
       'envId' => empty( $fileInfo['envId'] ) ? null : $fileInfo['envId'],
@@ -273,13 +272,6 @@ class Meow_MWAI_Modules_Files {
     $target = empty( $target ) ? $this->core->get_option( 'image_local_upload' ) : $target;
     $expiry = empty( $expiry ) ? $this->core->get_option( 'image_expires' ) : $expiry;
 
-    // if ( $purpose === 'assistant-in' || $purpose === 'assistant-out' ) {
-    //   // If it's an upload for an assistant, it's better to avoid having the file in the Media Library
-    //   // (and therefore, to only have it in the uploads folder) and to have it to never expire.
-    //   $target = 'uploads';
-    //   $expiry = null;
-    // }
-
     $expires = ( $expiry === 'never' || empty( $expiry ) ) ? null : date( 'Y-m-d H:i:s', time() + intval( $expiry ) );
     $refId = null;
     $url = null;
@@ -309,7 +301,7 @@ class Meow_MWAI_Modules_Files {
         'refId' => $refId,
         'envId' => $envId,
         'purpose' => $purpose,
-        'type' => 'image',
+        'type' => null,
         'status' => 'uploaded',
         'created' => $now,
         'updated' => $now,
@@ -368,7 +360,11 @@ class Meow_MWAI_Modules_Files {
     }
   }
 
-  
+  public function update_purpose( $fileId, $purpose ) {
+    if ( $this->check_db() ) {
+      $this->wpdb->update( $this->table_files, [ 'purpose' => $purpose ], [ 'id' => $fileId ] );
+    }
+  }
 
   public function update_envId( $fileId, $envId ) {
     if ( $this->check_db() ) {

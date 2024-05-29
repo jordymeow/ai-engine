@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.3.6
 
 import React, { useRef, useState, useImperativeHandle } from 'react';
 import TextAreaAutosize from 'react-textarea-autosize';
@@ -13,11 +13,10 @@ const ChatbotInput = React.forwardRef((props, ref) => {
     speechRecognitionAvailable, speechRecognition, fileSearch, 
     imageUpload, uploadedFile, composing, setComposing 
   } = props;
-  
   const [draggingType, setDraggingType] = useState(false);
-
   const inputRef = useRef();
   const fileSearchRef = useRef();
+  const uploadEnabled = imageUpload || fileSearch;  
 
   useImperativeHandle(ref, () => ({
     focusInput: () => { inputRef.current?.focus();},
@@ -52,7 +51,7 @@ const ChatbotInput = React.forwardRef((props, ref) => {
       onDragEnter={(event) => handleDrag(event, true)}
       onDragLeave={(event) => handleDrag(event, false)}
       onDragOver={(event) => handleDrag(event, true)}>
-      {(imageUpload || fileSearch) && 
+      {uploadEnabled && 
         <ChatUpload 
           className={modCss('mwai-file-upload', { 
             'mwai-enabled': uploadedFile?.uploadedId,

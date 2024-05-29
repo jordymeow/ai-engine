@@ -89,12 +89,17 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       $mime = $query->attachedFile->get_mimeType();
       // Claude only supports upload by data (base64), not by URL.
       $data = $query->attachedFile->get_base64();
+      $message = $query->get_message();
+      if ( empty( $message ) ) {
+        // Claude doesn't support messages with only images, so we add a text message.
+        $message = "I uploaded an image. Do not consider this message as part of the conversation.";
+      }
       $messages[] = [ 
         'role' => 'user',
         'content' => [
           [
             "type" => "text",
-            "text" => $query->get_message()
+            "text" => $message
           ],
           [
             "type" => "image",

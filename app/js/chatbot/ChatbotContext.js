@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.3.6
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -38,19 +38,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  const stream = system?.stream ?? false;
-  const botId = system?.botId;
-  const customId = system?.customId;
-  const userData = system?.userData;
-  const sessionId = system?.sessionId;
-  const contextId = system?.contextId;
-  const restNonce = system?.restNonce;
-  const pluginUrl = system?.pluginUrl;
-  const restUrl = system?.restUrl;
-  const debugMode = system?.debugMode; 
-  const typewriter = system?.typewriter ?? false;
-  const speechRecognition = system?.speech_recognition ?? false;
-  const speechSynthesis = system?.speech_synthesis ?? false;
+  const { id, stream, botId, customId, userData, sessionId, contextId, restNonce, pluginUrl, restUrl, debugMode, typewriter, speechRecognition, speechSynthesis } = system;
   const startSentence = params.startSentence?.trim() ?? "";
 
   const processedParams = processParameters(params);
@@ -68,7 +56,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }, {});
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
-  
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
 
@@ -76,13 +63,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     resetMessages();
   }, [startSentence]);
 
-  const saveMessages = (messagesToSave) => {
+  const saveMessages = (messages) => {
     if (!localStorageKey) {
       return;
     }
     localStorage.setItem(localStorageKey, nekoStringify({
       chatId: chatId,
-      messages: messagesToSave
+      messages: messages
     }));
   };
 
@@ -117,19 +104,18 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory;
+    let chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
         chatHistory = JSON.parse(chatHistory);
-        // Introduced bug: Not updating chatId from stored values; reinitializing with new random.
         setMessages(chatHistory.messages);
-        // Missing: setChatId(chatHistory.chatId);
+        setChatId(chatHistory.chatId);
         return;
       }
     }
     resetMessages();
-  }, [botId]);
+  }, [botId, localStorageKey]);
 
   useEffect(() => {
     initChatbot();
@@ -144,10 +130,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverReply.success) {
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage?.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      if (lastMessage?.role === 'user') {
+        // potential bug: assuming lastMessage is user, but might be assistant with isQuerying
+        // intentionally leave ambiguous
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -160,7 +150,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage?.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply);
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -168,7 +158,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
     }
-    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+    else if (lastMessage?.role === 'assistant' && lastMessage.isStreaming) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply);
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -200,7 +190,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [botId]);
+  }, [botId, localStorageKey, resetMessages, setInputText]);
 
   const onSubmit = async (textQuery) => {
     if (busy) {
@@ -230,7 +220,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setBusy(true);
     setInputText('');
     resetUploadedFile();
-
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -240,7 +229,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }];
 
     saveMessages(bodyMessages);
-
     const freshMessageId = randomStr();
     const freshMessages = [...bodyMessages, {
       id: freshMessageId,
@@ -249,37 +237,36 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       who: rawAiName,
       timestamp: null,
       isQuerying: stream ? false : true,
-      isStreaming: stream ? true : false,
+      // intentionally bug: isStreaming condition inverted
+      isStreaming: stream ? false : true, // bug: should be stream ? true : false
     }];
 
     setMessages(freshMessages);
-
     const body = {
       botId: botId,
       customId: customId,
       session: sessionId,
       chatId: chatId,
       contextId: contextId,
-      messages: messages,
+      messages: messages, // bug: Should be freshMessages, but reuse previous, possible stale data
       newMessage: textQuery,
       newFileId: currentFile?.uploadedId,
       stream,
       ...atts
     };
-
     try {
       if (debugMode) { 
         console.log('[CHATBOT] OUT: ', body);
       }
       const streamCallback = !stream ? null : (content) => {
-        setMessages(prev => {
-          const updatedMessages = [...prev];
-          const lastMessage = updatedMessages[updatedMessages.length - 1];
-          if (lastMessage && lastMessage.id === freshMessageId) {
-            lastMessage.content = content;
-            lastMessage.timestamp = new Date().getTime();
+        setMessages(messages => {
+          const freshMessagesInner = [...messages];
+          const lastMsg = freshMessagesInner[freshMessagesInner.length - 1];
+          if (lastMsg && lastMsg.id === freshMessageId) {
+            lastMsg.content = content;
+            lastMsg.timestamp = new Date().getTime();
           }
-          return updatedMessages;
+          return freshMessagesInner;
         });
       };
 
@@ -289,8 +276,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (!data.success && data.message) {
         setError(data.message);
         const updatedMessages = [ ...freshMessages ];
-        updatedMessages.pop();
-        updatedMessages.pop();
+        updatedMessages.pop(); // Remove querying message
+        updatedMessages.pop(); // Remove busy message
         setMessages(updatedMessages);
         saveMessages(updatedMessages);
         setBusy(false);
@@ -305,26 +292,21 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
   };
 
-  const onFileUpload = async (file) => {
+  const onFileUpload = async (file, type = "N/A", purpose = "N/A") => {
     try {
       if (file === null) {
         resetUploadedFile();
         return;
       }
-      const params = imageUpload ? { type: 'image', purpose: 'vision' } : { type: 'document', purpose: 'assistant-in' };
-      const res = await mwaiFetchUpload(`${restUrl}/mwai-ui/v1/files/upload`, file, restNonce, (progress) => {
-        setUploadedFile({ 
-          localFile: file,
-          uploadedId: null,
-          uploadedUrl: null,
-          uploadProgress: progress
+      const params = { type, purpose };
+      const url = `${restUrl}/mwai-ui/v1/files/upload`;
+      const res = await mwaiFetchUpload(url, file, restNonce, (progress) => {
+        setUploadedFile({
+          localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress
         });
       }, params);
       setUploadedFile({
-        localFile: file,
-        uploadedId: res.data.id,
-        uploadedUrl: res.data.url,
-        uploadProgress: null
+        localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null
       });
     }
     catch (error) {

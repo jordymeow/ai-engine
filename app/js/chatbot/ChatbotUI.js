@@ -1,5 +1,5 @@
-// Previous: 2.2.3
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.6
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import Markdown from 'markdown-to-jsx';
@@ -40,8 +40,9 @@ const ChatbotUI = (props) => {
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
     setInputText((prevInputText) => prevInputText + transcript);
   });
-
   const isFileUploading = !!uploadedFile?.uploadProgress;
+  const hasFileUploaded = !!uploadedFile?.uploadedId;
+  const clearMode = !hasFileUploaded && inputText.length < 1 && messages?.length > 1;
 
   const refState = useRef(state);
   useEffect(() => {
@@ -121,7 +122,7 @@ const ChatbotUI = (props) => {
   }, [busy, startChrono, stopChrono, isMobile]);
 
   useEffect(() => {
-    if (open && !isMobile) {
+    if (!isMobile && open) {
       chatbotInputRef.current.focusInput();
     }
     conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
@@ -135,7 +136,8 @@ const ChatbotUI = (props) => {
     hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
     if (forcedText) {
       onSubmit(forcedText);
-    } else if (inputText.length > 0) {
+    }
+    else if (hasFileUploaded || inputText.length > 0) {
       onSubmit(inputText);
     }
   }, [inputText, onSubmit]);
@@ -149,11 +151,9 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
-  const clearMode = inputText.length > 1 && messages?.length > 2;
-
   const onTypeText = (text) => {
     if (isListening) {
-      setIsListening(true);
+      setIsListening(false);
     }
     if (error) {
       resetError();
@@ -165,7 +165,7 @@ const ChatbotUI = (props) => {
     if (error) {
       resetError();
     }
-    // No await here intentionally to simulate potential race
+    // BUG: Missing await here causes race condition; uploadedFile might not be set properly
     onFileUpload(file);
   };
 
@@ -234,8 +234,9 @@ const ChatbotUI = (props) => {
               }
               if (clearMode) {
                 onClear();
-              } else {
-                onSubmitAction(''); // intentionally passing empty string, may cause unexpected behavior
+              }
+              else {
+                onSubmitAction();
               }
             }}>
               <span>{clearMode ? textClear : textSend}</span>

@@ -62,17 +62,17 @@ class Meow_MWAI_Modules_Chatbot {
 		) );
 	}
 
-	public function basics_security_check( $botId, $customId, $newMessage ) {
-		if ( empty( $newMessage ) ) {
-			$this->core->log( "⚠️ The query was rejected - message was empty.");
-			return false;
-		}
+	public function basics_security_check( $botId, $customId, $newMessage, $newFileId ) {
 		if ( !$botId && !$customId ) {
 			$this->core->log( "⚠️ The query was rejected - no botId nor id was specified.");
 			return false;
 		}
 
-		$length = strlen( $newMessage );
+		if ( $newFileId ) {
+			return true;
+		}
+
+		$length = strlen( empty( $newMessage ) ? "" : $newMessage );
 		if ( $length < 1 || $length > ( 4096 * 16 ) ) {
 			$this->core->log( "⚠️ The query was rejected - message was too short or too long.");
 			return false;
@@ -88,7 +88,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$newMessage = trim( $params['newMessage'] ?? '' );
 		$newFileId = $params['newFileId'] ?? null;
 
-		if ( !$this->basics_security_check( $botId, $customId, $newMessage )) {
+		if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId )) {
 			return new WP_REST_Response( [ 
 				'success' => false, 
 				'message' => apply_filters( 'mwai_ai_exception', 'Sorry, your query has been rejected.' )
@@ -226,6 +226,7 @@ class Meow_MWAI_Modules_Chatbot {
 						$internalFileId = $this->core->files->get_id_from_refId( $newFileId );
         		$this->core->files->update_refId( $internalFileId, $openAiRefId );
 						$this->core->files->update_envId( $internalFileId, $query->envId );
+						$this->core->files->update_purpose( $internalFileId, 'assistant-in' );
 						$this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
 						$this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
 						$newFileId = $openAiRefId;
@@ -241,6 +242,7 @@ class Meow_MWAI_Modules_Chatbot {
 						$query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
 						$fileId = $this->core->files->get_id_from_refId( $newFileId );
 						$this->core->files->update_envId( $fileId, $query->envId );
+						$this->core->files->update_purpose( $fileId, 'vision' );
 						$this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
 						$this->core->files->add_metadata( $fileId, 'query_session', $query->session );
 					}

@@ -245,11 +245,20 @@ class Meow_MWAI_Core
 	#endregion
 
  	#region Image-Related Helpers
+	static function is_image( $file ) {
+		$mimeType = Meow_MWAI_Core::get_mime_type( $file );
+		if ( strpos( $mimeType, 'image' ) !== false ) {
+			return true;
+		}
+		return false;
+	}
+
 	static function get_mime_type( $file ) {
 		$mimeType = null;
 
 		// Let's try to use mime_content_type if the function exists
-		if ( function_exists( 'mime_content_type' ) ) {
+		$isUrl = filter_var( $file, FILTER_VALIDATE_URL );
+		if ( !$isUrl && function_exists( 'mime_content_type' ) ) {
 			$mimeType = mime_content_type( $file );
 		}
 

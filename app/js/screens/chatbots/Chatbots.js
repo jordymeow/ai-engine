@@ -1,5 +1,5 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.6
 
 const { useMemo, useEffect, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -51,17 +51,19 @@ const Chatbots = (props) => {
 
   const defaultChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots.find(chat => chat.botId === 'default');
+      const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
       return chatbot;
     }
+    return null;
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots.find(chat => chat.botId === currentBotId);
+      const chatbot = chatbots.find(chatbot => chatbot.botId === currentBotId);
       setCurrentChatbot(chatbot?.botId);
       return chatbot;
     }
+    return null;
   }, [chatbots, currentBotId]);
 
   const currentTheme = useMemo(() => {
@@ -69,34 +71,42 @@ const Chatbots = (props) => {
       const chatTheme = themes.find(theme => theme.themeId === currentChatbot?.themeId);
       return chatTheme;
     }
-    return themes.find(theme => theme.themeId === 'chatgpt');
-  }, [currentChatbot, themes, chatbots]);
+    if (themes) {
+      return themes.find(theme => theme.themeId === 'chatgpt');
+    }
+    return null;
+  }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
+
     if (id === 'botId' && value === 'default') {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
+
     if (id === 'botId' && value === '') {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if (id === 'botId' && chatbots?.find(x => x.botId === value)) {
+
+    if (id === 'botId' && chatbots && chatbots.some(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
+
     if (id === 'botId' && value !== currentChatbot[id]) {
       setCurrentBotId(value);
     }
+
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
-    let newChatbots = [...chatbots];
+    let newChatbots = chatbots ? [...chatbots] : [];
     if (currentChatbot) {
       const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
       if (botIndex !== -1) {
         newChatbots[botIndex] = newParams;
-        newChatbots = await updateChatbots(newChatbots);
-        queryClient.setQueryData(['chatbots'], newChatbots);
+        const updatedChatbots = await updateChatbots(newChatbots);
+        queryClient.setQueryData(['chatbots'], updatedChatbots);
       }
     }
     setBusyAction(false);
@@ -120,35 +130,41 @@ const Chatbots = (props) => {
       name: newName,
     };
     delete newChatbot.functions;
-    const newChatbots = await updateChatbots([...chatbots, newChatbot]);
+    const newChatbots = await updateChatbots([...(chatbots || []), newChatbot]);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
   };
 
   const deleteCurrentChatbot = async () => {
     setBusyAction(true);
-    let newChatbots = [...chatbots.filter(x => x.botId !== currentChatbot.botId)];
+    let filteredChatbots = chatbots ? [...chatbots].filter(x => x.botId !== currentChatbot.botId) : [];
     setCurrentBotId('default');
-    newChatbots = await updateChatbots(newChatbots);
-    queryClient.setQueryData(['chatbots'], newChatbots);
+    const updatedChatbots = await updateChatbots(filteredChatbots);
+    queryClient.setQueryData(['chatbots'], updatedChatbots);
     setBusyAction(false);
   };
 
   const resetCurrentChatbot = async () => {
     setBusyAction(true);
-    let newChatbots = [...chatbots];
+    if (!chatbots) {
+      setBusyAction(false);
+      return;
+    }
+    const newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
-    newChatbots = await updateChatbots(newChatbots);
-    queryClient.setQueryData(['chatbots'], newChatbots);
+    if (botIndex !== -1) {
+      newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    }
+    const updatedChatbots = await updateChatbots(newChatbots);
+    queryClient.setQueryData(['chatbots'], updatedChatbots);
     setBusyAction(false);
   };
 
   const duplicateCurrentChatbot = async () => {
-    addNewChatbot(currentChatbot);
+    await addNewChatbot(currentChatbot);
   };
 
-  return (<>
+  return (
     <NekoWrapper>
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
         <NekoToolbar>
@@ -183,56 +199,79 @@ const Chatbots = (props) => {
         </NekoToolbar>
       </NekoColumn>
 
-      {(chatbotEditor || themeEditor) && <NekoColumn minimal style={{ margin: 10 }}>
-        {chatbotEditor && <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
-          action={<><NekoButton rounded className="primary-block" icon='plus' onClick={() => addNewChatbot()} /></>}>
-          {chatbots?.map(chatbotParams => <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
-            <ChatbotParams options={options} themes={themes} defaultChatbot={defaultChatbot}
-              deleteCurrentChatbot={deleteCurrentChatbot} resetCurrentChatbot={resetCurrentChatbot}
-              duplicateCurrentChatbot={duplicateCurrentChatbot}
-              shortcodeParams={chatbotParams} updateShortcodeParams={updateChatbotParams}
-            />
-          </NekoTab>)}
-        </NekoTabs>}
+      {(chatbotEditor || themeEditor) && (
+        <NekoColumn minimal style={{ margin: 10 }}>
+          {chatbotEditor && (
+            <NekoTabs inversed onChange={onChangeTab} currentTab={currentBotId}
+              action={<>
+                <NekoButton rounded className="primary-block" icon='plus' onClick={() => addNewChatbot()} />
+              </>}
+            >
+              {chatbots?.map(chatbotParams => (
+                <NekoTab key={chatbotParams.botId} title={chatbotParams.name} busy={busyAction}>
+                  <ChatbotParams 
+                    options={options} themes={themes} defaultChatbot={defaultChatbot}
+                    deleteCurrentChatbot={deleteCurrentChatbot}
+                    resetCurrentChatbot={resetCurrentChatbot}
+                    duplicateCurrentChatbot={duplicateCurrentChatbot}
+                    shortcodeParams={chatbotParams}
+                    updateShortcodeParams={updateChatbotParams}
+                  />
+                </NekoTab>
+              ))}
+            </NekoTabs>
+          )}
 
-        {chatbotEditor && themeEditor && <NekoSpacer large />}
-    
-        {themeEditor && <Themes themes={themes}
-          options={options} updateOption={updateOption}
-          currentTheme={currentTheme}
-          onSwitchTheme={onSwitchTheme}
-        />}
-      </NekoColumn>}
-      
-      {chatbotPreview && <NekoColumn minimal>
-        <small style={{ marginLeft: 15, marginBottom: -20 }}>
-          Chatbot: <b>{currentChatbot?.name}</b> - Theme: <b>{currentTheme?.name}</b>
-        </small>
-        <div style={{ position: 'relative', margin: '5px 10px 10px 10px', minHeight: 480, borderRadius: 5,
-          padding: 10, border: '2px dashed rgb(0 0 0 / 20%)', background: 'rgb(0 0 0 / 5%)' }}>
-          {!!currentChatbot && <ChatbotSystem
-            system={{
-              botId: currentChatbot.botId,
-              userData: userData,
-              sessionId: session,
-              restNonce: restNonce,
-              pluginUrl: pluginUrl,
-              restUrl: restUrl,
-              stream: stream,
-              debugMode: options?.debug_mode,
-              typewriter: options?.shortcode_chat_typewriter,
-              speech_recognition: options?.shortcode_chat_speech_recognition,
-              speech_synthesis: options?.shortcode_chat_speech_synthesis,
-            }}
-            params={currentChatbot}
-            theme={currentTheme}
-            style={(currentChatbot.window || currentChatbot.fullscreen) ? { position: 'absolute' } : {}}
-          />}
-        </div>
-        <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
-      </NekoColumn>}
+          {chatbotEditor && themeEditor && <NekoSpacer large />}
+          
+          {themeEditor && (
+            <Themes
+              themes={themes}
+              options={options}
+              updateOption={updateOption}
+              currentTheme={currentTheme}
+              onSwitchTheme={onSwitchTheme}
+            />
+          )}
+        </NekoColumn>
+      )}
+
+      {chatbotPreview && (
+        <NekoColumn minimal style={{ maxWidth: '50%' }}>
+          <small style={{ marginLeft: 15, marginBottom: -20 }}>
+            Chatbot: <b>{currentChatbot?.name}</b> - Theme: <b>{currentTheme?.name}</b>
+          </small>
+          <div style={{
+            position: 'relative', margin: '5px 10px 10px 10px', minHeight: 480,
+            borderRadius: 5, padding: 10, border: '2px dashed rgb(0 0 0 / 20%)',
+            background: 'rgb(0 0 0 / 5%)'
+          }}>
+            {currentChatbot && (
+              <ChatbotSystem
+                system={{
+                  botId: currentChatbot.botId,
+                  userData: userData,
+                  sessionId: session,
+                  restNonce: restNonce,
+                  pluginUrl: pluginUrl,
+                  restUrl: restUrl,
+                  stream: stream,
+                  debugMode: options?.debug_mode,
+                  typewriter: options?.shortcode_chat_typewriter,
+                  speech_recognition: options?.shortcode_chat_speech_recognition,
+                  speech_synthesis: options?.shortcode_chat_speech_synthesis,
+                }}
+                params={currentChatbot}
+                theme={currentTheme}
+                style={(currentChatbot.window || currentChatbot.fullscreen) ? { position: 'absolute' } : {}}
+              />
+            )}
+          </div>
+          <div style={{ marginLeft: 10, fontSize: 11, lineHeight: '140%', opacity: 0.5 }}>This is the actual chatbot, but there might be some differences when run on your front-end, depending on your theme and the other plugins you use.</div>
+        </NekoColumn>
+      )}
     </NekoWrapper>
-  </>);
+  );
 };
 
 export default Chatbots;
