@@ -1,5 +1,5 @@
-// Previous: 1.9.92
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.3.7
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -29,13 +29,13 @@ const UsageCosts = (calculatePrice) => {
 
   const jsxUsageCosts = useMemo(() => {
 
-    let sentence = toHTML(i18n.COMMON.USAGE_COSTS_HELP);
+    let sentence = toHTML(i18n.COMMON.USAGE_HELP);
     if (!isRegistered) {
-      sentence = <>{sentence} {toHTML(i18n.COMMON.USAGE_COSTS_PRO_HELP)}</>;
+      sentence = <>{sentence} {toHTML(i18n.COMMON.USAGE_PRO_HELP)}</>;
     }
 
     return (<StyledSidebar>
-      <h3>{i18n.COMMON.USAGE_COSTS}</h3>
+      <h3>{i18n.COMMON.USAGE}</h3>
       <div>Session: <span style={{ float: 'right' }}>${sessionCost.toFixed(4)}</span></div>
       <div>Last Request: <span style={{ float: 'right' }}>${lastCost.toFixed(4)}</span></div>
       <NekoSpacer height={30} />

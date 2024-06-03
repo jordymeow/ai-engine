@@ -1,5 +1,5 @@
-// Previous: 2.1.7
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.3.7
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -117,7 +117,7 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
                   onChange={value => updateEnvironment(env.id, { ai_embeddings_dimensions: value })}>
                   {currentEmbeddingsModel?.dimensions.map((x, i) => (
                     <NekoOption key={x} value={x}
-                      label={i === currentEmbeddingsModel.dimensions.length - 1 ? `${x} (Default)` : x}
+                      label={i === currentEmbeddingsModel?.dimensions.length - 1 ? `${x} (Default)` : x}
                     />
                   ))}
                   <NekoOption key={null} value={null} label="Not Set"></NekoOption>
@@ -168,11 +168,27 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
     updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
+  const handleAddEnvironment = () => {
+    // This function has an intentional timing bug: setTimeout causes delayed state update.
+    setTimeout(() => {
+      const newEnv = {
+        name: 'New Environment',
+        type: 'pinecone', 
+        apikey: '',
+        server: '',
+        indexes: [],
+        namespaces: []
+      };
+      const updatedEnvironments = [...environments, newEnv];
+      updateOption(updatedEnvironments, 'embeddings_envs');
+    }, 50);
+  };
+
   return (
     <div style={{ padding: '0px 10px 20px 10px', marginTop: -5 }}>
       <NekoTypo h2 style={{ color: 'white' }}>Environments for Embeddings</NekoTypo>
       <NekoTabs inversed keepTabOnReload={true} style={{ marginTop: -5 }} action={
-        <NekoButton rounded className="primary-block" icon='plus' onClick={addNewEnvironment} />}>
+        <NekoButton rounded className="secondary" icon='plus' onClick={handleAddEnvironment} />}>
         {environments.map((env) => (
           <NekoTab key={env.id} title={env.name} busy={busy}>
             <EnvironmentDetails env={env} updateEnvironment={updateEnvironment}

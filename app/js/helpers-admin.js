@@ -1,5 +1,5 @@
-// Previous: 2.2.4
-// Current: 2.2.90
+// Previous: 2.2.90
+// Current: 2.3.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -84,7 +84,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -94,10 +94,12 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
 
-    const detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
+    const htmlLang = document.querySelector('html');
+    const langAttr = htmlLang ? htmlLang.lang : null;
+    const detectedLanguage = (langAttr || navigator.language || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -113,9 +115,9 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom]);
 
-  const onChange = (value, field) => {
+  const onChange = (value) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
@@ -141,7 +143,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, languages, isCustom, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -238,7 +240,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const allModels = useMemo(() => {
     let models = [];
     if (env?.fake === true) {
-      models = [ ...options.openai_models ?? [], ...options.openrouter_models ?? [] ];
+      models = [ ...options.openai_models ?? [], ...options.google_models ?? [], ...options.anthropic_models ?? [], ...options.openrouter_models ?? [] ];
     }
     else if (env?.type === 'openai') {
       models = options?.openai_models ?? [];
@@ -284,15 +286,11 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     });
 
     if (fineTunes.length) {
-
-      // Add the finetuned models
       models = [ ...models, ...fineTunes.map(x => {
-
         let mode = 'completion';
         const splitted = x.model.split(':');
         let family = splitted[0];
 
-        // Handle new finetuned models
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
@@ -325,7 +323,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
-
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
@@ -355,13 +352,23 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   }, [models]);
 
   const getModel = (model) => {
-    if (model === 'gpt-3.5-turbo-0301' || model === 'gpt-35-turbo' || model === 'gpt-3.5-turbo-0613') {
+    if (!model) {
+      return null;
+    }
+    if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
     }
-    else if (model === 'gpt-4-0314' || model === 'gpt-4-0613') {
+    else if (model.startsWith('gpt-4-')) {
       model = 'gpt-4';
     }
-    return allModels.find(x => x.model === model);
+    else if (model.startsWith('gpt-4o-')) {
+      model = 'gpt-4o';
+    }
+    const modelObj = allModels.find(x => x.model === model);
+    if (!modelObj) {
+      console.warn(`Model ${model} not found.`, { allModels, options });
+    }
+    return modelObj;
   };
 
   const isFineTunedModel = (model) => {
@@ -369,8 +376,14 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return modelObj?.finetuned || false;
   };
 
-  const getModelName = (model) => {
+  const getModelName = (model, raw = false) => {
     const modelObj = getModel(model);
+    if (!modelObj) {
+      return model;
+    }
+    if (raw && modelObj) {
+      return modelObj.rawName;
+    }
     return modelObj?.name || modelObj?.model || model;
   };
 

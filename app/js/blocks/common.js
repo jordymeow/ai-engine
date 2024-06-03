@@ -1,7 +1,7 @@
-// Previous: 1.4.9
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 2.3.7
 
-import { NekoTheme, useClasses } from '@neko-ui';
+import { useClasses } from '@neko-ui';
 import Styled from "styled-components";
 import AiIcon from '../styles/AiIcon';
 
@@ -83,7 +83,7 @@ const BlockContainer = Styled.div`
 	.is-selected {
 
 		&:after {
-			border: 1px solid ${NekoTheme.blue};
+			border: 1px solid var(--neko-primary-color);
 		}
 
 		& > .mwai-block-container:not(.mwai-container) {
@@ -99,26 +99,26 @@ const BlockContainer = Styled.div`
 
 const AiBlockContainer = ({ children, type = "", title = "", hint = "", ...rest }) => {
   const classes = useClasses('mwai-block-container', 'mwai-' + type);
-  const [isOpen, setIsOpen] = React.useState(false);
-  
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
   React.useEffect(() => {
-    if (type === "expandable") {
-      setIsOpen(true);
+    if (type === 'chat') {
+      setIsExpanded(true);
     }
   }, [type]);
-
-  const toggleOpen = () => {
-    setIsOpen(prev => !prev);
-  };
-
   return (
-    <BlockContainer className={`${classes} ${isOpen ? 'mwai-container' : ''}`} {...rest} onClick={toggleOpen}>
-      <div className="mwai-title-container">
+    <BlockContainer className={classes} {...rest}>
+      <div className="mwai-title-container" onClick={toggleExpand}>
         <AiIcon icon="ai" style={{ width: 20, height: 20 }} />
         <div>{title}</div>
         <div className="mwai-hint">{hint}</div>
       </div>
-      <div className="mwai-block-container-content" style={{ display: isOpen ? 'block' : 'none' }}>
+      <div
+        className="mwai-block-container-content"
+        style={{ display: isExpanded ? 'block' : 'none' }}
+      >
         {children}
       </div>
     </BlockContainer>

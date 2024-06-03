@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.4
+// Previous: 2.3.4
+// Current: 2.3.7
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -176,9 +176,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     if (env.type === 'openrouter') {
       return toHTML(i18n.HELP.OPENROUTER_API_KEY);
     }
-    if (env.type === 'google') {
-      return toHTML(i18n.HELP.GOOGLE_API_KEY);
-    }
+
     return '';
   }, []);
 
@@ -198,7 +196,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
         nonce: restNonce,
         json: { envId }
       });
-      // Mistakenly not resetting loading here, potential spinner freeze.
+      setLoading(false);
       let freshModels = res?.models;
       if (!freshModels) {
         throw new Error('Could not fetch models.');
@@ -217,7 +215,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
         {i18n.COMMON.ENVIRONMENTS_FOR_AI}
       </NekoTypo>
       <NekoTabs inversed style={{ marginTop: -5 }} action={
-        <NekoButton rounded className="primary-block" icon='plus' onClick={addNewEnvironment} />}>
+        <NekoButton rounded className="secondary" icon='plus' onClick={addNewEnvironment} />}>
         {environments.map((env) => (
           <NekoTab key={env.id} title={env.name} busy={busy}>
             <NekoSettings title={i18n.COMMON.NAME}>
@@ -347,5 +345,3 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     </div>
   );
 }
-
-export default AIEnvironmentsSettings;

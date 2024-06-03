@@ -1,9 +1,11 @@
-// Previous: 2.0.5
-// Current: 2.1.1
+// Previous: 2.1.1
+// Current: 2.3.7
 
+// React & Vendor Libs
 const { useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
 
 import { themes as initThemes } from '@app/settings';
@@ -79,18 +81,17 @@ const Themes = (props) => {
       type: newThemes[themeIndex].type,
       name: newThemes[themeIndex].name,
       themeId: newThemes[themeIndex].themeId,
-      settings: [], 
+      settings: null,
       style: ""
     };
     await updateThemes(newThemes);
-    // Bug: missing queryClient.setQueryData call here causes cache inconsistency
     await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
   }
 
   return (<>
     <NekoTabs inversed onChange={onChangeTab} currentTab={currentTheme?.themeId}
-      action={<><NekoButton className="primary-block" icon='plus' onClick={addNewTheme} /></>}>
+      action={<><NekoButton className="secondary" icon='plus' onClick={addNewTheme} /></>}>
       {themes?.map(x => <NekoTab key={x.themeId} title={x.name} busy={busy}>
         <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} deleteTheme={deleteCurrentTheme} />
       </NekoTab>)}

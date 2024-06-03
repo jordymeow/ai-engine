@@ -1,6 +1,9 @@
 Releases of the Meow Commmon has to be carefully made, and version_compare
 should be used when big changes are made.
 
+= 4.1 (2024/06/02) =
+* Colors, and icon.
+
 = 3.9 (2024/04/25) =
 * is_beaver_builder()
 

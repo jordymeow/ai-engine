@@ -294,6 +294,15 @@ class Meow_MWAI_Modules_Discussions {
       $this->db_check = true;
     }
 
+    // LATER: REMOVE THIS AFTER SEPTEMBER 2024
+    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'extra'" );
+    if ( $this->db_check ) {
+      $column = $this->wpdb->get_row( "SHOW COLUMNS FROM $this->table_chats WHERE Field = 'extra'" );
+      if ( $column->Type === 'text' ) {
+        $this->wpdb->query( "ALTER TABLE $this->table_chats MODIFY COLUMN extra LONGTEXT" );
+      }
+    }
+
     return $this->db_check;
   }
 
@@ -304,7 +313,7 @@ class Meow_MWAI_Modules_Discussions {
       userId BIGINT(20) NULL,
       ip VARCHAR(64) NULL,
       messages TEXT NOT NULL NULL,
-      extra TEXT NOT NULL NULL,
+      extra LONGTEXT NOT NULL NULL,
       botId VARCHAR(64) NULL,
       chatId VARCHAR(64) NOT NULL,
       threadId VARCHAR(64) NULL,

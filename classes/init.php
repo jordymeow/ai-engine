@@ -9,7 +9,6 @@ if ( class_exists( 'MeowPro_MWAI_Core' ) && class_exists( 'Meow_MWAI_Core' ) ) {
 }
 
 spl_autoload_register(function ( $class ) {
-  $necessary = true;
   $file = null;
   if ( strpos( $class, 'Meow_MWAI' ) !== false ) {
     $file = MWAI_PATH . '/classes/' . str_replace( 'meow_mwai_', '', strtolower( $class ) ) . '.php';
@@ -30,25 +29,16 @@ spl_autoload_register(function ( $class ) {
     $file = MWAI_PATH . '/common/premium/' . str_replace( 'meowcommonpro_', '', strtolower( $class ) ) . '.php';
   }
   else if ( strpos( $class, 'MeowPro_MWAI_Addons' ) !== false ) {
-    $necessary = false;
     $file = MWAI_PATH . '/premium/addons/' . str_replace( 'meowpro_mwai_addons_', '', strtolower( $class ) ) . '.php';
   }
   else if ( strpos( $class, 'MeowPro_MWAI' ) !== false ) {
-    $necessary = false;
     $file = MWAI_PATH . '/premium/' . str_replace( 'meowpro_mwai_', '', strtolower( $class ) ) . '.php';
   }
-  if ( $file ) {
-    if ( !$necessary && !file_exists( $file ) ) {
-      return;
-    }
-    if ( !file_exists( $file ) ) {
-      return;
-    }
+  if ( $file && file_exists( $file ) ) {
     require( $file );
   }
 });
 
-//require_once( MWAI_PATH . '/classes/api.php');
 require_once( MWAI_PATH . '/common/helpers.php');
 
 global $mwai_core;

@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.6
+Stable tag: 2.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,14 +67,20 @@ Languages: English.
 
 == Changelog ==
 
+= 2.3.7 (2024/06/03) =
+* Add: New chart in the dashboard. I hope you'll like it!
+* Update: Longer conversation can now be kept in the DB.
+* Update: Sanitize Pinecone URL.
+* Update: Refreshed Neko UI.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
+* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.3.6 (2024/05/29) =
 * Update: Streamlined the way uploaded files are handled.
 * Add: Allow using Vision without the need of writing a query.
 * Fix: Handle better the way(s!) the links are displayed in the chatbot.
 * Update: Code cleanup and enhancements.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.3.5 (2024/05/24) =
 * Update: New icons and better upload states.
