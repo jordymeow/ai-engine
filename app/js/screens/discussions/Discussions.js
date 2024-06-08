@@ -1,5 +1,5 @@
-// Previous: 2.2.63
-// Current: 2.2.90
+// Previous: 2.2.90
+// Current: 2.3.8
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -128,7 +128,6 @@ const options = {
 
 const StyledMessage = ({ content }) => {
   const [ processedContent, setProcessedContent ] = useState(content || '');
-
   const checkImageURL = (url) => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -137,7 +136,6 @@ const StyledMessage = ({ content }) => {
       img.src = url;
     });
   };
-
   const cleanMessage = async (markdownContent) => {
     const regex = /!\[.*?\]\((.*?)\)/g;
     let newContent = markdownContent;
@@ -152,13 +150,11 @@ const StyledMessage = ({ content }) => {
     }
     setProcessedContent(newContent);
   };
-
   useEffect(() => {
     if (content) {
       cleanMessage(content);
     }
   }, [content]);
-
   return (
     <StyledMessageWrapper>
       <Markdown options={options}>{processedContent}</Markdown>
@@ -170,7 +166,6 @@ const Message = ({ message }) => {
   const embeddings = message?.extra?.embeddings ? message?.extra?.embeddings : (
     message?.extra?.embedding ? [message?.extra?.embedding] : []
   );
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
       <StyledContext>
@@ -258,16 +253,16 @@ const Discussions = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const messages = JSON.parse(x.messages);
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
       const formattedUpdated = tableDateTimeFormatter(x.updated);
       const user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
-      const userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
+      const userMessages = messages?.filter(y => y.role === 'user' || y.type === 'user');
       const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
       const lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
-      const chatbotName = chatbots.find(y => y.botId === x.botId)?.name;
+      const chatbotName = chatbots.find(y => y.botId === x.botId)?.name ?? 'Unknown';
       return {
         id: x.id,
         botId: <>
@@ -285,7 +280,7 @@ const Discussions = () => {
         updated: <div style={{ textAlign: 'right' }}>{formattedUpdated}</div>
       };
     });
-  }, [chatsData]);
+  }, [chatsData, chatbots]);
 
   const discussion = useMemo(() => {
     if (selectedIds?.length !== 1) { return null; }
@@ -322,7 +317,10 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
+      const selectedChatIds = [];
+      if (selectedChats) {
+        selectedChatIds.push(...selectedChats.map(x => x.chatId));
+      }
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -399,13 +397,19 @@ const Discussions = () => {
             }}
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
-            onSelectRow={id => { setSelectedIds([id]) }}
+            onSelectRow={id => { 
+              if (selectedIds.includes(id) && selectedIds.length === 1) {
+                setSelectedIds([]);
+                return;
+              }
+              setSelectedIds([id]);
+            }}
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>

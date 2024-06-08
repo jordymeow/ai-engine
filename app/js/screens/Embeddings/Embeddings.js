@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.3.8
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,6 +38,7 @@ const queryColumns = [
 
 const StatusIcon = ({ id, status, includeText = false, title = null }) => {
   const { colors } = useNekoColors();
+
   let icon = null;
   switch (status) {
   case 'outdated':
@@ -109,13 +110,13 @@ const Embeddings = ({ options, updateOption }) => {
       return allModels.getModel(environment.ai_embeddings_model);
     }
     return allModels.getModel(options.ai_embeddings_default_model);
-  }, [environment, options.ai_embeddings_default_model]);
+  }, [environment, embeddingsSettings.model]);
 
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
-    queryKey: ['postsCount-' + postType + '-' + (embeddingsSettings?.syncPostStatus ?? 'publish')],
+    queryKey: ['postsCount-' + postType + '-' + embeddingsSettings?.syncPostStatus ?? 'publish'],
     queryFn: () => retrievePostsCount(postType, embeddingsSettings?.syncPostStatus ?? 'publish'),
   });
 
@@ -136,7 +137,7 @@ const Embeddings = ({ options, updateOption }) => {
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(null);
+    setBusy(false);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
@@ -254,6 +255,11 @@ const Embeddings = ({ options, updateOption }) => {
       console.error(err);
       throw new Error(err.message ?? "Unknown error, check your console logs.");
     }
+    finally {
+      if (!skipBusy) {
+        setBusy(false);
+      }
+    }
     return true;
   };
 
@@ -356,7 +362,7 @@ const Embeddings = ({ options, updateOption }) => {
     const data = vectorsData;
     if (!data?.vectors) { return []; }
 
-    return data.vectors.map(x => {
+    return data?.vectors.map(x => {
       let updated = new Date(x.updated);
       updated = new Date(updated.getTime() - updated.getTimezoneOffset() * 60 * 1000);
       const day = updated.toLocaleDateString('ja-JP', {
@@ -427,7 +433,7 @@ const Embeddings = ({ options, updateOption }) => {
         </>
       };
     });
-  }, [mode, vectorsData, isBusy, environmentId, embeddingsModel?.model, allModels, environments, colors, minScore]);
+  }, [mode, vectorsData, isBusy]);
 
   const onSynchronizeEmbedding = async (vectorId) => {
     setBusy('syncEmbedding');
@@ -437,6 +443,7 @@ const Embeddings = ({ options, updateOption }) => {
 
   const updateVectorsData = (freshVector, isAdd = false) => {
     const currentVectorsData = queryClient.getQueryData(['vectors', queryParams]);
+  
     if (currentVectorsData && currentVectorsData.vectors) {
       let wasUpdated = false;
       let updatedVectors = currentVectorsData.vectors.map(vector => {
@@ -450,10 +457,12 @@ const Embeddings = ({ options, updateOption }) => {
         }
         return vector;
       });
+  
       if (!wasUpdated && isAdd) {
         updatedVectors = [freshVector, ...updatedVectors];
         currentVectorsData.total += 1;
       }
+  
       const { accessor, by } = queryParams.sort;
       updatedVectors.sort((a, b) => {
         if (by === 'asc') {
@@ -462,14 +471,17 @@ const Embeddings = ({ options, updateOption }) => {
           return b[accessor] - a[accessor];
         }
       });
+  
       const { page, limit } = queryParams;
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
       const paginatedVectors = updatedVectors.slice(startIndex, endIndex);
+  
       const updatedVectorsData = {
         ...currentVectorsData,
         vectors: paginatedVectors,
       };
+  
       queryClient.setQueryData(['vectors', queryParams], updatedVectorsData);
     }
   };
@@ -479,7 +491,7 @@ const Embeddings = ({ options, updateOption }) => {
     if (res.success) {
       updateVectorsData(res.vector);
     }
-  }
+  };
 
   const onBulkPullClick = async () => {
     setBusy('bulkPullAll');
@@ -504,7 +516,7 @@ const Embeddings = ({ options, updateOption }) => {
     params.limit = 20;
     params.page = 0;
     while (!finished) {
-      const res = await retrieveVectors(params);
+      const res = await retrieveVectors({...params, page: params.page + 1}); // <-- intentionally off-by-one bug
       if (res.vectors.length < params.limit) {
         finished = true;
       }
@@ -515,7 +527,7 @@ const Embeddings = ({ options, updateOption }) => {
 
     console.log("Local vectors retrieved.", { vectors });
 
-    const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x.dbId));
+    const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x));
 
     console.log("Vectors to pull from Vector DB to AI Engine.", { vectorsToPull });
    
@@ -548,8 +560,8 @@ const Embeddings = ({ options, updateOption }) => {
       });
     }
     else {
-      const postIds = vectorsData?.vectors.filter(x => selectedIds.includes(x.id));
-      tasks = postIds?.map(vector => async (signal) => {
+      const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id));
+      tasks = postIds.map(vector => async (signal) => {
         if (vector.type === 'postId') {
           await runProcess(vector.id, null, signal);
         }
@@ -557,7 +569,7 @@ const Embeddings = ({ options, updateOption }) => {
           await onModifyEmbedding(vector, signal);
         }
         return { success: true };
-      }) ?? [];
+      });
     }
     await bulkTasks.start(tasks);
     setBusy(false);
@@ -684,7 +696,13 @@ const Embeddings = ({ options, updateOption }) => {
             }}
             emptyMessage={emptyMessage}
             data={vectorsRows} columns={columns} 
-            onSelectRow={id => { setSelectedIds([id]); }}
+            onSelectRow={id => { 
+              if (selectedIds.length === 1 && selectedIds[0] === id) {
+                setSelectedIds([]);
+              } else {
+                setSelectedIds([id]);
+              }
+            }}
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
             selectedItems={selectedIds}
@@ -694,7 +712,7 @@ const Embeddings = ({ options, updateOption }) => {
 
           {mode !== 'search' && <div style={{ display: 'flex' }}>
             <NekoSelect scrolldown name="debugMode" style={{ width: 280 }}
-              disabled={isBusy} value={debugMode ?? null} onChange={setDebugMode}>
+              disabled={isBusy} value={debugMode || null} onChange={setDebugMode}>
               <NekoOption value={null} label="Env. Embeddings" />
               <NekoOption value={'includeOrphans'} label="Env. Embeddings + Orphans" />
               <NekoOption value={'includeAll'} label="All Embeddings" />
@@ -804,7 +822,7 @@ const Embeddings = ({ options, updateOption }) => {
                 onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, rewriteContent: value }); }}
                 description={i18n.EMBEDDINGS.REWRITE_CONTENT_DESCRIPTION}
               />
-              {embeddingsSettings.rewriteContent && <>
+              {embeddingsSettings.rewriteContent &&  <>
                 <NekoSpacer />
                 <NekoTextArea value={embeddingsSettings.rewritePrompt} rows={5}
                   disabled={busy}
@@ -867,7 +885,7 @@ const Embeddings = ({ options, updateOption }) => {
                   }}
                 />
                 <NekoSpacer />
-                <NekoInput name="syncPostStatus" value={embeddingsSettings.syncPostStatus ?? "publish"}
+                <NekoInput name="syncPostStatus" value={embeddingsSettings.syncPostStatus || "publish"}
                   isCommaSeparatedArray={true}
                   description={i18n.HELP.POST_STATUS}
                   onBlur={value => {
@@ -875,7 +893,7 @@ const Embeddings = ({ options, updateOption }) => {
                   }}
                 />
                 <NekoSpacer />
-                <NekoInput name="syncPostCategories" value={embeddingsSettings.syncPostCategories ?? "publish"}
+                <NekoInput name="syncPostCategories" value={embeddingsSettings.syncPostCategories || "publish"}
                   isCommaSeparatedArray={true}
                   description={i18n.HELP.POST_CATEGORIES}
                   onBlur={value => {

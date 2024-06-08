@@ -62,6 +62,12 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 				array( $this, 'ai_image_generator' ) );
 		}
 
+		// Addons
+		if ( $this->core->get_option( 'addons' ) ) {
+			add_submenu_page( 'meowapps-main-menu', 'Add-ons', '<div style="position: relative; top: -3px;">→ Add-ons</div>', 'manage_options', 'mwai_addons', 
+				array( $this, 'mwai_addons' ), array( $this, 'mwai_addons' ) );
+		}
+
 		// In the Admin Bar:
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_menu' ), 100 );
 	}
@@ -130,6 +136,23 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
 	public function ai_image_generator() {
 		echo '<div id="mwai-image-generator"></div>';
+	}
+
+	function mwai_addons() {
+		$addons = apply_filters( 'mwai_addons', [
+			[
+				'slug' => "mwai-notifications",
+				'name' => "Notifications",
+				'icon_url' => MeowCommon_Admin::$logo,
+				'description' => "Add-on for AI Engine that adds notifications.",
+				'install_url' => "https://meowapps.com/products/mwai-notifications/",
+				'settings_url' => null,
+				'enabled' => false,
+			]
+		] );
+		$encoded = json_encode( $addons );
+		$encoded_escaped = htmlspecialchars( $encoded, ENT_QUOTES, 'UTF-8' );
+		echo '<div id="mwai-addons" data-addons=\'' . $encoded_escaped . '\'></div>';
 	}
 
 	function post_row_actions( $actions, $post ) {

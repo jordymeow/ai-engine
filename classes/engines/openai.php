@@ -20,6 +20,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   protected $streamToolCalls = [];
   protected $streamLastMessage = null;
 
+  protected $streamInTokens = null;
+  protected $streamOutTokens = null;
+
   // Static
   private static $creating = false;
 
@@ -51,6 +54,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     $this->streamFunctionCall = null;
     $this->streamToolCalls = [];
     $this->streamLastMessage = null;
+    $this->streamInTokens = null;
+    $this->streamOutTokens = null;
     $this->inModel = null;
     $this->inId = null;
   }
@@ -175,6 +180,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         if ( $query->responseFormat === 'json' ) {
           $body['response_format'] = [ 'type' => 'json_object' ];
         }
+      }
+
+
+      // Usage Data (only for OpenAI)
+      // https://cookbook.openai.com/examples/how_to_stream_completions#4-how-to-get-token-usage-data-for-streamed-chat-completion-response
+      if ( !empty( $streamCallback ) ) {
+        $body['stream_options'] = [
+          'include_usage' => true,
+        ];
       }
   
       if ( !empty( $query->functions ) ) {
@@ -532,6 +546,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       }
     }
   
+    if ( !empty( $json['usage'] ) && isset( $json['usage']['prompt_tokens'] )
+      && isset( $json['usage']['completion_tokens'] ) ) {
+      $this->streamInTokens = $json['usage']['prompt_tokens'];
+      $this->streamOutTokens = $json['usage']['completion_tokens'];
+    }
+
     // If content is an array, let's try to convert it into a string. Normally, there would be a 'value' key.
     if ( is_array( $content ) ) {
       if ( isset( $content['value'] ) ) {
@@ -734,6 +754,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
         if ( !empty( $this->streamToolCalls ) ) {
           $message['tool_calls'] = $this->streamToolCalls;
+        }
+        if ( !is_null( $this->streamInTokens ) ) {
+          $returned_in_tokens = $this->streamInTokens;
+        }
+        if ( !is_null( $this->streamOutTokens ) ) {
+          $returned_out_tokens = $this->streamOutTokens;
         }
         $returned_choices = [ [ 'message' => $message ] ];
       }

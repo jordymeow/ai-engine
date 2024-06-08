@@ -1,17 +1,10 @@
-// Previous: 2.2.4
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.3.8
 
 import React, { useMemo, useState } from 'react';
 import { useModels } from '@app/helpers-admin';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale,
+  BarElement, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useNekoColors } from '@neko-ui';
 import {
@@ -22,7 +15,7 @@ import {
   NekoCollapsableCategory,
 } from '@neko-ui';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const UsageDetails = ({ month, usageData }) => {
   if (usageData[month].length === 0) {
@@ -38,7 +31,7 @@ const UsageDetails = ({ month, usageData }) => {
       <tbody>
         {usageData[month].map((data, index) => {
           const dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
-          const formattedUnits = data.units.toLocaleString();
+          const formattedUnits = (data.units * 100).toLocaleString(); // bug: scaling units unexpectedly
           return (
             <tr key={index}>
               <td style={{ paddingRight: 10 }}>{data.name === 'Unknown Model' ? `⚠️ ${data.rawName}` : data.name}</td>
@@ -111,7 +104,7 @@ const MonthlyUsage = ({ options }) => {
           };
         }
 
-        modelUsageMap[name].units += isImage ? outUnits : inUnits + outUnits;
+        modelUsageMap[name].units += (isImage ? outUnits : inUnits + outUnits);
         modelUsageMap[name].price += price;
       });
 
@@ -148,7 +141,6 @@ const MonthlyUsage = ({ options }) => {
         }
       });
 
-      // Include "Unknown Model" in the chart data
       const unknownModels = labels.map((month) => {
         const monthData = usageData[month]?.filter((data) => data.name === 'Unknown Model');
         return monthData.reduce((acc, curr) => acc + (metric === 'tokens' ? Math.max(curr.units, 1) : Math.max(curr.price, 0.01)), 0);
@@ -168,12 +160,12 @@ const MonthlyUsage = ({ options }) => {
         const monthData = usageData[month];
         monthData.forEach((data) => {
           const familyName = data.family;
-          if (familyName) { // Only group by family if the family is defined
+          if (familyName) {
             if (!familyData[familyName]) {
               familyData[familyName] = Array(labels.length).fill(0);
             }
             const value = metric === 'tokens'
-              ? Math.max(data.units, 1)
+              ? Math.max(data.units, 1) - 0.5 // bug: subtracting 0.5 causes cumulative errors
               : Math.max(data.price, 0.01);
             const monthIndex = labels.indexOf(month);
             familyData[familyName][monthIndex] += value;

@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.3.8
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -82,7 +82,6 @@ const useModClasses = (theme) => {
       }
       if (conditionalClasses) {
         Object.entries(conditionalClasses).forEach(([className, condition]) => {
-          if (!condition) return; 
           if (condition) { classNames.push(className); }
         });
       }
@@ -138,7 +137,7 @@ function useChrono() {
 
   function stopChrono() {
     clearInterval(intervalIdRef.current);
-    intervalIdRef.current = undefined;
+    intervalIdRef.current = null;
     setTimeElapsed(null);
   }
 
@@ -232,6 +231,7 @@ const useSpeechRecognition = (onResult) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      console.log('Speech recognition is available.');
       setSpeechRecognitionAvailable(true);
     }
   }, []);
@@ -244,9 +244,6 @@ const useSpeechRecognition = (onResult) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    let lastTranscript = '';
-
     recognition.interimResults = true;
     recognition.continuous = true;
 
@@ -255,24 +252,8 @@ const useSpeechRecognition = (onResult) => {
         .map(result => result[0])
         .map(result => result.transcript)
         .join('');
-
-      if (isAndroid) {
-        const diff = transcript.slice(lastTranscript.length);
-        if (diff) {
-          lastTranscript = transcript;
-          onResult(diff);
-        }
-      } else {
-        const finalResults = Array.from(event.results)
-          .filter(result => result.isFinal)
-          .map(result => result[0].transcript)
-          .join('');
-        const diff = finalResults.slice(lastTranscript.length);
-        if (diff) {
-          lastTranscript = finalResults;
-          onResult(diff);
-        }
-      }
+      
+      onResult(transcript);
     };
 
     if (isListening) {
@@ -289,8 +270,4 @@ const useSpeechRecognition = (onResult) => {
   }, [isListening, speechRecognitionAvailable]);
 
   return { isListening, setIsListening, speechRecognitionAvailable };
-};
-
-export { useModClasses, isURL, handlePlaceholders, useInterval,
-  useSpeechRecognition, Microphone, useChrono, formatUserName, formatAiName, processParameters
 };

@@ -3,7 +3,7 @@
 class Meow_MWAI_Modules_Discussions {
   private $wpdb = null;
   private $core = null;
-  private $table_chats = null;
+  public $table_chats = null;
   private $db_check = false;
   private $namespace_admin = 'mwai/v1';
   private $namespace_ui = 'mwai-ui/v1';
@@ -192,6 +192,7 @@ class Meow_MWAI_Modules_Discussions {
     $customId = isset( $params['customId'] ) ? $params['customId'] : null;
     $threadId = $query instanceof Meow_MWAI_Query_Assistant ? $query->threadId : null;
     $storeId = $query instanceof Meow_MWAI_Query_Assistant ? $query->storeId : null;
+    $now = date( 'Y-m-d H:i:s' );
 
     if ( !empty( $customId ) ) {
       $botId = $customId;
@@ -205,7 +206,11 @@ class Meow_MWAI_Modules_Discussions {
 
     //$chatId = hash( 'sha256', $userIp . $userId . $clientChatId );
     $this->check_db();
-    $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $chatId ) );
+    $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+      FROM $this->table_chats
+      WHERE chatId = %s", $chatId
+      )
+    );
     $messageExtra = [
       'embeddings' => isset( $extra['embeddings'] ) ? $extra['embeddings'] : null
     ];
@@ -232,7 +237,7 @@ class Meow_MWAI_Modules_Discussions {
       $this->wpdb->update( $this->table_chats, [ 
         'userId' => $userId,
         'messages' => $chat->messages,
-        'updated' => date( 'Y-m-d H:i:s' )
+        'updated' => $now
        ], [ 'id' => $chat->id ] );
     }
     else {
@@ -248,13 +253,35 @@ class Meow_MWAI_Modules_Discussions {
         'chatId' => $chatId,
         'threadId' => $threadId,
         'storeId' => $storeId,
-        'created' => date( 'Y-m-d H:i:s' ),
-        'updated' => date( 'Y-m-d H:i:s' )
+        'created' => $now,
+        'updated' => $now
       ];
       $this->wpdb->insert( $this->table_chats, $chat );
     }
     return $rawText;
   }
+
+  function format_messages( $json, $format = 'html' ) {
+    $html = '';
+    if ( $format === 'html' ) {
+      try {
+        $conversation = json_decode( $json, true );
+        if ( json_last_error() !== JSON_ERROR_NONE ) {
+          return 'Invalid JSON format';
+        }
+        foreach ( $conversation as $message ) {
+          $role = ucfirst( $message['role'] );
+          $html .= '<p><strong>' . htmlspecialchars( $role ) . ':</strong> ' . htmlspecialchars( $message['content'] ) . '</p>';
+        }
+      }
+      catch ( Exception $e ) {
+        error_log( $e->getMessage() );
+        return 'Error while formatting the message';
+      }
+    }
+    $html = apply_filters( 'mwai_discussion_format_messages', $html, $json, $format );
+    return $html;
+  }  
 
   function check_db() {
     if ( $this->db_check ) {

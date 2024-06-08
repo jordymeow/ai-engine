@@ -10,6 +10,7 @@ i18n.COMMON = {
   CLIENT_MODULES: __( 'Client Modules', 'ai-engine' ),
   BACKEND_MODULES: __( 'Admin Modules', 'ai-engine' ),
   SERVER_MODULES: __( 'Server Modules', 'ai-engine' ),
+  ADVISOR: __( 'Advisor', 'ai-engine' ),
   SETTINGS: __( 'Settings', 'ai-engine' ),
   CHATBOT: __( 'Chatbot', 'ai-engine' ),
   CHATBOTS: __( 'Chatbots', 'ai-engine' ),
@@ -221,6 +222,7 @@ i18n.COMMON = {
   PUBLIC_API: __( 'Public API', 'ai-engine' ),
   USER_INTERFACE: __( 'User Interface', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Intro Message', 'ai-engine' ),
+  ADDONS: __( 'Add-ons', 'ai-engine' ),
   AI_ENVIRONMENT_DEFAULTS: __( 'Default Environments for AI', 'ai-engine' ),
   ENVIRONMENTS_FOR_AI: __( 'Environments for AI', 'ai-engine' ),
   ENVIRONMENT_ID: __( 'Environment ID', 'ai-engine' ),
@@ -287,6 +289,7 @@ i18n.HELP = {
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
   PUBLIC_API: __( 'Enable the Public REST API.', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
+  ADDONS: __( 'Enable the AI Addons section under the Meow Apps menu.', 'ai-engine' ),
   OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   OPENAI_ORGANIZATION_ID: __( 'You can link this environment to an <a href="https://platform.openai.com/account/organization" target="_blank">Organization</a>. This is optional.', 'ai-engine' ),
   AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
@@ -302,6 +305,7 @@ i18n.HELP = {
   MAX_SELECT: __( 'The maximum number of embeddings to return and to use as context. Between 1 and 100 and defaults to 10.', 'ai-engine' ),
   FUNCTIONS: __( 'Select the functions to make available for the AI model\'s choice. It will use them to enhance responses and perform specific actions. This feature is known as Function Calling or Tools.', 'ai-engine' ),
   FUNCTIONS_UNAVAILABLE: __( 'There are no functions available. Please use <a href="https://wordpress.org/plugins/snippet-vault/" target="_blank">Snippet Vault</a> to add some. The Pro Version of AI Engine is also required for this feature.', 'ai-engine' ),
+  ADVISOR: __( 'Everyday, the advisor will give you recommendations about your WordPress, your website, the plugins you use, and more.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {

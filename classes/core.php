@@ -55,6 +55,10 @@ class Meow_MWAI_Core
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
 			new Meow_MWAI_Modules_Utilities( $this );
+			$module_advisor = $this->get_option( 'module_advisor' );
+			if ( $module_advisor ) {
+				new Meow_MWAI_Modules_Advisor( $this );
+			}
 		}
 		if ( $this->get_option( 'shortcode_chat' ) ) {
 			$this->chatbot = new Meow_MWAI_Modules_Chatbot();

@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.6
+// Previous: 2.3.6
+// Current: 2.3.8
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import Markdown from 'markdown-to-jsx';
@@ -37,9 +37,10 @@ const ChatbotUI = (props) => {
     textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables, error,
     iconUrl, busy, speechRecognition, imageUpload, uploadedFile, fileSearch } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId, onFileUpload, resetError } = actions;
-  const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition((transcript) => {
-    setInputText((prevInputText) => prevInputText + transcript);
-  });
+  const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition(text => { 
+      setInputText(text);
+    }
+  );
   const isFileUploading = !!uploadedFile?.uploadProgress;
   const hasFileUploaded = !!uploadedFile?.uploadedId;
   const clearMode = !hasFileUploaded && inputText.length < 1 && messages?.length > 1;
@@ -165,8 +166,7 @@ const ChatbotUI = (props) => {
     if (error) {
       resetError();
     }
-    // BUG: Missing await here causes race condition; uploadedFile might not be set properly
-    onFileUpload(file);
+    return onFileUpload(file);
   };
 
   const messageList = useMemo(() => messages?.map((message) => (

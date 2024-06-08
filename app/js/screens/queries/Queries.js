@@ -1,9 +1,11 @@
-// Previous: 2.2.62
-// Current: 2.2.90
+// Previous: 2.2.90
+// Current: 2.3.8
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoTable, NekoPaging, NekoBlock, NekoButton, NekoMessage } from '@neko-ui';
 import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers-admin';
@@ -36,9 +38,8 @@ const logsColumns = [
 ];
 
 const retrieveLogs = async (logsQueryParams) => {
-  const params = { ...logsQueryParams };
-  params.offset = (params.page - 1) * params.limit;
-  const res = await nekoFetch(`${apiUrl}/system/logs/list`, { nonce: restNonce, method: 'POST', json: params });
+  logsQueryParams.offset = (logsQueryParams.page - 1) * logsQueryParams.limit;
+  const res = await nekoFetch(`${apiUrl}/system/logs/list`, { nonce: restNonce, method: 'POST', json: logsQueryParams });
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
 };
 
@@ -115,16 +116,14 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         setBusyAction(false);
         return;
       }
-      await deleteLogs();
+      await deleteLogs([]);
     }
     else {
       await deleteLogs(selectedLogIds);
-      setSelectedLogIds([]); 
+      setSelectedLogIds([]);
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['logs'] }),
-      queryClient.refetchQueries({ queryKey: ['logs'] })
-    ]);
+    await queryClient.invalidateQueries({ queryKey: ['logs'] });
+    await queryClient.refetchQueries({ queryKey: ['logs'] });
     setBusyAction(false);
   };
 
@@ -156,16 +155,22 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
     </>}>
 
       <NekoTable busy={isFetchingLogs || busyAction}
-        onSelectRow={id => { setSelectedLogIds([id]); }}
+        onSelectRow={id => {
+          if (
+            selectedLogIds.length === 1 && selectedLogIds[0] === id
+          ) {
+            setSelectedLogIds([]);
+            return;
+          }
+          setSelectedLogIds([id]);
+        }}
         onSelect={ids => { 
-          setSelectedLogIds(prev => Array.from(new Set([ ...prev, ...ids ]))); 
-        }}
+          setSelectedLogIds([ ...selectedLogIds, ...ids  ]); }}
         onUnselect={ids => { 
-          setSelectedLogIds(prev => prev.filter(x => !ids.includes(x))); 
-        }}
+          setSelectedLogIds([ ...selectedLogIds.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
-          setLogsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+          setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
         }}
         emptyMessage={emptyMessage}
         filters={filters}
@@ -180,14 +185,14 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: -5 }}>
-        <NekoButton className="danger" disabled={selectedLogIds.length === 0}
+        <NekoButton className="danger" disabled={selectedLogIds.length}
           onClick={onDeleteSelectedLogs}>
           {i18n.COMMON.DELETE_ALL}
         </NekoButton>
         <div style={{ flex: 'auto' }} />
         <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
           total={logsTotal} onClick={page => { 
-            setLogsQueryParams(prev => ({ ...prev, page }));
+            setLogsQueryParams({ ...logsQueryParams, page });
           }}
         />
       </div>
@@ -200,7 +205,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         </b>
       </p>
       <p>
-        For more information, check this: <a href="https://www.notion.so/meowarts/Cost-Usage-Calculation-d5ce4917d77f4939b232b20d0082368a?pvs=4" target="_blank">Cost & Usage Calculation</a>. You are also always welcome to discuss about it in the <a href="https://discord.gg/bHDGh38" target="_blank">Discord Server</a>.
+        For more information, check this: <a href="https://www.notion.so/meowarts/Cost-Usage-Calculation-d5ce4917d77f4939b232b20d0082368a?pvs=4" target="_blank" rel="noopener noreferrer">Cost & Usage Calculation</a>. You are also always welcome to discuss about it in the <a href="https://discord.gg/bHDGh38" target="_blank" rel="noopener noreferrer">Discord Server</a>.
       </p>
     </NekoBlock>
 

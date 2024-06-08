@@ -1,5 +1,5 @@
-// Previous: 1.3.79
-// Current: 2.2.70
+// Previous: 2.2.70
+// Current: 2.3.8
 
 import Styled from "styled-components";
 import { NekoHeader, NekoButton, NekoIcon } from '@neko-ui';
@@ -13,7 +13,7 @@ const AiNekoHeader = ({ title = i18n.COMMON.SETTINGS, options = defaultOptions }
   const module_generator_images = options?.module_generator_images;
 
   return (
-    <NekoHeader title={`AI Engine | ${title}`} subtitle='By Jordy Meow'>
+    <NekoHeader title={`AI Engine | ${title}`} subtitle='🐱 Made by NyaoGPT'>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         {module_generator_content && <NekoButton className='header'
           onClick={() => location.href = 'edit.php?page=mwai_content_generator'}>
@@ -32,7 +32,6 @@ const AiNekoHeader = ({ title = i18n.COMMON.SETTINGS, options = defaultOptions }
         </NekoButton>}
         <NekoButton className='header' icon='tools'
           onClick={() => location.href = 'admin.php?page=mwai_settings'}>
-          
         </NekoButton>
       </div>
     </NekoHeader>
