@@ -3,7 +3,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI for WordPress. Chatbot, Content/Image Generator, CoPilot, Finetuning, Internal API, GPT, Gemini, etc! Sleek UI and ultra-customizable.
-Version: 2.3.9
+Version: 2.4.0
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '2.3.9' );
+define( 'MWAI_VERSION', '2.4.0' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -27,21 +27,19 @@ define( 'MWAI_FALLBACK_MODEL_JSON', 'gpt-4o' );
 
 require_once( MWAI_PATH . '/classes/init.php' );
 
-// NOTE: This should be removed when GPT-4 is released to everyone.
-// add_filter( 'mwai_ai_exception', function ( $exception ) {
-//   try {
-//     if ( substr( $exception, 0, 56 ) === "Error model_not_found: The model: `gpt-4` does not exist" ) {
-//       return "The GPT-4 model is currently not available for your OpenAI account. Luckily, you can join the <a target='_blank' href='https://openai.com/waitlist/gpt-4-api'>waitlist</a> to get access to it! ✌️";
-//     }
-//     else if ( substr( $exception, 0, 60 ) === "Error model_not_found: The model: `gpt-4-32k` does not exist" ) {
-//       return "The GPT-4 32k model is currently not available for your OpenAI account. Luckily, you can join the <a target='_blank' href='https://openai.com/waitlist/gpt-4-api'>waitlist</a> to get access to it! ✌️";
-//     }
-//     return $exception;
-//   }
-//   catch ( Exception $e ) {
-//     error_log( $e->getMessage() );
-//   }
-//   return $exception;
-// } );
+add_filter( 'mwai_ai_exception', function ( $exception ) {
+  try {
+    if ( strpos( $exception, "OpenAI" ) !== false ) {
+      if ( strpos( $exception, "API URL was not found" ) !== false ) {
+        return "Received the 'API URL was not found' error from OpenAI. This actually means that your OpenAI account has not been enabled for the Chat API. You need to either add some credits to OpenAI account, or link a credit card to it.";
+      }
+    }
+    return $exception;
+  }
+  catch ( Exception $e ) {
+    error_log( $e->getMessage() );
+  }
+  return $exception;
+} );
 
 ?>

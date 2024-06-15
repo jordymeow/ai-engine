@@ -942,7 +942,7 @@ class Meow_MWAI_Core
 				'name' => "Ollama",
 				'icon_url' => MeowCommon_Admin::$logo,
 				'description' => "Support for local LLMs via Ollama. Select the 'Ollama' type in your 'Environments for AI', then you can 'Refresh Models' and use them!",
-				'install_url' => "https://meowapps.com",
+				'install_url' => "https://meowapps.com/products/mwai-ollama/",
 				'settings_url' => null,
 				'enabled' => false
 			]

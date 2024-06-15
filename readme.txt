@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.9
+Stable tag: 2.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,7 @@ Languages: English.
 
 == Changelog ==
 
-= 2.3.9 (2024/06/15) =
+= 2.4.0 (2024/06/15) =
 * Update: The chatbot bundle size has been reduced.
 * Update: The CSS (and themes) used by the chatbot has been improved, simplified. It works better on mobile, it is more customizable, and the icons are handled via SVG sprites, for better performance and flexibility.
 * Update: Moved to a more dynamic way to handle the engines and models.
