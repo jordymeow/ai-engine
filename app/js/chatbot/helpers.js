@@ -1,10 +1,7 @@
-// Previous: 2.3.5
-// Current: 2.3.8
+// Previous: 2.3.8
+// Current: 2.3.9
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
-
-import cssChatGPT from '@root/../themes/ChatGPT.module.css';
-import cssMessages from '@root/../themes/Messages.module.css';
 
 const Microphone = ({ active, disabled, style, ...rest }) => {
 
@@ -64,42 +61,22 @@ function useInterval(delay, callback, enabled = true) {
   }, [delay, enabled]);
 }
 
-const useModClasses = (theme) => {
+const useModClasses = () => {
   const modCss = useMemo(() => {
     return (classNames, conditionalClasses) => {
-      let cssTheme = cssChatGPT;
-
-      if (!theme || theme.themeId === 'none' || theme.type === 'css') {
-        cssTheme = null;
-      }
-
-      if (theme?.themeId === 'messages') {
-        cssTheme = cssMessages;
-      }
-
       if (!Array.isArray(classNames)) {
         classNames = [classNames];
       }
+      
       if (conditionalClasses) {
         Object.entries(conditionalClasses).forEach(([className, condition]) => {
           if (condition) { classNames.push(className); }
         });
       }
 
-      return classNames.map(className => {
-        if (!cssTheme) {
-          return className;
-        }
-        else if (cssTheme[className]) {
-          return `${className} ${cssTheme[className]}`;
-        }
-        else {
-          console.warn(`The class name "${className}" is not defined in the "${theme?.themeId ?? "N/A"}" theme.`);
-          return className;
-        }
-      }).join(' ');
+      return classNames.join(' ');
     };
-  }, [theme]);
+  }, []);
 
   return { modCss };
 };
@@ -160,18 +137,18 @@ function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, mo
   if (!userName) {
     if (userData) {
       userName = <div className={modCss(['mwai-avatar'])}>
-        <img src={userData.AVATAR_URL} />
+        <img width="32" height="32" src={userData.AVATAR_URL} />
       </div>;
     }
     else {
       userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
-        <img src={`${pluginUrl}/images/avatar-user.svg`} />
+        <img width="32" height="32" src={`${pluginUrl}/images/avatar-user.svg`} />
       </div>;
     }
   }
   else if (isURL(userName)) {
     userName = <div className={modCss(['mwai-avatar'])}>
-      <img src={userName} />
+      <img width="32" height="32" src={userName} />
     </div>;
   }
   else {
@@ -185,11 +162,11 @@ function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
   if (!aiName) {
     let avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
     aiName = <div className={modCss(['mwai-avatar'])}>
-      <img src={`${avatar}`} />
+      <img width="32" height="32" src={`${avatar}`} />
     </div>;
   }
   else if (isURL(aiName)) {
-    aiName = <div className={modCss('mwai-avatar')}><img src={aiName} /></div>;
+    aiName = <div className={modCss('mwai-avatar')}><img width="32" height="32" src={aiName} /></div>;
   }
   else {
     aiName = <div className={modCss('mwai-name-text')}>{aiName}</div>;
@@ -209,8 +186,10 @@ const processParameters = (params) => {
   const fullscreen = Boolean(params.fullscreen);
   const icon = params.icon?.trim() ?? "";
   const iconText = params.iconText?.trim() ?? "";
+  const iconTextDelay = parseInt(params.iconTextDelay || 1);
   const iconAlt = params.iconAlt?.trim() ?? "";
   const iconPosition = params.iconPosition?.trim() ?? "";
+  const iconBubble = Boolean(params.iconBubble);
   const aiName = params.aiName?.trim() ?? "";
   const userName = params.userName?.trim() ?? "";
   const localMemory = Boolean(params.localMemory);
@@ -220,7 +199,7 @@ const processParameters = (params) => {
   return { 
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     window, copyButton, fullscreen, localMemory, imageUpload, fileSearch,
-    icon, iconText, iconAlt, iconPosition,
+    icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble,
     aiName, userName, guestName
   };
 };
@@ -231,7 +210,6 @@ const useSpeechRecognition = (onResult) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      console.log('Speech recognition is available.');
       setSpeechRecognitionAvailable(true);
     }
   }, []);
@@ -270,4 +248,42 @@ const useSpeechRecognition = (onResult) => {
   }, [isListening, speechRecognitionAvailable]);
 
   return { isListening, setIsListening, speechRecognitionAvailable };
+};
+
+const TransitionBlock = ({ if: condition, className, disableTransition = false, children, ...rest }) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const [animationClass, setAnimationClass] = useState('mwai-transition');
+
+  useEffect(() => {
+    if (disableTransition) {
+      setShouldRender(condition);
+    }
+    else {
+      if (condition) {
+        setShouldRender(true);
+        setTimeout(() => {
+          setAnimationClass('mwai-transition mwai-transition-visible');
+        }, 150);
+      } else {
+        setAnimationClass('mwai-transition');
+      }
+    }
+  }, [condition, disableTransition]);
+
+  const handleTransitionEnd = () => {
+    if (animationClass === 'mwai-transition' && !disableTransition) {
+      setShouldRender(false);
+    }
+  };
+
+  return !shouldRender ? null : (
+    <div className={`${className} ${disableTransition ? '' : animationClass}`}
+      onTransitionEnd={handleTransitionEnd} {...rest}>
+      {children}
+    </div>
+  );
+};
+
+export { useModClasses, isURL, handlePlaceholders, useInterval, TransitionBlock,
+  useSpeechRecognition, Microphone, useChrono, formatUserName, formatAiName, processParameters
 };

@@ -40,6 +40,7 @@ i18n.COMMON = {
   POPUP: __( 'Popup', 'ai-engine' ),
   POSITION: __( 'Position', 'ai-engine' ),
   ICON_TEXT: __( 'Icon Text', 'ai-engine' ),
+  ICON_TEXT_DELAY: __( 'Icon Text Delay', 'ai-engine' ),
   FULL_SCREEN: __( 'Full Screen', 'ai-engine' ),
   CASUALLY_FINE_TUNED: __( 'Casually Fine-Tuned', 'ai-engine' ),
   CONTENT_AWARE: __( 'Content Aware', 'ai-engine' ),
@@ -51,6 +52,7 @@ i18n.COMMON = {
   BACK_SECONDARY_COLOR: __( 'Back 2nd Color', 'ai-engine' ),
   HEADER_BUTTONS_COLOR: __( 'Header Buttons Color', 'ai-engine' ),
   HEADER_BACKGROUND_COLOR: __( 'Header Back Color', 'ai-engine' ),
+  BUBBLE_COLOR: __( 'Bubble Color', 'ai-engine' ),
   BACK_USER_COLOR: __( 'Back User Color', 'ai-engine' ),
   BACK_AI_COLOR: __( 'Back AI Color', 'ai-engine' ),
   BACK_AI_SECONDARY_COLOR: __( 'Back AI 2nd Color', 'ai-engine' ),
@@ -175,10 +177,10 @@ i18n.COMMON = {
   DELETE_ALL: __( 'Delete All', 'ai-engine' ),
   DELETE_SELECTED: __( 'Delete Selected', 'ai-engine' ),
   OPENAI_ORGANIZATION_ID: __( 'Organization ID', 'ai-engine' ),
-  OPENAI_AZURE_ENDPOINT: __( 'Endpoint', 'ai-engine' ),
   OPENAI_AZURE_API_KEY: __( 'API Key', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENT_NAME: __( 'Deployment Name', 'ai-engine' ),
   OPENAI_AZURE_DEPLOYMENTS: __( 'Deployments', 'ai-engine' ),
+  ENDPOINT: __( 'Endpoint', 'ai-engine' ),
   HUGGINGFACE_MODELS: __( 'Models', 'ai-engine' ),
   HUGGINGFACE_MODEL_NAME: __( 'Name', 'ai-engine' ),
   HUGGINGFACE_MODEL_URL: __( 'API URL', 'ai-engine' ),
@@ -251,6 +253,7 @@ i18n.COMMON = {
   QDRANT_COLLECTION: __( 'Collection', 'ai-engine' ),
   INSTRUCTIONS: __( 'Instructions', 'ai-engine' ),
   FUNCTIONS: __( 'Functions', 'ai-engine' ),
+  BUBBLE: __( 'Bubble', 'ai-engine' ),
 };
 
 i18n.FORMS = {
@@ -293,6 +296,7 @@ i18n.HELP = {
   OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   OPENAI_ORGANIZATION_ID: __( 'You can link this environment to an <a href="https://platform.openai.com/account/organization" target="_blank">Organization</a>. This is optional.', 'ai-engine' ),
   AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
+  ANTHROPIC_API_KEY: __( 'You can get your API Keys in your <a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Account</a>.', 'ai-engine' ),
   OPENROUTER_API_KEY: __( 'You can get your API Keys in your <a href="https://openrouter.ai/keys" target="_blank">OpenRouter Account</a>.', 'ai-engine' ),
   QDRANT: __( 'Use the code <b>#AIENGINE5</b> when you <a href="https://qdrant.to/cloud" target="_blank">Create a Qdrant Account</a>. You will get 5% off.', 'ai-engine' ),
   ASSISTANTS: __( 'The Assistants API is designed to help developers build powerful AI assistants capable of performing a variety of tasks.', 'ai-engine' ),
@@ -306,12 +310,15 @@ i18n.HELP = {
   FUNCTIONS: __( 'Select the functions to make available for the AI model\'s choice. It will use them to enhance responses and perform specific actions. This feature is known as Function Calling or Tools.', 'ai-engine' ),
   FUNCTIONS_UNAVAILABLE: __( 'There are no functions available. Please use <a href="https://wordpress.org/plugins/snippet-vault/" target="_blank">Snippet Vault</a> to add some. The Pro Version of AI Engine is also required for this feature.', 'ai-engine' ),
   ADVISOR: __( 'Everyday, the advisor will give you recommendations about your WordPress, your website, the plugins you use, and more.', 'ai-engine' ),
+  BUBBLE: __( 'The popup will be displayed as a bubble.', 'ai-engine' ),
+  ICON_TEXT: __( 'If set, this text will appear next to the icon/bubble.', 'ai-engine' ),
+  ICON_TEXT_DELAY: __( 'The delay before the text appears.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {
   AI_ENV_SETUP: __( 'To leverage the functionalities of AI Engine, it needs to be connected directly to AI services. We recommend starting with OpenAI. Create an account and generate an API Key by visiting the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website. Once obtained, navigate to the <b>Settings</b> tab and input your OpenAI API Key in the "Environments for AI" section.', 'ai-engine' ),
   PINECONE_SETUP: __( 'You choose to use Embeddings. To use them, you need to a Pinecone account. Visit the <a href="https://app.pinecone.io" target="_blank">Pinecone</a> website to create an account, then insert your Pinecone API Key in the <b>Settings</b> tab.', 'ai-engine' ),
-  INTRO: __( 'Boost your WordPress with AI! Don\'t forget to visit AI Engine\'s <a href="https://meowapps.com/ai-engine/" target="_blank">website</a> for more information. Also make sure you read the <a href="https://meowapps.com/ai-engine/disclaimer/" target="_blank">disclaimer</a>. Have fun! 🎵', 'ai-engine' ),
+  INTRO: __( 'Boost your WordPress with AI! Please visit AI Engine\'s <a href="https://meowapps.com/ai-engine/" target="_blank">website</a> for more information. The documentation is available <a href="https://docs.meowapps.com/" target="_blank">here</a>. Also make sure you read the <a href="https://meowapps.com/ai-engine/disclaimer/" target="_blank">disclaimer</a>. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
   ALERT_INJECT_BUT_NO_POPUP: __( 'You choose to inject the chatbot in your website. You probably also want to use the chatbot in a Popup.', 'ai-engine' ),
   ALERT_CASUALLY_BUT_NO_FINETUNE: __( 'Normally, you should not check the Casually Fine Tuned option with a non-finetuned model. Make sure that\'s what you want.', 'ai-engine' ),

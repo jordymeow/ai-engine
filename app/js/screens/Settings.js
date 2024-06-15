@@ -1,11 +1,10 @@
-// Previous: 2.3.7
-// Current: 2.3.8
+// Previous: 2.3.8
+// Current: 2.3.9
 
 const { useMemo, useState, useEffect } = wp.element;
 
-import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
-  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper, 
-  NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
+import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoWrapper, NekoSettings, NekoSpacer, NekoTypo,
+  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
@@ -123,7 +122,6 @@ const Settings = () => {
   const [ error, setError ] = useState(null);
   const [ busyAction, setBusyAction ] = useState(false);
   
-  const shortcodeParams = options?.shortcode_chat_params || {};
   const module_suggestions = options?.module_suggestions;
   const module_advisor = options?.module_advisor;
   const module_forms = options?.module_forms;
@@ -136,8 +134,9 @@ const Settings = () => {
   const module_embeddings = options?.module_embeddings;
   const module_assistants = options?.module_assistants;
   const module_transcription = options?.module_transcription;
+  const module_addons = options?.module_addons;
   const module_devtools = options?.module_devtools;
-  const shortcode_chat = options?.shortcode_chat;
+  const module_chatbots = options?.module_chatbots;
 
   const ai_envs = options?.ai_envs ? options?.ai_envs : [];
   const ai_default_env = options?.ai_default_env;
@@ -153,13 +152,13 @@ const Settings = () => {
   const ai_audio_default_model = options?.ai_audio_default_model;
   const ai_json_default_env = options?.ai_json_default_env;
   const ai_json_default_model = options?.ai_json_default_model;
+  const ai_streaming = options?.ai_streaming;
 
   const embeddings_envs = options?.embeddings_envs ? options?.embeddings_envs : [];
   const embeddings_default_env = options?.embeddings_default_env;
-  const shortcode_chat_syntax_highlighting = options?.shortcode_chat_syntax_highlighting;
-  const shortcode_chat_typewriter = options?.shortcode_chat_typewriter;
-  const shortcode_chat_discussions = options?.shortcode_chat_discussions;
-  const shortcode_chat_stream = options?.shortcode_chat_stream;
+  const syntax_highlight = options?.syntax_highlight;
+  const chatbot_typewriter = options?.chatbot_typewriter;
+  const chatbot_discussions = options?.chatbot_discussions;
   const speech_recognition = options?.speech_recognition;
   const speech_synthesis = options?.speech_synthesis;
   const public_api = options?.public_api;
@@ -180,8 +179,6 @@ const Settings = () => {
   const { jsonModels } = useModels(options, options?.ai_json_default_env);
   const { imageModels } = useModels(options, options?.ai_images_default_env);
   const { embeddingsModels } = useModels(options, options?.ai_embeddings_default_env);
-
-  const currentModel = getModel(shortcodeParams.model);
 
   const defaultEmbeddingsModel = useMemo(() => {
     return embeddingsModels.find(x => x.model === ai_embeddings_default_model);
@@ -294,18 +291,18 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbotsData = await retrieveChatbots();
-      const themesData = await retrieveThemes();
-      const optionsData = await retrieveOptions();
-      const data = { chatbots: chatbotsData, themes: themesData, options: optionsData };
-      const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const today = new Date();
-      const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
-      link.setAttribute('download', filename);
-      link.click();
+    const chatbots = await retrieveChatbots();
+    const themes = await retrieveThemes();
+    const optionsData = await retrieveOptions();
+    const data = { chatbots, themes, options: optionsData };
+    const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const today = new Date();
+    const filename = `ai-engine-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.json`;
+    link.setAttribute('download', filename);
+    link.click();
     }
     catch (err) {
       alert("Error while exporting settings. Please check your console.");
@@ -330,10 +327,10 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options } = data;
+          const { chatbots, themes, options: importedOptions } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(options);
+          await updateOptions(importedOptions);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -353,33 +350,22 @@ const Settings = () => {
   useDefaultEnvironments(ai_envs, options, updateOptions, embeddingsModels);
 
   useEffect(() => {
-    if (currentModel?.mode !== 'chat' && !!shortcodeParams.embeddings_index) {
-      updateShortcodeParams('', 'embeddings_index');
-    }
-  }, [shortcodeParams]);
-
-  useEffect(() => {
     if (!isRegistered) {
       let newOptions = { ...options };
       let hasChanges = false;
+  
       proOptions.forEach(option => {
         if (newOptions[option]) {
           newOptions[option] = false;
           hasChanges = true;
         }
       });
-      if (hasChanges) {
-        if (nekoStringify(newOptions) !== nekoStringify(options)) {
-          updateOptions(newOptions);
-        }
+  
+      if (hasChanges && nekoStringify(newOptions) !== nekoStringify(options)) {
+        updateOptions(newOptions);
       }
     }
-  }, []);  
-
-  const updateShortcodeParams = async (value, id) => {
-    const newParams = { ...shortcodeParams, [id]: value };
-    await updateOption(newParams, 'shortcode_chat_params');
-  };
+  }, [options]);
 
   const jsxUtilities =
     <NekoSettings title={i18n.COMMON.UTILITIES}>
@@ -479,7 +465,7 @@ const Settings = () => {
   const jsxChatbot =
     <NekoSettings title={i18n.COMMON.CHATBOT}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat}
+        <NekoCheckbox name="module_chatbots" label={i18n.COMMON.ENABLE} value="1" checked={module_chatbots}
           description={i18n.COMMON.CHATBOT_HELP}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -542,8 +528,8 @@ const Settings = () => {
   const jsxStream =
     <NekoSettings title={i18n.COMMON.STREAMING}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_stream" label={i18n.COMMON.ENABLE} value="1"
-          checked={shortcode_chat_stream}
+        <NekoCheckbox name="ai_streaming" label={i18n.COMMON.ENABLE} value="1"
+          checked={ai_streaming}
           description={i18n.HELP.STREAMING}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -552,8 +538,8 @@ const Settings = () => {
   const jsxShortcodeTypewriter =
     <NekoSettings title={i18n.SETTINGS.TYPEWRITER_EFFECT}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_typewriter" label={i18n.COMMON.ENABLE} value="1"
-          checked={shortcode_chat_typewriter}
+        <NekoCheckbox name="chatbot_typewriter" label={i18n.COMMON.ENABLE} value="1"
+          checked={chatbot_typewriter}
           description={toHTML(i18n.SETTINGS.TYPEWRITER_EFFECT_HELP)}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -562,8 +548,8 @@ const Settings = () => {
   const jsxShortcodeDiscussions = 
     <NekoSettings title={i18n.COMMON.DISCUSSIONS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_discussions" label={i18n.COMMON.ENABLE} value="1"
-          checked={shortcode_chat_discussions}
+        <NekoCheckbox name="chatbot_discussions" label={i18n.COMMON.ENABLE} value="1"
+          checked={chatbot_discussions}
           description={i18n.HELP.DISCUSSIONS}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -572,7 +558,7 @@ const Settings = () => {
   const jsxShortcodeSyntaxHighlighting =
     <NekoSettings title={i18n.COMMON.SYNTAX_HIGHLIGHT}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="shortcode_chat_syntax_highlighting" label={i18n.COMMON.ENABLE} value="1" checked={shortcode_chat_syntax_highlighting}
+        <NekoCheckbox name="syntax_highlight" label={i18n.COMMON.ENABLE} value="1" checked={syntax_highlight}
           description={i18n.HELP.SYNTAX_HIGHLIGHT}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -951,11 +937,11 @@ const Settings = () => {
               </NekoWrapper>
             </NekoTab>
 
-            {(shortcode_chat) && <NekoTab key="chatbots" title={i18n.COMMON.CHATBOTS}>
+            {module_chatbots && <NekoTab key="chatbots" title={i18n.COMMON.CHATBOTS}>
               <Chatbots options={options} updateOption={updateOption} busy={busy} />
             </NekoTab>}
 
-            {shortcode_chat && shortcode_chat_discussions && 
+            {module_chatbots && chatbot_discussions && 
               <NekoTab key="discussions" title={i18n.COMMON.DISCUSSIONS}>
                 <Discussions />
               </NekoTab>
@@ -987,6 +973,10 @@ const Settings = () => {
 
             {module_transcription && <NekoTab key="transcription" title={i18n.COMMON.TRANSCRIPTION}>
               <Transcription options={options} updateOption={updateOption} />
+            </NekoTab>}
+
+            {module_addons && <NekoTab key="addons" title={i18n.COMMON.ADDONS}>
+              <Addons addons={options?.addons} updateOption={updateOption} />
             </NekoTab>}
 
             <NekoTab key="settings" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
@@ -1152,13 +1142,13 @@ const Settings = () => {
 
       </NekoWrapper>
 
-      <NekoModal isOpen={!!error}
+      <NekoModal isOpen={error}
         title={i18n.COMMON.ERROR}
         content={error}
-        onRequestClose={() => setError(null)}
+        onRequestClose={() => setError(false)}
         okButton={{
           label: "Close",
-          onClick: () => setError(null)
+          onClick: () => setError(false)
         }}
       />
 

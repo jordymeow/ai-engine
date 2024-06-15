@@ -1,5 +1,5 @@
-// Previous: 2.2.90
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.3.9
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -94,16 +94,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-      return;
     }
 
-    const htmlLang = document.querySelector('html');
-    const langAttr = htmlLang ? htmlLang.lang : null;
-    const detectedLanguage = (langAttr || navigator.language || navigator.userLanguage).substr(0, 2);
+    const detectedLanguage = (document.querySelector('html').lang || navigator.language
+      || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
-  }, []);
+  }, [languages]);
 
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
@@ -117,7 +115,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     return "English";
   }, [currentLanguage, customLanguage, isCustom]);
 
-  const onChange = (value) => {
+  const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
@@ -143,7 +141,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, customLanguage, languages, isCustom, disabled]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -192,12 +190,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return selectedEnv;
   }, [aiEnvs, envId, allEnvs, allEnvironments]);
 
-  const deletedFineTunes = useMemo(() => {
-    let deleted = env?.finetunes_deleted || [];
+  const deletedFineTuneIds = useMemo(() => {
+    let deleteIds = env?.finetunes_deleted || [];
     if (Array.isArray(env?.legacy_finetunes_deleted)) {
-      deleted = [...deleted, ...env.legacy_finetunes_deleted];
+      deleteIds = [...deleteIds, ...env.legacy_finetunes_deleted];
     }
-    return deleted;
+    return deleteIds;
   }, [env]);
 
   const getTagStyle = (tag) => {
@@ -217,7 +215,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     };
   };
 
-  const tagDisplayText = {
+  const tabDisplayText = {
     deprecated: 'DEPRECATED',
     tuned: 'TUNED',
     preview: 'PREVIEW'
@@ -230,7 +228,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         {x.name ?? x.suffix ?? x.model}
         {tag && (
           <small style={getTagStyle(tag)}>
-            {tagDisplayText[tag]}
+            {tabDisplayText[tag]}
           </small>
         )}
       </>
@@ -240,24 +238,16 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const allModels = useMemo(() => {
     let models = [];
     if (env?.fake === true) {
-      models = [ ...options.openai_models ?? [], ...options.google_models ?? [], ...options.anthropic_models ?? [], ...options.openrouter_models ?? [] ];
-    }
-    else if (env?.type === 'openai') {
-      models = options?.openai_models ?? [];
-    }
-    else if (env?.type === 'azure') {
-      models = options?.openai_models?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
-    }
-    else if (env?.type === 'google') {
-      models = options?.google_models ?? [];
-    }
-    else if (env?.type === 'anthropic') {
-      models = options?.anthropic_models ?? [];
-    }
-    else if (env?.type === 'openrouter') {
-      models = options?.openrouter_models ?? [];
-    }
-    else if (env?.type === 'huggingface') {
+      for (let engine of options.ai_engines) {
+        if (Array.isArray(engine.models)) {
+          models = [ ...models, ...engine.models ];
+        }
+      }
+    } else if (env?.type === 'azure') {
+      const engine = options.ai_engines.find(x => x.type === 'openai');
+      const openAiModels = engine?.models ?? [];
+      models = openAiModels?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
+    } else if (env?.type === 'huggingface') {
       models = env?.customModels?.map(x => {
         let tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
         let mode = tags.includes('image') ? 'image' : 'chat';
@@ -269,14 +259,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           options: [],
         };
       }) ?? [];
-    }
-    else {
-      console.warn("useModels: Environment Type is not supported.", { env });
+    } else {
+      const engine = options.ai_engines.find(x => x.type === env?.type);
+      models = engine?.models ?? [];
     }
 
-    let extraModels = typeof options?.extra_models === 'string' ? options?.extra_models : "";
     let fineTunes = env?.finetunes ?? [];
-    
     if (Array.isArray(env?.legacy_finetunes)) {
       fineTunes = [ ...fineTunes, ...env.legacy_finetunes ];
     }
@@ -294,8 +282,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
-        }
-        else if (x.model.includes('ft:gpt-4')) {
+        } else if (x.model.includes('ft:gpt-4')) {
           mode = 'chat';
           family = 'gpt4';
         }
@@ -312,16 +299,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         };
       })];
     }
-    extraModels = extraModels?.split(',').filter(x => x);
-    if (extraModels.length) {
-      models = [ ...models, ...extraModels.map(x => ({ id: x, model: x, description: "Extra" })) ];
-    }
     return models;
   }, [options, env]);
 
   const models = useMemo(() => {
-    return allModels.filter(x => !deletedFineTunes.includes(x.model));
-  }, [allModels, deletedFineTunes]);
+    return allModels.filter(x => !deletedFineTuneIds.includes(x.model));
+  }, [allModels, deletedFineTuneIds]);
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -357,11 +340,9 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model.startsWith('gpt-4-')) {
+    } else if (model.startsWith('gpt-4-')) {
       model = 'gpt-4';
-    }
-    else if (model.startsWith('gpt-4o-')) {
+    } else if (model.startsWith('gpt-4o-')) {
       model = 'gpt-4o';
     }
     const modelObj = allModels.find(x => x.model === model);
@@ -412,7 +393,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object' && price !== null) {

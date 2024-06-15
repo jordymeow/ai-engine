@@ -1,5 +1,5 @@
-// Previous: 1.6.98
-// Current: 1.9.8
+// Previous: 1.9.8
+// Current: 2.3.9
 
 // NekoUI
 import { NekoInput, NekoCollapsableCategory, NekoSpacer } from '@neko-ui';
@@ -177,6 +177,21 @@ const MessagesTheme = (props) => {
       </div>
 
       <div className="mwai-builder-row">
+        <div className="mwai-builder-col">
+          <label>{i18n.COMMON.BUBBLE_COLOR}:</label>
+          <div style={{ display: 'flex' }}>
+            <NekoInput id="bubbleColor" name="bubbleColor" style={{ flex: 1 }}
+              value={settings?.bubbleColor ?? '#0084ff'} 
+              onBlur={onUpdateSettings}
+              onEnter={onUpdateSettings}
+            />
+            <NekoColorPicker id="bubbleColor" name="bubbleColor"
+              value={settings?.bubbleColor ?? '#0084ff'}
+              onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
+            />
+          </div>                          
+        </div>
         <div className="mwai-builder-col">
           <label>{i18n.COMMON.HEADER_BACKGROUND_COLOR}:</label>
           <div style={{ display: 'flex' }}>

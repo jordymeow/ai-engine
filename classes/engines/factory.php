@@ -77,6 +77,13 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_HuggingFace( $core, $env );
       return $engine;
     }
+
+    // Last chance via a filter.
+    $engine = apply_filters( 'mwai_init_engine', null, $core, $env );
+    if ( !is_null( $engine ) ) {
+      return $engine;
+    }
+
     throw new Exception( "AI Engine: Unknown engine type ({$env['type']})." );
   }
 

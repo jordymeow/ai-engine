@@ -185,7 +185,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
       // Usage Data (only for OpenAI)
       // https://cookbook.openai.com/examples/how_to_stream_completions#4-how-to-get-token-usage-data-for-streamed-chat-completion-response
-      if ( !empty( $streamCallback ) ) {
+      if ( !empty( $streamCallback ) && $this->envType === 'openai' ) {
         $body['stream_options'] = [
           'include_usage' => true,
         ];

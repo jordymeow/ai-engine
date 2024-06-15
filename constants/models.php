@@ -1,6 +1,6 @@
 <?php
 
-// Price as of March 2023: https://openai.com/api/pricing/
+// Price as of June 2024: https://openai.com/api/pricing/
 
 define( 'MWAI_OPENAI_MODELS', [
   // Base models:

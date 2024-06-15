@@ -40,7 +40,7 @@ class Meow_MWAI_Core
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
 		add_action( 'wp_register_script', array( $this, 'register_scripts' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'register_scripts' ) );
 	}
 
 	#region Init & Scripts
@@ -54,13 +54,12 @@ class Meow_MWAI_Core
 		}
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
-			new Meow_MWAI_Modules_Utilities( $this );
 			$module_advisor = $this->get_option( 'module_advisor' );
 			if ( $module_advisor ) {
 				new Meow_MWAI_Modules_Advisor( $this );
 			}
 		}
-		if ( $this->get_option( 'shortcode_chat' ) ) {
+		if ( $this->get_option( 'module_chatbots' ) ) {
 			$this->chatbot = new Meow_MWAI_Modules_Chatbot();
 			$this->discussions = new Meow_MWAI_Modules_Discussions();
 		}
@@ -75,11 +74,6 @@ class Meow_MWAI_Core
 
 	public function register_scripts() {
 		wp_register_script( 'mwai_highlight', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
-	}
-
-	public function enqueue_scripts() {
-		$this->register_scripts();
-		wp_enqueue_script( "mwai_highlight" );
 	}
 
 	#endregion
@@ -630,7 +624,7 @@ class Meow_MWAI_Core
     if ( !$model ) {
       throw new Exception( 'AI Engine: model is required.' );
     }
-    $usage = $this->get_option( 'openai_usage' );
+    $usage = $this->get_option( 'ai_models_usage' );
     $month = date( 'Y-m' );
     if ( !isset( $usage[$month] ) ) {
       $usage[$month] = array();
@@ -641,7 +635,7 @@ class Meow_MWAI_Core
     $usage[$month][$model]['prompt_tokens'] += $in_tokens;
     $usage[$month][$model]['completion_tokens'] += $out_tokens;
     $usage[$month][$model]['total_tokens'] += $in_tokens + $out_tokens;
-    $this->update_option( 'openai_usage', $usage );
+    $this->update_option( 'ai_models_usage', $usage );
     $usageInfo = [
       'prompt_tokens' => $in_tokens,
       'completion_tokens' => $out_tokens,
@@ -660,7 +654,7 @@ class Meow_MWAI_Core
 		if ( !$model ) {
 			throw new Exception( 'AI Engine: model is required.' );
 		}
-		$usage = $this->get_option( 'openai_usage' );
+		$usage = $this->get_option( 'ai_models_usage' );
 		$month = date( 'Y-m' );
 		if ( !isset( $usage[$month] ) ) {
 			$usage[$month] = array();
@@ -669,7 +663,7 @@ class Meow_MWAI_Core
 			$usage[$month][$model] = array( 'seconds' => 0 );
 		}
 		$usage[$month][$model]['seconds'] += $seconds;
-		$this->update_option( 'openai_usage', $usage );
+		$this->update_option( 'ai_models_usage', $usage );
 		return [ 'seconds' => $seconds ];
 	}
 
@@ -677,7 +671,7 @@ class Meow_MWAI_Core
     if ( !$model || !$resolution || !$images ) {
       throw new Exception( 'Missing parameters for record_image_usage.' );
     }
-    $usage = $this->get_option( 'openai_usage' );
+    $usage = $this->get_option( 'ai_models_usage' );
     $month = date( 'Y-m' );
     if ( !isset( $usage[$month] ) ) {
       $usage[$month] = array();
@@ -690,7 +684,7 @@ class Meow_MWAI_Core
     }
     $usage[$month][$model]['resolution'][$resolution] += $images;
     $usage[$month][$model]['images'] += $images;
-    $this->update_option( 'openai_usage', $usage );
+    $this->update_option( 'ai_models_usage', $usage );
     return [ 'resolution' => $resolution, 'images' => $images ];
   }
 
@@ -715,7 +709,7 @@ class Meow_MWAI_Core
 
 		$internalThemes = [
 			'chatgpt' => [
-				'type' => 'internal', 'name' => 'ChatGPT', 'themeId' => 'chatgpt',
+				'type' => 'internal','name' => 'ChatGPT', 'themeId' => 'chatgpt',
 				'settings' => [], 'style' => ""
 			],
 			'messages' => [
@@ -902,18 +896,57 @@ class Meow_MWAI_Core
 		}
 		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 		$options['default_limits'] = MWAI_LIMITS;
-		$options['openai_models'] = apply_filters( 
-			'mwai_openai_models',
-			Meow_MWAI_Engines_OpenAI::get_models_static()
-		);
-		$options['anthropic_models'] = apply_filters( 
-			'mwai_anthropic_models',
-			Meow_MWAI_Engines_Anthropic::get_models_static()
-		);
-		$options['fallback_model'] = MWAI_FALLBACK_MODEL;
 
-		// Support for functions from Snippet Vault
+		// Consolidate the engines and the models inside them
+		// we should ABSOLUTELY AVOID to use ai_models directly (except for saving).
+		// An engine looks like that: 
+		// [ 'name' => 'Ollama', 'type' => 'ollama', inputs => ['apikey', 'endpoint'], models => [] ]
+		// NOTE: Since the models are consolidated with the envId in ai_engines,
+ 		$options['ai_engines'] = apply_filters( 'mwai_engines', MWAI_ENGINES );
+		foreach ( $options['ai_engines'] as &$engine ) {
+			if ( $engine['type'] === 'openai' ) {
+				$engine['models'] = apply_filters(  'mwai_openai_models',
+					Meow_MWAI_Engines_OpenAI::get_models_static()
+				);
+			}
+			else if ( $engine['type'] === 'anthropic' ) {
+				$engine['models'] = apply_filters(  'mwai_anthropic_models',
+					Meow_MWAI_Engines_Anthropic::get_models_static()
+				);
+			}
+			else {
+				$engine['models'] = [];
+				foreach ( $options['ai_models'] as $model ) {
+					if ( $model['type'] === $engine['type'] ) {
+						$engine['models'][] = $model;
+					}
+				}
+			}
+		}
+
+		// Support for functions via Snippet Vault
 		$options['functions'] = apply_filters( 'mwai_functions_list', [] );
+
+		// Addons
+		$options['addons'] = apply_filters( 'mwai_addons', [
+			[
+				'slug' => "mwai-notifications",
+				'name' => "Notifications",
+				'icon_url' => MeowCommon_Admin::$logo,
+				'description' => "Add-on for AI Engine that adds notifications.",
+				'install_url' => "https://meowapps.com/products/mwai-notifications/",
+				'settings_url' => null,
+				'enabled' => false,
+			], [
+				'slug' => "mwai-ollama",
+				'name' => "Ollama",
+				'icon_url' => MeowCommon_Admin::$logo,
+				'description' => "Support for local LLMs via Ollama. Select the 'Ollama' type in your 'Environments for AI', then you can 'Refresh Models' and use them!",
+				'install_url' => "https://meowapps.com",
+				'settings_url' => null,
+				'enabled' => false
+			]
+		] );
 
 		//$this->options = $options;
 		return $options;
@@ -924,17 +957,14 @@ class Meow_MWAI_Core
 	function sanitize_options( $options ) {
 		$needs_update = false;
 
-		// This list was updated on December 11, 2023. After May 2024, let's remove this.
+		// TODO: After October 2024, let's remove this.
 		$old_options = [
-			'shortcode_chat_default_params',
-			'shortcode_chat_params_override',
-			'module_legacy_finetunes',
-			'shortcode_chat_legacy',
-			'shortcode_chat_inject',
-			'shortcode_chat_styles',
-			'dynamic_max_tokens',
-			'shortcode_chat_formatting',
-			'shortcode_forms_legacy',
+			'openai_models',
+			'anthropic_models',
+			'${envType}_models',
+			'shortcode_chat_params',
+			'extra_models',
+			'fallback_model'
 		];
 		foreach ( $old_options as $old_option ) {
 			if ( isset( $options[$old_option] ) ) {
@@ -943,98 +973,58 @@ class Meow_MWAI_Core
 			}
 		}
 
-		// This upgrades namespace to multi-namespaces (June 2023)
-		// After January 2024, let's remove this.
-		if ( isset( $options['pinecone'] ) && isset( $options['pinecone']['namespace'] ) ) {
-			$options['pinecone']['namespaces'] = [ $options['pinecone']['namespace'] ];
-			unset( $options['pinecone']['namespace'] );
-			$needs_update = true;
-		}
-		// Support for Multi Vector DB Environments
-		// After June 2024, let's remove this.
-		if ( !isset( $options['embeddings_envs'] ) ) {
-			$options['embeddings_envs'] = [];
-			$default_id = $this->get_random_id();
-			$pinecone = isset( $options['pinecone'] ) ? $options['pinecone'] : [];
-			$options['embeddings_envs'][] = [
-				'id' => $default_id,
-				'name' => 'Pinecone',
-				'type' => 'pinecone',
-				'apikey' => isset( $pinecone['apikey'] ) ? $pinecone['apikey'] : '',
-				'server' => isset( $pinecone['server'] ) ? $pinecone['server'] : 'gcp-starter',
-				'indexes' => isset( $pinecone['indexes'] ) ? $pinecone['indexes'] : [],
-				'namespaces' => isset( $pinecone['namespaces'] ) ? $pinecone['namespaces'] : [],
-				'index' => isset( $pinecone['index'] ) ? $pinecone['index'] : null,
-			];
-			$options['embeddings_default_env'] = $default_id;
-			$needs_update = true;
-		}
-		if ( isset( $options['pinecone'] ) ) {
-			unset( $options['pinecone'] );
-			$needs_update = true;
-		}
-		// Support for Multi AI Environments
-		// After June 2024, let's remove this.
-		if ( !isset( $options['ai_envs'] ) ) {
-			$options['ai_envs'] = [];
-			$default_openai_id = $this->get_random_id();
-			$default_azure_id = $this->get_random_id();
-			$openai_service = isset( $options['openai_service'] ) ? $options['openai_service'] : 'openai';
-			$openai_apikey = isset( $options['openai_apikey'] ) ? $options['openai_apikey'] : '';
-			$azure_endpoint = isset( $options['openai_azure_endpoint'] ) ? $options['openai_azure_endpoint'] : '';
-
-			// OpenAI
-			// We create a default OpenAI environment if the API Key is set, or if the Azure Endpoint is not set.
-			if ( !empty( $openai_apikey ) || empty( $azure_endpoint )  ) {
-				$openai_finetunes = isset( $options['openai_finetunes'] ) ? $options['openai_finetunes'] : [];
-				$openai_finetunes_deleted = isset( $options['openai_finetunes_deleted'] ) ?
-					$options['openai_finetunes_deleted'] : [];
-				$openai_legacy_finetunes = isset( $options['openai_legacy_finetunes'] ) ?
-					$options['openai_legacy_finetunes'] : [];
-				$openai_legacy_finetunes_deleted = isset( $options['openai_legacy_finetunes_deleted'] ) ?
-					$options['openai_legacy_finetunes_deleted'] : [];
-				$options['ai_envs'][] = [
-					'id' => $default_openai_id,
-					'name' => 'OpenAI',
-					'type' => 'openai',
-					'apikey' => $openai_apikey,
-					'finetunes' => $openai_finetunes,
-					'finetunes_deleted' => $openai_finetunes_deleted,
-					'legacy_finetunes' => $openai_legacy_finetunes,
-					'legacy_finetunes_deleted' => $openai_legacy_finetunes_deleted
-				];
-			}
-
-			// Azure
-			if ( !empty( $azure_endpoint ) ) {
-				$azure_apikey = isset( $options['openai_azure_apikey'] ) ? $options['openai_azure_apikey'] : '';
-				$azure_deployments = isset( $options['openai_azure_deployments'] ) ? $options['openai_azure_deployments'] : [];
-				$options['ai_envs'][] = [
-					'id' => $default_azure_id,
-					'name' => 'Azure',
-					'type' => 'azure',
-					'apikey' => $azure_apikey,
-					'endpoint' => $azure_endpoint,
-					'deployments' => $azure_deployments,
-				];
-			}
-
-			$options['ai_default_env'] = $default_openai_id;
-			if ( $openai_service === 'azure' ) {
-				$options['ai_default_env'] = $default_azure_id;
+		// TODO: After October 2024, let's remove this.
+		if ( isset( $options['openrouter_models'] ) ) {
+			foreach ( $options['openrouter_models'] as $model ) {
+				$model['envId'] = null;
+				$model['type'] = 'openrouter';
+				$options['ai_models'][] = $model;
 			}
 			$needs_update = true;
+			unset( $options['openrouter_models'] );
 		}
-		if ( !empty( $options['openai_apikey'] ) || !empty( $options['openai_azure_apikey'] ) ) {
-			unset( $options['openai_apikey'] );
-			unset( $options['openai_finetunes'] );
-			unset( $options['openai_finetunes_deleted'] );
-			unset( $options['openai_legacy_finetunes'] );
-			unset( $options['openai_legacy_finetunes_deleted'] );
-			unset( $options['openai_azure_apikey'] );
-			unset( $options['openai_azure_endpoint'] );
-			unset( $options['openai_azure_deployments'] );
-			unset( $options['openai_service'] );
+		if ( isset( $options['google_models'] ) ) {
+			foreach ( $options['google_models'] as $model ) {
+				$model['envId'] = null;
+				$model['type'] = 'google';
+				$options['ai_models'][] = $model;
+			}
+			$needs_update = true;
+			unset( $options['google_models'] );
+		}
+		if ( isset( $options['shortcode_chat_stream'] ) ) {
+			$options['ai_streaming'] = $options['shortcode_chat_stream'];
+			unset( $options['shortcode_chat_stream'] );
+			$needs_update = true;
+		}
+		if ( isset( $options['shortcode_chat_syntax_highlighting'] ) ) {
+			$options['syntax_highlight'] = $options['shortcode_chat_syntax_highlighting'];
+			unset( $options['shortcode_chat_syntax_highlighting'] );
+			$needs_update = true;
+		}
+		if ( isset( $options['shortcode_chat_moderation'] ) ) {
+			$options['chatbot_moderation'] = $options['shortcode_chat_moderation'];
+			unset( $options['shortcode_chat_moderation'] );
+			$needs_update = true;
+		}
+		if ( isset( $options['shortcode_chat_discussions'] ) ) {
+			$options['chatbot_discussions'] = $options['shortcode_chat_discussions'];
+			unset( $options['shortcode_chat_discussions'] );
+			$needs_update = true;
+		}
+		if ( isset( $options['shortcode_chat_typewriter'] ) ) {
+			$options['chatbot_typewriter'] = $options['shortcode_chat_typewriter'];
+			unset( $options['shortcode_chat_typewriter'] );
+			$needs_update = true;
+		}
+		if ( isset( $options['shortcode_chat'] ) ) {
+			$options['module_chatbots'] = $options['shortcode_chat'];
+			unset( $options['shortcode_chat'] );
+			$needs_update = true;
+		}
+		if ( isset( $options['openai_usage'] ) ) {
+			$options['ai_models_usage'] = $options['openai_usage'];
+			unset( $options['openai_usage'] );
 			$needs_update = true;
 		}
 
@@ -1110,6 +1100,16 @@ class Meow_MWAI_Core
 			}
 		}
 		return $this->update_options( $options );
+	}
+
+	function get_engine_models( $engineType ) {
+		$engines = $this->get_option( 'ai_engines' );
+		foreach ( $engines as $engine ) {
+			if ( $engine['type'] === $engineType ) {
+				return isset( $engine['models'] ) ? $engine['models'] : [];
+			}
+		}
+		return [];
 	}
 
 	function reset_options() {

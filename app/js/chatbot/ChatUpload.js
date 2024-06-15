@@ -1,60 +1,19 @@
-// Previous: none
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.3.9
 
-const { useState, useEffect, useMemo, useImperativeHandle, useRef } = wp.element;
-
-// AI Engine
-import { useChatbotContext } from "./ChatbotContext";
+// React & Vendor Libs
+const { useState, useMemo, useImperativeHandle, useRef } = wp.element;
 
 const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
-    disabled, style, modCss, ...rest }, ref) => {
-  const { state } = useChatbotContext();
-  const { pluginUrl } = state;
+  disabled, style, modCss, ...rest }, ref) => {
   const fileInputRef = useRef();
   const [isHovering, setIsHovering] = useState(false);
+  const hasUploadedFile = uploadedFile?.uploadedId;
 
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
   const handleExternalFile = (file) => onUploadFile(file);
   const resetUpload = () => onUploadFile(null);
-
-  const svgImages = useMemo(() => {
-    return {
-      idle: `${pluginUrl}/images/idle.svg`,
-      idleAdd: `${pluginUrl}/images/idle-add.svg`,
-      document: `${pluginUrl}/images/document.svg`,
-      documentAdd: `${pluginUrl}/images/document-add.svg`,
-      documentDel: `${pluginUrl}/images/document-del.svg`,
-      documentOk: `${pluginUrl}/images/document-ok.svg`,
-      documentUp: `${pluginUrl}/images/document-up.svg`,
-      image: `${pluginUrl}/images/image.svg`,
-      imageAdd: `${pluginUrl}/images/image-add.svg`,
-      imageDel: `${pluginUrl}/images/image-del.svg`,
-      imageOk: `${pluginUrl}/images/image-ok.svg`,
-      imageUp: `${pluginUrl}/images/image-up.svg`
-    };
-  }, [pluginUrl]);
-
-  // Preload images after 2 seconds
-  useEffect(() => {
-    const preloadTimeout = setTimeout(() => {
-      const preloadedImages = [];
-      Object.values(svgImages).forEach(src => {
-        const img = new Image();
-        img.src = src;
-        preloadedImages.push(img);
-      });
-    }, 2000);
-    return () => clearTimeout(preloadTimeout);
-  }, [svgImages]);
-
-  const type = useMemo(() => {
-    if (uploadedFile?.localFile) {
-      return uploadedFile.localFile.type.startsWith('image/') ? 'image' : 'document';
-    }
-    return draggedType;
-  }, [uploadedFile, draggedType]);
-
   useImperativeHandle(ref, () => ({ handleExternalFile }));
 
   const handleClick = () => {
@@ -72,37 +31,63 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
     if (file) onUploadFile(file);
   };
 
-  const hasUploadedFile = uploadedFile?.uploadedId;
+  // Mock uploadedFile for testing
+  // const mockUploadedFile = {
+  //   localFile: { type: 'image/png' },
+  //   uploadedId: '123',
+  //   uploadProgress: 83.39
+  // };
+  const file = uploadedFile;
 
-  const status = useMemo(() => {
-    if (uploadedFile?.uploadProgress) return 'Up';
-    if (draggedType) return 'Add';
-    if (isHovering && hasUploadedFile) return 'Del';
-    if (hasUploadedFile) return 'Ok';
-    if (isHovering && !hasUploadedFile) return 'Add';
-    return 'Idle';
-  }, [uploadedFile, draggedType, isHovering]);
-
-  const svgImg = useMemo(() => {
-    if (!type) {
-      return svgImages[status === 'Add' ? 'idleAdd' : 'idle'];
+  const type = useMemo(() => {
+    if (file?.localFile) {
+      return file.localFile.type.startsWith('image/') ? 'image' : 'document';
     }
-    return svgImages[`${type}${status}`] || svgImages['idle'];
-  }, [type, status]);
+    return draggedType;
+  }, [file, draggedType]);
 
   const imgClass = useMemo(() => {
-    if (!type) {
-      return modCss(`mwai-idle-${status.toLowerCase()}`);
+    let status = 'idle';
+    if (file?.uploadProgress) {
+      status = 'up';
     }
-    return modCss(`mwai-${type.toLowerCase()}-${status.toLowerCase()}`);
-  }, [type, status]);
+    else if (draggedType) {
+      status = 'add';
+    }
+    else if (isHovering && hasUploadedFile) {
+      status = 'del';
+    }
+    else if (hasUploadedFile) {
+      status = 'ok';
+    }
+    else if (isHovering && !hasUploadedFile) {
+      status = 'add';
+    }
 
+    const typeClass = type ? type.toLowerCase() : 'idle';
+    return modCss(['mwai-file-upload-icon', `mwai-${typeClass}-${status}`]);
+  }, [type, file, draggedType, isHovering, hasUploadedFile, modCss]);
+
+  // Calculate the UploadProgress Value
+  const uploadProgress = useMemo(() => {
+    if (file?.uploadProgress) {
+      if (file.uploadProgress > 99) {
+        return 99;
+      }
+      return Math.round(file.uploadProgress);
+    }
+    return "";
+  }, [file]);
+  
   return (
     <div disabled={disabled} onClick={handleClick}
       onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
       style={{ cursor: disabled ? 'default' : 'pointer', ...style }} {...rest}>
-      <img src={svgImg} alt="Upload a Document or an Image" className={imgClass} />
-      <span>{uploadedFile?.uploadProgress && `${Math.round(uploadedFile.uploadProgress)}`}</span>
+      <div className={imgClass}>
+        <span className="mwai-file-upload-progress">
+          {uploadProgress}
+        </span>
+      </div>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
     </div>
   );

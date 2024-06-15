@@ -1,5 +1,5 @@
-// Previous: 2.3.6
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.3.9
 
 const { useMemo, useEffect, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,9 +20,9 @@ import Shortcode from './Shortcode';
 const setCurrentChatbot = (chatbotId) => {
   if (chatbotId) {
     localStorage.setItem('mwai-admin-chatbotId', chatbotId);
-  } else {
-    localStorage.removeItem('mwai-admin-chatbotId');
+    return;
   }
+  localStorage.removeItem('mwai-admin-chatbotId');
 };
 
 const getCurrentChatbot = () => {
@@ -51,15 +51,17 @@ const Chatbots = (props) => {
 
   const defaultChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
+      const chatbot = chatbots.find(chat => chat.botId === 'default');
       return chatbot;
     }
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots.find(chatbot => chatbot.botId === currentBotId);
-      setCurrentChatbot(chatbot?.botId);
+      const chatbot = chatbots.find(chat => chat.botId === currentBotId);
+      if (chatbot) {
+        setCurrentChatbot(chatbot.botId);
+      }
       return chatbot;
     }
   }, [chatbots, currentBotId]);
@@ -70,7 +72,7 @@ const Chatbots = (props) => {
       return chatTheme;
     }
     return themes.find(theme => theme.themeId === 'chatgpt');
-  }, [currentChatbot, themes, chatbots]);
+  }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
     if (id === 'botId' && value === 'default') {
@@ -81,11 +83,11 @@ const Chatbots = (props) => {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if (id === 'botId' && chatbots && chatbots.find(x => x.botId === value)) {
+    if (id === 'botId' && chatbots && chatbots.some(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-    if (id === 'botId' && value !== currentChatbot?.botId) {
+    if (id === 'botId' && value !== currentChatbot[id]) {
       setCurrentBotId(value);
     }
 
@@ -225,7 +227,7 @@ const Chatbots = (props) => {
               restUrl: restUrl,
               stream: stream,
               debugMode: options?.debug_mode,
-              typewriter: options?.shortcode_chat_typewriter,
+              typewriter: options?.chatbot_typewriter,
               speech_recognition: options?.shortcode_chat_speech_recognition,
               speech_synthesis: options?.shortcode_chat_speech_synthesis,
             }}

@@ -1,0 +1,521 @@
+// main: chatgpt.scss, messages.scss
+
+@mixin file-upload-icon-sprites {
+	$icon-size: 32px;
+
+	&.mwai-idle-add {
+		background-position: -1 * $icon-size -3 * $icon-size;
+	}
+
+	&.mwai-image-add {
+		background-position: -1 * $icon-size -0 * $icon-size;
+	}
+
+	&.mwai-image-up {
+		background-position: -2 * $icon-size -0 * $icon-size;
+	}
+
+	&.mwai-image-del {
+		background-position: -3 * $icon-size -0 * $icon-size;
+	}
+
+	&.mwai-image-ok {
+		background-position: -4 * $icon-size -0 * $icon-size;
+	}
+
+	&.mwai-document-add {
+		background-position: -1 * $icon-size -2 * $icon-size;
+	}
+
+	&.mwai-document-up {
+		background-position: -2 * $icon-size -2 * $icon-size;
+	}
+
+	&.mwai-document-del {
+		background-position: -3 * $icon-size -2 * $icon-size;
+	}
+
+	&.mwai-document-ok {
+		background-position: -4 * $icon-size -2 * $icon-size;
+	}
+
+	.mwai-file-upload-progress {
+		position: absolute;
+		font-size: 8px;
+		width: 21px;
+		top: 24px;
+		left: 23px;
+		overflow: hidden;
+		text-align: center;
+		font-weight: bold;
+		color: white;
+	}
+}
+
+@mixin microphone {
+
+	width: 32px;
+	height: 32px;
+
+	svg {
+		width: 32px;
+		height: 32px;
+		fill: var(--mwai-fontColor);
+		opacity: 0.5;
+		filter: grayscale(100%);
+		transition: opacity 0.3s ease-out;
+		padding: 5px 10px;
+		cursor: pointer;
+	}
+
+	&[active=true] svg {
+		opacity: 1;
+	}
+
+	&[disabled] svg {
+		opacity: 0;
+		cursor: not-allowed;
+	}
+}
+
+@mixin fullscreen-window {
+  position: fixed;
+  left: 0 !important;
+  right: 0 !important; 
+  bottom: 0 !important;
+  top: 0 !important;
+  width: inherit;
+  height: inherit;
+  max-height: inherit;
+  max-width: inherit;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  z-index: 999999;
+  background-color: var(--mwai-backgroundSecondaryColor);
+
+	.mwai-header {
+		border-radius: 0;
+	} 
+
+  .mwai-content {
+    height: 100%;
+    max-height: inherit;
+		border-radius: 0;
+
+    .mwai-conversation {
+      flex: auto; 
+      max-height: none;
+    }
+  }
+}
+
+@mixin common-styles {
+
+	// Transitions
+
+	&.mwai-transition, .mwai-transition {
+		opacity: 0;
+		transition: opacity 350ms ease-in-out;
+	}
+
+	&.mwai-transition-visible, .mwai-transition-visible {
+		opacity: 1;
+	}
+
+	.mwai-text {
+		
+		img {
+			max-width: 100%;
+		}
+
+		div {
+			p:first-child {
+				margin-top: 0;
+			}
+			p:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+
+	// The icon when the chat window is closed.
+
+	.mwai-trigger {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		transition: all 0.2s ease-out;
+		z-index: 9999;
+		display: flex;
+		flex-direction: column;
+		align-items: end;
+
+		.mwai-icon-text-container {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+
+			.mwai-icon-text {
+				background: var(--mwai-iconTextBackgroundColor);
+				color: var(--mwai-iconTextColor);
+				box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.15);
+				max-width: 200px;
+				font-size: 13px;
+				margin-bottom: 15px;
+				padding: 10px 15px;
+				border-radius: 8px;
+			}
+
+			.mwai-icon-text-close {
+				color: var(--mwai-iconTextColor);
+				background: var(--mwai-iconTextBackgroundColor);
+				padding: 5px;
+				width: 20px;
+				height: 20px;
+				border-radius: 100%;
+				display: none;
+				justify-content: center;
+				align-items: center;
+				margin-bottom: 3px;
+			}
+
+			&:hover {
+				cursor: pointer;
+
+				.mwai-icon-text-close {
+					display: flex;
+					font-size: 12px;
+
+					&:hover {
+						filter: brightness(1.2);
+					}
+				}
+			}
+
+			@media (max-width: 760px) {
+				.mwai-icon-text-close {
+					display: flex;
+				}
+			}
+
+		}
+
+		.mwai-icon-container {
+
+			.mwai-icon {
+				filter: drop-shadow(0px 0px 15px rgba(0, 0, 0, 0.15));
+				transition: all 0.2s ease-out;
+
+				&:hover {
+					cursor: pointer;
+					transform: scale(1.05);
+				}
+			}
+		}
+	}
+
+	// Handle the chat window and fullscreen.
+	// Let's keep this common for all themes.
+
+	&.mwai-window {
+		position: fixed;
+		right: 30px;
+		bottom: 30px;
+		width: var(--mwai-width);
+		z-index: 9999;
+
+		.mwai-header {
+			display: none;
+			justify-content: flex-end;
+			align-items: center;
+			border-radius: var(--mwai-borderRadius) var(--mwai-borderRadius) 0 0;
+			background: var(--mwai-backgroundHeaderColor);
+
+			.mwai-buttons {
+				display: flex;
+				align-items: center;
+
+				.mwai-resize-button {
+					justify-content: center;
+					height: 32px;
+					width: 22px;
+					cursor: pointer;
+					display: flex;
+					justify-content: center;
+					align-items: center;
+
+					&:before {
+						transition: all 0.2s ease-out;
+						content: ' ';
+						cursor: pointer;
+						position: absolute;
+						height: 13px;
+						width: 13px;
+						border: 1px solid var(--mwai-headerButtonsColor);
+					}
+
+					&:hover:before {
+						width: 16px;
+						height: 16px;
+					}
+				}
+
+				.mwai-close-button {
+					justify-content: center;
+					height: 32px;
+					width: 33px;
+					cursor: pointer;
+					border-radius: var(--mwai-borderRadius);
+
+					&:before {
+						transition: all 0.2s ease-out;
+						transform: translate(16px, 5px) rotate(45deg);
+					}
+					&:after {
+						transition: all 0.2s ease-out;
+						transform: translate(16px, 5px) rotate(-45deg);
+					}
+				}
+
+				.mwai-close-button:before, .mwai-close-button:after {
+					content: ' ';
+					cursor: pointer;
+					position: absolute;
+					height: 22px;
+					width: 1px;
+					background-color: var(--mwai-headerButtonsColor);
+				}
+
+				.mwai-close-button:hover {
+					&:before {
+						opacity: 1;
+						transform: translate(16px, 5px) rotate(135deg);
+					}
+					&:after {
+						opacity: 1;
+						transform: translate(16px, 5px) rotate(45deg);
+					}
+				}
+
+			}
+		}
+
+		.mwai-content {
+			display: none;
+			opacity: 0;
+			max-height: var(--mwai-maxHeight);
+			border-radius: 0 0 var(--mwai-borderRadius) var(--mwai-borderRadius);
+			overflow: hidden;
+		}
+
+		&.mwai-bottom-left {
+			bottom: 30px;
+			right: inherit;
+			left: 30px;
+
+			.mwai-open-button {
+				right: inherit;
+				left: 0;
+			}
+		}
+
+		&.mwai-top-right {
+			top: 30px;
+			bottom: inherit;
+			right: 30px;
+
+			.mwai-open-button {
+				top: 0;
+				bottom: inherit;
+			}
+		}
+
+		&.mwai-top-left {
+			top: 30px;
+			bottom: inherit;
+			right: inherit;
+			left: 30px;
+
+			.mwai-open-button {
+				top: 0;
+				bottom: inherit;
+				right: inherit;
+				left: 0;
+			}
+		}
+
+		&.mwai-top-left, &.mwai-bottom-left {
+			
+			.mwai-open-button {
+				align-items: flex-start;
+			}
+		}
+
+		&.mwai-top-right, &.mwai-top-left {
+
+			.mwai-open-button {
+				flex-direction: column-reverse;
+
+				.mwai-icon-text {
+					margin-bottom: 0;
+					margin-top: 15px;
+				}
+			}
+		}
+	}
+
+	// Popup chat is fullscreen
+
+	&.mwai-window.mwai-fullscreen {
+
+		.mwai-header  {
+
+			.mwai-buttons  {
+				margin-bottom: 0px;
+
+				.mwai-resize-button {
+					&:before {
+						width: 16px;
+						height: 16px;
+					}
+			
+					&:hover:before {
+						width: 13px;
+						height: 13px;
+					}
+				}
+			}
+		}
+	}
+
+	// Standard chat is fullscreen
+
+	&.mwai-fullscreen:not(.mwai-window), &.mwai-fullscreen.mwai-window.mwai-open {
+		@include fullscreen-window;
+	}
+
+	// Popup chat is open
+
+	&.mwai-window.mwai-open {
+
+		.mwai-header {
+			display: flex;
+		}
+
+		.mwai-content {
+			display: flex;
+			transition: opacity 200ms ease-in-out 0s;
+			opacity: 1;
+		}
+
+		.mwai-open-button {
+			display: none;
+		}
+	}
+
+	.mwai-error {
+		margin: var(--mwai-spacing);
+		color: white;
+		background: rgba(180, 55, 55, 0.55);
+		padding: var(--mwai-spacing);
+		border-radius: var(--mwai-borderRadius);
+
+		&:hover {
+			cursor: pointer;
+			background: rgba(180, 44, 44, 0.85);
+		}
+	}
+
+	&.mwai-bubble .mwai-icon-container {
+		background: var(--mwai-bubbleColor);
+		width: 60px;
+		height: 60px;
+		border-radius: 100%;
+		transition: all 0.2s ease-out;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+
+		.mwai-icon {
+			max-width: 50%;
+			max-height: 50%;
+			filter: none;
+
+			&:hover {
+				transform: none;
+			}
+		}
+
+		&:hover {
+			cursor: pointer;
+			filter: brightness(1.1);
+		}
+	}
+
+	@media (max-width: 760px) {
+		&.mwai-window.mwai-open {
+			@include fullscreen-window;
+		
+			.mwai-input {
+				flex-direction: column;
+
+				button {
+					font-size: 16px;
+					margin-left: 0;
+					width: 100%;
+				}
+				
+				.mwai-input-text {
+					margin-bottom: var(--mwai-spacing);
+					width: 100%;
+
+					// This is to avoid iOS from zooming in when focusing on an input field.
+					input, textarea {
+						font-size: 16px;
+					}
+				}
+			}
+	
+			.mwai-content {
+				display: flex;
+				transition: opacity 200ms ease-in-out 0s;
+				opacity: 1;
+				height: 100%;
+				max-height: inherit;
+	
+				.mwai-conversation {
+					flex: auto;
+					max-height: none;
+				}
+			}
+
+			.mwai-resize-button {
+				display: none !important;
+			}
+	
+			.mwai-open-button {
+				display: none;
+			}
+		}
+	}
+
+	// Keyframes for buttons
+
+	@keyframes mwai-button-spinner {
+
+		from {
+			transform: rotate(0turn);
+		}
+		to {
+			transform: rotate(1turn);
+		}
+	}
+
+	// WordPress Admin Bar
+
+	.admin-bar .mwai-fullscreen:not(.mwai-window),
+	.admin-bar .mwai-fullscreen.mwai-window.mwai-open {
+		top: 32px;
+	}
+}

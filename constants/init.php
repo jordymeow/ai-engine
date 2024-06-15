@@ -1,5 +1,6 @@
 <?php
 
+require_once( MWAI_PATH . '/constants/engines.php' );
 require_once( MWAI_PATH . '/constants/models.php' );
 
 define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
@@ -17,8 +18,10 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'window' => false,
 	'icon' => '',
 	'iconText' => '',
-	'iconAlt' => 'AI Chatbot Avatar',
+	'iconTextDelay' => 1,
+	'iconAlt' => 'AI Engine Chatbot',
 	'iconPosition' => 'bottom-right',
+	'iconBubble' => false,
 	'fullscreen' => false,
 	'copyButton' => false,
 	'localMemory' => true,
@@ -79,6 +82,7 @@ define ( 'MWAI_LIMITS', [
 
 define( 'MWAI_OPTIONS', [
 	'module_suggestions' => true,
+	'module_chatbots' => true,
 	'module_forms' => false,
 	'module_blocks' => false,
 	'module_playground' => true,
@@ -90,29 +94,22 @@ define( 'MWAI_OPTIONS', [
 	'module_embeddings' => false,
 	'module_transcription' => false,
 	'module_advisor' => false,
-	'shortcode_chat' => true,
-	'shortcode_chat_stream' => false,
-	'shortcode_chat_typewriter' => false,
 	'speech_recognition' => false,
 	'speech_synthesis' => false,
-	'shortcode_chat_discussions' => false,
-	'shortcode_chat_moderation' => false,
-	'shortcode_chat_syntax_highlighting' => false,
+	'chatbot_typewriter' => false,
+	'chatbot_discussions' => false,
+	'chatbot_moderation' => false,
+	'syntax_highlight' => false,
 	'limits' => MWAI_LIMITS,
-
-	// General Settings for OpenAI
-	'fallback_model' => MWAI_FALLBACK_MODEL,
-	'openai_models' => null,
-	'openai_usage' => [],
-
-	// General Settings for Anthropic
-	'anthropic_models' => null,
 
 	// Settings for Images
 	'image_local_upload' => 'uploads',
 	'image_remote_upload' => 'data',
 	'image_expires' => 1 * HOUR_IN_SECONDS,
 
+	'ai_models' => [],
+	'ai_models_usage' => [],
+	'ai_streaming' => false,
 	'ai_default_env' => null,
 	'ai_default_model' => MWAI_FALLBACK_MODEL,
 	'ai_envs' => [
@@ -127,8 +124,8 @@ define( 'MWAI_OPTIONS', [
 			'usage' => [], // TODO:  We should only keep the last year of usage
 		],
 		[
-			'name' => 'Azure',
-			'type' => 'azure/openai',
+			'name' => 'Claude',
+			'type' => 'anthropic',
 			'apikey' => '',
 		]
 	],
@@ -152,7 +149,6 @@ define( 'MWAI_OPTIONS', [
 		'syncPostStatus' => ['publish'],
 		'syncPostCategories' => [],
 	],
-	'extra_models' => "",
 	'public_api' => false,
 	'debug_mode' => true,
 	'server_debug_mode' => true,

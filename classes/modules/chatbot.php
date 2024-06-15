@@ -5,7 +5,8 @@
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName',
 	'textSend', 'textClear', 'imageUpload', 'fileSearch',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
-	'themeId', 'window', 'icon', 'iconText', 'iconAlt', 'iconPosition', 'fullscreen', 'copyButton'
+	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
+	'fullscreen', 'copyButton'
 ] );
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions',
@@ -30,26 +31,56 @@ class Meow_MWAI_Modules_Chatbot {
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		$this->siteWideChatId = $this->core->get_option( 'botId' );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'register_scripts' ) );
 
-		if ( $this->core->get_option( 'shortcode_chat_discussions' ) ) {
-      add_shortcode( 'mwai_discussions', [ $this, 'shortcode_chat_discussions' ] );
+		if ( $this->core->get_option( 'chatbot_discussions' ) ) {
+      add_shortcode( 'mwai_discussions', [ $this, 'chatbot_discussions' ] );
     }
 	}
 
 	public function register_scripts() {
+
+		// Load JS
 		$physical_file = trailingslashit( MWAI_PATH ) . 'app/chatbot.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-		wp_register_script( 'mwai_chatbot', trailingslashit( MWAI_URL ) . 'app/chatbot.js',
-			[ 'wp-element' ], $cache_buster, false );
-		if ( !empty( $this->siteWideChatId ) && $this->siteWideChatId !== 'none' ) {
+		wp_register_script( 'mwai_chatbot', trailingslashit( MWAI_URL )
+			. 'app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
+
+			// Load CSS for the Themes
+		$themes = $this->core->get_themes();
+		foreach ( $themes as $theme ) {
+			if ( $theme['type'] === 'internal' ) {
+				$themeId = $theme['themeId'];
+				$filename = $themeId . '.css';
+				$physical_file = trailingslashit( MWAI_PATH ) . 'themes/' . $filename;
+				$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
+				wp_register_style( 'mwai_chatbot_theme_' . $themeId, trailingslashit( MWAI_URL )
+					. 'themes/' . $filename, [], $cache_buster );
+			}
+		}
+
+		// Actual loading of the scripts
+		$hasSiteWideChat = $this->siteWideChatId && $this->siteWideChatId !== 'none';
+		if ( is_admin() || $hasSiteWideChat ) {
 			$this->enqueue_scripts();
-			add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+			if ( $hasSiteWideChat ) {
+				// Chatbot Injection
+				add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+			}
 		}
 	}
 
 	public function enqueue_scripts() {
+		// TODO: We should optimize and only load the themes that are used.
+		$themes = $this->core->get_themes();
+		foreach ( $themes as $theme ) {
+			if ( $theme['type'] === 'internal' ) {
+				$themeId = $theme['themeId'];
+				wp_enqueue_style( "mwai_chatbot_theme_$themeId" );
+			}
+		}
 		wp_enqueue_script( "mwai_chatbot" );
-		if ( $this->core->get_option( 'shortcode_chat_syntax_highlighting' ) ) {
+		if ( $this->core->get_option( 'syntax_highlight' ) ) {
 			wp_enqueue_script( "mwai_highlight" );
 		}
 	}
@@ -373,10 +404,10 @@ class Meow_MWAI_Modules_Chatbot {
 			'pluginUrl' => MWAI_URL,
 			'restUrl' => untrailingslashit( get_rest_url() ),
 			'debugMode' => $this->core->get_option( 'debug_mode' ),
-			'typewriter' => $this->core->get_option( 'shortcode_chat_typewriter' ),
+			'typewriter' => $this->core->get_option( 'chatbot_typewriter' ),
 			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
 			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
-			'stream' => $this->core->get_option( 'shortcode_chat_stream' ),
+			'stream' => $this->core->get_option( 'ai_streaming' ),
 		];
 		return $frontSystem;
 	}
@@ -494,7 +525,7 @@ class Meow_MWAI_Modules_Chatbot {
 		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
 	}
 
-	function shortcode_chat_discussions( $atts ) {
+	function chatbot_discussions( $atts ) {
     $atts = empty($atts) ? [] : $atts;
 
     // Resolve the bot info

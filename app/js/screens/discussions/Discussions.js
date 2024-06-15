@@ -1,5 +1,5 @@
-// Previous: 2.2.90
-// Current: 2.3.8
+// Previous: 2.3.8
+// Current: 2.3.9
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -103,6 +103,8 @@ const StyledMessageWrapper = styled.div`
   }
 `;
 
+// Instead of a tag, write the object as raw HTML
+// We should also avoid the iframe tag
 const options = {
   overrides: {
     object: {
@@ -128,6 +130,7 @@ const options = {
 
 const StyledMessage = ({ content }) => {
   const [ processedContent, setProcessedContent ] = useState(content || '');
+
   const checkImageURL = (url) => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -136,6 +139,7 @@ const StyledMessage = ({ content }) => {
       img.src = url;
     });
   };
+
   const cleanMessage = async (markdownContent) => {
     const regex = /!\[.*?\]\((.*?)\)/g;
     let newContent = markdownContent;
@@ -150,11 +154,13 @@ const StyledMessage = ({ content }) => {
     }
     setProcessedContent(newContent);
   };
+
   useEffect(() => {
     if (content) {
       cleanMessage(content);
     }
   }, [content]);
+
   return (
     <StyledMessageWrapper>
       <Markdown options={options}>{processedContent}</Markdown>
@@ -166,6 +172,7 @@ const Message = ({ message }) => {
   const embeddings = message?.extra?.embeddings ? message?.extra?.embeddings : (
     message?.extra?.embedding ? [message?.extra?.embedding] : []
   );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
       <StyledContext>
@@ -245,10 +252,10 @@ const Discussions = () => {
 
   useEffect(() => {
     setChatsQueryParams({ ...chatsQueryParams, filters: filters });
-  }, [filters]);
+  }, [filters, chatsQueryParams]);
 
   const chatsTotal = useMemo(() => {
-    return chatsData?.total || 0;
+    return chatsData?.total ?? 0;
   }, [chatsData]);
 
   const chatsRows = useMemo(() => {
@@ -259,10 +266,10 @@ const Discussions = () => {
       const formattedCreated = tableDateTimeFormatter(x.created);
       const formattedUpdated = tableDateTimeFormatter(x.updated);
       const user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
-      const userMessages = messages?.filter(y => y.role === 'user' || y.type === 'user');
+      const userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
       const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
       const lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
-      const chatbotName = chatbots.find(y => y.botId === x.botId)?.name ?? 'Unknown';
+      const chatbotName = chatbots.find(y => y.botId === x.botId)?.name;
       return {
         id: x.id,
         botId: <>
@@ -317,14 +324,12 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = [];
-      if (selectedChats) {
-        selectedChatIds.push(...selectedChats.map(x => x.chatId));
-      }
+      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
     await queryClient.invalidateQueries({ queryKey: ['chats'] });
+    // Should be refetchQueries, but calling invalidate is enough
     queryClient.refetchQueries({ queryKey: ['chats'] });
     setBusyAction(false);
   }
@@ -333,8 +338,11 @@ const Discussions = () => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
+          onCurrentPageChanged={(page) => {
+            setChatsQueryParams(prev => ({ ...prev, page }));
+          }}
           total={chatsTotal} onClick={page => { 
-            setChatsQueryParams({ ...chatsQueryParams, page });
+            setChatsQueryParams(prev => ({ ...prev, page }));
           }}
         />
         <NekoButton className="primary" style={{ marginLeft: 5 }}
@@ -359,11 +367,8 @@ const Discussions = () => {
   const formattedUpdated = tableDateTimeFormatter(discussion?.updated);
 
   return (<>
-
     <NekoWrapper>
-
       <NekoColumn minimal style={{ flex: 2 }}>
-
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
@@ -380,11 +385,10 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
-
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
-              setChatsQueryParams({ ...chatsQueryParams, sort: { accessor, by } });
+              setChatsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
             }}
             emptyMessage={emptyMessage}
             filters={filters}
@@ -398,16 +402,15 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { 
-              if (selectedIds.includes(id) && selectedIds.length === 1) {
+              if (selectedIds.length === 1 && selectedIds[0] === id) {
                 setSelectedIds([]);
                 return;
               }
               setSelectedIds([id]);
             }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
+            onSelect={ids => { setSelectedIds(prev => [...prev, ...ids]) }}
+            onUnselect={ids => { setSelectedIds(prev => [...prev.filter(x => !ids.includes(x))]) }}
           />
-
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
@@ -415,28 +418,20 @@ const Discussions = () => {
             </NekoButton>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
               style={{ width: 180 }}
-              onChange={() => setAutoRefresh(!autoRefresh)} />
+              onChange={() => setAutoRefresh(prev => !prev)} />
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
-
         </NekoBlock>
-
       </NekoColumn>
-
       <NekoColumn minimal style={{ flex: 1 }}>
-
         <NekoBlock className="primary" title="Selected Discussion" action={<>
         </>}>
-
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
-
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
-
         </NekoBlock>
-
         {!!discussion && <NekoBlock className="primary" title="Information" action={<>
         </>}>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
@@ -475,15 +470,10 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{formattedUpdated}</div>
           </div>
-
         </NekoBlock>}
-
       </NekoColumn>
-
     </NekoWrapper>
-
     <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
-
   </>);
 }
 

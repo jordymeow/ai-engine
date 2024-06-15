@@ -15,7 +15,7 @@ class Meow_MWAI_Modules_Discussions {
     $this->wpdb = $wpdb;
     $this->table_chats = $wpdb->prefix . 'mwai_chats';
 
-    if ( $this->core->get_option( 'shortcode_chat_discussions' ) ) {
+    if ( $this->core->get_option( 'chatbot_discussions' ) ) {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
     }

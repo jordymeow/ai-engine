@@ -1,11 +1,9 @@
-// Previous: 2.1.1
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.3.9
 
-// React & Vendor Libs
 const { useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// NekoUI
 import { NekoButton, NekoTabs, NekoTab } from '@neko-ui';
 
 import { themes as initThemes } from '@app/settings';
@@ -65,11 +63,13 @@ const Themes = (props) => {
 
   const deleteCurrentTheme = async () => {
     setBusy(true);
-    const newThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
-    const firstTheme = newThemes[0];
-    onSwitchTheme(firstTheme.themeId);
-    await updateThemes(newThemes);
-    await queryClient.setQueryData(['themes'], newThemes);
+    const remainingThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
+    const firstTheme = remainingThemes[0] || null;
+    if (firstTheme) {
+      onSwitchTheme(firstTheme.themeId);
+    }
+    await updateThemes(remainingThemes);
+    await queryClient.setQueryData(['themes'], remainingThemes);
     setBusy(false);
   }
 
@@ -81,7 +81,7 @@ const Themes = (props) => {
       type: newThemes[themeIndex].type,
       name: newThemes[themeIndex].name,
       themeId: newThemes[themeIndex].themeId,
-      settings: null,
+      settings: [],
       style: ""
     };
     await updateThemes(newThemes);
@@ -91,7 +91,7 @@ const Themes = (props) => {
 
   return (<>
     <NekoTabs inversed onChange={onChangeTab} currentTab={currentTheme?.themeId}
-      action={<><NekoButton className="secondary" icon='plus' onClick={addNewTheme} /></>}>
+      action={<><NekoButton rounded className="secondary" icon='plus' onClick={addNewTheme} /></>}>
       {themes?.map(x => <NekoTab key={x.themeId} title={x.name} busy={busy}>
         <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} deleteTheme={deleteCurrentTheme} />
       </NekoTab>)}

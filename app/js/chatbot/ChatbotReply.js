@@ -1,5 +1,5 @@
-// Previous: 2.3.5
-// Current: 2.3.6
+// Previous: 2.3.6
+// Current: 2.3.9
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -21,8 +21,20 @@ const LinkContainer = ({ href, children, ...rest }) => {
   }
 
   const currentDomain = window.location.hostname;
-  const linkDomain = new URL(href, window.location.href).hostname;
-  const target = currentDomain === linkDomain ? "_self" : "_blank";
+  let linkDomain = '';
+  let target = '_self';
+
+  try {
+    const url = new URL(href, window.location.href);
+    linkDomain = url.hostname;
+    target = currentDomain === linkDomain ? '_self' : '_blank';
+  }
+  catch (error) {
+    console.error('Invalid URL:', error);
+    linkDomain = '';
+    target = '_blank';
+  }
+
   const isFile = String(children) === "Uploaded File";
 
   if (isFile) {
@@ -47,15 +59,16 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
   const name = isUser ? userName : (isAI ? aiName : null);
-  const [ isLongProcess, setIsLongProcess ] = useState(message.isQuerying || message.isStreaming);
+  const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
-  const matchCount = (content.match(/```/g) || []).length;
-  if (matchCount % 2 !== 0) { // if count is odd
-    content += "\n```"; // add ``` at the end
-  } else if (message.isStreaming) {
+  const matches = (content.match(/```/g) || []).length;
+  if (matches % 2 !== 0) { 
+    content += "\n```"; 
+  }
+  else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
@@ -77,11 +90,12 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
         },
         img: {
           props: {
-            onError: (e) => {
+            onError: (e, f) => {
               const src = e.target.src;
-              const isImage = /\.(jpeg|jpg|gif|png)$/.test(src);
+              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/) != null;
               if (isImage) {
                 e.target.src = "https://placehold.co/600x200?text=Expired+Image";
+                return;
               }
             },
             className: modCss('mwai-image'),
@@ -121,7 +135,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
   const [ images, setImages ] = useState(message?.images);
 
-  useEffect(() => { onRendered(); }, [message]);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
@@ -138,7 +152,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
         <div className={modCss('mwai-gallery')}>
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img src={image} onError={() => handleImageError(index)} />
+              <img key={index} src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -151,21 +165,25 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton, userName, aiName, modCss } = state;
   const typedElement = useRef(null);
-  const [ dynamic, setDynamic ] = useState(message.isQuerying);
+  const [ dynamic ] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
   const [ userScrolledUp, setUserScrolledUp ] = useState(false);
   const name = message.role === 'user' ? userName : aiName;
   const content = message.content;
 
   useInterval(200, () => {
-    if (!conversationRef?.current) return;
+    if (!conversationRef?.current) {
+      return;
+    }
     if (!userScrolledUp) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, !ready);
 
   useEffect(() => {
-    if (!conversationRef?.current) return;
+    if (!conversationRef?.current) {
+      return;
+    }
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
       const scroll = scrollTop + clientHeight;
@@ -180,7 +198,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, [conversationRef]);
 
   useEffect(() => {
-    if (dynamic) { 
+    if (!dynamic) { 
       onRendered();
       return;
     }
@@ -202,8 +220,8 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
       },
     };
 
-    const typedInstance = new Typed(typedElement.current, options);
-    return () => { typedInstance.destroy(); };
+    const typed = new Typed(typedElement.current, options);
+    return () => { typed.destroy(); };
   }, [message, message.isQuerying]);
 
   return (
@@ -236,27 +254,16 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const isImages = message?.images?.length > 0;
 
   const onRendered = () => {
-    if (!mainElement.current) return;
-    if (message.isQuerying) return;
-    if (mainElement.current.classList.contains('mwai-rendered')) return;
+    if (!mainElement.current) { return; }
+    if (message.isQuerying) { return; }
+    if (mainElement.current.classList.contains('mwai-rendered')) { 
+      return;
+    }
     if (typeof hljs !== 'undefined') {
       mainElement.current.classList.add('mwai-rendered');
       const selector = mainElement.current.querySelectorAll('pre code');
       selector.forEach((el) => {
         hljs.highlightElement(el);
-        const classesToReplace = ['hljs', 'hljs-title', 'hljs-keyword', 'hljs-string'];
-        classesToReplace.forEach((oldClass) => {
-          const elementsWithOldClass = el.querySelectorAll('.' + oldClass);
-          elementsWithOldClass.forEach((element) => {
-            element.classList.remove(oldClass);
-            const classes = (modCss(oldClass)).split(' ');
-            if (classes && classes.length > 1) {
-              element.classList.add(classes[1]);
-            } else {
-              console.warn('Could not find class for ' + oldClass);
-            }
-          });
-        });
       });
     }
   };
@@ -269,6 +276,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
     }
   
     if (message.role === 'assistant') {
+  
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
@@ -297,5 +305,3 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   return output;
 };
-
-export default ChatbotReply;

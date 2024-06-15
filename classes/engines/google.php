@@ -373,7 +373,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
   }
 
   public function get_models() {
-    return $this->core->get_option( 'google_models' );
+    return $this->core->get_engine_models( 'google' );
   }
 
   public function retrieve_models() {

@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.3.8
+// Previous: 2.3.8
+// Current: 2.3.9
 
 import React, { useMemo, useState } from 'react';
 import { useModels } from '@app/helpers-admin';
@@ -28,10 +28,18 @@ const UsageDetails = ({ month, usageData }) => {
 
   return (
     <table style={{ width: 'calc(100% - 36px)', margin: '5px 18px 0px 18px', borderCollapse: 'collapse' }}>
+      {/* <thead>
+        <tr>
+          <th style={{ textAlign: 'left', paddingRight: 10 }}>Model</th>
+          <th style={{ textAlign: 'left', paddingRight: 10 }}>Unit</th>
+          <th style={{ textAlign: 'right', paddingRight: 10 }}>Value</th>
+          <th style={{ textAlign: 'right' }}>Price</th>
+        </tr>
+      </thead> */}
       <tbody>
         {usageData[month].map((data, index) => {
           const dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
-          const formattedUnits = (data.units * 100).toLocaleString(); // bug: scaling units unexpectedly
+          const formattedUnits = data.units.toLocaleString();
           return (
             <tr key={index}>
               <td style={{ paddingRight: 10 }}>{data.name === 'Unknown Model' ? `⚠️ ${data.rawName}` : data.name}</td>
@@ -48,7 +56,7 @@ const UsageDetails = ({ month, usageData }) => {
 
 const MonthlyUsage = ({ options }) => {
   const { models, getModel, calculatePrice } = useModels(options, null, true);
-  const openai_usage = options?.openai_usage;
+  const ai_models_usage = options?.ai_models_usage;
   const { colors } = useNekoColors();
 
   const [groupBy, setGroupBy] = useState('model');
@@ -57,8 +65,8 @@ const MonthlyUsage = ({ options }) => {
   const calculateUsageData = () => {
     const usageData = {};
     
-    Object.keys(openai_usage).forEach((month) => {
-      const monthUsage = openai_usage[month];
+    Object.keys(ai_models_usage).forEach((month) => {
+      const monthUsage = ai_models_usage[month];
       if (!usageData[month]) usageData[month] = [];
 
       const modelUsageMap = {};
@@ -104,7 +112,7 @@ const MonthlyUsage = ({ options }) => {
           };
         }
 
-        modelUsageMap[name].units += (isImage ? outUnits : inUnits + outUnits);
+        modelUsageMap[name].units += isImage ? outUnits : inUnits + outUnits;
         modelUsageMap[name].price += price;
       });
 
@@ -115,7 +123,7 @@ const MonthlyUsage = ({ options }) => {
     return usageData;
   };
 
-  const usageData = useMemo(calculateUsageData, [openai_usage, models]);
+  const usageData = useMemo(calculateUsageData, [ai_models_usage, models]);
 
   const chartData = useMemo(() => {
     const labels = Object.keys(usageData);
@@ -165,7 +173,7 @@ const MonthlyUsage = ({ options }) => {
               familyData[familyName] = Array(labels.length).fill(0);
             }
             const value = metric === 'tokens'
-              ? Math.max(data.units, 1) - 0.5 // bug: subtracting 0.5 causes cumulative errors
+              ? Math.max(data.units, 1)
               : Math.max(data.price, 0.01);
             const monthIndex = labels.indexOf(month);
             familyData[familyName][monthIndex] += value;
@@ -228,7 +236,7 @@ const MonthlyUsage = ({ options }) => {
 
   return (
     <>
-      {openai_usage && Object.keys(openai_usage).length > 0 && (
+      {ai_models_usage && Object.keys(ai_models_usage).length > 0 && (
         <>
           <NekoQuickLinks name="groupBy" value={`${groupBy}-${metric}`} onChange={(value) => {
             const [newGroupBy, newMetric] = value.split('-');

@@ -1,7 +1,7 @@
-// main: ChatGPT.module.scss
+// main: messages.scss
 
 .mwai-chat {
-
+  
   pre code.hljs {
     display: block;
     overflow-x: auto;
@@ -13,15 +13,15 @@
   }
 
   .hljs {
-    color: #fff;
-    background: #1c1b1b;
+    color: #333;
+    background: #f0f0f0;
 
     &-subst {
-      color: #fff;
+      color: #333;
     }
 
     &-comment {
-      color: #999;
+      color: #888;
     }
 
     &-attr,
@@ -30,11 +30,11 @@
     &-meta .hljs-keyword,
     &-section,
     &-selector-tag {
-      color: #88aece;
+      color: #0077cc;
     }
 
     &-attribute {
-      color: #c59bc1;
+      color: #aa3377;
     }
 
     &-name,
@@ -43,11 +43,11 @@
     &-selector-id,
     &-template-tag,
     &-type {
-      color: #f08d49;
+      color: #c18401;
     }
 
     &-selector-class {
-      color: #88aece;
+      color: #0077cc;
     }
 
     &-link,
@@ -57,35 +57,35 @@
     &-symbol,
     &-template-variable,
     &-variable {
-      color: #b5bd68;
+      color: #689700;
     }
 
     &-meta,
     &-selector-pseudo {
-      color: #88aece;
+      color: #0077cc;
     }
 
     &-built_in,
     &-literal,
     &-title {
-      color: #f08d49;
+      color: #c18401;
     }
 
     &-bullet,
     &-code {
-      color: #ccc;
+      color: #555;
     }
 
     &-meta .hljs-string {
-      color: #b5bd68;
+      color: #689700;
     }
 
     &-deletion {
-      color: #de7176;
+      color: #b71c1c;
     }
 
     &-addition {
-      color: #76c490;
+      color: #1b5e20;
     }
 
     &-emphasis {

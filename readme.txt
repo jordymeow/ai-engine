@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.3.8
+Stable tag: 2.3.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,21 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.3.9 (2024/06/15) =
+* Update: The chatbot bundle size has been reduced.
+* Update: The CSS (and themes) used by the chatbot has been improved, simplified. It works better on mobile, it is more customizable, and the icons are handled via SVG sprites, for better performance and flexibility.
+* Update: Moved to a more dynamic way to handle the engines and models.
+* Update: Add-ons are now in a tab instead of a submenu
+* Update: Intense code cleanup and enhancements in how the options are handled.
+* Fix: There were a few issues related to Azure (streaming, in particular).
+* Fix: Chatbot rejects files (based on the settings) in a more logical way.
+* Fix: Removed issues related to URL building in the chatbot.
+* Add: Chatbot can now be displayed in a colored bubble.
+* Add: Chatbot's icon message can now be delayed by x seconds.
+* Add: Page selector for Queries, Embeddings and Discussions.
+* Add: Released a new add-on for "Ollama", a local LLM. More about it [here](https://meowapps.com/products/ollama/).
+* 🚀 Please backup your website before making this update, as it includes a lot of changes.
 
 = 2.3.8 (2024/06/08) =
 * Add: The AI Engine Advisor! Once activated, this module will help you optimize your WordPress based on your plugins, your theme, and your server.

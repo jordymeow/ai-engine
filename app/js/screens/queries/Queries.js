@@ -1,11 +1,9 @@
-// Previous: 2.2.90
-// Current: 2.3.8
+// Previous: 2.3.8
+// Current: 2.3.9
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoTable, NekoPaging, NekoBlock, NekoButton, NekoMessage } from '@neko-ui';
 import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers-admin';
@@ -65,8 +63,8 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
   });
 
   useEffect(() => {
-    setLogsQueryParams(prev => ({ ...prev, filters: filters }));
-  }, [filters]);
+    setLogsQueryParams({ ...logsQueryParams, filters: filters });
+  }, [filters, logsQueryParams]);
 
   const logsTotal = useMemo(() => {
     return logsData?.total || 0;
@@ -74,20 +72,18 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
   const logsRows = useMemo(() => {
     if (!logsData?.logs) { return []; }
-    return logsData?.logs.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return logsData?.logs.sort((a, b) => b.created_at - a.created_at).map(x => {
       const time = tableDateTimeFormatter(x.time);
       const user = tableUserIPFormatter(x.userId, x.ip);
 
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;
-      if (x.price >= 0.001) {
-        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
-      }
-      if (x.price >= 0.01) {
-        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
-      }
       if (x.price >= 0.10) {
         jsxSimplifiedPrice = <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>;
+      } else if (x.price >= 0.01) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
+      } else if (x.price >= 0.001) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
       }
 
       const envName = options?.ai_envs?.find(v => v.id === x.envId)?.name || x.envId;
@@ -107,7 +103,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         time: <div style={{ textAlign: 'right' }}>{time}</div>
       };
     });
-  }, [logsData]);
+  }, [logsData, getModelName, options?.ai_envs]);
 
   const onDeleteSelectedLogs = async () => {
     setBusyAction(true);
@@ -116,7 +112,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         setBusyAction(false);
         return;
       }
-      await deleteLogs([]);
+      await deleteLogs();
     }
     else {
       await deleteLogs(selectedLogIds);
@@ -156,18 +152,18 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
       <NekoTable busy={isFetchingLogs || busyAction}
         onSelectRow={id => {
-          if (
-            selectedLogIds.length === 1 && selectedLogIds[0] === id
-          ) {
+          if (selectedLogIds.length === 1 && selectedLogIds[0] === id) {
             setSelectedLogIds([]);
             return;
           }
           setSelectedLogIds([id]);
         }}
         onSelect={ids => { 
-          setSelectedLogIds([ ...selectedLogIds, ...ids  ]); }}
+          setSelectedLogIds([ ...selectedLogIds, ...ids  ]);
+        }}
         onUnselect={ids => { 
-          setSelectedLogIds([ ...selectedLogIds.filter(x => !ids.includes(x)) ]); }}
+          setSelectedLogIds([ ...selectedLogIds.filter(x => !ids.includes(x)) ]);
+        }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
           setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
@@ -185,12 +181,13 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: -5 }}>
-        <NekoButton className="danger" disabled={selectedLogIds.length}
+        <NekoButton className="danger" disabled={selectedLogIds.length === 0}
           onClick={onDeleteSelectedLogs}>
           {i18n.COMMON.DELETE_ALL}
         </NekoButton>
         <div style={{ flex: 'auto' }} />
         <NekoPaging currentPage={logsQueryParams.page} limit={logsQueryParams.limit}
+          onCurrentPageChanged={(page) => setLogsQueryParams({ ...logsQueryParams, page })}
           total={logsTotal} onClick={page => { 
             setLogsQueryParams({ ...logsQueryParams, page });
           }}

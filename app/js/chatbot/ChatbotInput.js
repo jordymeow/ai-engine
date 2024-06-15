@@ -1,10 +1,24 @@
-// Previous: 2.3.5
-// Current: 2.3.6
+// Previous: 2.3.6
+// Current: 2.3.9
 
 import React, { useRef, useState, useImperativeHandle } from 'react';
 import TextAreaAutosize from 'react-textarea-autosize';
 import { Microphone } from '@app/chatbot/helpers';
 import ChatUpload from './ChatUpload';
+
+const isImage = (file) => file.type.startsWith('image/');
+const isDocument = (file) => {
+  const allowedDocumentTypes = [
+    'text/x-c', 'text/x-csharp', 'text/x-c++', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/html', 'text/x-java', 'application/json', 'text/markdown',
+    'application/pdf', 'text/x-php', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/x-python', 'text/x-script.python', 'text/x-ruby', 'text/x-tex',
+    'text/plain', 'text/css', 'text/javascript', 'application/x-sh',
+    'application/typescript'
+  ];
+  return allowedDocumentTypes.includes(file.type);
+};
 
 const ChatbotInput = React.forwardRef((props, ref) => {
   const { 
@@ -14,39 +28,63 @@ const ChatbotInput = React.forwardRef((props, ref) => {
     imageUpload, uploadedFile, composing, setComposing 
   } = props;
   const [draggingType, setDraggingType] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const inputRef = useRef();
   const fileSearchRef = useRef();
   const uploadEnabled = imageUpload || fileSearch;  
 
   useImperativeHandle(ref, () => ({
-    focusInput: () => { inputRef.current?.focus();},
+    focusInput: () => { inputRef.current?.focus(); },
     currentElement: () => inputRef.current,
   }));
 
   const handleDrag = (event, dragState) => {
     event.preventDefault();
     event.stopPropagation();
-    if (dragState && !draggingType) {
-      const isImage = event.dataTransfer.items[0]?.type?.startsWith('image/');
-      setDraggingType(isImage ? 'image' : 'document');
+    const file = event.dataTransfer.items[0];
+    if (dragState) {
+      if (imageUpload && isImage(file)) {
+        setDraggingType('image');
+        setIsBlocked(false);
+      }
+      else if (fileSearch && isDocument(file)) {
+        setDraggingType('document');
+        setIsBlocked(false);
+      }
+      else {
+        setDraggingType(false);
+        setIsBlocked(true);
+      }
     }
-    else if (!dragState && draggingType) {
+    else {
       setDraggingType(false);
+      setIsBlocked(false);
     }
   };
 
   const handleDrop = (event) => {
+    event.preventDefault();
     handleDrag(event, false);
     if (busy) return;
-    const files = event.dataTransfer.files;
-    if (files.length) {
-      fileSearchRef.current.handleExternalFile(files[0]);
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      if (draggingType === 'image' && imageUpload) {
+        fileSearchRef.current.handleExternalFile(file);
+      } else if (draggingType === 'document' && fileSearch) {
+        fileSearchRef.current.handleExternalFile(file);
+      } else {
+        setIsBlocked(true);
+        setTimeout(() => setIsBlocked(false), 2000);
+      }
     }
   };
 
   return (
     <div 
-      className={modCss('mwai-input-text', { 'mwai-dragging': draggingType })}
+      className={modCss('mwai-input-text', { 
+        'mwai-dragging': draggingType,
+        'mwai-blocked': isBlocked,
+      })}
       onDrop={handleDrop}
       onDragEnter={(event) => handleDrag(event, true)}
       onDragLeave={(event) => handleDrag(event, false)}

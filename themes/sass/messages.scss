@@ -1,19 +1,26 @@
-.mwai-chat {
-  --mwai-spacing: 10px;
-  --mwai-fontSize: 13px;
+// out:  ../messages.css
+@import '_common.scss';
+
+// Chatbot
+.mwai-messages-theme {
+	--mwai-spacing: 10px;
+	--mwai-fontSize: 13px;
 	--mwai-lineHeight: 1.5;
-  --mwai-borderRadius: 10px;
+	--mwai-borderRadius: 10px;
 	--mwai-width: 460px;
 	--mwai-maxHeight: 40vh;
 	--mwai-iconTextColor: black;
 	--mwai-iconTextBackgroundColor: white;
-  --mwai-fontColor: black;
-  --mwai-backgroundPrimaryColor: #fafafa;
+	--mwai-fontColor: black;
+	--mwai-backgroundPrimaryColor: #fafafa;
 	--mwai-backgroundHeaderColor: #0084ff;
+	--mwai-bubbleColor: #0084ff;
 	--mwai-headerButtonsColor: white;
-  --mwai-backgroundUserColor: #0084ff;
-  --mwai-backgroundAiColor: #eee;
+	--mwai-backgroundUserColor: #0084ff;
+	--mwai-backgroundAiColor: #eee;
 	--mwai-backgroundAiSecondaryColor: #ddd;
+	--mwai-errorBackgroundColor: #6d2f2a;
+	--mwai-errorTextColor: #FFFFFF;
 
 	* {
 		box-sizing: border-box;
@@ -33,7 +40,7 @@
 		flex-direction: column;
 		overflow: auto;
 		max-height: var(--mwai-maxHeight);
-		padding: var(--mwai-spacing) var(--mwai-spacing) 0 var(--mwai-spacing);
+		padding: var(--mwai-spacing) var(--mwai-spacing) 0;
 
 		.mwai-reply {
 			margin-bottom: var(--mwai-spacing);
@@ -43,17 +50,18 @@
 			color: var(--mwai-fontColor);
 			position: relative;
 
-			.mwai-name {
-				display: none;
-			}
-
+			.mwai-name,
 			.mwai-name-text {
 				display: none;
 			}
 
 			& * > p {
-				&:first-child { margin-top: 0px; }
-				&:last-child { margin-bottom: 0px; }
+				&:first-child {
+					margin-top: 0;
+				}
+				&:last-child {
+					margin-bottom: 0;
+				}
 			}
 
 			&.mwai-ai {
@@ -61,7 +69,8 @@
 				background: var(--mwai-backgroundAiColor);
 				margin-left: 5px;
 
-				&::before, &::after {
+				&::before,
+				&::after {
 					content: "";
 					position: absolute;
 					z-index: 1;
@@ -89,7 +98,8 @@
 				color: white;
 				margin-right: 10px;
 
-				&::before, &::after {
+				&::before,
+				&::after {
 					content: "";
 					position: absolute;
 					z-index: 1;
@@ -138,10 +148,6 @@
 		> span > p > *:first-child {
 			margin-top: 0;
 		}
-
-		// > span > p > *:last-child {
-		// 	margin-bottom: 0;
-		// }
 
 		a {
 			color: #2196f3;
@@ -202,19 +208,20 @@
 		table {
 			width: 100%;
 			border: 2px solid var(--mwai-backgroundAiSecondaryColor);
-			border-collapse: collapse
+			border-collapse: collapse;
 		}
-		
+
 		thead {
-				background: var(--mwai-backgroundAiSecondaryColor);
+			background: var(--mwai-backgroundAiSecondaryColor);
 		}
-		
-		tr, td {
-				padding: 2px 5px;
-		}
-		
+
+		tr,
 		td {
-				border: 2px solid var(--mwai-backgroundAiSecondaryColor);
+			padding: 2px 5px;
+		}
+
+		td {
+			border: 2px solid var(--mwai-backgroundAiSecondaryColor);
 		}
 
 		.mwai-typewriter {
@@ -228,18 +235,10 @@
 		> * {
 			&:first-child {
 				margin-top: 0;
-
 			}
 			&:last-child {
 				margin-bottom: 0;
 			}
-		}
-	}
-
-	.mwai-avatar {
-		img {
-			width: 24px;
-			border-radius: 5px;
 		}
 	}
 
@@ -257,6 +256,11 @@
 			border: 1px solid var(--mwai-backgroundAiSecondaryColor);
 			overflow: hidden;
 
+			&.mwai-blocked img {
+				filter: grayscale(100%);
+				opacity: 0.5;
+			}
+
 			&.mwai-dragging {
 				border: 1px dashed var(--mwai-backgroundAiSecondaryColor);
 			}
@@ -272,12 +276,13 @@
 				font-family: inherit;
 				margin: 0;
 				overflow: hidden;
-	
+				
+
 				&:focus {
 					outline: none;
 					box-shadow: none;
 				}
-	
+
 				&::placeholder {
 					color: var(--mwai-fontColor);
 					opacity: 0.5;
@@ -285,86 +290,20 @@
 			}
 
 			.mwai-microphone {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				height: 100%;
-				cursor: pointer;
-
-				svg {
-					fill: var(--mwai-fontColor);
-					width: 34px;
-					height: 34px;
-					fill: var(--mwai-fontColor);
-					opacity: 0.5;
-					transition: opacity 0.3s ease-out;
-				}
-
-				&[active=true] {
-					svg {
-						opacity: 1;
-					}
-				}
-	
-				&[disabled] {
-					svg {
-						opacity: 0;
-					}
-				}
+				@include microphone;
 			}
 
-			.mwai-file-upload {
-				display: flex;
-				align-items: center;
-				justify-content: center;
+			.mwai-file-upload-icon {
+				$icon-size: 32px;
+				background: url('icons/white-icons.svg');
+				background-size: 500%; // 5 icons in the row
+				background-position: -0 * $icon-size -3 * $icon-size;
+				width: $icon-size;
+				height: $icon-size;
+				margin-top: calc(var(--mwai-spacing) / 2);
 				margin-left: 5px;
-				width: 30px;
-				cursor: pointer;
-				margin-right: -8px;
 				z-index: 100;
-
-				img {
-					width: 100%;
-					height: auto;
-					background-size: cover;
-				}
-
-				.mwai-idle-idle {
-					filter: brightness(0.5);
-				}
-
-				.mwai-idle-add {
-					filter: brightness(0.85);
-				}
-
-				.mwai-image-add, .mwai-image-del, .mwai-image-ok, .mwai-image-up {
-					filter: brightness(1);
-				}
-
-				.mwai-document-add, .mwai-document-del, .mwai-document-ok, .mwai-document-up {
-					filter: brightness(1);
-				}
-
-				.mwai-enabled {
-					filter: saturate(0);
-				}
-
-				span {
-					position: absolute;
-					font-size: 11px;
-					width: 21px;
-					top: 25px;
-					left: 24px;
-					overflow: hidden;
-					text-align: center;
-					font-weight: bold;
-				}
-			}
-
-			.mwai-microphone {
-				svg {
-					padding: 5px 10px;
-				}
+				@include file-upload-icon-sprites;
 			}
 		}
 
@@ -401,28 +340,25 @@
 			opacity: 0.5;
 		}
 
-		&.mwai-busy {
+		&.mwai-busy span {
+			display: none;
+		}
 
-			span {
-				display: none;
-			}
-
-			&:before {
-				content: '';
-				width: 18px;
-				height: 18px;
-				margin: auto;
-				border: 3px solid transparent;
-				border-top-color: var(--mwai-fontColor);
-				border-radius: 50%;
-				animation: mwai-button-spinner 1s ease infinite;
-			}
+		&.mwai-busy:before {
+			content: '';
+			width: 18px;
+			height: 18px;
+			margin: auto;
+			border: 3px solid transparent;
+			border-top-color: var(--mwai-fontColor);
+			border-radius: 50%;
+			animation: mwai-button-spinner 1s ease infinite;
 		}
 	}
 
 	.mwai-compliance {
 		opacity: 0.50;
-		margin-top: calc( -1 * var(--mwai-spacing));
+		margin-top: calc(-1 * var(--mwai-spacing));
 		padding: calc(var(--mwai-spacing) / 1.5) var(--mwai-spacing);
 		font-size: smaller;
 		color: var(--mwai-fontColor);
@@ -440,45 +376,50 @@
 	}
 }
 
-@import '_common.scss';
-@import '_copybutton.scss';
-@import '_codeLight.scss';
-
-.mwai-copy-button {
-	position: absolute;
-	left: 15px;
-	zoom: 0.5;
-	top: 18px;
-	filter: revert;
+// Common
+.mwai-messages-theme {
+	@include common-styles;
+	@import '_copybutton.scss';
+	@import '_codeLight.scss';
 }
 
-.mwai-ai .mwai-copy-button {
-	right: 15px;
-	left: inherit;
-	filter: brightness(0.4);
+// Common Overrides
+.mwai-messages-theme {
+	.mwai-copy-button {
+		position: absolute;
+		left: 15px;
+		zoom: 0.5;
+		top: 18px;
+		filter: revert;
+	}
+
+	.mwai-ai .mwai-copy-button {
+		right: 15px;
+		left: inherit;
+		filter: brightness(0.4);
+	}
 }
 
 // Mobile
-
-@media (max-width: 760px) {
-
-	.mwai-chat {
-
-		&.mwai-window {
-			width: calc(100% - 40px);
-			z-index: 9999999999;
-		}
-
-		.mwai-input {
-			flex-direction: column;
-
-			.mwai-input-text {
-				width: 100%;
-				margin-bottom: 10px;
+.mwai-messages-theme {
+	@media (max-width: 760px) {
+		.mwai-chat {
+			&.mwai-window {
+				width: calc(100% - 40px);
+				z-index: 9999999999;
 			}
 
-			button {
-				width: 100%;
+			.mwai-input {
+				flex-direction: column;
+
+				.mwai-input-text {
+					width: 100%;
+					margin-bottom: 10px;
+				}
+
+				button {
+					width: 100%;
+				}
 			}
 		}
 	}

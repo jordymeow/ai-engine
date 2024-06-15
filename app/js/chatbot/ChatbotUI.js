@@ -1,9 +1,9 @@
-// Previous: 2.3.6
-// Current: 2.3.8
+// Previous: 2.3.8
+// Current: 2.3.9
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import Markdown from 'markdown-to-jsx';
-import { useModClasses, useChrono, useSpeechRecognition } from '@app/chatbot/helpers';
+import { useModClasses, useChrono, useSpeechRecognition, TransitionBlock } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from './ChatbotReply';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
@@ -24,17 +24,19 @@ const ChatbotUI = (props) => {
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const [ composing, setComposing ] = useState(false);
   const [ open, setOpen ] = useState(false);
+  const [ showIconMessage, setShowIconMessage ] = useState(false);
   const [ minimized, setMinimized ] = useState(true);
   const { modCss } = useModClasses(theme);
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
   const chatbotInputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = document.innerWidth <= 768;
+  const isMobile = useRef(window.innerWidth <= 768);
 
   const { state, actions } = useChatbotContext();
   const { chatId, botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
-    textCompliance, isWindow, fullscreen, iconText, iconAlt, iconPosition, cssVariables, error,
+    textCompliance, isWindow, fullscreen, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble,
+    cssVariables, error,
     iconUrl, busy, speechRecognition, imageUpload, uploadedFile, fileSearch } = state;
   const { onClear, onSubmit, setInputText, setMessages, setClientId, onFileUpload, resetError } = actions;
   const { isListening, setIsListening, speechRecognitionAvailable } = useSpeechRecognition(text => { 
@@ -45,10 +47,26 @@ const ChatbotUI = (props) => {
   const hasFileUploaded = !!uploadedFile?.uploadedId;
   const clearMode = !hasFileUploaded && inputText.length < 1 && messages?.length > 1;
 
-  const refState = useRef(state);
+  const runTimer = useCallback(() => {
+    const timer = setTimeout(() => {
+      setOpen((prevOpen) => {
+        if (!prevOpen) {
+          setShowIconMessage(true);
+        }
+        return prevOpen;
+      });
+    }, iconTextDelay * 1000);
+    return () => clearTimeout(timer);
+  }, [ iconText, iconTextDelay ]);
+
   useEffect(() => {
-    refState.current = state;
-  }, [ state ]);
+    if (iconText && !iconTextDelay) {
+      setShowIconMessage(true);
+    }
+    else if (iconText && iconTextDelay) {
+      return runTimer();
+    }
+  }, [iconText, iconTextDelay]);
 
   const [ tasks, setTasks ] = useState([]);
 
@@ -116,25 +134,29 @@ const ChatbotUI = (props) => {
       startChrono();
       return;
     }
-    if (!isMobile && hasFocusRef.current) {
+    if (!isMobile.current && hasFocusRef.current) {
       chatbotInputRef.current.focusInput();
     }
     stopChrono();
   }, [busy, startChrono, stopChrono, isMobile]);
 
   useEffect(() => {
-    if (!isMobile && open) {
+    if (!isMobile.current && open) {
       chatbotInputRef.current.focusInput();
     }
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [open, isMobile]);
 
   useLayoutEffect(() => {
-    conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const onSubmitAction = useCallback((forcedText = null) => {
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
     if (forcedText) {
       onSubmit(forcedText);
     }
@@ -144,13 +166,20 @@ const ChatbotUI = (props) => {
   }, [inputText, onSubmit]);
 
   const baseClasses = modCss('mwai-chat', {
+    [`mwai-${theme?.themeId}-theme`]: true,
     'mwai-window': isWindow,
+    'mwai-bubble': iconBubble,
     'mwai-open': open,
     'mwai-fullscreen': !minimized || (!isWindow && fullscreen),
     'mwai-bottom-left': iconPosition === 'bottom-left',
     'mwai-top-right': iconPosition === 'top-right',
     'mwai-top-left': iconPosition === 'top-left',
   });
+
+  const onOpenChatbot = () => {
+    setOpen(true);
+    setShowIconMessage(false);
+  };
 
   const onTypeText = (text) => {
     if (isListening) {
@@ -174,26 +203,32 @@ const ChatbotUI = (props) => {
   )), [messages]);
 
   return (
-    <div id={`mwai-chatbot-${customId || botId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>
+    <TransitionBlock id={`mwai-chatbot-${customId || botId}`} if={true} disableTransition={!isWindow}
+      className={baseClasses} style={{ ...cssVariables, ...style }}>
       {themeStyle && <style>{themeStyle}</style>}
-      {isWindow && (
-        <>
-          <div className={modCss('mwai-open-button')}>
-            {iconText && <div className={modCss('mwai-icon-text')} onClick={() => setOpen(!open)}>
-              {iconText}
-            </div>}
-            <img width="64" height="64" alt={iconAlt} src={iconUrl} className="no-lightbox" onClick={() => setOpen(!open)} />
-          </div>
-          <div className={modCss('mwai-header')}>
-            <div className={modCss('mwai-buttons')}>
-              {fullscreen && (
-                <div className={modCss('mwai-resize-button')} onClick={() => setMinimized(!minimized)} />
-              )}
-              <div className={modCss('mwai-close-button')} onClick={() => setOpen(!open)} />
+      {isWindow && (<>
+        <div className={modCss(['mwai-trigger', 'mwai-open-button'])}>
+          <TransitionBlock className="mwai-icon-text-container" if={(iconText && showIconMessage)}>
+            <div className={modCss(['mwai-icon-text-close'])} onClick={() => setShowIconMessage(false)}>
+              &#x2715;
             </div>
+            <div className={modCss(['mwai-icon-text'])}>
+              {iconText}
+            </div>
+          </TransitionBlock>
+          <div className={modCss(['mwai-icon-container'])} onClick={onOpenChatbot}>
+            <img className={modCss('mwai-icon')} width="64" height="64" alt={iconAlt} src={iconUrl} />
           </div>
-        </>
-      )}
+        </div>
+        <div className={modCss('mwai-header')}>
+          <div className={modCss('mwai-buttons')}>
+            {fullscreen && (
+              <div className={modCss('mwai-resize-button')} onClick={() => setMinimized(!minimized)} />
+            )}
+            <div className={modCss('mwai-close-button')} onClick={() => setOpen(!open)} />
+          </div>
+        </div>
+      </>)}
       <div className={modCss('mwai-content')}>
         <div ref={conversationRef} className={modCss('mwai-conversation')}>
           {messageList}
@@ -247,7 +282,7 @@ const ChatbotUI = (props) => {
           <div className={modCss('mwai-compliance')} dangerouslySetInnerHTML={{ __html: textCompliance }} />
         )}
       </div>
-    </div>
+    </TransitionBlock>
   );
 };
 

@@ -1,5 +1,5 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.3.9
 
 // React & Vendor Libs
 const { useState } = wp.element;
@@ -16,7 +16,7 @@ const Moderation = ({ options, updateOption, busy: busyParent }) => {
   const [results, setResults] = useState([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const shortcode_chat_moderation = options?.shortcode_chat_moderation;
+  const chatbot_moderation = options?.chatbot_moderation;
   const isBusy = busy || busyParent;
 
   const onModerateClick = async () => {
@@ -39,8 +39,8 @@ const Moderation = ({ options, updateOption, busy: busyParent }) => {
 
   const jsxChatbot = 
     <NekoSettings title={i18n.COMMON.CHATBOT}>
-      <NekoCheckbox name="shortcode_chat_moderation" label={i18n.COMMON.ENABLE} value="1"
-        checked={shortcode_chat_moderation}
+      <NekoCheckbox name="chatbot_moderation" label={i18n.COMMON.ENABLE} value="1"
+        checked={chatbot_moderation}
         description={i18n.SETTINGS.CHATBOT_MODERATION_HELP}
         onChange={updateOption} />
   </NekoSettings>;

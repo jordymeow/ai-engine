@@ -43,7 +43,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
   }
 
   public function get_models() {
-    return $this->core->get_option( 'openrouter_models' );
+    return $this->core->get_engine_models( 'openrouter' );
   }
 
   public function handle_tokens_usage( $reply, $query, $returned_model,
