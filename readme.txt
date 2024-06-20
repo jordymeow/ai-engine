@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.4.1
+Stable tag: 2.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,8 @@ Languages: English.
 
 == Changelog ==
 
-= 2.4.1 (2024/06/20) =
+= 2.4.2 (2024/06/21) =
+* Add: Claude-3.5 Sonnet (Anthropic).
 * Fix: Issues related to envId in AI environments.
 * Fix: Issues related to Anthropic + function calling + streaming.
 * Fix: Avoid the Selected Discussion to break the Discussions tab.
