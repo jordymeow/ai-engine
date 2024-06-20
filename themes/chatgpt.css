@@ -446,7 +446,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 90%;
+  font-size: calc(var(--mwai-fontSize) * 0.9);
   position: relative;
 }
 
@@ -504,15 +504,14 @@
 .mwai-chatgpt-theme.mwai-discussions .mwai-content {
   background: var(--mwai-conversationsBackgroundColor);
   list-style: none;
-  padding: calc(var(--mwai-spacing) / 2);
-  margin: 0;
-}
-
-.mwai-chatgpt-theme.mwai-discussions .mwai-content .mwai-discussion {
+  padding: 0;
   margin: 0;
 }
 
 .mwai-chatgpt-theme.mwai-discussions .mwai-content li {
+  margin-left: calc(var(--mwai-spacing) / 2);
+  margin-right: calc(var(--mwai-spacing) / 2);
+  margin-bottom: calc(var(--mwai-spacing) / 2);
   color: var(--mwai-conversationsTextColor);
   font-size: 75%;
   padding: calc(var(--mwai-spacing) / 2);
@@ -524,6 +523,10 @@
   border-radius: var(--mwai-borderRadius);
   opacity: 1;
   cursor: pointer;
+}
+
+.mwai-chatgpt-theme.mwai-discussions .mwai-content li:first-child {
+  margin-top: calc(var(--mwai-spacing) / 2);
 }
 
 .mwai-chatgpt-theme.mwai-transition, .mwai-chatgpt-theme .mwai-transition {
@@ -933,6 +936,81 @@
   top: 32px;
 }
 
+.mwai-chatgpt-theme pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+.mwai-chatgpt-theme code.hljs {
+  padding: 3px 5px;
+}
+
+.mwai-chatgpt-theme .hljs {
+  color: #fff;
+  background: #1c1b1b;
+}
+
+.mwai-chatgpt-theme .hljs-subst {
+  color: #fff;
+}
+
+.mwai-chatgpt-theme .hljs-comment {
+  color: #999;
+}
+
+.mwai-chatgpt-theme .hljs-attr, .mwai-chatgpt-theme .hljs-doctag, .mwai-chatgpt-theme .hljs-keyword, .mwai-chatgpt-theme .hljs-meta .hljs-keyword, .mwai-chatgpt-theme .hljs-section, .mwai-chatgpt-theme .hljs-selector-tag {
+  color: #88aece;
+}
+
+.mwai-chatgpt-theme .hljs-attribute {
+  color: #c59bc1;
+}
+
+.mwai-chatgpt-theme .hljs-name, .mwai-chatgpt-theme .hljs-number, .mwai-chatgpt-theme .hljs-quote, .mwai-chatgpt-theme .hljs-selector-id, .mwai-chatgpt-theme .hljs-template-tag, .mwai-chatgpt-theme .hljs-type {
+  color: #f08d49;
+}
+
+.mwai-chatgpt-theme .hljs-selector-class {
+  color: #88aece;
+}
+
+.mwai-chatgpt-theme .hljs-link, .mwai-chatgpt-theme .hljs-regexp, .mwai-chatgpt-theme .hljs-selector-attr, .mwai-chatgpt-theme .hljs-string, .mwai-chatgpt-theme .hljs-symbol, .mwai-chatgpt-theme .hljs-template-variable, .mwai-chatgpt-theme .hljs-variable {
+  color: #b5bd68;
+}
+
+.mwai-chatgpt-theme .hljs-meta, .mwai-chatgpt-theme .hljs-selector-pseudo {
+  color: #88aece;
+}
+
+.mwai-chatgpt-theme .hljs-built_in, .mwai-chatgpt-theme .hljs-literal, .mwai-chatgpt-theme .hljs-title {
+  color: #f08d49;
+}
+
+.mwai-chatgpt-theme .hljs-bullet, .mwai-chatgpt-theme .hljs-code {
+  color: #ccc;
+}
+
+.mwai-chatgpt-theme .hljs-meta .hljs-string {
+  color: #b5bd68;
+}
+
+.mwai-chatgpt-theme .hljs-deletion {
+  color: #de7176;
+}
+
+.mwai-chatgpt-theme .hljs-addition {
+  color: #76c490;
+}
+
+.mwai-chatgpt-theme .hljs-emphasis {
+  font-style: italic;
+}
+
+.mwai-chatgpt-theme .hljs-strong {
+  font-weight: 700;
+}
+
 .mwai-chatgpt-theme .mwai-copy-button {
   opacity: 0;
   transition: all 0.3s ease-out;
@@ -995,81 +1073,6 @@
 .mwai-chatgpt-theme .mwai-chat .mwai-reply:hover .mwai-copy-button {
   display: block;
   opacity: 1;
-}
-
-.mwai-chatgpt-theme .mwai-chat pre code.hljs {
-  display: block;
-  overflow-x: auto;
-  padding: 1em;
-}
-
-.mwai-chatgpt-theme .mwai-chat code.hljs {
-  padding: 3px 5px;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs {
-  color: #fff;
-  background: #1c1b1b;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-subst {
-  color: #fff;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-comment {
-  color: #999;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-attr, .mwai-chatgpt-theme .mwai-chat .hljs-doctag, .mwai-chatgpt-theme .mwai-chat .hljs-keyword, .mwai-chatgpt-theme .mwai-chat .hljs-meta .hljs-keyword, .mwai-chatgpt-theme .mwai-chat .hljs-section, .mwai-chatgpt-theme .mwai-chat .hljs-selector-tag {
-  color: #88aece;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-attribute {
-  color: #c59bc1;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-name, .mwai-chatgpt-theme .mwai-chat .hljs-number, .mwai-chatgpt-theme .mwai-chat .hljs-quote, .mwai-chatgpt-theme .mwai-chat .hljs-selector-id, .mwai-chatgpt-theme .mwai-chat .hljs-template-tag, .mwai-chatgpt-theme .mwai-chat .hljs-type {
-  color: #f08d49;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-selector-class {
-  color: #88aece;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-link, .mwai-chatgpt-theme .mwai-chat .hljs-regexp, .mwai-chatgpt-theme .mwai-chat .hljs-selector-attr, .mwai-chatgpt-theme .mwai-chat .hljs-string, .mwai-chatgpt-theme .mwai-chat .hljs-symbol, .mwai-chatgpt-theme .mwai-chat .hljs-template-variable, .mwai-chatgpt-theme .mwai-chat .hljs-variable {
-  color: #b5bd68;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-meta, .mwai-chatgpt-theme .mwai-chat .hljs-selector-pseudo {
-  color: #88aece;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-built_in, .mwai-chatgpt-theme .mwai-chat .hljs-literal, .mwai-chatgpt-theme .mwai-chat .hljs-title {
-  color: #f08d49;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-bullet, .mwai-chatgpt-theme .mwai-chat .hljs-code {
-  color: #ccc;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-meta .hljs-string {
-  color: #b5bd68;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-deletion {
-  color: #de7176;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-addition {
-  color: #76c490;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-emphasis {
-  font-style: italic;
-}
-
-.mwai-chatgpt-theme .mwai-chat .hljs-strong {
-  font-weight: 700;
 }
 
 @media (max-width: 760px) {

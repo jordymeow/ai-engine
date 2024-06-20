@@ -1,5 +1,5 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.4.1
 
 // React & Vendor Libs
 import { useState, useEffect, useMemo } from 'react';
@@ -117,7 +117,7 @@ const Assistants = ({ options, refreshOptions }) => {
   useEffect(() => {
     const localSettings = getLocalSettings();
     const defaultEnvId = localSettings?.envId ?? null;
-    if (defaultEnvId !== envId) {
+    if (defaultEnvId) {
       setEnvId(defaultEnvId);
     }
   }, []);
@@ -143,7 +143,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const renderMetadata = (metadata) => {
-    if (!metadata || Object.keys(metadata).length === 0) { return null; }
+    if (!metadata) { return null; }
     return <small><ul style={{ margin: 0, padding: 0 }}>
       {Object.keys(metadata).map(key => 
         <li key={key} style={{ margin: 0 }}>
@@ -186,7 +186,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    if (!dataFiles || !dataFiles.files) return [];
+    if (!dataFiles) return [];
     return dataFiles.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
@@ -221,7 +221,7 @@ const Assistants = ({ options, refreshOptions }) => {
   const assistantRows = useMemo(() => {
     let filteredAssistants = allAssistants;
     if (modelFilter === 'deleted') {
-      filteredAssistants = filteredAssistants.filter(isDeleted);
+      filteredAssistants = filteredAssistants.filter(x => isDeleted(x));
     }
 
     return filteredAssistants.map(assistant => ({
@@ -259,7 +259,7 @@ const Assistants = ({ options, refreshOptions }) => {
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [modelFilter, deletedAssistants, allAssistants, colors]);
+  }, [modelFilter, deletedAssistants, allAssistants]);
 
   const busy = busyAction;
 
@@ -273,7 +273,7 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
+          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })) }}
         />
       </div>
     </div>);
@@ -294,13 +294,13 @@ const Assistants = ({ options, refreshOptions }) => {
                 {i18n.COMMON.DELETE}
               </NekoButton>
             </>}
-            {section === 'files' && <NekoButton disabled={busy} busy={busy}
+            {section === 'files' && <NekoButton disabled={busy || !environment} busy={busy}
               onClick={onRefreshFiles} className="secondary">
-              Refresh
+              {i18n.COMMON.REFRESH}
             </NekoButton>}
-            {section === 'assistants' && <NekoButton disabled={busy} busy={busy}
+            {section === 'assistants' && <NekoButton disabled={busy || !environment} busy={busy}
               onClick={onRefreshAssistants} className="secondary">
-              Refresh
+              {i18n.COMMON.REFRESH}
             </NekoButton>}
             {jsxEnvironments}
           </>

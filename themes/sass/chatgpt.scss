@@ -388,7 +388,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 90%;
+		font-size: calc(var(--mwai-fontSize) * 0.9);
 		position: relative;
 
 		.mwai-timer {
@@ -449,14 +449,13 @@
 	.mwai-content {
 		background: var(--mwai-conversationsBackgroundColor);
 		list-style: none;
-		padding: calc(var(--mwai-spacing) / 2);
+		padding: 0;
 		margin: 0;
 
-		.mwai-discussion {
-			margin: 0;
-		}
-
 		li {
+			margin-left: calc(var(--mwai-spacing) / 2);
+			margin-right: calc(var(--mwai-spacing) / 2);
+			margin-bottom: calc(var(--mwai-spacing) / 2);
 			color: var(--mwai-conversationsTextColor);
 			font-size: 75%;
 			padding: calc(var(--mwai-spacing) / 2);
@@ -469,14 +468,18 @@
 				cursor: pointer;
 			}
 		}
+
+		li:first-child {
+			margin-top: calc(var(--mwai-spacing) / 2);
+		}
 	}
 }
 
 // Common
 .mwai-chatgpt-theme {
 	@include common-styles;
-	@import '_copybutton.scss';
-	@import '_codeDark.scss';
+	@include code-dark;
+	@include copy-button;
 }
 
 // Mobile

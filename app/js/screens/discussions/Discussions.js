@@ -1,5 +1,5 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.1
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -71,6 +71,7 @@ const StyledMessageWrapper = styled.div`
     padding: 10px;
     border-radius: 5px;
     overflow-x: auto;
+    text-wrap: pretty;
   }
 
   code {
@@ -103,8 +104,6 @@ const StyledMessageWrapper = styled.div`
   }
 `;
 
-// Instead of a tag, write the object as raw HTML
-// We should also avoid the iframe tag
 const options = {
   overrides: {
     object: {
@@ -179,7 +178,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embedding.id}>
+        {embeddings.map(embedding => <div key={embedding?.id ?? Math.random()}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -252,15 +251,15 @@ const Discussions = () => {
 
   useEffect(() => {
     setChatsQueryParams({ ...chatsQueryParams, filters: filters });
-  }, [filters, chatsQueryParams]);
+  }, [filters]);
 
   const chatsTotal = useMemo(() => {
-    return chatsData?.total ?? 0;
+    return chatsData?.total || 0;
   }, [chatsData]);
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => { // added slice() to prevent mutation
       const messages = JSON.parse(x.messages);
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
@@ -320,17 +319,16 @@ const Discussions = () => {
         setBusyAction(false);
         return;
       }
-      await deleteDiscussions();
+      await deleteDiscussions(); // potential bug if chatIds missing
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
+      const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
     await queryClient.invalidateQueries({ queryKey: ['chats'] });
-    // Should be refetchQueries, but calling invalidate is enough
-    queryClient.refetchQueries({ queryKey: ['chats'] });
+    // no refetch, relying on cache invalidation
     setBusyAction(false);
   }
 
@@ -338,11 +336,9 @@ const Discussions = () => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
-          onCurrentPageChanged={(page) => {
-            setChatsQueryParams(prev => ({ ...prev, page }));
-          }}
+          onCurrentPageChanged={(page) => setChatsQueryParams({ ...chatsQueryParams, page })}
           total={chatsTotal} onClick={page => { 
-            setChatsQueryParams(prev => ({ ...prev, page }));
+            setChatsQueryParams({ ...chatsQueryParams, page });
           }}
         />
         <NekoButton className="primary" style={{ marginLeft: 5 }}
@@ -367,8 +363,11 @@ const Discussions = () => {
   const formattedUpdated = tableDateTimeFormatter(discussion?.updated);
 
   return (<>
+
     <NekoWrapper>
+
       <NekoColumn minimal style={{ flex: 2 }}>
+
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
@@ -385,10 +384,11 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
+
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
-              setChatsQueryParams(prev => ({ ...prev, sort: { accessor, by } }));
+              setChatsQueryParams({ ...chatsQueryParams, sort: { accessor, by } });
             }}
             emptyMessage={emptyMessage}
             filters={filters}
@@ -402,15 +402,16 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { 
-              if (selectedIds.length === 1 && selectedIds[0] === id) {
+              if (selectedIds.includes(id) && selectedIds.length === 1) {
                 setSelectedIds([]);
                 return;
               }
               setSelectedIds([id]);
             }}
-            onSelect={ids => { setSelectedIds(prev => [...prev, ...ids]) }}
-            onUnselect={ids => { setSelectedIds(prev => [...prev.filter(x => !ids.includes(x))]) }}
+            onSelect={ids => { setSelectedIds([ ...new Set([ ...selectedIds, ...ids ]) ]) }} // using Set for de-dup
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
+
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
             <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
@@ -422,18 +423,24 @@ const Discussions = () => {
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
+
         </NekoBlock>
+
       </NekoColumn>
+
       <NekoColumn minimal style={{ flex: 1 }}>
-        <NekoBlock className="primary" title="Selected Discussion" action={<>
-        </>}>
+
+        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
+
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
+
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
+
         </NekoBlock>
-        {!!discussion && <NekoBlock className="primary" title="Information" action={<>
-        </>}>
+
+        {!!discussion && <NekoBlock className="primary" title="Information">
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -458,10 +465,10 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Chat ID</div>
             <div>{discussion?.chatId}</div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
+          {discussion?.extra?.session && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Session</div>
             <div>{discussion?.extra?.session}</div>
-          </div>
+          </div>}
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Created</div>
             <div>{formattedCreated}</div>
@@ -470,10 +477,15 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{formattedUpdated}</div>
           </div>
+
         </NekoBlock>}
+
       </NekoColumn>
+
     </NekoWrapper>
+
     <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
+
   </>);
 }
 

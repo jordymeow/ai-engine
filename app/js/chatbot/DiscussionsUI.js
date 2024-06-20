@@ -1,5 +1,5 @@
-// Previous: 1.6.99
-// Current: 1.7.1
+// Previous: 1.7.1
+// Current: 2.4.1
 
 // React & Vendor Libs
 const { useMemo, useEffect } = wp.element;
@@ -36,7 +36,9 @@ const DiscussionsUI = (props) => {
     // mwaiAPI.toggle = () => setOpen(!open);
   });
 
-  const baseClasses = modCss('mwai-discussions');
+  const baseClasses = modCss('mwai-discussions', {
+    [`mwai-${theme?.themeId}-theme`]: true
+  });
 
   return (<>
     <div id={`mwai-discussions-${botId}`} className={baseClasses} style={{ ...cssVariables, ...style }}>

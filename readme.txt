@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.4.0
+Stable tag: 2.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,7 +48,7 @@ I will always advocate this, and I hope you do too 💕
 
 == Disclaimer ==
 
-AI Engine is a plugin that helps you to connect your websites to AI services. You need your own API keys and must follow the rules set by the AI service you choose. For OpenAI, check their [Terms of Service](https://openai.com/terms/) and [Privacy Policy](https://openai.com/privacy/). It is also important to check your usage on the [OpenAI website](https://platform.openai.com/account/usage) for accurate information. Please do so with other services as well.
+AI Engine is a plugin that helps you to connect your websites to AI services. You need your own API keys and must follow the rules set by the AI service you choose. For OpenAI, check their [Terms of Service](https://openai.com/terms/) and [Privacy Policy](https://openai.com/privacy/). It is also important to check your usage on the [OpenAI website](https://platform.openai.com/usage) for accurate information. Please do so with other services as well.
 
 The developer of AI Engine and related parties are not responsible for any issues or losses caused by using the plugin or AI-generated content. You should talk to a legal expert and follow the laws and regulations of your country. AI Engine does only store data on your own server, and it is your responsibility to keep it safe. AI Engine's full disclaimer is [here](https://meowapps.com/ai-engine/disclaimer/).
 
@@ -61,11 +61,19 @@ Please be aware that there may be conflicts with certain caching or performance 
 1. Create an account at OpenAI.
 2. Create an API key and insert in the plugin settings (Meow Apps -> AI Engine).
 3. Enjoy the features of AI Engine!
-5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/account/usage)!
+5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 Languages: English.
 
 == Changelog ==
+
+= 2.4.1 (2024/06/20) =
+* Fix: Issues related to envId in AI environments.
+* Fix: Issues related to Anthropic + function calling + streaming.
+* Fix: Avoid the Selected Discussion to break the Discussions tab.
+* Fix: Minor fixes related to the Advisor.
+* Fix: The Discussion shortcode was not working properly with themes.
+* Fix: Issues related to embeddings sync, and how they are displayed in the admin.
 
 = 2.4.0 (2024/06/15) =
 * Update: The chatbot bundle size has been reduced.

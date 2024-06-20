@@ -148,15 +148,31 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
 
       if ( !empty( $query->blocks ) ) {
         foreach ( $query->blocks as $feedback_block ) {
+          $contentBlock = $feedback_block['rawMessage']['content'];
+          $assistantMessageIndex = count($body['messages']);
           $body['messages'][] = [
             'role' => 'assistant',
-            'content' => $feedback_block['rawMessage']['content']
+            'content' => $contentBlock
           ];
+          
           foreach ( $feedback_block['feedbacks'] as $feedback ) {
             $feedbackValue = $feedback['reply']['value'];
             if ( !is_string( $feedbackValue ) ) {
               $feedbackValue = json_encode( $feedbackValue );
             }
+
+            // Check for the tool_use message and make sure input is not null.
+            foreach ( $body['messages'][$assistantMessageIndex]['content'] as &$message ) {
+              if ( $message['type'] === 'tool_use' && $message['id'] === $feedback['request']['toolId'] ) {
+                if ( empty( $message['input'] ) ) {
+                  $message['input'] = new stdClass();
+                }
+                break;
+              }
+            }
+            unset( $message );
+
+            // Add a new message with tool_result if tool_use.
             $body['messages'][] = [
               'role' => 'user',
               'content' => [
@@ -417,6 +433,11 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       $service = $this->get_service_name();
       $message = "From $service: " . $error;
       throw new Exception( $message );
+    }
+    finally {
+      if ( $isStreaming ) {
+        remove_action( 'http_api_curl', [ $this, 'stream_handler' ] );
+      }
     }
   }
 

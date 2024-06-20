@@ -49,10 +49,13 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
         if ( !empty( $license ) && !$this->isPro ) {
           add_action( 'admin_notices', array( $this, 'admin_notices_licensed_free' ) );
         }
-        if ( !$disableReview ) {
-          new MeowCommon_Ratings( $prefix, $mainfile, $domain );
+        // This section is admin only.
+        if ( current_user_can( 'manage_options' ) ) {
+          if ( !$disableReview ) {
+            new MeowCommon_Ratings( $prefix, $mainfile, $domain );
+          }
+          new MeowCommon_News( $domain );
         }
-        new MeowCommon_News( $domain );
       }
       add_filter( 'plugin_row_meta', array( $this, 'custom_plugin_row_meta' ), 10, 2 );
       add_filter( 'edd_sl_api_request_verify_ssl', array( $this, 'request_verify_ssl' ), 10, 0 );
@@ -160,7 +163,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
     }
 
     function get_phpinfo() {
-      if ( !current_user_can( 'administrator' ) || !function_exists( 'phpinfo' ) ) {
+      if ( !current_user_can( 'manage_options' ) || !function_exists( 'phpinfo' ) ) {
         return;
       }
       ob_start();

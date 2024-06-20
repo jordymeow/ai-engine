@@ -54,9 +54,12 @@ class Meow_MWAI_Core
 		}
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
-			$module_advisor = $this->get_option( 'module_advisor' );
-			if ( $module_advisor ) {
-				new Meow_MWAI_Modules_Advisor( $this );
+
+			if ( current_user_can( 'manage_options' ) ) {
+				$module_advisor = $this->get_option( 'module_advisor' );
+				if ( $module_advisor ) {
+					new Meow_MWAI_Modules_Advisor( $this );
+				}
 			}
 		}
 		if ( $this->get_option( 'module_chatbots' ) ) {
@@ -964,7 +967,8 @@ class Meow_MWAI_Core
 			'${envType}_models',
 			'shortcode_chat_params',
 			'extra_models',
-			'fallback_model'
+			'fallback_model',
+			'mwai_advisor_data'
 		];
 		foreach ( $old_options as $old_option ) {
 			if ( isset( $options[$old_option] ) ) {
@@ -974,6 +978,7 @@ class Meow_MWAI_Core
 		}
 
 		// TODO: After October 2024, let's remove this.
+		#region Temporary Code
 		if ( isset( $options['openrouter_models'] ) ) {
 			foreach ( $options['openrouter_models'] as $model ) {
 				$model['envId'] = null;
@@ -1027,6 +1032,7 @@ class Meow_MWAI_Core
 			unset( $options['openai_usage'] );
 			$needs_update = true;
 		}
+		#endregion
 
 		// The IDs for the embeddings environments are generated here.
 		// TODO: We should handle this more gracefully via an option in the Embeddings Settings.
@@ -1048,6 +1054,7 @@ class Meow_MWAI_Core
 		}
 
 		// The IDs for the AI environments are generated here.
+		$allEnvIds = [];
 		$ai_default_exists = false;
 		if ( isset( $options['ai_envs'] ) ) {
 			foreach ( $options['ai_envs'] as &$env ) {
@@ -1058,11 +1065,25 @@ class Meow_MWAI_Core
 				if ( $env['id'] === $options['ai_default_env'] ) {
 					$ai_default_exists = true;
 				}
+				$allEnvIds[] = $env['id'];
 			}
 		}
 		if ( !$ai_default_exists ) {
 			$options['ai_default_env'] = $options['ai_envs'][0]['id'] ?? null;
 			$needs_update = true;
+		}
+
+		// All the models with an envId that does not exist anymore are removed.
+		if ( isset( $options['ai_models'] ) ) {
+			$options['ai_models'] = array_values( array_filter( $options['ai_models'], 
+				function( $model ) use ( $allEnvIds, &$needs_update ) {
+					if ( isset( $model['envId'] ) && !in_array( $model['envId'], $allEnvIds ) ) {
+						$needs_update = true;
+						return false;
+					}
+					return true;
+				}
+			) );
 		}
 
 		if ( $needs_update ) {

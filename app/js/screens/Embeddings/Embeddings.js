@@ -1,5 +1,5 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.1
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -36,34 +36,57 @@ const queryColumns = [
   { accessor: 'actions', title: '', width: '100px'  }
 ];
 
-const StatusIcon = ({ id, status, includeText = false, title = null }) => {
+const StatusIcon = ({ embedding, envName }) => {
   const { colors } = useNekoColors();
-  let icon = null;
-  switch (status) {
-  case 'outdated':
-    icon = <NekoIcon title={title || status} icon="alert" width={24} color={colors.orange} />;
-    break;
-  case 'ok':
-    icon = <NekoIcon title={id || status} icon="check-circle" width={24} color={colors.green} />;
-    break;
-  case 'error':
-    icon = <NekoIcon title={title || status} icon="alert" width={24} color={colors.red} />;
-    break;
-  default:
-    icon = <NekoIcon title={title || status} icon="alert" width={24} color={colors.orange} />;
-    break;
-  }
-  if (includeText) {
-    return <div style={{ display: 'flex', alignItems: 'center' }} title={title || status}>
-      {icon} 
-      <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3 }}>{status}</span>
-    </div>;
-  }
-  return icon;
+  const includeText = true;
+  const { id, status: embeddingStatus, content, error } = embedding;
+
+  const status = useMemo(() => {
+    if (embeddingStatus === 'ok') {
+      if (!envName) return 'env_issue';
+      if (!content) return 'empty';
+    }
+    return embeddingStatus;
+  }, [embeddingStatus, envName, content]);
+
+  const title = useMemo(() => {
+    if (status === 'orphan') {
+      return 'This embedding was retrieved from the Vector DB, but it has no content. Add some, or delete it.';
+    }
+    else if (status === 'env_issue') {
+      return 'This embedding is not related to any Embeddings Environment. Make sure you have an Embeddings Environment selected, and Sync/Refresh it; it will be linked to the current environment. You can also delete it.';
+    }
+    else if (status === 'empty') {
+      return 'This embedding has no content.';
+    }
+    return error || null;
+  }, [status, error]);
+
+  const { icon, color } = useMemo(() => {
+    const statusMap = {
+      outdated: { icon: 'alert', color: colors.orange },
+      ok: { icon: 'check-circle', color: colors.green },
+      error: { icon: 'alert', color: colors.red },
+      orphan: { icon: 'pencil', color: colors.orange },
+      env_issue: { icon: 'database', color: colors.red },
+      empty: { icon: 'alert', color: colors.orange },
+      default: { icon: 'alert', color: colors.orange },
+    };
+    return statusMap[status] || statusMap.default;
+  }, [status, colors]);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center' }} title={title}>
+      <NekoIcon icon={icon} width={24} color={color} title={title} />
+      {includeText && (
+        <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3 }}>{status}</span>
+      )}
+    </div>
+  );
 };
 
 const setLocalSettings = ({ environmentId }) => {
-  const settings = {　environmentId: environmentId || null　};
+  const settings = { environmentId: environmentId || null };
   localStorage.setItem('mwai-admin-embeddings', nekoStringify(settings));
 };
 
@@ -84,7 +107,7 @@ const Embeddings = ({ options, updateOption }) => {
   const [ postType, setPostType ] = useState('post');
   const [ busy, setBusy ] = useState(false);
   const [ mode, setMode ] = useState('edit');
-  const [ search, setSearch ] = useState(null);
+  const [ search, setSearch ] = useState('');
   const [ embeddingModal, setEmbeddingModal ] = useState(false);
   const [ selectedIds, setSelectedIds ] = useState([]);
   const [ modal, setModal ] = useState({ type: null, data: null });
@@ -109,13 +132,13 @@ const Embeddings = ({ options, updateOption }) => {
       return allModels.getModel(environment.ai_embeddings_model);
     }
     return allModels.getModel(options.ai_embeddings_default_model);
-  }, [environment, embeddingsSettings.model]);
+  }, [environment, options.ai_embeddings_default_model]);
 
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
-    queryKey: ['postsCount-' + postType + '-' + (embeddingsSettings?.syncPostStatus ?? 'publish')],
+    queryKey: ['postsCount-' + postType + '-' + embeddingsSettings?.syncPostStatus ?? 'publish'],
     queryFn: () => retrievePostsCount(postType, embeddingsSettings?.syncPostStatus ?? 'publish'),
   });
 
@@ -130,13 +153,13 @@ const Embeddings = ({ options, updateOption }) => {
 
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(false); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(null);
+    setBusy(false);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
@@ -145,14 +168,13 @@ const Embeddings = ({ options, updateOption }) => {
 
   useEffect(() => {
     if (!embeddingsSettings.syncPosts && embeddingsSettings.syncPostsEnvId) {
-      // BUG: Wrong dependency? Should probably compare syncPostsEnvId
       setEmbeddingsSettings({ ...embeddingsSettings, syncPostsEnvId: null });
     }
   }, [embeddingsSettings.syncPosts]);
 
   const syncEnv = useMemo(() => {
     return environments.find(e => e.id === embeddingsSettings.syncPostsEnvId) || null;
-  }, [embeddingsSettings.syncPostsEnvId]);
+  }, [environments, embeddingsSettings.syncPostsEnvId]);
 
   useEffect(() => {
     setQueryParams({ ...queryParams, 
@@ -205,8 +227,8 @@ const Embeddings = ({ options, updateOption }) => {
   };
 
   const onResetSearch = async () => {
-    setSearch("");
-    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search: "" } });
+    setSearch('');
+    setQueryParams({ ...queryParams, filters: { ...queryParams.filters, search: '' } });
   };
 
   const onAddEmbedding = async (inEmbedding = embeddingModal, skipBusy = false) => {
@@ -316,7 +338,6 @@ const Embeddings = ({ options, updateOption }) => {
               console.error(e);
               return null;
             }
-            
           });
         }
         else if (isCsv) {
@@ -332,7 +353,9 @@ const Embeddings = ({ options, updateOption }) => {
           const findEmpty = formattedData.find(x => !x.prompt || !x.completion);
           console.warn('Empty line: ', findEmpty);
         }
-        setModal({ type: 'import', data: {　importVectors: cleanData,　envId: environmentId,　} });
+        setModal({ type: 'import',
+          data: { importVectors: cleanData, envId: environmentId }
+        });
       };
       reader.readAsText(file);
     }
@@ -356,7 +379,7 @@ const Embeddings = ({ options, updateOption }) => {
     const data = vectorsData;
     if (!data?.vectors) { return []; }
 
-    return data?.vectors.map(x => {
+    return data.vectors.map(x => {
       let updated = new Date(x.updated);
       updated = new Date(updated.getTime() - updated.getTimezoneOffset() * 60 * 1000);
       const day = updated.toLocaleDateString('ja-JP', {
@@ -395,9 +418,6 @@ const Embeddings = ({ options, updateOption }) => {
       if (isDifferentEnv && envName) {
         potentialError = <b style={{ color: colors.green }}>[ENV: {envName}] </b>;
       }
-      if (isDifferentEnv && !envName) {
-        potentialError = <b style={{ color: colors.red }}>[ORPHAN] </b>;
-      }
 
       return {
         id: x.id,
@@ -411,7 +431,7 @@ const Embeddings = ({ options, updateOption }) => {
             {modelName} {x.dimensions && <> ({x.dimensions})</>}
           </small>
         </>,
-        status: <StatusIcon id={x.id} status={x.status} title={x.error || null} includeText />,
+        status: <StatusIcon embedding={x} envName={envName} />,
         updated: updatedFormattedTime,
         created: createdFormattedTime,
         actions: <>
@@ -427,15 +447,23 @@ const Embeddings = ({ options, updateOption }) => {
         </>
       };
     });
-  }, [mode, vectorsData, isBusy]);
+  }, [mode, vectorsData, isBusy, embeddingsModel, environmentId, environments, allModels, colors, minScore]);
 
   const onSynchronizeEmbedding = async (vectorId) => {
     setBusy('syncEmbedding');
-    await runProcess(vectorId);
+    try {
+      await runProcess(vectorId);
+    }
+    catch (error) {
+      console.error(error);
+      alert(error?.message ?? error);
+    }
     setBusy(false);
   };
 
   const updateVectorsData = (freshVector, isAdd = false) => {
+    queryClient.invalidateQueries({ queryKey: ['vectors'] });
+    return;
     const currentVectorsData = queryClient.getQueryData(['vectors', queryParams]);
     if (currentVectorsData && currentVectorsData.vectors) {
       let wasUpdated = false;
@@ -483,7 +511,9 @@ const Embeddings = ({ options, updateOption }) => {
 
   const onBulkPullClick = async () => {
     setBusy('bulkPullAll');
-    const params = { page: 1, limit: 10000, filters: { envId: environmentId } };
+    const params = { page: 1, limit: 10000,
+      filters: { envId: environmentId }
+    };
     let remoteVectors = [];
     let vectors = [];
     let finished = false;
@@ -536,12 +566,14 @@ const Embeddings = ({ options, updateOption }) => {
         await runProcess(null, postId, signal);
         return { success: true };
       });
-    } else {
+    }
+    else {
       const postIds = vectorsData.vectors.filter(x => selectedIds.includes(x.id));
       tasks = postIds.map(vector => async (signal) => {
         if (vector.type === 'postId') {
           await runProcess(vector.id, null, signal);
-        } else if (vector.type === 'manual') {
+        }
+        else if (vector.type === 'manual') {
           await onModifyEmbedding(vector, signal);
         }
         return { success: true };
@@ -561,7 +593,8 @@ const Embeddings = ({ options, updateOption }) => {
     setBusy('singleRun');
     try {
       await runProcess(null, postId);
-    } catch (error) {
+    }
+    catch (error) {
       console.error(error);
       alert(error?.message ?? error);
     }
@@ -593,9 +626,13 @@ const Embeddings = ({ options, updateOption }) => {
 
   return (<>
     <NekoWrapper>
+
       <NekoColumn fullWidth minimal style={{ margin: 10 }}>
+
         <div style={{ display: 'flex' }}>
+
           <NekoToolbar style={{ flex: 1, marginRight: 15 }}>
+
               <NekoSwitch style={{ marginRight: 10 }} disabled={isBusy}
                 onLabel={i18n.EMBEDDINGS.AI_SEARCH} offLabel={i18n.EMBEDDINGS.EDIT} width={110}
                 onValue="search" offValue="edit"
@@ -608,7 +645,9 @@ const Embeddings = ({ options, updateOption }) => {
                   Add
                 </NekoButton>
               </>}
+
           </NekoToolbar>
+
           <NekoToolbar style={{ flex: 'auto' }}>
             {mode === 'edit' && <>
               {selectedIds.length > 0 && <>
@@ -621,10 +660,12 @@ const Embeddings = ({ options, updateOption }) => {
                   {i18n.COMMON.DELETE_SELECTED}
                 </NekoButton>
               </>}
+
               {selectedIds.length > 0 && <div style={{ display: 'flex',
                 alignItems: 'center', marginLeft: 10, marginRight: 10 }}>
                 {selectedIds.length} selected
               </div>}
+
               <NekoProgress busy={bulkTasks.busy} style={{ flex: 'auto' }}
                 value={bulkTasks.value} max={bulkTasks.max} onStopClick={bulkTasks.stop} />
             </>}
@@ -641,7 +682,9 @@ const Embeddings = ({ options, updateOption }) => {
             </div>}
           </NekoToolbar>
         </div>
+
       </NekoColumn>
+
       <NekoColumn minimal style={{ flex: 3 }}>
         <NekoBlock className="primary" title="Embeddings" action={<>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -658,6 +701,7 @@ const Embeddings = ({ options, updateOption }) => {
             }}>{i18n.COMMON.REFRESH}</NekoButton>
           </div>
         </>}>
+
           <NekoTable busy={isBusy}
             sort={queryParams.sort}
             onSortChange={(accessor, by) => {
@@ -668,17 +712,20 @@ const Embeddings = ({ options, updateOption }) => {
             onSelectRow={id => { 
               if (selectedIds.length === 1 && selectedIds[0] === id) {
                 setSelectedIds([]);
-              } else {
-                setSelectedIds([id]);
               }
+              setSelectedIds([id]);
             }}
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
             selectedItems={selectedIds}
           />
+
           <NekoSpacer />
+
           {mode !== 'search' && <div style={{ display: 'flex' }}>
+
             <div style={{ flex: 'auto' }} />
+
             <NekoPaging currentPage={queryParams.page} limit={queryParams.limit}
               onCurrentPageChanged={(page) => setQueryParams({ ...queryParams, page })}
               total={vectorsTotal} onClick={page => { 
@@ -692,7 +739,9 @@ const Embeddings = ({ options, updateOption }) => {
               {i18n.COMMON.EXPORT}
             </NekoButton>
           </div>}
+
         </NekoBlock>
+
         <NekoBlock className="primary" title="Information">
           <p>
             <b>If want to discuss embeddings with other users, visit the <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Meow Apps Discord Server</a>.</b>
@@ -706,9 +755,13 @@ const Embeddings = ({ options, updateOption }) => {
           <p>
             Both the chatbots and the AI Forms can use embeddings to enrich their answers.
           </p>
+
         </NekoBlock>
+
       </NekoColumn>
+
       <NekoColumn minimal>
+
         <NekoBlock className="primary">
           {jsxEnvIndexNS}
           <div style={{ display: 'flex' }}>
@@ -723,36 +776,45 @@ const Embeddings = ({ options, updateOption }) => {
           </div>
           <p>The best {maxSelect} embedding(s) with a score of {minScore} or more will provide additional context.</p>
         </NekoBlock>
+
         {mode !== 'search' && <div style={{ margin: 8 }}>
           <NekoTypo h2 style={{ color: 'white', marginBottom: 10 }}>{i18n.EMBEDDINGS.SYNC_POSTS}</NekoTypo>
           <NekoTabs inversed>
             <NekoTab title="Push" inversed>
+
               <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''}>
                 <NekoButton fullWidth className="secondary" disabled={!environment || isBusy}
                   onClick={() => ref.current.click() }>
                   Import CSV or JSON
                 </NekoButton>
               </NekoUploadDropArea>
+
               <NekoSpacer line={true} />
+
               <div style={{ display: 'flex', alignItems: 'center' }}>
+
                 <NekoSelect id="postType" scrolldown={true} disabled={isBusy} name="postType" 
                   style={{ width: 100 }} onChange={setPostType} value={postType}>
-                  {postTypes?.map(postType => 
-                    <NekoOption key={postType.type} value={postType.type} label={postType.name} />
+                  {postTypes?.map(pt => 
+                    <NekoOption key={pt.type} value={pt.type} label={pt.name} />
                   )}
                 </NekoSelect>
+
                 <NekoButton fullWidth className="primary" style={{ marginLeft: 10 }}
                   disabled={!environment || isBusy} isBusy={busy === 'bulkPushAll'}
                   onClick={() => onBulkPushClick(true)}>
                   {i18n.EMBEDDINGS.SYNC_ALL} {!isLoadingCount && <>({`${postsCount}`})</>}
                 </NekoButton>
               </div>
+
               <NekoSpacer tiny />
+
               <NekoButton fullWidth className="primary"
                 disabled={!environment || isBusy} isBusy={busy === 'singleRun'}
                 onClick={OnSingleRunClick}>
                 {i18n.EMBEDDINGS.SYNC_ONE}
               </NekoButton>
+
             </NekoTab>
             <NekoTab title="Pull" inversed>
               <NekoButton fullWidth className="primary"
@@ -784,14 +846,19 @@ const Embeddings = ({ options, updateOption }) => {
             </NekoTab>
           </NekoTabs>
         </div>}
+
         {mode !== 'search' && <div style={{ margin: "20px 8px 8px 8px" }}>
           <NekoTypo h2 style={{ color: 'white', marginBottom: 10 }}>{i18n.EMBEDDINGS.AUTO_SYNC_POSTS}</NekoTypo>
           <NekoTabs inversed>
+
             <NekoTab title="Status" inversed>
               {jsxAutoSyncStatus}
             </NekoTab>
+              
             <NekoTab title="Settings" inversed>
+
               {jsxAutoSyncStatus}
+
               {environment && isSyncEnvDifferent && <>
                 <NekoSpacer tiny />
                 <NekoMessage variant="danger" style={{ padding: '10px 20px', marginBottom: 5 }}>
@@ -806,15 +873,18 @@ const Embeddings = ({ options, updateOption }) => {
                 </NekoButton>
                 <NekoSpacer tiny />
               </>}
+
               <NekoSpacer tiny />
+
               <NekoCheckbox label={i18n.EMBEDDINGS.AUTO_SYNC_POSTS} checked={embeddingsSettings.syncPosts}
                 disabled={busy}
                 onChange={value => { setEmbeddingsSettings({ ...embeddingsSettings, syncPosts: value }); }}
                 description={i18n.EMBEDDINGS.AUTO_SYNC_POSTS_DESCRIPTION}
               />
+
               {embeddingsSettings.syncPosts && <>
                 <NekoSpacer />
-                <NekoInput name="syncPostTypes" value={embeddingsSettings.syncPostTypes}
+                <NekoInput name="syncPostTypes" value={embeddingsSettings.syncPostTypes }
                   isCommaSeparatedArray={true}
                   description={i18n.HELP.POST_TYPES}
                   onBlur={value => {
@@ -838,17 +908,23 @@ const Embeddings = ({ options, updateOption }) => {
                   }}
                 />
               </>}
+
             </NekoTab>
           </NekoTabs>
         </div>}
+
       </NekoColumn>
+
     </NekoWrapper>
+
     <AddModifyModal modal={modal} setModal={setModal} busy={busy}
       onAddEmbedding={onAddEmbedding} onModifyEmbedding={onModifyEmbedding} />
+
     <ExportModal modal={modal} setModal={setModal} busy={busy} />
+
     <ImportModal modal={modal} setModal={setModal} busy={busy}
-      onAddEmbedding={onAddEmbedding} onModifyEmbedding={onModifyEmbedding} 
-    />
+      onAddEmbedding={onAddEmbedding} onModifyEmbedding={onModifyEmbedding} />
+
     {bulkTasks.TasksErrorModal}
   </>);
 };

@@ -16,6 +16,7 @@
 	--mwai-backgroundHeaderColor: #0084ff;
 	--mwai-bubbleColor: #0084ff;
 	--mwai-headerButtonsColor: white;
+	--mwai-conversationsBackgroundColor: white;
 	--mwai-backgroundUserColor: #0084ff;
 	--mwai-backgroundAiColor: #eee;
 	--mwai-backgroundAiSecondaryColor: #ddd;
@@ -177,7 +178,7 @@
 				background: var(--mwai-backgroundAiSecondaryColor);
 				padding: 2px 6px;
 				border-radius: 8px;
-				font-size: 90%;
+				font-size: calc(var(--mwai-fontSize) * 0.9);
 				font-family: system-ui;
 			}
 		}
@@ -306,30 +307,30 @@
 				@include file-upload-icon-sprites;
 			}
 		}
+	}
 
-		button {
-			margin-left: var(--mwai-spacing);
-			padding: 5px 15px;
-			background-color: var(--mwai-backgroundUserColor);
-			color: white;
-			border: none;
-			border-radius: var(--mwai-borderRadius);
-			cursor: pointer;
-			height: 32px;
-			width: 110px;
-			display: flex;
-			justify-content: center;
-			align-items: center;
+	button {
+		margin-left: var(--mwai-spacing);
+		padding: 5px 15px;
+		background-color: var(--mwai-backgroundUserColor);
+		color: white;
+		border: none;
+		border-radius: var(--mwai-borderRadius);
+		cursor: pointer;
+		height: 32px;
+		width: 110px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 
-			.mwai-timer {
-				margin-left: 5px;
-				margin-right: 5px;
-				font-size: 11px;
-			}
+		.mwai-timer {
+			margin-left: 5px;
+			margin-right: 5px;
+			font-size: 11px;
+		}
 
-			&:hover {
-				filter: brightness(1.2);
-			}
+		&:hover {
+			filter: brightness(1.2);
 		}
 	}
 
@@ -376,11 +377,64 @@
 	}
 }
 
+// Discussions
+.mwai-messages-theme.mwai-discussions {
+	border-radius: var(--mwai-borderRadius);
+	background: var(--mwai-conversationsBackgroundColor);
+	color: var(--mwai-backgroundPrimaryColor);
+	overflow: hidden;
+
+	* {
+		box-sizing: border-box;
+	}
+
+	.mwai-header {
+		background: var(--mwai-backgroundAiSecondaryColor);
+		padding: var(--mwai-spacing);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.mwai-content {
+		background: var(--mwai-conversationsBackgroundColor);
+		list-style: none;
+		padding: 0;
+		margin: 0;
+
+		li {
+			margin-left: calc(var(--mwai-spacing) / 2);
+			margin-right: calc(var(--mwai-spacing) / 2);
+			margin-bottom: calc(var(--mwai-spacing) / 2);
+			color: var(--mwai-conversationsTextColor);
+			font-size: 75%;
+			padding: calc(var(--mwai-spacing) / 2);
+			opacity: 0.65;
+
+			&.mwai-active, &:hover {
+				color: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundHeaderColor);
+				border-radius: var(--mwai-borderRadius);
+				opacity: 1;
+				cursor: pointer;
+			}
+		}
+
+		li:first-child {
+			margin-top: calc(var(--mwai-spacing) / 2);
+		}
+	}
+
+	button {
+		margin-left: 0;
+	}
+}
+
 // Common
 .mwai-messages-theme {
 	@include common-styles;
-	@import '_copybutton.scss';
-	@import '_codeLight.scss';
+	@include code-light;
+	@include copy-button;
 }
 
 // Common Overrides

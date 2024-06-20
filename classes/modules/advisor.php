@@ -56,7 +56,7 @@ class Meow_MWAI_Modules_Advisor {
   }
 
   private function check_and_run_advisor() {
-    $last_run_data = $this->core->get_option( 'mwai_advisor_data', [] );
+    $last_run_data = get_option( 'mwai_advisor_data', [] );
     $last_run_time = $last_run_data['date'] ?? 0;
     $current_time = time();
     if ( $current_time - $last_run_time > $this->update_interval ) {
@@ -102,10 +102,10 @@ class Meow_MWAI_Modules_Advisor {
 
       $answer = $mwai->simpleTextQuery( $finalPrompt, [ "scope" => 'advisor' ] );
       $recommendations = json_decode( $answer, true );
-      $this->core->update_option( 'mwai_advisor_data', [
+      update_option( 'mwai_advisor_data', [
         'date' => time(),
         'data' => $recommendations
-      ] );
+      ], false );
 
     }
     catch ( Exception $e ) {
@@ -141,7 +141,7 @@ class Meow_MWAI_Modules_Advisor {
   }
 
   function advisor_metabox() {
-    $data = $this->core->get_option( 'mwai_advisor_data', [] );
+    $data = get_option( 'mwai_advisor_data', [] );
     $recommendations = $data['data'] ?? [];
     if ( empty( $recommendations ) ) {
       echo '<p>No recommendations yet.</p>';
@@ -150,11 +150,13 @@ class Meow_MWAI_Modules_Advisor {
       echo '<p>Everyday, AI Engine will analyze your WordPress setup and provide you with recommendations to improve it.</p>';
       echo '<ul>';
       foreach ( $recommendations as $recommendation ) {
+        $title = isset( $recommendation['title'] ) ? $recommendation['title'] : 'Miscellaneous';
+        $description = isset( $recommendation['description'] ) ? $recommendation['description'] : 'No information available.';
         echo '<li style="display: inline;">';
         echo '<div style="display: flex; margin-bottom: 10px;">';
         echo $this->generate_badge( $recommendation['level'] );
         echo '<div>';
-        echo '<strong>' . $recommendation['title'] . '</strong> - ' . $recommendation['description'];
+        echo '<strong>' . $title . '</strong> - ' . $description;
         echo '</div>';
         echo '</div>';
         echo '</li>';

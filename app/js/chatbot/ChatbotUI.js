@@ -1,5 +1,5 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.1
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import Markdown from 'markdown-to-jsx';
@@ -31,7 +31,7 @@ const ChatbotUI = (props) => {
   const chatbotInputRef = useRef();
   const conversationRef = useRef();
   const hasFocusRef = useRef(false);
-  const isMobile = useRef(window.innerWidth <= 768);
+  const isMobile = document.innerWidth <= 768;
 
   const { state, actions } = useChatbotContext();
   const { chatId, botId, customId, messages, inputText, textInputMaxLength, textSend, textClear, textInputPlaceholder, 
@@ -66,7 +66,7 @@ const ChatbotUI = (props) => {
     else if (iconText && iconTextDelay) {
       return runTimer();
     }
-  }, [iconText, iconTextDelay]);
+  }, [iconText]);
 
   const [ tasks, setTasks ] = useState([]);
 
@@ -134,14 +134,14 @@ const ChatbotUI = (props) => {
       startChrono();
       return;
     }
-    if (!isMobile.current && hasFocusRef.current) {
+    if (!isMobile && hasFocusRef.current) {
       chatbotInputRef.current.focusInput();
     }
     stopChrono();
   }, [busy, startChrono, stopChrono, isMobile]);
 
   useEffect(() => {
-    if (!isMobile.current && open) {
+    if (!isMobile && open) {
       chatbotInputRef.current.focusInput();
     }
     if (conversationRef.current) {
@@ -156,7 +156,7 @@ const ChatbotUI = (props) => {
   }, [messages]);
 
   const onSubmitAction = useCallback((forcedText = null) => {
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
     if (forcedText) {
       onSubmit(forcedText);
     }
@@ -165,7 +165,7 @@ const ChatbotUI = (props) => {
     }
   }, [inputText, onSubmit]);
 
-  const baseClasses = modCss('mwai-chat', {
+  const baseClasses = modCss('mwai-chatbot', {
     [`mwai-${theme?.themeId}-theme`]: true,
     'mwai-window': isWindow,
     'mwai-bubble': iconBubble,

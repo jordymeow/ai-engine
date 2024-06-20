@@ -9,7 +9,7 @@
     "dev": "webpack --watch --mode development",
     "build": "webpack --mode production",
     "analysis": "webpack --mode production --env analysis='true'",
-    "zip": "zip -r ai-engine-pro.zip . -x node_modules/\\* .git/\\* .yarn/\\* logs/\\*",
+    "zip": "../zip.sh",
     "7zip": "7z a -tzip ../zip/ai-engine-pro.zip . -x!node_modules -x!.git -x!.yarn -x!logs"
   },
   "dependencies": {

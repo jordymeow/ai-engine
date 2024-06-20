@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.1
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -154,7 +154,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
   const addNewEnvironment = () => {
     const newEnv = {
-      id: Date.now(),
       name: 'New Environment',
       type: 'openai', 
       apikey: ''
@@ -195,7 +194,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
         nonce: restNonce,
         json: { envId }
       });
-      // TODO: Intentionally not setting loading to false here in case of fetch failure
+      setLoading(false);
       let newModels = res?.models;
       if (!newModels) {
         throw new Error('Could not fetch models.');
@@ -209,6 +208,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     catch (err) {
       alert(err.message);
       console.log(err);
+      setLoading(false);
     }
   }, [updateOption, options]);
 
@@ -295,14 +295,14 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
             {env.type === 'google' && <>
               <NekoMessage variant="danger">
-                Compared to OpenAI, Google's Gemini is less stable and clearly in beta, with limitations like single-message processing (in the case of Vision) and frequent unclear errors. Let's discuss about Gemini on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noopener noreferrer">Discord</a>.
+                Compared to OpenAI, Google's Gemini is less stable and clearly in beta, with limitations like single-message processing (in the case of Vision) and frequent unclear errors. Let's discuss about Gemini on <a href="https://discord.gg/bHDGh38" target="_blank">Discord</a>.
               </NekoMessage>
               <NekoSpacer />
             </>}
 
             {env.type === 'huggingface' && <>
               <NekoMessage variant="danger">
-                Support for Hugging Face is experimental and may not work as expected. Also, AI Engine is ready for Image and Vision but Hugging Face is not (hence the disabled checkboxes). Let's discuss about Hugging Face on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noopener noreferrer">Discord</a>.
+                Support for Hugging Face is experimental and may not work as expected. Also, AI Engine is ready for Image and Vision but Hugging Face is not (hence the disabled checkboxes). Let's discuss about Hugging Face on <a href="https://discord.gg/bHDGh38" target="_blank">Discord</a>.
               </NekoMessage>
               <NekoSpacer />
             </>}
@@ -340,7 +340,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
               {env.type === 'huggingface' &&
                 <NekoCollapsableCategory title={i18n.COMMON.HUGGINGFACE_MODELS}>
-                  <p>Browse the <a href="https://huggingface.co/models" target="_blank" rel="noopener noreferrer">Models on Hugging Face</a>. Use the Deploy button (Inference API Serverless) in order to get the API URL. Paste it below with the name of your choice and you're done!</p>
+                  <p>Browse the <a href="https://huggingface.co/models" target="_blank">Models on Hugging Face</a>. Use the Deploy button (Inference API Serverless) in order to get the API URL. Paste it below with the name of your choice and you're done!</p>
                   <CustomModels 
                     customModels={env.customModels ?? []}
                     environmentId={env.id}
