@@ -32,7 +32,6 @@ class Meow_MWAI_Core
 		$this->is_cli = defined( 'WP_CLI' );
 		$this->files = new Meow_MWAI_Modules_Files( $this );
 		$this->tasks = new Meow_MWAI_Modules_Tasks( $this );
-
 		if ( $this->get_option( 'module_suggestions' ) ) {
 			$this->magicWand = new Meow_MWAI_Modules_Wand( $this );
 		}
@@ -49,29 +48,37 @@ class Meow_MWAI_Core
 		$this->chatbot = null;
 		$this->discussions = null;
 		new Meow_MWAI_Modules_Security( $this );
+
+		// REST API
 		if ( $this->is_rest ) {
 			new Meow_MWAI_Rest( $this );
 		}
+
+		// WP Admin
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
+		}
 
-			if ( current_user_can( 'manage_options' ) ) {
-				$module_advisor = $this->get_option( 'module_advisor' );
-				if ( $module_advisor ) {
-					new Meow_MWAI_Modules_Advisor( $this );
-				}
+		// Administrator in WP Admin
+		if ( is_admin() && current_user_can( 'manage_options' ) ) {
+			$module_advisor = $this->get_option( 'module_advisor' );
+			if ( $module_advisor ) {
+				new Meow_MWAI_Modules_Advisor( $this );
 			}
 		}
+
+		// Chatbots & Discussions
 		if ( $this->get_option( 'module_chatbots' ) ) {
 			$this->chatbot = new Meow_MWAI_Modules_Chatbot();
 			$this->discussions = new Meow_MWAI_Modules_Discussions();
 		}
 
-		// Advanced core
+		// Advanced Core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
 			new MeowPro_MWAI_Core( $this );
 		}
 
+		// Simple API
 		$mwai = new Meow_MWAI_API( $this->chatbot, $this->discussions );
 	}
 

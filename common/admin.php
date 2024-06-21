@@ -44,13 +44,13 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       $this->isPro = $isPro;
 
       // If there is no mainfile, it's either a Pro only Plugin (with no Free version available) or a Theme.
+
       if ( is_admin() ) {
         $license = get_option( $this->prefix . '_license', "" );
         if ( !empty( $license ) && !$this->isPro ) {
           add_action( 'admin_notices', array( $this, 'admin_notices_licensed_free' ) );
         }
-        // This section is admin only.
-        if ( current_user_can( 'manage_options' ) ) {
+        if ( $this->is_user_admin() ) {
           if ( !$disableReview ) {
             new MeowCommon_Ratings( $prefix, $mainfile, $domain );
           }
@@ -59,6 +59,14 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       }
       add_filter( 'plugin_row_meta', array( $this, 'custom_plugin_row_meta' ), 10, 2 );
       add_filter( 'edd_sl_api_request_verify_ssl', array( $this, 'request_verify_ssl' ), 10, 0 );
+    }
+
+    function is_user_admin() {
+      if ( !function_exists( 'current_user_can' ) || !function_exists( 'wp_get_current_user' ) ) {
+        error_log( 'MeowCommon_Admin is called too early. Please make sure it is called after the plugins_loaded filter.' );
+        return false;
+      }
+      return current_user_can( 'manage_options' );
     }
 
     function custom_plugin_row_meta( $links, $file ) {
@@ -163,7 +171,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
     }
 
     function get_phpinfo() {
-      if ( !current_user_can( 'manage_options' ) || !function_exists( 'phpinfo' ) ) {
+      if ( !$this->is_user_admin() || !function_exists( 'phpinfo' ) ) {
         return;
       }
       ob_start();
