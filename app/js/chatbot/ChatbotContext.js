@@ -1,5 +1,5 @@
-// Previous: 2.3.6
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.4
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -25,6 +25,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const { params, system, theme, atts } = rest;
   const { modCss } = useModClasses(theme);
   const shortcodeStyles = theme?.settings || {};
+  const [ restNonce, setRestNonce ] = useState(system.restNonce);
   const [ messages, setMessages ] = useState([]);
   const [ chatId, setChatId ] = useState(randomStr());
   const [ inputText, setInputText ] = useState('');
@@ -38,15 +39,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const [ busy, setBusy ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
 
-  // System Parameters
-  //const id = system.id;
-  const stream = system.stream || false;
+  const { stream = false } = system;
   const botId = system.botId;
   const customId = system.customId;
   const userData = system.userData;
   const sessionId = system.sessionId;
-  const contextId = system.contextId; 
-  const restNonce = system.restNonce;
+  const contextId = system.contextId;
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
   const debugMode = system.debugMode; 
@@ -55,7 +53,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const speechSynthesis = system?.speech_synthesis ?? false;
   const startSentence = params.startSentence?.trim() ?? "";
 
-  // UI Parameters
   const processedParams = processParameters(params);
   let { aiName, userName } = processedParams;
   const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
@@ -63,6 +60,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble, imageUpload, fileSearch } = processedParams;
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
+
   const { cssVariables, iconUrl } = useMemo(() => {
     const iconUrl = icon ? (isURL(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
@@ -71,8 +69,21 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }, {});
     return { cssVariables, iconUrl };
   }, [icon, pluginUrl, shortcodeStyles]);
+
   aiName = formatAiName(aiName, pluginUrl, iconUrl, modCss);
   userName = formatUserName(userName, guestName, userData, pluginUrl, modCss);
+
+  const refreshRestNonce = async () => {
+    const res = await mwaiFetch(`${restUrl}/mwai/v1/start_session`);
+    const data = await res.json();
+    setRestNonce(data.restNonce);
+  }
+
+  useEffect(() => {
+    if (!restNonce) {
+      refreshRestNonce();
+    }
+  }, [restNonce]);
 
   useEffect(() => {
     resetMessages();
@@ -119,7 +130,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   };
 
   const initChatbot = useCallback(() => {
-    let chatHistory;
+    let chatHistory = [];
     if (localStorageKey) {
       chatHistory = localStorage.getItem(localStorageKey);
       if (chatHistory) {
@@ -130,7 +141,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [botId, localStorageKey]);
+  }, [botId]);
 
   useEffect(() => {
     initChatbot();
@@ -148,7 +159,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      freshMessages.pop();
+      if (lastMessage) {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -204,7 +217,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [botId, localStorageKey]);
 
   const onSubmit = async (textQuery) => {
-
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
@@ -250,6 +262,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
     }];
+
     setMessages(freshMessages);
     const body = {
       botId: botId,
@@ -265,18 +278,17 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     };
     try {
       if (debugMode) { 
-        // eslint-disable-next-line no-console
         console.log('[CHATBOT] OUT: ', body);
       }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
-          const freshMessages = [...messages];
-          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
-          if (lastMessage && lastMessage.id === freshMessageId) {
-            lastMessage.content = content;
-            lastMessage.timestamp = new Date().getTime();
+          const localMessages = [...messages];
+          const lastMsg = localMessages[localMessages.length - 1];
+          if (lastMsg && lastMsg.id === freshMessageId) {
+            lastMsg.content = content;
+            lastMsg.timestamp = new Date().getTime();
           }
-          return freshMessages;
+          return localMessages;
         });
       };
 

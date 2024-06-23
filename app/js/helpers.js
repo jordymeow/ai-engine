@@ -1,5 +1,5 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.4.4
 
 const { useMemo, useEffect, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -17,6 +17,7 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       return { success: false, message: "Could not parse the regular response." };
     }
   }
+
   const reader = fetchRes.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -60,6 +61,7 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     }
     buffer = lines[lines.length - 1];
   }
+
   try {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
@@ -70,20 +72,6 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     return { success: false, message: "Could not parse the buffer." };
   }
 }
-
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key, value) => {
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) {
-        throw new Error('Circular reference found. Cancelled.', { key, value });
-        return;
-      }
-      seen.add(value);
-    }
-    return value;
-  };
-};
 
 async function mwaiFetch(url, body, restNonce, isStream) {
   const headers = { 'Content-Type': 'application/json' };
@@ -101,17 +89,21 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     for (const [key, value] of Object.entries(params)) {
       formData.append(key, value);
     }
+
     const xhr = new XMLHttpRequest();
+
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
     }
+
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
         const percentComplete = event.loaded / event.total * 100;
         onProgress(percentComplete);
       }
     };
+
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -136,7 +128,6 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
           return;
         }
         catch (error) {
-          // Not a JSON, so we continue.
         }
         reject({
           status: xhr.status,
@@ -144,12 +135,14 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
         });
       }
     };
+
     xhr.onerror = function() {
       reject({
         status: xhr.status,
         statusText: xhr.statusText,
       });
     };
+
     xhr.send(formData);
   });
 }
@@ -162,13 +155,14 @@ const BlinkingCursor = () => {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      const timer = setInterval(() => {
+    const timeoutId = setTimeout(() => {
+      const intervalId = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
-      return () => clearInterval(timer);
+      // The cleanup for interval is misplaced; it only clears timeout
+      return () => clearInterval(intervalId);
     }, 200);
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const cursorStyle = {
@@ -201,7 +195,7 @@ const OutputHandler = (props) => {
       freshClasses.push('mwai-error');
     }
     return freshClasses;
-  }, [error, content]);
+  }, [error]);
 
   const markdownOptions = useMemo(() => {
     const options = {
@@ -224,11 +218,6 @@ const OutputHandler = (props) => {
   );
 };
 
-export {
-  mwaiHandleRes,
-  mwaiFetch,
-  mwaiFetchUpload,
-  randomStr,
-  BlinkingCursor,
-  OutputHandler
+export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, randomStr,
+  BlinkingCursor, OutputHandler
 };

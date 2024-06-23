@@ -25,47 +25,65 @@ const LicenseBlock = () => {
       return;
     }
     setBusy(true);
-    const res = await nekoFetch(`${CommonApiUrl}/get_license`, { 
-      method: 'POST',
-      nonce: restNonce
-    });
-    setLicense(res.data);
-    if (res.data.key) {
-      setSerialKey(res.data.key);
+    try {
+      const res = await nekoFetch(`${CommonApiUrl}/get_license`, { 
+        method: 'POST',
+        nonce: restNonce
+      });
+      setLicense(res.data);
+      if (res.data.key) {
+        setSerialKey(res.data.key);
+      }
+    }
+    catch (err) {
+      alert('Error while checking the license. Check your console for more information.');
+      console.error(err);
     }
     setBusy(false);
   };
 
   const removeLicense = async () => {
     setBusy(true);
-    const res = await nekoFetch(`${CommonApiUrl}/set_license`, { 
-      method: 'POST',
-      nonce: restNonce,
-      json: { serialKey: null }
-    });
-    if (res.success) {
-      setSerialKey('');
-      setLicense(null);
-      setCurrentModal('licenseRemoved');
+    try {
+      const res = await nekoFetch(`${CommonApiUrl}/set_license`, { 
+        method: 'POST',
+        nonce: restNonce,
+        json: { serialKey: null }
+      });
+      if (res.success) {
+        setSerialKey('');
+        setLicense(null);
+        setCurrentModal('licenseRemoved');
+      }
+    }
+    catch (err) {
+      alert('Error while removing the license. Check your console for more information.');
+      console.error(err);
     }
     setBusy(false);
   };
 
   const forceLicense = async () => {
     setBusy(true);
-    const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
-      method: 'POST',
-      nonce: restNonce,
-      json: { 
-        serialKey,
-        override: true
+    try {
+      const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: { 
+          serialKey,
+          override: true
+        }
+      });
+      if (res.success) {
+        setLicense(res.data);
+        if (res.data && !res.data.issue) {
+          setCurrentModal('licenseAdded');
+        }
       }
-    });
-    if (res.success) {
-      setLicense(res.data);
-      if (res.data && !res.data.issue) {
-        setCurrentModal('licenseAdded');
-      }
+    }
+    catch (err) {
+      alert('Error while forcing the license. Check your console for more information.');
+      console.error(err);
     }
     setBusy(false);
   };
@@ -78,16 +96,22 @@ const LicenseBlock = () => {
       return;
     }
     setBusy(true);
-    const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
-      method: 'POST',
-      nonce: restNonce,
-      json: { serialKey }
-    });
-    if (res.success) {
-      setLicense(res.data);
-      if (res.data && !res.data.issue) {
-        setCurrentModal('licenseAdded');
+    try {
+      const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: { serialKey }
+      });
+      if (res.success) {
+        setLicense(res.data);
+        if (res.data && !res.data.issue) {
+          setCurrentModal('licenseAdded');
+        }
       }
+    }
+    catch (err) {
+      alert('Error while validating the license. Check your console for more information.');
+      console.error(err);
     }
     setBusy(false);
   };

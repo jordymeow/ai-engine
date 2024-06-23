@@ -40,6 +40,13 @@ class Meow_MWAI_Rest
 
 	function rest_init() {
 		try {
+			// Session Endpoint
+			register_rest_route( $this->namespace, '/start_session', array(
+				'methods' => 'POST',
+				'permission_callback' => [ $this->core, 'can_start_session' ],
+				'callback' => [ $this, 'rest_start_session' ],
+			) );
+
 			// Settings Endpoints
 			register_rest_route( $this->namespace, '/settings/update', array(
 				'methods' => 'POST',
@@ -257,6 +264,22 @@ class Meow_MWAI_Rest
 		}
 		catch ( Exception $e ) {
 			var_dump( $e );
+		}
+	}
+
+	function rest_start_session() {
+		try {
+			$sessionId = $this->core->get_session_id();
+			$restNonce = $this->core->get_nonce( true );
+			return new WP_REST_Response( [ 
+				'success' => true,
+				'sessionId' => $sessionId,
+				'restNonce' => $restNonce
+			], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response( [ 'success' => false, 'message' => $message ], 500 );
 		}
 	}
 

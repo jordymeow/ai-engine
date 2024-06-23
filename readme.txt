@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.4.3
+Stable tag: 2.4.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,12 @@ Languages: English.
 
 == Changelog ==
 
+= 2.4.4 (2024/06/23) =
+* Fix: Improve nonce handling to eliminate the 'Cookie check failed' error in the chatbot.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+* 🎵 Discuss with others about AI Engine on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.4.3 (2024/06/21) =
 * Add: Claude-3.5 Sonnet (Anthropic).
 * Fix: Issues related to envId in AI environments.
@@ -103,9 +109,6 @@ Languages: English.
 * Update: Longer conversation can now be kept in the DB.
 * Update: Sanitize Pinecone URL.
 * Update: Refreshed Neko UI.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most!
-* 🎵 Discuss with other users about features and issues on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.3.6 (2024/05/29) =
 * Update: Streamlined the way uploaded files are handled.

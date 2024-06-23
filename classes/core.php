@@ -89,6 +89,9 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Roles & Capabilities
+	function can_start_session() {
+		return apply_filters( 'mwai_allow_session', true );
+	}
 
 	function can_access_settings() {
 		return apply_filters( 'mwai_allow_setup', current_user_can( 'manage_options' ) );
@@ -417,10 +420,10 @@ class Meow_MWAI_Core
 
 	#region Users/Sessions Helpers
 
-	function get_nonce() {
-		// if ( !is_user_logged_in() ) {
-		// 	return null;
-		// }
+	function get_nonce( $force = false ) {
+		if ( !$force && !is_user_logged_in() ) {
+			return null;
+		}
 		if ( isset( $this->nonce ) ) {
 			return $this->nonce;
 		}
