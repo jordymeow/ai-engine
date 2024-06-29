@@ -143,11 +143,15 @@
 				img {
 					width: 32px;
 					height: 32px;
+					min-width: 32px;
+					min-height: 32px;
 				}
 
 				&.mwai-svg img {
 					width: 28px;
 					height: 28px;
+					min-width: 28px;
+					min-height: 28px;
 					filter: brightness(0) invert(1);
 				}
 			}
@@ -192,6 +196,10 @@
 				color: #2196f3;
 			}
 
+			h1, h2, h3, h4 {
+				color: var(--mwai-fontColor);
+			}
+
 			h1 {
 				font-size: 200%;
 			}
@@ -228,12 +236,11 @@
 				max-width: 100%;
 				width: 100%;
 				font-family: system-ui;
-				background: #343541;
+				background: #{'hsl(0 0% 0% / 30%)'};
 
 				code {
 					padding: 0 !important;
 					font-family: system-ui;
-					background: #343541;
 				}
 			}
 

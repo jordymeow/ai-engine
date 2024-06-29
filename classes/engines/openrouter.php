@@ -141,10 +141,23 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
         $tags[] = 'preview';
         $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
       }
+
+      // Vision Support
+      // Unfortunately, OpenRouter does not provide a way know if a model is vision or not
+
       // If the name includes 'Vision', add 'vision' tag
       if ( preg_match( '/vision/i', $model['name'], $matches ) ) {
         $tags[] = 'vision';
       }
+      // If the name includes 'gpt-4o', add 'vision' tag
+      else if ( preg_match( '/gpt-4o/i', $model['name'], $matches ) ) {
+        $tags[] = 'vision';
+      }
+      // If the name includes 'flash', add 'vision' tag
+      else if ( preg_match( '/flash/i', $model['name'], $matches ) ) {
+        $tags[] = 'vision';
+      }
+
       $models[] = array(
         'model' => $model['id'],
         'name' => trim( $model['name'] ),

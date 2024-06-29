@@ -1,0 +1,1057 @@
+.mwai-timeless-theme {
+  --mwai-spacing: 20px;
+  --mwai-fontSize: 15px;
+  --mwai-lineHeight: 1.5;
+  --mwai-borderRadius: 10px;
+  --mwai-width: 360px;
+  --mwai-maxHeight: 40vh;
+  --mwai-iconTextColor: #FFFFFF;
+  --mwai-iconTextBackgroundColor: #2831dc;
+  --mwai-fontColor: black;
+  --mwai-backgroundPrimaryColor: #fafafa;
+  --mwai-backgroundHeaderColor: linear-gradient(130deg, #2831dc 0%, #09a9f8 100%);
+  --mwai-bubbleColor: #2831dc;
+  --mwai-headerButtonsColor: white;
+  --mwai-conversationsBackgroundColor: white;
+  --mwai-backgroundUserColor: linear-gradient(130deg, #272fdc 0%, #09a9f8 100%);
+  --mwai-backgroundAiColor: #F1F3F7;
+  --mwai-backgroundAiSecondaryColor: #ddd;
+  --mwai-errorBackgroundColor: #6d2f2a;
+  --mwai-errorTextColor: #FFFFFF;
+  font-size: var(--mwai-fontSize);
+}
+
+.mwai-timeless-theme * {
+  box-sizing: border-box;
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header {
+  height: 80px;
+  padding: var(--mwai-spacing);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-avatar img {
+  width: 48px;
+  height: 48px;
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-name {
+  color: white;
+  font-size: 140%;
+  margin-left: calc(var(--mwai-spacing) / 2);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-name small {
+  font-size: 75%;
+  display: block;
+}
+
+.mwai-timeless-theme .mwai-content {
+  display: flex;
+  background: var(--mwai-backgroundPrimaryColor);
+  font-size: var(--mwai-fontSize);
+  color: var(--mwai-fontColor);
+  border-radius: var(--mwai-borderRadius);
+  flex-direction: column;
+  padding: var(--mwai-spacing);
+}
+
+.mwai-timeless-theme .mwai-conversation {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  max-height: var(--mwai-maxHeight);
+}
+
+.mwai-timeless-theme .mwai-conversation .mwai-reply {
+  margin-bottom: var(--mwai-spacing);
+  padding: 7px 12px;
+  border-radius: 15px;
+  font-size: var(--mwai-fontSize);
+  color: var(--mwai-fontColor);
+  position: relative;
+}
+
+.mwai-timeless-theme .mwai-conversation .mwai-reply .mwai-name,
+.mwai-timeless-theme .mwai-conversation .mwai-reply .mwai-name-text {
+  display: none;
+}
+
+.mwai-timeless-theme .mwai-conversation .mwai-reply * > p:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme .mwai-conversation .mwai-reply * > p:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-ai {
+  align-self: flex-start;
+  background: var(--mwai-backgroundAiColor);
+  margin-left: 5px;
+}
+
+.mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-user {
+  align-self: flex-end;
+  background: var(--mwai-backgroundUserColor);
+  color: white;
+  margin-right: 10px;
+}
+
+.mwai-timeless-theme .mwai-text {
+  flex: auto;
+}
+
+.mwai-timeless-theme .mwai-text .mwai-image {
+  display: block;
+  max-width: 250px;
+  height: auto;
+  margin: 0 0 10px 0;
+  border-radius: var(--mwai-borderRadius);
+}
+
+.mwai-timeless-theme .mwai-text .mwai-filename {
+  display: flex;
+  text-decoration: none;
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  color: white;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+}
+
+.mwai-timeless-theme .mwai-text > span > p > *:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme .mwai-text a {
+  color: #2196f3;
+}
+
+.mwai-timeless-theme .mwai-text h1 {
+  font-size: 200%;
+}
+
+.mwai-timeless-theme .mwai-text h2 {
+  font-size: 160%;
+}
+
+.mwai-timeless-theme .mwai-text h3 {
+  font-size: 140%;
+}
+
+.mwai-timeless-theme .mwai-text h4 {
+  font-size: 120%;
+}
+
+.mwai-timeless-theme .mwai-text p {
+  font-size: var(--mwai-fontSize);
+  line-height: var(--mwai-lineHeight);
+}
+
+.mwai-timeless-theme .mwai-text p code {
+  background: var(--mwai-backgroundAiSecondaryColor);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: calc(var(--mwai-fontSize) * 0.9);
+  font-family: system-ui;
+}
+
+.mwai-timeless-theme .mwai-text pre {
+  color: var(--mwai-fontColor);
+  border-radius: var(--mwai-borderRadius);
+  break-after: auto;
+  white-space: pre-wrap;
+  max-width: 100%;
+  width: 100%;
+  font-family: system-ui;
+  background: var(--mwai-backgroundAiSecondaryColor);
+  padding: var(--mwai-spacing);
+}
+
+.mwai-timeless-theme .mwai-text pre code {
+  padding: 0 !important;
+  font-family: system-ui;
+  background: var(--mwai-backgroundAiSecondaryColor);
+}
+
+.mwai-timeless-theme .mwai-text ol {
+  padding: 0;
+  margin: 0 0 0 20px;
+}
+
+.mwai-timeless-theme .mwai-text table {
+  width: 100%;
+  border: 2px solid var(--mwai-backgroundAiSecondaryColor);
+  border-collapse: collapse;
+}
+
+.mwai-timeless-theme .mwai-text thead {
+  background: var(--mwai-backgroundAiSecondaryColor);
+}
+
+.mwai-timeless-theme .mwai-text tr,
+.mwai-timeless-theme .mwai-text td {
+  padding: 2px 5px;
+}
+
+.mwai-timeless-theme .mwai-text td {
+  border: 2px solid var(--mwai-backgroundAiSecondaryColor);
+}
+
+.mwai-timeless-theme .mwai-text .mwai-typewriter {
+  display: inline-block;
+}
+
+.mwai-timeless-theme .mwai-text .mwai-typewriter > :first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme .mwai-text > *:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme .mwai-text > *:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-timeless-theme .mwai-input {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-top: 1px solid var(--mwai-backgroundAiSecondaryColor);
+  padding-top: var(--mwai-spacing);
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text {
+  flex: auto;
+  position: relative;
+  display: flex;
+  width: 100%;
+  background: var(--mwai-backgroundPrimaryColor);
+  overflow: hidden;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text.mwai-blocked img {
+  filter: grayscale(100%);
+  opacity: 0.5;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text.mwai-dragging {
+  border: 1px dashed var(--mwai-backgroundAiSecondaryColor);
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text textarea {
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+  flex: auto;
+  border: none;
+  font-size: var(--mwai-fontSize);
+  resize: none;
+  font-family: inherit;
+  margin: 0;
+  overflow: hidden;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text textarea::placeholder {
+  color: var(--mwai-fontColor);
+  opacity: 0.5;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text .mwai-microphone {
+  width: 32px;
+  height: 32px;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text .mwai-microphone svg {
+  width: 32px;
+  height: 32px;
+  fill: var(--mwai-fontColor);
+  opacity: 0.5;
+  filter: grayscale(100%);
+  transition: opacity 0.3s ease-out;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text .mwai-microphone[active=true] svg {
+  opacity: 1;
+}
+
+.mwai-timeless-theme .mwai-input .mwai-input-text .mwai-microphone[disabled] svg {
+  opacity: 0;
+  cursor: not-allowed;
+}
+
+.mwai-timeless-theme button {
+  margin-left: var(--mwai-spacing);
+  background: var(--mwai-backgroundUserColor);
+  color: white;
+  border: none;
+  border-radius: 100%;
+  cursor: pointer;
+  height: 48px;
+  width: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  position: absolute;
+  right: -20px;
+}
+
+.mwai-timeless-theme button img {
+  width: 20px;
+  height: 20px;
+  margin: auto;
+  display: block;
+  filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg) brightness(1000%) contrast(100%);
+}
+
+.mwai-timeless-theme button span {
+  display: none;
+}
+
+.mwai-timeless-theme button .mwai-timer {
+  margin-left: 5px;
+  margin-right: 5px;
+  font-size: 11px;
+}
+
+.mwai-timeless-theme button:hover {
+  filter: brightness(1.2);
+}
+
+.mwai-timeless-theme button[disabled] {
+  cursor: not-allowed;
+}
+
+.mwai-timeless-theme button[disabled] span {
+  opacity: 0.5;
+}
+
+.mwai-timeless-theme button[disabled].mwai-busy span {
+  display: none;
+}
+
+.mwai-timeless-theme button[disabled].mwai-busy:before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  border: 3px solid transparent;
+  border-top-color: var(--mwai-fontColor);
+  border-radius: 50%;
+  animation: mwai-button-spinner 1s ease infinite;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon {
+  background: url("icons/white-icons.svg");
+  background-size: 500%;
+  background-position: 0px -96px;
+  width: 32px;
+  height: 32px;
+  margin-top: calc(var(--mwai-spacing) / 2);
+  margin-left: 5px;
+  z-index: 100;
+  transform: scale(0.75);
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-idle-add {
+  background-position: -32px -96px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-add {
+  background-position: -32px 0px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-up {
+  background-position: -64px 0px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-del {
+  background-position: -96px 0px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-ok {
+  background-position: -128px 0px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-add {
+  background-position: -32px -64px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-up {
+  background-position: -64px -64px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-del {
+  background-position: -96px -64px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-ok {
+  background-position: -128px -64px;
+}
+
+.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon .mwai-file-upload-progress {
+  position: absolute;
+  font-size: 8px;
+  width: 21px;
+  top: 24px;
+  left: 23px;
+  overflow: hidden;
+  text-align: center;
+  font-weight: bold;
+  color: white;
+}
+
+.mwai-timeless-theme .mwai-compliance {
+  opacity: 0.50;
+  margin-top: calc(-1 * var(--mwai-spacing));
+  padding: calc(var(--mwai-spacing) / 1.5) var(--mwai-spacing);
+  font-size: smaller;
+  color: var(--mwai-fontColor);
+  text-align: left;
+}
+
+.mwai-timeless-theme .mwai-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 5px;
+}
+
+.mwai-timeless-theme .mwai-gallery img {
+  width: 100%;
+}
+
+.mwai-timeless-theme.mwai-discussions {
+  border-radius: var(--mwai-borderRadius);
+  background: var(--mwai-conversationsBackgroundColor);
+  color: var(--mwai-backgroundPrimaryColor);
+  overflow: hidden;
+}
+
+.mwai-timeless-theme.mwai-discussions * {
+  box-sizing: border-box;
+}
+
+.mwai-timeless-theme.mwai-discussions .mwai-header {
+  background: var(--mwai-backgroundAiSecondaryColor);
+  padding: var(--mwai-spacing);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mwai-timeless-theme.mwai-discussions .mwai-content {
+  background: var(--mwai-conversationsBackgroundColor);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mwai-timeless-theme.mwai-discussions .mwai-content li {
+  margin-left: calc(var(--mwai-spacing) / 2);
+  margin-right: calc(var(--mwai-spacing) / 2);
+  margin-bottom: calc(var(--mwai-spacing) / 2);
+  color: var(--mwai-conversationsTextColor);
+  font-size: 75%;
+  padding: calc(var(--mwai-spacing) / 2);
+  opacity: 0.65;
+}
+
+.mwai-timeless-theme.mwai-discussions .mwai-content li.mwai-active, .mwai-timeless-theme.mwai-discussions .mwai-content li:hover {
+  color: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundHeaderColor);
+  border-radius: var(--mwai-borderRadius);
+  opacity: 1;
+  cursor: pointer;
+}
+
+.mwai-timeless-theme.mwai-discussions .mwai-content li:first-child {
+  margin-top: calc(var(--mwai-spacing) / 2);
+}
+
+.mwai-timeless-theme.mwai-discussions button {
+  margin-left: 0;
+}
+
+.mwai-timeless-theme.mwai-transition, .mwai-timeless-theme .mwai-transition {
+  opacity: 0;
+  transition: opacity 350ms ease-in-out;
+}
+
+.mwai-timeless-theme.mwai-transition-visible, .mwai-timeless-theme .mwai-transition-visible {
+  opacity: 1;
+}
+
+.mwai-timeless-theme .mwai-text img {
+  max-width: 100%;
+}
+
+.mwai-timeless-theme .mwai-text div p:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme .mwai-text div p:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-timeless-theme .mwai-trigger {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  transition: all 0.2s ease-out;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-text-container .mwai-icon-text {
+  background: var(--mwai-iconTextBackgroundColor);
+  color: var(--mwai-iconTextColor);
+  box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.15);
+  max-width: 200px;
+  font-size: 13px;
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-text-container .mwai-icon-text-close {
+  color: var(--mwai-iconTextColor);
+  background: var(--mwai-iconTextBackgroundColor);
+  padding: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-text-container:hover {
+  cursor: pointer;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-text-container:hover .mwai-icon-text-close {
+  display: flex;
+  font-size: 12px;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-text-container:hover .mwai-icon-text-close:hover {
+  filter: brightness(1.2);
+}
+
+@media (max-width: 760px) {
+  .mwai-timeless-theme .mwai-trigger .mwai-icon-text-container .mwai-icon-text-close {
+    display: flex;
+  }
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-container .mwai-icon {
+  filter: drop-shadow(0px 0px 15px rgba(0, 0, 0, 0.15));
+  transition: all 0.2s ease-out;
+}
+
+.mwai-timeless-theme .mwai-trigger .mwai-icon-container .mwai-icon:hover {
+  cursor: pointer;
+  transform: scale(1.05);
+}
+
+.mwai-timeless-theme.mwai-window {
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+  width: var(--mwai-width);
+  z-index: 9999;
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header {
+  display: none;
+  justify-content: flex-end;
+  align-items: center;
+  border-radius: var(--mwai-borderRadius) var(--mwai-borderRadius) 0 0;
+  background: var(--mwai-backgroundHeaderColor);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button {
+  justify-content: center;
+  height: 32px;
+  width: 22px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:before {
+  transition: all 0.2s ease-out;
+  content: ' ';
+  cursor: pointer;
+  position: absolute;
+  height: 13px;
+  width: 13px;
+  border: 1px solid var(--mwai-headerButtonsColor);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
+  width: 16px;
+  height: 16px;
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button {
+  justify-content: center;
+  height: 32px;
+  width: 33px;
+  cursor: pointer;
+  border-radius: var(--mwai-borderRadius);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before {
+  transition: all 0.2s ease-out;
+  transform: translate(16px, 5px) rotate(45deg);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
+  transition: all 0.2s ease-out;
+  transform: translate(16px, 5px) rotate(-45deg);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before, .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
+  content: ' ';
+  cursor: pointer;
+  position: absolute;
+  height: 22px;
+  width: 1px;
+  background-color: var(--mwai-headerButtonsColor);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:before {
+  opacity: 1;
+  transform: translate(16px, 5px) rotate(135deg);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:after {
+  opacity: 1;
+  transform: translate(16px, 5px) rotate(45deg);
+}
+
+.mwai-timeless-theme.mwai-window .mwai-content {
+  display: none;
+  opacity: 0;
+  max-height: var(--mwai-maxHeight);
+  border-radius: 0 0 var(--mwai-borderRadius) var(--mwai-borderRadius);
+  overflow: hidden;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-bottom-left {
+  bottom: 30px;
+  right: inherit;
+  left: 30px;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-bottom-left .mwai-open-button {
+  right: inherit;
+  left: 0;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-right {
+  top: 30px;
+  bottom: inherit;
+  right: 30px;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-right .mwai-open-button {
+  top: 0;
+  bottom: inherit;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-left {
+  top: 30px;
+  bottom: inherit;
+  right: inherit;
+  left: 30px;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-left .mwai-open-button {
+  top: 0;
+  bottom: inherit;
+  right: inherit;
+  left: 0;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-left .mwai-open-button, .mwai-timeless-theme.mwai-window.mwai-bottom-left .mwai-open-button {
+  align-items: flex-start;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-right .mwai-open-button, .mwai-timeless-theme.mwai-window.mwai-top-left .mwai-open-button {
+  flex-direction: column-reverse;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-top-right .mwai-open-button .mwai-icon-text, .mwai-timeless-theme.mwai-window.mwai-top-left .mwai-open-button .mwai-icon-text {
+  margin-bottom: 0;
+  margin-top: 15px;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons {
+  margin-bottom: 0px;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:before {
+  width: 16px;
+  height: 16px;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
+  width: 13px;
+  height: 13px;
+}
+
+.mwai-timeless-theme.mwai-fullscreen:not(.mwai-window), .mwai-timeless-theme.mwai-fullscreen.mwai-window.mwai-open {
+  position: fixed;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: 0 !important;
+  width: inherit;
+  height: inherit;
+  max-height: inherit;
+  max-width: inherit;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  z-index: 999999;
+  background-color: var(--mwai-backgroundSecondaryColor);
+}
+
+.mwai-timeless-theme.mwai-fullscreen:not(.mwai-window) .mwai-header, .mwai-timeless-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-header {
+  border-radius: 0;
+}
+
+.mwai-timeless-theme.mwai-fullscreen:not(.mwai-window) .mwai-content, .mwai-timeless-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-content {
+  height: 100%;
+  max-height: inherit;
+  border-radius: 0;
+}
+
+.mwai-timeless-theme.mwai-fullscreen:not(.mwai-window) .mwai-content .mwai-conversation, .mwai-timeless-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-content .mwai-conversation {
+  flex: auto;
+  max-height: none;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-open .mwai-header {
+  display: flex;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-open .mwai-content {
+  display: flex;
+  transition: opacity 200ms ease-in-out 0s;
+  opacity: 1;
+}
+
+.mwai-timeless-theme.mwai-window.mwai-open .mwai-open-button {
+  display: none;
+}
+
+.mwai-timeless-theme .mwai-error {
+  margin: var(--mwai-spacing);
+  color: white;
+  background: rgba(180, 55, 55, 0.55);
+  padding: var(--mwai-spacing);
+  border-radius: var(--mwai-borderRadius);
+}
+
+.mwai-timeless-theme .mwai-error:hover {
+  cursor: pointer;
+  background: rgba(180, 44, 44, 0.85);
+}
+
+.mwai-timeless-theme.mwai-bubble .mwai-icon-container {
+  background: var(--mwai-bubbleColor);
+  width: 60px;
+  height: 60px;
+  border-radius: 100%;
+  transition: all 0.2s ease-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mwai-timeless-theme.mwai-bubble .mwai-icon-container .mwai-icon {
+  max-width: 50%;
+  max-height: 50%;
+  filter: none;
+}
+
+.mwai-timeless-theme.mwai-bubble .mwai-icon-container .mwai-icon:hover {
+  transform: none;
+}
+
+.mwai-timeless-theme.mwai-bubble .mwai-icon-container:hover {
+  cursor: pointer;
+  filter: brightness(1.1);
+}
+
+@media (max-width: 760px) {
+  .mwai-timeless-theme.mwai-window.mwai-open {
+    position: fixed;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: 0 !important;
+    width: inherit;
+    height: inherit;
+    max-height: inherit;
+    max-width: inherit;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    z-index: 999999;
+    background-color: var(--mwai-backgroundSecondaryColor);
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-header {
+    border-radius: 0;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-content {
+    height: 100%;
+    max-height: inherit;
+    border-radius: 0;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-content .mwai-conversation {
+    flex: auto;
+    max-height: none;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-input {
+    flex-direction: column;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-input button {
+    font-size: 16px;
+    margin-left: 0;
+    width: 100%;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-input .mwai-input-text {
+    margin-bottom: var(--mwai-spacing);
+    width: 100%;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-input .mwai-input-text input, .mwai-timeless-theme.mwai-window.mwai-open .mwai-input .mwai-input-text textarea {
+    font-size: 16px;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-content {
+    display: flex;
+    transition: opacity 200ms ease-in-out 0s;
+    opacity: 1;
+    height: 100%;
+    max-height: inherit;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-content .mwai-conversation {
+    flex: auto;
+    max-height: none;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-resize-button {
+    display: none !important;
+  }
+  .mwai-timeless-theme.mwai-window.mwai-open .mwai-open-button {
+    display: none;
+  }
+}
+
+@keyframes mwai-button-spinner {
+  from {
+    transform: rotate(0turn);
+  }
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.mwai-timeless-theme .admin-bar .mwai-fullscreen:not(.mwai-window),
+.mwai-timeless-theme .admin-bar .mwai-fullscreen.mwai-window.mwai-open {
+  top: 32px;
+}
+
+.mwai-timeless-theme pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+.mwai-timeless-theme code.hljs {
+  padding: 3px 5px;
+}
+
+.mwai-timeless-theme .hljs {
+  color: #333;
+  background: #f0f0f0;
+}
+
+.mwai-timeless-theme .hljs-subst {
+  color: #333;
+}
+
+.mwai-timeless-theme .hljs-comment {
+  color: #888;
+}
+
+.mwai-timeless-theme .hljs-attr, .mwai-timeless-theme .hljs-doctag, .mwai-timeless-theme .hljs-keyword, .mwai-timeless-theme .hljs-meta .hljs-keyword, .mwai-timeless-theme .hljs-section, .mwai-timeless-theme .hljs-selector-tag {
+  color: #0077cc;
+}
+
+.mwai-timeless-theme .hljs-attribute {
+  color: #aa3377;
+}
+
+.mwai-timeless-theme .hljs-name, .mwai-timeless-theme .hljs-number, .mwai-timeless-theme .hljs-quote, .mwai-timeless-theme .hljs-selector-id, .mwai-timeless-theme .hljs-template-tag, .mwai-timeless-theme .hljs-type {
+  color: #c18401;
+}
+
+.mwai-timeless-theme .hljs-selector-class {
+  color: #0077cc;
+}
+
+.mwai-timeless-theme .hljs-link, .mwai-timeless-theme .hljs-regexp, .mwai-timeless-theme .hljs-selector-attr, .mwai-timeless-theme .hljs-string, .mwai-timeless-theme .hljs-symbol, .mwai-timeless-theme .hljs-template-variable, .mwai-timeless-theme .hljs-variable {
+  color: #689700;
+}
+
+.mwai-timeless-theme .hljs-meta, .mwai-timeless-theme .hljs-selector-pseudo {
+  color: #0077cc;
+}
+
+.mwai-timeless-theme .hljs-built_in, .mwai-timeless-theme .hljs-literal, .mwai-timeless-theme .hljs-title {
+  color: #c18401;
+}
+
+.mwai-timeless-theme .hljs-bullet, .mwai-timeless-theme .hljs-code {
+  color: #555;
+}
+
+.mwai-timeless-theme .hljs-meta .hljs-string {
+  color: #689700;
+}
+
+.mwai-timeless-theme .hljs-deletion {
+  color: #b71c1c;
+}
+
+.mwai-timeless-theme .hljs-addition {
+  color: #1b5e20;
+}
+
+.mwai-timeless-theme .hljs-emphasis {
+  font-style: italic;
+}
+
+.mwai-timeless-theme .hljs-strong {
+  font-weight: 700;
+}
+
+.mwai-timeless-theme .mwai-copy-button {
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  width: 22px;
+  height: 22px;
+  position: absolute;
+  right: var(--mwai-spacing);
+}
+
+.mwai-timeless-theme .mwai-copy-button .mwai-copy-button-one {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-top: 0px;
+  margin-left: 0px;
+  background: white;
+  opacity: 0.4;
+  transition: all 0.2s ease-in;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.mwai-timeless-theme .mwai-copy-button .mwai-copy-button-two {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-top: 6px;
+  margin-left: 6px;
+  background: white;
+  opacity: 0.6;
+  transition: all 0.2s ease-in;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.mwai-timeless-theme .mwai-copy-button:hover .mwai-copy-button-one {
+  opacity: 0.6;
+  margin-top: 0px;
+  margin-left: 6px;
+}
+
+.mwai-timeless-theme .mwai-copy-button:hover .mwai-copy-button-two {
+  opacity: 1;
+  margin-top: 6px;
+  margin-left: 0px;
+}
+
+.mwai-timeless-theme .mwai-copy-button.mwai-animate .mwai-copy-button-one {
+  opacity: 0;
+}
+
+.mwai-timeless-theme .mwai-copy-button.mwai-animate .mwai-copy-button-two {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  margin-left: 2px;
+  opacity: 1;
+}
+
+.mwai-timeless-theme .mwai-chat .mwai-reply:hover .mwai-copy-button {
+  display: block;
+  opacity: 1;
+}
+
+.mwai-timeless-theme .mwai-copy-button {
+  position: absolute;
+  left: 15px;
+  zoom: 0.5;
+  top: 18px;
+  filter: revert;
+}
+
+.mwai-timeless-theme .mwai-ai .mwai-copy-button {
+  right: 15px;
+  left: inherit;
+  filter: brightness(0.4);
+}
+
+@media (max-width: 760px) {
+  .mwai-timeless-theme .mwai-chat.mwai-window {
+    width: calc(100% - 40px);
+    z-index: 9999999999;
+  }
+  .mwai-timeless-theme .mwai-chat .mwai-input {
+    flex-direction: column;
+  }
+  .mwai-timeless-theme .mwai-chat .mwai-input .mwai-input-text {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  .mwai-timeless-theme .mwai-chat .mwai-input button {
+    width: 100%;
+  }
+}

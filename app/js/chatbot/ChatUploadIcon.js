@@ -1,27 +1,33 @@
-// Previous: 2.3.5
-// Current: 2.3.9
+// Previous: none
+// Current: 2.4.5
+
+import { useChatbotContext } from "./ChatbotContext";
+import { useClasses } from "./helpers";
 
 // React & Vendor Libs
-const { useState, useMemo, useImperativeHandle, useRef } = wp.element;
+const { useState, useMemo, useRef } = wp.element;
 
-const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
-  disabled, style, modCss, ...rest }, ref) => {
+const ChatUploadIcon = () => {
+  const css = useClasses();
+  const { state, actions } = useChatbotContext();
+  const { uploadedFile, busy, imageUpload, fileSearch, draggingType } = state;
+  const { onUploadFile } = actions;
+  const [ isHovering, setIsHovering ] = useState(false);
+
   const fileInputRef = useRef();
-  const [isHovering, setIsHovering] = useState(false);
   const hasUploadedFile = uploadedFile?.uploadedId;
+  const uploadEnabled = imageUpload || fileSearch;
 
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
-  const handleExternalFile = (file) => onUploadFile(file);
   const resetUpload = () => onUploadFile(null);
-  useImperativeHandle(ref, () => ({ handleExternalFile }));
 
   const handleClick = () => {
     if (uploadedFile?.localFile) {
       resetUpload();
       return;
     }
-    if (!disabled) {
+    if (!busy) {
       fileInputRef.current.click();
     }
   };
@@ -31,27 +37,21 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
     if (file) onUploadFile(file);
   };
 
-  // Mock uploadedFile for testing
-  // const mockUploadedFile = {
-  //   localFile: { type: 'image/png' },
-  //   uploadedId: '123',
-  //   uploadProgress: 83.39
-  // };
   const file = uploadedFile;
 
   const type = useMemo(() => {
     if (file?.localFile) {
       return file.localFile.type.startsWith('image/') ? 'image' : 'document';
     }
-    return draggedType;
-  }, [file, draggedType]);
+    return draggingType;
+  }, [file, draggingType]);
 
   const imgClass = useMemo(() => {
     let status = 'idle';
     if (file?.uploadProgress) {
       status = 'up';
     }
-    else if (draggedType) {
+    else if (draggingType) {
       status = 'add';
     }
     else if (isHovering && hasUploadedFile) {
@@ -65,12 +65,11 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
     }
 
     const typeClass = type ? type.toLowerCase() : 'idle';
-    return modCss(['mwai-file-upload-icon', `mwai-${typeClass}-${status}`]);
-  }, [type, file, draggedType, isHovering, hasUploadedFile, modCss]);
+    return `mwai-file-upload-icon mwai-${typeClass}-${status}`;
+  }, [type, file, draggingType, isHovering, hasUploadedFile]);
 
-  // Calculate the UploadProgress Value
   const uploadProgress = useMemo(() => {
-    if (file?.uploadProgress) {
+    if (file?.uploadProgress !== undefined) {
       if (file.uploadProgress > 99) {
         return 99;
       }
@@ -78,11 +77,15 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
     }
     return "";
   }, [file]);
-  
-  return (
-    <div disabled={disabled} onClick={handleClick}
+
+  return uploadEnabled ? (
+    <div disabled={busy} onClick={handleClick}
       onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
-      style={{ cursor: disabled ? 'default' : 'pointer', ...style }} {...rest}>
+      className={css('mwai-file-upload', {
+        'mwai-enabled': uploadedFile?.uploadedId,
+        'mwai-busy': uploadedFile?.localFile && !uploadedFile?.uploadedId,
+      })}
+      style={{ cursor: busy ? 'default' : 'pointer' }}>
       <div className={imgClass}>
         <span className="mwai-file-upload-progress">
           {uploadProgress}
@@ -90,7 +93,7 @@ const ChatUpload = React.forwardRef(({ onUploadFile, uploadedFile, draggedType,
       </div>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
     </div>
-  );
-});
+  ) : null;
+};
 
-export default ChatUpload;
+export default ChatUploadIcon;

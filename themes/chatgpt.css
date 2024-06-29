@@ -139,11 +139,15 @@
 .mwai-chatgpt-theme .mwai-reply .mwai-name .mwai-avatar img {
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .mwai-chatgpt-theme .mwai-reply .mwai-name .mwai-avatar.mwai-svg img {
   width: 28px;
   height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   filter: brightness(0) invert(1);
 }
 
@@ -187,6 +191,10 @@
   color: #2196f3;
 }
 
+.mwai-chatgpt-theme .mwai-reply .mwai-text h1, .mwai-chatgpt-theme .mwai-reply .mwai-text h2, .mwai-chatgpt-theme .mwai-reply .mwai-text h3, .mwai-chatgpt-theme .mwai-reply .mwai-text h4 {
+  color: var(--mwai-fontColor);
+}
+
 .mwai-chatgpt-theme .mwai-reply .mwai-text h1 {
   font-size: 200%;
 }
@@ -221,13 +229,12 @@
   max-width: 100%;
   width: 100%;
   font-family: system-ui;
-  background: #343541;
+  background: hsl(0 0% 0% / 30%);
 }
 
 .mwai-chatgpt-theme .mwai-reply .mwai-text pre code {
   padding: 0 !important;
   font-family: system-ui;
-  background: #343541;
 }
 
 .mwai-chatgpt-theme .mwai-reply .mwai-text ul, .mwai-chatgpt-theme .mwai-reply .mwai-text ol {
@@ -948,7 +955,6 @@
 
 .mwai-chatgpt-theme .hljs {
   color: #fff;
-  background: #1c1b1b;
 }
 
 .mwai-chatgpt-theme .hljs-subst {

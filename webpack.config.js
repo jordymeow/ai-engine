@@ -9,14 +9,14 @@ module.exports = function (env, options) {
 
   const isProduction = options.mode === 'production';
   const isAnalysis = env && env.analysis === 'true';
-	
+
   const cleanPlugin = new CleanWebpackPlugin({
     protectWebpackAssets: false,
     cleanOnceBeforeBuildPatterns: ["!app/"],
     cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
       '!forms.js', '*.LICENSE.txt', '*.map'],
   });
-	
+
   const plugins = [];
   if (isProduction) {
     plugins.push(cleanPlugin);

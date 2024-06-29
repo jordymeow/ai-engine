@@ -1,9 +1,8 @@
 <?php
 
 // Params for the chatbot (front and server)
-
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName',
-	'textSend', 'textClear', 'imageUpload', 'fileSearch',
+	'aiAvatar', 'userAvatar', 'textSend', 'textClear', 'imageUpload', 'fileSearch',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
 	'fullscreen', 'copyButton'
@@ -14,7 +13,6 @@ define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'content
 ] );
 
 // Params for the discussions (front and server)
-
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
 define( 'MWAI_DISCUSSIONS_SERVER_PARAMS', [ 'customId' ] );
 
@@ -26,13 +24,13 @@ class Meow_MWAI_Modules_Chatbot {
 	public function __construct() {
 		global $mwai_core;
 		$this->core = $mwai_core;
+		$this->siteWideChatId = $this->core->get_option( 'botId' );
+
 		add_shortcode( 'mwai_chatbot', array( $this, 'chat_shortcode' ) );
 		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
-		$this->siteWideChatId = $this->core->get_option( 'botId' );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'register_scripts' ) );
-
 		if ( $this->core->get_option( 'chatbot_discussions' ) ) {
       add_shortcode( 'mwai_discussions', [ $this, 'chatbot_discussions' ] );
     }

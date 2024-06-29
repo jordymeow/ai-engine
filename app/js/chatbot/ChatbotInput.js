@@ -1,10 +1,12 @@
-// Previous: 2.3.6
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.5
 
-import React, { useRef, useState, useImperativeHandle } from 'react';
+const { useRef, useState, useEffect, useImperativeHandle } = wp.element;
+
 import TextAreaAutosize from 'react-textarea-autosize';
-import { Microphone } from '@app/chatbot/helpers';
-import ChatUpload from './ChatUpload';
+import { Microphone, useClasses } from '@app/chatbot/helpers';
+import ChatUploadIcon from './ChatUploadIcon';
+import { useChatbotContext } from './ChatbotContext';
 
 const isImage = (file) => file.type.startsWith('image/');
 const isDocument = (file) => {
@@ -20,23 +22,31 @@ const isDocument = (file) => {
   return allowedDocumentTypes.includes(file.type);
 };
 
-const ChatbotInput = React.forwardRef((props, ref) => {
-  const { 
-    onTypeText, onSubmitAction, onUploadFile, inputText, textInputMaxLength, 
-    textInputPlaceholder, busy, modCss, isListening, setIsListening, 
-    speechRecognitionAvailable, speechRecognition, fileSearch, 
-    imageUpload, uploadedFile, composing, setComposing 
-  } = props;
-  const [draggingType, setDraggingType] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const inputRef = useRef();
-  const fileSearchRef = useRef();
-  const uploadEnabled = imageUpload || fileSearch;  
+const ChatbotInput = () => {
+  const css = useClasses();
+  const { state, actions } = useChatbotContext();
+  const { inputText, textInputMaxLength, textInputPlaceholder, error, speechRecognitionAvailable,
+    isMobile, conversationRef, open, uploadIconPosition, draggingType, isBlocked,
+    isListening, busy, speechRecognition, imageUpload, fileSearch, chatbotInputRef } = state;
+  const { onSubmitAction, setIsListening, resetError, setInputText, setIsBlocked,
+    setDraggingType, onUploadFile } = actions;
 
-  useImperativeHandle(ref, () => ({
+  const [ composing, setComposing ] = useState(false);
+  const inputRef = useRef();
+
+  useImperativeHandle(chatbotInputRef, () => ({
     focusInput: () => { inputRef.current?.focus(); },
     currentElement: () => inputRef.current,
   }));
+
+  useEffect(() => {
+    if (!isMobile && open) {
+      inputRef.current.focus();
+    }
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+    }
+  }, [open, isMobile, conversationRef]);
 
   const handleDrag = (event, dragState) => {
     event.preventDefault();
@@ -69,40 +79,42 @@ const ChatbotInput = React.forwardRef((props, ref) => {
     const file = event.dataTransfer.files[0];
     if (file) {
       if (draggingType === 'image' && imageUpload) {
-        fileSearchRef.current.handleExternalFile(file);
-      } else if (draggingType === 'document' && fileSearch) {
-        fileSearchRef.current.handleExternalFile(file);
-      } else {
+        onUploadFile(file);
+      }
+      else if (draggingType === 'document' && fileSearch) {
+        onUploadFile(file);
+      }
+      else {
         setIsBlocked(true);
         setTimeout(() => setIsBlocked(false), 2000);
       }
     }
   };
 
+  const onTypeText = (text) => {
+    if (isListening) {
+      setIsListening(false);
+    }
+    if (error) {
+      resetError();
+    }
+    setInputText(text);
+  };
+
+  const classNames = css('mwai-input-text', {
+    'mwai-dragging': draggingType,
+    'mwai-blocked': isBlocked,
+  });
+
   return (
-    <div 
-      className={modCss('mwai-input-text', { 
-        'mwai-dragging': draggingType,
-        'mwai-blocked': isBlocked,
-      })}
+    <div ref={chatbotInputRef} className={classNames}
       onDrop={handleDrop}
       onDragEnter={(event) => handleDrag(event, true)}
       onDragLeave={(event) => handleDrag(event, false)}
       onDragOver={(event) => handleDrag(event, true)}>
-      {uploadEnabled && 
-        <ChatUpload 
-          className={modCss('mwai-file-upload', { 
-            'mwai-enabled': uploadedFile?.uploadedId,
-            'mwai-busy': uploadedFile?.localFile && !uploadedFile?.uploadedId,
-          })}
-          modCss={modCss}
-          draggedType={draggingType}
-          disabled={busy}
-          ref={fileSearchRef}
-          uploadedFile={uploadedFile}
-          onUploadFile={onUploadFile}
-        />
-      }
+
+      {uploadIconPosition === 'mwai-input' && <ChatUploadIcon />}
+
       <TextAreaAutosize
         ref={inputRef}
         disabled={busy}
@@ -120,16 +132,16 @@ const ChatbotInput = React.forwardRef((props, ref) => {
         }}
         onChange={(e) => onTypeText(e.target.value)}
       />
-      {speechRecognition && (
-        <Microphone 
-          active={isListening} 
-          disabled={!speechRecognitionAvailable || busy}
-          className={modCss('mwai-microphone')}
-          onClick={() => setIsListening(!isListening)}
-        />
-      )}
+
+      {speechRecognition && (<Microphone
+        active={isListening}
+        disabled={!speechRecognitionAvailable || busy}
+        className="mwai-microphone"
+        onClick={() => setIsListening(!isListening)}
+      />)}
+
     </div>
   );
-});
+};
 
 export default ChatbotInput;

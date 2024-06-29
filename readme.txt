@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.4.4
+Stable tag: 2.4.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,12 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.4.5 (2024/06/28) =
+* Fix: Resolved the function calling issue with non-streamed assistants.
+* Add: Included vision for OpenRouter's GPT-4o and Gemini-Flash.
+* Fix: Matched label IDs with inputs in AI Forms.
+* Update: Major refactoring of the chatbot codebase. This will allow for more flexibility and features in the future. It will be rolled out progressively. Let us know if you encounter any issues.
 
 = 2.4.4 (2024/06/23) =
 * Fix: Improve nonce handling to eliminate the 'Cookie check failed' error in the chatbot.

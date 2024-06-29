@@ -1,40 +1,13 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
-const Microphone = ({ active, disabled, style, ...rest }) => {
-
+const Microphone = ({ active, disabled, ...rest }) => {
   const svgPath = `<path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM64 216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 89.1 66.2 162.7 152 174.4V464H120c-13.3 0-24 10.7-24 24s10.7 24 24 24h72 72c13.3 0 24-10.7 24-24s-10.7-24-24-24H216V430.4c85.8-11.7 152-85.3 152-174.4V216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 70.7-57.3 128-128 128s-128-57.3-128-128V216z"/>`;
 
-  const pulsarAnimation = `
-    @keyframes pulse {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 0.5;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-  `;
-
-  const iconStyle = {
-    display: "inline-block",
-    width: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    animation: active ? "pulse 2s infinite" : "",
-    WebkitAnimation: active ? "pulse 2s infinite" : ""
-  };
-
   return (
+    // eslint-disable-next-line react/no-unknown-property
     <div active={active ? "true" : "false"} disabled={disabled} {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"
         dangerouslySetInnerHTML={{ __html: svgPath }}
@@ -61,27 +34,24 @@ function useInterval(delay, callback, enabled = true) {
   }, [delay, enabled]);
 }
 
-const useModClasses = () => {
-  const modCss = useMemo(() => {
+const useClasses = () => {
+  return useMemo(() => {
     return (classNames, conditionalClasses) => {
       if (!Array.isArray(classNames)) {
         classNames = [classNames];
       }
-      
       if (conditionalClasses) {
         Object.entries(conditionalClasses).forEach(([className, condition]) => {
           if (condition) { classNames.push(className); }
         });
       }
-
       return classNames.join(' ');
     };
   }, []);
-
-  return { modCss };
 };
 
 function isURL(url) {
+  if (!url || typeof url !== 'string') return false;
   return url.indexOf('http') === 0;
 }
 
@@ -91,7 +61,7 @@ function handlePlaceholders(template, guestName = 'Guest: ', userData) {
   }
 
   for (const [placeholder, value] of Object.entries(userData)) {
-    let realPlaceHolder = `{${placeholder}}`;
+    const realPlaceHolder = `{${placeholder}}`;
     if (!template.includes(realPlaceHolder)) continue;
     template = template.replace(realPlaceHolder, value);
   }
@@ -133,43 +103,17 @@ function useChrono() {
   return { timeElapsed, startChrono, stopChrono };
 }
 
-function formatUserName(userName, guestName = 'Guest: ', userData, pluginUrl, modCss) {
-  if (!userName) {
-    if (userData) {
-      userName = <div className={modCss(['mwai-avatar'])}>
-        <img width="32" height="32" src={userData.AVATAR_URL} />
-      </div>;
-    }
-    else {
-      userName = <div className={modCss(['mwai-avatar', 'mwai-svg'])}>
-        <img width="32" height="32" src={`${pluginUrl}/images/avatar-user.svg`} />
-      </div>;
-    }
-  }
-  else if (isURL(userName)) {
-    userName = <div className={modCss(['mwai-avatar'])}>
-      <img width="32" height="32" src={userName} />
+function formatAvatar(aiName, pluginUrl, iconUrl) {
+  if (isURL(aiName)) {
+    aiName = <div className="mwai-avatar">
+      <img alt="AI Engine" src={aiName} />
     </div>;
   }
   else {
-    userName = handlePlaceholders(userName, guestName, userData);
-    userName = <div className={modCss(['mwai-name-text'])}>{userName}</div>;
-  }
-  return userName;
-}
-
-function formatAiName(aiName, pluginUrl, iconUrl, modCss) {
-  if (!aiName) {
-    let avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
-    aiName = <div className={modCss(['mwai-avatar'])}>
-      <img width="32" height="32" src={`${avatar}`} />
+    const avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
+    aiName = <div className="mwai-avatar">
+      <img alt="AI Engine" src={`${avatar}`} />
     </div>;
-  }
-  else if (isURL(aiName)) {
-    aiName = <div className={modCss('mwai-avatar')}><img width="32" height="32" src={aiName} /></div>;
-  }
-  else {
-    aiName = <div className={modCss('mwai-name-text')}>{aiName}</div>;
   }
   return aiName;
 }
@@ -192,15 +136,17 @@ const processParameters = (params) => {
   const iconBubble = Boolean(params.iconBubble);
   const aiName = params.aiName?.trim() ?? "";
   const userName = params.userName?.trim() ?? "";
+  const aiAvatar = params.aiAvatar?.trim() ?? "";
+  const userAvatar = params.userAvatar?.trim() ?? "";
   const localMemory = Boolean(params.localMemory);
   const imageUpload = Boolean(params.imageUpload);
   const fileSearch = Boolean(params.fileSearch);
 
-  return { 
+  return {
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     window, copyButton, fullscreen, localMemory, imageUpload, fileSearch,
     icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble,
-    aiName, userName, guestName
+    aiName, aiAvatar, userName, userAvatar, guestName
   };
 };
 
@@ -230,7 +176,6 @@ const useSpeechRecognition = (onResult) => {
         .map(result => result[0])
         .map(result => result.transcript)
         .join('');
-      
       onResult(transcript);
     };
 
@@ -284,6 +229,5 @@ const TransitionBlock = ({ if: condition, className, disableTransition = false, 
   );
 };
 
-export { useModClasses, isURL, handlePlaceholders, useInterval, TransitionBlock,
-  useSpeechRecognition, Microphone, useChrono, formatUserName, formatAiName, processParameters
-};
+export { useClasses, isURL, handlePlaceholders, useInterval, TransitionBlock, formatAvatar,
+  useSpeechRecognition, Microphone, useChrono, processParameters };

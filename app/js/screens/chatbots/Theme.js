@@ -1,15 +1,16 @@
-// Previous: 1.4.8
-// Current: 1.6.93
+// Previous: 1.6.93
+// Current: 2.4.5
 
 // NekoUI
 import { NekoButton, NekoSpacer } from '@neko-ui';
-import { NekoCollapsableCategories, NekoCollapsableCategory } from '@neko-ui';
+import { NekoCollapsableCategory } from '@neko-ui';
 
 import i18n from '@root/i18n';
 
 import ChatGPTTheme from './themes/ChatGPTTheme';
 import CustomTheme from './themes/CustomTheme';
 import MessagesTheme from './themes/MessagesTheme';
+import TimelessTheme from './themes/TimelessTheme';
 
 const Theme = (props) => {
   const { theme, updateTheme, resetTheme, deleteTheme } = props;
@@ -30,6 +31,10 @@ const Theme = (props) => {
 
     {theme.type === 'internal' && theme.themeId === 'messages' && (
       <MessagesTheme settings={theme.settings ?? []} onUpdateSettings={onUpdateSettings} />
+    )}
+
+    {theme.type === 'internal' && theme.themeId === 'timeless' && (
+      <TimelessTheme settings={theme.settings ?? []} onUpdateSettings={onUpdateSettings} />
     )}
 
     {theme.type !== 'internal' && (

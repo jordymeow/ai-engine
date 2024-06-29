@@ -8,7 +8,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   // Azure
   private $azureDeployments = null;
-  private $azureApiVersion = 'api-version=2023-12-01-preview';
+  private $azureApiVersion = 'api-version=2024-03-01-preview';
 
   // Response
   protected $inModel = null;

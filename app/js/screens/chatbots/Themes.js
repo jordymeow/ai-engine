@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.5
 
 const { useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,7 +25,7 @@ const Themes = (props) => {
     if (theme) {
       onSwitchTheme(theme.themeId);
     }
-  }
+  };
 
   const updateTheme = async (value, id) => {
     try {
@@ -41,60 +41,65 @@ const Themes = (props) => {
       console.error(e);
     }
     setBusy(false);
-  }
+  };
 
   const addNewTheme = async () => {
     setBusy(true);
     try {
-      const newThemes = await updateThemes([...themes, {
+      const newTheme = {
         type: 'css',
         name: 'New Theme',
         themeId: 'theme-' + randomHash(),
         settings: [],
         style: ""
-      }]);
+      };
+      const newThemes = await updateThemes([...themes, newTheme]);
       queryClient.setQueryData(['themes'], newThemes);
     }
     catch (e) {
       console.error(e);
     }
     setBusy(false);
-  }
+  };
 
   const deleteCurrentTheme = async () => {
     setBusy(true);
-    const remainingThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
-    const firstTheme = remainingThemes[0] || null;
+    const newThemes = [...themes.filter(x => x.themeId !== currentTheme.themeId)];
+    const firstTheme = newThemes[0];
     if (firstTheme) {
       onSwitchTheme(firstTheme.themeId);
     }
-    await updateThemes(remainingThemes);
-    await queryClient.setQueryData(['themes'], remainingThemes);
+    await updateThemes(newThemes);
+    await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
-  }
+  };
 
   const resetTheme = async () => {
     setBusy(true);
     const newThemes = [...themes];
     const themeIndex = newThemes.findIndex(x => x.themeId === currentTheme.themeId);
-    newThemes[themeIndex] = {
-      type: newThemes[themeIndex].type,
-      name: newThemes[themeIndex].name,
-      themeId: newThemes[themeIndex].themeId,
-      settings: [],
-      style: ""
-    };
+    if (themeIndex !== -1) {
+      newThemes[themeIndex] = {
+        type: newThemes[themeIndex].type,
+        name: newThemes[themeIndex].name,
+        themeId: newThemes[themeIndex].themeId,
+        settings: [], // intentionally reset
+        style: "" 
+      };
+    }
     await updateThemes(newThemes);
     await queryClient.setQueryData(['themes'], newThemes);
     setBusy(false);
-  }
+  };
 
   return (<>
     <NekoTabs inversed onChange={onChangeTab} currentTab={currentTheme?.themeId}
       action={<><NekoButton rounded className="secondary" icon='plus' onClick={addNewTheme} /></>}>
-      {themes?.map(x => <NekoTab key={x.themeId} title={x.name} busy={busy}>
-        <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} deleteTheme={deleteCurrentTheme} />
-      </NekoTab>)}
+      {themes?.map(x =>
+        <NekoTab key={x.themeId} title={x.name} busy={busy}>
+          <Theme theme={x} updateTheme={updateTheme} resetTheme={resetTheme} deleteTheme={deleteCurrentTheme} />
+        </NekoTab>
+      )}
     </NekoTabs>
   </>);
 };

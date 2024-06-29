@@ -729,6 +729,10 @@ class Meow_MWAI_Core
 				'type' => 'internal', 'name' => 'Messages', 'themeId' => 'messages',
 				'settings' => [], 'style' => ""
 			],
+			'timeless' => [
+				'type' => 'internal', 'name' => 'Timeless', 'themeId' => 'timeless',
+				'settings' => [], 'style' => ""
+			],
 		];
 		$customThemes = [];
 		foreach ( $themes as $theme ) {

@@ -1,9 +1,12 @@
-// Previous: none
-// Current: 1.9.4
+// Previous: 1.9.4
+// Current: 2.4.5
+
+import { useClasses } from "@app/chatbot/helpers";
 
 const { useState } = wp.element;
 
-const CopyButton = ({ content, modCss }) => {
+const CopyButton = ({ content }) => {
+  const css = useClasses();
   const [ copyAnimation, setCopyAnimation ] = useState(false);
 
   const onCopy = () => {
@@ -17,12 +20,12 @@ const CopyButton = ({ content, modCss }) => {
     catch (err) {
       console.warn('Not allowed to copy to clipboard. Make sure your website uses HTTPS.', { content });
     }
-  }
+  };
 
   return (
-    <div className={modCss('mwai-copy-button', { 'mwai-animate': copyAnimation })} onClick={onCopy}>
-      <div className={modCss('mwai-copy-button-one')}></div>
-      <div className={modCss('mwai-copy-button-two')}></div>
+    <div className={css('mwai-copy-button', { 'mwai-animate': copyAnimation })} onClick={onCopy}>
+      <div className="mwai-copy-button-one"></div>
+      <div className="mwai-copy-button-two"></div>
     </div>
   );
 };

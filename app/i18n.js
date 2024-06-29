@@ -29,6 +29,7 @@ i18n.COMMON = {
   MODE: __( 'Mode', 'ai-engine' ),
   CONTEXT: __( 'Context', 'ai-engine' ),
   IMAGES_NUMBER: __( 'Number of Images', 'ai-engine' ),
+  AVATAR: __( 'Avatar', 'ai-engine' ),
   AI_NAME: __( 'AI Name', 'ai-engine' ),
   USER_NAME: __( 'User Name', 'ai-engine' ),
   PLACEHOLDER: __( 'Placeholder', 'ai-engine' ),

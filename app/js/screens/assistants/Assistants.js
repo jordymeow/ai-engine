@@ -1,8 +1,8 @@
-// Previous: 2.3.1
-// Current: 2.4.1
+// Previous: 2.4.1
+// Current: 2.4.5
 
 // React & Vendor Libs
-import { useState, useEffect, useMemo } from 'react';
+const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nekoStringify } from '@neko-ui';
 
@@ -17,24 +17,24 @@ import { toHTML } from '@app/helpers-admin';
 
 const assistantColumns = [
   {
-    accessor: 'name', 
-    title: 'Name', 
+    accessor: 'name',
+    title: 'Name',
     verticalAlign: 'top'
   },
   {
-    accessor: 'instructions', 
-    title: 'Instructions', 
-    width: 220, 
+    accessor: 'instructions',
+    title: 'Instructions',
+    width: 220,
     verticalAlign: 'top'
   },
   {
-    accessor: 'parameters', 
-    title: 'Parameters', 
+    accessor: 'parameters',
+    title: 'Parameters',
     verticalAlign: 'top'
   },
   {
-    accessor: 'createdOn', 
-    title: 'Created On', 
+    accessor: 'createdOn',
+    title: 'Created On',
     verticalAlign: 'top'
   }
 ];
@@ -130,7 +130,7 @@ const Assistants = ({ options, refreshOptions }) => {
     setFilesQueryParams(prev => ({ ...prev, envId }));
   }, [envId]);
 
-  const { isFetching: isBusyFiles, error: errFiles, data: dataFiles } = useQuery({
+  const { isFetching: isBusyFiles, data: dataFiles } = useQuery({
     queryKey: ['assistants-files', queryParamsChecksum],
     enabled: section === 'files',
     staleTime: 1000 * 60 * 5,
@@ -145,7 +145,7 @@ const Assistants = ({ options, refreshOptions }) => {
   const renderMetadata = (metadata) => {
     if (!metadata) { return null; }
     return <small><ul style={{ margin: 0, padding: 0 }}>
-      {Object.keys(metadata).map(key => 
+      {Object.keys(metadata).map(key =>
         <li key={key} style={{ margin: 0 }}>
           <i>{key}</i>: {metadata[key]} {key === 'assistant_id' ? `(${resolveAssistantName(metadata[key])})` : ''}
         </li>)
@@ -186,8 +186,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    if (!dataFiles) return [];
-    return dataFiles.files.map(file => ({
+    return dataFiles?.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
@@ -221,7 +220,7 @@ const Assistants = ({ options, refreshOptions }) => {
   const assistantRows = useMemo(() => {
     let filteredAssistants = allAssistants;
     if (modelFilter === 'deleted') {
-      filteredAssistants = filteredAssistants.filter(x => isDeleted(x));
+      filteredAssistants = filteredAssistants.filter(isDeleted);
     }
 
     return filteredAssistants.map(assistant => ({
@@ -230,7 +229,7 @@ const Assistants = ({ options, refreshOptions }) => {
         <span>{assistant.name}</span>
         <small>{assistant.id}</small>
       </div>,
-      instructions: assistant.instructions?.length > 100 ? 
+      instructions: assistant.instructions?.length > 100 ?
         `${assistant.instructions.slice(0, 100)}...` : assistant.instructions,
       parameters: <>
         <ul style={{ margin: 0, padding: 0 }}>
@@ -273,18 +272,18 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })) }}
+          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
         />
       </div>
     </div>);
   }, [ filesQueryParams, fileTotal ]);
 
-  return (<NekoWrapper>    
+  return (<NekoWrapper>
 
     <NekoColumn fullWidth minimal style={{ margin: 8 }}>
-      
+
       <NekoTabs inversed currentTab={section}
-        onChange={(_index, attributes) => { setSection(attributes.key) }}
+        onChange={(_index, attributes) => { setSection(attributes.key); }}
         action={
           <>
             <div style={{ flex: 'auto' }} />
@@ -315,8 +314,8 @@ const Assistants = ({ options, refreshOptions }) => {
           <NekoTable busy={isBusyFiles || busy}
             data={fileRows} columns={fileColumns}
             selectedItems={selectedIds}
-            onSelect={ids => { setSelectedIds(prev => [...prev, ...ids]) }}
-            onUnselect={ids => { setSelectedIds(prev => [...prev.filter(x => !ids.includes(x))]) }}
+            onSelect={ids => { setSelectedIds(prev => [ ...prev, ...ids ]); }}
+            onUnselect={ids => { setSelectedIds(prev => [ ...prev.filter(x => !ids.includes(x)) ]); }}
             emptyMessage={i18n.NO_FILES_YET}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -353,5 +352,3 @@ const Assistants = ({ options, refreshOptions }) => {
     </NekoColumn>
   </NekoWrapper>);
 };
-
-export default Assistants;

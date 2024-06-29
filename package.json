@@ -13,10 +13,13 @@
     "7zip": "7z a -tzip ../zip/ai-engine-pro.zip . -x!node_modules -x!.git -x!.yarn -x!logs"
   },
   "dependencies": {
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
     "@tanstack/react-query": "^5.25.0",
     "@textea/json-viewer": "^2.17.2",
     "chart.js": "^4.4.3",
     "csv-reader": "^1.0.11",
+    "eslint-plugin-react": "^7.34.3",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "markdown-to-jsx": "^7.4.1",
     "papaparse": "^5.4.1",
     "preact": "^10.19.6",

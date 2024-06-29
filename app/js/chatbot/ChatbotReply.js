@@ -1,21 +1,19 @@
-// Previous: 2.3.6
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
 import Markdown from 'markdown-to-jsx';
 
-import { useInterval } from '@app/chatbot/helpers';
+import { useClasses, useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { BlinkingCursor } from '@app/helpers';
 import CopyButton from '@app/components/CopyButton';
+import ChatbotName from './ChatbotName';
 
-const LinkContainer = ({ href, children, ...rest }) => {
-  const { state } = useChatbotContext();
-  const { modCss } = state;
-
+const LinkContainer = ({ href, children }) => {
   if (!href) {
     return <span>{children}</span>;
   }
@@ -28,8 +26,7 @@ const LinkContainer = ({ href, children, ...rest }) => {
     const url = new URL(href, window.location.href);
     linkDomain = url.hostname;
     target = currentDomain === linkDomain ? '_self' : '_blank';
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Invalid URL:', error);
     linkDomain = '';
     target = '_blank';
@@ -40,7 +37,7 @@ const LinkContainer = ({ href, children, ...rest }) => {
   if (isFile) {
     const filename = href.split('/').pop();
     return (
-      <a href={href} target={target} rel="noopener noreferrer" className={modCss('mwai-filename')}>
+      <a href={href} target={target} rel="noopener noreferrer" className="mwai-filename">
         <span>✓ {filename}</span>
       </a>
     );
@@ -55,28 +52,23 @@ const LinkContainer = ({ href, children, ...rest }) => {
 
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
-  const { copyButton, userName, aiName, modCss } = state;
-  const isUser = message.role === 'user';
-  const isAI = message.role === 'assistant';
-  const name = isUser ? userName : (isAI ? aiName : null);
+  const { copyButton } = state;
   const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
   const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) { 
-    content += "\n```"; 
-  }
-  else if (message.isStreaming) {
+  if (matches % 2 !== 0) {
+    content += "\n```";
+  } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
 
-  useEffect(() => { 
+  useEffect(() => {
     if (!isLongProcess) {
       onRendered();
-    }
-    else if (isLongProcess && !isQuerying && !isStreaming) {
+    } else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -90,21 +82,20 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
         },
         img: {
           props: {
-            onError: (e, f) => {
+            onError: (e) => {
               const src = e.target.src;
-              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/) != null;
+              const isImage = /\.(jpeg|jpg|gif|png)$/i.test(src);
               if (isImage) {
                 e.target.src = "https://placehold.co/600x200?text=Expired+Image";
-                return;
               }
             },
-            className: modCss('mwai-image'),
+            className: "mwai-image",
           },
         }
       }
     };
     return options;
-  }, [isQuerying, isStreaming, content]);
+  }, []);
 
   if (isQuerying) {
     return (<BouncingDots />);
@@ -115,28 +106,20 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
 
   return (
     <>
-      <span className={modCss('mwai-name')}>{name}</span>
-      <span className={modCss('mwai-text')}>
+      <ChatbotName role={message.role} />
+      <span className="mwai-text">
         <span>
           <Markdown options={markdownOptions}>{content}</Markdown>
         </span>
       </span>
-      {copyButton && <CopyButton content={message.content} modCss={modCss} />}
+      {copyButton && <CopyButton content={message.content} />}
     </>
   );
 };
 
 const ImagesMessage = ({ message, onRendered = () => {} }) => {
-  const { state } = useChatbotContext();
-  const { userName, aiName, modCss } = state;
-  const isUser = message.role === 'user';
-  const isAI = message.role === 'assistant';
-  const name = isUser ? userName : (isAI ? aiName : null);
-
   const [ images, setImages ] = useState(message?.images);
-
   useEffect(() => { onRendered(); });
-
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
     setImages(prevImages => prevImages.map((img, i) => i === index ? placeholderImage : img));
@@ -147,12 +130,12 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   }
   return (
     <>
-      <span className={modCss('mwai-name')}>{name}</span>
-      <span className={modCss('mwai-text')}>
-        <div className={modCss('mwai-gallery')}>
+      <ChatbotName role={message.role} />
+      <span className="mwai-text">
+        <div className="mwai-gallery">
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img key={index} src={image} onError={() => handleImageError(index)} />
+              <img src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -163,12 +146,11 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
 const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
-  const { copyButton, userName, aiName, modCss } = state;
+  const { copyButton } = state;
   const typedElement = useRef(null);
   const [ dynamic ] = useState(message.isQuerying);
   const [ ready, setReady ] = useState(!message.isQuerying);
   const [ userScrolledUp, setUserScrolledUp ] = useState(false);
-  const name = message.role === 'user' ? userName : aiName;
   const content = message.content;
 
   useInterval(200, () => {
@@ -181,24 +163,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   }, !ready);
 
   useEffect(() => {
-    if (!conversationRef?.current) {
-      return;
-    }
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
-      const scroll = scrollTop + clientHeight;
-      setUserScrolledUp(scrollHeight - scroll > 20);
-    };
-    conversationRef.current.addEventListener('scroll', handleScroll);
-    return () => {
-      if (conversationRef.current) {
-        conversationRef.current.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, [conversationRef]);
-
-  useEffect(() => {
-    if (!dynamic) { 
+    if (!dynamic) {
       onRendered();
       return;
     }
@@ -206,7 +171,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     if (!typedElement.current) {
       return;
     }
-    
+
     const options = {
       strings: [content],
       typeSpeed: applyFilters('typewriter.speed', 15),
@@ -228,25 +193,26 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     <>
       {message.isQuerying && <BouncingDots />}
       {!message.isQuerying && dynamic && <>
-        <span className={modCss("mwai-name")}>{name}</span>
-        <span className={modCss("mwai-text")} ref={typedElement} />
+        <ChatbotName role={message.role} />
+        <span className="mwai-text" ref={typedElement} />
       </>}
       {!message.isQuerying && !dynamic && <>
-        <span className={modCss("mwai-name")}>{name}</span>
-        <span className={modCss("mwai-text")}>
+        <ChatbotName role={message.role} />
+        <span className="mwai-text">
           <Markdown>{content}</Markdown>
         </span>
       </>}
-      {ready && copyButton && <CopyButton content={content} modCss={modCss} />}
+      {ready && copyButton && <CopyButton content={content} />}
     </>
   );
 };
 
 const ChatbotReply = ({ message, conversationRef }) => {
   const { state } = useChatbotContext();
-  const { typewriter, modCss } = state;
+  const { typewriter } = state;
+  const css = useClasses();
   const mainElement = useRef();
-  const classes = modCss('mwai-reply', { 
+  const classes = css('mwai-reply', {
     'mwai-ai': message.role === 'assistant',
     'mwai-user': message.role === 'user',
     'mwai-system': message.role === 'system'
@@ -256,7 +222,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const onRendered = () => {
     if (!mainElement.current) { return; }
     if (message.isQuerying) { return; }
-    if (mainElement.current.classList.contains('mwai-rendered')) { 
+    if (mainElement.current.classList.contains('mwai-rendered')) {
       return;
     }
     if (typeof hljs !== 'undefined') {
@@ -274,15 +240,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
-  
+
     if (message.role === 'assistant') {
-  
       if (isImages) {
         return <div ref={mainElement} className={classes}>
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
-      }
-      else if (typewriter && !message.isStreaming) {
+      } else if (typewriter && !message.isStreaming) {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
@@ -291,13 +255,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-  
+
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-  
+
     return (
       <div><i>Unhandled role.</i></div>
     );
@@ -305,3 +269,5 @@ const ChatbotReply = ({ message, conversationRef }) => {
 
   return output;
 };
+
+export default ChatbotReply;
