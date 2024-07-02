@@ -47,72 +47,10 @@
 		line-height: var(--mwai-lineHeight);
 		transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 
-		.mwai-copy-button {
-			opacity: 0;
-			transition: all 0.3s ease-out;
-			width: 22px;
-			height: 22px;
-			position: absolute;
-			right: var(--mwai-spacing);
-
-			.mwai-copy-button-one, .mwai-copy-button-two {
-				position: absolute;
-				width: 16px;
-				height: 16px;
-				background: white;
-				opacity: 0.4;
-				transition: all 0.2s ease-in;
-				cursor: pointer;
-				border-radius: 2px;
-			}
-
-			.mwai-copy-button-one {
-				margin-top: 0;
-				margin-left: 0;
-			}
-
-			.mwai-copy-button-two {
-				margin-top: 6px;
-				margin-left: 6px;
-				opacity: 0.6;
-			}
-
-			&:hover {
-				.mwai-copy-button-one {
-					opacity: 0.6;
-					margin-top: 0;
-					margin-left: 6px;
-				}
-
-				.mwai-copy-button-two {
-					opacity: 1;
-					margin-top: 6px;
-					margin-left: 0;
-				}
-			}
-
-			&.mwai-animate {
-				.mwai-copy-button-one {
-					opacity: 0;
-				}
-
-				.mwai-copy-button-two {
-					width: 18px;
-					height: 18px;
-					margin-top: 2px;
-					margin-left: 2px;
-					opacity: 1;
-				}
-			}
-		}
+		
 
 		&.mwai-fade-out {
 			opacity: 0;
-		}
-
-		&:hover .mwai-copy-button {
-			display: block;
-			opacity: 1;
 		}
 
 		&.mwai-user {
@@ -331,6 +269,7 @@
 				font-family: inherit;
 				margin: 0;
 				overflow: hidden;
+				min-height: inherit;
 
 				&:focus {
 					outline: none;
@@ -486,7 +425,7 @@
 .mwai-chatgpt-theme {
 	@include common-styles;
 	@include code-dark;
-	@include copy-button;
+	@include reply-actions;
 }
 
 // Mobile

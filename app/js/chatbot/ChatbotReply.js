@@ -1,16 +1,15 @@
-// Previous: 2.3.9
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.4.6
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
 import Markdown from 'markdown-to-jsx';
-
 import { useClasses, useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { BlinkingCursor } from '@app/helpers';
-import CopyButton from '@app/components/CopyButton';
+import ReplyActions from '@app/components/ReplyActions';
 import ChatbotName from './ChatbotName';
 
 const LinkContainer = ({ href, children }) => {
@@ -53,14 +52,14 @@ const LinkContainer = ({ href, children }) => {
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton } = state;
-  const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
+  const [isLongProcess, setIsLongProcess] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
   const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) {
-    content += "\n```";
+  if (matches % 2 !== 0) { 
+    content += "\n```"; 
   } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
@@ -68,7 +67,8 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   useEffect(() => {
     if (!isLongProcess) {
       onRendered();
-    } else if (isLongProcess && !isQuerying && !isStreaming) {
+    }
+    if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -107,19 +107,17 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   return (
     <>
       <ChatbotName role={message.role} />
-      <span className="mwai-text">
-        <span>
-          <Markdown options={markdownOptions}>{content}</Markdown>
-        </span>
-      </span>
-      {copyButton && <CopyButton content={message.content} />}
+      <ReplyActions content={message.content} enabled={copyButton} className="mwai-text">
+        <Markdown options={markdownOptions}>{content}</Markdown>
+      </ReplyActions>
     </>
   );
 };
 
 const ImagesMessage = ({ message, onRendered = () => {} }) => {
-  const [ images, setImages ] = useState(message?.images);
-  useEffect(() => { onRendered(); });
+  const [images, setImages] = useState(message?.images);
+  useEffect(() => { onRendered(); }, []);
+
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
     setImages(prevImages => prevImages.map((img, i) => i === index ? placeholderImage : img));
@@ -135,7 +133,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
         <div className="mwai-gallery">
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img src={image} onError={() => handleImageError(index)} />
+              <img key={index} src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -145,13 +143,15 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 };
 
 const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
-  const { state } = useChatbotContext();
-  const { copyButton } = state;
   const typedElement = useRef(null);
-  const [ dynamic ] = useState(message.isQuerying);
-  const [ ready, setReady ] = useState(!message.isQuerying);
-  const [ userScrolledUp, setUserScrolledUp ] = useState(false);
+  const [dynamic] = useState(message.isQuerying);
+  const [ready, setReady] = useState(!message.isQuerying);
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
   const content = message.content;
+
+  useEffect(() => {
+    console.warn("Do not use the Typewriter Effect. Use Streaming instead.");
+  }, []);
 
   useInterval(200, () => {
     if (!conversationRef?.current) {
@@ -202,7 +202,6 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           <Markdown>{content}</Markdown>
         </span>
       </>}
-      {ready && copyButton && <CopyButton content={content} />}
     </>
   );
 };
@@ -220,7 +219,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const isImages = message?.images?.length > 0;
 
   const onRendered = () => {
-    if (!mainElement.current) { return; }
+    if (!mainElement.current || !mainElement.current.classList) { return; }
     if (message.isQuerying) { return; }
     if (mainElement.current.classList.contains('mwai-rendered')) {
       return;
@@ -229,6 +228,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
       mainElement.current.classList.add('mwai-rendered');
       const selector = mainElement.current.querySelectorAll('pre code');
       selector.forEach((el) => {
+        // eslint-disable-next-line no-undef
         hljs.highlightElement(el);
       });
     }
@@ -250,10 +250,11 @@ const ChatbotReply = ({ message, conversationRef }) => {
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
+      } else {
+        return <div ref={mainElement} className={classes}>
+          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+        </div>;
       }
-      return <div ref={mainElement} className={classes}>
-        <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-      </div>;
     }
 
     if (message.role === 'system') {

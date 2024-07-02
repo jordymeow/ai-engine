@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.4.6
 
 // React & Vendor Libs
 const { useMemo, useEffect } = wp.element;
@@ -30,7 +30,7 @@ const ChatbotTrigger = () => {
           <div className="mwai-icon-text-close" onClick={() => setShowIconMessage(false)}>
             &#x2715;
           </div>
-          <div className="mwai-icon-text">
+          <div className="mwai-icon-text" onClick={() => setOpen(true)}>
             {iconText}
           </div>
         </TransitionBlock>

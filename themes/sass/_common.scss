@@ -715,69 +715,35 @@
   }
 }
 
-@mixin copy-button {
-
-	.mwai-copy-button {
-		opacity: 0;
-		transition: all 0.3s ease-out;
-		width: 22px;
-		height: 22px;
+@mixin reply-actions {
+	.mwai-reply-actions {
 		position: absolute;
-		right: var(--mwai-spacing);
-	}
+		border-radius: 5px;
+		top: 10px;
+		right: 10px;
+		display: flex;
+		align-items: center;
+		padding: 2px 2px;
+		z-index: 100;
+		background: var(--mwai-backgroundPrimaryColor);
+		box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
 
-	.mwai-copy-button .mwai-copy-button-one {
-		position: absolute;
-		width: 16px;
-		height: 16px;
-		margin-top: 0px;
-		margin-left: 0px;
-		background: white;
-		opacity: 0.4;
-		transition: all 0.2s ease-in;
-		cursor: pointer;
-		border-radius: 2px;
-	}
+		.mwai-copy-button {
+			fill: var(--mwai-fontColor);
+			padding: 3px 5px;
+			width: 24px;
+			height: 24px;
+			background: var(--mwai-backgroundPrimaryColor);
+			cursor: pointer;
+			border-radius: 5px;
 
-	.mwai-copy-button .mwai-copy-button-two {
-		position: absolute;
-		width: 16px;
-		height: 16px;
-		margin-top: 6px;
-		margin-left: 6px;
-		background: white;
-		opacity: 0.6;
-		transition: all 0.2s ease-in;
-		cursor: pointer;
-		border-radius: 2px;
-	}
+			&:hover {
+				filter: brightness(1.2);
+			}
+		}
 
-	.mwai-copy-button:hover .mwai-copy-button-one {
-		opacity: 0.6;
-		margin-top: 0px;
-		margin-left: 6px;
-	}
-
-	.mwai-copy-button:hover .mwai-copy-button-two {
-		opacity: 1;
-		margin-top: 6px;
-		margin-left: 0px;
-	}
-
-	.mwai-copy-button.mwai-animate .mwai-copy-button-one {
-		opacity: 0;
-	}
-
-	.mwai-copy-button.mwai-animate .mwai-copy-button-two {
-		width: 18px;
-		height: 18px;
-		margin-top: 2px;
-		margin-left: 2px;
-		opacity: 1;
-	}
-
-	.mwai-chat .mwai-reply:hover .mwai-copy-button {
-		display: block;
-		opacity: 1;
+		&.mwai-hidden {
+			opacity: 0;
+		}
 	}
 }

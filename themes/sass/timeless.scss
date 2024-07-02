@@ -30,6 +30,10 @@
 		box-sizing: border-box;
 	}
 
+	&.mwai-window {
+		filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
+	}
+
 	&.mwai-window .mwai-header { 
 		height: 80px;
 		padding: var(--mwai-spacing);
@@ -227,7 +231,10 @@
 		align-items: center;
 		width: 100%;
 		border-top: 1px solid var(--mwai-backgroundAiSecondaryColor);
+		border-bottom: 1px solid var(--mwai-backgroundAiSecondaryColor);
 		padding-top: var(--mwai-spacing);
+		padding-bottom: var(--mwai-spacing);
+		position: relative;
 
 		.mwai-input-text {
 			flex: auto;
@@ -256,7 +263,7 @@
 				font-family: inherit;
 				margin: 0;
 				overflow: hidden;
-				
+				min-height: inherit;
 
 				&:focus {
 					outline: none;
@@ -286,8 +293,6 @@
 		width: 48px;
 		min-width: 48px;
 		min-height: 48px;
-		position: absolute;
-		right: -20px;
 
 		img {
 			width: 20px;
@@ -346,9 +351,8 @@
 			width: $icon-size;
 			height: $icon-size;
 			margin-top: calc(var(--mwai-spacing) / 2);
-			margin-left: 5px;
 			z-index: 100;
-			transform: scale($ideal-size / $icon-size);
+			// transform: scale($ideal-size / $icon-size);
 			@include file-upload-icon-sprites;
 		}
 	}
@@ -430,23 +434,23 @@
 .mwai-timeless-theme {
 	@include common-styles;
 	@include code-light;
-	@include copy-button;
+	@include reply-actions;
 }
 
 // Common Overrides
 .mwai-timeless-theme {
-	.mwai-copy-button {
-		position: absolute;
-		left: 15px;
-		zoom: 0.5;
-		top: 18px;
-		filter: revert;
-	}
 
-	.mwai-ai .mwai-copy-button {
-		right: 15px;
-		left: inherit;
-		filter: brightness(0.4);
+	.mwai-reply-actions {
+		top: 5px;
+
+		.mwai-copy-button {
+			zoom: 0.8;
+
+			&:hover {
+				fill: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundUserColor);
+			}
+		}
 	}
 }
 

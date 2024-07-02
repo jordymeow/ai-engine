@@ -277,7 +277,7 @@
 				font-family: inherit;
 				margin: 0;
 				overflow: hidden;
-				
+				min-height: inherit;
 
 				&:focus {
 					outline: none;
@@ -434,23 +434,23 @@
 .mwai-messages-theme {
 	@include common-styles;
 	@include code-light;
-	@include copy-button;
+	@include reply-actions;
 }
 
 // Common Overrides
 .mwai-messages-theme {
-	.mwai-copy-button {
-		position: absolute;
-		left: 15px;
-		zoom: 0.5;
-		top: 18px;
-		filter: revert;
-	}
 
-	.mwai-ai .mwai-copy-button {
-		right: 15px;
-		left: inherit;
-		filter: brightness(0.4);
+	.mwai-reply-actions {
+		top: 5px;
+
+		.mwai-copy-button {
+			zoom: 0.8;
+
+			&:hover {
+				fill: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundUserColor);
+			}
+		}
 	}
 }
 

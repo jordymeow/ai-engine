@@ -215,7 +215,7 @@ class Meow_MWAI_Modules_Files {
     $now = date( 'Y-m-d H:i:s' );
     if ( empty( $fileInfo['refId'] ) ) {
       if ( !empty( $fileInfo['url'] ) ) {
-        $fileInfo['redId'] = $this->generate_refId( $fileInfo['url'] );
+        $fileInfo['refId'] = $this->generate_refId( $fileInfo['url'] );
       }
       else {
         throw new Exception( 'File ID (or URL) is required.' );
@@ -245,20 +245,14 @@ class Meow_MWAI_Modules_Files {
   }
 
   // Generate a refId from a URL or random, and make sure it's unique
-  public function generate_refId( $url = null ) {
-    $refId = null;
-    if ( $url ) {
-      $refId = md5( $url );
-      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+  public function generate_refId( $attempts = 0 ) {
+    $refId = md5( date( 'Y-m-d H:i:s' ) . '-' . $attempts );
+    $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
         FROM $this->table_files
         WHERE refId = %s", $refId
       ) );
-      if ( $file ) {
-        $refId = md5( $url . date( 'Y-m-d H:i:s' ) );
-      }
-    }
-    else {
-      $refId = md5( date( 'Y-m-d H:i:s' ) );
+    if ( $file ) {
+      return $this->generate_refId( $attempts + 1 );
     }
     return $refId;
   }
@@ -273,18 +267,18 @@ class Meow_MWAI_Modules_Files {
     $expiry = empty( $expiry ) ? $this->core->get_option( 'image_expires' ) : $expiry;
 
     $expires = ( $expiry === 'never' || empty( $expiry ) ) ? null : date( 'Y-m-d H:i:s', time() + intval( $expiry ) );
-    $refId = null;
+    $refId = $this->generate_refId();
     $url = null;
     if ( empty( $filename ) ) {
       $parsed_url = parse_url( $path, PHP_URL_PATH );
       $filename = basename( $parsed_url );
       $extension = pathinfo( $filename, PATHINFO_EXTENSION );
-      $filename =  md5( $filename . date( 'Y-m-d-H-i-s' ) ) . '.' . $extension;
     }
     else {
-      $filename = basename( $filename );
+      $extension = pathinfo( $filename, PATHINFO_EXTENSION );
     }
-    $unique_filename = wp_unique_filename( wp_upload_dir()['path'], $filename );
+    $newFilename = $refId . '.' . $extension;
+    $unique_filename = wp_unique_filename( wp_upload_dir()['path'], $newFilename );
     $destination = wp_upload_dir()['path'] . '/' . $unique_filename;
 
     if ( $target === 'uploads' ) {
@@ -295,7 +289,7 @@ class Meow_MWAI_Modules_Files {
         throw new Exception( 'Could not move the file.' );
       }
       $url = wp_upload_dir()['url'] . '/' . $unique_filename;
-      $refId = $this->generate_refId( $url );
+      
       $now = date( 'Y-m-d H:i:s' );
       $fileId = $this->commit_file( [
         'refId' => $refId,
@@ -332,7 +326,6 @@ class Meow_MWAI_Modules_Files {
         throw new Exception( $id->get_error_message() );
       }
       $url = wp_get_attachment_url( $id );
-      $refId = md5( $url );
       update_post_meta( $id, '_mwai_file_id', $refId );
       update_post_meta( $id, '_mwai_file_expires', $expires );
     }

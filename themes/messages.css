@@ -272,6 +272,7 @@
   font-family: inherit;
   margin: 0;
   overflow: hidden;
+  min-height: inherit;
 }
 
 .mwai-messages-theme .mwai-input .mwai-input-text textarea:focus {
@@ -969,82 +970,48 @@
   font-weight: 700;
 }
 
-.mwai-messages-theme .mwai-copy-button {
-  opacity: 0;
-  transition: all 0.3s ease-out;
-  width: 22px;
-  height: 22px;
+.mwai-messages-theme .mwai-reply-actions {
   position: absolute;
-  right: var(--mwai-spacing);
+  border-radius: 5px;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  padding: 2px 2px;
+  z-index: 100;
+  background: var(--mwai-backgroundPrimaryColor);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
 }
 
-.mwai-messages-theme .mwai-copy-button .mwai-copy-button-one {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin-top: 0px;
-  margin-left: 0px;
-  background: white;
-  opacity: 0.4;
-  transition: all 0.2s ease-in;
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button {
+  fill: var(--mwai-fontColor);
+  padding: 3px 5px;
+  width: 24px;
+  height: 24px;
+  background: var(--mwai-backgroundPrimaryColor);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 5px;
 }
 
-.mwai-messages-theme .mwai-copy-button .mwai-copy-button-two {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin-top: 6px;
-  margin-left: 6px;
-  background: white;
-  opacity: 0.6;
-  transition: all 0.2s ease-in;
-  cursor: pointer;
-  border-radius: 2px;
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover {
+  filter: brightness(1.2);
 }
 
-.mwai-messages-theme .mwai-copy-button:hover .mwai-copy-button-one {
-  opacity: 0.6;
-  margin-top: 0px;
-  margin-left: 6px;
-}
-
-.mwai-messages-theme .mwai-copy-button:hover .mwai-copy-button-two {
-  opacity: 1;
-  margin-top: 6px;
-  margin-left: 0px;
-}
-
-.mwai-messages-theme .mwai-copy-button.mwai-animate .mwai-copy-button-one {
+.mwai-messages-theme .mwai-reply-actions.mwai-hidden {
   opacity: 0;
 }
 
-.mwai-messages-theme .mwai-copy-button.mwai-animate .mwai-copy-button-two {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  margin-left: 2px;
-  opacity: 1;
+.mwai-messages-theme .mwai-reply-actions {
+  top: 5px;
 }
 
-.mwai-messages-theme .mwai-chat .mwai-reply:hover .mwai-copy-button {
-  display: block;
-  opacity: 1;
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button {
+  zoom: 0.8;
 }
 
-.mwai-messages-theme .mwai-copy-button {
-  position: absolute;
-  left: 15px;
-  zoom: 0.5;
-  top: 18px;
-  filter: revert;
-}
-
-.mwai-messages-theme .mwai-ai .mwai-copy-button {
-  right: 15px;
-  left: inherit;
-  filter: brightness(0.4);
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover {
+  fill: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
 }
 
 @media (max-width: 760px) {

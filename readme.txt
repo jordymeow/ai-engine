@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.4.5
+Stable tag: 2.4.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,13 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.4.6 (2024/07/03) =
+* Update: Anonymized file uploads.
+* Update: Enhancement on the Timeless Theme.
+* Update: Optimized the way the session is started.
+* Fix: Various issues related to avatars, user names, etc.
+* Fix: Other minor issues.
 
 = 2.4.5 (2024/06/28) =
 * Fix: Resolved the function calling issue with non-streamed assistants.

@@ -25,6 +25,10 @@
   box-sizing: border-box;
 }
 
+.mwai-timeless-theme.mwai-window {
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
+}
+
 .mwai-timeless-theme.mwai-window .mwai-header {
   height: 80px;
   padding: var(--mwai-spacing);
@@ -220,7 +224,10 @@
   align-items: center;
   width: 100%;
   border-top: 1px solid var(--mwai-backgroundAiSecondaryColor);
+  border-bottom: 1px solid var(--mwai-backgroundAiSecondaryColor);
   padding-top: var(--mwai-spacing);
+  padding-bottom: var(--mwai-spacing);
+  position: relative;
 }
 
 .mwai-timeless-theme .mwai-input .mwai-input-text {
@@ -251,6 +258,7 @@
   font-family: inherit;
   margin: 0;
   overflow: hidden;
+  min-height: inherit;
 }
 
 .mwai-timeless-theme .mwai-input .mwai-input-text textarea:focus {
@@ -299,8 +307,6 @@
   width: 48px;
   min-width: 48px;
   min-height: 48px;
-  position: absolute;
-  right: -20px;
 }
 
 .mwai-timeless-theme button img {
@@ -355,9 +361,7 @@
   width: 32px;
   height: 32px;
   margin-top: calc(var(--mwai-spacing) / 2);
-  margin-left: 5px;
   z-index: 100;
-  transform: scale(0.75);
 }
 
 .mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-idle-add {
@@ -961,82 +965,48 @@
   font-weight: 700;
 }
 
-.mwai-timeless-theme .mwai-copy-button {
-  opacity: 0;
-  transition: all 0.3s ease-out;
-  width: 22px;
-  height: 22px;
+.mwai-timeless-theme .mwai-reply-actions {
   position: absolute;
-  right: var(--mwai-spacing);
+  border-radius: 5px;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  padding: 2px 2px;
+  z-index: 100;
+  background: var(--mwai-backgroundPrimaryColor);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
 }
 
-.mwai-timeless-theme .mwai-copy-button .mwai-copy-button-one {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin-top: 0px;
-  margin-left: 0px;
-  background: white;
-  opacity: 0.4;
-  transition: all 0.2s ease-in;
+.mwai-timeless-theme .mwai-reply-actions .mwai-copy-button {
+  fill: var(--mwai-fontColor);
+  padding: 3px 5px;
+  width: 24px;
+  height: 24px;
+  background: var(--mwai-backgroundPrimaryColor);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 5px;
 }
 
-.mwai-timeless-theme .mwai-copy-button .mwai-copy-button-two {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin-top: 6px;
-  margin-left: 6px;
-  background: white;
-  opacity: 0.6;
-  transition: all 0.2s ease-in;
-  cursor: pointer;
-  border-radius: 2px;
+.mwai-timeless-theme .mwai-reply-actions .mwai-copy-button:hover {
+  filter: brightness(1.2);
 }
 
-.mwai-timeless-theme .mwai-copy-button:hover .mwai-copy-button-one {
-  opacity: 0.6;
-  margin-top: 0px;
-  margin-left: 6px;
-}
-
-.mwai-timeless-theme .mwai-copy-button:hover .mwai-copy-button-two {
-  opacity: 1;
-  margin-top: 6px;
-  margin-left: 0px;
-}
-
-.mwai-timeless-theme .mwai-copy-button.mwai-animate .mwai-copy-button-one {
+.mwai-timeless-theme .mwai-reply-actions.mwai-hidden {
   opacity: 0;
 }
 
-.mwai-timeless-theme .mwai-copy-button.mwai-animate .mwai-copy-button-two {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  margin-left: 2px;
-  opacity: 1;
+.mwai-timeless-theme .mwai-reply-actions {
+  top: 5px;
 }
 
-.mwai-timeless-theme .mwai-chat .mwai-reply:hover .mwai-copy-button {
-  display: block;
-  opacity: 1;
+.mwai-timeless-theme .mwai-reply-actions .mwai-copy-button {
+  zoom: 0.8;
 }
 
-.mwai-timeless-theme .mwai-copy-button {
-  position: absolute;
-  left: 15px;
-  zoom: 0.5;
-  top: 18px;
-  filter: revert;
-}
-
-.mwai-timeless-theme .mwai-ai .mwai-copy-button {
-  right: 15px;
-  left: inherit;
-  filter: brightness(0.4);
+.mwai-timeless-theme .mwai-reply-actions .mwai-copy-button:hover {
+  fill: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
 }
 
 @media (max-width: 760px) {
