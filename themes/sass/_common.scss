@@ -124,6 +124,7 @@
 	}
 
 	.mwai-text {
+		overflow-wrap: anywhere;
 		
 		img {
 			max-width: 100%;
@@ -306,7 +307,6 @@
 			opacity: 0;
 			max-height: var(--mwai-maxHeight);
 			border-radius: 0 0 var(--mwai-borderRadius) var(--mwai-borderRadius);
-			overflow: hidden;
 		}
 
 		&.mwai-bottom-left {
@@ -445,6 +445,10 @@
 			&:hover {
 				transform: none;
 			}
+		}
+
+		.mwai-emoji {
+			font-size: 30px !important;
 		}
 
 		&:hover {

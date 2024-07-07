@@ -1,11 +1,12 @@
-// Previous: 2.4.5
-// Current: 2.4.6
+// Previous: 2.4.6
+// Current: 2.4.7
 
 // React & Vendor Libs
 const { useMemo, useEffect } = wp.element;
 
 import { useChatbotContext } from "./ChatbotContext";
 import { TransitionBlock } from "./helpers";
+import { isEmoji } from '../helpers';
 
 const ChatbotTrigger = () => {
   const { state, actions } = useChatbotContext();
@@ -23,6 +24,19 @@ const ChatbotTrigger = () => {
       return null;
     }
 
+    const renderIcon = () => {
+      if (isEmoji(iconUrl)) {
+        return (
+          <div className="mwai-icon mwai-emoji" style={{ fontSize: '48px', lineHeight: '64px', width: '64px', height: '64px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {iconUrl}
+          </div>
+        );
+      }
+      else {
+        return <img className="mwai-icon" width="64" height="64" alt={iconAlt} src={iconUrl} />;
+      }
+    };
+
     // TODO: Let's remove mwai-open-button at some point.
     return (
       <div className="mwai-trigger mwai-open-button">
@@ -35,7 +49,7 @@ const ChatbotTrigger = () => {
           </div>
         </TransitionBlock>
         <div className="mwai-icon-container" onClick={() => setOpen(true)}>
-          <img className="mwai-icon" width="64" height="64" alt={iconAlt} src={iconUrl} />
+          {renderIcon()}
         </div>
       </div>
     );

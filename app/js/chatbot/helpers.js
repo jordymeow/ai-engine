@@ -1,5 +1,5 @@
-// Previous: 2.4.5
-// Current: 2.4.6
+// Previous: 2.4.6
+// Current: 2.4.7
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 
@@ -8,6 +8,7 @@ const Microphone = ({ active, disabled, ...rest }) => {
   const svgPath = `<path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM64 216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 89.1 66.2 162.7 152 174.4V464H120c-13.3 0-24 10.7-24 24s10.7 24 24 24h72 72c13.3 0 24-10.7 24-24s-10.7-24-24-24H216V430.4c85.8-11.7 152-85.3 152-174.4V216c0-13.3-10.7-24-24-24s-24 10.7-24 24v40c0 70.7-57.3 128-128 128s-128-57.3-128-128V216z"/>`;
 
   return (
+    // eslint-disable-next-line react/no-unknown-property
     <div active={active ? "true" : "false"} disabled={disabled} {...rest}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"
         dangerouslySetInnerHTML={{ __html: svgPath }}
@@ -90,22 +91,6 @@ function useChrono() {
   return { timeElapsed, startChrono, stopChrono };
 }
 
-function formatAvatar(aiName, pluginUrl, iconUrl) {
-
-  if (isURL(aiName)) {
-    aiName = <div className="mwai-avatar">
-      <img alt="AI Engine" src={aiName} />
-    </div>;
-  }
-  else {
-    const avatar = iconUrl ? iconUrl : `${pluginUrl}/images/chat-openai.svg`;
-    aiName = <div className="mwai-avatar">
-      <img alt="AI Engine" src={`${avatar}`} />
-    </div>;
-  }
-  return aiName;
-}
-
 const processParameters = (params) => {
   const guestName = params.guestName?.trim() ?? "";
   const textSend = params.textSend?.trim() ?? "";
@@ -113,7 +98,7 @@ const processParameters = (params) => {
   const textInputMaxLength = parseInt(params.textInputMaxLength);
   const textInputPlaceholder = params.textInputPlaceholder?.trim() ?? "";
   const textCompliance = params.textCompliance?.trim() ?? "";
-  const windowFlag = Boolean(params.window);
+  const window = Boolean(params.window);
   const copyButton = Boolean(params.copyButton);
   const fullscreen = Boolean(params.fullscreen);
   const icon = params.icon?.trim() ?? "";
@@ -126,15 +111,19 @@ const processParameters = (params) => {
   const userName = params.userName?.trim() ?? "";
   const aiAvatar = Boolean(params?.aiAvatar);
   const userAvatar = Boolean(params?.userAvatar);
+  const guestAvatar = Boolean(params?.guestAvatar);
+  const aiAvatarUrl = aiAvatar ? params?.aiAvatarUrl?.trim() ?? "" : null;
+  const userAvatarUrl = userAvatar ? params?.userAvatarUrl?.trim() ?? "" : null;
+  const guestAvatarUrl = guestAvatar ? params?.guestAvatarUrl?.trim() ?? "" : null;
   const localMemory = Boolean(params.localMemory);
   const imageUpload = Boolean(params.imageUpload);
   const fileSearch = Boolean(params.fileSearch);
 
   return {
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    window: windowFlag, copyButton, fullscreen, localMemory, imageUpload, fileSearch,
+    window, copyButton, fullscreen, localMemory, imageUpload, fileSearch,
     icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble,
-    aiName, aiAvatar, userName, userAvatar, guestName
+    aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar, aiAvatarUrl, userAvatarUrl, guestAvatarUrl
   };
 };
 
@@ -161,7 +150,6 @@ const useSpeechRecognition = (onResult) => {
 
     const handleResult = (event) => {
       const transcript = Array.from(event.results)
-        .slice(0, event.results.length - 1)
         .map(result => result[0])
         .map(result => result.transcript)
         .join('');
@@ -219,5 +207,5 @@ const TransitionBlock = ({ if: condition, className, disableTransition = false, 
 };
 
 
-export { useClasses, isURL, useInterval, TransitionBlock, formatAvatar,
+export { useClasses, isURL, useInterval, TransitionBlock,
   useSpeechRecognition, Microphone, useChrono, processParameters };

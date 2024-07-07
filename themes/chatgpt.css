@@ -486,6 +486,10 @@
   opacity: 1;
 }
 
+.mwai-chatgpt-theme .mwai-text {
+  overflow-wrap: anywhere;
+}
+
 .mwai-chatgpt-theme .mwai-text img {
   max-width: 100%;
 }
@@ -656,7 +660,6 @@
   opacity: 0;
   max-height: var(--mwai-maxHeight);
   border-radius: 0 0 var(--mwai-borderRadius) var(--mwai-borderRadius);
-  overflow: hidden;
 }
 
 .mwai-chatgpt-theme.mwai-window.mwai-bottom-left {
@@ -800,6 +803,10 @@
 
 .mwai-chatgpt-theme.mwai-bubble .mwai-icon-container .mwai-icon:hover {
   transform: none;
+}
+
+.mwai-chatgpt-theme.mwai-bubble .mwai-icon-container .mwai-emoji {
+  font-size: 30px !important;
 }
 
 .mwai-chatgpt-theme.mwai-bubble .mwai-icon-container:hover {

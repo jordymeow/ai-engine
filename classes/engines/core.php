@@ -99,6 +99,11 @@ class Meow_MWAI_Engines_Core {
         // Get the value related to this feedback (usually, a function call)
         $value = apply_filters( 'mwai_ai_feedback', null, $needFeedback );
 
+        if ( $value === null ) {
+          $this->core->log( "⚠️ (Feedback) The returned value for '{$needFeedback['name']}' was null." );
+          $value = "[NO VALUE RETURNED - DO NOT SHOW THIS]";
+        }
+
         // Add the feedback information to the appropriate feedback block
         $feedback_blocks[$rawMessageKey]['feedbacks'][] = [ 
           'request' => $needFeedback, // TODO: Meow_MWAI_Feedback_Request

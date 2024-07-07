@@ -4,11 +4,11 @@ class Meow_MWAI_Query_Function {
   public string $name;
   public string $description;
   public array $parameters;
-  public string $type;
+  public string $type; // 'snippet-vault', etc...
   public ?string $id;
 
   public function __construct( string $name, string $description,
-    array $parameters = [], string $type = 'PHP', string $id = null ) {
+    array $parameters = [], string $type = null, string $id = null ) {
     // $name: The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
     if ( !preg_match( '/^[a-zA-Z0-9_-]{1,64}$/', $name ) ) {
       throw new InvalidArgumentException( "AI Engine: Invalid function name ($name) for Meow_MWAI_Query_Function." );
@@ -23,7 +23,7 @@ class Meow_MWAI_Query_Function {
     $this->name = $name;
     $this->description = $description;
     $this->parameters = $parameters;
-    $this->type = $type;
+    $this->type = $type ?? 'manual';
     $this->id = $id;
   }
 
@@ -65,8 +65,7 @@ class Meow_MWAI_Query_Function {
     return $json;
   }
 
-  public function serializeForAnthropic() 
-  {
+  public function serializeForAnthropic() {
     $json = [
       'name' => $this->name,
       'description' => $this->description,
@@ -96,6 +95,48 @@ class Meow_MWAI_Query_Function {
       if ( !empty( $required ) )  {
         $json['input_schema']['required'] = $required;
       }
+    }
+
+    return $json;
+  }
+
+  public static function fromJson( array $json ): Meow_MWAI_Query_Function {
+    $funcName = $json['name'];
+    $funcDesc = $json['desc'];
+    $funcType = $json['type'] ?? null;
+    $funcId = $json['id'] ?? null;
+    if ( $funcId === null && !empty( $json['snippetId'] ) ) {
+      $funcId = $json['snippetId'];
+    }
+    $args = [];
+    if ( !empty( $json['args'] ) ) {
+      foreach ( $json['args'] as $arg ) {
+        $name = ltrim( $arg['name'], '$' );
+        $desc = $arg['desc'] ?? null;
+        $type = $arg['type'] ?? 'string';
+        $required = $arg['required'] ?? false;
+        $args[] = new Meow_MWAI_Query_Parameter( $name, $desc, $type, $required );
+      }
+    }
+    return new self( $funcName, $funcDesc, $args, $funcType, $funcId );
+  }
+
+  public static function toJson( Meow_MWAI_Query_Function $function ): array {
+    $json = [
+      'name' => $function->name,
+      'desc' => $function->description,
+      'type' => $function->type,
+      'id' => $function->id,
+      'args' => [],
+    ];
+
+    foreach ( $function->parameters as $param ) {
+      $json['args'][] = [
+        'name' => $param->name,
+        'desc' => $param->description,
+        'type' => $param->type,
+        'required' => $param->required,
+      ];
     }
 
     return $json;

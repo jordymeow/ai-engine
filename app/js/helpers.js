@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.4.4
+// Previous: 2.4.4
+// Current: 2.4.7
 
 const { useMemo, useEffect, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -91,7 +91,6 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     }
 
     const xhr = new XMLHttpRequest();
-
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
@@ -155,14 +154,13 @@ const BlinkingCursor = () => {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const intervalId = setInterval(() => {
+    const timeout = setTimeout(() => {
+      const timer = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
-      // The cleanup for interval is misplaced; it only clears timeout
-      return () => clearInterval(intervalId);
+      return () => clearInterval(timer);
     }, 200);
-    return () => clearTimeout(timeoutId);
+    return () => clearTimeout(timeout);
   }, []);
 
   const cursorStyle = {
@@ -218,6 +216,12 @@ const OutputHandler = (props) => {
   );
 };
 
+const emojiRegex = /([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD800-\uDFFF]|[\uFE00-\uFE0F]|[\u1F100-\u1F1FF]|[\u1F200-\u1F2FF]|[\u1F300-\u1F5FF]|[\u1F600-\u1F64F]|[\u1F680-\u1F6FF]|[\u1F700-\u1F77F]|[\u1F780-\u1F7FF]|[\u1F800-\u1F8FF]|[\u1F900-\u1F9FF]|[\u1FA00-\u1FA6F])/;
+
+function isEmoji(str) {
+  return str && str.length === 2 && emojiRegex.test(str);
+}
+
 export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, randomStr,
-  BlinkingCursor, OutputHandler
+  BlinkingCursor, OutputHandler, isEmoji
 };

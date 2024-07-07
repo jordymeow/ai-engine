@@ -1,5 +1,5 @@
-// Previous: 1.4.9
-// Current: 1.6.56
+// Previous: 1.6.56
+// Current: 2.4.7
 
 import createChatbotBlock from './ChatbotBlock';
 import createContainerBlock from './FormContainerBlock';
@@ -15,10 +15,10 @@ const initFormsBlocks = () => {
   createOutputBlock();
   createSubmitBlock();
   createContainerBlock();
-}
+};
 
 const initChatbotBlocks = () => {
   createChatbotBlock();
-}
+};
 
 export { initFormsBlocks, initChatbotBlocks };

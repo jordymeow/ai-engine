@@ -1,9 +1,9 @@
-// Previous: 2.3.7
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
-import { apiUrl, restNonce } from '@app/settings';
+import { pluginUrl, apiUrl, restNonce } from '@app/settings';
 
 import i18n from '@root/i18n';
 
@@ -84,7 +84,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom, startLanguage]);
+  }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -94,6 +94,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
 
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
@@ -101,7 +102,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
-  }, [languages]);
+  }, []);
 
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
@@ -141,7 +142,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -190,12 +191,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return selectedEnv;
   }, [aiEnvs, envId, allEnvs, allEnvironments]);
 
-  const deletedFineTuneIds = useMemo(() => {
-    let deleteIds = env?.finetunes_deleted || [];
+  const deletedFineTunes = useMemo(() => {
+    let deleted = env?.finetunes_deleted || [];
     if (Array.isArray(env?.legacy_finetunes_deleted)) {
-      deleteIds = [...deleteIds, ...env.legacy_finetunes_deleted];
+      deleted = [...deleted, ...env.legacy_finetunes_deleted];
     }
-    return deleteIds;
+    return deleted;
   }, [env]);
 
   const getTagStyle = (tag) => {
@@ -215,7 +216,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     };
   };
 
-  const tabDisplayText = {
+  const tagDisplayText = {
     deprecated: 'DEPRECATED',
     tuned: 'TUNED',
     preview: 'PREVIEW'
@@ -228,7 +229,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         {x.name ?? x.suffix ?? x.model}
         {tag && (
           <small style={getTagStyle(tag)}>
-            {tabDisplayText[tag]}
+            {tagDisplayText[tag]}
           </small>
         )}
       </>
@@ -243,11 +244,13 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           models = [ ...models, ...engine.models ];
         }
       }
-    } else if (env?.type === 'azure') {
+    }
+    else if (env?.type === 'azure') {
       const engine = options.ai_engines.find(x => x.type === 'openai');
       const openAiModels = engine?.models ?? [];
       models = openAiModels?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
-    } else if (env?.type === 'huggingface') {
+    }
+    else if (env?.type === 'huggingface') {
       models = env?.customModels?.map(x => {
         let tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
         let mode = tags.includes('image') ? 'image' : 'chat';
@@ -259,7 +262,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           options: [],
         };
       }) ?? [];
-    } else {
+    }
+    else {
       const engine = options.ai_engines.find(x => x.type === env?.type);
       models = engine?.models ?? [];
     }
@@ -282,7 +286,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
-        } else if (x.model.includes('ft:gpt-4')) {
+        }
+        else if (x.model.includes('ft:gpt-4')) {
           mode = 'chat';
           family = 'gpt4';
         }
@@ -303,8 +308,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   }, [options, env]);
 
   const models = useMemo(() => {
-    return allModels.filter(x => !deletedFineTuneIds.includes(x.model));
-  }, [allModels, deletedFineTuneIds]);
+    return allModels.filter(x => !deletedFineTunes.includes(x.model));
+  }, [allModels, deletedFineTunes]);
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -340,9 +345,11 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
-    } else if (model.startsWith('gpt-4-')) {
+    }
+    else if (model.startsWith('gpt-4-')) {
       model = 'gpt-4';
-    } else if (model.startsWith('gpt-4o-')) {
+    }
+    else if (model.startsWith('gpt-4o-')) {
       model = 'gpt-4o';
     }
     const modelObj = allModels.find(x => x.model === model);
@@ -393,6 +400,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
+    
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object' && price !== null) {
@@ -523,9 +531,25 @@ const randomHash = (length = 6) => {
   return hash;
 };
 
+const OpenAiIcon = ({ size = 14, disabled = false, style, ...rest }) => {
+  const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
+  const finalStyle = { ...baseStyle, ...style };
+  return (<img width={size} height={size} {...rest} style={finalStyle} alt="OpenAI"
+    src={pluginUrl + '/images/chat-openai.svg'}
+  />);
+};
+
+const AnthropicIcon = ({ size = 14, disabled = false, style, ...rest }) => {
+  const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
+  const finalStyle = { ...baseStyle, ...style };
+  return (<img width={size} height={size} {...rest} style={finalStyle} alt="Anthropic"
+    src={pluginUrl + '/images/chat-anthropic.svg'}
+  />);
+};
+
 export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent,
   synchronizeEmbedding, retrievePostsIds, retrieveDiscussions,
-  tableDateTimeFormatter, tableUserIPFormatter, randomHash,
+  tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR
 };

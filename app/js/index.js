@@ -1,18 +1,18 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.4.7
 
 const { render } = wp.element;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({ 
-	defaultOptions: { 
-		queries: { 
-			refetchOnWindowFocus: false,
-			refetchOnMount: false,
-			retry: false,
-			placeholderData: (prev) => prev,
-		}
-	}
+  defaultOptions: { 
+    queries: { 
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: false,
+      placeholderData: (prev) => prev,
+    }
+  }
 });
 
 import { NekoUI } from '@neko-ui';
@@ -34,59 +34,58 @@ const assistantsEnabled = options.module_suggestions;
 const formsEnabled = options.module_forms;
 
 if (chatbotsEnabled) {
-	initChatbotBlocks();
+  initChatbotBlocks();
 }
 
 if (formsEnabled) {
-	initFormsBlocks();
+  initFormsBlocks();
 }
 
 if (assistantsEnabled) {
-	BlockFeatures();
-	BlockCopilot();
+  BlockFeatures();
+  BlockCopilot();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  const settings = document.getElementById('mwai-admin-settings');
+  if (settings) {
+    render(<QueryClientProvider client={queryClient}>
+      <NekoUI><Settings /></NekoUI>
+    </QueryClientProvider>, settings);
+  }
 
-	const settings = document.getElementById('mwai-admin-settings');
-	if (settings) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><Settings /></NekoUI>
-		</QueryClientProvider>, settings);
-	}
+  const generator = document.getElementById('mwai-content-generator');
+  if (generator) {
+    render(<QueryClientProvider client={queryClient}>
+      <NekoUI><ContentGenerator /></NekoUI>
+    </QueryClientProvider>, generator);
+  }
 
-	const generator = document.getElementById('mwai-content-generator');
-	if (generator) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><ContentGenerator /></NekoUI>
-		</QueryClientProvider>, generator);
-	}
+  const imgGen = document.getElementById('mwai-image-generator');
+  if (imgGen) {
+    render(<QueryClientProvider client={queryClient}>
+      <NekoUI><ImageGenerator /></NekoUI>
+    </QueryClientProvider>, imgGen);
+  }
 
-	const imgGen = document.getElementById('mwai-image-generator');
-	if (imgGen) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><ImageGenerator /></NekoUI>
-		</QueryClientProvider>, imgGen);
-	}
+  const dashboard = document.getElementById('mwai-playground');
+  if (dashboard) {
+    render(<QueryClientProvider client={queryClient}>
+      <NekoUI><Playground /></NekoUI>
+    </QueryClientProvider>, dashboard);
+  }
 
-	const dashboard = document.getElementById('mwai-playground');
-	if (dashboard) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><Playground /></NekoUI>
-		</QueryClientProvider>, dashboard);
-	}
+  if (assistantsEnabled) {
+    const postsListTools = document.getElementById('mwai-admin-postsList');
+    if (postsListTools) {
+      render(<NekoUI><PostsListTools /></NekoUI>, postsListTools);
+    }
+  }
 
-	if (assistantsEnabled) {
-		const postsListTools = document.getElementById('mwai-admin-postsList');
-		if (postsListTools) {
-			render(<NekoUI><PostsListTools /></NekoUI>, postsListTools);
-		}
-	}
-
-	const meowDashboard = document.getElementById('meow-common-dashboard');
-	if (meowDashboard) {
-		render(<QueryClientProvider client={queryClient}>
-			<NekoUI><Dashboard /></NekoUI>
-		</QueryClientProvider>, meowDashboard);
-	}
+  const meowDashboard = document.getElementById('meow-common-dashboard');
+  if (meowDashboard) {
+    render(<QueryClientProvider client={queryClient}>
+      <NekoUI><Dashboard /></NekoUI>
+    </QueryClientProvider>, meowDashboard);
+  }
 });

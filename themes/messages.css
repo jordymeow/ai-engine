@@ -497,6 +497,10 @@
   opacity: 1;
 }
 
+.mwai-messages-theme .mwai-text {
+  overflow-wrap: anywhere;
+}
+
 .mwai-messages-theme .mwai-text img {
   max-width: 100%;
 }

@@ -3,15 +3,14 @@
 
 // Chatbot
 .mwai-timeless-theme {
-	--mwai-spacing: 20px;
-	--mwai-fontSize: 15px;
+	--mwai-spacing: 15px;
+	--mwai-fontSize: 13px;
 	--mwai-lineHeight: 1.5;
 	--mwai-borderRadius: 10px;
 	--mwai-width: 360px;
 	--mwai-maxHeight: 40vh;
 	--mwai-iconTextColor: #FFFFFF;
 	--mwai-iconTextBackgroundColor: #2831dc;
-
 	--mwai-fontColor: black;
 	--mwai-backgroundPrimaryColor: #fafafa;
 	--mwai-backgroundHeaderColor: linear-gradient(130deg, #2831dc 0%, #09a9f8 100%);
@@ -28,10 +27,6 @@
 
 	* {
 		box-sizing: border-box;
-	}
-
-	&.mwai-window {
-		filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
 	}
 
 	&.mwai-window .mwai-header { 
@@ -230,10 +225,10 @@
 		display: flex;
 		align-items: center;
 		width: 100%;
-		border-top: 1px solid var(--mwai-backgroundAiSecondaryColor);
-		border-bottom: 1px solid var(--mwai-backgroundAiSecondaryColor);
-		padding-top: var(--mwai-spacing);
-		padding-bottom: var(--mwai-spacing);
+		border-top: 0.5px solid var(--mwai-backgroundAiSecondaryColor);
+		border-bottom: 0.5px solid var(--mwai-backgroundAiSecondaryColor);
+		padding-top: calc(var(--mwai-spacing) / 2);
+		padding-bottom: calc(var(--mwai-spacing) / 2);
 		position: relative;
 
 		.mwai-input-text {
@@ -271,8 +266,7 @@
 				}
 
 				&::placeholder {
-					color: var(--mwai-fontColor);
-					opacity: 0.5;
+					color: var(--mwai-backgroundAiSecondaryColor);
 				}
 			}
 
@@ -293,18 +287,15 @@
 		width: 48px;
 		min-width: 48px;
 		min-height: 48px;
+		transition: all 0.5s;
 
 		img {
-			width: 20px;
-			height: 20px;
+			width: 24px;
+			height: 24px;
 			margin: auto;
 			display: block;
 			// Black and white and only white
 			filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg) brightness(1000%) contrast(100%);
-		}
-
-		span {
-			display: none;
 		}
 
 		.mwai-timer {
@@ -320,50 +311,45 @@
 
 	button[disabled] {
 		cursor: not-allowed;
-
-		span {
-			opacity: 0.5;
-		}
-
-		&.mwai-busy span {
-			display: none;
-		}
-
-		&.mwai-busy:before {
-			content: '';
-			width: 18px;
-			height: 18px;
-			margin: auto;
-			border: 3px solid transparent;
-			border-top-color: var(--mwai-fontColor);
-			border-radius: 50%;
-			animation: mwai-button-spinner 1s ease infinite;
-		}
+		filter: saturate(25%);
+		opacity: 0.5;
 	}
 
-	.mwai-tools {
-		.mwai-file-upload-icon {
-			$icon-size: 32px;
-			$ideal-size: 24px;
-			background: url('icons/white-icons.svg');
-			background-size: 500%; // 5 icons in the row
-			background-position: -0 * $icon-size -3 * $icon-size;
-			width: $icon-size;
-			height: $icon-size;
-			margin-top: calc(var(--mwai-spacing) / 2);
-			z-index: 100;
-			// transform: scale($ideal-size / $icon-size);
-			@include file-upload-icon-sprites;
-		}
-	}
+	.mwai-footer {
+		display: flex;
+		align-items: center;
 
-	.mwai-compliance {
-		opacity: 0.50;
-		margin-top: calc(-1 * var(--mwai-spacing));
-		padding: calc(var(--mwai-spacing) / 1.5) var(--mwai-spacing);
-		font-size: smaller;
-		color: var(--mwai-fontColor);
-		text-align: left;
+		.mwai-tools {
+			margin-right: calc(var(--mwai-spacing) / 2);
+
+			.mwai-file-upload {
+				display: inline-block;
+			}
+
+			.mwai-file-upload-icon {
+				display: inline-block;
+				$icon-size: 32px;
+				$ideal-size: 24px;
+				background: url('icons/white-icons.svg');
+				background-size: 500%; // 5 icons in the row
+				background-position: -0 * $icon-size -3 * $icon-size;
+				width: $icon-size;
+				height: $icon-size;
+				margin-top: calc(var(--mwai-spacing) / 2);
+				z-index: 100;
+				//transform: scale($ideal-size / $icon-size);
+				@include file-upload-icon-sprites;
+			}
+		}
+
+		.mwai-compliance {
+			opacity: 0.50;
+			font-size: 11px;
+			line-height: 11px;
+			color: var(--mwai-fontColor);
+			text-align: left;
+		}
+
 	}
 
 	.mwai-gallery {
@@ -373,6 +359,14 @@
 
 		img {
 			width: 100%;
+		}
+	}
+
+	&.mwai-window {
+		filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
+
+		.mwai-input-submit {
+			margin-right: -36px;
 		}
 	}
 }

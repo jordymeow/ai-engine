@@ -942,7 +942,12 @@ class Meow_MWAI_Core
 		}
 
 		// Support for functions via Snippet Vault
-		$options['functions'] = apply_filters( 'mwai_functions_list', [] );
+		$json = [];
+		$functions = apply_filters( 'mwai_functions_list', [] );
+		foreach ( $functions as $function ) {
+			$json[] = Meow_MWAI_Query_Function::toJson( $function );
+		}
+		$options['functions'] = $json;
 
 		// Addons
 		$options['addons'] = apply_filters( 'mwai_addons', [

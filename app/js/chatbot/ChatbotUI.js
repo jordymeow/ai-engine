@@ -1,5 +1,5 @@
-// Previous: 2.4.1
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.4.7
 
 const { useState, useMemo, useLayoutEffect } = wp.element;
 
@@ -44,6 +44,7 @@ const ChatbotUI = (props) => {
     'mwai-top-left': iconPosition === 'top-left',
   });
 
+  // #region Auto Scroll
   useLayoutEffect(() => {
     if (autoScroll && conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
@@ -53,10 +54,11 @@ const ChatbotUI = (props) => {
   const onScroll = () => {
     if (conversationRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
-      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 1; 
+      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 1; // Allowing a small margin
       setAutoScroll(isAtBottom);
     }
   };
+  // #endregion
 
   const messageList = useMemo(() => messages?.map((message) => (
     <ChatbotReply key={message.id} message={message} />
@@ -87,15 +89,20 @@ const ChatbotUI = (props) => {
           <ChatbotSubmit />
         </div>
 
-        <div className="mwai-tools">
-          {uploadIconPosition === 'mwai-tools' && <ChatUploadIcon />}
+        <div className="mwai-footer">
+
+          <div className="mwai-tools">
+            {uploadIconPosition === 'mwai-tools' && <ChatUploadIcon />}
+          </div>
+
+          {textCompliance && (
+            <div className='mwai-compliance' dangerouslySetInnerHTML={{ __html: textCompliance }} />
+          )}
+
         </div>
 
-        {textCompliance && (
-          <div className='mwai-compliance' dangerouslySetInnerHTML={{ __html: textCompliance }} />
-        )}
-
       </div>
+
     </TransitionBlock>
   );
 };

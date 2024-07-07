@@ -1,11 +1,13 @@
-// Previous: 2.4.5
-// Current: 2.4.6
+// Previous: 2.4.6
+// Current: 2.4.7
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 import { nekoStringify } from '@neko-ui';
-import { processParameters, isURL, useChrono, useSpeechRecognition } from '@app/chatbot/helpers';
+
+import { processParameters, isURL,
+  useChrono, useSpeechRecognition } from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
-import { mwaiHandleRes, mwaiFetch, randomStr, mwaiFetchUpload } from '@app/helpers';
+import { mwaiHandleRes, mwaiFetch, randomStr, mwaiFetchUpload, isEmoji } from '@app/helpers';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
 
 const rawAiName = 'AI: ';
@@ -36,10 +38,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     uploadedUrl: null,
     uploadProgress: null,
   });
-  const [ windowed, setWindowed ] = useState(true);
+  const [ windowed, setWindowed ] = useState(true); // When fullscreen is enabled, minimize is the reduced version.
   const [ open, setOpen ] = useState(false);
   const [ error, setError ] = useState(null);
   const [ busy, setBusy ] = useState(false);
+  const [ busyNonce, setBusyNonce ] = useState(false);
   const [ serverReply, setServerReply ] = useState();
   const chatbotInputRef = useRef();
   const conversationRef = useRef();
@@ -48,45 +51,50 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setInputText(text);
   });
 
-  const { stream, botId, customId, userData, sessionId, contextId, pluginUrl, restUrl, debugMode } = system;
-  const { startSentence = "" } = params;
+  const stream = system.stream || false;
+  const botId = system.botId;
+  const customId = system.customId;
+  const userData = system.userData;
+  const sessionId = system.sessionId;
+  const contextId = system.contextId; 
+  const pluginUrl = system.pluginUrl;
+  const restUrl = system.restUrl;
+  const debugMode = system.debugMode;
   const typewriter = system?.typewriter ?? false;
   const speechRecognition = system?.speech_recognition ?? false;
   const speechSynthesis = system?.speech_synthesis ?? false;
+  const startSentence = params.startSentence?.trim() ?? "";
 
   const isMobile = document.innerWidth <= 768;
   const processedParams = processParameters(params);
-  const { aiName, userName, aiAvatar, userAvatar } = processedParams;
-  const {
-    textSend,
-    textClear,
-    textInputMaxLength,
-    textInputPlaceholder,
-    textCompliance,
-    guestName,
-    window: isWindow,
-    copyButton,
-    fullscreen,
-    localMemory: localMemoryParam,
-    icon,
-    iconText,
-    iconTextDelay,
-    iconAlt,
-    iconPosition,
-    iconBubble,
-    imageUpload,
-    fileSearch
-  } = processedParams;
+  const { aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar } = processedParams;
+  const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
+    window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
+    icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble, imageUpload, fileSearch } = processedParams;
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
-  const { cssVariables, iconUrl } = useMemo(() => {
-    const iconUrl = icon ? (isURL(icon) ? icon : pluginUrl + '/images/' + icon) : pluginUrl + '/images/chat-green.svg';
+  const { cssVariables, iconUrl, aiAvatarUrl, userAvatarUrl, guestAvatarUrl } = useMemo(() => {
+    const processUrl = (url) => {
+      if (!url) return null;
+      if (isEmoji(url)) return url;
+      return isURL(url) ? url : `${pluginUrl}/images/${url}`;
+    };
+    const iconUrl = icon ? processUrl(icon) : `${pluginUrl}/images/chat-traditional-1.svg`;
+    const finalAiAvatarUrl = processUrl(processedParams.aiAvatarUrl);
+    const finalUserAvatarUrl = processUrl(processedParams.userAvatarUrl);
+    const finalGuestAvatarUrl = processUrl(processedParams.guestAvatarUrl);
     const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return { cssVariables, iconUrl };
-  }, [icon, pluginUrl, shortcodeStyles]);
+    return {
+      cssVariables,
+      iconUrl,
+      aiAvatarUrl: finalAiAvatarUrl,
+      userAvatarUrl: finalUserAvatarUrl,
+      guestAvatarUrl: finalGuestAvatarUrl
+    };
+  }, [icon, pluginUrl, shortcodeStyles, processedParams]);
 
   const [ draggingType, setDraggingType ] = useState(false);
   const [ isBlocked, setIsBlocked ] = useState(false);
@@ -101,10 +109,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const submitButtonConf = useMemo(() => {
     return {
       text: textSend,
-      image: theme?.themeId === 'timeless' ? pluginUrl + '/images/submit-blue-arrow.svg' : null,
-      imageOnly: false,
+      textSend: textSend,
+      textClear: textClear,
+      imageSend: theme?.themeId === 'timeless' ? pluginUrl + '/images/action-submit-blue.svg' : null,
+      imageClear: theme?.themeId === 'timeless' ? pluginUrl + '/images/action-clear-blue.svg' : null,
     };
-  }, [pluginUrl, textSend, theme?.themeId]);
+  }, [pluginUrl, textClear, textSend, theme?.themeId]);
 
   const resetMessages = () => {
     resetUploadedFile();
@@ -123,21 +133,31 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
   };
 
-  useEffect(() => {
-    async function refreshRestNonce() {
-      if (chatbotTriggered && !restNonce) {
-        try {
-          const res = await mwaiFetch(`${restUrl}/mwai/v1/start_session`);
-          const data = await res.json();
-          setRestNonce(data.restNonce);
-        }
-        catch (err) {
-          console.error('Error while fetching the restNonce.', err);
-        }
+  async function refreshRestNonce(force = false) {
+    try {
+      if (!force && restNonce) {
+        return restNonce;
       }
+      setBusyNonce(true);
+      const res = await mwaiFetch(`${restUrl}/mwai/v1/start_session`);
+      const data = await res.json();
+      setRestNonce(data.restNonce);
+      return data.restNonce;
     }
-    refreshRestNonce();
-  }, [chatbotTriggered, restNonce, restUrl]);
+    catch (err) {
+      console.error('Error while fetching the restNonce.', err);
+    }
+    finally {
+      setBusyNonce(false);
+    }
+  }
+
+  useEffect(() => {
+    if (chatbotTriggered && !restNonce) {
+      refreshRestNonce();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatbotTriggered]);
 
   useEffect(() => {
     if (inputText.length > 0 && !chatbotTriggered) {
@@ -147,6 +167,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   useEffect(() => {
     resetMessages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSentence]);
 
   useEffect(() => {
@@ -170,8 +191,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         ask: (text, submit = false) => {
           setTasks((prevTasks) => [...prevTasks, { action: 'ask', data: { text, submit } }]);
         },
-        setContext: ({ chatId: ctxChatId, messages: ctxMessages }) => {
-          setTasks((prevTasks) => [...prevTasks, { action: 'setContext', data: { chatId: ctxChatId, messages: ctxMessages } }]);
+        setContext: ({ chatId, messages }) => {
+          setTasks((prevTasks) => [...prevTasks, { action: 'setContext', data: { chatId, messages } }]);
         },
       });
     }
@@ -186,15 +207,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       chatbotInputRef.current.focusInput();
     }
     stopChrono();
-  }, [busy, isMobile, hasFocusRef, startChrono, stopChrono]);
+  }, [busy, startChrono, stopChrono, isMobile]);
 
-  const saveMessages = useCallback((messagesToSave) => {
+  const saveMessages = useCallback((messages) => {
     if (!localStorageKey) {
       return;
     }
     localStorage.setItem(localStorageKey, nekoStringify({
       chatId: chatId,
-      messages: messagesToSave,
+      messages: messages
     }));
   }, [localStorageKey, chatId]);
 
@@ -214,67 +235,67 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  }, [botId, localStorageKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [botId]);
 
   useEffect(() => {
     if (!serverReply) {
       return;
     }
     setBusy(false);
-    const lastMsgIndex = messages.length - 1;
-    const lastMessage = messages[lastMsgIndex];
+    const freshMessages = [...messages];
+    const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverReply.success) {
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-        const newMessages = [...messages];
-        newMessages.splice(lastMsgIndex, 1);
-        setMessages(newMessages);
+      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+        freshMessages.pop();
       }
-      const messagesWithoutUser = [...messages];
-      // Remove the last user message too
-      if (messagesWithoutUser.length > 0 && messagesWithoutUser[messagesWithoutUser.length - 1].role === 'user') {
-        messagesWithoutUser.pop();
-      }
-      const newMsg = {
+      freshMessages.pop();
+      freshMessages.push({
         id: randomStr(),
         role: 'system',
         content: serverReply.message,
         who: rawAiName,
         timestamp: new Date().getTime(),
-      };
-      messagesWithoutUser.push(newMsg);
-      setMessages(messagesWithoutUser);
-      saveMessages(messagesWithoutUser);
+      });
+      setMessages(freshMessages);
+      saveMessages(freshMessages);
       return;
     }
 
     if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
-      lastMessage.content = applyFilters('ai.reply', serverReply.reply);
+      lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isQuerying;
-    } else if (lastMessage.role === 'assistant' && lastMessage.isStreaming) {
-      lastMessage.content = applyFilters('ai.reply', serverReply.reply);
+    }
+    else if (lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+      lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
       }
       lastMessage.timestamp = new Date().getTime();
       delete lastMessage.isStreaming;
-    } else {
+    }
+    else {
       const newMessage = {
         id: randomStr(),
         role: 'assistant',
-        content: applyFilters('ai.reply', serverReply.reply),
+        content: applyFilters('ai.reply', serverReply.reply, { chatId, botId }),
         who: rawAiName,
         timestamp: new Date().getTime(),
-        images: serverReply.images,
       };
-      setMessages(prev => [...prev, newMessage]);
+      if (serverReply.images) {
+        newMessage.images = serverReply.images;
+      }
+      freshMessages.push(newMessage);
     }
-    // setMessages probably missing dependency, but we keep as is.
-  }, [serverReply, messages, saveMessages, lastMsgIndex]);
+    setMessages(freshMessages);
+    saveMessages(freshMessages);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverReply]);
 
   const onClear = useCallback(async () => {
     await setChatId(randomStr());
@@ -283,13 +304,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     resetMessages();
     setInputText('');
-  }, [localStorageKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [botId]);
 
   const onSubmit = useCallback(async (textQuery) => {
+
     if (busy) {
       console.error('AI Engine: There is already a query in progress.');
       return;
     }
+
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
@@ -303,8 +327,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     if (currentImageUrl) {
       if (isImage) {
         textDisplay = `![Uploaded Image](${currentImageUrl})\n${textQuery}`;
-      } else {
-        // Potential bug: if the mimeType is not image, we might still show as image in markdown
+      }
+      else {
         textDisplay = `[Uploaded File](${currentImageUrl})\n${textQuery}`;
       }
     }
@@ -312,7 +336,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setBusy(true);
     setInputText('');
     resetUploadedFile();
-
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -320,7 +343,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       who: rawUserName,
       timestamp: new Date().getTime(),
     }];
-
     saveMessages(bodyMessages);
     const freshMessageId = randomStr();
     const freshMessages = [...bodyMessages, {
@@ -332,7 +354,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
     }];
-
     setMessages(freshMessages);
     const body = {
       botId: botId,
@@ -340,36 +361,35 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       session: sessionId,
       chatId: chatId,
       contextId: contextId,
-      messages: messages, // bug: messages here is stale, not the latest, should be freshMessages
+      messages: messages,
       newMessage: textQuery,
       newFileId: currentFile?.uploadedId,
       stream,
       ...atts
     };
-
     try {
       if (debugMode) {
         console.log('[CHATBOT] OUT: ', body);
       }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
-          const msgs = [...messages];
-          const lastMsgIdx = msgs.length - 1;
-          const lastMsg = msgs[lastMsgIdx];
-          if (lastMsg && lastMsg.id === freshMessageId) {
-            lastMsg.content = content;
-            lastMsg.timestamp = new Date().getTime();
+          const freshMessages = [...messages];
+          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
+          if (lastMessage && lastMessage.id === freshMessageId) {
+            lastMessage.content = content;
+            lastMessage.timestamp = new Date().getTime();
           }
-          return msgs;
+          return freshMessages;
         });
       };
 
-      const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, restNonce, stream);
+      const nonce = restNonce ?? await refreshRestNonce();
+      const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, nonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
 
       if (!data.success && data.message) {
         setError(data.message);
-        const updatedMessages = [...freshMessages];
+        const updatedMessages = [ ...freshMessages ];
         updatedMessages.pop();
         updatedMessages.pop();
         setMessages(updatedMessages);
@@ -377,19 +397,22 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setBusy(false);
         return;
       }
+
       setServerReply(data);
-    } catch (err) {
-      console.error("Error in chatbot submission:", err);
+    }
+    catch (err) {
+      console.error("An error happened in the handling of the chatbot response.", { err });
       setBusy(false);
     }
-  }, [busy, uploadedFile, messages, saveMessages, stream, botId, customId, sessionId, chatId, contextId, atts, inputText, debugMode, restUrl, restNonce, freshMessages]);
+  }, [busy, uploadedFile, messages, saveMessages, stream, botId, customId, sessionId, chatId, contextId, atts, inputText, debugMode, restNonce, refreshRestNonce, restUrl]);
 
   const onSubmitAction = useCallback((forcedText = null) => {
     const hasFileUploaded = !!uploadedFile?.uploadedId;
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
     if (forcedText) {
       onSubmit(forcedText);
-    } else if (hasFileUploaded || inputText.length > 0) {
+    }
+    else if (hasFileUploaded || inputText.length > 0) {
       onSubmit(inputText);
     }
   }, [inputText, onSubmit, uploadedFile?.uploadedId]);
@@ -400,9 +423,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         resetUploadedFile();
         return;
       }
+
       const params = { type, purpose };
       const url = `${restUrl}/mwai-ui/v1/files/upload`;
-      const res = await mwaiFetchUpload(url, file, restNonce, (progress) => {
+
+      const nonce = restNonce ?? await refreshRestNonce();
+      const res = await mwaiFetchUpload(url, file, nonce, (progress) => {
         setUploadedFile({
           localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress
         });
@@ -410,7 +436,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setUploadedFile({
         localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null
       });
-    } catch (error) {
+    }
+    catch (error) {
       console.error('onFileUpload Error', error);
       setError(error.message || 'An unknown error occurred');
       resetUploadedFile();
@@ -435,26 +462,28 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const runTimer = useCallback(() => {
     const timer = setTimeout(() => {
-      setOpen(prevOpen => {
-        if (!prevOpen) {
+      setShowIconMessage((prev) => {
+        if (!prev) {
           setShowIconMessage(true);
         }
-        return prevOpen;
+        return prev;
       });
     }, iconTextDelay * 1000);
     return () => clearTimeout(timer);
-  }, [iconText, iconTextDelay]);
+  }, [ iconText, iconTextDelay ]);
 
   useEffect(() => {
     if (iconText && !iconTextDelay) {
       setShowIconMessage(true);
-    } else if (iconText && iconTextDelay) {
+    }
+    else if (iconText && iconTextDelay) {
       return runTimer();
     }
-  }, [iconText, iconTextDelay, runTimer]);
+  }, [iconText, iconTextDelay]);
 
   const [ tasks, setTasks ] = useState([]);
-  const runTasks = useCallback(() => {
+
+  const runTasks = useCallback(async () => {
     if (tasks.length > 0) {
       const task = tasks[0];
       if (task.action === 'ask') {
@@ -465,7 +494,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           setInputText(text);
         }
       } else if (task.action === 'toggle') {
-        setOpen(prev => !prev);
+        setOpen((prevOpen) => !prevOpen);
       } else if (task.action === 'open') {
         setOpen(true);
       } else if (task.action === 'close') {
@@ -473,13 +502,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       } else if (task.action === 'clear') {
         onClear();
       } else if (task.action === 'setContext') {
-        const { chatId: ctxChatId, messages: ctxMessages } = task.data;
-        setChatId(ctxChatId);
-        setMessages(ctxMessages);
+        const { chatId, messages } = task.data;
+        setChatId(chatId);
+        setMessages(messages);
       }
-      setTasks(prev => prev.slice(1));
+      setTasks((prevTasks) => [...prevTasks.slice(1)]);
     }
-  }, [tasks, onClear, onSubmit]);
+  }, [ tasks, onClear, onSubmit, setChatId, setInputText, setMessages ]);
 
   useEffect(() => {
     runTasks();
@@ -524,7 +553,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     fileSearch,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     aiName, userName, guestName,
-    aiAvatar, userAvatar,
+    aiAvatar, userAvatar, guestAvatar,
+    aiAvatarUrl, userAvatarUrl, guestAvatarUrl,
     isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, iconBubble,
     cssVariables, iconUrl,
     chatbotInputRef,
@@ -540,6 +570,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     submitButtonConf,
     draggingType,
     isBlocked,
+    busyNonce
   };
 
   return (

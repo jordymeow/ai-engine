@@ -1,6 +1,6 @@
 .mwai-timeless-theme {
-  --mwai-spacing: 20px;
-  --mwai-fontSize: 15px;
+  --mwai-spacing: 15px;
+  --mwai-fontSize: 13px;
   --mwai-lineHeight: 1.5;
   --mwai-borderRadius: 10px;
   --mwai-width: 360px;
@@ -23,10 +23,6 @@
 
 .mwai-timeless-theme * {
   box-sizing: border-box;
-}
-
-.mwai-timeless-theme.mwai-window {
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
 }
 
 .mwai-timeless-theme.mwai-window .mwai-header {
@@ -223,10 +219,10 @@
   display: flex;
   align-items: center;
   width: 100%;
-  border-top: 1px solid var(--mwai-backgroundAiSecondaryColor);
-  border-bottom: 1px solid var(--mwai-backgroundAiSecondaryColor);
-  padding-top: var(--mwai-spacing);
-  padding-bottom: var(--mwai-spacing);
+  border-top: 0.5px solid var(--mwai-backgroundAiSecondaryColor);
+  border-bottom: 0.5px solid var(--mwai-backgroundAiSecondaryColor);
+  padding-top: calc(var(--mwai-spacing) / 2);
+  padding-bottom: calc(var(--mwai-spacing) / 2);
   position: relative;
 }
 
@@ -267,8 +263,7 @@
 }
 
 .mwai-timeless-theme .mwai-input .mwai-input-text textarea::placeholder {
-  color: var(--mwai-fontColor);
-  opacity: 0.5;
+  color: var(--mwai-backgroundAiSecondaryColor);
 }
 
 .mwai-timeless-theme .mwai-input .mwai-input-text .mwai-microphone {
@@ -307,18 +302,15 @@
   width: 48px;
   min-width: 48px;
   min-height: 48px;
+  transition: all 0.5s;
 }
 
 .mwai-timeless-theme button img {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   margin: auto;
   display: block;
   filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg) brightness(1000%) contrast(100%);
-}
-
-.mwai-timeless-theme button span {
-  display: none;
 }
 
 .mwai-timeless-theme button .mwai-timer {
@@ -333,28 +325,25 @@
 
 .mwai-timeless-theme button[disabled] {
   cursor: not-allowed;
-}
-
-.mwai-timeless-theme button[disabled] span {
+  filter: saturate(25%);
   opacity: 0.5;
 }
 
-.mwai-timeless-theme button[disabled].mwai-busy span {
-  display: none;
+.mwai-timeless-theme .mwai-footer {
+  display: flex;
+  align-items: center;
 }
 
-.mwai-timeless-theme button[disabled].mwai-busy:before {
-  content: '';
-  width: 18px;
-  height: 18px;
-  margin: auto;
-  border: 3px solid transparent;
-  border-top-color: var(--mwai-fontColor);
-  border-radius: 50%;
-  animation: mwai-button-spinner 1s ease infinite;
+.mwai-timeless-theme .mwai-footer .mwai-tools {
+  margin-right: calc(var(--mwai-spacing) / 2);
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload {
+  display: inline-block;
+}
+
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon {
+  display: inline-block;
   background: url("icons/white-icons.svg");
   background-size: 500%;
   background-position: 0px -96px;
@@ -364,43 +353,43 @@
   z-index: 100;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-idle-add {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-idle-add {
   background-position: -32px -96px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-add {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-image-add {
   background-position: -32px 0px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-up {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-image-up {
   background-position: -64px 0px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-del {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-image-del {
   background-position: -96px 0px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-image-ok {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-image-ok {
   background-position: -128px 0px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-add {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-document-add {
   background-position: -32px -64px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-up {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-document-up {
   background-position: -64px -64px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-del {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-document-del {
   background-position: -96px -64px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon.mwai-document-ok {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-document-ok {
   background-position: -128px -64px;
 }
 
-.mwai-timeless-theme .mwai-tools .mwai-file-upload-icon .mwai-file-upload-progress {
+.mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon .mwai-file-upload-progress {
   position: absolute;
   font-size: 8px;
   width: 21px;
@@ -412,11 +401,10 @@
   color: white;
 }
 
-.mwai-timeless-theme .mwai-compliance {
+.mwai-timeless-theme .mwai-footer .mwai-compliance {
   opacity: 0.50;
-  margin-top: calc(-1 * var(--mwai-spacing));
-  padding: calc(var(--mwai-spacing) / 1.5) var(--mwai-spacing);
-  font-size: smaller;
+  font-size: 11px;
+  line-height: 11px;
   color: var(--mwai-fontColor);
   text-align: left;
 }
@@ -429,6 +417,14 @@
 
 .mwai-timeless-theme .mwai-gallery img {
   width: 100%;
+}
+
+.mwai-timeless-theme.mwai-window {
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
+}
+
+.mwai-timeless-theme.mwai-window .mwai-input-submit {
+  margin-right: -36px;
 }
 
 .mwai-timeless-theme.mwai-discussions {
@@ -490,6 +486,10 @@
 
 .mwai-timeless-theme.mwai-transition-visible, .mwai-timeless-theme .mwai-transition-visible {
   opacity: 1;
+}
+
+.mwai-timeless-theme .mwai-text {
+  overflow-wrap: anywhere;
 }
 
 .mwai-timeless-theme .mwai-text img {
@@ -662,7 +662,6 @@
   opacity: 0;
   max-height: var(--mwai-maxHeight);
   border-radius: 0 0 var(--mwai-borderRadius) var(--mwai-borderRadius);
-  overflow: hidden;
 }
 
 .mwai-timeless-theme.mwai-window.mwai-bottom-left {
@@ -806,6 +805,10 @@
 
 .mwai-timeless-theme.mwai-bubble .mwai-icon-container .mwai-icon:hover {
   transform: none;
+}
+
+.mwai-timeless-theme.mwai-bubble .mwai-icon-container .mwai-emoji {
+  font-size: 30px !important;
 }
 
 .mwai-timeless-theme.mwai-bubble .mwai-icon-container:hover {

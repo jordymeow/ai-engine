@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: ai, gpt, openai, chatbot, copilot
 Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
-Tested up to: 6.5
+Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.4.6
+Stable tag: 2.4.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,15 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.4.7 (2024/07/07) =
+* Update: New system for the avatars used in the chatbot. You can set different avatars for the icon, the AI, the guest. Emoticons are also supported.
+* Update: Improved the Timeless theme.
+* Update: Improved the way the nonce is handled.
+* Update: Streamlined the way function calling works.
+* Update: Modified default avatars.
+* Update: The JS filter ai.reply now returns the chatId and botId as well.
+* Fix: Minor issues.
 
 = 2.4.6 (2024/07/03) =
 * Update: Anonymized file uploads.

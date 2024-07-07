@@ -1,8 +1,11 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName',
-	'aiAvatar', 'userAvatar', 'textSend', 'textClear', 'imageUpload', 'fileSearch',
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
+	'aiName', 'userName', 'guestName',
+	'aiAvatar', 'userAvatar', 'guestAvatar',
+	'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl',
+	'textSend', 'textClear', 'imageUpload', 'fileSearch',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
 	'fullscreen', 'copyButton'

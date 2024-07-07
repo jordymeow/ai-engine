@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.4.7
 
 import { useChatbotContext } from "./ChatbotContext";
 
@@ -20,8 +20,8 @@ const ChatbotSubmit = () => {
     if (busy) {
       return timeElapsed ? <div className="mwai-timer">{timeElapsed}</div> : null;
     }
-    if (submitButtonConf?.image) {
-      return <img src={submitButtonConf.image} alt={submitButtonConf.alt} />;
+    if (submitButtonConf?.imageSend && submitButtonConf?.imageClear) {
+      return <img src={clearMode ? submitButtonConf.imageClear : submitButtonConf.imageSend} alt={clearMode ? textClear : textSend} />;
     }
     return <span>{clearMode ? textClear : textSend}</span>;
   }, [busy, timeElapsed, clearMode, textClear, textSend, submitButtonConf]);

@@ -1,5 +1,5 @@
-// Previous: 2.3.9
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.4.7
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -31,6 +31,8 @@ import AIEnvironmentsSettings from './ai/Environments';
 import Transcription from './misc/Transcription';
 import Assistants from './assistants/Assistants';
 import { retrieveChatbots, retrieveOptions, retrieveThemes, updateChatbots, updateThemes } from '@app/requests';
+import Addons from './Addons';
+import { OpenAiIcon } from '@app/helpers-admin';
 
 const retrieveIncidents = async () => {
   const res = await nekoFetch(`${apiUrl}/openai/incidents`, { nonce: restNonce });
@@ -86,7 +88,7 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels
           }
         }
         else {
-          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
+          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined || newOptions[modelKey] !== null) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
@@ -94,9 +96,8 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels
         }
       }
 
-      // We need to make sure the dimensions are valid
       if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
-        const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
+        const dimensions = newOptions?.ai_embeddings_default_dimensions ?? null;
         if (dimensions !== null) {
           const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
           if (!model?.dimensions.includes(dimensions)) {
@@ -176,7 +177,7 @@ const Settings = () => {
   const resolve_shortcodes = options?.resolve_shortcodes;
   const clean_uninstall = options?.clean_uninstall;
 
-  const { completionModels, getModel } = useModels(options);
+  const { completionModels } = useModels(options);
   const { visionModels } = useModels(options, options?.ai_vision_default_env);
   const { audioModels } = useModels(options, options?.ai_audio_default_env);
   const { jsonModels } = useModels(options, options?.ai_json_default_env);
@@ -200,8 +201,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const options = await retrieveOptions();
-      setOptions(options);
+      const optionsRes = await retrieveOptions();
+      setOptions(optionsRes);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -269,7 +270,6 @@ const Settings = () => {
       }
       return env;
     });
-    // Potential bug: should be 'ai_envs' but using 'ai_envs' instead (takes into account if variable changes)
     updateOption(updatedEnvironments, 'ai_envs');
   };
 
@@ -331,22 +331,20 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options } = data;
+          const { chatbots, themes, options: importedOptions } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(options);
+          await updateOptions(importedOptions);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
         reader.readAsText(file);
       };
       fileInput.click();
-    }
-    catch (err) {
+    } catch (err) {
       alert("Error while importing settings. Please check your console.");
       console.log(err);
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
   };
@@ -357,20 +355,19 @@ const Settings = () => {
     if (!isRegistered) {
       const newOptions = { ...options };
       let hasChanges = false;
-
       proOptions.forEach(option => {
         if (newOptions[option]) {
           newOptions[option] = false;
           hasChanges = true;
         }
       });
-
       if (hasChanges) {
         if (nekoStringify(newOptions) !== nekoStringify(options)) {
           updateOptions(newOptions);
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const jsxUtilities =
@@ -424,7 +421,9 @@ const Settings = () => {
     <NekoSettings title={i18n.COMMON.FINETUNES}>
       <NekoCheckbox name="module_finetunes" label={i18n.COMMON.ENABLE} value="1"
         checked={module_finetunes}
-        description={i18n.HELP.FINETUNES}
+        description={<><OpenAiIcon disabled={!module_finetunes} style={{ marginRight: 3 }} />
+          {i18n.HELP.FINETUNES}
+        </>}
         onChange={updateOption} />
     </NekoSettings>;
 
@@ -440,7 +439,9 @@ const Settings = () => {
     <NekoSettings title={<>{i18n.COMMON.MODERATION}</>}>
       <NekoCheckbox name="module_moderation" label={i18n.COMMON.ENABLE} value="1"
         checked={module_moderation}
-        description={i18n.COMMON.MODERATION_HELP}
+        description={<><OpenAiIcon disabled={!module_moderation} style={{ marginRight: 3 }} />
+          {i18n.COMMON.MODERATION_HELP}
+        </>}
         onChange={updateOption} />
     </NekoSettings>;
 
@@ -461,10 +462,15 @@ const Settings = () => {
     </NekoSettings>;
 
   const jsxAssistants =
-    <NekoSettings title={<>{i18n.COMMON.ASSISTANTS}<small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small></>}>
+    <NekoSettings
+      title={<>{i18n.COMMON.ASSISTANTS}
+        <small style={{ position: 'relative', top: -3, fontSize: 8 }}> BETA</small>
+      </>}>
       <NekoCheckbox name="module_assistants" label={i18n.COMMON.ENABLE} value="1"
         checked={module_assistants} requirePro={true} isPro={isRegistered}
-        description={i18n.HELP.ASSISTANTS}
+        description={<><OpenAiIcon disabled={!module_assistants} style={{ marginRight: 3 }} />
+          {i18n.HELP.ASSISTANTS}
+        </>}
         onChange={updateOption} />
     </NekoSettings>;
 
