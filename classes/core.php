@@ -18,6 +18,7 @@ class Meow_MWAI_Core
 	public $files = null;
 	public $tasks = null;
 	public $magicWand = null;
+	private $options = null;
 	private $option_name = 'mwai_options';
 	private $themes_option_name = 'mwai_themes';
 	private $chatbots_option_name = 'mwai_chatbots';
@@ -32,9 +33,6 @@ class Meow_MWAI_Core
 		$this->is_cli = defined( 'WP_CLI' );
 		$this->files = new Meow_MWAI_Modules_Files( $this );
 		$this->tasks = new Meow_MWAI_Modules_Tasks( $this );
-		if ( $this->get_option( 'module_suggestions' ) ) {
-			$this->magicWand = new Meow_MWAI_Modules_Wand( $this );
-		}
 
 		add_action( 'plugins_loaded', array( $this, 'init' ) );
 		add_action( 'wp_register_script', array( $this, 'register_scripts' ) );
@@ -57,6 +55,11 @@ class Meow_MWAI_Core
 		// WP Admin
 		if ( is_admin() ) {
 			new Meow_MWAI_Admin( $this );
+		}
+
+		// Suggestions Module
+		if ( is_admin() && $this->get_option( 'module_suggestions' ) ) {
+			$this->magicWand = new Meow_MWAI_Modules_Wand( $this );
 		}
 
 		// Administrator in WP Admin
@@ -431,6 +434,20 @@ class Meow_MWAI_Core
 		return $this->nonce;
 	}
 
+	// This is a bit hacky, but chatId needs to be retrieved or generated.
+	// Maybe we can clean this up later.
+	function fix_chat_id( $query, $params ) {
+		if ( isset( $query->chatId ) && $query->chatId !== 'N/A' ) {
+			return $query->chatId;
+		}
+		$chatId = isset( $params['chatId'] ) ? $params['chatId'] : $query->session;
+		if ( $chatId === 'N/A' ) {
+			$chatId = $this->get_random_id( 8 );
+		}
+		$query->set_chat_id( $chatId );
+		return $chatId;
+	}
+
 	function get_session_id() {
 		if ( isset( $_COOKIE['mwai_session_id'] ) ) {
 			return $_COOKIE['mwai_session_id'];
@@ -514,6 +531,32 @@ class Meow_MWAI_Core
 		return filter_var( apply_filters( 'mwai_get_ip_address', $ip ), FILTER_VALIDATE_IP );
   	}
 
+	#endregion
+
+	#region Sanitization
+	function sanitize_sort( &$sort, $default_accessor = 'created', $default_order = 'DESC', 
+		$allowed_columns = array( 'created', 'updated', 'name', 'id', 'time', 'units', 'price' )) {
+
+    // Ensure $sort is an array
+    if ( !is_array( $sort ) ) {
+      $sort = [ "accessor" => $default_accessor, "by" => $default_order ];
+    }
+    // Extract and sanitize the accessor
+    $sort_accessor = isset( $sort['accessor'] ) ? $sort['accessor'] : $default_accessor;
+    if ( !in_array( $sort_accessor, $allowed_columns ) ) {
+      error_log( "AI Engine: This sort accessor is not allowed ($sort_accessor)." );
+      $sort_accessor = $default_accessor;
+    }
+    // Extract and sanitize the sort order
+    $sort_by = isset( $sort['by'] ) ? strtoupper( $sort['by'] ) : $default_order;
+    if ( $sort_by !== 'ASC' && $sort_by !== 'DESC' ) {
+      error_log( "AI Engine: This sort order is not allowed ($sort_by)." );
+      $sort_by = $default_order;
+    }
+    // Update the sort array with sanitized values
+    $sort['accessor'] = $sort_accessor;
+    $sort['by'] = $sort_by;
+  }
 	#endregion
 
 	#region Other Helpers
@@ -705,6 +748,7 @@ class Meow_MWAI_Core
 
 	#region Streaming
 	public function stream_push( $data ) {
+		$data = apply_filters( 'mwai_stream_push', $data );
 		$out = "data: " . json_encode( $data );
 		echo $out;
 		echo "\n\n";
@@ -847,6 +891,7 @@ class Meow_MWAI_Core
 
 	function update_chatbots( $chatbots ) {
 		$deprecatedFields = [ 'env', 'embeddingsIndex', 'embeddingsNamespace', 'service' ];
+		// TODO: I think some HTML fields are missing, guestName, maybe others.
 		$htmlFields = [ 'textCompliance', 'aiName', 'userName', 'startSentence' ];
 		$keepLineReturnsFields = [ 'instructions' ];
 		$whiteSpacedFields = [ 'context' ];
@@ -894,32 +939,14 @@ class Meow_MWAI_Core
 		return $chatbots;
 	}
 
-	function get_all_options( $force = false ) {
-		// We could cache options this way, but if we do, the apply_filters seems to be called too early.
-		// That causes issues with the mwai_languages filter.
-		// if ( !$force && !is_null( $this->options ) ) {
-		// 	return $this->options;
-		// }
-		$options = get_option( $this->option_name, [] );
-		$options = $this->sanitize_options( $options );
-		foreach ( MWAI_OPTIONS as $key => $value ) {
-			if ( !isset( $options[$key] ) ) {
-				$options[$key] = $value;
-			}
-			if ( $key === 'languages' ) {
-				// NOTE: If we decide to make a set of options for languages, we can keep it in the settings
-				$options[$key] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
-			}
-		}
-		$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
-		$options['default_limits'] = MWAI_LIMITS;
+	function populate_dynamic_options( $options ) {
+		// Languages
+		$options['languages'] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
 
-		// Consolidate the engines and the models inside them
-		// we should ABSOLUTELY AVOID to use ai_models directly (except for saving).
-		// An engine looks like that: 
-		// [ 'name' => 'Ollama', 'type' => 'ollama', inputs => ['apikey', 'endpoint'], models => [] ]
-		// NOTE: Since the models are consolidated with the envId in ai_engines,
- 		$options['ai_engines'] = apply_filters( 'mwai_engines', MWAI_ENGINES );
+		// Consolidate the Engines and their Models
+		// PS: We should ABSOLUTELY AVOID to use ai_models directly (except for saving)
+		// Engine Example: [ 'name' => 'Ollama', 'type' => 'ollama', inputs => ['apikey', 'endpoint'], models => [] ]
+		$options['ai_engines'] = apply_filters( 'mwai_engines', MWAI_ENGINES );
 		foreach ( $options['ai_engines'] as &$engine ) {
 			if ( $engine['type'] === 'openai' ) {
 				$engine['models'] = apply_filters(  'mwai_openai_models',
@@ -941,7 +968,7 @@ class Meow_MWAI_Core
 			}
 		}
 
-		// Support for functions via Snippet Vault
+		// Functions via Snippet Vault (or custom code)
 		$json = [];
 		$functions = apply_filters( 'mwai_functions_list', [] );
 		foreach ( $functions as $function ) {
@@ -970,11 +997,29 @@ class Meow_MWAI_Core
 			]
 		] );
 
-		//$this->options = $options;
 		return $options;
 	}
 
-	// Sanitize options when we update the plugi or perform some updates
+	function get_all_options( $force = false, $sanitize = false ) {
+		if ( $force || is_null( $this->options ) ) {
+			$options = get_option( $this->option_name, [] );
+			if ( $sanitize ) {
+				$options = $this->sanitize_options( $options );
+			}
+			foreach ( MWAI_OPTIONS as $key => $value ) {
+				if ( !isset( $options[$key] ) ) {
+					$options[$key] = $value;
+				}
+			}
+			$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
+			$options['default_limits'] = MWAI_LIMITS;
+			$this->options = $options;
+		}
+		$options = $this->populate_dynamic_options( $this->options );
+		return $options;
+	}
+
+	// Sanitize options when we update the plugin or perform some updates
 	// if we change the structure of the options.
 	function sanitize_options( $options ) {
 		$needs_update = false;
@@ -992,6 +1037,15 @@ class Meow_MWAI_Core
 		foreach ( $old_options as $old_option ) {
 			if ( isset( $options[$old_option] ) ) {
 				unset( $options[$old_option] );
+				$needs_update = true;
+			}
+		}
+
+		// Avoid the logs_path to be a PHP file.
+		if ( isset( $options['logs_path'] ) ) {
+			$logs_path = $options['logs_path'];
+			if ( substr( $logs_path, -4 ) === '.php' ) {
+				$options['logs_path'] = '';
 				$needs_update = true;
 			}
 		}
@@ -1106,6 +1160,7 @@ class Meow_MWAI_Core
 		}
 
 		if ( $needs_update ) {
+			ksort( $options );
 			update_option( $this->option_name, $options, false );
 		}
 
@@ -1116,7 +1171,7 @@ class Meow_MWAI_Core
 		if ( !update_option( $this->option_name, $options, false ) ) {
 			return false;
 		}
-		$options = $this->get_all_options( true );
+		$options = $this->get_all_options( true, true );
 		return $options;
 	}
 

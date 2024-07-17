@@ -810,7 +810,7 @@ class Meow_MWAI_Rest
 			$limit = $params['limit'];
 			$filters = $params['filters'];
 			$sort = $params['sort'];
-			$logs = apply_filters( 'mwai_stats_logs', [], $offset, $limit, $filters, $sort );
+			$logs = apply_filters( 'mwai_stats_logs_list', [], $offset, $limit, $filters, $sort );
 			return new WP_REST_Response([ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
 		}
 		catch ( Exception $e ) {
@@ -885,8 +885,9 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$message = $this->retrieve_message( $params );
 			$url = !empty( $params['url'] ) ? $params['url'] : null;
-			$path = !empty( $params['path'] ) ? $params['path'] : null;
-			$result = $mwai->simpleVisionQuery( $message, $url, $path );
+			// This could lead to a security issue, so let's avoid using path directly.
+			//$path = !empty( $params['path'] ) ? $params['path'] : null;
+			$result = $mwai->simpleVisionQuery( $message, $url );
 			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
 		}
 		catch ( Exception $e ) {

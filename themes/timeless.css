@@ -427,6 +427,17 @@
   margin-right: -36px;
 }
 
+@media (max-width: 760px) {
+  .mwai-timeless-theme.mwai-window .mwai-input-submit {
+    margin-right: inherit;
+    border-radius: 0;
+  }
+}
+
+.mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-input-submit {
+  margin-right: inherit;
+}
+
 .mwai-timeless-theme.mwai-discussions {
   border-radius: var(--mwai-borderRadius);
   background: var(--mwai-conversationsBackgroundColor);

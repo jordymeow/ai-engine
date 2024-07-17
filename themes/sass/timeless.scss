@@ -368,6 +368,19 @@
 		.mwai-input-submit {
 			margin-right: -36px;
 		}
+
+		@media (max-width: 760px) {
+			.mwai-input-submit {
+				margin-right: inherit;
+				border-radius: 0;
+			}
+		}
+
+		&.mwai-fullscreen {
+			.mwai-input-submit {
+				margin-right: inherit;
+			}
+		}
 	}
 }
 

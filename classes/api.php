@@ -122,8 +122,15 @@ class Meow_MWAI_API {
 			if ( empty( $botId ) || empty( $message ) ) {
 				throw new Exception( 'The botId and message are required.' );
 			}
-			$reply = $this->simpleChatbotQuery( $botId, $message, $params );
-			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
+			$reply = $this->simpleChatbotQuery( $botId, $message, $params, false );
+			return new WP_REST_Response([ 
+				'success' => true,
+				'data' => $reply['reply'],
+				'extra' => [
+					'actions' => $reply['actions'],
+					'chatId' => $reply['chatId']
+				]
+			], 200 );
 		}
 		catch (Exception $e) {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -189,7 +196,6 @@ class Meow_MWAI_API {
 				$message = isset( $params['prompt'] ) ? $params['prompt'] : '';
 			}
 			$url = isset( $params['url'] ) ? $params['url'] : '';
-			$path = isset( $params['path'] ) ? $params['path'] : '';
 			$options = isset( $params['options'] ) ? $params['options'] : [];
 			$scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
 			if ( !empty( $scope ) ) {
@@ -198,10 +204,10 @@ class Meow_MWAI_API {
 			if ( empty( $message ) ) {
 				throw new Exception( 'The message is required.' );
 			}
-			if ( empty( $url ) && empty( $path ) ) {
-				throw new Exception( 'The url or path is required.' );
+			if ( empty( $url ) ) {
+				throw new Exception( 'The url is required.' );
 			}
-			$reply = $this->simpleVisionQuery( $message, $url, $path, $options );
+			$reply = $this->simpleVisionQuery( $message, $url, null, $options );
 			return new WP_REST_Response([ 'success' => true, 'data' => $reply ], 200 );
 		}
 		catch (Exception $e) {
@@ -291,7 +297,7 @@ class Meow_MWAI_API {
 	 * 
 	 * @return string The result of the AI query.
 	 */
-	public function simpleChatbotQuery( $botId, $message, $params = [] ) {
+	public function simpleChatbotQuery( $botId, $message, $params = [], $onlyReply = true ) {
 		if ( !isset( $params['messages'] ) && isset( $params['chatId'] ) ) {
 			$discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
 			if ( !empty( $discussion ) ) {
@@ -299,7 +305,7 @@ class Meow_MWAI_API {
 			}
 		}
 		$data = $this->chatbot_module->chat_submit( $botId, $message, null, $params );
-		return $data['reply'];
+		return $onlyReply ? $data['reply'] : $data;
 	}
 
 	/**

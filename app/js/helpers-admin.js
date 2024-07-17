@@ -1,5 +1,5 @@
-// Previous: 2.3.9
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 2.4.8
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -97,8 +97,9 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       return;
     }
 
-    const detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
+    const htmlLang = document.querySelector('html')?.lang;
+    const browserLang = navigator.language || navigator.userLanguage;
+    const detectedLanguage = (htmlLang || browserLang).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
@@ -121,7 +122,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value);
+    setCurrentLanguage(value, field);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -142,7 +143,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, customLanguage, languages, isCustom]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -367,6 +368,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const getModelName = (model, raw = false) => {
     const modelObj = getModel(model);
     if (!modelObj) {
+      //console.warn(`Model ${model} not found.`, { allModels, options });
       return model;
     }
     if (raw && modelObj) {
@@ -400,7 +402,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
-    
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object' && price !== null) {
@@ -547,9 +548,25 @@ const AnthropicIcon = ({ size = 14, disabled = false, style, ...rest }) => {
   />);
 };
 
+const JsIcon = ({ size = 14, disabled = false, style, ...rest }) => {
+  const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
+  const finalStyle = { ...baseStyle, ...style };
+  return (<img width={size} height={size} {...rest} style={finalStyle} alt="JavaScript"
+    src={pluginUrl + '/images/code-js.svg'}
+  />);
+};
+
+const PhpIcon = ({ size = 14, disabled = false, style, ...rest }) => {
+  const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
+  const finalStyle = { ...baseStyle, ...style };
+  return (<img width={size} height={size} {...rest} style={finalStyle} alt="PHP"
+    src={pluginUrl + '/images/code-php.svg'}
+  />);
+};
+
 export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent,
   synchronizeEmbedding, retrievePostsIds, retrieveDiscussions,
-  tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon,
+  tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon, JsIcon, PhpIcon,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR
 };

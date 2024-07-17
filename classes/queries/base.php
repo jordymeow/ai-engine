@@ -4,6 +4,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   // Environment
   public ?string $session = null;
+  public ?string $chatId = null;
   public string $scope = '';
   private $core = null;
 
@@ -119,14 +120,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     $this->scope = $scope;
   }
 
-  // TODO: Remove this after March 2024.
-  public function set_env( string $env ): void {
-    // TODO: At some point in February 2024, we should try to remove the env completely,
-    // transfer the forms and chatbots to use the new scope.
-    //error_log( 'AI Engine: set_env() is deprecated. Please use set_scope() instead.' );
-    $this->scope = $env;
-  }
-
   /**
    * The environment ID for AI services.
    * Used for statistics, mainly.
@@ -147,6 +140,18 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   public function get_model() {
     return $this->model;
+  }
+
+  /**
+   * The chat ID to use.
+   * @param string $chatId The chat ID.
+   */
+  public function set_chat_id( string $chatId ) {
+    $this->chatId = $chatId;
+  }
+
+  public function get_chat_id() {
+    return $this->chatId;
   }
 
   /**
@@ -300,18 +305,18 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     // Those are for the keys passed directly by the shortcode.
     $params = $this->convert_keys( $params );
 
-    // TODO: Remove this condition after July 2024.
+    // TODO: After September 2024, remove this context condition.
     if ( !empty( $params['context'] ) ) {
       $this->core->log( '⚠️ (Base Query) context is deprecated. Please use instructions instead.' );
       $this->set_instructions( $params['context'] );
     }
-    if ( !empty( $params['instructions'] ) ) {
-      $this->set_instructions( $params['instructions'] );
-    }
-    // TODO: Remove this condition after September 2024.
+    // TODO: After September 2024, remove this prompt condition.
     if ( !empty( $params['prompt'] ) ) {
       $this->core->log( '⚠️ (Base Query) prompt is deprecated. Please use message instead.' );
       $this->set_message( $params['prompt'] );
+    }
+    if ( !empty( $params['instructions'] ) ) {
+      $this->set_instructions( $params['instructions'] );
     }
     if ( !empty( $params['message'] ) ) {
       $this->set_message( $params['message'] );
@@ -345,6 +350,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     }
     if ( !empty( $params['model'] ) ) {
 			$this->set_model( $params['model'] );
+		}
+    if ( !empty( $params['chatId'] ) ) {
+      $this->set_chat_id( $params['chatId'] );
 		}
   }
 }

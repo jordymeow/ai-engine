@@ -15,6 +15,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   // This is when models return a message that needs to be executed (functions, tools, etc)
   public $needFeedbacks = [];
+  public $needClientActions = [];
 
   public function __construct( $query = null ) {
     $this->query = $query;
@@ -42,6 +43,9 @@ class Meow_MWAI_Reply implements JsonSerializable {
     ];
     if ( !empty( $this->needFeedbacks ) ) {
       $data['needFeedbacks'] = $this->needFeedbacks;
+    }
+    if ( !empty( $this->needClientActions ) ) {
+      $data['needClientActions'] = $this->needClientActions;
     }
     return $data;
   }
@@ -151,14 +155,14 @@ class Meow_MWAI_Reply implements JsonSerializable {
           }
 
           // It's a tool call (OpenAI-style and Anthropic-style)
-          $needFeedbacks = [];
+          $toolCalls = [];
           if ( isset( $choice['message']['tool_calls'] ) ) {
             $tools = $choice['message']['tool_calls'];
             foreach ( $tools as $tool ) {
               if ( $tool['type'] === 'function' ) {
-                $needFeedbacks[] = [ 
+                $toolCalls[] = [ 
                   'toolId' => $tool['id'], 
-                  'mode' => 'interactive',
+                  //'mode' => 'interactive',
                   'type' => 'tool_call',
                   'name' => trim( $tool['function']['name'] ),
                   'arguments' => $this->extract_arguments( $tool['function']['arguments'] ),
@@ -172,7 +176,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
           // If it's a function call (Open-AI style; usually for a final execution)
           if ( isset( $choice['message']['function_call'] ) ) {
             $content = $choice['message']['function_call'];
-            $needFeedbacks[] = [
+            $toolCalls[] = [
               'toolId' => null,
               'mode' => 'static',
               'type' => 'function_call',
@@ -183,21 +187,31 @@ class Meow_MWAI_Reply implements JsonSerializable {
           }
 
           // Resolve the original function from the query
-          if ( !empty( $needFeedbacks ) ) {
-            foreach ( $needFeedbacks as &$needFeedback ) {
-              if ( $needFeedback['type'] !== 'function_call' && $needFeedback['type'] !== 'tool_call' ) {
+          if ( !empty( $toolCalls ) ) {
+            foreach ( $toolCalls as &$toolCall ) {
+              if ( $toolCall['type'] !== 'function_call' && $toolCall['type'] !== 'tool_call' ) {
                 continue;
               }
               foreach ( $this->query->functions as $function ) {
-                if ( $function->name == $needFeedback['name'] ) {
-                  $needFeedback['function'] = $function;
+                if ( $function->name == $toolCall['name'] ) {
+                  $toolCall['function'] = $function;
                   break;
                 }
               }
             }
           }
 
-          $this->needFeedbacks = $needFeedbacks;
+          // Let's separate the Feedbacks (PHP code) and Client Actions (JS code)
+          $this->needFeedbacks = [];
+          $this->needClientActions = [];
+          foreach ( $toolCalls as $toolCall ) {
+            if ( $toolCall['function']->target !== 'js' ) {
+              $this->needFeedbacks[] = $toolCall;
+            }
+            else if ( $toolCall['function']->target === 'js' ) {
+              $this->needClientActions[] = $toolCall;
+            }
+          }
         }
 
         // It's text completion

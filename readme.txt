@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.4.7
+Stable tag: 2.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,13 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.4.8 (2024/07/17) =
+* Add: A first implementation of actions and blocks for the chatbot. Actions in JS are also handled. Please note that documentation will come later, this is for internal testing for now.
+* Update: The chatId is now returned by simpleChatbotQuery.
+* Update: Streamlined the naming of a few functions and filters related to the Statistics Module.
+* Fix: Minor fixes, such as the button in Timeless.
+* Fix: Three minor security issues (simpleVisionQuery SSRF, logs file as a PHP file, SQL injection via sort parameter). Those attacks could only be performed by, actually, an admin.
 
 = 2.4.7 (2024/07/07) =
 * Update: New system for the avatars used in the chatbot. You can set different avatars for the icon, the AI, the guest. Emoticons are also supported.

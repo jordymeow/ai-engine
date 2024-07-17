@@ -128,7 +128,7 @@ class Meow_MWAI_Modules_Discussions {
     $offset = !empty( $offset ) ? intval( $offset ) : 0;
     $limit = !empty( $limit ) ? intval( $limit ) : 5;
     $filters = !empty( $filters ) ? $filters : [];
-    $sort = !empty( $sort ) ? $sort : [ 'accessor' => 'updated', 'by' => 'desc' ];
+    $this->core->sanitize_sort( $sort, 'updated', 'DESC' );
     $query = "SELECT * FROM $this->table_chats";
 
     // Filters
@@ -188,7 +188,7 @@ class Meow_MWAI_Modules_Discussions {
     $userIp = $mwai_core->get_ip_address();
     $userId = $mwai_core->get_user_id();
     $botId = isset( $params['botId'] ) ? $params['botId'] : null;
-    $chatId = isset( $params['chatId'] ) ? $params['chatId'] : $query->session;
+    $chatId = $this->core->fix_chat_id( $query, $params );
     $customId = isset( $params['customId'] ) ? $params['customId'] : null;
     $threadId = $query instanceof Meow_MWAI_Query_Assistant ? $query->threadId : null;
     $storeId = $query instanceof Meow_MWAI_Query_Assistant ? $query->storeId : null;

@@ -30,7 +30,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$this->siteWideChatId = $this->core->get_option( 'botId' );
 
 		add_shortcode( 'mwai_chatbot', array( $this, 'chat_shortcode' ) );
-		add_shortcode( 'mwai_chatbot_v2', array( $this, 'chat_shortcode' ) );
+		add_shortcode( 'mwai_chatbot_v2', array( $this, 'old_chat_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'register_scripts' ) );
@@ -112,6 +112,30 @@ class Meow_MWAI_Modules_Chatbot {
 		return true;
 	}
 
+	public function build_final_res( $botId, $newMessage, $newFileId, $params, $reply, $images, $actions, $usage ) {
+		$filterParams = [
+			'botId' => $botId,
+			'reply' => $reply,
+			'images' => $images,
+			'newMessage' => $newMessage,
+			'newFileId' => $newFileId,
+			'params' => $params,
+			'usage' => $usage,
+		];
+		$actions = apply_filters( 'mwai_chatbot_actions', $actions, $filterParams );
+		$blocks = apply_filters( 'mwai_chatbot_blocks', [], $filterParams );
+		$actions = $this->sanitize_actions( $actions );
+		$blocks = $this->sanitize_blocks( $blocks );
+		return [
+			'success' => true,
+			'reply' => $reply,
+			'images' => $images,
+			'actions' => $actions,
+			'blocks' => $blocks,
+			'usage' => $usage
+		];
+	}
+
 	public function rest_chat( $request ) {
 		$params = $request->get_json_params();
 		$botId = $params['botId'] ?? null;
@@ -129,12 +153,9 @@ class Meow_MWAI_Modules_Chatbot {
 
 		try {
 			$data = $this->chat_submit( $botId, $newMessage, $newFileId, $params, $stream );
-			return new WP_REST_Response( [
-				'success' => true,
-				'reply' => $data['reply'],
-				'images' => $data['images'],
-				'usage' => $data['usage']
-			], 200 );
+			$final_res = $this->build_final_res( $botId, $newMessage, $newFileId, $params,
+				$data['reply'], $data['images'], $data['actions'], $data['usage'] );
+			return new WP_REST_Response( $final_res, 200 );
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
@@ -144,6 +165,46 @@ class Meow_MWAI_Modules_Chatbot {
 			], 500 );
 		}
 	}
+
+	private function sanitize_items( $items, $supported_types, $type_name ) {
+		$sanitized_items = [];
+		foreach ( $items as $item ) {
+			if ( isset( $supported_types[$item['type']] ) ) {
+				$is_valid = true;
+				foreach ( $supported_types[$item['type']] as $param ) {
+					if ( empty( $item[$param] ) ) {
+						$is_valid = false;
+						$this->core->log( "⚠️ Missing required parameter '{$param}' for {$type_name} type: {$item['type']}." );
+						break;
+					}
+				}
+				if ( $is_valid ) {
+					$sanitized_items[] = $item;
+				}
+			}
+			else {
+				$this->core->log( "⚠️ Unsupported {$type_name} type: {$item['type']}." );
+			}
+		}
+	
+		return $sanitized_items;
+	}
+	
+	public function sanitize_actions( $actions ) {
+		$supported_action_types = [
+			'function' => ['name', 'args'],
+			'javascript' => ['snippet'],
+			'reply-shortcut' => ['label', 'content'],
+		];
+		return $this->sanitize_items( $actions, $supported_action_types, 'action' );
+	}
+	
+	public function sanitize_blocks( $blocks ) {
+		$supported_block_types = [
+			'html' => ['content'],
+		];
+		return $this->sanitize_items( $blocks, $supported_block_types, 'block' );
+	}	
 
 	public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false ) {
 		try {
@@ -337,23 +398,30 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
 
+			$actions = [];
+			if ( $reply->needClientActions ) {
+				foreach ( $reply->needClientActions as $action ) {
+					$actions[] = [
+						'type' => 'function',
+						'name' => $action['function']->name,
+						'args' => $action['arguments']
+					];
+				}
+			}
+
 			$restRes = [
 				'reply' => $rawText,
+				'chatId' => $this->core->fix_chat_id( $query, $params ),
 				'images' => $reply->get_type() === 'images' ? $reply->results : null,
+				'actions' => $actions,
 				'usage' => $reply->usage
 			];
 
 			// Process Reply
 			if ( $stream ) {
-				$this->stream_push( [
-					'type' => 'end',
-					'data' => json_encode([
-						'success' => true,
-						'reply' => $restRes['reply'],
-						'images' => $restRes['images'],
-						'usage' => $restRes['usage']
-					])
-				] );
+				$final_res = $this->build_final_res( $botId, $newMessage, $newFileId, $params,
+					$restRes['reply'], $restRes['images'], $restRes['actions'], $restRes['usage'] );
+				$this->stream_push( [ 'type' => 'end', 'data' => json_encode( $final_res ) ] );
 				die();
 			}
 			else {
@@ -441,6 +509,12 @@ class Meow_MWAI_Modules_Chatbot {
       'customId' => $customId,
     ];
   }
+
+	// TODO: After January 2025, remove this.
+	public function old_chat_shortcode( $atts ) {
+		error_log( "AI Engine: The shortcode 'mwai_chatbot_v2' is deprecated. Please use 'mwai_chatbot' instead." );
+		return $this->chat_shortcode( $atts );
+	}
 
 	public function chat_shortcode( $atts ) {
 		$atts = empty( $atts ) ? [] : $atts;
