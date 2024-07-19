@@ -1,5 +1,5 @@
-// Previous: 2.4.7
-// Current: 2.4.8
+// Previous: 2.4.8
+// Current: 2.4.9
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -94,14 +94,13 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-      return;
     }
-
-    const htmlLang = document.querySelector('html')?.lang;
-    const browserLang = navigator.language || navigator.userLanguage;
-    const detectedLanguage = (htmlLang || browserLang).substr(0, 2);
-    if (languages.find(l => l.value === detectedLanguage)) {
-      setCurrentLanguage(detectedLanguage);
+    const htmlLang = document.querySelector('html')?.lang || navigator.language || navigator.userLanguage;
+    if (htmlLang) {
+      const detectedLanguage = htmlLang.substr(0, 2);
+      if (languages.find(l => l.value === detectedLanguage)) {
+        setCurrentLanguage(detectedLanguage);
+      }
     }
   }, []);
 
@@ -122,7 +121,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -245,13 +244,11 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           models = [ ...models, ...engine.models ];
         }
       }
-    }
-    else if (env?.type === 'azure') {
+    } else if (env?.type === 'azure') {
       const engine = options.ai_engines.find(x => x.type === 'openai');
       const openAiModels = engine?.models ?? [];
       models = openAiModels?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
-    }
-    else if (env?.type === 'huggingface') {
+    } else if (env?.type === 'huggingface') {
       models = env?.customModels?.map(x => {
         let tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
         let mode = tags.includes('image') ? 'image' : 'chat';
@@ -263,8 +260,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           options: [],
         };
       }) ?? [];
-    }
-    else {
+    } else {
       const engine = options.ai_engines.find(x => x.type === env?.type);
       models = engine?.models ?? [];
     }
@@ -287,8 +283,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (x.model.includes('ft:gpt-3.5')) {
           mode = 'chat';
           family = 'turbo';
-        }
-        else if (x.model.includes('ft:gpt-4')) {
+        } else if (x.model.includes('ft:gpt-4')) {
           mode = 'chat';
           family = 'gpt4';
         }
@@ -346,12 +341,12 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model.startsWith('gpt-4-')) {
-      model = 'gpt-4';
-    }
-    else if (model.startsWith('gpt-4o-')) {
+    } else if (model.startsWith('gpt-4o-mini')) {
+      model = 'gpt-4o-mini';
+    } else if (model.startsWith('gpt-4o')) {
       model = 'gpt-4o';
+    } else if (model.startsWith('gpt-4')) {
+      model = 'gpt-4';
     }
     const modelObj = allModels.find(x => x.model === model);
     if (!modelObj) {
@@ -368,7 +363,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const getModelName = (model, raw = false) => {
     const modelObj = getModel(model);
     if (!modelObj) {
-      //console.warn(`Model ${model} not found.`, { allModels, options });
       return model;
     }
     if (raw && modelObj) {
@@ -402,6 +396,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     const price = getPrice(model, option);
+    
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object' && price !== null) {

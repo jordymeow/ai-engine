@@ -19,6 +19,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   protected $streamFunctionCall = null;
   protected $streamToolCalls = [];
   protected $streamLastMessage = null;
+  protected $streamAnnotations = [];
+  protected $streamImageIds = [];
 
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
@@ -423,7 +425,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
             $this->streamToolCalls[] = [
               'id' => null,
               'type' => null,
-              'function' => [ 'name' => "", 'arguments' => "" ]
+              'function' => [ 'name' => "", 'arguments' => "" ],
+              'code_interpreter' => [ 'input' => "", 'outputs' => [] ],
             ];
             end( $this->streamToolCalls );
             $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
@@ -443,6 +446,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
               $currentStreamToolCall['function']['arguments'] .= $function['arguments'];
             }
           }
+          if ( isset( $tool_call['code_interpreter'] ) ) {
+            $code_interpreter = $tool_call['code_interpreter'];
+            if ( isset( $code_interpreter['input'] ) ) {
+              $currentStreamToolCall['code_interpreter']['input'] .= $code_interpreter['input'];
+            }
+            if ( isset( $code_interpreter['outputs'] ) ) {
+              $currentStreamToolCall['code_interpreter']['outputs'] = $code_interpreter['outputs'];
+            }
+          }
           $this->streamLastMessage['tool_calls'] = $this->streamToolCalls;
         }
       }
@@ -452,10 +464,32 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( $delta ) {
         switch ( $delta['type'] ?? null ) {
           case 'text':
-            $content = $delta['value'] ?? $delta['text'];
+            if ( !empty( $delta['value'] ) && is_string( $delta['value'] ) ) {
+              $content = $delta['value'];
+            }
+            else if ( !empty( $delta['text'] ) && is_string( $delta['text'] ) ) {
+              $content = $delta['text'];
+            }
+            else if ( !empty( $delta['text'] ) && is_array( $delta['text'] ) ) {
+              $text = $delta['text'];
+              if ( !empty( $text['annotations'] ) ) {
+                $this->streamAnnotations = array_merge( $this->streamAnnotations, $text['annotations'] );
+              }
+              if ( !empty( $text['value'] ) ) {
+                $content = $text['value'];
+              }
+            }
+            else {
+              error_log( 'AI Engine: Unknown text format: ' . json_encode( $delta ) );
+            }
             break;
           case 'image':
             $content = $delta['url'];
+            break;
+          case 'image_file':
+            $fileId = $delta['image_file']['file_id'];
+            $content = "<!-- IMG #" . $fileId . " -->";
+            $this->streamImageIds[] = $fileId;
             break;
           case 'function_call':
             if ( empty( $this->streamFunctionCall ) ) {
@@ -487,6 +521,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
       }
     } 
+    else if ( $object === 'thread.run.step' ) {
+      //$type = $json['step'];
+      // Could be tool_calls, means an OpenAI Assistant is doing something.
+    }
     else {
       if ( isset( $json['choices'][0]['text'] ) ) {
         $content = $json['choices'][0]['text'];
@@ -570,7 +608,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   
     return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
-  
 
   public function run_query( $url, $options, $isStream = false ) {
     try {
@@ -1080,6 +1117,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   public function download_file( $fileId, $newFile = null ) {
     $fileInfo = $this->execute( 'GET', '/files/' . $fileId, null, null, false );
     $fileInfo = json_decode( (string)$fileInfo, true );
+    if ( empty( $fileInfo ) ) {
+      throw new Exception( 'AI Engine: File (' . ( $fileId ?? 'N/A' ) . ') not found.' );
+    }
     $filename = $fileInfo['filename'];
     $extension = pathinfo( $filename, PATHINFO_EXTENSION );
     if ( empty( $newFile ) ) {

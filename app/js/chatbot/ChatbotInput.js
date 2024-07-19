@@ -1,5 +1,5 @@
-// Previous: 2.3.9
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.4.9
 
 const { useRef, useState, useEffect, useImperativeHandle } = wp.element;
 
@@ -26,7 +26,7 @@ const ChatbotInput = () => {
   const css = useClasses();
   const { state, actions } = useChatbotContext();
   const { inputText, textInputMaxLength, textInputPlaceholder, error, speechRecognitionAvailable,
-    isMobile, conversationRef, open, uploadIconPosition, draggingType, isBlocked,
+    isMobile, conversationRef, open, uploadIconPosition, draggingType, isBlocked, locked,
     isListening, busy, speechRecognition, imageUpload, fileSearch, chatbotInputRef } = state;
   const { onSubmitAction, setIsListening, resetError, setInputText, setIsBlocked,
     setDraggingType, onUploadFile } = actions;
@@ -62,12 +62,12 @@ const ChatbotInput = () => {
         setIsBlocked(false);
       }
       else {
-        setDraggingType(false);
+        setDraggingType('unknown');
         setIsBlocked(true);
       }
     }
     else {
-      setDraggingType(false);
+      setDraggingType('unknown');
       setIsBlocked(false);
     }
   };
@@ -86,7 +86,7 @@ const ChatbotInput = () => {
       }
       else {
         setIsBlocked(true);
-        setTimeout(() => setIsBlocked(false), 2000);
+        setTimeout(() => setIsBlocked(false), 3000);
       }
     }
   };
@@ -117,7 +117,7 @@ const ChatbotInput = () => {
 
       <TextAreaAutosize
         ref={inputRef}
-        disabled={busy}
+        disabled={busy || locked}
         placeholder={textInputPlaceholder}
         value={inputText}
         maxLength={textInputMaxLength}

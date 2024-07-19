@@ -21,6 +21,22 @@ define( 'MWAI_OPENAI_MODELS', [
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
 	],
 	[
+		"model" => "gpt-4o-mini",
+		"name" => "GPT-4o Mini",
+		"family" => "gpt4",
+		"price" => [
+			"in" => 0.0015,
+			"out" => 0.0060,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"mode" => "chat",
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
+	],
+	[
 		"model" => "gpt-4-turbo",
 		"name" => "GPT-4 Turbo",
 		"family" => "gpt4",

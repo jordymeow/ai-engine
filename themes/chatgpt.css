@@ -33,6 +33,42 @@
   border-radius: var(--mwai-borderRadius);
 }
 
+.mwai-chatgpt-theme .mwai-shortcuts {
+  display: flex;
+  justify-content: center;
+  margin: var(--mwai-spacing);
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut {
+  margin-right: calc(var(--mwai-spacing) / 2);
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut.mwai-success {
+  color: #4caf50;
+  border: 1px solid #4caf50;
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut.mwai-danger {
+  color: #f44336;
+  border: 1px solid #f44336;
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut.mwai-warning {
+  color: #ff9800;
+  border: 1px solid #ff9800;
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut.mwai-info {
+  color: #2196f3;
+  border: 1px solid #2196f3;
+}
+
+.mwai-chatgpt-theme .mwai-blocks {
+  display: flex;
+  flex-direction: column;
+  padding: var(--mwai-spacing);
+}
+
 .mwai-chatgpt-theme .mwai-conversation {
   overflow: auto;
 }

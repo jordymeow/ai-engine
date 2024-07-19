@@ -1,14 +1,15 @@
-// Previous: 2.4.5
-// Current: 2.4.6
+// Previous: 2.4.6
+// Current: 2.4.9
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
 import Markdown from 'markdown-to-jsx';
+
 import { useClasses, useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
-import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { BlinkingCursor } from '@app/helpers';
+import { applyFilters } from '@app/chatbot/MwaiAPI';
 import ReplyActions from '@app/components/ReplyActions';
 import ChatbotName from './ChatbotName';
 
@@ -52,14 +53,14 @@ const LinkContainer = ({ href, children }) => {
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
   const { copyButton } = state;
-  const [isLongProcess, setIsLongProcess] = useState(message.isQuerying || message.isStreaming);
+  const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
   let content = message.content ?? "";
 
   const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) { 
-    content += "\n```"; 
+  if (matches % 2 !== 0) {
+    content += "\n```";
   } else if (message.isStreaming) {
     content += "<BlinkingCursor />";
   }
@@ -67,8 +68,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   useEffect(() => {
     if (!isLongProcess) {
       onRendered();
-    }
-    if (isLongProcess && !isQuerying && !isStreaming) {
+    } else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -84,9 +84,10 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
           props: {
             onError: (e) => {
               const src = e.target.src;
-              const isImage = /\.(jpeg|jpg|gif|png)$/i.test(src);
+              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/) !== null;
               if (isImage) {
                 e.target.src = "https://placehold.co/600x200?text=Expired+Image";
+                return;
               }
             },
             className: "mwai-image",
@@ -100,6 +101,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
   if (isQuerying) {
     return (<BouncingDots />);
   }
+
   if (isStreaming && !content) {
     return (<BouncingDots />);
   }
@@ -115,8 +117,8 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
 };
 
 const ImagesMessage = ({ message, onRendered = () => {} }) => {
-  const [images, setImages] = useState(message?.images);
-  useEffect(() => { onRendered(); }, []);
+  const [ images, setImages ] = useState(message?.images);
+  useEffect(() => { onRendered(); });
 
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
@@ -133,7 +135,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
         <div className="mwai-gallery">
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img key={index} src={image} onError={() => handleImageError(index)} />
+              <img src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -144,9 +146,8 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
 
 const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   const typedElement = useRef(null);
-  const [dynamic] = useState(message.isQuerying);
-  const [ready, setReady] = useState(!message.isQuerying);
-  const [userScrolledUp, setUserScrolledUp] = useState(false);
+  const [ dynamic ] = useState(message.isQuerying);
+  const [ ready, setReady ] = useState(!message.isQuerying);
   const content = message.content;
 
   useEffect(() => {
@@ -156,9 +157,6 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
   useInterval(200, () => {
     if (!conversationRef?.current) {
       return;
-    }
-    if (!userScrolledUp) {
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, !ready);
 
@@ -219,7 +217,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
   const isImages = message?.images?.length > 0;
 
   const onRendered = () => {
-    if (!mainElement.current || !mainElement.current.classList) { return; }
+    if (!mainElement.current) { return; }
     if (message.isQuerying) { return; }
     if (mainElement.current.classList.contains('mwai-rendered')) {
       return;
@@ -247,14 +245,14 @@ const ChatbotReply = ({ message, conversationRef }) => {
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
       } else if (typewriter && !message.isStreaming) {
+        console.warn("The Typewriter effect is deprecated. Use Streaming instead.");
         return <div ref={mainElement} className={classes}>
           <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
-      } else {
-        return <div ref={mainElement} className={classes}>
-          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-        </div>;
       }
+      return <div ref={mainElement} className={classes}>
+        <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+      </div>;
     }
 
     if (message.role === 'system') {

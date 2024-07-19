@@ -3,7 +3,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI for WordPress. Chatbot, Content/Image Generator, CoPilot, Finetuning, Internal API, GPT, Gemini, etc! Sleek UI and ultra-customizable.
-Version: 2.4.8
+Version: 2.4.9
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '2.4.8' );
+define( 'MWAI_VERSION', '2.4.9' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -21,9 +21,9 @@ define( 'MWAI_PATH', dirname( __FILE__ ) );
 define( 'MWAI_URL', plugin_dir_url( __FILE__ ) );
 define( 'MWAI_ITEM_ID', 17631833 );
 define( 'MWAI_TIMEOUT', 60 * 5 );
-define( 'MWAI_FALLBACK_MODEL', 'gpt-3.5-turbo' );
-define( 'MWAI_FALLBACK_MODEL_VISION', 'gpt-4o' );
-define( 'MWAI_FALLBACK_MODEL_JSON', 'gpt-4o' );
+define( 'MWAI_FALLBACK_MODEL', 'gpt-4o-mini' );
+define( 'MWAI_FALLBACK_MODEL_VISION', 'gpt-4o-mini' );
+define( 'MWAI_FALLBACK_MODEL_JSON', 'gpt-4o-mini' );
 
 require_once( MWAI_PATH . '/classes/init.php' );
 

@@ -560,6 +560,15 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Other Helpers
+	function safe_strlen( $string, $encoding = 'UTF-8' ) {
+		if ( function_exists( 'mb_strlen' ) ) {
+			return mb_strlen( $string, $encoding );
+		}
+		else {
+			// Fallback implementation for environments without mbstring extension
+			return preg_match_all( '/./u', $string, $matches );
+		}
+	}
 
 	public function check_rest_nonce( $request ) {
     $nonce = $request->get_header( 'X-WP-Nonce' );

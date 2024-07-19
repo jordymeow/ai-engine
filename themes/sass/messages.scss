@@ -36,6 +36,50 @@
 		flex-direction: column;
 	}
 
+	.mwai-shortcuts {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+
+		.mwai-shortcut {
+			background: white;
+			margin-bottom: 5px;
+			font-size: var(--mwai-fontSize);
+			height: inherit;
+			min-height: inherit;
+			width: inherit;
+			min-width: inherit;
+			border-radius: var(--mwai-borderRadius);
+			padding: 5px 10px;
+
+			&.mwai-success {
+				color: #4caf50;
+				border: 1px solid #4caf50;
+			}
+
+			&.mwai-danger {
+				color: #f44336;
+				border: 1px solid #f44336;
+			}
+
+			&.mwai-warning {
+				color: #ff9800;
+				border: 1px solid #ff9800;
+			}
+
+			&.mwai-info {
+				color: #2196f3;
+				border: 1px solid #2196f3;
+			}
+		}
+	}
+
+	.mwai-blocks {
+		display: flex;
+		flex-direction: column;
+		padding: var(--mwai-spacing);
+	}
+
 	.mwai-conversation {
 		display: flex;
 		flex-direction: column;

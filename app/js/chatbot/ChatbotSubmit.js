@@ -1,5 +1,5 @@
-// Previous: 2.4.5
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 2.4.9
 
 import { useChatbotContext } from "./ChatbotContext";
 
@@ -10,7 +10,7 @@ const ChatbotSubmit = () => {
   const { state, actions } = useChatbotContext();
   const { onClear, onSubmitAction, setIsListening } = actions;
   const { textClear, textSend, uploadedFile, inputText, messages,
-    isListening, timeElapsed, busy, submitButtonConf } = state;
+    isListening, timeElapsed, busy, submitButtonConf, locked } = state;
 
   const isFileUploading = !!uploadedFile?.uploadProgress;
   const hasFileUploaded = !!uploadedFile?.uploadedId;
@@ -49,7 +49,7 @@ const ChatbotSubmit = () => {
   }, [busy, onSubmitClick]);
 
   return (
-    <button className={buttonClassName} disabled={busy || isFileUploading} onClick={handleClick}>
+    <button className={buttonClassName} disabled={busy || isFileUploading || locked} onClick={handleClick}>
       {buttonContent}
     </button>
   );

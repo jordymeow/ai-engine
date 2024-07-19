@@ -124,6 +124,7 @@ class Meow_MWAI_Modules_Chatbot {
 		];
 		$actions = apply_filters( 'mwai_chatbot_actions', $actions, $filterParams );
 		$blocks = apply_filters( 'mwai_chatbot_blocks', [], $filterParams );
+		$shortcuts = apply_filters( 'mwai_chatbot_shortcuts', [], $filterParams );
 		$actions = $this->sanitize_actions( $actions );
 		$blocks = $this->sanitize_blocks( $blocks );
 		return [
@@ -131,6 +132,7 @@ class Meow_MWAI_Modules_Chatbot {
 			'reply' => $reply,
 			'images' => $images,
 			'actions' => $actions,
+			'shortcuts' => $shortcuts,
 			'blocks' => $blocks,
 			'usage' => $usage
 		];
@@ -172,7 +174,7 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( isset( $supported_types[$item['type']] ) ) {
 				$is_valid = true;
 				foreach ( $supported_types[$item['type']] as $param ) {
-					if ( empty( $item[$param] ) ) {
+					if ( empty( $item['data'][$param] ) ) {
 						$is_valid = false;
 						$this->core->log( "⚠️ Missing required parameter '{$param}' for {$type_name} type: {$item['type']}." );
 						break;
@@ -186,25 +188,30 @@ class Meow_MWAI_Modules_Chatbot {
 				$this->core->log( "⚠️ Unsupported {$type_name} type: {$item['type']}." );
 			}
 		}
-	
 		return $sanitized_items;
-	}
+	}	
 	
 	public function sanitize_actions( $actions ) {
 		$supported_action_types = [
 			'function' => ['name', 'args'],
 			'javascript' => ['snippet'],
-			'reply-shortcut' => ['label', 'content'],
 		];
 		return $this->sanitize_items( $actions, $supported_action_types, 'action' );
 	}
 	
 	public function sanitize_blocks( $blocks ) {
 		$supported_block_types = [
-			'html' => ['content'],
+			'content' => ['html'],
 		];
 		return $this->sanitize_items( $blocks, $supported_block_types, 'block' );
 	}	
+
+	public function sanitize_shortcuts( $shortcuts ) {
+		$supported_shortcut_types = [
+			'message' => ['label', 'message'],
+		];
+		return $this->sanitize_items( $shortcuts, $supported_shortcut_types, 'shortcut' );
+	}
 
 	public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false ) {
 		try {
@@ -226,7 +233,8 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			$textInputMaxLength = $chatbot['textInputMaxLength'] ?? null;
-			if ( $textInputMaxLength && strlen( $newMessage ) > (int)$textInputMaxLength ) {
+			if ( $textInputMaxLength && $this->core->safe_strlen( $newMessage ) > (int)$textInputMaxLength ) {
+				error_log( "AI Engine: The query was rejected - message was too long.");
 				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
 			
@@ -403,8 +411,10 @@ class Meow_MWAI_Modules_Chatbot {
 				foreach ( $reply->needClientActions as $action ) {
 					$actions[] = [
 						'type' => 'function',
-						'name' => $action['function']->name,
-						'args' => $action['arguments']
+						'data' => [
+							'name' => $action['function']->name,
+							'args' => $action['arguments']
+						]
 					];
 				}
 			}

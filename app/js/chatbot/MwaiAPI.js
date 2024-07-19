@@ -1,23 +1,18 @@
-// Previous: 2.0.5
-// Current: 2.0.7
+// Previous: 2.0.7
+// Current: 2.4.9
 
 class MwaiAPI {
-
   constructor() {
-    if (MwaiAPI.instance) {
-      return MwaiAPI.instance;
+    if (typeof window !== 'undefined' && window.MwaiAPI) {
+      return window.MwaiAPI;
     }
 
-    // Chatbot API: open(), close(), toggle(), clear(), setContext(chatId, messages)
     this.chatbots = [];
-    //this.discussions = [];
-
     this.filters = {};
     this.actions = {};
 
-    MwaiAPI.instance = this;
     if (typeof window !== 'undefined') {
-      window.MwaiAPI = MwaiAPI.instance;
+      window.MwaiAPI = this;
     }
   }
 
@@ -65,22 +60,34 @@ class MwaiAPI {
   }
 }
 
-const mwaiAPI = new MwaiAPI();
+// Ensure the class is only initialized once
+const getInstance = () => {
+  if (typeof window !== 'undefined' && window.MwaiAPI) {
+    return window.MwaiAPI;
+  }
+  const instance = new MwaiAPI();
+  if (typeof window !== 'undefined') {
+    window.MwaiAPI = instance;
+  }
+  return instance;
+};
+
+const mwaiAPI = getInstance();
 
 export const addFilter = (tag, callback, priority = 10) => {
   mwaiAPI.addFilter(tag, callback, priority);
 };
 
-export const applyFilters = (tag, value, args) => {
-  return mwaiAPI.applyFilters(tag, value, args);
+export const applyFilters = (tag, value, ...args) => {
+  return mwaiAPI.applyFilters(tag, value, ...args);
 };
 
 export const addAction = (tag, callback, priority = 10) => {
   mwaiAPI.addAction(tag, callback, priority);
 };
 
-export const doAction = (tag, args) => {
-  mwaiAPI.doAction(tag, args);
+export const doAction = (tag, ...args) => {
+  mwaiAPI.doAction(tag, ...args);
 };
 
 export { mwaiAPI };

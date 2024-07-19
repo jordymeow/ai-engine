@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.4.8
+Stable tag: 2.4.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.4.9 (2024/07/19) =
+* Add: Support for [GPT-4o mini](https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/). 
+* Add: Support for HTML Blocks and Shortcuts (Quick Actions) via MwaiAPI in JS and PHP filters.
+* Fix: Better handling of documents, annotations and images created via the OpenAI Assistants.
+* Fix: Better CSS for the buttons and the scroll in the chatbot.
+* Fix: The MwaiAPI was registering the chatbots twice, and now works in the admin as well.
+* Fix: Input Max Length was not handled properly in the chatbot (UTF-8 related).
 
 = 2.4.8 (2024/07/17) =
 * Add: A first implementation of actions and blocks for the chatbot. Actions in JS are also handled. Please note that documentation will come later, this is for internal testing for now.
