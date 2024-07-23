@@ -78,6 +78,16 @@
 		display: flex;
 		flex-direction: column;
 		padding: var(--mwai-spacing);
+
+		.mwai-block {
+			p:first-child {
+				margin-top: 0;
+			}
+		}
+
+		button {
+			cursor: pointer;
+		}
 	}
 
 	.mwai-conversation {
@@ -488,7 +498,7 @@
 		top: 5px;
 
 		.mwai-copy-button {
-			zoom: 0.8;
+			padding-top: 4px;
 
 			&:hover {
 				fill: var(--mwai-backgroundPrimaryColor);
@@ -500,24 +510,24 @@
 
 // Mobile
 .mwai-messages-theme {
+
 	@media (max-width: 760px) {
-		.mwai-chat {
-			&.mwai-window {
-				width: calc(100% - 40px);
-				z-index: 9999999999;
+
+		&.mwai-window {
+			width: calc(100% - 40px);
+			z-index: 9999999999;
+		}
+
+		.mwai-input {
+			flex-direction: column;
+
+			.mwai-input-text {
+				width: 100%;
 			}
 
-			.mwai-input {
-				flex-direction: column;
-
-				.mwai-input-text {
-					width: 100%;
-					margin-bottom: 10px;
-				}
-
-				button {
-					width: 100%;
-				}
+			.mwai-input-submit {
+				width: 100%;
+				margin: 15px 0 0 0;
 			}
 		}
 	}

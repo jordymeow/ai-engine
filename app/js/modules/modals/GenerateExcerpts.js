@@ -1,5 +1,5 @@
-// Previous: 1.6.76
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 2.5.0
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -22,13 +22,12 @@ const GenerateExcerptsModal = (props) => {
     if (post) {
       fetchExcerpts(post);
     }
-  }, [post])
-
+  }, [post]);
 
   const fetchExcerpts = async ({ postId }) => {
     setBusy(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, {
         method: 'POST',
         nonce: restNonce,
         json: { action: 'suggestExcerpts', data: { postId } }
@@ -40,7 +39,7 @@ const GenerateExcerptsModal = (props) => {
       setError(err.message);
     }
     setBusy(false);
-  }
+  };
 
   const onClick = async (title) => {
     setBusy(true);
@@ -52,14 +51,14 @@ const GenerateExcerptsModal = (props) => {
       setError(e.message);
     }
     setBusy(false);
-  }
+  };
 
   const cleanClose = async () => {
     onClose();
     setExcerpts([]);
     setError();
     setBusy(false);
-  }
+  };
 
   const content = useMemo(() => {
     if (busy) {
@@ -72,8 +71,8 @@ const GenerateExcerptsModal = (props) => {
       return (<>
         Pick a new excerpt by clicking on it.
         <ResultsContainer>
-          {excerpts.map(x => 
-            <Result key={x} onClick={() => { onClick(x) }}>{x}</Result>
+          {excerpts.map(x =>
+            <Result key={x} onClick={() => { onClick(x); }}>{x}</Result>
           )}
         </ResultsContainer>
       </>);

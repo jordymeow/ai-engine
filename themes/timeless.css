@@ -94,6 +94,22 @@
   border: 1px solid #2196f3;
 }
 
+.mwai-timeless-theme .mwai-blocks {
+  display: flex;
+  flex-direction: column;
+  padding: var(--mwai-spacing);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.15);
+  background: var(--mwai-backgroundAiColor);
+}
+
+.mwai-timeless-theme .mwai-blocks .mwai-block p:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme .mwai-blocks button {
+  cursor: pointer;
+}
+
 .mwai-timeless-theme .mwai-conversation {
   display: flex;
   flex-direction: column;
@@ -265,8 +281,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  border-top: 0.5px solid var(--mwai-backgroundAiSecondaryColor);
-  border-bottom: 0.5px solid var(--mwai-backgroundAiSecondaryColor);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.15);
   padding: calc(var(--mwai-spacing) / 2) var(--mwai-spacing);
   position: relative;
 }
@@ -300,15 +315,12 @@
   margin: 0;
   overflow: hidden;
   min-height: inherit;
-}
-
-.mwai-timeless-theme .mwai-input .mwai-input-text textarea:focus {
-  outline: none;
   box-shadow: none;
+  outline: none;
 }
 
 .mwai-timeless-theme .mwai-input .mwai-input-text textarea::placeholder {
-  color: var(--mwai-backgroundAiSecondaryColor);
+  color: rgba(0, 0, 0, 0.25);
 }
 
 .mwai-timeless-theme .mwai-input .mwai-input-text .mwai-microphone {
@@ -366,17 +378,19 @@
 
 .mwai-timeless-theme .mwai-input button[disabled] {
   cursor: not-allowed;
-  filter: saturate(25%);
-  opacity: 0.5;
+  filter: saturate(0%);
 }
 
 .mwai-timeless-theme .mwai-footer {
   display: flex;
   align-items: center;
+  border-top: 0.5px solid rgba(0, 0, 0, 0.15);
+  padding: calc(var(--mwai-spacing) / 2) var(--mwai-spacing);
 }
 
 .mwai-timeless-theme .mwai-footer .mwai-tools {
   margin-right: calc(var(--mwai-spacing) / 2);
+  height: 38px;
 }
 
 .mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload {
@@ -392,6 +406,8 @@
   height: 32px;
   margin-top: calc(var(--mwai-spacing) / 2);
   z-index: 100;
+  transform: scale(0.8);
+  transform-origin: 0 0;
 }
 
 .mwai-timeless-theme .mwai-footer .mwai-tools .mwai-file-upload-icon.mwai-idle-add {
@@ -448,7 +464,7 @@
   line-height: 11px;
   color: var(--mwai-fontColor);
   text-align: left;
-  padding: var(--mwai-spacing) calc(var(--mwai-spacing) / 2);
+  padding: calc(var(--mwai-spacing) / 2) 0;
 }
 
 .mwai-timeless-theme .mwai-gallery {
@@ -467,6 +483,7 @@
 
 .mwai-timeless-theme.mwai-window .mwai-input-submit {
   margin-right: -36px;
+  margin-left: 0px;
 }
 
 @media (max-width: 760px) {
@@ -478,6 +495,150 @@
 
 .mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-input-submit {
   margin-right: inherit;
+}
+
+.mwai-timeless-theme.mwai-form-container {
+  padding: var(--mwai-spacing);
+  font-size: var(--mwai-fontSize);
+  color: var(--mwai-fontColor);
+  background: var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+}
+
+.mwai-timeless-theme.mwai-form-container fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.mwai-timeless-theme.mwai-form-container fieldset input[type="text"], .mwai-timeless-theme.mwai-form-container fieldset input[type="email"], .mwai-timeless-theme.mwai-form-container fieldset input[type="tel"], .mwai-timeless-theme.mwai-form-container fieldset input[type="url"], .mwai-timeless-theme.mwai-form-container fieldset input[type="password"], .mwai-timeless-theme.mwai-form-container fieldset input[type="number"], .mwai-timeless-theme.mwai-form-container fieldset input[type="date"], .mwai-timeless-theme.mwai-form-container fieldset input[type="datetime"], .mwai-timeless-theme.mwai-form-container fieldset input[type="datetime-local"], .mwai-timeless-theme.mwai-form-container fieldset input[type="month"], .mwai-timeless-theme.mwai-form-container fieldset input[type="search"], .mwai-timeless-theme.mwai-form-container fieldset input[type="time"], .mwai-timeless-theme.mwai-form-container fieldset input[type="week"], .mwai-timeless-theme.mwai-form-container fieldset select, .mwai-timeless-theme.mwai-form-container fieldset textarea {
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  border: 0;
+  width: 100%;
+  border-radius: var(--mwai-borderRadius);
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundAiColor) !important;
+  color: var(--mwai-fontColor);
+}
+
+.mwai-timeless-theme.mwai-form-container fieldset select {
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  border: 0;
+  width: 100%;
+  border-radius: var(--mwai-borderRadius);
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+}
+
+.mwai-timeless-theme.mwai-form-container fieldset textarea {
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  border: 0;
+  width: 100%;
+  border-radius: var(--mwai-borderRadius);
+  font-family: inherit;
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+}
+
+.mwai-timeless-theme.mwai-form-container fieldset input[disabled], .mwai-timeless-theme.mwai-form-container fieldset select[disabled], .mwai-timeless-theme.mwai-form-container fieldset textarea[disabled] {
+  opacity: 0.25;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button {
+  height: 45px;
+  background: none;
+  width: 100%;
+  color: white;
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundUserColor);
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  position: relative;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button:hover {
+  filter: brightness(1.2);
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button[disabled] span {
+  opacity: 0.25;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button[disabled]:hover {
+  filter: brightness(1);
+  cursor: not-allowed;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit.mwai-loading button span {
+  opacity: 0;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit.mwai-loading button::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 3px solid transparent;
+  border-top-color: white;
+  border-radius: 50%;
+  animation: mwai-button-spinner 1s ease infinite;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output {
+  font-size: var(--mwai-fontSize);
+  position: relative;
+  margin-top: var(--mwai-spacing);
+  padding: var(--mwai-spacing);
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output.mwai-error {
+  background: var(--mwai-errorBackgroundColor);
+  color: var(--mwai-errorFontColor);
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output > * {
+  color: var(--mwai-fontColor) !important;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output > *:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output > *:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output img {
+  max-width: 33%;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output div > *:first-child {
+  margin-top: 0;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container .mwai-form-output div > *:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-timeless-theme.mwai-form-container .mwai-form-output-container.mwai-has-content {
+  display: block;
+}
+
+.mwai-timeless-theme.mwai-form-container .wp-block-columns {
+  margin: 0;
 }
 
 .mwai-timeless-theme.mwai-discussions {
@@ -907,7 +1068,6 @@
     width: 100%;
   }
   .mwai-timeless-theme.mwai-window.mwai-open .mwai-input .mwai-input-text {
-    margin-bottom: var(--mwai-spacing);
     width: 100%;
   }
   .mwai-timeless-theme.mwai-window.mwai-open .mwai-input .mwai-input-text input, .mwai-timeless-theme.mwai-window.mwai-open .mwai-input .mwai-input-text textarea {
@@ -1032,6 +1192,7 @@
   z-index: 100;
   background: var(--mwai-backgroundPrimaryColor);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+  z-index: 100;
 }
 
 .mwai-timeless-theme .mwai-reply-actions .mwai-copy-button {
@@ -1057,7 +1218,7 @@
 }
 
 .mwai-timeless-theme .mwai-reply-actions .mwai-copy-button {
-  zoom: 0.8;
+  padding-top: 4px;
 }
 
 .mwai-timeless-theme .mwai-reply-actions .mwai-copy-button:hover {
@@ -1066,18 +1227,26 @@
 }
 
 @media (max-width: 760px) {
-  .mwai-timeless-theme .mwai-chat.mwai-window {
+  .mwai-timeless-theme.mwai-window {
     width: calc(100% - 40px);
     z-index: 9999999999;
   }
-  .mwai-timeless-theme .mwai-chat .mwai-input {
+  .mwai-timeless-theme .mwai-input {
     flex-direction: column;
   }
-  .mwai-timeless-theme .mwai-chat .mwai-input .mwai-input-text {
+  .mwai-timeless-theme .mwai-input .mwai-input-text {
     width: 100%;
     margin-bottom: 10px;
   }
-  .mwai-timeless-theme .mwai-chat .mwai-input button {
+  .mwai-timeless-theme .mwai-input .mwai-input-submit {
     width: 100%;
+    border-radius: var(--mwai-borderRadius);
+    margin-left: 0;
+    height: 24px;
+    min-height: 36px;
+  }
+  .mwai-timeless-theme .mwai-input .mwai-input-submit img {
+    width: 16px;
+    height: 16px;
   }
 }

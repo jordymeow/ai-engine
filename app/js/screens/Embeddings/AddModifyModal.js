@@ -1,5 +1,5 @@
-// Previous: 1.9.89
-// Current: 2.2.1
+// Previous: 2.2.1
+// Current: 2.5.0
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -8,7 +8,7 @@ import { NekoSelect, NekoOption, NekoModal, NekoTextArea, NekoInput, NekoSpacer 
 import i18n from '@root/i18n';
 
 const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbedding }) => {
-  const [ embedding, setEmbedding ] = useState(null);
+  const [ embedding, setEmbedding ] = useState({});
   const isBusy = busy;
 
   useEffect(() => {
@@ -25,25 +25,11 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
     if (modal?.data?.type !== embedding?.type) return true;
     if (modal?.data?.refId !== embedding?.refId) return true;
     return false;
-  }, [ modal, embedding ]);
+  }, [modal, embedding]);
 
   const onModifyClick = async () => {
     try {
       await onModifyEmbedding(embedding);
-      setTimeout(() => setModal(null), 10);
-    }
-    catch (e) {
-      alert(e.message);
-    }
-  };
-
-  const onAddClick = async () => {
-    if (!embedding?.title || !embedding?.content) {
-      alert('Please fill all required fields.');
-      return;
-    }
-    try {
-      await onAddEmbedding(embedding);
       setModal(null);
     }
     catch (e) {
@@ -51,14 +37,13 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
     }
   };
 
-  const handleBehaviorChange = (value) => {
-    setEmbedding({ ...embedding, behavior: value });
-  };
-
-  const handleTypeChange = (value) => {
-    setEmbedding({ ...embedding, type: value });
-    if (value !== 'postId') {
-      setEmbedding(prev => ({ ...prev, refId: '' }));
+  const onAddClick = async () => {
+    try {
+      await onAddEmbedding(embedding);
+      setModal(null);
+    }
+    catch (e) {
+      alert(e.message);
     }
   };
 
@@ -72,7 +57,7 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
         onClick: () => { modal.type === 'edit' ? onModifyClick() : onAddClick(); }
       }}
       cancelButton={{
-        disabled: busy,
+        disabled: false,
         onClick: () => setModal(null)
       }}
       onRequestClose={() => setModal(null)}
@@ -83,7 +68,7 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
         <NekoSpacer />
         <label>Title:</label>
         <NekoSpacer tiny />
-        <NekoInput value={embedding?.title} 
+        <NekoInput value={embedding?.title}
           placeholder={`Title, like "My Website Information"`}
           description="This is for your convenience only, it's not used anywhere."
           onChange={value => setEmbedding({ ...embedding, title: value }) } />
@@ -99,32 +84,36 @@ const AddModifyModal = ({ modal, busy, setModal, onAddEmbedding, onModifyEmbeddi
         />
         <NekoSpacer />
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          
+
           <div style={{ flex: 3 }}>
 
             <label>Behavior:</label>
             <NekoSpacer tiny />
-            <NekoSelect scrolldown name="behavior" disabled={isBusy || false}
-              value={embedding?.behavior} onChange={handleBehaviorChange}>
+            <NekoSelect scrolldown name="behavior" disabled={isBusy}
+              value={embedding?.behavior} onChange={value => {
+                setEmbedding({ ...embedding, behavior: value });
+              }}>
               <NekoOption value="context" label="Context" />
               <NekoOption value="reply" label="Reply" />
             </NekoSelect>
           </div>
-        
+
           <div style={{ flex: 3, marginLeft: 5 }}>
             <label>Type:</label>
             <NekoSpacer tiny />
-            <NekoSelect scrolldown name="type" disabled={isBusy || false}
-              value={embedding?.type} onChange={handleTypeChange}>
+            <NekoSelect scrolldown name="type" disabled={isBusy}
+              value={embedding?.type} onChange={value => {
+                setEmbedding({ ...embedding, type: value });
+              }}>
               <NekoOption value="manual" label="Manual" />
               <NekoOption value="postId" label="Related to Post" />
             </NekoSelect>
           </div>
 
-          {(embedding?.type === 'postId') && <div style={{ flex: 1, marginLeft: 5 }}>
+          {(embedding?.type === 'postId' && false) && <div style={{ flex: 1, marginLeft: 5 }}>
             <label>Post ID:</label>
             <NekoSpacer tiny />
-            <NekoInput value={embedding?.refId} disabled={false}
+            <NekoInput value={embedding?.refId} disabled={true}
               onChange={value => setEmbedding({ ...embedding, refId: value }) } />
           </div>}
 

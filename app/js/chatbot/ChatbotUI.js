@@ -1,10 +1,11 @@
-// Previous: 2.4.7
-// Current: 2.4.9
+// Previous: 2.4.9
+// Current: 2.5.0
 
-const { useState, useMemo, useLayoutEffect, useEffect, useRef } = wp.element;
+// React & Vendor Libs
+const { useState, useMemo, useLayoutEffect, useCallback, useEffect, useRef } = wp.element;
 
 import Markdown from 'markdown-to-jsx';
-import { TransitionBlock, useClasses } from '@app/chatbot/helpers';
+import { TransitionBlock, useClasses, useViewport } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import ChatbotReply from './ChatbotReply';
 import ChatbotInput from './ChatbotInput';
@@ -23,51 +24,99 @@ const markdownOptions = {
   }
 };
 
+const isImage = (file) => file.type.startsWith('image/');
+const isDocument = (file) => {
+  const allowedDocumentTypes = [
+    'text/x-c', 'text/x-csharp', 'text/x-c++', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/html', 'text/x-java', 'application/json', 'text/markdown',
+    'application/pdf', 'text/x-php', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/x-python', 'text/x-script.python', 'text/x-ruby', 'text/x-tex',
+    'text/plain', 'text/css', 'text/javascript', 'application/x-sh',
+    'application/typescript'
+  ];
+  return allowedDocumentTypes.includes(file.type);
+};
+
 const ChatbotUI = (props) => {
   const css = useClasses();
   const { style } = props;
   const [ autoScroll, setAutoScroll ] = useState(true);
   const { state, actions } = useChatbotContext();
   const { theme, botId, customId, messages, textCompliance, isWindow, fullscreen, iconPosition, iconBubble,
-    shortcuts, blocks,
+    shortcuts, blocks, imageUpload, fileSearch, draggingType, isBlocked,
     windowed, cssVariables, error, conversationRef, open, busy, uploadIconPosition } = state;
-  const { resetError, onSubmit } = actions;
+  const { resetError, onSubmit, setIsBlocked, setDraggingType, onUploadFile } = actions;
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
+  const needTools = imageUpload || fileSearch;
+  const needsFooter = needTools || textCompliance;
+  const timeoutRef = useRef(null);
+  const isFullscreen = useMemo(() => !windowed || (!isWindow && fullscreen), [windowed, isWindow, fullscreen]);
+
+  // #region Attempt to fix Android & iOS Virtual Keyboard
+  const { viewportHeight, isIOS, isAndroid } = useViewport();
+  useEffect(() => {
+    if (!(isIOS || isAndroid) || !(isWindow && fullscreen)) {
+      return;
+    }
+    const scrollableDiv = document.querySelector('.mwai-window');
+    if (scrollableDiv) {
+      scrollableDiv.style.height = `${viewportHeight}px`;
+      if (isIOS) {
+        const scrollToTop = () => {
+          if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+            window.scrollTo({ top: 0 });
+            // Unfortunately, the first scrollTo doesn't always work, so we need to do it again.
+            const scrollInterval = setInterval(() => {
+              window.scrollTo({ top: 0 });
+            }, 100);
+            setTimeout(() => {
+              clearInterval(scrollInterval);
+            }, 1000);
+          }
+        };
+        scrollToTop();
+      }
+    }
+  }, [fullscreen, isAndroid, isFullscreen, isIOS, isWindow, viewportHeight]);
+  // #endregion
 
   const baseClasses = css('mwai-chatbot', {
     [`mwai-${theme?.themeId}-theme`]: true,
     'mwai-window': isWindow,
     'mwai-bubble': iconBubble,
     'mwai-open': open,
-    'mwai-fullscreen': !windowed || (!isWindow && fullscreen),
+    'mwai-fullscreen': isFullscreen,
     'mwai-bottom-left': iconPosition === 'bottom-left',
     'mwai-top-right': iconPosition === 'top-right',
     'mwai-top-left': iconPosition === 'top-left',
   });
 
+  // #region Auto Scroll
   useLayoutEffect(() => {
     if (autoScroll && conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
-  }, [messages, autoScroll, conversationRef, busy, error]);
+  }, [messages, autoScroll, conversationRef, busy]);
 
   const onScroll = () => {
     if (conversationRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
-      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 1;
+      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 1; // Allowing a small margin
       setAutoScroll(isAtBottom);
     }
   };
-
+  // #endregion
+  // eslint-disable-next-line no-undef
   const executedScripts = useRef(new Set());
 
   const simpleHash = (str) => {
     let hash = 0, i, chr;
-    if (!str || str.length === 0) return hash;
+    if (str.length === 0) return hash;
     for (i = 0; i < str.length; i++) {
       chr = str.charCodeAt(i);
       hash = ((hash << 5) - hash) + chr;
-      hash |= 0;
+      hash |= 0; // Convert to 32bit integer
     }
     return hash;
   };
@@ -79,8 +128,7 @@ const ChatbotUI = (props) => {
       script.type = 'text/javascript';
       script.textContent = scriptContent;
       document.body.appendChild(script);
-      // Forget to mark as executed to simulate re-execution
-      // executedScripts.current.add(scriptHash);
+      executedScripts.current.add(scriptHash);
     }
   };
 
@@ -148,6 +196,68 @@ const ChatbotUI = (props) => {
     </div>;
   }, [css, blocks]);
 
+  const handleDrag = useCallback((event, dragState) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer.items[0];
+
+    if (dragState) {
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      if (imageUpload && isImage(file)) {
+        setDraggingType('image');
+        setIsBlocked(false);
+      }
+      else if (fileSearch && isDocument(file)) {
+        setDraggingType('document');
+        setIsBlocked(false);
+      }
+      else {
+        setDraggingType(false);
+        setIsBlocked(true);
+      }
+    }
+    else {
+      // Set a timeout before changing the state
+      if (!timeoutRef.current) {
+        timeoutRef.current = setTimeout(() => {
+          setDraggingType(false);
+          setIsBlocked(true);
+          timeoutRef.current = null;
+        }, 100); // Adjust this delay as needed
+      }
+    }
+  }, [imageUpload, fileSearch]);
+
+  const handleDrop = useCallback((event) => {
+    event.preventDefault();
+    handleDrag(event, false);
+    if (busy) return;
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      if (draggingType === 'image' && imageUpload) {
+        onUploadFile(file);
+      }
+      else if (draggingType === 'document' && fileSearch) {
+        onUploadFile(file);
+      }
+      else {
+        // Indicate that the drop is not valid
+        setIsBlocked(true);
+        setTimeout(() => setIsBlocked(false), 2000); // Reset after 2 seconds
+      }
+    }
+  }, [busy, draggingType, imageUpload, fileSearch, onUploadFile]);
+
+  const inputClassNames = css('mwai-input', {
+    'mwai-dragging': draggingType,
+    'mwai-blocked': isBlocked,
+  });
+
   return (
     <TransitionBlock id={`mwai-chatbot-${customId || botId}`}
       className={baseClasses} style={{ ...cssVariables, ...style }}
@@ -170,22 +280,22 @@ const ChatbotUI = (props) => {
 
         {jsxBlocks}
 
-        <div className="mwai-input">
+        <div className={inputClassNames} onDrop={handleDrop}
+          onDragEnter={(event) => handleDrag(event, true)}
+          onDragLeave={(event) => handleDrag(event, false)}
+          onDragOver={(event) => handleDrag(event, true)}>
           <ChatbotInput />
           <ChatbotSubmit />
         </div>
 
-        <div className="mwai-footer">
-
-          <div className="mwai-tools">
+        {needsFooter && <div className="mwai-footer">
+          {needTools && <div className="mwai-tools">
             {uploadIconPosition === 'mwai-tools' && <ChatUploadIcon />}
-          </div>
-
-          {textCompliance && (
-            <div className='mwai-compliance' dangerouslySetInnerHTML={{ __html: textCompliance }} />
+          </div>}
+          {textCompliance && (<div className='mwai-compliance'
+            dangerouslySetInnerHTML={{ __html: textCompliance }} />
           )}
-
-        </div>
+        </div>}
 
       </div>
 

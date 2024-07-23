@@ -1,5 +1,5 @@
-// Previous: 2.4.1
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.5.0
 
 // React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
@@ -94,15 +94,13 @@ const Assistants = ({ options, refreshOptions }) => {
   const [ errorModal, setErrorModal ] = useState(null);
   const [ busyAction, setBusyAction ] = useState(false);
   const [ envId, setEnvId ] = useState(options?.ai_envs?.[0]?.id);
-  const environments = options?.ai_envs || [];
-  const [ modelFilter, setModelFilter ] = useState('all');
+  const environments = useMemo(() => options?.ai_envs || [], [options]);
   const [ section, setSection ] = useState('assistants');
   const [ selectedIds, setSelectedIds ] = useState([]);
   const { colors } = useNekoColors();
 
   const environment = useMemo(() => environments.find(x => x.id === envId), [envId, environments]);
-  const deletedAssistants = environment?.assistants_deleted || [];
-  const allAssistants = environment?.assistants || [];
+  const allAssistants = useMemo(() => environment?.assistants || [], [environment]);
 
   const [ filesQueryParams, setFilesQueryParams ] = useState({
     userId: null,
@@ -127,7 +125,7 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [envId]);
 
   useEffect(() => {
-    setFilesQueryParams(prev => ({ ...prev, envId }));
+    setFilesQueryParams({ ...filesQueryParams, envId });
   }, [envId]);
 
   const { isFetching: isBusyFiles, data: dataFiles } = useQuery({
@@ -176,7 +174,7 @@ const Assistants = ({ options, refreshOptions }) => {
     setBusyAction(true);
     try {
       await deleteFiles(fileIds);
-      await queryClient.invalidateQueries(['assistants-files']);
+      await queryClient.invalidateQueries('assistants-files');
       setSelectedIds([]);
     }
     catch (err) {
@@ -186,7 +184,8 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    return dataFiles?.files.map(file => ({
+    if (!dataFiles || !dataFiles.files) return [];
+    return dataFiles.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
@@ -198,10 +197,10 @@ const Assistants = ({ options, refreshOptions }) => {
         </NekoButton>
       </>
     }));
-  }, [dataFiles, busy]);
+  }, [dataFiles]);
 
   const fileTotal = useMemo(() => {
-    return dataFiles?.total || 0;
+    return dataFiles?.total ?? 0;
   }, [dataFiles]);
 
   const onRefreshAssistants = async () => {
@@ -212,18 +211,11 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const onRefreshFiles = async () => {
-    await queryClient.invalidateQueries(['assistants-files']);
+    await queryClient.invalidateQueries('assistants-files');
   };
 
-  const isDeleted = (assistant) => deletedAssistants.includes(assistant.id);
-
   const assistantRows = useMemo(() => {
-    let filteredAssistants = allAssistants;
-    if (modelFilter === 'deleted') {
-      filteredAssistants = filteredAssistants.filter(isDeleted);
-    }
-
-    return filteredAssistants.map(assistant => ({
+    return allAssistants.map(assistant => ({
       ...assistant,
       name: <div style={{ display: 'flex', flexDirection: 'column' }}>
         <span>{assistant.name}</span>
@@ -258,7 +250,7 @@ const Assistants = ({ options, refreshOptions }) => {
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [modelFilter, deletedAssistants, allAssistants]);
+  }, [allAssistants, colors.gray, colors.green]);
 
   const busy = busyAction;
 
@@ -272,7 +264,7 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
+          total={fileTotal} onClick={page => { setFilesQueryParams({ ...filesQueryParams, page }); }}
         />
       </div>
     </div>);
@@ -314,8 +306,8 @@ const Assistants = ({ options, refreshOptions }) => {
           <NekoTable busy={isBusyFiles || busy}
             data={fileRows} columns={fileColumns}
             selectedItems={selectedIds}
-            onSelect={ids => { setSelectedIds(prev => [ ...prev, ...ids ]); }}
-            onUnselect={ids => { setSelectedIds(prev => [ ...prev.filter(x => !ids.includes(x)) ]); }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
             emptyMessage={i18n.NO_FILES_YET}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>

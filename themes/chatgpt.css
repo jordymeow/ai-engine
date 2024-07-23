@@ -69,6 +69,14 @@
   padding: var(--mwai-spacing);
 }
 
+.mwai-chatgpt-theme .mwai-blocks .mwai-block p:first-child {
+  margin-top: 0;
+}
+
+.mwai-chatgpt-theme .mwai-blocks button {
+  cursor: pointer;
+}
+
 .mwai-chatgpt-theme .mwai-conversation {
   overflow: auto;
 }
@@ -465,6 +473,146 @@
   border-top-color: var(--mwai-fontColor);
   border-radius: 50%;
   animation: mwai-button-spinner 1s ease infinite;
+}
+
+.mwai-chatgpt-theme.mwai-form-container {
+  padding: var(--mwai-spacing);
+  font-size: var(--mwai-fontSize);
+  color: var(--mwai-fontColor);
+  background: var(--mwai-backgroundSecondaryColor);
+  border-radius: var(--mwai-borderRadius);
+}
+
+.mwai-chatgpt-theme.mwai-form-container fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.mwai-chatgpt-theme.mwai-form-container fieldset input[type="text"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="email"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="tel"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="url"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="password"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="number"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="date"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="datetime"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="datetime-local"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="month"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="search"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="time"], .mwai-chatgpt-theme.mwai-form-container fieldset input[type="week"], .mwai-chatgpt-theme.mwai-form-container fieldset select, .mwai-chatgpt-theme.mwai-form-container fieldset textarea {
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  border: 0;
+  width: 100%;
+  border-radius: var(--mwai-borderRadius);
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+}
+
+.mwai-chatgpt-theme.mwai-form-container fieldset select {
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  border: 0;
+  width: 100%;
+  border-radius: var(--mwai-borderRadius);
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+}
+
+.mwai-chatgpt-theme.mwai-form-container fieldset textarea {
+  padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+  border: 0;
+  width: 100%;
+  border-radius: var(--mwai-borderRadius);
+  font-family: inherit;
+  font-size: var(--mwai-fontSize);
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+}
+
+.mwai-chatgpt-theme.mwai-form-container fieldset input[disabled], .mwai-chatgpt-theme.mwai-form-container fieldset select[disabled], .mwai-chatgpt-theme.mwai-form-container fieldset textarea[disabled] {
+  opacity: 0.25;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button {
+  height: 45px;
+  background: none;
+  width: 100%;
+  color: var(--mwai-fontColor);
+  font-size: var(--mwai-fontSize);
+  background-color: var(--mwai-backgroundSecondaryColor);
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  position: relative;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button:hover {
+  background: var(--mwai-backgroundPrimaryColor);
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button[disabled] span {
+  opacity: 0.25;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button[disabled]:hover {
+  background: none;
+  cursor: not-allowed;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit.mwai-loading button span {
+  opacity: 0;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit.mwai-loading button::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 3px solid transparent;
+  border-top-color: var(--mwai-fontColor);
+  border-radius: 50%;
+  animation: mwai-button-spinner 1s ease infinite;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output {
+  font-size: var(--mwai-fontSize);
+  position: relative;
+  margin-top: var(--mwai-spacing);
+  padding: var(--mwai-spacing);
+  border: 1px solid var(--mwai-backgroundPrimaryColor);
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output.mwai-error {
+  background: var(--mwai-errorBackgroundColor);
+  color: var(--mwai-errorFontColor);
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output > *:first-child {
+  margin-top: 0;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output > *:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output img {
+  max-width: 33%;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output div > *:first-child {
+  margin-top: 0;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container .mwai-form-output div > *:last-child {
+  margin-bottom: 0;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-output-container.mwai-has-content {
+  display: block;
+}
+
+.mwai-chatgpt-theme.mwai-form-container .wp-block-columns {
+  margin: 0;
 }
 
 .mwai-chatgpt-theme.mwai-discussions {
@@ -888,7 +1036,6 @@
     width: 100%;
   }
   .mwai-chatgpt-theme.mwai-window.mwai-open .mwai-input .mwai-input-text {
-    margin-bottom: var(--mwai-spacing);
     width: 100%;
   }
   .mwai-chatgpt-theme.mwai-window.mwai-open .mwai-input .mwai-input-text input, .mwai-chatgpt-theme.mwai-window.mwai-open .mwai-input .mwai-input-text textarea {
@@ -1012,6 +1159,7 @@
   z-index: 100;
   background: var(--mwai-backgroundPrimaryColor);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+  z-index: 100;
 }
 
 .mwai-chatgpt-theme .mwai-reply-actions .mwai-copy-button {
@@ -1033,20 +1181,20 @@
 }
 
 @media (max-width: 760px) {
-  .mwai-chatgpt-theme .mwai-chat .mwai-input button {
+  .mwai-chatgpt-theme.mwai-window {
+    width: calc(100% - 40px);
+    z-index: 9999999999;
+  }
+  .mwai-chatgpt-theme .mwai-input {
+    flex-direction: column;
+  }
+  .mwai-chatgpt-theme .mwai-input .mwai-input-submit {
     margin: 15px 0 0 0;
     height: 40px;
     width: inherit;
   }
-  .mwai-chatgpt-theme .mwai-chat .mwai-name {
+  .mwai-chatgpt-theme .mwai-name {
     margin-right: 0;
     max-width: inherit;
-  }
-  .mwai-chatgpt-theme .mwai-chat.mwai-window {
-    width: calc(100% - 40px);
-    z-index: 9999999999;
-  }
-  .mwai-chatgpt-theme .mwai-chat .mwai-input {
-    flex-direction: column;
   }
 }

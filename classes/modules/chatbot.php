@@ -40,25 +40,11 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function register_scripts() {
-
 		// Load JS
 		$physical_file = trailingslashit( MWAI_PATH ) . 'app/chatbot.js';	
 		$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
 		wp_register_script( 'mwai_chatbot', trailingslashit( MWAI_URL )
 			. 'app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
-
-			// Load CSS for the Themes
-		$themes = $this->core->get_themes();
-		foreach ( $themes as $theme ) {
-			if ( $theme['type'] === 'internal' ) {
-				$themeId = $theme['themeId'];
-				$filename = $themeId . '.css';
-				$physical_file = trailingslashit( MWAI_PATH ) . 'themes/' . $filename;
-				$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
-				wp_register_style( 'mwai_chatbot_theme_' . $themeId, trailingslashit( MWAI_URL )
-					. 'themes/' . $filename, [], $cache_buster );
-			}
-		}
 
 		// Actual loading of the scripts
 		$hasSiteWideChat = $this->siteWideChatId && $this->siteWideChatId !== 'none';
@@ -72,18 +58,11 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	public function enqueue_scripts() {
-		// TODO: We should optimize and only load the themes that are used.
-		$themes = $this->core->get_themes();
-		foreach ( $themes as $theme ) {
-			if ( $theme['type'] === 'internal' ) {
-				$themeId = $theme['themeId'];
-				wp_enqueue_style( "mwai_chatbot_theme_$themeId" );
-			}
-		}
 		wp_enqueue_script( "mwai_chatbot" );
 		if ( $this->core->get_option( 'syntax_highlight' ) ) {
 			wp_enqueue_script( "mwai_highlight" );
 		}
+		$this->core->enqueue_themes();
 	}
 
 	public function rest_api_init() {
@@ -384,11 +363,11 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $stream ) { 
 				$streamCallback = function( $reply ) {
 					$raw = $reply;
-					$this->stream_push( [ 'type' => 'live', 'data' => $raw ] );
-					if (  ob_get_level() > 0 ) {
-						ob_flush();
-					}
-					flush();
+					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ] );
+					// if ( ob_get_level() > 0 ) {
+					// 	ob_flush();
+					// }
+					// flush();
 				};
 				header( 'Cache-Control: no-cache' );
 				header( 'Content-Type: text/event-stream' );
@@ -431,7 +410,7 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $stream ) {
 				$final_res = $this->build_final_res( $botId, $newMessage, $newFileId, $params,
 					$restRes['reply'], $restRes['images'], $restRes['actions'], $restRes['usage'] );
-				$this->stream_push( [ 'type' => 'end', 'data' => json_encode( $final_res ) ] );
+				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $final_res ) ] );
 				die();
 			}
 			else {
@@ -442,23 +421,13 @@ class Meow_MWAI_Modules_Chatbot {
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
 			if ( $stream ) { 
-				$this->stream_push( [ 'type' => 'error', 'data' => $message ] );
+				$this->core->stream_push( [ 'type' => 'error', 'data' => $message ] );
 				die();
 			}
 			else {
 				throw $e;
 			}
 		}
-	}
-
-	public function stream_push( $data ) {
-		$out = "data: " . json_encode( $data );
-		echo $out;
-		echo "\n\n";
-		if (ob_get_level() > 0) {
-			ob_end_flush();
-		}
-		flush();
 	}
 
 	public function inject_chat() {

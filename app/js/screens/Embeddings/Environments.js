@@ -1,11 +1,11 @@
-// Previous: 2.2.4
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.5.0
 
-const { useMemo, useState, useEffect } = wp.element;
+const { useMemo } = wp.element;
 
-import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoSpacer,
+import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput,
   NekoCollapsableCategories, NekoCollapsableCategory, NekoCheckbox,
-  NekoSelect, NekoOption, NekoMessage } from '@neko-ui';
+  NekoSelect, NekoOption } from '@neko-ui';
 import i18n from '@root/i18n';
 import { useModels, toHTML } from '@app/helpers-admin';
 
@@ -23,7 +23,7 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
           onFinalChange={value => updateEnvironment(env.id, { name: value })}
         />
       </NekoSettings>
-      
+
       <NekoSettings title={i18n.COMMON.TYPE}>
         <NekoSelect scrolldown name="type" value={env.type}
           description={env.type === 'qdrant' ? toHTML(i18n.HELP.QDRANT) : null}
@@ -32,17 +32,17 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
           <NekoOption value="qdrant" label="Qdrant" />
         </NekoSelect>
       </NekoSettings>
-      
+
       <NekoSettings title={i18n.COMMON.API_KEY}>
         <NekoInput  name="apikey" value={env.apikey}
           description={toHTML(env.type === 'pinecone' ? i18n.COMMON.PINECONE_APIKEY_HELP :
             i18n.COMMON.QDRANT_APIKEY_HELP)}
-          onFinalChange={value => updateEnvironment(env.id, { apikey: value })} 
+          onFinalChange={value => updateEnvironment(env.id, { apikey: value })}
         />
       </NekoSettings>
-      
+
       <NekoSettings title={i18n.COMMON.SERVER}>
-        <NekoInput name="server" value={env.server} 
+        <NekoInput name="server" value={env.server}
           description={toHTML(env.type === 'qdrant' ? i18n.COMMON.QDRANT_SERVER_HELP : i18n.COMMON.PINECONE_SERVER_HELP)}
           onFinalChange={value => updateEnvironment(env.id, { server: value })}
         />
@@ -93,7 +93,6 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
             </NekoSettings>
 
             {env?.ai_embeddings_override && <>
-
               <NekoSettings title={i18n.COMMON.ENVIRONMENT}>
                 <NekoSelect scrolldown name="ai_embeddings_env" value={env?.ai_embeddings_env}
                   onChange={value => updateEnvironment(env.id, { ai_embeddings_env: value })}>
@@ -104,7 +103,7 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
               </NekoSettings>
 
               <NekoSettings title={i18n.COMMON.MODEL}>
-                <NekoSelect scrolldown name="ai_embeddings_model" value={env.ai_embeddings_model}    
+                <NekoSelect scrolldown name="ai_embeddings_model" value={env.ai_embeddings_model}
                   onChange={value => updateEnvironment(env.id, { ai_embeddings_model: value })}>
                   {embeddingsModels.map((x) => (
                     <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
@@ -123,7 +122,6 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
                   <NekoOption key={null} value={null} label="Not Set"></NekoOption>
                 </NekoSelect>
               </NekoSettings>
-
             </>}
           </div>
         </NekoCollapsableCategory>
@@ -143,13 +141,11 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
 };
 
 function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updateOption, options, busy }) {
-  
-  const ai_envs = options?.ai_envs ? options?.ai_envs : [];
 
   const addNewEnvironment = () => {
     const newEnv = {
       name: 'New Environment',
-      type: 'pinecone', 
+      type: 'pinecone',
       apikey: '',
       server: '',
       indexes: [],
@@ -168,27 +164,11 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
     updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
-  const handleAddEnvironment = () => {
-    // This function has an intentional timing bug: setTimeout causes delayed state update.
-    setTimeout(() => {
-      const newEnv = {
-        name: 'New Environment',
-        type: 'pinecone', 
-        apikey: '',
-        server: '',
-        indexes: [],
-        namespaces: []
-      };
-      const updatedEnvironments = [...environments, newEnv];
-      updateOption(updatedEnvironments, 'embeddings_envs');
-    }, 50);
-  };
-
   return (
     <div style={{ padding: '0px 10px 20px 10px', marginTop: -5 }}>
       <NekoTypo h2 style={{ color: 'white' }}>Environments for Embeddings</NekoTypo>
       <NekoTabs inversed keepTabOnReload={true} style={{ marginTop: -5 }} action={
-        <NekoButton rounded className="secondary" icon='plus' onClick={handleAddEnvironment} />}>
+        <NekoButton rounded className="secondary" icon='plus' onClick={addNewEnvironment} />}>
         {environments.map((env) => (
           <NekoTab key={env.id} title={env.name} busy={busy}>
             <EnvironmentDetails env={env} updateEnvironment={updateEnvironment}

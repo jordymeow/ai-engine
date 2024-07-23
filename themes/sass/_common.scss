@@ -471,7 +471,7 @@
 				}
 				
 				.mwai-input-text {
-					margin-bottom: var(--mwai-spacing);
+					//margin-bottom: var(--mwai-spacing);
 					width: 100%;
 
 					// This is to avoid iOS from zooming in when focusing on an input field.
@@ -731,6 +731,7 @@
 		z-index: 100;
 		background: var(--mwai-backgroundPrimaryColor);
 		box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+		z-index: 100;
 
 		.mwai-copy-button {
 			fill: var(--mwai-fontColor);

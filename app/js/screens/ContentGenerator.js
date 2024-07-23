@@ -1,10 +1,8 @@
-// Previous: 2.3.0
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.5.0
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
-// NekoUI
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoInput, NekoModal, NekoProgress,
   NekoQuickLinks, NekoLink, NekoCheckbox,
@@ -68,12 +66,9 @@ const ContentGenerator = () => {
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
-  const { completionModels, calculatePrice } = useModels(options, template?.envId ?? null);
-  const { addUsage, jsxUsageCosts } = UsageCosts(calculatePrice);
-  const aiEnvironments = options?.ai_envs || [];
-  const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
-    useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
+  const isBusy = bulkTasks.busy || busy || isLoadingPostTypes;
 
+  // Template Properties
   const title = template?.title ?? "";
   const sections = template?.sections ?? "";
   const mode = template?.mode ?? 'single';
@@ -93,6 +88,13 @@ const ContentGenerator = () => {
   const maxTokens = template?.maxTokens ?? 2048;
   const topicsAreTitles = template?.topicsAreTitles ?? false;
   const noSections = !sectionsPromptFormat || !sectionsCount;
+
+  const { completionModels, calculatePrice } = useModels(options, envId || null);
+  const { addUsage, jsxUsageCosts } = UsageCosts(calculatePrice);
+  const aiEnvironments = options?.ai_envs || [];
+
+  const { jsxLanguageSelector, currentLanguage, isCustom, currentHumanLanguage } =
+    useLanguages({ options, language: template?.language, customLanguage: template?.customLanguage });
 
   const setTemplateProperty = (value, property) => {
     setTemplate(x => ({ ...x, [property]: value }));
@@ -116,7 +118,9 @@ const ContentGenerator = () => {
   }, [sections, paragraphsCount]);
 
   useEffect(() => {
-    if (!template) return;
+    if (!template) {
+      return;
+    }
     if (!isCustom && template.customLanguage) {
       setTemplateProperty(null, 'customLanguage');
     }
@@ -126,7 +130,7 @@ const ContentGenerator = () => {
     if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
+  }, [isCustom, currentLanguage, currentHumanLanguage]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -152,10 +156,10 @@ const ContentGenerator = () => {
 
   const onSubmitPrompt = async (promptToUse, maxTokens = 2048, isBulk = false) => {
     try {
-      const res = await nekoFetch(`${apiUrl}/ai/completions`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/completions`, {
         method: 'POST',
         nonce: restNonce,
-        json: { 
+        json: {
           scope: 'admin-tools',
           envId: envId || null,
           model: model || null,
@@ -253,7 +257,7 @@ const ContentGenerator = () => {
 
   const onGenerateAllClick = async (inTopic = topic, isBulk = false) => {
     setBusy(true);
-    setRunTimes(() => ({ ...runTimes, all: new Date() }));
+    setRunTimes(prev => ({ ...prev, all: new Date() }));
     try {
       let freshTitle = inTopic;
       if (!topicsAreTitles || !isBulk) {
@@ -269,19 +273,19 @@ const ContentGenerator = () => {
         setTemplateProperty(freshTitle, 'title');
 
         if (!noSections) {
-          setRunTimes(x => ({ ...x, sections: new Date() }));
+          setRunTimes(prev => ({ ...prev, sections: new Date() }));
           freshSections = await submitSectionsPrompt(inTopic, freshTitle, isBulk);
-          await setRunTimes(x => ({ ...x, sections: null }));
+          setRunTimes(prev => ({ ...prev, sections: null }));
         }
 
         if (freshSections || noSections) {
-          await setRunTimes(x => ({ ...x, content: new Date() }));
+          setRunTimes(prev => ({ ...prev, content: new Date() }));
           freshContent = await submitContentPrompt(inTopic, freshTitle, freshSections, isBulk);
-          await setRunTimes(x => ({ ...x, content: null }));
+          setRunTimes(prev => ({ ...prev, content: null }));
           if (freshContent) {
-            await setRunTimes(x => ({ ...x, excerpt: new Date() }));
+            setRunTimes(prev => ({ ...prev, excerpt: new Date() }));
             freshExcerpt = await onSubmitPromptForExcerpt(inTopic, freshTitle, isBulk);
-            await setRunTimes(x => ({ ...x, excerpt: null }));
+            setRunTimes(prev => ({ ...prev, excerpt: null }));
           }
         }
       }
@@ -513,9 +517,9 @@ const ContentGenerator = () => {
 
             <NekoSpacer line={true} height={40} />
 
-            <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
+            <NekoSelect scrolldown={true} disabled={isBusy} name="postType"
               onChange={setPostType} value={postType}>
-              {postTypes?.map(postType => 
+              {postTypes?.map(postType =>
                 <NekoOption key={postType.type} value={postType.type} label={postType.name} />
               )}
             </NekoSelect>
@@ -580,9 +584,9 @@ const ContentGenerator = () => {
             </StyledTitleWithButton>
             {showPostParams && <>
               <label>{i18n.COMMON.POST_TYPE}:</label>
-              <NekoSelect scrolldown={true} disabled={isBusy} name="postType" 
+              <NekoSelect scrolldown={true} disabled={isBusy} name="postType"
                 onChange={setPostType} value={postType}>
-                {postTypes?.map(postType => 
+                {postTypes?.map(postType =>
                   <NekoOption key={postType.type} value={postType.type} label={postType.name} />
                 )}
               </NekoSelect>
@@ -656,7 +660,9 @@ const ContentGenerator = () => {
 
           <NekoSpacer />
           {jsxUsageCosts}
+
         </NekoColumn>
+
       </NekoWrapper>
 
       <NekoModal isOpen={createdPostId}
@@ -685,8 +691,8 @@ const ContentGenerator = () => {
         title="Error"
         content={<p>{error}</p>}
       />
-      
-    </NekoPage> 
+
+    </NekoPage>
   );
 };
 

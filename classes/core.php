@@ -58,7 +58,7 @@ class Meow_MWAI_Core
 		}
 
 		// Suggestions Module
-		if ( is_admin() && $this->get_option( 'module_suggestions' ) ) {
+		if ( $this->get_option( 'module_suggestions' ) && ( is_admin() || $this->is_rest ) ) {
 			$this->magicWand = new Meow_MWAI_Modules_Wand( $this );
 		}
 
@@ -86,7 +86,31 @@ class Meow_MWAI_Core
 	}
 
 	public function register_scripts() {
+		// Register Highlight.js
 		wp_register_script( 'mwai_highlight', MWAI_URL . 'vendor/highlightjs/highlight.min.js', [], '11.7', false );
+		// Register CSS for the themes
+		$themes = $this->get_themes();
+		foreach ( $themes as $theme ) {
+			if ( $theme['type'] === 'internal' ) {
+				$themeId = $theme['themeId'];
+				$filename = $themeId . '.css';
+				$physical_file = trailingslashit( MWAI_PATH ) . 'themes/' . $filename;
+				$cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
+				wp_register_style( 'mwai_chatbot_theme_' . $themeId, trailingslashit( MWAI_URL )
+					. 'themes/' . $filename, [], $cache_buster );
+			}
+		}
+	}
+
+	public function enqueue_themes() {
+		// TODO: We should optimize and only load the themes that are used.
+		$themes = $this->get_themes();
+		foreach ( $themes as $theme ) {
+			if ( $theme['type'] === 'internal' ) {
+				$themeId = $theme['themeId'];
+				wp_enqueue_style( "mwai_chatbot_theme_$themeId" );
+			}
+		}
 	}
 
 	#endregion

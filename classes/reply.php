@@ -201,6 +201,13 @@ class Meow_MWAI_Reply implements JsonSerializable {
             }
           }
 
+          // NOTE: Anaheim proposed that fix to avoid the error "Duplicate value for 'tool_call_id'"
+          // This happens when the same function is called twice; we need to investigate.
+          $toolCallsDeepCopy = array_map( function( $toolCall ) {
+            return is_array( $toolCall ) ? array_merge( [], $toolCall ) : $toolCall;
+          }, $toolCalls);
+          $toolCalls = $toolCallsDeepCopy;
+
           // Let's separate the Feedbacks (PHP code) and Client Actions (JS code)
           $this->needFeedbacks = [];
           $this->needClientActions = [];

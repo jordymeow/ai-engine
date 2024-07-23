@@ -70,6 +70,16 @@
 		display: flex;
 		flex-direction: column;
 		padding: var(--mwai-spacing);
+
+		.mwai-block {
+			p:first-child {
+				margin-top: 0;
+			}
+		}
+
+		button {
+			cursor: pointer;
+		}
 	}
 
 	.mwai-conversation {
@@ -408,6 +418,162 @@
 			}
 		}
 	}
+
+	&.mwai-form-container {
+		padding: var(--mwai-spacing);
+		font-size: var(--mwai-fontSize);
+		color: var(--mwai-fontColor);
+		background: var(--mwai-backgroundSecondaryColor);
+		border-radius: var(--mwai-borderRadius);
+
+		fieldset {
+			border: 0;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 10px;
+	
+			input[type="text"], input[type="email"], input[type="tel"], input[type="url"], input[type="password"], input[type="number"], input[type="date"], input[type="datetime"], input[type="datetime-local"], input[type="month"], input[type="search"], input[type="time"], input[type="week"], select, textarea {
+				padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+				border: 0;
+				width: 100%;
+				border-radius: var(--mwai-borderRadius);
+				font-size: var(--mwai-fontSize);
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
+			}
+	
+			select {
+				padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+				border: 0;
+				width: 100%;
+				border-radius: var(--mwai-borderRadius);
+				font-size: var(--mwai-fontSize);
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
+			}
+	
+			textarea {
+				padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
+				border: 0;
+				width: 100%;
+				border-radius: var(--mwai-borderRadius);
+				font-family: inherit;
+				font-size: var(--mwai-fontSize);
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
+			}
+	
+			input[disabled], select[disabled], textarea[disabled] {
+				opacity: 0.25;
+			}
+		}
+	
+		.mwai-form-submit {
+	
+			button {
+				height: 45px;
+				background: none;
+				width: 100%;
+				color: var(--mwai-fontColor);
+				font-size: var(--mwai-fontSize);
+				background-color: var(--mwai-backgroundSecondaryColor);
+				border: 1px solid var(--mwai-backgroundPrimaryColor);
+				border-radius: var(--mwai-borderRadius);
+				cursor: pointer;
+				transition: all 0.2s ease-out;
+				position: relative;
+	
+				&:hover {
+					background: var(--mwai-backgroundPrimaryColor);
+				}
+			}
+	
+			button[disabled] {
+				span {
+					opacity: 0.25;
+				}
+	
+				&:hover {
+					background: none;
+					cursor: not-allowed;
+				}
+			}
+	
+			&.mwai-loading {
+	
+				button {
+					
+					span {
+						opacity: 0;
+					}
+		
+					&::after {
+						content: '';
+						position: absolute;
+						width: 18px;
+						height: 18px;
+						top: 0;
+						left: 0;
+						right: 0;
+						bottom: 0;
+						margin: auto;
+						border: 3px solid transparent;
+						border-top-color: var(--mwai-fontColor);
+						border-radius: 50%;
+						animation: mwai-button-spinner 1s ease infinite;
+					}
+				}
+			}
+		}
+	
+		.mwai-form-output-container {
+			
+			.mwai-form-output {
+				font-size: var(--mwai-fontSize);
+				position: relative;
+				margin-top: var(--mwai-spacing);
+				padding: var(--mwai-spacing);
+				border: 1px solid var(--mwai-backgroundPrimaryColor);
+	
+				&.mwai-error {
+					background: var(--mwai-errorBackgroundColor);
+					color: var(--mwai-errorFontColor);
+				}
+	
+				& > *:first-child {
+					margin-top: 0;
+				}
+	
+				& > *:last-child {
+					margin-bottom: 0;
+				}
+		
+				img {
+					max-width: 33%;
+				}
+	
+				div {
+					& > *:first-child {
+						margin-top: 0;
+					}
+		
+					& > *:last-child {
+						margin-bottom: 0;
+					}
+				}
+			}
+	
+			&.mwai-has-content {
+				display: block;
+			}
+		}
+	
+		.wp-block-columns {
+			margin: 0;
+		}
+	}
 }
 
 // Discussions
@@ -466,27 +632,27 @@
 
 // Mobile
 .mwai-chatgpt-theme {
+
 	@media (max-width: 760px) {
-		.mwai-chat {
-			.mwai-input button {
+
+		&.mwai-window {
+			width: calc(100% - 40px);
+			z-index: 9999999999;
+		}
+
+		.mwai-input {
+			flex-direction: column;
+
+			.mwai-input-submit {
 				margin: 15px 0 0 0;
 				height: 40px;
 				width: inherit;
 			}
+		}
 
-			.mwai-name {
-				margin-right: 0;
-				max-width: inherit;
-			}
-
-			&.mwai-window {
-				width: calc(100% - 40px);
-				z-index: 9999999999;
-			}
-
-			.mwai-input {
-				flex-direction: column;
-			}
+		.mwai-name {
+			margin-right: 0;
+			max-width: inherit;
 		}
 	}
 }

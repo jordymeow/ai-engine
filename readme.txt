@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.4.9
+Stable tag: 2.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,20 @@ Languages: English.
 
 == Changelog ==
 
+= 2.5.0 (2024/07/23) =
+* Update: A better and enhanced copy button, that also now works in forms.
+* Update: Improved drag n' drop for chatbot files.
+* Update: Forms now use the same CSS as chatbots (you can try Timeless with them).
+* Update: New unnecessary icon with Nyao, just for fun!
+* Fix: TTS functionality on Android.
+* Fix: Some features related to the Magic Wand were broken.
+* Fix: The chatbot tabs were a bit clunky.
+* Fix: Virtual keyboard hack for a better mobile experience.
+* Fix: Various CSS-related issues and additional mobile CSS fixes.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+* 🎵 Discuss with others about AI Engine on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.4.9 (2024/07/19) =
 * Add: Support for [GPT-4o mini](https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/). 
 * Add: Support for HTML Blocks and Shortcuts (Quick Actions) via MwaiAPI in JS and PHP filters.
@@ -106,9 +120,6 @@ Languages: English.
 
 = 2.4.4 (2024/06/23) =
 * Fix: Improve nonce handling to eliminate the 'Cookie check failed' error in the chatbot.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
-* 🎵 Discuss with others about AI Engine on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.4.3 (2024/06/21) =
 * Add: Claude-3.5 Sonnet (Anthropic).

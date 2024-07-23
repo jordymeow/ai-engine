@@ -77,6 +77,14 @@
   padding: var(--mwai-spacing);
 }
 
+.mwai-messages-theme .mwai-blocks .mwai-block p:first-child {
+  margin-top: 0;
+}
+
+.mwai-messages-theme .mwai-blocks button {
+  cursor: pointer;
+}
+
 .mwai-messages-theme .mwai-conversation {
   display: flex;
   flex-direction: column;
@@ -907,7 +915,6 @@
     width: 100%;
   }
   .mwai-messages-theme.mwai-window.mwai-open .mwai-input .mwai-input-text {
-    margin-bottom: var(--mwai-spacing);
     width: 100%;
   }
   .mwai-messages-theme.mwai-window.mwai-open .mwai-input .mwai-input-text input, .mwai-messages-theme.mwai-window.mwai-open .mwai-input .mwai-input-text textarea {
@@ -1032,6 +1039,7 @@
   z-index: 100;
   background: var(--mwai-backgroundPrimaryColor);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+  z-index: 100;
 }
 
 .mwai-messages-theme .mwai-reply-actions .mwai-copy-button {
@@ -1057,7 +1065,7 @@
 }
 
 .mwai-messages-theme .mwai-reply-actions .mwai-copy-button {
-  zoom: 0.8;
+  padding-top: 4px;
 }
 
 .mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover {
@@ -1066,18 +1074,18 @@
 }
 
 @media (max-width: 760px) {
-  .mwai-messages-theme .mwai-chat.mwai-window {
+  .mwai-messages-theme.mwai-window {
     width: calc(100% - 40px);
     z-index: 9999999999;
   }
-  .mwai-messages-theme .mwai-chat .mwai-input {
+  .mwai-messages-theme .mwai-input {
     flex-direction: column;
   }
-  .mwai-messages-theme .mwai-chat .mwai-input .mwai-input-text {
+  .mwai-messages-theme .mwai-input .mwai-input-text {
     width: 100%;
-    margin-bottom: 10px;
   }
-  .mwai-messages-theme .mwai-chat .mwai-input button {
+  .mwai-messages-theme .mwai-input .mwai-input-submit {
     width: 100%;
+    margin: 15px 0 0 0;
   }
 }

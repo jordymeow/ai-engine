@@ -1,5 +1,5 @@
-// Previous: 2.0.9
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.5.0
 
 const { useState, useMemo } = wp.element;
 import Styled from 'styled-components';
@@ -34,6 +34,12 @@ const StyledShortcode = Styled.div`
   }
 `;
 
+/**
+ * Sanitizes the parameter value to avoid breaking the shortcode.
+ *
+ * @param {string} value - The parameter value to sanitize.
+ * @returns {string} - The sanitized parameter value.
+ */
 const sanitizeParamValue = ( value ) => {
   if ( typeof value !== 'string' ) {
     return value;
@@ -56,8 +62,8 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
     }
 
     let shortcode;
-    let params = [];
-    let skipped = [];
+    const params = [];
+    const skipped = [];
 
     if (isCustom) {
       for (const key in currentChatbot) {
@@ -120,7 +126,7 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
     await navigator.clipboard.writeText(shortcodeData.shortcodeText);
     setCopyMessage('Copied!');
     setTimeout(() => {
-      setCopyMessage('Copied!');
+      setCopyMessage(null);
     }, 2000);
   };
 

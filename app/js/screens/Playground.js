@@ -1,7 +1,7 @@
-// Previous: 2.1.0
-// Current: 2.3.0
+// Previous: 2.3.0
+// Current: 2.5.0
 
-const { useState, useEffect, useMemo } = wp.element;
+const { useState, useEffect } = wp.element;
 import Styled from "styled-components";
 
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput, NekoTextArea,
@@ -18,7 +18,6 @@ import { OutputHandler, mwaiFetch, mwaiHandleRes } from "@app/helpers";
 
 const StyledTextArea = Styled(NekoTextArea)`
   .neko-textarea-container {
-  
     textarea {
       color: white;
       font-size: 13px;
@@ -26,7 +25,6 @@ const StyledTextArea = Styled(NekoTextArea)`
       font-family: monospace;
       background: #333d4e;
       border: none;
-
       &:focus {
         background-color: #333d4e;
       }
@@ -55,7 +53,11 @@ const Dashboard = () => {
   const aiEnvironments = options?.ai_envs || [];
 
   const setTemplateProperty = (value, property) => {
-    setTemplate({ ...template, [property]: value });
+    const newTemplate = { ...template, [property]: value };
+    setTemplate(newTemplate);
+    if (property === 'prompt') {
+      // Trigger render
+    }
   };
 
   const setPrompt = (prompt) => {
@@ -65,7 +67,7 @@ const Dashboard = () => {
   const onPushContinuousEntry = () => {
     const newPrompt = prompt + "Human: " + continuousEntry;
     setPrompt(newPrompt);
-    setContinuousEntry("");
+    setContinuousEntry('');
     onSubmitPrompt(newPrompt);
   };
 
@@ -81,9 +83,9 @@ const Dashboard = () => {
     try {
       const stop = stopSequence.replace(/\\n/g, '\n');
       const streamCallback = !stream ? null : (content) => {
-        setCompletion(content);
+        setCompletion(prev => prev + content);
       };
-      const res = await mwaiFetch(`${apiUrl}/ai/completions`, { 
+      const res = await mwaiFetch(`${apiUrl}/ai/completions`, {
         scope: 'playground',
         session: session,
         message: promptToUse,
@@ -123,7 +125,7 @@ const Dashboard = () => {
       <AiNekoHeader title={i18n.COMMON.PLAYGROUND} />
 
       <NekoWrapper>
-        
+
         <NekoColumn fullWidth>
 
           <OptionsCheck options={options} />
@@ -145,15 +147,15 @@ const Dashboard = () => {
           <StyledSidebar>
 
             {mode !== 'continuous' && <>
-              <StyledTextArea rows={12} onChange={setPrompt} value={prompt} />
+              <StyledTextArea rows={12} onChange={e => setPrompt(e.target.value)} value={prompt} />
             </>}
 
             {mode === 'continuous' && <>
-              <StyledTextArea rows={18} onChange={setPrompt} value={prompt} />
-              <div style={{ display: 'flex', position: 'relative' }}>
+              <StyledTextArea rows={18} onChange={e => setPrompt(e.target.value)} value={prompt} />
+              <div style={{ display: 'flex' }}>
                 <span className="dashicons dashicons-format-continuous" style={{ position: 'absolute', color: 'white',
                   zIndex: 200, fontSize: 28, marginTop: 12, marginLeft: 10 }}></span>
-                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={setContinuousEntry}
+                <StyledNekoInput name="continuousEntry" value={continuousEntry} onChange={e => setContinuousEntry(e.target.value)}
                   onEnter={onPushContinuousEntry} disabled={busy} />
               </div>
             </>}
@@ -185,15 +187,15 @@ const Dashboard = () => {
 
             <label>{i18n.COMMON.ENVIRONMENT}:</label>
             <NekoSelect scrolldown name="envId"
-              value={envId ?? ""} onChange={setTemplateProperty}>
+              value={envId ?? ""} onChange={e => setTemplateProperty(e.target.value, 'envId')}>
               {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
               <NekoOption value={""} label={"None"}></NekoOption>
             </NekoSelect>
 
             <label>{i18n.COMMON.MODEL}:</label>
-            <NekoSelect name="model" value={model} scrolldown={true} onChange={setTemplateProperty}>
+            <NekoSelect name="model" value={model} scrolldown={true} onChange={e => setTemplateProperty(e.target.value, 'model')}>
               {completionModels.map((x) => (
-                <NekoOption value={x.model} label={x.name}></NekoOption>
+                <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
               ))}
             </NekoSelect>
 
@@ -213,7 +215,7 @@ const Dashboard = () => {
               </>} />
             <label>{i18n.COMMON.STOP_SEQUENCE}:</label>
             <NekoInput name="stopSequence" value={stopSequence} type="text"
-              onChange={setTemplateProperty} description={<>
+              onChange={e => setTemplateProperty(e.target.value, 'stopSequence')} description={<>
                 <span>
                   {i18n.HELP.STOP_SEQUENCE}
                 </span>

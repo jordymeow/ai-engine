@@ -1,5 +1,5 @@
-// Previous: 2.3.9
-// Current: 2.4.1
+// Previous: 2.4.1
+// Current: 2.5.0
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -63,7 +63,7 @@ const Deployments = ({ updateEnvironment, environmentId, deployments, options })
   );
 };
 
-const CustomModels = ({ updateEnvironment, environmentId, customModels, options }) => {
+const CustomModels = ({ updateEnvironment, environmentId, customModels,  }) => {
 
   const updateCustomModels = (index, field, value) => {
     const freshCustomModels = JSON.parse(nekoStringify(customModels));
@@ -155,7 +155,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
   const addNewEnvironment = () => {
     const newEnv = {
       name: 'New Environment',
-      type: 'openai', 
+      type: 'openai',
       apikey: ''
     };
     const updatedEnvironments = [...environments, newEnv];
@@ -173,23 +173,23 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
   const getDescription = useCallback(env => {
     switch(env.type) {
-      case 'openai':
-        return toHTML(i18n.HELP.OPENAI_API_KEY);
-      case 'azure':
-        return toHTML(i18n.HELP.AZURE_API_KEY);
-      case 'openrouter':
-        return toHTML(i18n.HELP.OPENROUTER_API_KEY);
-      case 'anthropic':
-        return toHTML(i18n.HELP.ANTHROPIC_API_KEY);
-      default:
-        return '';
+    case 'openai':
+      return toHTML(i18n.HELP.OPENAI_API_KEY);
+    case 'azure':
+      return toHTML(i18n.HELP.AZURE_API_KEY);
+    case 'openrouter':
+      return toHTML(i18n.HELP.OPENROUTER_API_KEY);
+    case 'anthropic':
+      return toHTML(i18n.HELP.ANTHROPIC_API_KEY);
+    default:
+      return '';
     }
   }, []);
 
   const fetchModels = useCallback(async (envId, envType) => {
     try {
       setLoading(true);
-      const res = await nekoFetch(`${apiUrl}/ai/models`, { 
+      const res = await nekoFetch(`${apiUrl}/ai/models`, {
         method: 'POST',
         nonce: restNonce,
         json: { envId }
@@ -210,7 +210,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       console.log(err);
       setLoading(false);
     }
-  }, [updateOption, options]);
+  }, [updateOption, options?.ai_models]);
 
   const renderFields = (env) => {
     const currentEngine = aiEngines.find(engine => engine.type === env.type) || {};
@@ -222,7 +222,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
           <NekoSettings title={i18n.COMMON.API_KEY}>
             <NekoInput name="apikey" value={env.apikey}
               description={getDescription(env)}
-              onFinalChange={value => updateEnvironment(env.id, { apikey: value })} 
+              onFinalChange={value => updateEnvironment(env.id, { apikey: value })}
             />
           </NekoSettings>
         )}
@@ -230,28 +230,28 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
           <NekoSettings title={i18n.COMMON.OPENAI_ORGANIZATION_ID}>
             <NekoInput name="organizationId" value={env.organizationId}
               description={toHTML(i18n.HELP.OPENAI_ORGANIZATION_ID)}
-              onFinalChange={value => updateEnvironment(env.id, { organizationId: value })} 
+              onFinalChange={value => updateEnvironment(env.id, { organizationId: value })}
             />
           </NekoSettings>
         )}
         {fields.includes('endpoint') && (
           <NekoSettings title={i18n.COMMON.ENDPOINT}>
             <NekoInput name="endpoint" value={env.endpoint}
-              onFinalChange={value => updateEnvironment(env.id, { endpoint: value })} 
+              onFinalChange={value => updateEnvironment(env.id, { endpoint: value })}
             />
           </NekoSettings>
         )}
         {fields.includes('region') && (
           <NekoSettings title={i18n.COMMON.REGION}>
             <NekoInput name="region" value={env.region}
-              onFinalChange={value => updateEnvironment(env.id, { region: value })} 
+              onFinalChange={value => updateEnvironment(env.id, { region: value })}
             />
           </NekoSettings>
         )}
         {fields.includes('projectId') && (
           <NekoSettings title={i18n.COMMON.PROJECT_ID}>
             <NekoInput name="projectId" value={env.projectId}
-              onFinalChange={value => updateEnvironment(env.id, { projectId: value })} 
+              onFinalChange={value => updateEnvironment(env.id, { projectId: value })}
             />
           </NekoSettings>
         )}
@@ -278,7 +278,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
           return (<NekoTab key={env.id} title={env.name} busy={busy}>
             <NekoSettings title={i18n.COMMON.NAME}>
               <NekoInput name="name" value={env.name}
-                onFinalChange={value => updateEnvironment(env.id, { name: value })} 
+                onFinalChange={value => updateEnvironment(env.id, { name: value })}
               />
             </NekoSettings>
 
@@ -295,14 +295,14 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
             {env.type === 'google' && <>
               <NekoMessage variant="danger">
-                Compared to OpenAI, Google's Gemini is less stable and clearly in beta, with limitations like single-message processing (in the case of Vision) and frequent unclear errors. Let's discuss about Gemini on <a href="https://discord.gg/bHDGh38" target="_blank">Discord</a>.
+                Compared to OpenAI, Google's Gemini is less stable and clearly in beta, with limitations like single-message processing (in the case of Vision) and frequent unclear errors. Let's discuss about Gemini on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>.
               </NekoMessage>
               <NekoSpacer />
             </>}
 
             {env.type === 'huggingface' && <>
               <NekoMessage variant="danger">
-                Support for Hugging Face is experimental and may not work as expected. Also, AI Engine is ready for Image and Vision but Hugging Face is not (hence the disabled checkboxes). Let's discuss about Hugging Face on <a href="https://discord.gg/bHDGh38" target="_blank">Discord</a>.
+                Support for Hugging Face is experimental and may not work as expected. Also, AI Engine is ready for Image and Vision but Hugging Face is not (hence the disabled checkboxes). Let's discuss about Hugging Face on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>.
               </NekoMessage>
               <NekoSpacer />
             </>}
@@ -310,7 +310,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             <NekoCollapsableCategories keepState="environmentCategories">
               {hasDynamicModels && <NekoCollapsableCategory title={i18n.COMMON.MODELS}>
                 {env.type === 'openrouter' && <p>
-                  There are currently <b>{modelsCount}</b> models available. OpenRouter models need to be refresh regularly. This button will fetch the latest models and their prices. 
+                  There are currently <b>{modelsCount}</b> models available. OpenRouter models need to be refresh regularly. This button will fetch the latest models and their prices.
                 </p>}
                 {env.type === 'google' && <p>
                   There are currently <b>{modelsCount}</b> models available. Google models need to be refresh regularly. This button will fetch the latest models and their prices.
@@ -329,8 +329,8 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                   {i18n.HELP.AZURE_DEPLOYMENTS}
                 </p>
                 <NekoCollapsableCategory title={i18n.COMMON.OPENAI_AZURE_DEPLOYMENTS}>
-                  <Deployments 
-                    deployments={env.deployments ?? []} 
+                  <Deployments
+                    deployments={env.deployments ?? []}
                     environmentId={env.id}
                     updateEnvironment={updateEnvironment}
                     options={options}
@@ -340,8 +340,8 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
               {env.type === 'huggingface' &&
                 <NekoCollapsableCategory title={i18n.COMMON.HUGGINGFACE_MODELS}>
-                  <p>Browse the <a href="https://huggingface.co/models" target="_blank">Models on Hugging Face</a>. Use the Deploy button (Inference API Serverless) in order to get the API URL. Paste it below with the name of your choice and you're done!</p>
-                  <CustomModels 
+                  <p>Browse the <a href="https://huggingface.co/models" target="_blank" rel="noreferrer">Models on Hugging Face</a>. Use the Deploy button (Inference API Serverless) in order to get the API URL. Paste it below with the name of your choice and you're done!</p>
+                  <CustomModels
                     customModels={env.customModels ?? []}
                     environmentId={env.id}
                     updateEnvironment={updateEnvironment}
@@ -369,7 +369,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             </NekoCollapsableCategories>
 
           </NekoTab>);
-
         })}
       </NekoTabs>
     </div>

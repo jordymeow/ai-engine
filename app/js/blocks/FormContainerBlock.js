@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 2.0.3
+// Previous: 2.0.3
+// Current: 2.5.0
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -7,7 +7,7 @@ import { AiBlockContainer, meowIcon } from "./common";
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
 const { useEffect } = wp.element;
-const { PanelBody, SelectControl } = wp.components;
+const { PanelBody, SelectControl, TextControl } = wp.components;
 const { InspectorControls, InnerBlocks, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
@@ -46,9 +46,11 @@ const FormContainerBlock = props => {
           <SelectControl label="Theme" value={theme} onChange={value => setAttributes({ theme: value })}
             options={[
               { label: 'None', value: 'none' },
-              { label: 'ChatGPT', value: 'ChatGPT' }
+              { label: 'ChatGPT', value: 'ChatGPT' },
+              { label: 'Timeless', value: 'Timeless' },
             ]}
           />
+          <TextControl label="ID" value={id} onChange={value => setAttributes({ id: value })} />
         </PanelBody>
       </InspectorControls>
     </>

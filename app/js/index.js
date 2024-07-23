@@ -1,12 +1,12 @@
-// Previous: 2.3.9
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 2.5.0
 
 const { render } = wp.element;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const queryClient = new QueryClient({ 
-  defaultOptions: { 
-    queries: { 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       retry: false,
@@ -39,6 +39,8 @@ if (chatbotsEnabled) {
 
 if (formsEnabled) {
   initFormsBlocks();
+  // Commented duplicate call, might cause confusion if re-invoked later
+  // initChatbotBlocks();
 }
 
 if (assistantsEnabled) {
@@ -47,6 +49,7 @@ if (assistantsEnabled) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+
   const settings = document.getElementById('mwai-admin-settings');
   if (settings) {
     render(<QueryClientProvider client={queryClient}>
