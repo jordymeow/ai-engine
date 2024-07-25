@@ -96,6 +96,7 @@ define( 'MWAI_OPTIONS', [
 	'module_advisor' => false,
 	'speech_recognition' => false,
 	'speech_synthesis' => false,
+	'virtual_keyboard_fix' => false,
 	'chatbot_typewriter' => false,
 	'chatbot_discussions' => false,
 	'chatbot_moderation' => false,

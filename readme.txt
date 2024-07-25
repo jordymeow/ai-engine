@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.0
+Stable tag: 2.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,18 @@ Languages: English.
 
 == Changelog ==
 
+= 2.5.1 (2024/07/25) =
+* Add: Option to enable or disable the Virtual Keyboard Fix.
+* Update: Much better Default CSS for Custom Theme.
+* Fix: Issues related to the Virtual Keyboard Fix.
+* Fix: Force the log file to have the .log extension, to avoid security issues.
+* Fix: Shortcuts were not pushed by the server-side.
+* Fix: The expiration 'Never' was crashing when used with Assistants Upload.
+* Update: If DevTools is disabled, all the related debug options are disabled as well.
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+* 🎵 Discuss with others about AI Engine on [my Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+
 = 2.5.0 (2024/07/23) =
 * Update: A better and enhanced copy button, that also now works in forms.
 * Update: Improved drag n' drop for chatbot files.
@@ -77,9 +89,6 @@ Languages: English.
 * Fix: The chatbot tabs were a bit clunky.
 * Fix: Virtual keyboard hack for a better mobile experience.
 * Fix: Various CSS-related issues and additional mobile CSS fixes.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
-* 🎵 Discuss with others about AI Engine on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.4.9 (2024/07/19) =
 * Add: Support for [GPT-4o mini](https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/). 

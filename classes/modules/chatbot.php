@@ -106,6 +106,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$shortcuts = apply_filters( 'mwai_chatbot_shortcuts', [], $filterParams );
 		$actions = $this->sanitize_actions( $actions );
 		$blocks = $this->sanitize_blocks( $blocks );
+		$shortcuts = $this->sanitize_shortcuts( $shortcuts );
 		return [
 			'success' => true,
 			'reply' => $reply,
@@ -148,8 +149,11 @@ class Meow_MWAI_Modules_Chatbot {
 	}
 
 	private function sanitize_items( $items, $supported_types, $type_name ) {
+		if ( empty( $items ) ) {
+			return $items;
+		}
 		$sanitized_items = [];
-		foreach ( $items as $item ) {
+ 		foreach ( $items as $item ) {
 			if ( isset( $supported_types[$item['type']] ) ) {
 				$is_valid = true;
 				foreach ( $supported_types[$item['type']] as $param ) {
@@ -286,7 +290,6 @@ class Meow_MWAI_Modules_Chatbot {
 							if ( !empty( $query->chatId ) ) {
 								$chatbotName .= "_" . $query->chatId;
 							}
-							$expiry = $this->core->get_option( 'image_expires' );
 							$metadata = [];
 							if ( !empty( $chatbot['assistantId'] ) ) {
 								$metadata['assistantId'] = $chatbot['assistantId'];
@@ -294,6 +297,7 @@ class Meow_MWAI_Modules_Chatbot {
 							if ( !empty( $query->chatId ) ) {
 								$metadata['chatId'] = $query->chatId;
 							}
+							$expiry = $this->core->get_option( 'image_expires' );
 							$storeId = $openai->create_vector_store( $chatbotName, $expiry, $metadata );
 							$query->setStoreId( $storeId );
 						}	
@@ -451,11 +455,12 @@ class Meow_MWAI_Modules_Chatbot {
 			'contextId' => get_the_ID(),
 			'pluginUrl' => MWAI_URL,
 			'restUrl' => untrailingslashit( get_rest_url() ),
-			'debugMode' => $this->core->get_option( 'debug_mode' ),
-			'typewriter' => $this->core->get_option( 'chatbot_typewriter' ),
+			'stream' => $this->core->get_option( 'ai_streaming' ),
+			'debugMode' => $this->core->get_option('module_devtools') && $this->core->get_option( 'debug_mode' ),
 			'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
 			'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
-			'stream' => $this->core->get_option( 'ai_streaming' ),
+			'typewriter' => $this->core->get_option( 'chatbot_typewriter' ),
+			'virtual_keyboard_fix' => $this->core->get_option( 'virtual_keyboard_fix' )
 		];
 		return $frontSystem;
 	}

@@ -731,7 +731,7 @@
   left: 30px;
 }
 
-.mwai-messages-theme.mwai-window.mwai-bottom-left .mwai-open-button {
+.mwai-messages-theme.mwai-window.mwai-bottom-left .mwai-trigger {
   right: inherit;
   left: 0;
 }
@@ -742,7 +742,7 @@
   right: 30px;
 }
 
-.mwai-messages-theme.mwai-window.mwai-top-right .mwai-open-button {
+.mwai-messages-theme.mwai-window.mwai-top-right .mwai-trigger {
   top: 0;
   bottom: inherit;
 }
@@ -754,22 +754,22 @@
   left: 30px;
 }
 
-.mwai-messages-theme.mwai-window.mwai-top-left .mwai-open-button {
+.mwai-messages-theme.mwai-window.mwai-top-left .mwai-trigger {
   top: 0;
   bottom: inherit;
   right: inherit;
   left: 0;
 }
 
-.mwai-messages-theme.mwai-window.mwai-top-left .mwai-open-button, .mwai-messages-theme.mwai-window.mwai-bottom-left .mwai-open-button {
+.mwai-messages-theme.mwai-window.mwai-top-left .mwai-trigger, .mwai-messages-theme.mwai-window.mwai-bottom-left .mwai-trigger {
   align-items: flex-start;
 }
 
-.mwai-messages-theme.mwai-window.mwai-top-right .mwai-open-button, .mwai-messages-theme.mwai-window.mwai-top-left .mwai-open-button {
+.mwai-messages-theme.mwai-window.mwai-top-right .mwai-trigger, .mwai-messages-theme.mwai-window.mwai-top-left .mwai-trigger {
   flex-direction: column-reverse;
 }
 
-.mwai-messages-theme.mwai-window.mwai-top-right .mwai-open-button .mwai-icon-text, .mwai-messages-theme.mwai-window.mwai-top-left .mwai-open-button .mwai-icon-text {
+.mwai-messages-theme.mwai-window.mwai-top-right .mwai-trigger .mwai-icon-text, .mwai-messages-theme.mwai-window.mwai-top-left .mwai-trigger .mwai-icon-text {
   margin-bottom: 0;
   margin-top: 15px;
 }
@@ -830,7 +830,7 @@
   opacity: 1;
 }
 
-.mwai-messages-theme.mwai-window.mwai-open .mwai-open-button {
+.mwai-messages-theme.mwai-window.mwai-open .mwai-trigger {
   display: none;
 }
 
@@ -934,7 +934,7 @@
   .mwai-messages-theme.mwai-window.mwai-open .mwai-resize-button {
     display: none !important;
   }
-  .mwai-messages-theme.mwai-window.mwai-open .mwai-open-button {
+  .mwai-messages-theme.mwai-window.mwai-open .mwai-trigger {
     display: none;
   }
 }

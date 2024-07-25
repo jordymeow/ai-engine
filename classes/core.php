@@ -1077,7 +1077,7 @@ class Meow_MWAI_Core
 		// Avoid the logs_path to be a PHP file.
 		if ( isset( $options['logs_path'] ) ) {
 			$logs_path = $options['logs_path'];
-			if ( substr( $logs_path, -4 ) === '.php' ) {
+			if ( substr( $logs_path, -4 ) !== '.log' ) {
 				$options['logs_path'] = '';
 				$needs_update = true;
 			}
@@ -1305,7 +1305,12 @@ class Meow_MWAI_Core
 	}
 
 	function log( $data = null ) {
-		if ( !$this->get_option( 'server_debug_mode', false ) ) { return false; }
+		if ( !$this->get_option( 'module_devtools', false ) ) {
+			return false;
+		}
+		if ( !$this->get_option( 'server_debug_mode', false ) ) { 
+			return false;
+		}
 		$log_file_path = $this->get_logs_path();
 		$fh = @fopen( $log_file_path, 'a' );
 		if ( !$fh ) { return false; }

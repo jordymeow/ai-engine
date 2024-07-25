@@ -1,5 +1,5 @@
-// Previous: 2.4.5
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 2.5.1
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -68,7 +68,6 @@ const proOptions = [
 ];
 
 function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels) {
-
   const performChecks = async () => {
     let updatesNeeded = false;
     const newOptions = { ...options };
@@ -88,7 +87,7 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels
           }
         }
         else {
-          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined || newOptions[modelKey] !== null) {
+          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
             updatesNeeded = true;
             newOptions[envKey] = null;
             newOptions[modelKey] = null;
@@ -97,10 +96,10 @@ function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels
       }
 
       if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
-        const dimensions = newOptions?.ai_embeddings_default_dimensions ?? null;
+        const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
         if (dimensions !== null) {
           const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
-          if (!model?.dimensions.includes(dimensions)) {
+          if (model?.dimensions && !model?.dimensions.includes(dimensions)) {
             const newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
             if (newDimensions !== null) {
               newOptions.ai_embeddings_default_dimensions = newDimensions;
@@ -163,6 +162,7 @@ const Settings = () => {
   const syntax_highlight = options?.syntax_highlight;
   const chatbot_typewriter = options?.chatbot_typewriter;
   const chatbot_discussions = options?.chatbot_discussions;
+  const virtual_keyboard_fix = options?.virtual_keyboard_fix;
   const speech_recognition = options?.speech_recognition;
   const speech_synthesis = options?.speech_synthesis;
   const public_api = options?.public_api;
@@ -201,8 +201,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsRes = await retrieveOptions();
-      setOptions(optionsRes);
+      const optionsData = await retrieveOptions();
+      setOptions(optionsData);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -341,10 +341,12 @@ const Settings = () => {
         reader.readAsText(file);
       };
       fileInput.click();
-    } catch (err) {
+    }
+    catch (err) {
       alert("Error while importing settings. Please check your console.");
       console.log(err);
-    } finally {
+    }
+    finally {
       setBusyAction(false);
     }
   };
@@ -355,19 +357,18 @@ const Settings = () => {
     if (!isRegistered) {
       const newOptions = { ...options };
       let hasChanges = false;
+
       proOptions.forEach(option => {
         if (newOptions[option]) {
           newOptions[option] = false;
           hasChanges = true;
         }
       });
-      if (hasChanges) {
-        if (nekoStringify(newOptions) !== nekoStringify(options)) {
-          updateOptions(newOptions);
-        }
+
+      if (hasChanges && nekoStringify(newOptions) !== nekoStringify(options)) {
+        updateOptions(newOptions);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const jsxUtilities =
@@ -537,6 +538,16 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
+  const jsxVirtualKeyboardFix =
+    <NekoSettings title={i18n.COMMON.VIRTUAL_KEYBOARD}>
+      <NekoCheckboxGroup max="1">
+        <NekoCheckbox name="virtual_keyboard_fix" label={i18n.COMMON.FIX} value="1"
+          checked={virtual_keyboard_fix}
+          description={i18n.HELP.VIRTUAL_KEYBOARD}
+          onChange={updateOption} />
+      </NekoCheckboxGroup>
+    </NekoSettings>;
+
   const jsxStream =
     <NekoSettings title={i18n.COMMON.STREAMING}>
       <NekoCheckboxGroup max="1">
@@ -593,7 +604,7 @@ const Settings = () => {
   const jsxImageLocalUpload =
     <NekoSettings title="Local Upload">
       <NekoSelect scrolldown name="image_local_upload" value={options?.image_local_upload} onChange={updateOption}
-        description="Images can be stored either in the filesystem or in the Media Library.">
+        description="Files can be stored either in the filesystem or the Media Library.">
         <NekoOption key='uploads' value='uploads' label="Filesystem"></NekoOption>
         <NekoOption key='library' value='library' label="Media Library"></NekoOption>
       </NekoSelect>
@@ -611,7 +622,7 @@ const Settings = () => {
   const jsxImageExpiration =
     <NekoSettings title="Expiration">
       <NekoSelect scrolldown name="image_expires" value={options?.image_expires ?? 'never'} onChange={updateOption}
-        description="The images uploaded will be deleted after a certain amount of time.">
+        description="Uploaded files will be deleted after a certain amount of time. This also affects files uploaded to OpenAI via the Assistants.">
         <NekoOption key={1 * 60 * 60} value={1 * 60 * 60} label="1 hour"></NekoOption>
         <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></NekoOption>
         <NekoOption key={24 * 60 * 60} value={24 * 60 * 60} label="1 day"></NekoOption>
@@ -625,7 +636,7 @@ const Settings = () => {
     <NekoSettings title="Local Download">
       <NekoSelect scrolldown name="image_local_download" value={options?.image_local_download ?? null}
         onChange={updateOption}
-        description="Images can be stored either in the filesystem or in the Media Library.">
+        description="Files can be stored either in the filesystem or the Media Library.">
         <NekoOption key={null} value={null} label="None"></NekoOption>
         <NekoOption key='uploads' value='uploads' label="Filesystem"></NekoOption>
         <NekoOption key='library' value='library' label="Media Library"></NekoOption>
@@ -636,7 +647,7 @@ const Settings = () => {
     <NekoSettings title="Expiration">
       <NekoSelect scrolldown name="image_expires_download" value={options?.image_expires_download ?? 'never'}
         onChange={updateOption}
-        description="The download images will be deleted after a certain amount of time.">
+        description="Downloaded files will be deleted after a certain amount of time.">
         <NekoOption key={1 * 60 * 60} value={1 * 60 * 60} label="1 hour"></NekoOption>
         <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></NekoOption>
         <NekoOption key={24 * 60 * 60} value={24 * 60 * 60} label="1 day"></NekoOption>
@@ -889,283 +900,279 @@ const Settings = () => {
     </NekoSettings>;
 
   return (
+< NekoPage>
+<AiNekoHeader options={options} />
+< NekoWrapper >
+< NekoColumn fullWidth >
+< OptionsCheck options={options} />
 
-    <NekoPage>
+{intro_message && <NekoContainer>
+{toHTML(i18n.SETTINGS.INTRO)}
+</NekoContainer>}
 
-      <AiNekoHeader options={options} />
+<NekoTabs keepTabOnReload={true}>
 
-      <NekoWrapper>
+<NekoTab key="dashboard" title={i18n.COMMON.DASHBOARD}>
+<NekoWrapper>
 
-        <NekoColumn fullWidth>
+<NekoColumn minimal>
 
-          <OptionsCheck options={options} />
+<NekoBlock busy={busy} title={i18n.COMMON.CLIENT_MODULES} className="primary">
+<p>{i18n.SETTINGS.MODULES_INTRO}</p>
+<NekoSpacer />
+{jsxChatbot}
+{jsxForms}
+</NekoBlock>
 
-          {intro_message && <NekoContainer>
-            {toHTML(i18n.SETTINGS.INTRO)}
-          </NekoContainer>}
+<NekoBlock busy={busy} title={i18n.COMMON.SERVER_MODULES} className="primary">
+<p>{i18n.SETTINGS.MODULES_INTRO}</p>
+<NekoSpacer />
+{jsxAssistants}
+{jsxStatistics}
+{jsxEmbeddings}
+{jsxFinetunes}
+{jsxModeration}
+</NekoBlock>
 
-          <NekoTabs keepTabOnReload={true}>
+<NekoBlock busy={busy} title={i18n.COMMON.BACKEND_MODULES} className="primary">
+<p>{i18n.SETTINGS.MODULES_INTRO}</p>
+<NekoSpacer />
+{jsxAdvisors}
+{jsxGenerators}
+{jsxPlayground}
+{jsxUtilities}
+{jsxTranscribe}
+</NekoBlock>
 
-            <NekoTab key="dashboard" title={i18n.COMMON.DASHBOARD}>
-              <NekoWrapper>
+</NekoColumn>
 
-                <NekoColumn minimal>
+<NekoColumn minimal>
+<NekoBlock busy={busy} title={i18n.COMMON.USAGE} className="primary">
+{jsxOpenAiUsage}
+</NekoBlock>
+</NekoColumn>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.CLIENT_MODULES} className="primary">
-                    <p>{i18n.SETTINGS.MODULES_INTRO}</p>
-                    <NekoSpacer />
-                    {jsxChatbot}
-                    {jsxForms}
-                  </NekoBlock>
+</NekoWrapper>
+</NekoTab>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.SERVER_MODULES} className="primary">
-                    <p>{i18n.SETTINGS.MODULES_INTRO}</p>
-                    <NekoSpacer />
-                    {jsxAssistants}
-                    {jsxStatistics}
-                    {jsxEmbeddings}
-                    {jsxFinetunes}
-                    {jsxModeration}
-                  </NekoBlock>
+{module_chatbots && <NekoTab key="chatbots" title={i18n.COMMON.CHATBOTS}>
+<Chatbots options={options} updateOption={updateOption} busy={busy} />
+</NekoTab>}
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.BACKEND_MODULES} className="primary">
-                    <p>{i18n.SETTINGS.MODULES_INTRO}</p>
-                    <NekoSpacer />
-                    {jsxAdvisors}
-                    {jsxGenerators}
-                    {jsxPlayground}
-                    {jsxUtilities}
-                    {jsxTranscribe}
-                  </NekoBlock>
+{module_chatbots && chatbot_discussions &&
+<NekoTab key="discussions" title={i18n.COMMON.DISCUSSIONS}>
+<Discussions />
+</NekoTab>
+}
 
-                </NekoColumn>
+{module_statistics && <NekoTab key="queries" title={i18n.COMMON.QUERIES}>
+<Statistics options={options} updateOption={updateOption} busy={busy} />
+</NekoTab>}
 
-                <NekoColumn minimal>
-                  <NekoBlock busy={busy} title={i18n.COMMON.USAGE} className="primary">
-                    {jsxOpenAiUsage}
-                  </NekoBlock>
-                </NekoColumn>
+{module_embeddings && <NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS}>
+<Embeddings
+options={options}
+updateEnvironment={updateVectorDbEnvironment}
+updateOption={updateOption}
+/>
+</NekoTab>}
 
-              </NekoWrapper>
-            </NekoTab>
+{module_assistants && <NekoTab key="assistants" title={i18n.COMMON.ASSISTANTS}>
+<Assistants options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
+</NekoTab>}
 
-            {module_chatbots && <NekoTab key="chatbots" title={i18n.COMMON.CHATBOTS}>
-              <Chatbots options={options} updateOption={updateOption} busy={busy} />
-            </NekoTab>}
+{module_finetunes && <NekoTab key="finetunes" title={i18n.COMMON.FINETUNES}>
+<FineTunes options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
+</NekoTab>}
 
-            {module_chatbots && chatbot_discussions &&
-              <NekoTab key="discussions" title={i18n.COMMON.DISCUSSIONS}>
-                <Discussions />
-              </NekoTab>
-            }
+{module_moderation && <NekoTab key="moderation" title={i18n.COMMON.MODERATION}>
+<Moderation options={options} updateOption={updateOption} busy={busy} />
+</NekoTab>}
 
-            {module_statistics && <NekoTab key="queries" title={i18n.COMMON.QUERIES}>
-              <Statistics options={options} updateOption={updateOption} busy={busy} />
-            </NekoTab>}
+{module_transcription && <NekoTab key="transcription" title={i18n.COMMON.TRANSCRIPTION}>
+<Transcription options={options} updateOption={updateOption} />
+</NekoTab>}
 
-            {module_embeddings && <NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS}>
-              <Embeddings
-                options={options}
-                updateEnvironment={updateVectorDbEnvironment}
-                updateOption={updateOption}
-              />
-            </NekoTab>}
+{module_addons && <NekoTab key="addons" title={i18n.COMMON.ADDONS}>
+<Addons addons={options?.addons} updateOption={updateOption} />
+</NekoTab>}
 
-            {module_assistants && <NekoTab key="assistants" title={i18n.COMMON.ASSISTANTS}>
-              <Assistants options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
-            </NekoTab>}
+<NekoTab key="settings" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
+<NekoWrapper>
 
-            {module_finetunes && <NekoTab key="finetunes" title={i18n.COMMON.FINETUNES}>
-              <FineTunes options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
-            </NekoTab>}
+<NekoColumn minimal>
 
-            {module_moderation && <NekoTab key="moderation" title={i18n.COMMON.MODERATION}>
-              <Moderation options={options} updateOption={updateOption} busy={busy} />
-            </NekoTab>}
+<AIEnvironmentsSettings busy={busy}
+options={options}
+environments={ai_envs}
+updateEnvironment={updateAIEnvironment}
+updateOption={updateOption}
+/>
 
-            {module_transcription && <NekoTab key="transcription" title={i18n.COMMON.TRANSCRIPTION}>
-              <Transcription options={options} updateOption={updateOption} />
-            </NekoTab>}
+<div style={{ padding: '0px 10px 15px 10px', marginTop: 13, marginBottom: 5}}>
+<NekoTypo h2 style={{ color: 'white', marginBottom: 15 }}>{i18n.COMMON.AI_ENVIRONMENT_DEFAULTS}</NekoTypo>
+<NekoTabs inversed>
 
-            {module_addons && <NekoTab key="addons" title={i18n.COMMON.ADDONS}>
-              <Addons addons={options?.addons} updateOption={updateOption} />
-            </NekoTab>}
+<NekoTab key="ai" title={i18n.COMMON.DEFAULT} busy={busy}>
+{jsxAIEnvironmentDefault}
+{jsxAIEnvironmentModelDefault}
+</NekoTab>
 
-            <NekoTab key="settings" title={<>{i18n.COMMON.SETTINGS}{jsxIncidentsIcon}</>}>
-              <NekoWrapper>
+<NekoTab key="vision" title={i18n.COMMON.VISION} busy={busy}>
+{jsxAIEnvironmentVisionDefault}
+{jsxAIEnvironmentModelVisionDefault}
+</NekoTab>
 
-                <NekoColumn minimal>
+<NekoTab key="images" title={i18n.COMMON.IMAGES} busy={busy}>
+{jsxAIEnvironmentImagesDefault}
+{jsxAIEnvironmentModelImagesDefault}
+</NekoTab>
 
-                  <AIEnvironmentsSettings busy={busy}
-                    options={options}
-                    environments={ai_envs}
-                    updateEnvironment={updateAIEnvironment}
-                    updateOption={updateOption}
-                  />
+<NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS} busy={busy}>
+{jsxAIEnvironmentEmbeddingsDefault}
+{jsxAIEnvironmentModelEmbeddingsDefault}
+{jsxAIEnvironmentDimensionsEmbeddingsDefault}
+</NekoTab>
 
-                  <div style={{ padding: '0px 10px 15px 10px', marginTop: 13, marginBottom: 5}}>
-                    <NekoTypo h2 style={{ color: 'white', marginBottom: 15 }}>{i18n.COMMON.AI_ENVIRONMENT_DEFAULTS}</NekoTypo>
-                    <NekoTabs inversed>
+<NekoTab key="audio" title={i18n.COMMON.AUDIO} busy={busy}>
+{jsxAIEnvironmentAudioDefault}
+{jsxAIEnvironmentModelAudioDefault}
+</NekoTab>
 
-                      <NekoTab key="ai" title={i18n.COMMON.DEFAULT} busy={busy}>
-                        {jsxAIEnvironmentDefault}
-                        {jsxAIEnvironmentModelDefault}
-                      </NekoTab>
+<NekoTab key="json" title={i18n.COMMON.JSON} busy={busy}>
+{jsxAIEnvironmentJsonDefault}
+{jsxAIEnvironmentModelJsonDefault}
+</NekoTab>
 
-                      <NekoTab key="vision" title={i18n.COMMON.VISION} busy={busy}>
-                        {jsxAIEnvironmentVisionDefault}
-                        {jsxAIEnvironmentModelVisionDefault}
-                      </NekoTab>
+</NekoTabs>
+</div>
 
-                      <NekoTab key="images" title={i18n.COMMON.IMAGES} busy={busy}>
-                        {jsxAIEnvironmentImagesDefault}
-                        {jsxAIEnvironmentModelImagesDefault}
-                      </NekoTab>
+{module_embeddings && <>
+<EmbeddingsEnvironmentsSettings busy={busy} options={options}
+environments={embeddings_envs}
+updateEnvironment={updateVectorDbEnvironment}
+updateOption={updateOption}
+/>
+<NekoBlock busy={busy} title={i18n.COMMON.EMBEDDINGS_ENVIRONMENT_DEFAULT} className="primary">
+{jsxEmbeddingsEnvironmentDefault}
+</NekoBlock>
+</>}
 
-                      <NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS} busy={busy}>
-                        {jsxAIEnvironmentEmbeddingsDefault}
-                        {jsxAIEnvironmentModelEmbeddingsDefault}
-                        {jsxAIEnvironmentDimensionsEmbeddingsDefault}
-                      </NekoTab>
+<NekoBlock busy={isLoadingIncidents}
+title={<div style={{ display: 'flex' }}>{i18n.COMMON.INCIDENTS_OPENAI}{jsxIncidentsIcon}</div>}
+className="primary" contentStyle={{ padding: 0 }}>
+<OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
+</NekoBlock>
 
-                      <NekoTab key="audio" title={i18n.COMMON.AUDIO} busy={busy}>
-                        {jsxAIEnvironmentAudioDefault}
-                        {jsxAIEnvironmentModelAudioDefault}
-                      </NekoTab>
+<NekoBlock busy={busy} title={i18n.COMMON.MAINTENANCE} className="primary">
 
-                      <NekoTab key="json" title={i18n.COMMON.JSON} busy={busy}>
-                        {jsxAIEnvironmentJsonDefault}
-                        {jsxAIEnvironmentModelJsonDefault}
-                      </NekoTab>
+<NekoButton className="blue" onClick={onExportSettings}>
+Export Settings
+</NekoButton>
 
-                    </NekoTabs>
-                  </div>
+<NekoButton className="danger" onClick={onImportSettings}>
+Import Settings
+</NekoButton>
 
-                  {module_embeddings && <>
-                    <EmbeddingsEnvironmentsSettings busy={busy} options={options}
-                      environments={embeddings_envs}
-                      updateEnvironment={updateVectorDbEnvironment}
-                      updateOption={updateOption}
-                    />
-                    <NekoBlock busy={busy} title={i18n.COMMON.EMBEDDINGS_ENVIRONMENT_DEFAULT} className="primary">
-                      {jsxEmbeddingsEnvironmentDefault}
-                    </NekoBlock>
-                  </>}
+<NekoButton className="danger" onClick={onResetSettings}>
+Reset Settings
+</NekoButton>
 
-                  <NekoBlock busy={isLoadingIncidents}
-                    title={<div style={{ display: 'flex' }}>{i18n.COMMON.INCIDENTS_OPENAI}{jsxIncidentsIcon}</div>}
-                    className="primary" contentStyle={{ padding: 0 }}>
-                    <OpenAIStatus incidents={incidents} isLoading={isLoadingIncidents} />
-                  </NekoBlock>
+</NekoBlock>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.MAINTENANCE} className="primary">
+</NekoColumn>
 
-                    <NekoButton className="blue" onClick={onExportSettings}>
-                      Export Settings
-                    </NekoButton>
+<NekoColumn minimal>
 
-                    <NekoButton className="danger" onClick={onImportSettings}>
-                      Import Settings
-                    </NekoButton>
+<NekoBlock busy={busy} title={i18n.COMMON.GENERAL} className="primary">
+{jsxStream}
+</NekoBlock>
 
-                    <NekoButton className="danger" onClick={onResetSettings}>
-                      Reset Settings
-                    </NekoButton>
+<NekoBlock busy={busy} title={i18n.COMMON.USER_INTERFACE} className="primary">
+{jsxIntroMessage}
+{jsxAddOns}
+</NekoBlock>
 
-                  </NekoBlock>
+<NekoBlock busy={busy} title={i18n.COMMON.CHATBOT} className="primary">
+{jsxShortcodeDiscussions}
+{jsxShortcodeSyntaxHighlighting}
+{jsxWebSpeechAPI}
+{jsxVirtualKeyboardFix}
+</NekoBlock>
 
-                </NekoColumn>
+{module_statistics && <NekoBlock busy={busy} title={i18n.COMMON.STATISTICS} className="primary">
+<p>{i18n.HELP.STATISTICS}</p>
+{jsxStatisticsData}
+{jsxStatisticsFormsData}
+</NekoBlock>}
 
-                <NekoColumn minimal>
+<NekoBlock busy={busy} title={i18n.COMMON.IMAGES_AND_FILES} className="primary">
+<p><b>Uploaded by Users</b></p>
+{jsxImageLocalUpload}
+{jsxImageRemoteUpload}
+{jsxImageExpiration}
+<p><b>Generated by AI</b></p>
+{jsxImageLocalDownload}
+{options?.image_local_download !== null && jsxImageExpirationDownload}
+</NekoBlock>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.GENERAL} className="primary">
-                    {jsxStream}
-                  </NekoBlock>
+<NekoBlock busy={busy} title={i18n.COMMON.ADMIN_TOOLS} className="primary">
+<NekoCollapsableCategory title={i18n.COMMON.ADMIN_BAR} />
+{jsxAdminBarSettings}
+{jsxAdminBarPlayground}
+{jsxAdminBarGenerateContent}
+{jsxAdminBarGenerateImages}
+</NekoBlock>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.USER_INTERFACE} className="primary">
-                    {jsxIntroMessage}
-                    {jsxAddOns}
-                  </NekoBlock>
+<NekoBlock busy={busy} title={i18n.COMMON.ADVANCED} className="primary">
+{jsxResolveShortcodes}
+{jsxContextMaxTokens}
+{jsxPublicAPI}
+{jsxBearerToken}
+{jsxDevTools}
+{jsxCleanUninstall}
+</NekoBlock>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.CHATBOT} className="primary">
-                    {jsxShortcodeDiscussions}
-                    {jsxShortcodeSyntaxHighlighting}
-                    {jsxWebSpeechAPI}
-                  </NekoBlock>
+<NekoBlock busy={busy} title={i18n.COMMON.SECURITY} className="primary">
+{jsxBannedKeywords}
+{jsxBannedIPs}
+</NekoBlock>
 
-                  {module_statistics && <NekoBlock busy={busy} title={i18n.COMMON.STATISTICS} className="primary">
-                    <p>{i18n.HELP.STATISTICS}</p>
-                    {jsxStatisticsData}
-                    {jsxStatisticsFormsData}
-                  </NekoBlock>}
+<NekoBlock busy={busy} title={i18n.COMMON.LEGACY_FEATURES} className="primary">
+{jsxShortcodeTypewriter}
+</NekoBlock>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.IMAGES} className="primary">
-                    <p><b>User Upload</b></p>
-                    {jsxImageLocalUpload}
-                    {jsxImageRemoteUpload}
-                    {jsxImageExpiration}
-                    <p><b>AI Generated</b></p>
-                    {jsxImageLocalDownload}
-                    {options?.image_local_download !== null && jsxImageExpirationDownload}
-                  </NekoBlock>
+</NekoColumn>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.ADMIN_TOOLS} className="primary">
-                    <NekoCollapsableCategory title={i18n.COMMON.ADMIN_BAR} />
-                    {jsxAdminBarSettings}
-                    {jsxAdminBarPlayground}
-                    {jsxAdminBarGenerateContent}
-                    {jsxAdminBarGenerateImages}
-                  </NekoBlock>
+</NekoWrapper>
+</NekoTab>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.ADVANCED} className="primary">
-                    {jsxResolveShortcodes}
-                    {jsxContextMaxTokens}
-                    {jsxPublicAPI}
-                    {jsxBearerToken}
-                    {jsxDevTools}
-                    {jsxCleanUninstall}
-                  </NekoBlock>
+{module_devtools && <NekoTab key="devtools" title={i18n.COMMON.DEV_TOOLS}>
+<DevToolsTab options={options} setOptions={setOptions} updateOption={updateOption} />
+</NekoTab>}
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.SECURITY} className="primary">
-                    {jsxBannedKeywords}
-                    {jsxBannedIPs}
-                  </NekoBlock>
+<NekoTab key="license" title={i18n.COMMON.LICENSE_TAB}>
+<LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
+</NekoTab>
 
-                  <NekoBlock busy={busy} title={i18n.COMMON.LEGACY_FEATURES} className="primary">
-                    {jsxShortcodeTypewriter}
-                  </NekoBlock>
+</NekoTabs>
 
-                </NekoColumn>
+</NekoColumn>
 
-              </NekoWrapper>
-            </NekoTab>
+</NekoWrapper>
 
-            {module_devtools && <NekoTab key="devtools" title={i18n.COMMON.DEV_TOOLS}>
-              <DevToolsTab options={options} setOptions={setOptions} updateOption={updateOption} />
-            </NekoTab>}
+<NekoModal isOpen={error}
+title={i18n.COMMON.ERROR}
+content={error}
+onRequestClose={() => setError(null)}
+okButton={{
+label: "Close",
+onClick: () => setError(null)
+}}
+/>
 
-            <NekoTab key="license" title={i18n.COMMON.LICENSE_TAB}>
-              <LicenseBlock domain={domain} prefix={prefix} isPro={isPro} isRegistered={isRegistered} />
-            </NekoTab>
-
-          </NekoTabs>
-
-        </NekoColumn>
-
-      </NekoWrapper>
-
-      <NekoModal isOpen={error}
-        title={i18n.COMMON.ERROR}
-        content={error}
-        onRequestClose={() => setError(false)}
-        okButton={{
-          label: "Close",
-          onClick: () => setError(false)
-        }}
-      />
-
-    </NekoPage>
-  );
+</NekoPage>
+);
 };
 
 export default Settings;

@@ -1,7 +1,6 @@
-// Previous: 2.4.9
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.5.1
 
-// React & Vendor Libs
 const { useState, useMemo, useLayoutEffect, useCallback, useEffect, useRef } = wp.element;
 
 import Markdown from 'markdown-to-jsx';
@@ -44,41 +43,52 @@ const ChatbotUI = (props) => {
   const [ autoScroll, setAutoScroll ] = useState(true);
   const { state, actions } = useChatbotContext();
   const { theme, botId, customId, messages, textCompliance, isWindow, fullscreen, iconPosition, iconBubble,
-    shortcuts, blocks, imageUpload, fileSearch, draggingType, isBlocked,
+    shortcuts, blocks, imageUpload, fileSearch, draggingType, isBlocked, virtualKeyboardFix,
     windowed, cssVariables, error, conversationRef, open, busy, uploadIconPosition } = state;
   const { resetError, onSubmit, setIsBlocked, setDraggingType, onUploadFile } = actions;
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
   const needTools = imageUpload || fileSearch;
   const needsFooter = needTools || textCompliance;
   const timeoutRef = useRef(null);
-  const isFullscreen = useMemo(() => !windowed || (!isWindow && fullscreen), [windowed, isWindow, fullscreen]);
 
   // #region Attempt to fix Android & iOS Virtual Keyboard
   const { viewportHeight, isIOS, isAndroid } = useViewport();
   useEffect(() => {
-    if (!(isIOS || isAndroid) || !(isWindow && fullscreen)) {
+    if (!virtualKeyboardFix) {
+      return;
+    }
+    if (!(isIOS || isAndroid)) {
+      return;
+    }
+    if (!isWindow) {
       return;
     }
     const scrollableDiv = document.querySelector('.mwai-window');
     if (scrollableDiv) {
-      scrollableDiv.style.height = `${viewportHeight}px`;
-      if (isIOS) {
-        const scrollToTop = () => {
-          if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-            window.scrollTo({ top: 0 });
-            // Unfortunately, the first scrollTo doesn't always work, so we need to do it again.
-            const scrollInterval = setInterval(() => {
+      if (open) {
+        scrollableDiv.style.height = `${viewportHeight}px`;
+        if (isIOS) {
+          const scrollToTop = () => {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
               window.scrollTo({ top: 0 });
-            }, 100);
-            setTimeout(() => {
-              clearInterval(scrollInterval);
-            }, 1000);
-          }
-        };
-        scrollToTop();
+              // Unfortunately, the first scrollTo doesn't always work, so we need to do it again.
+              const scrollInterval = setInterval(() => {
+                window.scrollTo({ top: 0 });
+              }, 100);
+              setTimeout(() => {
+                clearInterval(scrollInterval);
+              }, 1000);
+            }
+          };
+          scrollToTop();
+        }
+      }
+      else {
+        //console.log("UNSET THE HEIGHT");
+        scrollableDiv.style.height = '';
       }
     }
-  }, [fullscreen, isAndroid, isFullscreen, isIOS, isWindow, viewportHeight]);
+  }, [fullscreen, isAndroid, isIOS, isWindow, windowed, open, viewportHeight, virtualKeyboardFix]);
   // #endregion
 
   const baseClasses = css('mwai-chatbot', {
@@ -86,7 +96,7 @@ const ChatbotUI = (props) => {
     'mwai-window': isWindow,
     'mwai-bubble': iconBubble,
     'mwai-open': open,
-    'mwai-fullscreen': isFullscreen,
+    'mwai-fullscreen': !windowed || (!isWindow && fullscreen),
     'mwai-bottom-left': iconPosition === 'bottom-left',
     'mwai-top-right': iconPosition === 'top-right',
     'mwai-top-left': iconPosition === 'top-left',
@@ -226,7 +236,7 @@ const ChatbotUI = (props) => {
       if (!timeoutRef.current) {
         timeoutRef.current = setTimeout(() => {
           setDraggingType(false);
-          setIsBlocked(true);
+          setIsBlocked(false);
           timeoutRef.current = null;
         }, 100); // Adjust this delay as needed
       }

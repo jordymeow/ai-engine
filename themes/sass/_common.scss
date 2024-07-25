@@ -314,7 +314,7 @@
 			right: inherit;
 			left: 30px;
 
-			.mwai-open-button {
+			.mwai-trigger {
 				right: inherit;
 				left: 0;
 			}
@@ -325,7 +325,7 @@
 			bottom: inherit;
 			right: 30px;
 
-			.mwai-open-button {
+			.mwai-trigger {
 				top: 0;
 				bottom: inherit;
 			}
@@ -337,7 +337,7 @@
 			right: inherit;
 			left: 30px;
 
-			.mwai-open-button {
+			.mwai-trigger {
 				top: 0;
 				bottom: inherit;
 				right: inherit;
@@ -347,14 +347,14 @@
 
 		&.mwai-top-left, &.mwai-bottom-left {
 			
-			.mwai-open-button {
+			.mwai-trigger {
 				align-items: flex-start;
 			}
 		}
 
 		&.mwai-top-right, &.mwai-top-left {
 
-			.mwai-open-button {
+			.mwai-trigger {
 				flex-direction: column-reverse;
 
 				.mwai-icon-text {
@@ -409,7 +409,7 @@
 			opacity: 1;
 		}
 
-		.mwai-open-button {
+		.mwai-trigger {
 			display: none;
 		}
 	}
@@ -498,7 +498,7 @@
 				display: none !important;
 			}
 	
-			.mwai-open-button {
+			.mwai-trigger {
 				display: none;
 			}
 		}

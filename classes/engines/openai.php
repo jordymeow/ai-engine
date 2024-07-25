@@ -1074,15 +1074,24 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   }
 
   public function create_vector_store( $name = null, $expiry = null, $metadata = null ) {
-    $expiryInDays = $expiry ? max( 1, ceil( $expiry / 86400 ) ) : 7;
-    $result = $this->execute( 'POST', '/vector_stores', [
+    $body = [
       'name' => !empty( $name ) ? $name : 'default',
-      'metadata' => $metadata,
-      'expires_after' => [ 
-        'anchor' => 'last_active_at',
-        'days' => $expiryInDays
-      ]
-    ], null, true, [ 'OpenAI-Beta' => 'assistants=v2' ] );
+      'metadata' => $metadata
+    ];
+    if ( $expiry !== 'never' ) {
+      if ( is_string( $expiry ) ) {
+        error_log( 'AI Engine: Expiry is a string, setting it to 7 days.' );
+        $expiry = 7;
+      }
+      $expiryInDays = $expiry ? max( 1, ceil( (int)$expiry / 86400 ) ) : 7;
+      if ( $expiry && is_numeric( $expiry ) ) {
+        $body['expires_after'] = [
+          'anchor' => 'last_active_at',
+          'days' => $expiryInDays
+        ];
+      }
+    }
+    $result = $this->execute( 'POST', '/vector_stores', $body, null, true, [ 'OpenAI-Beta' => 'assistants=v2' ] );
     return $result['id'];
   }
 

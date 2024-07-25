@@ -1,20 +1,21 @@
-// Previous: 1.6.94
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.5.1
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
 const DefaultCSS = `.mwai-THEME_ID-theme {
   --mwai-spacing: 10px;
   --mwai-fontSize: 14px;
   --mwai-fontColor: #000;
-  --mwai-backgroundPrimaryColor: #fff;
-  --mwai-primaryColor: #0084ff;
-  --mwai-secondaryColor: #f0f0f0;
+  --mwai-bgPrimary: #fff;
+  --mwai-primary: #0084ff;
+  --mwai-secondary: #f0f0f0;
+  --mwai-width: 300px;
+  --mwai-borderRadius: 5px;
 }
 
 .mwai-THEME_ID-theme .mwai-content {
-  background: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-bgPrimary);
   padding: var(--mwai-spacing);
   font-size: var(--mwai-fontSize);
   color: var(--mwai-fontColor);
@@ -32,11 +33,11 @@ const DefaultCSS = `.mwai-THEME_ID-theme {
 }
 
 .mwai-THEME_ID-theme .mwai-reply.mwai-ai {
-  background: var(--mwai-secondaryColor);
+  background: var(--mwai-secondary);
 }
 
 .mwai-THEME_ID-theme .mwai-reply.mwai-user {
-  background: var(--mwai-primaryColor);
+  background: var(--mwai-primary);
   color: #fff;
 }
 
@@ -47,14 +48,117 @@ const DefaultCSS = `.mwai-THEME_ID-theme {
 .mwai-THEME_ID-theme .mwai-input {
   display: flex;
   align-items: center;
-  column-gap: 5px;
+  gap: 5px;
 }
 
 .mwai-THEME_ID-theme .mwai-input-text {
   display: flex;
   align-items: center;
-}`;
+  flex: 1;
+}
 
+.mwai-THEME_ID-theme .mwai-input-text textarea {
+  flex: 1;
+}
+
+.mwai-THEME_ID-theme .mwai-trigger {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  transition: all 0.2s ease-out;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mwai-THEME_ID-theme .mwai-trigger .mwai-icon-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mwai-THEME_ID-theme .mwai-trigger .mwai-icon-text {
+  background: var(--mwai-iconTextBackgroundColor);
+  color: var(--mwai-iconTextColor);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+  max-width: 200px;
+  font-size: 13px;
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+.mwai-THEME_ID-theme .mwai-reply-actions .mwai-copy-button {
+  fill: var(--mwai-fontColor);
+  padding: 3px 5px;
+  width: 24px;
+  height: 24px;
+  background: var(--mwai-bgPrimary);
+  cursor: pointer;
+  border-radius: var(--mwai-borderRadius);
+  display: none;
+}
+
+.mwai-THEME_ID-theme .mwai-reply-actions:not(.mwai-hidden) .mwai-copy-button {
+  display: block;
+}
+
+.mwai-THEME_ID-theme.mwai-window {
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+  width: var(--mwai-width);
+  z-index: 9999;
+}
+
+.mwai-THEME_ID-theme.mwai-window .mwai-content {
+  display: none;
+  opacity: 0;
+  max-height: var(--mwai-maxHeight);
+  border-radius: 0 0 var(--mwai-borderRadius) var(--mwai-borderRadius);
+}
+
+.mwai-THEME_ID-theme.mwai-window.mwai-bottom-left,
+.mwai-THEME_ID-theme.mwai-window.mwai-top-left {
+  right: auto;
+  left: 30px;
+}
+
+.mwai-THEME_ID-theme.mwai-window.mwai-top-right,
+.mwai-THEME_ID-theme.mwai-window.mwai-top-left {
+  top: 30px;
+  bottom: auto;
+}
+
+.mwai-THEME_ID-theme.mwai-window.mwai-open .mwai-trigger {
+  display: none;
+}
+
+.mwai-THEME_ID-theme.mwai-window.mwai-open .mwai-content {
+  display: flex;
+  flex-direction: column;
+  transition: opacity 200ms ease-in-out;
+  opacity: 1;
+}
+
+.mwai-THEME_ID-theme.mwai-window .mwai-header {
+  display: none;
+  justify-content: flex-end;
+  height: 22px;
+}
+
+.mwai-THEME_ID-theme.mwai-window.mwai-open .mwai-header {
+  display: flex;
+}
+
+.mwai-THEME_ID-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
+  content: '╳';
+  cursor: pointer;
+}
+`;
+
+// NekoUI
 import { NekoInput, NekoButton,
   NekoTextArea, NekoSpacer } from '@neko-ui';
 
@@ -70,16 +174,12 @@ const CustomTheme = (props) => {
   }, [theme]);
 
   const isDirty = useMemo(() => {
-    return css !== theme.style;
+    return css.trim() !== theme.style.trim();
   }, [css, theme]);
 
   const setDefaultCSS = () => {
     const newCss = DefaultCSS.replace(/THEME_ID/g, theme.themeId);
     setCss(newCss);
-  };
-
-  const handleCssChange = (value) => {
-    setCss(value);
   };
 
   return (<StyledBuilderForm>
@@ -105,7 +205,10 @@ const CustomTheme = (props) => {
     </div>
     <NekoSpacer />
     <label>Custom CSS:</label>
-    <NekoTextArea name="css" value={css} onChange={handleCssChange} rows={16} tabToSpaces={2}></NekoTextArea>
+    <NekoTextArea name="css" value={css} onChange={(val) => {
+      setCss(val);
+    }} rows={16} tabToSpaces={2}></NekoTextArea>
+
     <div style={{ display: 'flex' }}>
       <NekoButton fullWidth onClick={setDefaultCSS}>
         Default CSS

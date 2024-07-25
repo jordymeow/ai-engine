@@ -852,7 +852,7 @@
   left: 30px;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-bottom-left .mwai-open-button {
+.mwai-chatgpt-theme.mwai-window.mwai-bottom-left .mwai-trigger {
   right: inherit;
   left: 0;
 }
@@ -863,7 +863,7 @@
   right: 30px;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-top-right .mwai-open-button {
+.mwai-chatgpt-theme.mwai-window.mwai-top-right .mwai-trigger {
   top: 0;
   bottom: inherit;
 }
@@ -875,22 +875,22 @@
   left: 30px;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-open-button {
+.mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-trigger {
   top: 0;
   bottom: inherit;
   right: inherit;
   left: 0;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-open-button, .mwai-chatgpt-theme.mwai-window.mwai-bottom-left .mwai-open-button {
+.mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-trigger, .mwai-chatgpt-theme.mwai-window.mwai-bottom-left .mwai-trigger {
   align-items: flex-start;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-top-right .mwai-open-button, .mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-open-button {
+.mwai-chatgpt-theme.mwai-window.mwai-top-right .mwai-trigger, .mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-trigger {
   flex-direction: column-reverse;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-top-right .mwai-open-button .mwai-icon-text, .mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-open-button .mwai-icon-text {
+.mwai-chatgpt-theme.mwai-window.mwai-top-right .mwai-trigger .mwai-icon-text, .mwai-chatgpt-theme.mwai-window.mwai-top-left .mwai-trigger .mwai-icon-text {
   margin-bottom: 0;
   margin-top: 15px;
 }
@@ -951,7 +951,7 @@
   opacity: 1;
 }
 
-.mwai-chatgpt-theme.mwai-window.mwai-open .mwai-open-button {
+.mwai-chatgpt-theme.mwai-window.mwai-open .mwai-trigger {
   display: none;
 }
 
@@ -1055,7 +1055,7 @@
   .mwai-chatgpt-theme.mwai-window.mwai-open .mwai-resize-button {
     display: none !important;
   }
-  .mwai-chatgpt-theme.mwai-window.mwai-open .mwai-open-button {
+  .mwai-chatgpt-theme.mwai-window.mwai-open .mwai-trigger {
     display: none;
   }
 }
