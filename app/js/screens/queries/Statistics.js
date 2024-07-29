@@ -1,5 +1,5 @@
-// Previous: 2.0.2
-// Current: 2.2.4
+// Previous: 2.2.4
+// Current: 2.5.2
 
 const { useMemo, useState } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,7 @@ const Statistics = ({ options, updateOption, busy }) => {
     staleTime: 1000 * 60 * 60 * 24
   });
 
+
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
     await updateOption(newParams, 'limits');
@@ -61,7 +62,7 @@ const Statistics = ({ options, updateOption, busy }) => {
   };
 
   const onResetLimits = async () => {
-    if (!confirm(i18n.ALERTS.ARE_YOU_SURE)) {
+    if (confirm(i18n.ALERTS.ARE_YOU_SURE)) {
       await updateOption(default_limits, 'limits');
     }
   };

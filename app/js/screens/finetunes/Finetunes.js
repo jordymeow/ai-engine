@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.7
+// Previous: 2.3.7
+// Current: 2.5.2
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,10 +13,9 @@ import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon
 import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
-import Generator from '@app/screens/finetunes/Generator';
+import Generator from '@app/screens/finetunes/ Generator';
 import i18n from '@root/i18n';
-import { retrieveFilesFromOpenAI, retrieveFineTunes } from '@app/requests';
-import { retrieveDeletedFineTunes } from '@app/requests';
+import { retrieveFilesFromOpenAI, retrieveFineTunes, retrieveDeletedFineTunes } from '@app/requests';
 
 const builderColumnsEasy = [
   { accessor: 'row', title: "#", width: 25, verticalAlign: 'top' },
@@ -53,6 +52,7 @@ const fineTuneColumns = [
 
 const StatusIcon = ({ status, includeText = false }) => {
   const { colors } = useNekoColors();
+
   const orange = colors.orange;
   const green = colors.green;
   const red = colors.red;
@@ -83,7 +83,7 @@ const StatusIcon = ({ status, includeText = false }) => {
   }
   if (includeText) {
     return <div style={{ display: 'flex', alignItems: 'center' }}>
-      {icon} 
+      {icon}
       <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3 }}>{status}</span>
     </div>;
   }
@@ -109,7 +109,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%', width: '100%' }}
         onEnter={onSave} onBlur={onSave} value={data} />
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
     </div>;
   }
 
@@ -169,7 +169,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     }
   }, [section]);
 
-  useEffect(() => { if (errFiles && !errorModal) setErrorModal(errFiles); }, [errFiles]);
+  useEffect(() => { errFiles && !errorModal && setErrorModal(errFiles); }, [errFiles]);
 
   const rowsPerPage = 10;
   const [ hasStorageBackup, setHasStorageBackup ] = useState(true);
@@ -201,10 +201,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       }
       return null;
     }).filter(index => index !== null);
-  
+
     setInvalidEntries(invalidIndices);
     setIsValid(invalidIndices.length === 0);
-  }, [entries]);  
+  }, [entries]);
 
   const onDeleteRow = (line) => {
     const newData = entries.filter((x, i) => i !== (line - 1));
@@ -235,7 +235,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries(['datasets']);
+    await queryClient.invalidateQueries('datasets');
   };
 
   const onRefreshFiles = async () => {
@@ -336,11 +336,11 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const rewriteInstructions = (value) => {
     let shouldReplace = false;
     let shouldAdd = false;
-  
+
     for (let i = 0; i < entries.length; i++) {
       const currentEntry = entries[i];
       const messages = currentEntry.messages;
-  
+
       if (messages && messages.length > 0) {
         if (messages[0].role === 'system') {
           if (messages[0].content !== value) {
@@ -381,7 +381,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       }
     }
   };
-  
+
 
   const updateInstructions = (value) => {
     setInstructions(value);
@@ -431,7 +431,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         if (messageRow) {
           return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content }; }
-            return y; 
+            return y;
           })};
         }
         else if (role === 'assistant') {
@@ -487,15 +487,15 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           onUpdateDataRow={onUpdateDataRow}
           onDeleteDataRow={onDeleteDataRow}
         />,
-        question: 
+        question:
           <EditableText data={question} onChange={value => onUpdateDataRow(currentRow, 'user', value)}>
             {question}
           </EditableText>,
-        answer: 
+        answer:
           <EditableText data={answer} onChange={value => onUpdateDataRow(currentRow, 'assistant', value)}>
             {answer}
           </EditableText>,
-        actions: 
+        actions:
         <>
           {isExpert && <NekoButton rounded icon="plus" onClick={() => addMessage(currentRow)} />}
           <NekoButton rounded icon="trash" onClick={() => onDeleteRow(currentRow)} />
@@ -507,7 +507,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const deleteFile = async (fileId) => {
     setBusyAction(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/openai/files/delete`, { method: 'POST', nonce: restNonce, 
+      const res = await nekoFetch(`${apiUrl}/openai/files/delete`, { method: 'POST', nonce: restNonce,
         json: { envId: envId, fileId }
       });
       if (res.success) {
@@ -525,13 +525,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   const cancelFineTune = async (finetuneId) => {
-    // Are you sure
-    // if (!confirm(i18n.ALERTS.DELETE_FINETUNE)) {
-    //   return;
-    // }
     setBusyAction(true);
     try {
-      const res = await nekoFetch(`${apiUrl}/openai/finetunes/cancel`, { 
+      const res = await nekoFetch(`${apiUrl}/openai/finetunes/cancel`, {
         method: 'POST', nonce: restNonce, json: { envId: envId, finetuneId }
       });
       if (res.success) {
@@ -717,10 +713,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     setBusyAction(true);
     try {
       const data = entries.map(x => {
-        const jsonStr = nekoStringify(x);
-        return jsonStr;
+        const json = nekoStringify(x);
+        return json;
       }).join("\n");
-      const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce, 
+      const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce,
         json: { envId: envId, filename, data }
       });
       await refreshFiles();
@@ -810,7 +806,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             const completionValue = values[completionKey];
             const completionValueClean = completionValue?.replace(/\n\n$/g, '');
             const promptValueClean = promptValue?.replace(/\n\n###\n\n$/g, '');
-            
+
             if (!promptValue || !completionValue) {
               return null;
             }
@@ -830,6 +826,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           });
         }
 
+        // Clean the data
         data = data.filter(x => x);
         const hasMessages = data.every(x => x?.messages);
         if (!hasMessages) {
@@ -901,155 +898,194 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   }, [invalidEntries, rowsPerPage]);
 
   return (<>
+
     <NekoWrapper>
       <NekoColumn fullWidth minimal style={{ margin: 8 }}>
-          <NekoTabs inversed currentTab={section}
-            onChange={(_index, attributes) => { setSection(attributes.key) }}
-            action={<>
-              <div style={{ flex: 'auto' }} />
-              {section === 'finetunes' && <>
-                <NekoButton disabled={busyAction} busy={busyAction === 'finetunes'}
-                  onClick={onRefreshFineTunes} className="secondary">
-                  {i18n.COMMON.REFRESH_MODELS}
-                </NekoButton>
-                {jsxEnvironments}
-              </>}
-              {section === 'files' && <>
-                <NekoButton disabled={busyAction} onClick={onRefreshFiles} className="secondary">
+
+        <NekoTabs inversed currentTab={section}
+          onChange={(_index, attributes) => { setSection(attributes.key); }}
+          action={<>
+            <div style={{ flex: 'auto' }} />
+            {section === 'finetunes' && <>
+              <NekoButton disabled={busyAction} busy={busyAction === 'finetunes'}
+                onClick={onRefreshFineTunes} className="secondary">
+                {i18n.COMMON.REFRESH_MODELS}
+              </NekoButton>
+              {jsxEnvironments}
+            </>}
+            {section === 'files' && <>
+              <NekoButton disabled={busyAction} onClick={onRefreshFiles} className="secondary">
                   Refresh Files
-                </NekoButton>
-                {jsxEnvironments}
-              </>}
-              {section === 'editor' && <>
-                <label style={{ marginRight: 10 }}>Filename:</label>
-                <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
-                  onChange={setFilename} style={{ width: 220, marginRight: 5 }} />
-                <NekoButton className="secondary" disabled={!isValid || busyAction} icon="upload"
-                  onClick={onUploadDataSet}>
+              </NekoButton>
+              {jsxEnvironments}
+            </>}
+            {section === 'editor' && <>
+              <label style={{ marginRight: 10 }}>Filename:</label>
+              <NekoInput disabled={!totalRows || busyAction} value={totalRows ? filename : ''}
+                onChange={setFilename} style={{ width: 220, marginRight: 5 }} />
+              <NekoButton className="secondary" disabled={!isValid || busyAction} icon="upload"
+                onClick={onUploadDataSet}>
                   Upload to OpenAI
-                </NekoButton>
-                {jsxEnvironments}
-              </>}
-            </>}>
-            <NekoTab title={i18n.COMMON.MODELS} key='finetunes'>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>{toHTML(i18n.FINETUNING.MODELS_INTRO)}</div>
-                <NekoQuickLinks value={modelFilter} onChange={value => { setModelFilter(value); }}>
-                  <NekoLink title="Current" value='current' count={currentModelsCount ?? '-'} />
-                  <NekoLink title="Failed" value='failed' count={failedModelsCount ?? '-'} />
-                  <NekoLink title="Deleted" value='deleted' count={deletedModelsCount ?? '-'} />
-                </NekoQuickLinks>
-              </div>
-              <NekoSpacer />
-              <NekoTable busy={busy}
-                data={fineTuneRows} columns={fineTuneColumns} 
-                emptyMessage={i18n.FINETUNING.NO_FINETUNES_YET}
-              />
-              <div style={{ marginTop: 5, display: 'flex', justifyContent: 'end', lineHeight: '12px',
-                alignItems: 'center' }}>
-                <NekoButton small disabled={busyAction} busy={busyAction === 'clean'}
-                  onClick={onCleanFineTunes} className="primary">
-                  {i18n.FINETUNING.CLEAN_MODELS_LIST}
-                </NekoButton>
-                <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
-              </div>
-            </NekoTab>
-            <NekoTab title={i18n.COMMON.FILES} key='files'>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>{toHTML(i18n.FINETUNING.FILES_INTRO)}</div>
-                <NekoQuickLinks value={purposeFilter} onChange={value => { setPurposeFilter(value); }}>
-                  <NekoLink title="Datasets" value='fine-tune' />
-                  <NekoLink title="All" value={null} />
-                </NekoQuickLinks>
-              </div>
-              <NekoSpacer />
-              <NekoTable busy={busy}
-                data={fileRows} columns={fileColumns} 
-                emptyMessage={<>You do not have any dataset files yet.</>}
-              />
-            </NekoTab>
-            <NekoTab title={i18n.FINETUNING.DATASET_EDITOR} key='editor'>
+              </NekoButton>
+              {jsxEnvironments}
+            </>}
+          </>}>
+
+          <NekoTab title={i18n.COMMON.MODELS} key='finetunes'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>{toHTML(i18n.FINETUNING.MODELS_INTRO)}</div>
+              <NekoQuickLinks value={modelFilter} onChange={value => { setModelFilter(value); }}>
+                <NekoLink title="Current" value='current' count={currentModelsCount ?? '-'} />
+                <NekoLink title="Failed" value='failed' count={failedModelsCount ?? '-'} />
+                <NekoLink title="Deleted" value='deleted' count={deletedModelsCount ?? '-'} />
+              </NekoQuickLinks>
+            </div>
+            <NekoSpacer />
+            <NekoTable busy={busy}
+              data={fineTuneRows} columns={fineTuneColumns}
+              emptyMessage={i18n.FINETUNING.NO_FINETUNES_YET}
+            />
+            <div style={{ marginTop: 5, display: 'flex', justifyContent: 'end', lineHeight: '12px',
+              alignItems: 'center' }}>
+              <NekoButton small disabled={busyAction} busy={busyAction === 'clean'}
+                onClick={onCleanFineTunes} className="primary">
+                {i18n.FINETUNING.CLEAN_MODELS_LIST}
+              </NekoButton>
+              <small style={{ marginLeft: 5 }}>{i18n.FINETUNING.DELETED_FINETUNE_ISSUE}</small>
+            </div>
+          </NekoTab>
+
+          <NekoTab title={i18n.COMMON.FILES} key='files'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>{toHTML(i18n.FINETUNING.FILES_INTRO)}</div>
+              <NekoQuickLinks value={purposeFilter} onChange={value => { setPurposeFilter(value); }}>
+                <NekoLink title="Datasets" value='fine-tune' />
+                <NekoLink title="All" value={null} />
+              </NekoQuickLinks>
+            </div>
+            <NekoSpacer />
+            <NekoTable busy={busy}
+              data={fileRows} columns={fileColumns}
+              emptyMessage={<>You do not have any dataset files yet.</>}
+            />
+          </NekoTab>
+
+          <NekoTab title={i18n.FINETUNING.DATASET_EDITOR} key='editor'>
+
             {!hasStorageBackup && <p style={{ color: 'red' }}>{i18n.FINETUNING.HUGE_DATASET_WARNING}</p>}
+
             <NekoToolbar style={{ display: 'flex' }}>
+
               <NekoButton icon="plus" onClick={() => addRow()} disabled={busyAction}>
                 Add Entry
               </NekoButton>
+
               {isExpert && <NekoButton onClick={() => rewriteInstructions(instructions)} disabled={busyAction}>
                 Rewrite Instructions
               </NekoButton>}
+
               <div style={{ flex: 'auto' }} />
+
               <NekoSwitch style={{ marginLeft: 5 }}
                 onLabel={"Expert"} offLabel={"Easy"} width={90}
                 onBackgroundColor={colors.purple} offBackgroundColor={colors.green}
                 onChange={setIsExpert} checked={isExpert}
               />
+
               <NekoUploadDropArea ref={ref} onSelectFiles={onSelectFiles} accept={''} style={{ paddingLeft: 5 }}>
                 <NekoButton className="secondary" onClick={() => ref.current.click() }>
                   Import
                 </NekoButton>
               </NekoUploadDropArea>
+
               <NekoButton disabled={!totalRows} onClick={onClearDataset} className="secondary">
                 Clear
               </NekoButton>
+
             </NekoToolbar>
+
             <NekoSpacer />
+
             {entries.length > 0 && invalidEntries?.length > 0 && <>
               <NekoMessage variant="danger">
                 {jsxInvalidEntries}
               </NekoMessage>
               <NekoSpacer />
             </>}
+
             <NekoCollapsableCategories keepState="datasetEditor">
+
               <NekoCollapsableCategory title="Dataset">
+
                 <NekoSpacer tiny />
+
                 <div style={{ display: 'flex' }}>
                   <div style={{ flex: 'auto' }} />
                   <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
                     onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
                 </div>
+
                 <NekoSpacer tiny />
+
                 <NekoTable busy={busyAction}
                   data={builderRows} columns={isExpert ? builderColumnsExpert : builderColumnsEasy}
                   emptyMessage={<>You can import a file, or create manually each entry by clicking <b>Add</b>.</>}
                 />
+
                 <NekoSpacer tiny />
+
                 <div style={{ display: 'flex' }}>
                   <div style={{ flex: 'auto' }} />
                   <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-                    onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
+                    onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
                   <NekoButton disabled={!totalRows} style={{ marginLeft: 5 }} onClick={exportAsJSON}>
                     Export as JSON
                   </NekoButton>
                 </div>
+
               </NekoCollapsableCategory>
+
               <NekoCollapsableCategory title={i18n.COMMON.CONTEXT}>
+
                 <NekoSpacer />
+
                 <span>
                   The instructions are the same for all entries. It is used as the <i>system</i> (and first) message in each conversation. More information <a href="https://platform.openai.com/docs/guides/fine-tuning/preparing-your-dataset" target="_blank" rel="noreferrer">here</a>.
                 </span>
+
                 <NekoSpacer />
+
                 <NekoTextArea id="instructions" name="instructions" rows={2}
                   value={instructions} onBlur={updateInstructions} onEnter={updateInstructions}
                 />
+
               </NekoCollapsableCategory>
+
               <NekoCollapsableCategory title="Generator">
                 <NekoSpacer />
-                <Generator options={options} setMessages={setEntries} />
+                <Generator options={options} instructions={instructions} setMessages={setEntries} />
                 <NekoMessage variant="danger">
                   Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a <u>high cost</u>.
                 </NekoMessage>
               </NekoCollapsableCategory>
+
               <NekoCollapsableCategory title="Instructions">
                 <p>
                   You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">case studies</a>. Please also check the <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
                 </p>
               </NekoCollapsableCategory>
+
             </NekoCollapsableCategories>
+
           </NekoTab>
+
         </NekoTabs>
+
       </NekoColumn>
     </NekoWrapper>
+
     <NekoContainer style={{ margin: 10 }}>
+
       <NekoModal isOpen={errorModal}
         title="Error"
         onRequestClose={() => setErrorModal()}
@@ -1061,6 +1097,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           <p>{errorModal?.message}</p>
         </>}
       />
+
       <NekoModal isOpen={fileForFineTune}
         title="Train a new model"
         onRequestClose={() => setFileForFineTune()}

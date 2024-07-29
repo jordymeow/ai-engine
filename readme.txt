@@ -5,7 +5,7 @@ Donate link: https://meowapps.com/donation/
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.1
+Stable tag: 2.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,15 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.5.2 (2024/07/29) =
+* Add: New settings related to GDPR. The user will now have to accept conditions before using the chatbot.
+* Update: Retrieve content from remote vectors, if needed and if the local ones are not available.
+* Fix: Insert the System Message when a new entry is created in the Dataset Generator.
+* Fix: Avoid an issue with empty but existing argument with tools.
+* Fix: Issues related to buttons/shortcuts and their CSS.
+* Fix: Allow having AI Forms without inputs.
+* Fix: The Reset Limits issue.
 
 = 2.5.1 (2024/07/25) =
 * Add: Option to enable or disable the Virtual Keyboard Fix.

@@ -57,6 +57,11 @@ class Meow_MWAI_Core
 			new Meow_MWAI_Admin( $this );
 		}
 
+		// GDPR Module
+		if ( $this->get_option( 'chatbot_gdpr_consent' ) ) {
+			new Meow_MWAI_Modules_GDPR( $this );
+		}
+
 		// Suggestions Module
 		if ( $this->get_option( 'module_suggestions' ) && ( is_admin() || $this->is_rest ) ) {
 			$this->magicWand = new Meow_MWAI_Modules_Wand( $this );
