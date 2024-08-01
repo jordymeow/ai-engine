@@ -1,5 +1,5 @@
-// Previous: 2.4.6
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.5.3
 
 import { useClasses } from '@app/chatbot/helpers';
 const { useState, useEffect, useRef, useCallback } = wp.element;
@@ -58,19 +58,15 @@ const ReplyActions = ({ enabled, content, children, className, ...rest }) => {
 
   const svgPath = copyStatus === 'success' ? svgPathSuccess : copyStatus === 'error' ? svgPathError : svgPathDefault;
 
-  if (!enabled) {
-    return <span className={className}>{children}</span>;
-  }
-
   return (
     <div {...rest} onMouseLeave={handleMouseLeave} onMouseEnter={handleMouseEnter} onMouseOver={handleMouseEnter}>
       <span className={className}>
         {children}
       </span>
       <div className={css('mwai-reply-actions', { 'mwai-hidden': hidden })}>
-        <div className="mwai-copy-button" onClick={onCopy}>
+        {enabled && <div className="mwai-copy-button" onClick={onCopy}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: svgPath }} />
-        </div>
+        </div>}
       </div>
     </div>
   );

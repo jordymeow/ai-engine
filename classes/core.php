@@ -1032,6 +1032,22 @@ class Meow_MWAI_Core
 				'install_url' => "https://meowapps.com/products/mwai-ollama/",
 				'settings_url' => null,
 				'enabled' => false
+			], [
+				'slug' => "mwai-websearch",
+				'name' => "Web Search",
+				'icon_url' => MeowCommon_Admin::$logo,
+				'description' => "This add-on for AI Engine enhances the AI models' responses by incorporating additional context. It currently supports Google Search.",
+				'install_url' => "https://meowapps.com/products/mwai-websearch/",
+				'settings_url' => null,
+				'enabled' => false
+			], [
+				'slug' => "mwai-better-links",
+				'name' => "Better Links",
+				'icon_url' => MeowCommon_Admin::$logo,
+				'description' => "This add-on for AI Engine adds link validation and term linking features.",
+				'install_url' => "https://meowapps.com/products/mwai-better-links/",
+				'settings_url' => null,
+				'enabled' => false
 			]
 		] );
 
@@ -1041,9 +1057,7 @@ class Meow_MWAI_Core
 	function get_all_options( $force = false, $sanitize = false ) {
 		if ( $force || is_null( $this->options ) ) {
 			$options = get_option( $this->option_name, [] );
-			if ( $sanitize ) {
-				$options = $this->sanitize_options( $options );
-			}
+			$init_mode = empty( $options );
 			foreach ( MWAI_OPTIONS as $key => $value ) {
 				if ( !isset( $options[$key] ) ) {
 					$options[$key] = $value;
@@ -1051,6 +1065,9 @@ class Meow_MWAI_Core
 			}
 			$options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
 			$options['default_limits'] = MWAI_LIMITS;
+			if ( $sanitize || $init_mode ) {
+				$options = $this->sanitize_options( $options );
+			}
 			$this->options = $options;
 		}
 		$options = $this->populate_dynamic_options( $this->options );

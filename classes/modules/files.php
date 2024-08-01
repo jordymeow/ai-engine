@@ -22,8 +22,9 @@ class Meow_MWAI_Modules_Files {
 	}
 
   public function cleanup_expired_files() {
+    $current_time = current_time( 'mysql' );
+    $expired_files = [];
     if ( $this->check_db() ) {
-      $current_time = current_time( 'mysql' );
       $expired_files = $this->wpdb->get_results( 
         "SELECT * FROM $this->table_files WHERE expires IS NOT NULL AND expires < '{$current_time}'"
       );
@@ -659,27 +660,28 @@ class Meow_MWAI_Modules_Files {
     $this->db_check = $table_files_exists && $table_filemeta_exists;
 
     // LATER: REMOVE THIS AFTER MARCH 2024
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'userId'" );
-    if ( !$this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN userId BIGINT(20) UNSIGNED NULL" );
-      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN purpose VARCHAR(32) NULL" );
-      $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN path TEXT NULL" );
-      $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN metadata" );
-      $this->db_check = true;
-    }
-    // LATER: REMOVE THIS AFTER MARCH 2024
-    $this->db_check = $this->db_check && !$this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'fileId'" );
-    if ( !$this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN refId VARCHAR(64) NOT NULL" );
-      $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN fileId" );
-      $this->db_check = true;
-    }
-    // LATER: REMOVE THIS AFTER MARCH 2024
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'envId'" );
-    if ( !$this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN envId VARCHAR(128) NULL" );
-      $this->db_check = true;
-    }
+    // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'userId'" );
+    // if ( !$this->db_check ) {
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN userId BIGINT(20) UNSIGNED NULL" );
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN purpose VARCHAR(32) NULL" );
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN path TEXT NULL" );
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN metadata" );
+    //   $this->db_check = true;
+    // }
+    // // LATER: REMOVE THIS AFTER MARCH 2024
+    // $this->db_check = $this->db_check && !$this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'fileId'" );
+    // if ( !$this->db_check ) {
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN refId VARCHAR(64) NOT NULL" );
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN fileId" );
+    //   $this->db_check = true;
+    // }
+    // // LATER: REMOVE THIS AFTER MARCH 2024
+    // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'envId'" );
+    // if ( !$this->db_check ) {
+    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN envId VARCHAR(128) NULL" );
+    //   $this->db_check = true;
+    // }
+
     return $this->db_check;
   }
 

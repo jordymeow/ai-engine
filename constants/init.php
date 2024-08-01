@@ -81,6 +81,7 @@ define ( 'MWAI_LIMITS', [
 ] );
 
 define( 'MWAI_OPTIONS', [
+	'module_addons' => true,
 	'module_suggestions' => true,
 	'module_chatbots' => true,
 	'module_forms' => false,
@@ -158,7 +159,6 @@ define( 'MWAI_OPTIONS', [
 	'server_debug_mode' => true,
 	'logs_path' => null,
 	'intro_message' => true,
-	'addons' => true,
 	'resolve_shortcodes' => false,
 	'context_max_length' => 4096,
 	'banned_words' => [],

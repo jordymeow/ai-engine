@@ -386,7 +386,7 @@ class Meow_MWAI_Modules_Chatbot {
 			$rawText = $reply->result;
 			$extra = [];
 			if ( $context ) {
-				$extra = [ 'embeddings' => $context['embeddings'] ];
+				$extra = [ 'embeddings' => isset( $context['embeddings'] ) ? $context['embeddings'] : null ];
 			}
 			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
 

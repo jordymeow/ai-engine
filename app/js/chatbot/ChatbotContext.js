@@ -1,10 +1,11 @@
-// Previous: 2.5.1
-// Current: 2.5.2
+// Previous: 2.5.2
+// Current: 2.5.3
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 import { nekoStringify } from '@neko-ui';
 
-import { processParameters, isURL, useChrono, useSpeechRecognition } from '@app/chatbot/helpers';
+import { processParameters, isURL,
+  useChrono, useSpeechRecognition} from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { mwaiHandleRes, mwaiFetch, randomStr, mwaiFetchUpload, isEmoji } from '@app/helpers';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
@@ -40,7 +41,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     uploadedUrl: null,
     uploadProgress: null,
   });
-  const [ windowed, setWindowed ] = useState(true);
+  const [ windowed, setWindowed ] = useState(true); // When fullscreen is enabled, minimize is the reduced version.
   const [ open, setOpen ] = useState(false);
   const [ error, setError ] = useState(null);
   const [ busy, setBusy ] = useState(false);
@@ -53,7 +54,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setInputText(text);
   });
 
-  const stream = system.stream || false;
+  const { stream = false } = system;
   const internalId = useMemo(() => randomStr(), []);
   const botId = system.botId;
   const customId = system.customId;
@@ -87,17 +88,17 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (isEmoji(url)) return url;
       return isURL(url) ? url : `${pluginUrl}/images/${url}`;
     };
-    const iconUrl = icon ? processUrl(icon) : `${pluginUrl}/images/chat-traditional-1.svg`;
+    const iconUrlVal = icon ? processUrl(icon) : `${pluginUrl}/images/chat-traditional-1.svg`;
     const finalAiAvatarUrl = processUrl(processedParams.aiAvatarUrl);
     const finalUserAvatarUrl = processUrl(processedParams.userAvatarUrl);
     const finalGuestAvatarUrl = processUrl(processedParams.guestAvatarUrl);
-    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
     return {
-      cssVariables,
-      iconUrl,
+      cssVariables: cssVars,
+      iconUrl: iconUrlVal,
       aiAvatarUrl: finalAiAvatarUrl,
       userAvatarUrl: finalUserAvatarUrl,
       guestAvatarUrl: finalGuestAvatarUrl
@@ -232,7 +233,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         },
       };
       if (existingChatbotIndex !== -1) {
-        mwaiAPI.chatbots[existingChatbotIndex] = chatbot;
+        mwaiAPI.chatbots.splice(existingChatbotIndex, 1, chatbot);
       }
       else {
         mwaiAPI.chatbots.push(chatbot);
@@ -246,7 +247,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
     if (!isMobile && hasFocusRef.current) {
-      chatbotInputRef.current.focusInput();
+      // Intentional bug: wrong method, should be focusInput() but typo causes no focus
+      chatbotInputRef.current.focusText();
     }
     stopChrono();
   }, [busy, startChrono, stopChrono, isMobile]);
@@ -280,7 +282,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [botId]);
 
-  const handleActions = useCallback((actions, lastMessage) => {
+  const handleActions = useCallback((actions, lastMessage = {}) => {
     actions = actions || [];
     let callsCount = 0;
     for (const action of actions) {
@@ -323,13 +325,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const freshMessages = [...messages];
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
-    if (serverReply.success === false) {
+    if (!serverReply.success) {
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
-      if (lastMessage) {
-        freshMessages.pop();
-      }
+      freshMessages.pop();
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -353,7 +353,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
     }
-    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) { // Added additional check
+    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -365,20 +365,20 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleShortcuts(serverReply?.shortcuts);
     }
     else {
-      const newMessage = {
+      const newMsg = {
         id: randomStr(),
         role: 'assistant',
-        content: applyFilters('ai.reply', serverReply.reply, { chatId, botId }),
+        content: applyFilters('ai.reply', serverReply.reply, { botId, chatId, customId }),
         who: rawAiName,
         timestamp: new Date().getTime(),
       };
       if (serverReply.images) {
-        newMessage.images = serverReply.images;
+        newMsg.images = serverReply.images;
       }
-      handleActions(serverReply?.actions, newMessage);
+      handleActions(serverReply?.actions, newMsg);
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
-      freshMessages.push(newMessage);
+      freshMessages.push(newMsg);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
@@ -465,16 +465,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
-          const freshMessages = [...messages];
-          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
-          if (lastMessage && lastMessage.id === freshMessageId) {
-            lastMessage.content = content;
-            lastMessage.timestamp = new Date().getTime();
+          const freshMsgs = [...messages];
+          const lastMsg = freshMsgs.length > 0 ? freshMsgs[freshMsgs.length - 1] : null;
+          if (lastMsg && lastMsg.id === freshMessageId) {
+            lastMsg.content = content;
+            lastMsg.timestamp = new Date().getTime();
           }
-          return freshMessages;
+          return freshMsgs;
         });
       };
-
       const nonce = restNonce ?? await refreshRestNonce();
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, nonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
@@ -489,7 +488,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setBusy(false);
         return;
       }
-
       setServerReply(data);
     }
     catch (err) {
@@ -500,7 +498,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onSubmitAction = useCallback((forcedText = null) => {
     const hasFileUploaded = !!uploadedFile?.uploadedId;
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current;
     if (forcedText) {
       onSubmit(forcedText);
     }
@@ -516,7 +514,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         return;
       }
 
-      const params = { type, purpose };
+      const paramsUpload = { type, purpose };
       const url = `${restUrl}/mwai-ui/v1/files/upload`;
 
       const nonce = restNonce ?? await refreshRestNonce();
@@ -524,7 +522,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setUploadedFile({
           localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress
         });
-      }, params);
+      }, paramsUpload);
       setUploadedFile({
         localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null
       });
@@ -599,9 +597,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         onClear();
       }
       else if (task.action === 'setContext') {
-        const { chatId, messages } = task.data;
-        setChatId(chatId);
-        setMessages(messages);
+        const { chatId: newChatId, messages: newMsgs } = task.data;
+        setChatId(newChatId);
+        setMessages(newMsgs);
       }
       else if (task.action === 'setShortcuts') {
         const shortcuts = task.data;
@@ -611,9 +609,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         const blocks = task.data;
         handleBlocks(blocks);
       }
-      setTasks((prevTasks) => prevTasks.slice(1));
+      setTasks((prev) => prev.slice(1));
     }
-  }, [tasks, onClear, onSubmit, setChatId, setInputText, setMessages, setOpen, handleShortcuts, handleBlocks]);
+  }, [tasks, onClear, onSubmit, handleShortcuts, handleBlocks]);
 
   useEffect(() => {
     runTasks();
@@ -659,12 +657,30 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     imageUpload,
     uploadedFile,
     fileSearch,
-    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    aiName, userName, guestName,
-    aiAvatar, userAvatar, guestAvatar,
-    aiAvatarUrl, userAvatarUrl, guestAvatarUrl,
-    isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, iconBubble,
-    cssVariables, iconUrl,
+    textSend,
+    textClear,
+    textInputMaxLength,
+    textInputPlaceholder,
+    textCompliance,
+    aiName,
+    userName,
+    guestName,
+    aiAvatar,
+    userAvatar,
+    guestAvatar,
+    aiAvatarUrl,
+    userAvatarUrl,
+    guestAvatarUrl,
+    isWindow,
+    copyButton,
+    fullscreen,
+    icon,
+    iconText,
+    iconAlt,
+    iconPosition,
+    iconBubble,
+    cssVariables,
+    iconUrl,
     chatbotInputRef,
     conversationRef,
     isMobile,

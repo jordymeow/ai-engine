@@ -1,11 +1,11 @@
 === AI Engine ===
 Contributors: TigrouMeow
 Tags: ai, gpt, openai, chatbot, copilot
-Donate link: https://meowapps.com/donation/
+Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.2
+Stable tag: 2.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.5.3 (2024/08/01) =
+* Fix: The prices were not calculated properly. This was entirely reviewed.
+* Fix: Avoid errors when context is provided without embeddings.
+* Fix: A much better experience when AI Engine is installed for the first time.
+* Update: Removed a lot of code and checks which became unnecessary. 
+* Update: Added customId in the ai.reply filter.
+* ☀️ If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
 
 = 2.5.2 (2024/07/29) =
 * Add: New settings related to GDPR. The user will now have to accept conditions before using the chatbot.
