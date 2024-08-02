@@ -1,5 +1,5 @@
-// Previous: 2.4.8
-// Current: 2.4.9
+// Previous: 2.4.9
+// Current: 2.5.4
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -95,12 +95,11 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
     }
-    const htmlLang = document.querySelector('html')?.lang || navigator.language || navigator.userLanguage;
-    if (htmlLang) {
-      const detectedLanguage = htmlLang.substr(0, 2);
-      if (languages.find(l => l.value === detectedLanguage)) {
-        setCurrentLanguage(detectedLanguage);
-      }
+
+    const detectedLanguage = (document.querySelector('html').lang || navigator.language
+      || navigator.userLanguage).substr(0, 2);
+    if (languages.find(l => l.value === detectedLanguage)) {
+      setCurrentLanguage(detectedLanguage);
     }
   }, []);
 
@@ -114,7 +113,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -142,7 +141,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, isCustom, languages, customLanguage, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -150,7 +149,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
-  const envId = overrideDefaultEnvId ? overrideDefaultEnvId : options?.ai_default_env;
+  const envId = overrideDefaultEnvId ?? options?.ai_default_env;
   const aiEnvs = options?.ai_envs ?? [];
 
   const allEnvironments = useMemo(() => {
@@ -239,19 +238,21 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const allModels = useMemo(() => {
     let models = [];
     if (env?.fake === true) {
-      for (let engine of options.ai_engines) {
+      for (const engine of options.ai_engines) {
         if (Array.isArray(engine.models)) {
           models = [ ...models, ...engine.models ];
         }
       }
-    } else if (env?.type === 'azure') {
+    }
+    else if (env?.type === 'azure') {
       const engine = options.ai_engines.find(x => x.type === 'openai');
       const openAiModels = engine?.models ?? [];
       models = openAiModels?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
-    } else if (env?.type === 'huggingface') {
+    }
+    else if (env?.type === 'huggingface') {
       models = env?.customModels?.map(x => {
-        let tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
-        let mode = tags.includes('image') ? 'image' : 'chat';
+        const tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
+        const mode = tags.includes('image') ? 'image' : 'chat';
         return {
           model: x.name,
           name: x.name,
@@ -260,7 +261,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           options: [],
         };
       }) ?? [];
-    } else {
+    }
+    else {
       const engine = options.ai_engines.find(x => x.type === env?.type);
       models = engine?.models ?? [];
     }
@@ -276,18 +278,11 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
     if (fineTunes.length) {
       models = [ ...models, ...fineTunes.map(x => {
-        let mode = 'completion';
-        const splitted = x.model.split(':');
-        let family = splitted[0];
 
-        if (x.model.includes('ft:gpt-3.5')) {
-          mode = 'chat';
-          family = 'turbo';
-        } else if (x.model.includes('ft:gpt-4')) {
-          mode = 'chat';
-          family = 'gpt4';
-        }
-        return { 
+        const mode = 'chat';
+        const splitted = x.model.split(':');
+        const family = splitted[0];
+        return {
           model: x.model,
           name: jsxModelName(x, true),
           rawName: x.suffix,
@@ -306,6 +301,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
+
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -341,11 +337,14 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
-    } else if (model.startsWith('gpt-4o-mini')) {
+    }
+    else if (model.startsWith('gpt-4o-mini')) {
       model = 'gpt-4o-mini';
-    } else if (model.startsWith('gpt-4o')) {
+    }
+    else if (model.startsWith('gpt-4o')) {
       model = 'gpt-4o';
-    } else if (model.startsWith('gpt-4')) {
+    }
+    else if (model.startsWith('gpt-4')) {
       model = 'gpt-4';
     }
     const modelObj = allModels.find(x => x.model === model);
@@ -407,8 +406,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
-  };
-
+  }
   return { allModels, model, models,
     completionModels, imageModels, visionModels, coreModels, embeddingsModels, audioModels, jsonModels,
     setModel, isFineTunedModel, getModelName,

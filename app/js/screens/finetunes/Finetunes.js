@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.5.2
+// Previous: 2.5.2
+// Current: 2.5.4
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,9 +13,45 @@ import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon
 import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
-import Generator from '@app/screens/finetunes/ Generator';
+import Generator from '@app/screens/finetunes/Generator';
 import i18n from '@root/i18n';
 import { retrieveFilesFromOpenAI, retrieveFineTunes, retrieveDeletedFineTunes } from '@app/requests';
+
+const EstimationMessage = ({ createdOn, estimatedOn }) => {
+  if (!createdOn || !estimatedOn) return null;
+  const now = new Date();
+  createdOn = new Date(createdOn);
+  estimatedOn = new Date(estimatedOn);
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const calculateTimeDifference = (start, end) => {
+    const diff = end - start;
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    if (hours > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''} and ${minutes % 60} minute${minutes % 60 !== 1 ? 's' : ''}`;
+    }
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  };
+
+  return (
+    <div>
+      Start: {formatDate(createdOn)}.<br />
+      Finish: {formatDate(estimatedOn)}.<br />
+      Time Left: <b>{calculateTimeDifference(now, estimatedOn)}</b>.<br /><br />
+      <small>Use Refresh Models to update the status.</small>
+    </div>
+  );
+};
 
 const builderColumnsEasy = [
   { accessor: 'row', title: "#", width: 25, verticalAlign: 'top' },
@@ -60,15 +96,11 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
   case 'pending':
-    icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
-    break;
-  case 'running':
+  case 'running': // bug: falling through without break
     icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
     break;
   case 'succeeded':
-    icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
-    break;
-  case 'processed':
+  case 'processed': // bug: fallthrough, treated same
     icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
     break;
   case 'failed':
@@ -137,7 +169,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const [ datasetsQueryEnabled, setDatasetsQueryEnabled ] = useState(false);
 
   const [ envId, setEnvId ] = useState(options?.ai_envs?.[0]?.id);
-  const environments = options?.ai_envs || [];
+  const environments = useMemo(() => options?.ai_envs || [], [options]);
   const environment = useMemo(() => environments?.find(x => x.id === envId), [envId, environments]);
   const deletedFineTunes = environment?.finetunes_deleted || [];
   const allFineTunes = environment?.finetunes || [];
@@ -147,7 +179,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     queryFn: () => retrieveFilesFromOpenAI(envId, purposeFilter)
   });
 
-  const { models, model, setModel, getModel, isFineTunedModel } = useModels(options, envId);
+  const [ model, setModel ] = useState('gpt-4o-mini-2024-07-18');
 
   const updateEnv = async (option, value) => {
     const newEnvs = environments.map(x => {
@@ -158,10 +190,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     });
     return updateOption(newEnvs, 'ai_envs');
   };
-
-  const finetunableModels = useMemo(() => {
-    return models.filter(x => x.tags?.includes('finetune'));
-  }, [models]);
 
   useEffect(() => {
     if (section === 'files' && !datasetsQueryEnabled) {
@@ -248,20 +276,16 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     const currentFile = fileForFineTune;
     const currentSuffix = suffix;
 
-    const rawModel = getModel(model);
     setBusyAction(true);
-    const isFineTuned = isFineTunedModel(model);
-
     let json = {
       envId: envId,
       fileId: currentFile,
-      model: isFineTuned ? rawModel.model : rawModel.family,
+      model: model,
       suffix: currentSuffix
     };
     if (hyperParams) {
       json = { ...json, nEpochs, batchSize, learningRateMultiplier, promptLossWeight };
     }
-
     try {
       const res = await nekoFetch(`${apiUrl}/openai/files/finetune`, {
         method: 'POST',
@@ -672,7 +696,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
       const createdOn = new Date(x.createdOn);
       return {
         ...x,
-        model: x.model ? x.model : (x.estimatedOn ? <small>Should be finished by {new Date(x.estimatedOn).toLocaleString()}.</small> : ''),
+        model: x.model ? x.model : <EstimationMessage createdOn={x.createdOn} estimatedOn={x.estimatedOn} />,
         status: <StatusIcon status={(x.status)} includeText />,
         createdOn: <>{createdOn.toLocaleDateString()}<br />{createdOn.toLocaleTimeString()}</>,
         actions:  <>
@@ -744,8 +768,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
-    const rawModel = getModel(model);
-    return `${rawModel?.family}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
+    const rawModel = model;
+    return `${rawModel}:ft-your-org:${suffix}-${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}-${hours < 10 ? '0' + hours : hours}-${minutes < 10 ? '0' + minutes : minutes}-${seconds < 10 ? '0' + seconds : seconds}`;
   }, [suffix, model]);
 
   const onSelectFiles = async (files) => {
@@ -826,7 +850,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           });
         }
 
-        // Clean the data
         data = data.filter(x => x);
         const hasMessages = data.every(x => x?.messages);
         if (!hasMessages) {
@@ -1121,19 +1144,20 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           </ul>
           <label>Base model:</label>
           <NekoSpacer height={5} />
-          <NekoSelect value={model} scrolldown={true} onChange={setModel}>
+          <NekoInput value={model} onChange={setModel}
+            description={<>As of August 2024, you can use <a href="#" onClick={() => setModel('gpt-4o-mini-2024-07-18')}>gpt-4o-mini-2024-07-18</a>, <a href="#" onClick={() => setModel('gpt-3.5-turbo-0125')}>gpt-3.5-turbo-0125</a>, or any of your previously fine-tuned models. Check all the available models <a href='https://platform.openai.com/docs/guides/fine-tuning/which-models-can-be-fine-tuned' target='_blank' rel='noreferrer'>here</a>.</>}
+          />
+          {/* <NekoSelect value={model} scrolldown={true} onChange={setModel}>
             {finetunableModels.map((x) => (
               <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
             ))}
-          </NekoSelect>
-          <NekoSpacer height={5} />
-          <small>For now, the hyperparameters can't be modified - they are set automatically by OpenAI.</small>
+          </NekoSelect> */}
           <NekoSpacer height={10} />
           <label>Suffix (for new model name):</label>
           <NekoSpacer height={5} />
           <NekoInput value={suffix} onChange={setSuffix} />
           <NekoSpacer height={5} />
-          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with this <a href="https://beta.openai.com/docs/api-reference/fine-tunes/list#fine-tunes/create-suffix" target="_blank" rel="noreferrer">prefix</a>. Preview: <b>{modelNamePreview}</b>.</small>
+          <small>The name of the new model name will be decided by OpenAI. You can customize it a bit with a <a href="https://platform.openai.com/docs/guides/fine-tuning/create-a-fine-tuned-model" target="_blank" rel="noreferrer">suffix</a>. Preview: <b>{modelNamePreview}</b>.</small>
           <NekoSpacer line height={20} />
           <NekoCheckbox label="Enable HyperParams" checked={hyperParams} onChange={setHyperParams} />
           {hyperParams && <>
@@ -1157,5 +1181,3 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     </NekoContainer>
   </>);
 };
-
-export default Finetunes;

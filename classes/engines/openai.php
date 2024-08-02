@@ -957,27 +957,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return 'N/A';
   }
 
-  static function get_finetune_base_model( $model )
+  static function get_model_without_release_date( $model )
   {
-    // New fine-tuned models
-    preg_match("/^ft:([^:]+):/", $model, $matches);
-    if (count($matches) > 0) {
-      if ( preg_match( '/^gpt-3.5/', $matches[1] ) ) {
-        return "gpt-3.5-turbo";
-      }
-      else if ( preg_match( '/^gpt-4/', $matches[1] ) ) {
-        return "gpt-4";
-      }
-      return $matches[1];
+    if ( empty( $model ) ) {
+      return null;
     }
-
-    // Legacy fine-tuned models
-    preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches );
-    if ( count( $matches ) > 0 ) {
-      return $matches[1];
-    }
-
-    return null;
+    return preg_replace( '/-\d{4}-\d{2}-\d{2}$/', '', $model );
   }
 
   public function list_deleted_finetunes( $envId = null, $legacy = false ) 
@@ -1020,10 +1005,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
     // Add suffix
     $finetunes = array_map( function ( $finetune ) {
-      $finetune['suffix'] = SELF::get_suffix_for_model( $finetune['fine_tuned_model'] );
-      $finetune['createdOn'] = date( 'Y-m-d H:i:s', $finetune['created_at'] );
+      if ( isset( $finetune['user_provided_suffix'] ) ) {
+        $finetune['suffix'] = $finetune['user_provided_suffix'];
+      }
+      else {
+        $finetune['suffix'] = SELF::get_suffix_for_model( $finetune['fine_tuned_model'] );
+      } 
+      $finetune['createdOn'] = date( 'Y-m-d H:i:s', $finetune['created_at'] ) . ' UTC';
       if ( isset( $finetune['estimated_finish'] ) ) {
-        $finetune['estimatedOn'] = date( 'Y-m-d H:i:s', $finetune['estimated_finish'] );
+        $finetune['estimatedOn'] = date( 'Y-m-d H:i:s', $finetune['estimated_finish'] ) . ' UTC';
       }
       else {
         $finetune['estimatedOn'] = null;
@@ -1324,7 +1314,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( $finetune['status'] !== 'succeeded' ) {
         continue;
       }
-      $baseModel = SELF::get_finetune_base_model( $finetune['model'] );
+      $baseModel = SELF::get_model_without_release_date( $finetune['base_model'] );
       if ( !empty( $baseModel ) ) {
         $model = null;
         foreach ( $models as $currentModel ) {
@@ -1335,7 +1325,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
         if ( !empty( $model ) ) {
           $model['model'] = $finetune['model'];
-          $model['name'] = SELF::get_suffix_for_model( $finetune['model'] );
+          $model['name'] = $finetune['suffix'];
           $models[] = $model;
         }
       }
@@ -1349,16 +1339,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   private function calculate_price( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
   {
-    // For fine-tuned models:
-    $potentialBaseModel = SELF::get_finetune_base_model( $modelFamily );
-    if ( !empty( $potentialBaseModel ) ) {
-      $modelFamily = $potentialBaseModel;
-      $finetune = true;
-    }
-
+    $modelFamily = SELF::get_model_without_release_date( $modelFamily );
     $models = $this->get_models();
     foreach ( $models as $currentModel ) {
-      if ( $currentModel['model'] === $modelFamily || ( $finetune && $currentModel['family'] === $modelFamily ) ) {
+      if ( $currentModel['model'] === $modelFamily ) {
         if ( $currentModel['type'] === 'image' ) {
           if ( !$option ) {
             $this->core->log( "⚠️ (OpenAI) Image models require an option." );
@@ -1374,7 +1358,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
         else {
           if ( $finetune ) {
-
             if ( isset( $currentModel['finetune']['price'] ) ) {
               $currentModel['price'] = $currentModel['finetune']['price'];
             }

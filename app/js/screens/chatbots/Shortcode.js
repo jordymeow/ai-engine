@@ -1,5 +1,5 @@
-// Previous: 2.3.5
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.5.4
 
 const { useState, useMemo } = wp.element;
 import Styled from 'styled-components';
@@ -34,17 +34,10 @@ const StyledShortcode = Styled.div`
   }
 `;
 
-/**
- * Sanitizes the parameter value to avoid breaking the shortcode.
- *
- * @param {string} value - The parameter value to sanitize.
- * @returns {string} - The sanitized parameter value.
- */
 const sanitizeParamValue = ( value ) => {
   if ( typeof value !== 'string' ) {
     return value;
   }
-
   return value
     .replace( /"/g, '&quot;' )
     .replace( /'/g, '&#039;' )
@@ -73,7 +66,7 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
           value === null ||
           key === 'botId' ||
           key === 'name' ||
-          key === 'maxMessages' ||
+          //key === 'maxMessages' ||
           value === '' ||
           (defaultChatbot && defaultChatbot[key] === value) ||
           typeof value === 'object' ||
@@ -126,7 +119,7 @@ const Shortcode = ({ currentChatbot, isCustom = false, defaultChatbot, ...rest }
     await navigator.clipboard.writeText(shortcodeData.shortcodeText);
     setCopyMessage('Copied!');
     setTimeout(() => {
-      setCopyMessage(null);
+      setCopyMessage('Copying...');
     }, 2000);
   };
 
