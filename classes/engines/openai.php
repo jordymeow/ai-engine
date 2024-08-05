@@ -660,6 +660,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
       throw $e;
     }
+    finally {
+      if ( $isStream && file_exists( $options['filename'] ) ) {
+        unlink( $options['filename'] );
+      }
+    }
   }
 
   private function get_audio( $url ) {
@@ -1303,6 +1308,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     finally {
       if ( !is_null( $streamCallback ) ) {
         remove_action( 'http_api_curl', [ $this, 'stream_handler' ] );
+      }
+      if ( !empty( $options['stream'] ) && file_exists( $options['filename'] ) ) {
+        unlink( $options['filename'] );
       }
     }
   }

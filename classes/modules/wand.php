@@ -40,6 +40,13 @@ class Meow_MWAI_Modules_Wand
       'where' => 'blockContext',
       'group' => 'first'
     ],
+    'translateSection' => [
+      'label' => 'Translate Post',
+      'sublabel' => 'To Post Language',
+      'arguments' => ['postId', 'text', 'context'],
+      'where' => 'postContext', // We should probably handle this dynamically on the front-side
+      'group' => 'first' // This is random
+    ],
     'suggestSynonyms' => [
       'label' => 'Suggest Synonyms',
       'sublabel' => 'For Selected Words',
@@ -203,6 +210,66 @@ class Meow_MWAI_Modules_Wand
       'mode' => 'insertMedia',
       'type' => 'image',
       'media' => $media
+    ];
+  }
+
+  /**
+   * Translates the specified text of text to the target language.
+   *
+   * @param mixed $value Unused parameter
+   * @param array $arguments Contains postId, text, and context
+   * @return array Translation result
+   */
+  public function action_translateSection( $value, $arguments ) {
+    $postId = $arguments['postId'];
+    $text = $arguments['text'];
+
+    if (empty($text)) {
+      return [
+        'mode' => 'replace',
+        'type' => 'text',
+        'result' => '',
+        'results' => []
+      ];
+    }
+
+    $context = $arguments['context'];
+    $targetLanguage = $this->core->get_post_language($postId);
+    $query = new Meow_MWAI_Query_Text("", 1024);
+    $query->set_scope('admin-tools');
+    $prompt = "Translate the following section into {$targetLanguage}:\n\n" .
+      "[SECTION TO TRANSLATE]\n{$text}\n[END SECTION TO TRANSLATE]\n\n" .
+      "Translation guidelines:\n" .
+      "1. Maintain the original tone, mood, and nuance.\n" .
+      "2. Preserve the intended meaning as accurately as possible.\n" .
+      "3. Ensure the translation fits seamlessly within the broader context.\n" .
+      "4. Use appropriate idiomatic expressions in the target language when applicable.\n" .
+      "5. Maintain any formatting or special characters present in the original text.\n\n" .
+      "Broader context (for reference only, do not translate):\n\n" .
+      "[CONTEXT]\n{$context}\n[END CONTEXT]\n\n" .
+      "Provide only the translated section, between the markers [TRANSLATED SECTION] and [END TRANSLATED SECTION], without any additional content. Do not include the markers [TRANSLATED SECTION] and [END TRANSLATED SECTION] in your reply!\n\n";
+    $prompt = apply_filters('mwai_prompt_translateSection', $prompt, $arguments);
+    $query->set_message($prompt);
+    $reply = $this->core->run_query($query);
+
+    // Clean up the result, just in case...
+    $result = $reply->result;
+    $result = str_replace('[TRANSLATED SECTION]', '', $result);
+    $result = str_replace('[END TRANSLATED SECTION]', '', $result);
+    $result = trim($result);
+    $results = [];
+    foreach ($reply->results as $r) {
+      $r = str_replace('[TRANSLATED SECTION]', '', $r);
+      $r = str_replace('[END TRANSLATED SECTION]', '', $r);
+      $r = trim($r);
+      $results[] = $r;
+    }
+
+    return [
+      'mode' => 'replace',
+      'type' => $reply->type,
+      'result' => $result,
+      'results' => $results
     ];
   }
 

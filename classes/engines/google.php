@@ -210,6 +210,11 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       $this->core->log( "❌ (Google) " .  $e->getMessage() );
       throw $e;
     }
+    finally {
+      if ( $isStream && file_exists( $options['filename'] ) ) {
+        unlink( $options['filename'] );
+      }
+    }
   }
 
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {

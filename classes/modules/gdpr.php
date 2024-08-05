@@ -30,11 +30,18 @@ class Meow_MWAI_Modules_GDPR {
         'script' => '
           (function() {
             let chatbot_' . $uniqueId . ' = MwaiAPI.getChatbot("' . $botId . '");
+            if (document.cookie.indexOf("mwai_gdpr_accepted=1") !== -1) {
+              chatbot_' . $uniqueId . '.setBlocks([]);
+              return;
+            }
             chatbot_' . $uniqueId . '.lock();
             document.getElementById("mwai-gdpr-form-' . $botId . '").addEventListener("submit", function(event) {
               event.preventDefault();
               chatbot_' . $uniqueId . '.unlock();
               chatbot_' . $uniqueId . '.setBlocks([]);
+              let date = new Date();
+              date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+              document.cookie = "mwai_gdpr_accepted=1; expires=" + date.toUTCString() + "; path=/";
             });
           })();
         '

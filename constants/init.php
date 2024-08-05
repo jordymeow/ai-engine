@@ -100,7 +100,7 @@ define( 'MWAI_OPTIONS', [
 	'virtual_keyboard_fix' => false,
 	'chatbot_gdpr_consent' => false,
 	'chatbot_gdpr_text' => 'By using this chatbot, you agree to the recording and processing of your data by our website and the external services it might use (LLMs, vector databases, etc.).',
-	'chatbot_gdpr_button' => '👍 I understand',
+	'chatbot_gdpr_button' => 'I understand',
 	'chatbot_typewriter' => false,
 	'chatbot_discussions' => false,
 	'chatbot_moderation' => false,

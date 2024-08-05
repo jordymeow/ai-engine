@@ -1,5 +1,5 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.5.5
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -45,11 +45,10 @@ const Addons = ({ addons }) => {
 
       <StyledAddonsContainer>
         {filteredAddons.map(addon => (
-          <NekoContainer key={addon.id} footer={
+          <NekoContainer key={addon.id} style={{ marginBottom: 0 }} footer={
             <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginLeft: 10, minHeight: 30 }}>
-              <span style={{ fontSize: '11px', color: '#666', marginRight: 15,
-                  color: addon.enabled ? '#4CAF50' : '#666',
-                  textTransform: 'uppercase', fontWeight: 'bold' }}>
+              <span style={{ fontSize: '11px', marginRight: 15, color: addon.enabled ? '#4CAF50' : '#666',
+                textTransform: 'uppercase', fontWeight: 'bold' }}>
                 {addon.enabled ? <label>Enabled</label> : <label>Disabled</label>}
               </span>
               <div style={{ flex: 'auto' }} />

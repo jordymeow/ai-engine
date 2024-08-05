@@ -16,8 +16,8 @@ class Meow_MWAI_Engines_Core {
   public function __construct( $core, $env ) {
     $this->core = $core;
     $this->env = $env;
-    $this->envId = $env['id'];
-    $this->envType = $env['type'];
+    $this->envId = isset( $env['id'] ) ? $env['id'] : null;
+    $this->envType = isset( $env['type'] ) ? $env['type'] : null;
   }
 
   public function run( $query, $streamCallback = null, $maxDepth = 5 ) {

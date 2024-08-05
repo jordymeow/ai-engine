@@ -1019,7 +1019,6 @@ class Meow_MWAI_Core
 			[
 				'slug' => "mwai-notifications",
 				'name' => "Notifications",
-				'icon_url' => MeowCommon_Admin::$logo,
 				'description' => "Add-on for AI Engine that adds notifications.",
 				'install_url' => "https://meowapps.com/products/mwai-notifications/",
 				'settings_url' => null,
@@ -1027,7 +1026,6 @@ class Meow_MWAI_Core
 			], [
 				'slug' => "mwai-ollama",
 				'name' => "Ollama",
-				'icon_url' => MeowCommon_Admin::$logo,
 				'description' => "Support for local LLMs via Ollama. Select the 'Ollama' type in your 'Environments for AI', then you can 'Refresh Models' and use them!",
 				'install_url' => "https://meowapps.com/products/mwai-ollama/",
 				'settings_url' => null,
@@ -1035,7 +1033,6 @@ class Meow_MWAI_Core
 			], [
 				'slug' => "mwai-websearch",
 				'name' => "Web Search",
-				'icon_url' => MeowCommon_Admin::$logo,
 				'description' => "This add-on for AI Engine enhances the AI models' responses by incorporating additional context. It currently supports Google Search.",
 				'install_url' => "https://meowapps.com/products/mwai-websearch/",
 				'settings_url' => null,
@@ -1043,7 +1040,6 @@ class Meow_MWAI_Core
 			], [
 				'slug' => "mwai-better-links",
 				'name' => "Better Links",
-				'icon_url' => MeowCommon_Admin::$logo,
 				'description' => "This add-on for AI Engine adds link validation and term linking features.",
 				'install_url' => "https://meowapps.com/products/mwai-better-links/",
 				'settings_url' => null,

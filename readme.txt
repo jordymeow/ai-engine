@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.4
+Stable tag: 2.5.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,20 +20,20 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 Unlock the full potential of AI technology on your website with AI Engine. This powerful plugin integrates seamlessly with top AI models from OpenAI, Anthropic, and Google, including GPT-4o, GPT-4 and Vision, offering unparalleled versatility and innovation.
 
-* **Engage with Ease:** Instantly enhance your site's interaction by integrating a ChatGPT-like chatbot. This isn't just any chatbot; it's a gateway to engaging, dynamic conversations that captivate your visitors.
-* **Create and Innovate:** Generate fresh, engaging content effortlessly. Whether you're brainstorming new post ideas or drafting up engaging articles, AI Engine handles it all swiftly—letting you focus on creativity and growth.
-* **Streamline with AI CoPilot:** Directly within the WordPress editor, AI CoPilot is ready to assist. Just hit space, type your query, and watch as it suggests edits, finds synonyms, or translates text. It’s like having a little magic wand for your content!
-* **Explore the AI Playground:** Dive into a world where your ideas come to life. The AI Playground offers a space to experiment with AI capabilities—from creating unique templates to simulating custom scenarios. Imagine drafting restaurant reviews or concocting recipes based on what’s in your fridge—all in moments.
-* **Train Your AI:** Tailor your AI to understand your audience better. With custom training using your website’s own data, your AI becomes more intuitive and responsive, providing a more personalized experience for your visitors.
-* **Keep It Clean:** Use our advanced moderation tools to maintain a friendly and safe environment on your site, ensuring content remains respectful and engaging.
-* **Voice to Text:** Bring accessibility to the forefront with our Speech-to-Text feature powered by Whisper API. It’s easy for users to interact with your website using just their voice.
-* **Smarter Interactions:** With embeddings, your chatbot becomes smarter, understanding the context of interactions better and delivering more relevant responses.
-* **Insightful Analytics:** Keep track of everything with built-in usage statistics. Understand how your AI tools are performing and optimize them for better efficiency and cost-effectiveness.
-* **Extend with APIs:** Our internal API opens up a world of possibilities, allowing you to customize and integrate AI features in ways that best suit your site’s needs.
+* **Models:** Access a diverse range of cutting-edge AI models. Manage them effortlessly and track their usage with precision.
+* **Chatbot:** Deploy a highly engaging, customizable, and powerful chatbot for customer support, sales, or even home automation assistance.
+* **Generate:** Elevate your content creation process. AI Engine empowers you to brainstorm, optimize, and produce written content and images with unprecedented ease.
+* **Copilot:** Boost your writing efficiency with our AI Copilot, seamlessly integrated into the editor. Simply hit 'space' for instant assistance, or use the wand buttons to execute various enhancements.
+* **Translate:** Break language barriers effortlessly. The "Translate" button instantly transforms your content into multiple languages using your preferred AI model.
+* **Playground:** Explore the AI Playground, a dynamic space for experimentation. Utilize advanced tools for translation, correction, and content suggestions. Create custom templates to streamline your AI-driven workflows.
+* **Finetuning:** Tailor AI models to your specific requirements. AI Engine offers comprehensive finetuning capabilities, ensuring you maximize the potential of your AI tools.
+* **Internal APIs:** Integrate AI seamlessly into your WordPress site with our internal APIs, REST API, and versatile filters. From crafting immersive D&D games to innovative web solutions, the possibilities are virtually limitless.
+
+And that's just the beginning! The Free Version offers incredible value, but the Pro Version adds features such as advanced analytics, AI Forms, Assistants, and more. Check the [Pro Version](https://meowapps.com/ai-engine/).
 
 == Beyond the Features ==
 
-AI Engine offers its own internal API (including a REST API). This allows you to integrate AI capabilities into your WordPress website, no-coding solutions, and more. It has been officially integrated with many plugins to enhance their functionality. Here are a few examples:
+Since AI Engine offers its own internal APIs, this allows you and others to integrate AI capabilities to your WordPress. It has been officially integrated with many plugins to enhance their functionality. Here are a few examples:
 
 * [Media File Renamer](https://wordpress.org/plugins/media-file-renamer/)
 * [SEO Engine](https://wordpress.org/plugins/seo-engine/)
@@ -66,6 +66,13 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.5.5 (2024/08/05) =
+* Add: More efficient and complete translation feature. Check the "Translate Post" button!
+* Fix: Avoid using emoji by default in the options related GDPR because it crashes on some installs.
+* Fix: Make sure the streaming temporary files are removed.
+* Update: Avoid the GDPR to be asked every time.
+* Update: Simplified parts of the code, removed potential warnings.
 
 = 2.5.4 (2024/08/02) =
 * Add: You can now manually enter the model you would like to use for finetuning.

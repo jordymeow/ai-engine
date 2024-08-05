@@ -1,11 +1,11 @@
-// Previous: 2.5.3
-// Current: 2.5.4
+// Previous: 2.5.4
+// Current: 2.5.5
 
-const { useMemo, useState, useEffect } = wp.element;
+const { useMemo, useState, useEffect, useCallback } = wp.element;
 
-import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoWrapper, NekoSettings, NekoSpacer, NekoTypo,
-  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoCollapsableCategory,
-  NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
+import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
+  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
+  NekoCollapsableCategory, NekoColumn, NekoIcon, NekoModal } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
@@ -54,10 +54,10 @@ const retrieveIncidents = async () => {
 
 const defaultEnvironmentSections = [
   { envKey: 'ai_embeddings_default_env', modelKey: 'ai_embeddings_default_model', defaultModel: 'text-embedding-ada-002' },
-  { envKey: 'ai_vision_default_env', modelKey: 'ai_vision_default_model', defaultModel: 'gpt-3.5-turbo' },
+  { envKey: 'ai_vision_default_env', modelKey: 'ai_vision_default_model', defaultModel: 'gpt-4o-mini' },
   { envKey: 'ai_images_default_env', modelKey: 'ai_images_default_model', defaultModel: 'dall-e-3-hd' },
   { envKey: 'ai_audio_default_env', modelKey: 'ai_audio_default_model', defaultModel: 'whisper-1' },
-  { envKey: 'ai_json_default_env', modelKey: 'ai_json_default_model', defaultModel: 'gpt-3.5-turbo' }
+  { envKey: 'ai_json_default_env', modelKey: 'ai_json_default_model', defaultModel: 'gpt-4o-mini' }
 ];
 
 const proOptions = [
@@ -66,60 +66,6 @@ const proOptions = [
   'module_embeddings',
   'module_assistants'
 ];
-
-function useDefaultEnvironments(aiEnvs, options, updateOptions, embeddingsModels) {
-
-  const performChecks = async () => {
-    let updatesNeeded = false;
-    const newOptions = { ...options };
-
-    defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
-      let exists = false;
-      if (options[envKey]) {
-        exists = !!aiEnvs.find(x => x.id === options[envKey]);
-      }
-      if (!exists) {
-        const foundEnv = aiEnvs.find(x => x?.type === 'openai');
-        if (foundEnv) {
-          if (newOptions[envKey] !== foundEnv.id || newOptions[modelKey] !== defaultModel) {
-            updatesNeeded = true;
-            newOptions[envKey] = foundEnv.id;
-            newOptions[modelKey] = defaultModel;
-          }
-        }
-        else {
-          if (newOptions[envKey] !== null && newOptions[envKey] !== undefined || newOptions[modelKey] !== null && newOptions[modelKey] !== undefined) {
-            updatesNeeded = true;
-            newOptions[envKey] = null;
-            newOptions[modelKey] = null;
-          }
-        }
-      }
-
-      if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
-        const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
-        if (dimensions !== null) {
-          const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
-          if (model && !model.dimensions.includes(dimensions)) {
-            const newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
-            if (newDimensions !== null && newDimensions !== undefined) {
-              newOptions.ai_embeddings_default_dimensions = newDimensions;
-              updatesNeeded = true;
-            }
-          }
-        }
-      }
-    });
-
-    if (updatesNeeded) {
-      await updateOptions(newOptions);
-    }
-  };
-
-  useEffect(() => {
-    performChecks();
-  }, [aiEnvs, options]);
-}
 
 const Settings = () => {
   const [ options, setOptions ] = useState(defaultOptions);
@@ -142,7 +88,7 @@ const Settings = () => {
   const module_devtools = options?.module_devtools;
   const module_chatbots = options?.module_chatbots;
 
-  const ai_envs = options?.ai_envs ? [...options.ai_envs] : [];
+  const ai_envs = useMemo(() => options?.ai_envs ? options?.ai_envs : [], [options]);
   const ai_default_env = options?.ai_default_env;
   const ai_default_model = options?.ai_default_model;
   const ai_vision_default_env = options?.ai_vision_default_env;
@@ -158,7 +104,7 @@ const Settings = () => {
   const ai_json_default_model = options?.ai_json_default_model;
   const ai_streaming = options?.ai_streaming;
 
-  const embeddings_envs = options?.embeddings_envs ? [...options.embeddings_envs] : [];
+  const embeddings_envs = options?.embeddings_envs ? options?.embeddings_envs : [];
   const embeddings_default_env = options?.embeddings_default_env;
   const syntax_highlight = options?.syntax_highlight;
   const chatbot_typewriter = options?.chatbot_typewriter;
@@ -202,11 +148,65 @@ const Settings = () => {
 
   const busy = busyAction;
 
+  useEffect(() => {
+    const performChecks = async () => {
+      let updatesNeeded = false;
+      const newOptions = { ...options };
+
+      defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
+        let exists = false;
+        if (options[envKey]) {
+          exists = !!ai_envs.find(x => x.id === options[envKey]);
+        }
+        if (!exists) {
+          const foundEnv = ai_envs.find(x => x?.type === 'openai');
+          if (foundEnv) {
+            if (newOptions[envKey] !== foundEnv.id || newOptions[modelKey] !== defaultModel) {
+              console.warn(`Updating ${envKey} and ${modelKey} to ${foundEnv.id} and ${defaultModel}`);
+              updatesNeeded = true;
+              newOptions[envKey] = foundEnv.id;
+              newOptions[modelKey] = defaultModel;
+            }
+          }
+          else {
+            if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
+              console.warn(`Updating ${envKey} and ${modelKey} to null`);
+              updatesNeeded = true;
+              newOptions[envKey] = null;
+              newOptions[modelKey] = null;
+            }
+          }
+        }
+
+        if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
+          const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
+          if (dimensions !== null) {
+            const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
+            if (!model?.dimensions.includes(dimensions)) {
+              const newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
+              if (newDimensions !== null) {
+                newOptions.ai_embeddings_default_dimensions = newDimensions;
+                console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
+                updatesNeeded = true;
+              }
+            }
+          }
+        }
+      });
+
+      if (updatesNeeded) {
+        await updateOptions(newOptions);
+      }
+    };
+
+    performChecks();
+  }, [ai_envs, options, updateOptions, embeddingsModels]);
+
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsData = await retrieveOptions();
-      setOptions(optionsData);
+      const options = await retrieveOptions();
+      setOptions(options);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -222,7 +222,7 @@ const Settings = () => {
     }
   };
 
-  const updateOptions = async (newOptions) => {
+  const updateOptions = useCallback(async (newOptions) => {
     try {
       if (nekoStringify(newOptions) === nekoStringify(options)) {
         return;
@@ -235,9 +235,7 @@ const Settings = () => {
           options: newOptions
         }
       });
-      if (response?.options) {
-        setOptions(response.options);
-      }
+      setOptions(response.options);
     }
     catch (err) {
       console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ?
@@ -252,10 +250,11 @@ const Settings = () => {
     finally {
       setBusyAction(false);
     }
-  };
+  }, [options]);
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
+    console.log('Updating', id, value);
     await updateOptions(newOptions);
   };
 
@@ -301,10 +300,11 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbots = await retrieveChatbots();
-      const themes = await retrieveThemes();
-      const optionsData = await retrieveOptions();
-      const data = { chatbots, themes, options: optionsData };
+      const chatbotsPromise = retrieveChatbots();
+      const themesPromise = retrieveThemes();
+      const optionsPromise = retrieveOptions();
+      const [chatbots, themes, options] = await Promise.all([chatbotsPromise, themesPromise, optionsPromise]);
+      const data = { chatbots, themes, options };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -335,10 +335,10 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options: importedOptions } = data;
+          const { chatbots, themes, options } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(importedOptions);
+          await updateOptions(options);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -355,23 +355,26 @@ const Settings = () => {
     }
   };
 
-  useDefaultEnvironments(ai_envs, options, updateOptions, embeddingsModels);
-
   useEffect(() => {
     if (!isRegistered) {
       const newOptions = { ...options };
       let hasChanges = false;
-      proOptions.forEach(opt => {
-        if (newOptions[opt]) {
-          newOptions[opt] = false;
+
+      proOptions.forEach(option => {
+        if (newOptions[option]) {
+          newOptions[option] = false;
+          console.warn(`Resetting ${option}`);
           hasChanges = true;
         }
       });
-      if (hasChanges && nekoStringify(newOptions) !== nekoStringify(options)) {
-        updateOptions(newOptions);
+
+      if (hasChanges) {
+        if (nekoStringify(newOptions) !== nekoStringify(options)) {
+          updateOptions(newOptions);
+        }
       }
     }
-  }, [/* dependencies intentionally omitted for subtle bug */]);
+  }, []);
 
   const jsxUtilities =
     <NekoSettings title={i18n.COMMON.UTILITIES}>
@@ -1200,10 +1203,10 @@ const Settings = () => {
       <NekoModal isOpen={error}
         title={i18n.COMMON.ERROR}
         content={error}
-        onRequestClose={() => setError(null)}
+        onRequestClose={() => setError(false)}
         okButton={{
           label: "Close",
-          onClick: () => setError(null)
+          onClick: () => setError(false)
         }}
       />
 
