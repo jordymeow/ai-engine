@@ -20,7 +20,6 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
   }
 
   protected function build_headers( $query ) {
-    parent::build_headers( $query );
     $site_url = apply_filters( 'mwai_openrouter_site_url', get_site_url(), $query );
     $site_name = apply_filters( 'mwai_openrouter_site_name', get_bloginfo( 'name' ), $query );
     $headers = array(
@@ -31,6 +30,13 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
       'User-Agent' => 'AI Engine',
     );
     return $headers;
+  }
+
+  protected function build_body( $query, $streamCallback = null, $extra = null ) {
+    $body = parent::build_body( $query, $streamCallback, $extra );
+    // https://openrouter.ai/docs/transforms
+    $body['transforms'] = ['middle-out'];
+    return $body;
   }
 
   private function truncate_float( $number, $precision = 4 ) {
@@ -81,7 +87,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
         }
       }
       catch ( Exception $e ) {
-        $this->core->log( '❌ (OpenRouter) ' . $e->getMessage() );
+        Meow_MWAI_Logging::error( 'OpenRouter: ' . $e->getMessage() );
       }
     }
 
@@ -162,7 +168,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
         'model' => $model['id'],
         'name' => trim( $model['name'] ),
         'family' => $family,
-        'mode' => 'chat',
+        'features' => ['completion'],
         'price' => array(
           'in' => $priceIn,
           'out' => $priceOut,

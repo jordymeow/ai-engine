@@ -24,13 +24,14 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   }
 
   #[\ReturnTypeWillChange]
-  public function jsonSerialize() {
+  public function jsonSerialize(): array {
     $json = [
       'message' => $this->message,
       'instructions' => $this->instructions,
 
       'ai' => [
         'model' => $this->model,
+        'feature' => $this->feature,
         'maxTokens' => $this->maxTokens,
         'temperature' => $this->temperature,
       ],
@@ -38,7 +39,6 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       'system' => [
         'class' => get_class( $this ),
         'envId' => $this->envId,
-        'mode' => $this->mode,
         'scope' => $this->scope,
         'session' => $this->session,
         'maxMessages' => $this->maxMessages,

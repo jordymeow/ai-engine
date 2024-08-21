@@ -29,7 +29,7 @@ class Meow_MWAI_Modules_Security {
     }
     $ip = $this->core->get_ip_address();
     if ( $this->is_blocked_ip( $ip, $this->banned_ips ) ) {
-      $this->core->log( "🔒 (Security) Blocked IP: $ip" );
+      Meow_MWAI_Logging::warn( "Blocked IP: $ip", '🔒' );
       throw new Exception( "Your query has been rejected." );
     }
     return $ok;
@@ -51,7 +51,7 @@ class Meow_MWAI_Modules_Security {
       // Add the 'u' modifier to enable Unicode support
       $pattern = '/\\b' . preg_quote( $word, '/' ) . '\\b/iu';
       if ( preg_match( $pattern, $text ) ) {
-        $this->core->log( "🔒 (Security) Blocked word: $word" );
+        Meow_MWAI_Logging::warn( "Blocked word: $word", '🔒' );
         throw new Exception( "Your query has been rejected." );
       }
     }

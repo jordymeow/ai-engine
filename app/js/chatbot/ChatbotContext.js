@@ -1,11 +1,12 @@
-// Previous: 2.5.2
-// Current: 2.5.3
+// Previous: 2.5.3
+// Current: 2.5.6
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 import { nekoStringify } from '@neko-ui';
 
 import { processParameters, isURL,
-  useChrono, useSpeechRecognition} from '@app/chatbot/helpers';
+  useChrono, useSpeechRecognition,
+  doPlaceholders} from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { mwaiHandleRes, mwaiFetch, randomStr, mwaiFetchUpload, isEmoji } from '@app/helpers';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
@@ -41,7 +42,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     uploadedUrl: null,
     uploadProgress: null,
   });
-  const [ windowed, setWindowed ] = useState(true); // When fullscreen is enabled, minimize is the reduced version.
+  const [ windowed, setWindowed ] = useState(true);
   const [ open, setOpen ] = useState(false);
   const [ error, setError ] = useState(null);
   const [ busy, setBusy ] = useState(false);
@@ -54,7 +55,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setInputText(text);
   });
 
-  const { stream = false } = system;
+  const stream = system.stream || false;
   const internalId = useMemo(() => randomStr(), []);
   const botId = system.botId;
   const customId = system.customId;
@@ -68,14 +69,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const typewriter = system?.typewriter ?? false;
   const speechRecognition = system?.speech_recognition ?? false;
   const speechSynthesis = system?.speech_synthesis ?? false;
-  const startSentence = params.startSentence?.trim() ?? "";
+  const startSentence = doPlaceholders(params.startSentence?.trim() ?? "", userData);
 
   const initialActions = system.actions || [];
   const initialShortcuts = system.shortcuts || [];
   const initialBlocks = system.blocks || [];
 
   const isMobile = document.innerWidth <= 768;
-  const processedParams = processParameters(params);
+  const processedParams = processParameters(params, userData);
   const { aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar } = processedParams;
   const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
@@ -88,17 +89,17 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       if (isEmoji(url)) return url;
       return isURL(url) ? url : `${pluginUrl}/images/${url}`;
     };
-    const iconUrlVal = icon ? processUrl(icon) : `${pluginUrl}/images/chat-traditional-1.svg`;
+    const iconUrl = icon ? processUrl(icon) : `${pluginUrl}/images/chat-traditional-1.svg`;
     const finalAiAvatarUrl = processUrl(processedParams.aiAvatarUrl);
     const finalUserAvatarUrl = processUrl(processedParams.userAvatarUrl);
     const finalGuestAvatarUrl = processUrl(processedParams.guestAvatarUrl);
-    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
     return {
-      cssVariables: cssVars,
-      iconUrl: iconUrlVal,
+      cssVariables,
+      iconUrl,
       aiAvatarUrl: finalAiAvatarUrl,
       userAvatarUrl: finalUserAvatarUrl,
       guestAvatarUrl: finalGuestAvatarUrl
@@ -138,8 +139,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setMessages(freshMessages);
     }
     else {
-      setMessages([]);
-    }
+      setMessages([]);}
   };
 
   const refreshRestNonce = useCallback(async (force = false) => {
@@ -177,8 +177,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     if (chatbotTriggered && !restNonce) {
       refreshRestNonce();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatbotTriggered]);
+  }, [chatbotTriggered, restNonce]);
 
   useEffect(() => {
     if (inputText.length > 0 && !chatbotTriggered) {
@@ -188,7 +187,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   useEffect(() => {
     resetMessages();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSentence]);
 
   useEffect(() => {
@@ -233,7 +231,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         },
       };
       if (existingChatbotIndex !== -1) {
-        mwaiAPI.chatbots.splice(existingChatbotIndex, 1, chatbot);
+        mwaiAPI.chatbots[existingChatbotIndex] = chatbot;
       }
       else {
         mwaiAPI.chatbots.push(chatbot);
@@ -247,8 +245,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
     if (!isMobile && hasFocusRef.current) {
-      // Intentional bug: wrong method, should be focusInput() but typo causes no focus
-      chatbotInputRef.current.focusText();
+      chatbotInputRef.current.focusInput();
     }
     stopChrono();
   }, [busy, startChrono, stopChrono, isMobile]);
@@ -279,10 +276,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     resetMessages();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [botId]);
 
-  const handleActions = useCallback((actions, lastMessage = {}) => {
+  const handleActions = useCallback((actions, lastMessage) => {
     actions = actions || [];
     let callsCount = 0;
     for (const action of actions) {
@@ -326,7 +322,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
 
     if (!serverReply.success) {
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
       freshMessages.pop();
@@ -342,7 +338,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -353,7 +349,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
     }
-    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+    else if (lastMessage.role === 'assistant' && lastMessage.isStreaming) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -365,7 +361,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleShortcuts(serverReply?.shortcuts);
     }
     else {
-      const newMsg = {
+      const newMessage = {
         id: randomStr(),
         role: 'assistant',
         content: applyFilters('ai.reply', serverReply.reply, { botId, chatId, customId }),
@@ -373,16 +369,15 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         timestamp: new Date().getTime(),
       };
       if (serverReply.images) {
-        newMsg.images = serverReply.images;
+        newMessage.images = serverReply.images;
       }
-      handleActions(serverReply?.actions, newMsg);
+      handleActions(serverReply?.actions, newMessage);
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
-      freshMessages.push(newMsg);
+      freshMessages.push(newMessage);
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverReply]);
 
   const onClear = useCallback(async () => {
@@ -394,8 +389,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setInputText('');
     setShortcuts([]);
     setBlocks([]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [botId]);
+  }, [botId, localStorageKey, resetMessages]);
 
   const onSubmit = useCallback(async (textQuery) => {
 
@@ -428,6 +422,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setShortcuts([]);
     setBlocks([]);
     resetUploadedFile();
+
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -465,15 +460,16 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       const streamCallback = !stream ? null : (content) => {
         setMessages(messages => {
-          const freshMsgs = [...messages];
-          const lastMsg = freshMsgs.length > 0 ? freshMsgs[freshMsgs.length - 1] : null;
-          if (lastMsg && lastMsg.id === freshMessageId) {
-            lastMsg.content = content;
-            lastMsg.timestamp = new Date().getTime();
+          const freshMessages = [...messages];
+          const lastMessage = freshMessages.length > 0 ? freshMessages[freshMessages.length - 1] : null;
+          if (lastMessage && lastMessage.id === freshMessageId) {
+            lastMessage.content = content;
+            lastMessage.timestamp = new Date().getTime();
           }
-          return freshMsgs;
+          return freshMessages;
         });
       };
+
       const nonce = restNonce ?? await refreshRestNonce();
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, nonce, stream);
       const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
@@ -488,6 +484,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setBusy(false);
         return;
       }
+
       setServerReply(data);
     }
     catch (err) {
@@ -498,7 +495,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onSubmitAction = useCallback((forcedText = null) => {
     const hasFileUploaded = !!uploadedFile?.uploadedId;
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current;
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
     if (forcedText) {
       onSubmit(forcedText);
     }
@@ -514,15 +511,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         return;
       }
 
-      const paramsUpload = { type, purpose };
+      const params = { type, purpose };
       const url = `${restUrl}/mwai-ui/v1/files/upload`;
-
       const nonce = restNonce ?? await refreshRestNonce();
       const res = await mwaiFetchUpload(url, file, nonce, (progress) => {
         setUploadedFile({
           localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress
         });
-      }, paramsUpload);
+      }, params);
       setUploadedFile({
         localFile: file, uploadedId: res.data.id, uploadedUrl: res.data.url, uploadProgress: null
       });
@@ -569,7 +565,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     else if (iconText && iconTextDelay) {
       return runTimer();
     }
-  }, [iconText, iconTextDelay]);
+  }, [iconText]);
 
   const [ tasks, setTasks ] = useState([]);
 
@@ -597,9 +593,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         onClear();
       }
       else if (task.action === 'setContext') {
-        const { chatId: newChatId, messages: newMsgs } = task.data;
-        setChatId(newChatId);
-        setMessages(newMsgs);
+        const { chatId, messages } = task.data;
+        setChatId(chatId);
+        setMessages(messages);
       }
       else if (task.action === 'setShortcuts') {
         const shortcuts = task.data;
@@ -609,9 +605,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         const blocks = task.data;
         handleBlocks(blocks);
       }
-      setTasks((prev) => prev.slice(1));
+      setTasks((prevTasks) => prevTasks.slice(1));
     }
-  }, [tasks, onClear, onSubmit, handleShortcuts, handleBlocks]);
+  }, [tasks, onClear, onSubmit, setChatId, setInputText, setMessages, setOpen, handleShortcuts, handleBlocks]);
 
   useEffect(() => {
     runTasks();
@@ -657,30 +653,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     imageUpload,
     uploadedFile,
     fileSearch,
-    textSend,
-    textClear,
-    textInputMaxLength,
-    textInputPlaceholder,
-    textCompliance,
-    aiName,
-    userName,
-    guestName,
-    aiAvatar,
-    userAvatar,
-    guestAvatar,
-    aiAvatarUrl,
-    userAvatarUrl,
-    guestAvatarUrl,
-    isWindow,
-    copyButton,
-    fullscreen,
-    icon,
-    iconText,
-    iconAlt,
-    iconPosition,
-    iconBubble,
-    cssVariables,
-    iconUrl,
+    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
+    aiName, userName, guestName,
+    aiAvatar, userAvatar, guestAvatar,
+    aiAvatarUrl, userAvatarUrl, guestAvatarUrl,
+    isWindow, copyButton, fullscreen, icon, iconText, iconAlt, iconPosition, iconBubble,
+    cssVariables, iconUrl,
     chatbotInputRef,
     conversationRef,
     isMobile,

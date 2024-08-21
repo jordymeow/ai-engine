@@ -28,6 +28,7 @@ class Meow_MWAI_Core
 	public $discussions = null;
 
 	public function __construct() {
+		Meow_MWAI_Logging::init( 'mwai_options', 'AI Engine' );
 		$this->site_url = get_site_url();
 		$this->is_rest = MeowCommon_Helpers::is_rest();
 		$this->is_cli = defined( 'WP_CLI' );
@@ -285,6 +286,15 @@ class Meow_MWAI_Core
 		}
 		return strtolower( "$locale ($humanLanguage)" );
 	}
+
+	function do_placeholders( $text ) {
+		$user_data = $this->get_user_data();
+		$placeholders = apply_filters( 'mwai_placeholders', $user_data );
+		foreach ( $placeholders as $key => $value ) {
+			$text = str_replace( '{' . $key . '}', $value, $text );
+		}
+		return $text;
+	}
 	#endregion
 
  	#region Image-Related Helpers
@@ -294,6 +304,24 @@ class Meow_MWAI_Core
 			return true;
 		}
 		return false;
+	}
+
+	static function get_image_resolution( $url ) {
+		if ( empty( $url ) ) {
+			return null;
+		}
+    $headers = get_headers( $url, 1 );
+    if ( strpos( $headers[0], '200' ) === false ) {
+      return null;
+    }
+    $image_info = getimagesize( $url );
+    if ( $image_info === false ) {
+      return null;
+    }
+    return [ 
+			'width' => $image_info[0],
+			'height' => $image_info[1]
+		];
 	}
 
 	static function get_mime_type( $file ) {
@@ -351,7 +379,7 @@ class Meow_MWAI_Core
 	 * @param string $alt The alt text of the image.
 	 * @return int The attachment ID of the image.
 	 */
-	public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null ) {
+	public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null, $attachedPost = null ) {
 		$path_parts = pathinfo( parse_url( $url, PHP_URL_PATH ) );
 		$url_filename = $path_parts['basename'];
 		$file_type = wp_check_filetype( $url_filename, null );
@@ -425,6 +453,11 @@ class Meow_MWAI_Core
 		$attachment_data = wp_generate_attachment_metadata( $attachmentId, $file );
 		wp_update_attachment_metadata( $attachmentId, $attachment_data );
 		update_post_meta( $attachmentId, '_wp_attachment_image_alt', $alt );
+
+		// Attach the image to a post if needed
+		if ( $attachedPost ) {
+			wp_update_post( [ 'ID' => $attachmentId, 'post_parent' => $attachedPost ] );
+		}
 	
 		return $attachmentId;
 	}	
@@ -441,7 +474,7 @@ class Meow_MWAI_Core
 			return null;
 		}
 		else if ( !isset( $context['content'] ) ) {
-			$this->log( "⚠️ A context without content was returned." );
+			Meow_MWAI_Logging::warn( "A context without content was returned." );
 			return null;
 		}
 		$context['content'] = $this->clean_sentences( $context['content'], $contextMaxLength );
@@ -573,13 +606,13 @@ class Meow_MWAI_Core
     // Extract and sanitize the accessor
     $sort_accessor = isset( $sort['accessor'] ) ? $sort['accessor'] : $default_accessor;
     if ( !in_array( $sort_accessor, $allowed_columns ) ) {
-      error_log( "AI Engine: This sort accessor is not allowed ($sort_accessor)." );
+			Meow_MWAI_Logging::error( "This sort accessor is not allowed ($sort_accessor)." );
       $sort_accessor = $default_accessor;
     }
     // Extract and sanitize the sort order
     $sort_by = isset( $sort['by'] ) ? strtoupper( $sort['by'] ) : $default_order;
     if ( $sort_by !== 'ASC' && $sort_by !== 'DESC' ) {
-      error_log( "AI Engine: This sort order is not allowed ($sort_by)." );
+			Meow_MWAI_Logging::error( "This sort order is not allowed ($sort_by)." );
       $sort_by = $default_order;
     }
     // Update the sort array with sanitized values
@@ -970,7 +1003,7 @@ class Meow_MWAI_Core
 			}
 		}
 		if ( !update_option( $this->chatbots_option_name, $chatbots ) ) {
-			$this->log( '⚠️ Could not update chatbots.' );
+			Meow_MWAI_Logging::warn( 'Could not update chatbots.' );
 			$chatbots = get_option( $this->chatbots_option_name, [] );
 			return $chatbots;
 		}
@@ -1264,98 +1297,6 @@ class Meow_MWAI_Core
 		delete_option( $this->option_name );
 		return $this->get_all_options( true );
 	}
-	#endregion
-
-	#region Logs
-
-	function get_logs() {
-		$log_file_path = $this->get_logs_path();
-
-		if ( !file_exists( $log_file_path ) ) {
-			return "Empty log file.";
-		}
-
-		$content = file_get_contents( $log_file_path );
-		$lines = explode( "\n", $content );
-		$lines = array_filter( $lines );
-		$lines = array_reverse( $lines );
-		$content = implode( "\n", $lines );
-		return $content;
-	}
-
-	function clear_logs() {
-		$logPath = $this->get_logs_path();
-		if ( file_exists( $logPath ) ) {
-			unlink( $logPath );
-		}
-
-		$options = $this->get_all_options();
-		$options['logs_path'] = null;
-		$this->update_options( $options );
-	}
-
-	function get_logs_path() {
-		$uploads_dir = wp_upload_dir();
-		$uploads_dir_path = trailingslashit( $uploads_dir['basedir'] );
-
-		$path = $this->get_option( 'logs_path' );
-
-		if ( $path && file_exists( $path ) ) {
-			// make sure the path is legal (within the uploads directory with the MWAI_PREFIX and log extension)
-			if ( strpos( $path, $uploads_dir_path ) !== 0 || strpos( $path, MWAI_PREFIX ) === false || substr( $path, -4 ) !== '.log' ) {
-				$path = null;
-			} else {
-				return $path;
-			}
-		}
-
-		if ( !$path ) {
-			$path = $uploads_dir_path . MWAI_PREFIX . "_" . $this->random_ascii_chars() . ".log";
-			if ( !file_exists( $path ) ) {
-				touch( $path );
-			}
-			$options = $this->get_all_options();
-			$options['logs_path'] = $path;
-			$this->update_options( $options );
-		}
-
-		return $path;
-	}
-
-	function log( $data = null ) {
-		if ( !$this->get_option( 'module_devtools', false ) ) {
-			return false;
-		}
-		if ( !$this->get_option( 'server_debug_mode', false ) ) { 
-			return false;
-		}
-		$log_file_path = $this->get_logs_path();
-		$fh = @fopen( $log_file_path, 'a' );
-		if ( !$fh ) { return false; }
-		$date = date( "Y-m-d H:i:s" );
-		if ( is_null( $data ) ) {
-			fwrite( $fh, "\n" );
-		}
-		else {
-			fwrite( $fh, "$date: {$data}\n" );
-			//error_log( "[MWAI] $data" );
-		}
-		fclose( $fh );
-		return true;
-	}
-
-	private function random_ascii_chars( $length = 8 ) {
-		$characters = array_merge( range( 'A', 'Z' ), range( 'a', 'z' ), range( '0', '9' ) );
-		$characters_length = count( $characters );
-		$random_string = '';
-
-		for ( $i = 0; $i < $length; $i++ ) {
-			$random_string .= $characters[rand(0, $characters_length - 1)];
-		}
-
-		return $random_string;
-	}
-
 	#endregion
 }
 

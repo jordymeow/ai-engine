@@ -395,6 +395,7 @@ i18n.CONTENT_GENERATOR = {
 };
 
 i18n.TEMPLATES = {
+  TEMPLATE: __( 'Template', 'ai-engine' ),
   TEMPLATES: __( 'Templates', 'ai-engine' ),
   DELETE_CONFIRM: __( 'Are you sure you want to delete this template?', 'ai-engine' ),
   DELETE_ALL_CONFIRM: __( 'Are you sure you want to delete all the templates?', 'ai-engine' ),

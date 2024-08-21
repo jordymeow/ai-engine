@@ -7,16 +7,23 @@ if ( !class_exists( 'MeowCommon_Ratings' ) ) {
 		public $mainfile; 	// plugin main file (media-file-renamer.php)
 		public $domain; 		// domain used for translation (media-file-renamer)
 		public $prefix;			// used for many things (filters, options, etc)
-		public $ignored_domains = [ 'mwai-notifications', 'mwai-ollama' ];
+		public $ignored_domains = [ 'mwai-*' ];
 
 		public function __construct( $prefix, $mainfile, $domain ) {
 			$this->mainfile = $mainfile;
 			$this->domain = $domain;
 			$this->prefix = $prefix;
 
-			// Avoid showing the rating for some plugins
 			if ( array_search( $this->domain, $this->ignored_domains ) !== false ) {
 				return;
+			}
+			foreach ( $this->ignored_domains as $ignored_domain ) {
+				if ( strpos( $ignored_domain, '*' ) !== false ) {
+					$ignored_domain = str_replace( '*', '', $ignored_domain );
+					if ( strpos( $this->domain, $ignored_domain ) !== false ) {
+						return;
+					}
+				}
 			}
 
 			// Add the hooks

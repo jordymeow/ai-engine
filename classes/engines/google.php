@@ -207,7 +207,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
-      $this->core->log( "❌ (Google) " .  $e->getMessage() );
+      Meow_MWAI_Logging::error( "(Google) " . $e->getMessage() );
       throw $e;
     }
     finally {
@@ -342,7 +342,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      $this->core->log( "❌ (Google) " . $e->getMessage() );
+      Meow_MWAI_Logging::error( "(Google) " . $e->getMessage() );
       $message = "From Google: " . $e->getMessage();
       throw new Exception( $message );
     }
@@ -414,7 +414,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
         'model' => $name,
         'name' => $name,
         'family' => $family,
-        'mode' => 'chat',
+        'features' => ['completion'],
         'type' => 'token',
 		    'unit' => 1 / 1000,
         'maxCompletionTokens' => $maxCompletionTokens,

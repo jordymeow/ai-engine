@@ -1,5 +1,5 @@
-// Previous: 2.1.0
-// Current: 2.5.5
+// Previous: 2.5.5
+// Current: 2.5.6
 
 const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
@@ -7,28 +7,19 @@ const { registerPlugin } = wp.plugins;
 const { Button, ToolbarDropdownMenu, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
 const { BlockControls } = wp.blockEditor;
 const { PluginDocumentSettingPanel } = wp.editPost;
-
-//const { PluginBlockSettingsMenuItem } = wp.editPost;
 const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoWrapper, NekoUI } from '@neko-ui';
 
-// UI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
 import AiIcon from '../styles/AiIcon';
 import MagicWandModal from './modals/MagicWandModal';
-
-// SlotFills Reference
-// https://developer.wordpress.org/block-editor/reference-guides/slotfills/
-
-// Plugin Block Settings Menu Item Reference
-// https://developer.wordpress.org/block-editor/reference-guides/slotfills/plugin-block-settings-menu-item/
+import { getPostContent } from '@app/helpers-admin';
 
 function BlockAIWand() {
   const [ busy, setBusy ] = useState(false);
@@ -37,7 +28,7 @@ function BlockAIWand() {
 
   if (!selectedBlock) { return null; }
   if (selectedBlock.name !== 'core/paragraph') {
-    return null;
+    return null; // added return for consistency
   }
 
   const applyFadeOutStyle = (element) => {
@@ -89,12 +80,12 @@ function BlockAIWand() {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const selectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = selectedBlock.attributes.content;
+    const selectedBlk = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = selectedBlk.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlock.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlk.clientId, { content: updatedContent });
   };
 
   const updateText = (text) => {
@@ -107,7 +98,7 @@ function BlockAIWand() {
     replaceText(text);
   };
 
-  const text = selectedBlock.attributes.content;
+  const { content } = selectedBlock.attributes;
   const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
@@ -122,7 +113,7 @@ function BlockAIWand() {
       const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, {
         method: 'POST',
         nonce: restNonce,
-        json: { action, data: { postId, text, selectedText } }
+        json: { action, data: { postId, text: content, selectedText } }
       });
       resetBlockStyle();
       setBusy(false);
@@ -219,19 +210,13 @@ function BlockAIWand() {
                   <small>For this Text</small>
                 </div>
               </MenuItem>
-              {/* <MenuItem  onClick={() => doAction('suggestImages')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Suggest Images</b>
-                  <small>Choose Between 3 Images</small>
-                </div>
-              </MenuItem> */}
             </MenuGroup>
           </>)}
         </ToolbarDropdownMenu>
       </ToolbarGroup>
     </BlockControls>
     <MagicWandModal
-      isOpen={results?.length}
+      isOpen={results?.length > 0}
       results={results}
       onClick={onClick}
       onClose={() => setResults([])}
@@ -239,10 +224,7 @@ function BlockAIWand() {
   </>);
 }
 
-// AI Engine: Translate Post
-
 const translateText = async (text, context) => {
-
   if (!text) {
     return text;
   }
@@ -252,12 +234,11 @@ const translateText = async (text, context) => {
   const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, {
     method: 'POST',
     nonce: restNonce,
-    json: { action: 'translateSection', data: { postId: postId, context, text } }
+    json: { action: 'translateSection', data: { postId, context, text } }
   });
   const translation = res.data.result;
   return translation;
-
-  //return text.split(' ').map(word => word.split('').reverse().join('')).join(' ');
+  // return text.split(' ').map(word => word.split('').reverse().join('')).join(' ');
 };
 
 const translatePost = async () => {
@@ -269,7 +250,7 @@ const translatePost = async () => {
   const noticeId = 'mwai-translation-progress-notice';
   const blocks = getBlocks();
   const originalTitle = getEditedPostAttribute('title');
-  const wholeContent = originalTitle + ' ' + blocks.map(block => block.attributes.content || '').join("\n\n");
+  const wholeContent = getPostContent();
 
   const updateProgressNotice = async (progress) => {
     createInfoNotice(`Translating content... ${progress}%`, {
@@ -302,7 +283,7 @@ const translatePost = async () => {
 
   await updateProgressNotice(0);
 
-  const totalItems = blocks.length + 2; // +2 for title and excerpt
+  const totalItems = blocks.length + 2;
   let translatedItems = 0;
   let translatedTitle = '';
 
@@ -344,27 +325,6 @@ const translatePost = async () => {
     removeNotice(noticeId);
   }
 };
-
-const doOnClick = () => {
-  alert("Coming soon! Let me know your feedback and ideas, I will make this awesome for you.");
-};
-
-const MWAI_Block_AI_Actions = () => (
-  <>
-    <PluginBlockSettingsMenuItem
-      allowedBlocks={['core/paragraph']}
-      icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-      label={<> {__('Enhance text')}</>}
-      onClick={doOnClick}
-    />
-    <PluginBlockSettingsMenuItem
-      allowedBlocks={['core/paragraph']}
-      icon={<AiIcon icon="wand" style={{ marginRight: 0 }} />}
-      label={<> {__('Translate text')}</>}
-      onClick={doOnClick}
-    />
-  </>
-);
 
 const MWAI_DocumentSettings = () => {
   const suggestionsEnabled = options?.module_suggestions;
@@ -428,27 +388,18 @@ const MWAI_DocumentSettings = () => {
   );
 };
 
-
 const BlockFeatures = () => {
-
-  // This goes into the sidebar
+  // Note: registered plugin for sidebar settings
   registerPlugin('ai-engine-document-settings', {
     render: MWAI_DocumentSettings
   });
 
-  // This goes in the context menu of the block toolbar
-  // registerPlugin('ai-engine-ai-wand', {
-  //   render: MWAI_Block_AI_Actions
-  // });
-
-  // This goes in the block toolbar directly
   registerFormatType('ai-wand/actions', {
     title: 'AI Wand',
     tagName: 'mwai',
     className: null,
     edit: BlockAIWand,
   });
-
 };
 
 export default BlockFeatures;

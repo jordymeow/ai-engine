@@ -2,8 +2,8 @@
 /*
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
-Description: AI for WordPress. Chatbot, Content/Image Generator, CoPilot, Finetuning, Internal API, GPT, Gemini, etc! Sleek UI and ultra-customizable.
-Version: 2.5.5
+Description: Chat, Create, Translate, Automate, Finetune with AI. Copilot, Internal API. Sleek UI. Hundreds of AI models supported. Build your dream project now!
+Version: 2.5.6
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '2.5.5' );
+define( 'MWAI_VERSION', '2.5.6' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );

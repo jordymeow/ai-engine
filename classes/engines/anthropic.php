@@ -193,7 +193,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          $this->core->log( '⚠️ (Anthropic) The model "' . $query->model . '" doesn\'t support Function Calling.' );
+          Meow_MWAI_Logging::warn( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
         }
         else {
           $body['tools'] = [];
@@ -240,7 +240,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          $this->core->log( '⚠️ (Anthropic) The model "' . $query->model . '" doesn\'t support Function Calling.' );
+          Meow_MWAI_Logging::warn( 'The model "' . $query->model . '" doesn\'t support Function Calling.' );
         }
         else {
           $body['tools'] = [];
@@ -429,7 +429,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
           $error = $json['error']['message'];
         }
       }
-      $this->core->log( "❌ (Anthropic) $error" );
+      Meow_MWAI_Logging::error( "(Anthropic) " . $error );
       $service = $this->get_service_name();
       $message = "From $service: " . $error;
       throw new Exception( $message );

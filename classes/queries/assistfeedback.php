@@ -60,7 +60,7 @@ class Meow_MWAI_Query_AssistFeedback extends Meow_MWAI_Query_Assistant implement
   }
 
   #[\ReturnTypeWillChange]
-  public function jsonSerialize() {
+  public function jsonSerialize(): array {
     $json = [
       'message' => $this->message,
       'blocks' => $this->blocks,

@@ -54,7 +54,7 @@ class Meow_MWAI_Engines_Core {
       $reply = $this->run_embedding_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
-      $reply = $this->run_images_query( $query );
+      $reply = $this->run_image_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
       $reply = $this->run_transcribe_query( $query );
@@ -100,7 +100,7 @@ class Meow_MWAI_Engines_Core {
         $value = apply_filters( 'mwai_ai_feedback', null, $needFeedback );
 
         if ( $value === null ) {
-          $this->core->log( "⚠️ (Feedback) The returned value for '{$needFeedback['name']}' was null." );
+          Meow_MWAI_Logging::warn( "The returned value for '{$needFeedback['name']}' was null." );
           $value = "[NO VALUE RETURNED - DO NOT SHOW THIS]";
         }
 
@@ -366,7 +366,7 @@ class Meow_MWAI_Engines_Core {
     throw new Exception( 'Not implemented.' );
   }
 
-  public function run_images_query( Meow_MWAI_Query_Base $query ) {
+  public function run_image_query( Meow_MWAI_Query_Base $query ) {
     throw new Exception( 'Not implemented.' );
   }
 

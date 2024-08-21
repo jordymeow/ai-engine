@@ -6,7 +6,7 @@ class Meow_MWAI_Query_Transcribe extends Meow_MWAI_Query_Base {
   public function __construct( $message = '', $model = 'whisper-1' ) {
 		parent::__construct( $message );
     $this->set_model( $model );
-		$this->mode = 'transcription';
+		$this->feature = 'transcription';
   }
 
 	public function set_url( $url ) {

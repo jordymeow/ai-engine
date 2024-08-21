@@ -1,16 +1,17 @@
-// Previous: 1.9.93
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.5.6
 
 /* eslint-disable no-console */
 // React & Vendor Libs
 // const { useMemo, useState, useEffect } = wp.element;
 
 // NekoUI
-import { NekoButton, NekoBlock, NekoSettings, NekoCheckbox, NekoColumn, NekoWrapper } from '@neko-ui';
+import { NekoButton, NekoBlock, NekoSettings, NekoCheckbox, NekoColumn, NekoWrapper, NekoLog } from '@neko-ui';
 
 import i18n from '@root/i18n';
 import { retrievePostContent } from '@app/helpers-admin';
-import { jsxDebugLogsConsole } from '@app/components/LogsReader';
+
+import { refreshLogs, clearLogs } from '@app/requests';
 
 const DevToolsTab = ({ options, updateOption, setOptions }) => {
   const debug_mode = options?.debug_mode;
@@ -48,7 +49,7 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
 
   return (<>
     <NekoWrapper>
-      <NekoColumn minimal>  
+      <NekoColumn minimal>
         <NekoBlock title="Debugging" className="primary">
           <NekoButton onClick={onGetContentClick}>Get Content</NekoButton>
           <p>This button will display the content of the post, as seen by AI Engine, in your Developer Tools Console. That allows you to check what AI Engine uses when using Content Aware, Embeddings Sync, etc.</p>
@@ -60,7 +61,13 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
           {jsxServerDebugMode}
         </NekoBlock>
 
-        {server_debug_mode && jsxDebugLogsConsole()}
+        {server_debug_mode &&
+          <NekoLog
+            refreshQuery={refreshLogs}
+            clearQuery={clearLogs}
+            i18n={i18n}
+          />
+        }
       </NekoColumn>
     </NekoWrapper>
   </>);

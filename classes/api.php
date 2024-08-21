@@ -333,6 +333,30 @@ class Meow_MWAI_API {
 	}
 
 	/**
+   * Generates an image relevant to the text.
+   */
+  public function imageQueryForMediaLibrary( $message, $params = [], $postId ) {
+    $query = new Meow_MWAI_Query_Image( $message );
+    $query->set_local_download( null );
+    $reply = $this->core->run_query( $query );
+    preg_match( '/\!\[Image\]\((.*?)\)/', $reply->result, $matches );
+    $url = $matches[1] ?? $reply->result;
+    $attachmentId = $this->core->add_image_from_url( $url, null, null, null, null, null, $postId );
+    if ( empty( $attachmentId ) ) {
+      throw new Exception( 'Could not add the image to the Media Library.' );
+    }
+		// TODO: We should create a nice title, caption, and alt.
+    $media = [
+      'id' => $attachmentId,
+      'url' => wp_get_attachment_url( $attachmentId ),
+      'title' => get_the_title( $attachmentId ),
+      'caption' => wp_get_attachment_caption( $attachmentId ),
+      'alt' => get_post_meta( $attachmentId, '_wp_attachment_image_alt', true )
+    ];
+		return $media;
+  }
+
+	/**
 	 * Executes a query that will have to return a JSON result.
 	 * 
 	 * @param string $message The prompt for the AI.

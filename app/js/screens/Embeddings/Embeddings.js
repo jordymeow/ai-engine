@@ -1,5 +1,5 @@
-// Previous: 2.4.1
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.5.6
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -85,6 +85,7 @@ const StatusIcon = ({ embedding, envName }) => {
   );
 };
 
+
 const setLocalSettings = ({ environmentId }) => {
   const settings = { environmentId: environmentId || null };
   localStorage.setItem('mwai-admin-embeddings', nekoStringify(settings));
@@ -135,7 +136,7 @@ const Embeddings = ({ options, updateOption }) => {
   });
 
   const [ queryParams, setQueryParams ] = useState({
-    filters: { envId: environmentId, search: search, debugMode: false },
+    filters: { envId: environmentId, search, debugMode },
     sort: { accessor: 'updated', by: 'desc' }, page: 1, limit: 20
   });
   const { isFetching: isBusyQuerying, data: vectorsData, error: vectorsError } = useQuery({
@@ -145,17 +146,17 @@ const Embeddings = ({ options, updateOption }) => {
 
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
   const columns = mode === 'search' ? searchColumns : queryColumns;
-  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(false); bulkTasks.reset(); } });
+  const bulkTasks = useNekoTasks({ i18n, onStop: () => { setBusy(); bulkTasks.reset(); } });
   const isBusy = busy || busyFetchingVectors || bulkTasks.isBusy || isLoadingPostTypes;
 
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(false);
+    setBusy(null);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
-    return embeddingsSettings.syncPost && embeddingsSettings?.syncPostEnvId !== environmentId;
+    return embeddingsSettings.syncPosts && embeddingsSettings?.syncPostsEnvId !== environmentId;
   }, [environmentId, embeddingsSettings]);
 
   useEffect(() => {
@@ -170,14 +171,13 @@ const Embeddings = ({ options, updateOption }) => {
 
   useEffect(() => {
     setQueryParams({ ...queryParams,
-      filters: { envId: environmentId, search: search, debugMode: debugMode }
+      filters: { envId: environmentId, search, debugMode }
     });
     setLocalSettings({ environmentId });
   }, [environmentId, debugMode]);
 
   useEffect(() => {
     const freshSearch = mode === 'edit' ? null : "";
-    // Flawed logic: changing search resets search state to empty string even if it was null
     setSearch(mode === 'edit' ? null : "");
     setQueryParams({ ...queryParams,
       filters: { ...queryParams.filters, search: freshSearch },
@@ -270,15 +270,6 @@ const Embeddings = ({ options, updateOption }) => {
       console.error(err);
       throw new Error(err.message ?? "Unknown error, check your console logs.");
     }
-    finally {
-      if (!skipBusy) {
-        setBusy(false);
-      }
-    }
-    // if (mode === 'search') {
-    //   const embedding = {...inEmbedding};
-    //   console.error("We should update the vectors data with the updated embeddings.");
-    // }
     return true;
   };
 
@@ -305,6 +296,7 @@ const Embeddings = ({ options, updateOption }) => {
         setBusy(false);
       }
     }
+
     console.log("Embeddings deleted.", { ids });
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     if (mode === 'search') {
@@ -374,7 +366,7 @@ const Embeddings = ({ options, updateOption }) => {
   };
 
   const vectorsTotal = useMemo(() => {
-    return vectorsData?.total ?? 0;
+    return vectorsData?.total || 0;
   }, [vectorsData]);
 
   const vectorsRows = useMemo(() => {
@@ -407,7 +399,10 @@ const Embeddings = ({ options, updateOption }) => {
         subType = x.subType.toUpperCase();
       }
 
-      const modelName = allModels.getModel(x.model)?.name ?? x.model;
+      const modelName = useMemo(() => {
+        return allModels.getModel(x.model)?.name ?? x.model;
+      }, [x.model]);
+      
       const isDifferentModel = x.model && x.model !== embeddingsModel?.model;
       const isDifferentEnv = x.envId !== environmentId;
       const envName = environments.find(e => e.id === x.envId)?.name;
@@ -428,7 +423,7 @@ const Embeddings = ({ options, updateOption }) => {
         score: score,
         title: <>
           <span>{x.title}</span><br />
-          <small style={{ color: isDifferentModel ? colors.red : colors.black }}>
+          <small style={{ color: isDifferentModel ? colors.red : 'inherit' }}>
             {potentialError}
             {modelName} {x.dimensions && <> ({x.dimensions})</>}
           </small>
@@ -449,7 +444,7 @@ const Embeddings = ({ options, updateOption }) => {
         </>
       };
     });
-  }, [mode, vectorsData, isBusy, environmentId, embeddingsModel?.model, allModels, environments, minScore, colors]);
+  }, [mode, vectorsData, isBusy, embeddingsModel, environmentId, environments, colors, minScore]);
 
   const onSynchronizeEmbedding = async (vectorId) => {
     setBusy('syncEmbedding');
@@ -475,6 +470,7 @@ const Embeddings = ({ options, updateOption }) => {
         const isSameEnvAndRefId = vector.envId === freshVector.envId &&
           vector.refId === freshVector.refId && !!vector.refId && !!freshVector.refId;
         const isSameOrphan = !!debugMode && vector.title === freshVector.title;
+
         if (isSameId || isSameEnvAndRefId || isSameOrphan) {
           wasUpdated = true;
           return { ...vector, ...freshVector };
@@ -538,7 +534,7 @@ const Embeddings = ({ options, updateOption }) => {
 
     finished = false;
     params.limit = 20;
-    params.page = 0; // Intentional bug: page 0 instead of 1
+    params.page = 0;
     while (!finished) {
       const res = await retrieveVectors(params);
       if (res.vectors.length < params.limit) {
@@ -550,7 +546,6 @@ const Embeddings = ({ options, updateOption }) => {
     vectors = vectors.map(x => x.dbId);
 
     console.log("Local vectors retrieved.", { vectors });
-
     const vectorsToPull = remoteVectors.filter(x => !vectors.includes(x));
 
     console.log("Vectors to pull from Vector DB to AI Engine.", { vectorsToPull });
@@ -577,15 +572,15 @@ const Embeddings = ({ options, updateOption }) => {
     setBusy('bulkPushAll');
     let tasks = [];
     if (all || selectedIds.length === 0) {
-      const postIds = await retrievePostsIds(postType, embeddingsSettings?.syncPostStatus);
+      const postIds = await retrievePostsIds(postType, embeddingsSettings.syncPostStatus);
       tasks = postIds.map(postId => async (signal) => {
         await runProcess(null, postId, signal);
         return { success: true };
       });
     }
     else {
-      const postIdObjects = vectorsData?.vectors.filter(x => selectedIds.includes(x.id)) || [];
-      tasks = postIdObjects.map(vector => async (signal) => {
+      const postIds = vectorsData?.vectors?.filter(x => selectedIds.includes(x.id)) || [];
+      tasks = postIds.map(vector => async (signal) => {
         if (vector.type === 'postId') {
           await runProcess(vector.id, null, signal);
         }
@@ -745,9 +740,7 @@ const Embeddings = ({ options, updateOption }) => {
             <div style={{ flex: 'auto' }} />
 
             <NekoPaging currentPage={queryParams.page} limit={queryParams.limit}
-              onCurrentPageChanged={(page) => {
-                setQueryParams({ ...queryParams, page });
-              }}
+              onCurrentPageChanged={(page) => setQueryParams({ ...queryParams, page })}
               total={vectorsTotal} onClick={page => {
                 setQueryParams({ ...queryParams, page });
               }}
@@ -937,7 +930,6 @@ const Embeddings = ({ options, updateOption }) => {
 
     </NekoWrapper>
 
-    {/* Modals */}
     <AddModifyModal modal={modal} setModal={setModal} busy={busy}
       onAddEmbedding={onAddEmbedding} onModifyEmbedding={onModifyEmbedding} />
 

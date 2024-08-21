@@ -29,7 +29,7 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
     if ( $ai_embeddings_default_dimensions ) {
       $this->set_dimensions( $ai_embeddings_default_dimensions );
     }
-    $this->mode = 'embedding';
+    $this->feature = 'embedding';
   }
 
   /**
@@ -41,19 +41,19 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
   }
 
 	#[\ReturnTypeWillChange]
-  public function jsonSerialize() {
+  public function jsonSerialize(): array {
     $json = [
       'message' => $this->message,
 
       'ai' => [
         'model' => $this->model,
+        'feature' => $this->feature,
         'dimensions' => $this->dimensions,
       ],
 
       'system' => [
         'class' => get_class( $this ),
         'envId' => $this->envId,
-        'mode' => $this->mode,
         'scope' => $this->scope,
         'session' => $this->session
       ]

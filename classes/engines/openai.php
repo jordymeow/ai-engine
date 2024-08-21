@@ -88,31 +88,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $this->envType === 'azure' ? 'Azure' : 'OpenAI';
   }
 
-  private function build_prompt( $query ) {
-    $prompt = "";
-    if ( $query->mode === 'chat' ) {
-      $prompt = $query->instructions . "\n\n";
-      foreach ( $query->messages as $message ) {
-        $role = $message['role'];
-        $content = $message['content'];
-        if ( $role === 'system' ) {
-          $prompt .= "$content\n\n";
-        }
-        if ( $role === 'user' ) {
-          $prompt .= "User: $content\n";
-        }
-        if ( $role === 'assistant' ) {
-          $prompt .= "AI: $content\n";
-        }
-      }
-      $prompt .= "AI: ";
-    }
-    else if ( $query->mode === 'completion' ) {
-      $prompt = $query->get_message();
-    }
-    return $prompt;
-  }
-
   protected function build_messages( $query ) {
     $messages = [];
 
@@ -196,10 +171,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
-          $this->core->log( '⚠️ (OpenAI) The model ' . $query->model . ' doesn\'t support Function Calling.' );
+          Meow_MWAI_Logging::warn( 'The model ' . $query->model . ' doesn\'t support Function Calling.' );
         }
         else if ( strpos( $query->model, 'ft:' ) === 0 ) {
-          $this->core->log( '⚠️ (OpenAI) OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
+          Meow_MWAI_Logging::warn( 'OpenAI doesn\'t support Function Calling with fine-tuned models yet.' );
         }
         else {
           $body['tools'] = [];
@@ -214,13 +189,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           //$body['function_call'] = $query->functionCall;
         }
       }
-
-      if ( $query->mode === 'chat' ) {
-        $body['messages'] = $this->build_messages( $query );
-      }
-      else if ( $query->mode === 'completion' ) {
-        $body['prompt'] = $this->build_prompt( $query );
-      }
+      $body['messages'] = $this->build_messages( $query );
 
       // Add the feedback if it's a feedback query.
       if ( $query instanceof Meow_MWAI_Query_Feedback ) {
@@ -310,25 +279,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( $this->envType === 'azure' ) {
         $deployment_name = $this->get_azure_deployment_name( $query->model );
         $url = trailingslashit( $endpoint ) . 'openai/deployments/' . $deployment_name;
-        if ( $query->mode === 'chat' ) {
-          $url .= '/chat/completions?' . $this->azureApiVersion;
-        }
-        else if ($query->mode === 'completion') {
-          $url .= '/completions?' . $this->azureApiVersion;
-        }
+        $url .= '/chat/completions?' . $this->azureApiVersion;
       }
       else {
-        if ( $query->mode === 'chat' ) {
-          $url .= trailingslashit( $endpoint ) . 'chat/completions';
-        }
-        else if ( $query->mode === 'completion' ) {
-          $url .= trailingslashit( $endpoint ) . 'completions';
-        }
+        $url .= trailingslashit( $endpoint ) . 'chat/completions';
       }
       return $url;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      $modeEndpoint = $query->mode === 'translation' ? 'translations' : 'transcriptions';
+      $modeEndpoint = $query->feature === 'translation' ? 'translations' : 'transcriptions';
       $url .= trailingslashit( $endpoint ) . 'audio/' . $modeEndpoint;
       return $url;
     }
@@ -657,7 +616,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
-      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
+      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       throw $e;
     }
     finally {
@@ -707,7 +666,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
+      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       $service = $this->get_service_name();
       throw new Exception( "From $service: " . $e->getMessage() );
     }
@@ -738,7 +697,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !is_null( $error ) ) {
         $message = $error;
       }
-      $this->core->log( '❌ (OpenAI) ' . $message );
+      Meow_MWAI_Logging::error( 'OpenAI: ' . $message );
       $service = $this->get_service_name();
       throw new Exception( "From $service: " . $message );
     }
@@ -758,9 +717,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     if ( $isStreaming ) {
       $this->streamCallback = $streamCallback;
       add_action( 'http_api_curl', [ $this, 'stream_handler' ], 10, 3 );
-    }
-    if ( $query->mode !== 'chat' && $query->mode !== 'completion' ) {
-      throw new Exception( 'Unknown mode for query: ' . $query->mode );
     }
 
     $this->reset_stream();
@@ -812,8 +768,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           throw new Exception( 'No content received (res is null).' );
         }
         if ( !$data['model'] ) {
-          $this->core->log( '❌ (OpenAI) Invalid response (no model information):' );
-          $this->core->log( '❌ (OpenAI) ' . print_r( $data, 1 ) );
+          Meow_MWAI_Logging::error( 'OpenAI: Invalid response (no model information):' );
+          Meow_MWAI_Logging::error( print_r( $data, 1 ) );
           throw new Exception( 'Invalid response (no model information).' );
         }
         $returned_id = $data['id'];
@@ -844,7 +800,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
+      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       $service = $this->get_service_name();
       $message = "From $service: " . $e->getMessage();
       throw new Exception( $message );
@@ -874,7 +830,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   }
 
   // Request to DALL-E API
-  public function run_images_query( $query ) {
+  public function run_image_query( $query ) {
     $body = $this->build_body( $query );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );
@@ -916,7 +872,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
+      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       $service = $this->get_service_name();
       throw new Exception( "From $service: " . $e->getMessage() );
     }
@@ -1302,7 +1258,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $data;
     }
     catch ( Exception $e ) {
-      $this->core->log( '❌ (OpenAI) ' . $e->getMessage() );
+      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       throw new Exception( 'From OpenAI: ' . $e->getMessage() );
     }
     finally {
@@ -1345,21 +1301,21 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return MWAI_OPENAI_MODELS;
   }
 
-  private function calculate_price( $modelFamily, $inUnits, $outUnits, $option = null, $finetune = false )
+  private function calculate_price( $modelFamily, $inUnits, $outUnits, $resolution = null, $finetune = false )
   {
     $modelFamily = SELF::get_model_without_release_date( $modelFamily );
     $models = $this->get_models();
     foreach ( $models as $currentModel ) {
       if ( $currentModel['model'] === $modelFamily ) {
         if ( $currentModel['type'] === 'image' ) {
-          if ( !$option ) {
-            $this->core->log( "⚠️ (OpenAI) Image models require an option." );
+          if ( !$resolution ) {
+            Meow_MWAI_Logging::warn( "(OpenAI) Image models require a resolution." );
             return null;
           }
           else {
-            foreach ( $currentModel['options'] as $imageType ) {
-              if ( $imageType['option'] == $option ) {
-                return $imageType['price'] * $outUnits;
+            foreach ( $currentModel['resolutions'] as $r ) {
+              if ( $r['name'] == $resolution ) {
+                return $r['price'] * $outUnits;
               }
             }
           }
@@ -1388,7 +1344,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
       }
     }
-    $this->core->log( "⚠️ (OpenAI) Invalid model ($modelFamily)." );
+    Meow_MWAI_Logging::warn( "(OpenAI) Invalid model ($modelFamily)." );
     return null;
   }
 
@@ -1396,8 +1352,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   {
     $model = $query->model;
     $units = 0;
-    $option = null;
-
     $finetune = false;
     if ( is_a( $query, 'Meow_MWAI_Query_Text' ) || is_a( $query, 'Meow_MWAI_Query_Assistant' ) ) {
       if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
@@ -1405,24 +1359,23 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       }
       $inUnits = $reply->get_in_tokens( $query );
       $outUnits = $reply->get_out_tokens();
-      return $this->calculate_price( $model, $inUnits, $outUnits, $option, $finetune );
+      return $this->calculate_price( $model, $inUnits, $outUnits, null, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Image' ) ) {
-      /** @var Meow_MWAI_Query_Image $query */
       $units = $query->maxResults;
-      $option = $query->resolution;
-      return $this->calculate_price( $model, 0, $units, $option, $finetune );
+      $resolution = $query->resolution;
+      return $this->calculate_price( $model, 0, $units, $resolution, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Transcribe' ) ) {
       $model = 'whisper';
       $units = $reply->get_units();
-      return $this->calculate_price( $model, 0, $units, $option, $finetune );
+      return $this->calculate_price( $model, 0, $units, null, $finetune );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Embed' ) ) {
       $units = $reply->get_total_tokens();
-      return $this->calculate_price( $model, 0, $units, $option, $finetune );
+      return $this->calculate_price( $model, 0, $units, null, $finetune );
     }
-    $this->core->log( "⚠️ (OpenAI) Cannot calculate price for $model.");
+    Meow_MWAI_Logging::warn( "(OpenAI) Cannot calculate price for $model." );
     return null;
   }
 

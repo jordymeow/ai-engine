@@ -25,7 +25,7 @@ class Meow_MWAI_Rest
 			$message = $params['prompt'];
 			unset( $params['prompt'] );
 			$params['message'] = $message;
-			$this->core->log( '⚠️ "prompt" is deprecated, please use "message" instead.' );
+			Meow_MWAI_Logging::deprecated( '"prompt" is deprecated, please use "message" instead.' );
 		}
 		else {
 			$message = "";
@@ -420,21 +420,32 @@ class Meow_MWAI_Rest
 			$params = $request->get_json_params();
 			$action = sanitize_text_field( $params['action'] );
 			$message = $this->retrieve_message( $params, true );
+			$context = sanitize_text_field( $params['context'] );
+			$postId = !empty( $params['postId'] ) ? intval( $params['postId'] ) : null;
 			if ( empty( $action ) || empty( $message ) ) {
 				return new WP_REST_Response([ 'success' => false, 'message' => "Copilot needs an action and a prompt." ], 500 );
 			}
-			$query = new Meow_MWAI_Query_Text( $message, 2048 );
-			$query->set_scope( 'admin-tools' );
-			$model = $this->core->get_option( 'ai_default_model' );
-			$env = $this->core->get_option( 'ai_default_env' );
-			if ( !empty( $env ) ) {
-				$query->set_env_id( $env );
+			
+			global $mwai;
+			$result = null;
+			$params = [ 'scope' => 'copilot' ];
+
+			if ( $action === 'text' ) {
+				$prompt = "Here is the current article: \n\n===\n\n" . $context . "\n\n===\n\nIn this article, instead of the [== CURRENT BLOCK ==] placeholder, the author needs additional content. This new content should use the same tone, style, context, it should naturally flow in the article. The author shared additional information for this request:\n\n===\n\n" . $message . "\n\n===\n\nPlease provide the additional content. Only output the additional content, not the entire article, no need for extra information, and no need for the placeholders. Only output the content that should be added.";
+				if ( !empty( $model ) ) {
+					$params['model'] = $model;
+				}
+				$result = $mwai->simpleTextQuery( $prompt, $params );
 			}
-			if ( !empty( $model ) ) {
-				$query->set_model( $model );
+			else if ( $action === 'image' ) {
+				$prompt = "Here is the current article: \n\n===\n\n" . $context . "\n\n===\n\nIn this article, instead of the [== CURRENT BLOCK ==] placeholder, the author needs an image. Please write a detailed description (prompt) for that image that would fit this context. The image should be relevant to the article. The author shared additional information for this request:\n\n===\n\n" . $message . "\n\n===\n\nPlease only output the description for the image, not the entire article, no need for extra information, and no need for the placeholders. Only output the description.";
+
+				// Create the image
+				$simplifiedPrompt = $mwai->simpleTextQuery( $prompt, $params );
+				$media = $mwai->imageQueryForMediaLibrary( $simplifiedPrompt, $params, $postId );
+				$result = [ 'media' => $media ];
 			}
-			$reply = $this->core->run_query( $query );
-			return new WP_REST_Response([ 'success' => true, 'data' => $reply->result ], 200 );
+			return new WP_REST_Response([ 'success' => true, 'data' => $result ], 200 );
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
@@ -965,15 +976,14 @@ class Meow_MWAI_Rest
 	#region Logs
 
 	function rest_get_logs() {
-		$logs = $this->core->get_logs();
+		$logs = Meow_MWAI_Logging::get();
 		return new WP_REST_Response( [ 'success' => true, 'data' => $logs ], 200 );
 	}
 
 	function rest_clear_logs() {
-		$this->core->clear_logs();
+		Meow_MWAI_Logging::clear();
 		return new WP_REST_Response( [ 'success' => true ], 200 );
 	}
-
 
 	#endregion
 }

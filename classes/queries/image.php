@@ -1,7 +1,7 @@
 <?php
 
 class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
-	public ?string $resolution = '1792x1024';
+	public ?string $resolution = null;
 	public ?string $style = null;
 	public ?string $localDownload = 'uploads';
 	public ?string $localDownloadExpiry = 'uploads';
@@ -11,10 +11,36 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
   public function __construct( ?string $message = "", ?string $model = "dall-e-3" ) {
 		parent::__construct( $message );
     $this->model = $model;
-    $this->mode = "generation"; // could be generation, edit, variation
+    $this->feature = "text-to-image"; // image-to-image, inpainting, etc
 		global $mwai_core;
 		$this->localDownload = $mwai_core->get_option( 'image_local_download' );
 		$this->localDownloadExpiry = $mwai_core->get_option( 'image_expires_download' );
+  }
+
+	#[\ReturnTypeWillChange]
+  public function jsonSerialize(): array {
+    $json = [
+      'message' => $this->message,
+
+      'ai' => [
+        'model' => $this->model,
+				'feature' => $this->feature,
+				'resolution' => $this->resolution
+      ],
+
+      'system' => [
+        'class' => get_class( $this ),
+        'envId' => $this->envId,
+        'scope' => $this->scope,
+        'session' => $this->session
+      ]
+    ];
+
+    if ( !empty( $this->context ) ) {
+      $json['context']['content'] = $this->context;
+    }
+
+    return $json;
   }
 
 	#endregion

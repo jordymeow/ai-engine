@@ -16,16 +16,17 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
 
   public function __construct( ?string $message = '' ) {
     parent::__construct( $message );
-    $this->mode = "assistant"; 
+    $this->feature = "assistant"; 
   }
 
   #[\ReturnTypeWillChange]
-  public function jsonSerialize() {
+  public function jsonSerialize(): array {
     return [
       'message' => $this->message,
 
       'ai' => [
         'model' => $this->model,
+        'feature' => $this->feature,
         'assistantId' => $this->assistantId,
         'threadId' => $this->threadId,
         'storeId' => $this->storeId,
@@ -38,7 +39,6 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
       'system' => [
         'class' => get_class( $this ),
         'envId' => $this->envId,
-        'mode' => $this->mode,
         'scope' => $this->scope,
         'session' => $this->session,
         'chatId' => $this->chatId,

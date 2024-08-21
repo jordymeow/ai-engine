@@ -18,7 +18,8 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public int $maxMessages = 15;
   public int $maxResults = 1;
   public string $model = '';
-  public string $mode = '';
+  //public string $mode = ''; //TODO: Let's get rid of this thing from the past
+  public string $feature = 'completion';
 
   // Functions
   public array $functions = [];
@@ -48,19 +49,19 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   }
 
   #[\ReturnTypeWillChange]
-  public function jsonSerialize() {
+  public function jsonSerialize(): array {
     $json = [
       'message' => $this->message,
       'instructions' => $this->instructions,
 
       'ai' => [
         'model' => $this->model,
+        'feature' => $this->feature,
       ],
 
       'system' => [
         'class' => get_class( $this ),
         'envId' => $this->envId,
-        'mode' => $this->mode,
         'scope' => $this->scope,
         'session' => $this->session,
         'maxMessages' => $this->maxMessages,
@@ -135,7 +136,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    */
   public function set_model( string $model ) {
     $this->model = $model;
-    $this->mode = 'chat';
   }
 
   public function get_model() {
@@ -161,7 +161,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function set_instructions( string $instructions ): void {
     $this->instructions = apply_filters( 'mwai_ai_context', $instructions, $this );
     if ( $this->instructions !== $instructions ) {
-      $this->core->log( '⚠️ (Base Query) mwai_ai_context filter is deprecated. Please use mwai_ai_instructions instead.' );
+      Meow_MWAI_Logging::deprecated( '"mwai_ai_context" filter is deprecated. Please use "mwai_ai_instructions" instead.' );
     }
     $this->instructions = apply_filters( 'mwai_ai_instructions', $this->instructions, $this );
   }
@@ -307,12 +307,12 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
     // TODO: After September 2024, remove this context condition.
     if ( !empty( $params['context'] ) ) {
-      $this->core->log( '⚠️ (Base Query) context is deprecated. Please use instructions instead.' );
+      Meow_MWAI_Logging::deprecated( '"context" is deprecated. Please use "instructions" instead.' );
       $this->set_instructions( $params['context'] );
     }
     // TODO: After September 2024, remove this prompt condition.
     if ( !empty( $params['prompt'] ) ) {
-      $this->core->log( '⚠️ (Base Query) prompt is deprecated. Please use message instead.' );
+      Meow_MWAI_Logging::deprecated( '"prompt" is deprecated. Please use "message" instead.' );
       $this->set_message( $params['prompt'] );
     }
     if ( !empty( $params['instructions'] ) ) {

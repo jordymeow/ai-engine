@@ -9,6 +9,13 @@ define( 'MWAI_ENGINES', [
     'models' => []
   ],
   [
+    'name' => 'Anthropic',
+    'type' => 'anthropic',
+    'inputs' => ['apikey'],
+    'internal' => true,
+    'models' => []
+  ],
+  [
     'name' => 'Azure (OpenAI)',
     'type' => 'azure',
     'inputs' => ['apikey', 'endpoint'],
@@ -23,13 +30,6 @@ define( 'MWAI_ENGINES', [
     'models' => []
   ],
   [
-    'name' => 'Anthropic',
-    'type' => 'anthropic',
-    'inputs' => ['apikey'],
-    'internal' => true,
-    'models' => []
-  ],
-  [
     'name' => 'OpenRouter',
     'type' => 'openrouter',
     'inputs' => ['apikey', 'dynamicModels'],
@@ -40,6 +40,13 @@ define( 'MWAI_ENGINES', [
     'name' => 'Hugging Face',
     'type' => 'huggingface',
     'inputs' => ['apikey'],
+    'internal' => true,
+    'models' => []
+  ],
+  [
+    'name' => 'Replicate',
+    'type' => 'replicate',
+    'inputs' => ['apikey', 'dynamicModels'],
     'internal' => true,
     'models' => []
   ]

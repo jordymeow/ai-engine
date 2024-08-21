@@ -10,6 +10,7 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
 	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
 	'fullscreen', 'copyButton'
 ] );
+
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions',
 	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions'
@@ -75,7 +76,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function basics_security_check( $botId, $customId, $newMessage, $newFileId ) {
 		if ( !$botId && !$customId ) {
-			$this->core->log( "⚠️ The query was rejected - no botId nor id was specified.");
+			Meow_MWAI_Logging::warn( "The query was rejected - no botId nor id was specified." );
 			return false;
 		}
 
@@ -85,7 +86,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 		$length = strlen( empty( $newMessage ) ? "" : $newMessage );
 		if ( $length < 1 || $length > ( 4096 * 16 ) ) {
-			$this->core->log( "⚠️ The query was rejected - message was too short or too long.");
+			Meow_MWAI_Logging::warn( "The query was rejected - message was too short or too long." );
 			return false;
 		}
 		return true;
@@ -160,7 +161,7 @@ class Meow_MWAI_Modules_Chatbot {
 				foreach ( $supported_types[$item['type']] as $param ) {
 					if ( !isset( $item['data'][$param] ) ) {
 						$is_valid = false;
-						$this->core->log( "⚠️ Missing required parameter '{$param}' for {$type_name} type: {$item['type']}." );
+						Meow_MWAI_Logging::warn( "The query was rejected - missing required parameter '{$param}' for {$type_name} type: {$item['type']}." );
 						break;
 					}
 				}
@@ -169,7 +170,7 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 			}
 			else {
-				$this->core->log( "⚠️ Unsupported {$type_name} type: {$item['type']}." );
+				Meow_MWAI_Logging::warn( "The query was rejected - unsupported {$type_name} type: {$item['type']}." );
 			}
 		}
 		return $sanitized_items;
@@ -212,13 +213,13 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			if ( !$chatbot ) {
-				$this->core->log( "⚠️ No chatbot was found for this query.");
+				Meow_MWAI_Logging::warn( "The query was rejected - no chatbot was found." );
 				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
 
 			$textInputMaxLength = $chatbot['textInputMaxLength'] ?? null;
 			if ( $textInputMaxLength && $this->core->safe_strlen( $newMessage ) > (int)$textInputMaxLength ) {
-				error_log( "AI Engine: The query was rejected - message was too long.");
+				Meow_MWAI_Logging::warn( "The query was rejected - message was too long." );
 				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
 			
@@ -497,7 +498,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 	// TODO: After January 2025, remove this.
 	public function old_chat_shortcode( $atts ) {
-		error_log( "AI Engine: The shortcode 'mwai_chatbot_v2' is deprecated. Please use 'mwai_chatbot' instead." );
+		Meow_MWAI_Logging::deprecated( "The shortcode 'mwai_chatbot_v2' is deprecated. Please use 'mwai_chatbot' instead." );
 		return $this->chat_shortcode( $atts );
 	}
 
@@ -528,6 +529,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 		$frontParams = [];
 		foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {
+			// Let's go through the overriden or custom params first (the ones passed in the shortcode)
 			if ( isset( $atts[$param] ) ) {
 				if ( $param === 'localMemory' ) {
 					$frontParams[$param] = $atts[$param] === 'true';
@@ -536,9 +538,15 @@ class Meow_MWAI_Modules_Chatbot {
 					$frontParams[$param] = $atts[$param];
 				}
 			}
+			// If not, let's use the chatbot's default values
 			else if ( isset( $chatbot[$param] ) ) {
 				$frontParams[$param] = $chatbot[$param];
 			}
+
+			// Apply the placeholders
+			if ( in_array( $param, ['startSentence', 'iconText'] ) ) {
+				$frontParams[$param] = $this->core->do_placeholders( $frontParams[$param] );
+			} 
 		}
 
 		// Server Params

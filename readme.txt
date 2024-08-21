@@ -1,15 +1,15 @@
 === AI Engine ===
 Contributors: TigrouMeow
-Tags: ai, gpt, openai, chatbot, copilot
+Tags: ai, chatbot, gpt, copilot, translate
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.5
+Stable tag: 2.5.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI for WordPress. Chatbot, Content/Image Generator, CoPilot, Finetuning, Internal API, GPT, Gemini, etc! Sleek UI and ultra-customizable.
+Chat, Create, Translate, Automate, Finetune with AI. Copilot, Internal API. Sleek UI. Hundreds of AI models supported. Build your dream project now!
 
 == Description ==
 Create your own chatbot, craft content and images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track statistic and usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
@@ -66,6 +66,15 @@ Please be aware that there may be conflicts with certain caching or performance 
 Languages: English.
 
 == Changelog ==
+
+= 2.5.6 (2024/08/21) =
+* Add: Support for Replicate. Play with Flux, it's awesome! 🍀
+* Update: Better copilot. It now uses the whole post as the context for your copilot queries. 
+* Add: The copilot can also create images. The actual prompt to create the image is generated through AI, by using the context of the post, and the instructions you provide.
+* Add: Logger in the DevTools.
+* Update: Better handling of the pricing related to images.
+* Update: The template system has been improved and redesigned a bit, so that it can be used in other parts of AI Engine or WordPress at a later point.
+* Update: Added middle-out transformer for OpenRouter.
 
 = 2.5.5 (2024/08/05) =
 * Add: More efficient and complete translation feature. Check the "Translate Post" button!

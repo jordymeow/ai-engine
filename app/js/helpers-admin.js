@@ -1,5 +1,5 @@
-// Previous: 2.4.9
-// Current: 2.5.4
+// Previous: 2.5.4
+// Current: 2.5.6
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -34,12 +34,16 @@ const OptionsCheck = ({ options }) => {
 
   return (
     <>
-      {!isAISetup && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-        {toHTML(i18n.SETTINGS.AI_ENV_SETUP)}
-      </NekoMessage>}
-      {!pineconeIsOK && <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
-        {toHTML(i18n.SETTINGS.PINECONE_SETUP)}
-      </NekoMessage>}
+      {!isAISetup && (
+        <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
+          {toHTML(i18n.SETTINGS.AI_ENV_SETUP)}
+        </NekoMessage>
+      )}
+      {!pineconeIsOK && (
+        <NekoMessage variant="danger" style={{ marginTop: 0, marginBottom: 25 }}>
+          {toHTML(i18n.SETTINGS.PINECONE_SETUP)}
+        </NekoMessage>
+      )}
     </>
   );
 };
@@ -94,12 +98,12 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-    }
-
-    const detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
-    if (languages.find(l => l.value === detectedLanguage)) {
-      setCurrentLanguage(detectedLanguage);
+    } else {
+      const htmlLang = document.querySelector('html').lang || navigator.language || navigator.userLanguage;
+      const detectedLanguage = htmlLang.substr(0, 2);
+      if (languages.find(l => l.value === detectedLanguage)) {
+        setCurrentLanguage(detectedLanguage);
+      }
     }
   }, []);
 
@@ -118,33 +122,50 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
-      return;
+    } else {
+      setCurrentLanguage(value);
+      localStorage.setItem('mwai_preferred_language', value);
     }
-    setCurrentLanguage(value);
-    localStorage.setItem('mwai_preferred_language', value);
   };
 
   const jsxLanguageSelector = useMemo(() => {
     return (
       <>
-        {isCustom && <NekoInput name="customLanguage" disabled={disabled}
-          onReset={() => { setIsCustom(false); }}
-          description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={customLanguage} onChange={setCustomLanguage} />}
-        {!isCustom && <NekoSelect scrolldown name="language" disabled={disabled} 
-          description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
-          value={currentLanguage} onChange={onChange}>
-          {languages.map((lang) => {
-            return <NekoOption key={lang.value} value={lang.value} label={lang.label} />;
-          })}
-          <NekoOption key="custom" value="custom" label="Other" />
-        </NekoSelect>}
+        {isCustom && (
+          <NekoInput
+            name="customLanguage"
+            disabled={disabled}
+            onReset={() => { setIsCustom(false); }}
+            description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
+            value={customLanguage}
+            onChange={setCustomLanguage}
+          />
+        )}
+        {!isCustom && (
+          <NekoSelect
+            scrolldown
+            name="language"
+            disabled={disabled}
+            description={toHTML(i18n.CONTENT_GENERATOR.CUSTOM_LANGUAGE_HELP)}
+            value={currentLanguage}
+            onChange={onChange}
+          >
+            {languages.map((lang) => (
+              <NekoOption key={lang.value} value={lang.value} label={lang.label} />
+            ))}
+            <NekoOption key="custom" value="custom" label="Other" />
+          </NekoSelect>
+        )}
       </>
     );
-  }, [currentLanguage, isCustom, languages, customLanguage, disabled]);
+  }, [currentLanguage, languages, isCustom, customLanguage, disabled]);
 
-  return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
-    currentHumanLanguage, isCustom };
+  return {
+    jsxLanguageSelector,
+    currentLanguage: isCustom ? 'custom' : currentLanguage,
+    currentHumanLanguage,
+    isCustom
+  };
 };
 
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
@@ -162,7 +183,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         finetunes_deleted: [],
         deployments: [],
       };
-
       aiEnvs.forEach(env => {
         if (env.finetunes) fakeEnv.finetunes.push(...env.finetunes);
         if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...env.legacy_finetunes);
@@ -170,7 +190,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
         if (env.deployments) fakeEnv.deployments.push(...env.deployments);
       });
-
       return fakeEnv;
     }
     return null;
@@ -191,7 +210,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   }, [aiEnvs, envId, allEnvs, allEnvironments]);
 
   const deletedFineTunes = useMemo(() => {
-    let deleted = env?.finetunes_deleted || [];
+    let deleted = env?.finetunes_deleted ?? [];
     if (Array.isArray(env?.legacy_finetunes_deleted)) {
       deleted = [...deleted, ...env.legacy_finetunes_deleted];
     }
@@ -202,7 +221,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     const colors = {
       deprecated: 'var(--neko-red)',
       tuned: 'var(--neko-green)',
-      preview: 'var(--neko-orange)'
+      preview: 'var(--neko-orange)',
     };
     return {
       background: colors[tag],
@@ -211,14 +230,14 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       margin: '1px 0px 0px 3px',
       borderRadius: 4,
       fontSize: 9,
-      lineHeight: '100%'
+      lineHeight: '100%',
     };
   };
 
   const tagDisplayText = {
     deprecated: 'DEPRECATED',
     tuned: 'TUNED',
-    preview: 'PREVIEW'
+    preview: 'PREVIEW',
   };
 
   const jsxModelName = (x, isTuned) => {
@@ -240,36 +259,35 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     if (env?.fake === true) {
       for (const engine of options.ai_engines) {
         if (Array.isArray(engine.models)) {
-          models = [ ...models, ...engine.models ];
+          models = [...models, ...engine.models];
         }
       }
-    }
-    else if (env?.type === 'azure') {
+    } else if (env?.type === 'azure') {
       const engine = options.ai_engines.find(x => x.type === 'openai');
       const openAiModels = engine?.models ?? [];
       models = openAiModels?.filter(x => env.deployments?.find(d => d.model === x.model)) ?? [];
-    }
-    else if (env?.type === 'huggingface') {
+    } else if (env?.type === 'huggingface') {
       models = env?.customModels?.map(x => {
-        const tags = x['tags'] ? [...new Set([...x['tags'], 'core', 'chat'])] : ['core', 'chat'];
-        const mode = tags.includes('image') ? 'image' : 'chat';
+        const tags = x['tags']
+          ? [...new Set([...x['tags'], 'core', 'chat'])]
+          : ['core', 'chat'];
+        const features = tags.includes('image') ? 'text-to-image' : 'completion';
         return {
           model: x.name,
           name: x.name,
-          mode: mode,
+          features: features,
           tags: tags,
           options: [],
         };
       }) ?? [];
-    }
-    else {
+    } else {
       const engine = options.ai_engines.find(x => x.type === env?.type);
       models = engine?.models ?? [];
     }
 
     let fineTunes = env?.finetunes ?? [];
     if (Array.isArray(env?.legacy_finetunes)) {
-      fineTunes = [ ...fineTunes, ...env.legacy_finetunes ];
+      fineTunes = [...fineTunes, ...env.legacy_finetunes];
     }
     fineTunes = fineTunes.filter(x => x.status === 'succeeded' && x.model);
     models = models.map(x => {
@@ -277,9 +295,8 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     });
 
     if (fineTunes.length) {
-      models = [ ...models, ...fineTunes.map(x => {
-
-        const mode = 'chat';
+      models = [...models, ...fineTunes.map(x => {
+        const features = ['completion'];
         const splitted = x.model.split(':');
         const family = splitted[0];
         return {
@@ -287,7 +304,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
           name: jsxModelName(x, true),
           rawName: x.suffix,
           suffix: x.suffix,
-          mode,
+          features,
           family,
           description: "finetuned",
           finetuned: true,
@@ -301,7 +318,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const models = useMemo(() => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
-
 
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
@@ -320,7 +336,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   }, [models]);
 
   const completionModels = useMemo(() => {
-    return models.filter(x => x?.mode === 'completion' || x?.mode === 'chat');
+    return models.filter(x => x?.tags?.includes('chat'));
   }, [models]);
 
   const audioModels = useMemo(() => {
@@ -337,14 +353,11 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     }
     if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
-    }
-    else if (model.startsWith('gpt-4o-mini')) {
+    } else if (model.startsWith('gpt-4o-mini')) {
       model = 'gpt-4o-mini';
-    }
-    else if (model.startsWith('gpt-4o')) {
+    } else if (model.startsWith('gpt-4o')) {
       model = 'gpt-4o';
-    }
-    else if (model.startsWith('gpt-4')) {
+    } else if (model.startsWith('gpt-4')) {
       model = 'gpt-4';
     }
     const modelObj = allModels.find(x => x.model === model);
@@ -381,21 +394,21 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return coreModel || null;
   };
 
-  const getPrice = (model, option = "1024x1024") => {
+  const getPrice = (model, resolution = "1024x1024") => {
     const modelObj = getFamilyModel(model);
     if (modelObj?.type === 'image') {
-      if (modelObj?.options) {
-        const opt = modelObj.options.find(x => x.option === option);
+      if (modelObj?.resolutions) {
+        const opt = modelObj.resolutions.find(x => x.name === resolution);
         return opt?.price || null;
       }
     }
     return modelObj?.price || null;
   };
 
-  const calculatePrice = (model, inUnits, outUnits, option = "1024x1024") => {
+  const calculatePrice = (model, inUnits, outUnits, resolution = "1024x1024") => {
     const modelObj = getFamilyModel(model);
-    const price = getPrice(model, option);
-    
+    const price = getPrice(model, resolution);
+
     let priceIn = price;
     let priceOut = price;
     if (typeof price === 'object' && price !== null) {
@@ -406,11 +419,27 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
-  }
-  return { allModels, model, models,
-    completionModels, imageModels, visionModels, coreModels, embeddingsModels, audioModels, jsonModels,
-    setModel, isFineTunedModel, getModelName,
-    getFamilyName, getPrice, getModel, calculatePrice };
+  };
+
+  return {
+    allModels,
+    model,
+    models,
+    completionModels,
+    imageModels,
+    visionModels,
+    coreModels,
+    embeddingsModels,
+    audioModels,
+    jsonModels,
+    setModel,
+    isFineTunedModel,
+    getModelName,
+    getFamilyName,
+    getPrice,
+    getModel,
+    calculatePrice
+  };
 };
 
 const retrieveRemoteVectors = async (queryParams) => {
@@ -419,8 +448,11 @@ const retrieveRemoteVectors = async (queryParams) => {
 };
 
 const addFromRemote = async (queryParams, signal) => {
-  const res = await nekoFetch(`${apiUrl}/vectors/add_from_remote`, { nonce: restNonce, method: 'POST', 
-    json: queryParams, signal
+  const res = await nekoFetch(`${apiUrl}/vectors/add_from_remote`, {
+    nonce: restNonce,
+    method: 'POST',
+    json: queryParams,
+    signal
   });
   return res;
 };
@@ -429,7 +461,7 @@ const retrieveDiscussions = async (chatsQueryParams) => {
   chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
   const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
   return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
-}
+};
 
 const retrieveVectors = async (queryParams) => {
   const isSearch = queryParams?.filters?.search !== null;
@@ -464,16 +496,16 @@ const retrievePostsCount = async (postType, postStatus = 'publish') => {
 const retrievePostsIds = async (postType, postStatus = 'publish') => {
   const res = await nekoFetch(`${apiUrl}/helpers/posts_ids?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
   return res?.postIds ? res.postIds : [];
-}
+};
 
 const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus = 'publish') => {
-  const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`, 
+  const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`,
     { nonce: restNonce });
   return res;
 };
 
 const synchronizeEmbedding = async ({ vectorId, postId, envId }, signal = null) => {
-  const res = await nekoFetch(`${apiUrl}/vectors/sync`, { 
+  const res = await nekoFetch(`${apiUrl}/vectors/sync`, {
     nonce: restNonce,
     method: 'POST',
     json: { vectorId, postId, envId },
@@ -506,14 +538,18 @@ function tableUserIPFormatter(userId, ip) {
     }
     return substr;
   })() : '';
-  return <>
-    {!userId && <>{i18n.COMMON.GUEST}</>}
-    {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`} rel="noreferrer">
-      {i18n.COMMON.USER} #{userId}
-    </a></>}
-    <br />
-    <small>{formattedIP}</small>
-  </>;
+  return (
+    <>
+      {!userId && <>{i18n.COMMON.GUEST}</>}
+      {userId && (
+        <a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`} rel="noreferrer">
+          {i18n.COMMON.USER} #{userId}
+        </a>
+      )}
+      <br />
+      <small>{formattedIP}</small>
+    </>
+  );
 }
 
 const randomHash = (length = 6) => {
@@ -528,38 +564,104 @@ const randomHash = (length = 6) => {
 const OpenAiIcon = ({ size = 14, disabled = false, style, ...rest }) => {
   const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
   const finalStyle = { ...baseStyle, ...style };
-  return (<img width={size} height={size} {...rest} style={finalStyle} alt="OpenAI"
-    src={pluginUrl + '/images/chat-openai.svg'}
-  />);
+  return (
+    <img
+      width={size}
+      height={size}
+      {...rest}
+      style={finalStyle}
+      alt="OpenAI"
+      src={pluginUrl + '/images/chat-openai.svg'}
+    />
+  );
 };
 
 const AnthropicIcon = ({ size = 14, disabled = false, style, ...rest }) => {
   const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
   const finalStyle = { ...baseStyle, ...style };
-  return (<img width={size} height={size} {...rest} style={finalStyle} alt="Anthropic"
-    src={pluginUrl + '/images/chat-anthropic.svg'}
-  />);
+  return (
+    <img
+      width={size}
+      height={size}
+      {...rest}
+      style={finalStyle}
+      alt="Anthropic"
+      src={pluginUrl + '/images/chat-anthropic.svg'}
+    />
+  );
 };
 
 const JsIcon = ({ size = 14, disabled = false, style, ...rest }) => {
   const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
   const finalStyle = { ...baseStyle, ...style };
-  return (<img width={size} height={size} {...rest} style={finalStyle} alt="JavaScript"
-    src={pluginUrl + '/images/code-js.svg'}
-  />);
+  return (
+    <img
+      width={size}
+      height={size}
+      {...rest}
+      style={finalStyle}
+      alt="JavaScript"
+      src={pluginUrl + '/images/code-js.svg'}
+    />
+  );
 };
 
 const PhpIcon = ({ size = 14, disabled = false, style, ...rest }) => {
   const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
   const finalStyle = { ...baseStyle, ...style };
-  return (<img width={size} height={size} {...rest} style={finalStyle} alt="PHP"
-    src={pluginUrl + '/images/code-php.svg'}
-  />);
+  return (
+    <img
+      width={size}
+      height={size}
+      {...rest}
+      style={finalStyle}
+      alt="PHP"
+      src={pluginUrl + '/images/code-php.svg'}
+    />
+  );
 };
 
-export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
-  retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent,
-  synchronizeEmbedding, retrievePostsIds, retrieveDiscussions,
-  tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon, JsIcon, PhpIcon,
-  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR
+const getPostContent = (currentPositionMarker = null) => {
+  const { getBlocks, getSelectedBlockClientId } = wp.data.select("core/block-editor");
+  const { getEditedPostAttribute } = wp.data.select("core/editor");
+  const blocks = getBlocks();
+  const originalTitle = getEditedPostAttribute('title');
+  const selectedBlockClientId = getSelectedBlockClientId();
+
+  let wholeContent = originalTitle + '\n\n';
+  blocks.forEach((block, _index) => {
+    if (currentPositionMarker && block.clientId === getSelectedBlockClientId()) {
+      wholeContent += currentPositionMarker + '\n\n';
+    } else {
+      wholeContent += (block.attributes.content || '') + '\n\n';
+    }
+  });
+  return wholeContent.trim();
+};
+
+export {
+  OptionsCheck,
+  cleanSections,
+  useModels,
+  toHTML,
+  useLanguages,
+  addFromRemote,
+  retrieveVectors,
+  retrieveRemoteVectors,
+  retrievePostsCount,
+  retrievePostContent,
+  synchronizeEmbedding,
+  retrievePostsIds,
+  retrieveDiscussions,
+  getPostContent,
+  tableDateTimeFormatter,
+  tableUserIPFormatter,
+  randomHash,
+  OpenAiIcon,
+  AnthropicIcon,
+  JsIcon,
+  PhpIcon,
+  ENTRY_TYPES,
+  ENTRY_BEHAVIORS,
+  DEFAULT_VECTOR,
 };

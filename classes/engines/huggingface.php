@@ -81,11 +81,11 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_OpenAI
         if ( !in_array( 'chat', $tags ) ) {
           $tags[] = 'chat';
         }
-        $mode = in_array( 'image', $tags ) ? 'image' : 'chat';
+        $features = in_array( 'image', $tags ) ? ['text-to-image'] : ['completion'];
         $models[] = array(
           'model' => $model['name'],
           'name' => $model['name'],
-          'mode' => $mode,
+          'features' => $features,
           'tags' => $tags,
         );
       }

@@ -187,25 +187,12 @@ class Meow_MWAI_Modules_Wand
    * Generates an image relevant to the text.
    */
   public function action_generateImage( $value, $arguments ) {
+    global $mwai;
     $postId = $arguments['postId'];
     $text = $arguments['text'];
     $prompt = apply_filters( 'mwai_prompt_generateImage', "Generate an image that is relevant to the following text:\n\n", $arguments );
-    $query = new Meow_MWAI_Query_Image( $prompt . $text );
-    $query->set_local_download( null );
-    $reply = $this->core->run_query( $query );
-    preg_match( '/\!\[Image\]\((.*?)\)/', $reply->result, $matches );
-    $url = $matches[1] ?? $reply->result;
-    $attachmentId = $this->core->add_image_from_url( $url, null, null, null, null, null, $postId );
-    if ( empty( $attachmentId ) ) {
-      throw new Exception( 'Could not add the image to the Media Library.' );
-    }
-    $media = [
-      'id' => $attachmentId,
-      'url' => wp_get_attachment_url( $attachmentId ),
-      'title' => get_the_title( $attachmentId ),
-      'caption' => wp_get_attachment_caption( $attachmentId ),
-      'alt' => get_post_meta( $attachmentId, '_wp_attachment_image_alt', true )
-    ];
+    $message = $prompt . $text;
+    $media = $mwai->imageQueryForMediaLibrary( $message, $params = [], $postId );
     return [
       'mode' => 'insertMedia',
       'type' => 'image',

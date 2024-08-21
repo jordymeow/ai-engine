@@ -51,19 +51,19 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
   }
 
   #[\ReturnTypeWillChange]
-  public function jsonSerialize() {
+  public function jsonSerialize(): array {
     $json = [
       'message' => $this->message,
       'blocks' => $this->blocks,
 
       'ai' => [
-        'model' => $this->model
+        'model' => $this->model,
+        'feature' => $this->feature,
       ],
 
       'system' => [
         'class' => get_class( $this ),
         'envId' => $this->envId,
-        'mode' => $this->mode,
         'scope' => $this->scope,
         'session' => $this->session,
       ]
