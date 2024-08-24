@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.7
+Stable tag: 2.5.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,7 +66,7 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
-= 2.5.7 (2024/08/24) =
+= 2.5.8 (2024/08/24) =
 * Fix: Avoid crashes while rendering odd markdown in the chatbot.
 * Update: Enhanced the core so that add-on like Ollama can be used with models such as the Llava model. You can now use Image Vision for free, it works amazingly!
 * Update: Fullscreen moved to Appareance.
