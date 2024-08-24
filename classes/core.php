@@ -288,8 +288,12 @@ class Meow_MWAI_Core
 	}
 
 	function do_placeholders( $text ) {
-		$user_data = $this->get_user_data();
-		$placeholders = apply_filters( 'mwai_placeholders', $user_data );
+		$defaultPlaceholders = [];
+		$dataPlaceholders = $this->get_user_data();
+		if ( !empty( $dataPlaceholders ) ) {
+			$defaultPlaceholders = array_merge( $defaultPlaceholders, $dataPlaceholders );
+		}
+		$placeholders = apply_filters( 'mwai_placeholders', $defaultPlaceholders );
 		foreach ( $placeholders as $key => $value ) {
 			$text = str_replace( '{' . $key . '}', $value, $text );
 		}
@@ -818,8 +822,8 @@ class Meow_MWAI_Core
 	#endregion
 
 	#region Streaming
-	public function stream_push( $data ) {
-		$data = apply_filters( 'mwai_stream_push', $data );
+	public function stream_push( $data, $query = null ) {
+		$data = apply_filters( 'mwai_stream_push', $data, $query );
 		$out = "data: " . json_encode( $data );
 		echo $out;
 		echo "\n\n";

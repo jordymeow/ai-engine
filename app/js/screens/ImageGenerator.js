@@ -1,5 +1,5 @@
-// Previous: 2.3.5
-// Current: 2.5.6
+// Previous: 2.5.6
+// Current: 2.5.7
 
 const { useState, useEffect, useMemo } = wp.element;
 import Styled from "styled-components";
@@ -53,7 +53,6 @@ const ImageGenerator = () => {
   const currentModel = getModel(template?.model);
   const [ taskQueue, setTaskQueue ] = useState([]);
 
-  // Results
   const [ urls, setUrls ] = useState([]);
   const [ selectedUrl, setSelectedUrl ] = useState();
   const [ title, setTitle] = useState('');
@@ -85,8 +84,8 @@ const ImageGenerator = () => {
       const defaultModel = imageModels.find(x => x.model === 'dall-e-3') || imageModels[0];
       setTemplate({ ...template, model: defaultModel.model });
     }
-    if (template?.model && !template?.resolution && currentModel?.options?.length > 0) {
-      const resolutions = currentModel.options.map(x => x.option);
+    if (template?.model && !template?.resolution && currentModel?.resolutions?.length > 0) {
+      const resolutions = currentModel.resolutions.map(x => x.name);
       const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
       setTemplate({ ...template, resolution: bestResolution });
     }
@@ -185,7 +184,6 @@ const ImageGenerator = () => {
       processQueue();
     }
   }, [taskQueue, busy]);
-
 
   const clearImages = () => {
     setUrls([]);
@@ -306,7 +304,7 @@ const ImageGenerator = () => {
               setBusy(false);
             }}
             status={() => `${processedTasks} / ${totalTasks}`}
-          />
+/>
 
           <NekoSpacer />
 

@@ -367,9 +367,9 @@ class Meow_MWAI_Modules_Chatbot {
 
 			// Process Query
 			if ( $stream ) { 
-				$streamCallback = function( $reply ) {
+				$streamCallback = function( $reply ) use ( $query ) {
 					$raw = $reply;
-					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ] );
+					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ], $query );
 					// if ( ob_get_level() > 0 ) {
 					// 	ob_flush();
 					// }
@@ -416,7 +416,7 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $stream ) {
 				$final_res = $this->build_final_res( $botId, $newMessage, $newFileId, $params,
 					$restRes['reply'], $restRes['images'], $restRes['actions'], $restRes['usage'] );
-				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $final_res ) ] );
+				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $final_res ) ], $query );
 				die();
 			}
 			else {
@@ -427,7 +427,7 @@ class Meow_MWAI_Modules_Chatbot {
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
 			if ( $stream ) { 
-				$this->core->stream_push( [ 'type' => 'error', 'data' => $message ] );
+				$this->core->stream_push( [ 'type' => 'error', 'data' => $message ], $query );
 				die();
 			}
 			else {

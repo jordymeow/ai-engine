@@ -37,6 +37,11 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   // Extra Parameters (used by specific services, or for statistics, etc)
   public array $extraParams = [];
 
+  // Options
+  // Engine will either upload or share an URL to the image, for Vision, for example.
+  // Having this here allows other services to override it if needed (Ollama needs it false).
+  public ?string $image_remote_upload = null;
+
   #region Constructors, Serialization
 
   public function __construct( $message = '' ) {
@@ -46,6 +51,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     }
     $this->session = $mwai_core->get_session_id();
     $this->core = $mwai_core;
+    $this->image_remote_upload = $this->core->get_option( 'image_remote_upload' );
   }
 
   #[\ReturnTypeWillChange]

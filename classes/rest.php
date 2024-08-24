@@ -343,10 +343,10 @@ class Meow_MWAI_Rest
 			$stream = $params['stream'] ?? false;
 			$streamCallback = null;
 			if ( $stream ) { 
-				$streamCallback = function( $reply ) {
+				$streamCallback = function( $reply ) use ( $query ) {
 					//$raw = _wp_specialchars( $reply, ENT_NOQUOTES, 'UTF-8', true );
 					$raw = $reply;
-					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ] );
+					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ], $query );
 					if ( ob_get_level() > 0 ) {
 						ob_flush();
 					}
@@ -367,7 +367,7 @@ class Meow_MWAI_Rest
 				'usage' => $reply->usage
 			];
 			if ( $stream ) {
-				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $restRes ) ] );
+				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $restRes ) ], $query );
 				die();
 			}
 			return new WP_REST_Response( $restRes, 200 );
@@ -375,7 +375,7 @@ class Meow_MWAI_Rest
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
 			if ( $stream ) { 
-				$this->core->stream_push( [ 'type' => 'error', 'data' => $message ] );
+				$this->core->stream_push( [ 'type' => 'error', 'data' => $message ], $query );
 			}
 			else {
 				return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );

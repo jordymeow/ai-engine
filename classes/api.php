@@ -335,8 +335,9 @@ class Meow_MWAI_API {
 	/**
    * Generates an image relevant to the text.
    */
-  public function imageQueryForMediaLibrary( $message, $params = [], $postId ) {
+  public function imageQueryForMediaLibrary( $message, $params = [], $postId = null ) {
     $query = new Meow_MWAI_Query_Image( $message );
+		$query->inject_params( $params );
     $query->set_local_download( null );
     $reply = $this->core->run_query( $query );
     preg_match( '/\!\[Image\]\((.*?)\)/', $reply->result, $matches );

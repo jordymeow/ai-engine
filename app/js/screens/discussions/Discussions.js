@@ -1,10 +1,10 @@
-// Previous: 2.3.9
-// Current: 2.4.1
+// Previous: 2.4.1
+// Current: 2.5.7
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
-import Markdown from 'markdown-to-jsx';
+import { compiler } from 'markdown-to-jsx';
 
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock } from '@neko-ui';
@@ -160,9 +160,21 @@ const StyledMessage = ({ content }) => {
     }
   }, [content]);
 
+  const renderedContent = useMemo(() => {
+    let out = "";
+    try {
+      out = compiler(processedContent, options);
+    }
+    catch (e) {
+      console.error("Crash in markdown-to-jsx! Reverting to plain text.", { e, processedContent });
+      out = processedContent;
+    }
+    return out;
+  }, [processedContent]);
+
   return (
     <StyledMessageWrapper>
-      <Markdown options={options}>{processedContent}</Markdown>
+      {renderedContent}
     </StyledMessageWrapper>
   );
 };
@@ -178,7 +190,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embedding?.id ?? Math.random()}>
+        {embeddings.map(embedding => <div key={embeddings.id}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -259,7 +271,7 @@ const Discussions = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => { // added slice() to prevent mutation
+    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
       const messages = JSON.parse(x.messages);
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
@@ -286,7 +298,7 @@ const Discussions = () => {
         updated: <div style={{ textAlign: 'right' }}>{formattedUpdated}</div>
       };
     });
-  }, [chatsData, chatbots]);
+  }, [chatsData]);
 
   const discussion = useMemo(() => {
     if (selectedIds?.length !== 1) { return null; }
@@ -319,16 +331,16 @@ const Discussions = () => {
         setBusyAction(false);
         return;
       }
-      await deleteDiscussions(); // potential bug if chatIds missing
+      await deleteDiscussions();
     }
     else {
-      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
+      const selectedChats = chatsData?.chats.filter(x => x.id === selectedIds[0]);
+      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
     await queryClient.invalidateQueries({ queryKey: ['chats'] });
-    // no refetch, relying on cache invalidation
+    queryClient.refetchQueries({ queryKey: ['chats'] });
     setBusyAction(false);
   }
 
@@ -402,24 +414,24 @@ const Discussions = () => {
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => { 
-              if (selectedIds.includes(id) && selectedIds.length === 1) {
+              if (selectedIds.length === 1 && selectedIds[0] === id) {
                 setSelectedIds([]);
                 return;
               }
               setSelectedIds([id]);
             }}
-            onSelect={ids => { setSelectedIds([ ...new Set([ ...selectedIds, ...ids ]) ]) }} // using Set for de-dup
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
             <NekoCheckbox name="auto-refresh" label={"Auto Refresh"} value="1" checked={autoRefresh}
               style={{ width: 180 }}
-              onChange={() => setAutoRefresh(prev => !prev)} />
+              onChange={() => setAutoRefresh(!autoRefresh)} />
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
@@ -430,7 +442,8 @@ const Discussions = () => {
 
       <NekoColumn minimal style={{ flex: 1 }}>
 
-        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
+        <NekoBlock className="primary" title="Selected Discussion" action={<>
+        </>}>
 
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
@@ -465,10 +478,10 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Chat ID</div>
             <div>{discussion?.chatId}</div>
           </div>
-          {discussion?.extra?.session && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Session</div>
             <div>{discussion?.extra?.session}</div>
-          </div>}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Created</div>
             <div>{formattedCreated}</div>

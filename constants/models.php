@@ -18,7 +18,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 128000,
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
 	],
 	[
 		"model" => "gpt-4o-mini",
@@ -38,7 +38,7 @@ define( 'MWAI_OPENAI_MODELS', [
 			"out" => 1.20,
 			"train" => 3.00
 		],
-		"tags" => ['core', 'chat', 'vision', 'functions', 'finetune', 'json']
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
 	],
 	[
 		"model" => "gpt-4-turbo",

@@ -5,35 +5,36 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.6
+Stable tag: 2.5.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Chat, Create, Translate, Automate, Finetune with AI. Copilot, Internal API. Sleek UI. Hundreds of AI models supported. Build your dream project now!
+Chat, Create, Translate, Automate, Finetune with AI! Copilot, Internal API. Sleek UI. Hundreds of AI models supported. Build your dream project now!
 
 == Description ==
 Create your own chatbot, craft content and images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track statistic and usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
+
+It support a huge range of models via OpenAI, Anthropic, Google, OpenRouter, Replicate and Hugging Face. Ollama is also supported via an add-on. Of course, all the famous models are supported, such as GPT-4, GPT-4o, Claude, DALL-E, Flux, Gemini, and many more.
 
 Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more tutorial and information, check the official website: [AI Engine](https://meowapps.com/ai-engine/). Thank you!
 
 == Features ==
 
-Unlock the full potential of AI technology on your website with AI Engine. This powerful plugin integrates seamlessly with top AI models from OpenAI, Anthropic, and Google, including GPT-4o, GPT-4 and Vision, offering unparalleled versatility and innovation.
+* **Chatbot:** Create a highly engaging, powerful, fun, and customizable chatbot. From customer support to home automation, the possibilities are endless. Go wild!
+* **Generate:** Create content better and faster. AI Engine helps you to brainstorm, write and optimize your content. It also helps you to create images.
+* **Copilot:** Boost your efficiency with the AI Copilot, seamlessly integrated into the editor. Simply hit 'space' for instant assistance, or use the wand buttons to execute various actions.
+* **Translate:** Break the language barriers. The "Translate" button instantly transforms your content into another language.
+* **Playground:** Your dynamic space for experimentation. Create custom templates to streamline your AI-driven workflows.
+* **Finetuning:** Tailor models to your specific requirements.
+* **Internal APIs:** Integrate AI seamlessly into your WordPress with the internal APIs, REST API, and versatile filters. The possibilities are virtually limitless! You can transform your WordPress into a powerful SaaS, an AI-driven game, a dystopian never-ending story, or whatever you can dream up.
 
-* **Models:** Access a diverse range of cutting-edge AI models. Manage them effortlessly and track their usage with precision.
-* **Chatbot:** Deploy a highly engaging, customizable, and powerful chatbot for customer support, sales, or even home automation assistance.
-* **Generate:** Elevate your content creation process. AI Engine empowers you to brainstorm, optimize, and produce written content and images with unprecedented ease.
-* **Copilot:** Boost your writing efficiency with our AI Copilot, seamlessly integrated into the editor. Simply hit 'space' for instant assistance, or use the wand buttons to execute various enhancements.
-* **Translate:** Break language barriers effortlessly. The "Translate" button instantly transforms your content into multiple languages using your preferred AI model.
-* **Playground:** Explore the AI Playground, a dynamic space for experimentation. Utilize advanced tools for translation, correction, and content suggestions. Create custom templates to streamline your AI-driven workflows.
-* **Finetuning:** Tailor AI models to your specific requirements. AI Engine offers comprehensive finetuning capabilities, ensuring you maximize the potential of your AI tools.
-* **Internal APIs:** Integrate AI seamlessly into your WordPress site with our internal APIs, REST API, and versatile filters. From crafting immersive D&D games to innovative web solutions, the possibilities are virtually limitless.
+🥰 Remember, any model can be used, included self-hosted LLMs. 
 
-And that's just the beginning! The Free Version offers incredible value, but the Pro Version adds features such as advanced analytics, AI Forms, Assistants, and more. Check the [Pro Version](https://meowapps.com/ai-engine/).
+And that's just the beginning! The Free Version offers incredible value, but the Pro Version adds features such as advanced metrics, AI forms, embeddings, assistants, and more. Check the [Pro Version](https://meowapps.com/ai-engine/).
 
 == Beyond the Features ==
 
-Since AI Engine offers its own internal APIs, this allows you and others to integrate AI capabilities to your WordPress. It has been officially integrated with many plugins to enhance their functionality. Here are a few examples:
+Since AI Engine has its own internal APIs, this allows you and others to integrate AI features to your WordPress. It has been officially integrated with many plugins to enhance their functionality. Here are a few examples:
 
 * [Media File Renamer](https://wordpress.org/plugins/media-file-renamer/)
 * [SEO Engine](https://wordpress.org/plugins/seo-engine/)
@@ -63,9 +64,16 @@ Please be aware that there may be conflicts with certain caching or performance 
 3. Enjoy the features of AI Engine!
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
-Languages: English.
-
 == Changelog ==
+
+= 2.5.7 (2024/08/24) =
+* Fix: Avoid crashes while rendering odd markdown in the chatbot.
+* Update: Enhanced the core so that add-on like Ollama can be used with models such as the Llava model. You can now use Image Vision for free, it works amazingly!
+* Update: Fullscreen moved to Appareance.
+* Fix: Better handling of the resolutions handled by AI models; that avoids the crash many of you experienced in the Chatbots section.
+* Fix: Removed a few warnings and notices.
+* Add: AI Forms can be used with any text-to-image model (I know you want to use Flux!).
+* Add: gpt-4o can now be fine-tuned.
 
 = 2.5.6 (2024/08/21) =
 * Add: Support for Replicate. Play with Flux, it's awesome! 🍀

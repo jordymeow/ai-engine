@@ -109,8 +109,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.
     if ( $query->attachedFile ) {
       $finalUrl = null;
-      $remote_upload = $this->core->get_option( 'image_remote_upload' );
-      if ( $remote_upload === 'url' ) {
+      if ( $query->image_remote_upload === 'url' ) {
         $finalUrl = $query->attachedFile->get_url();
       }
       else {

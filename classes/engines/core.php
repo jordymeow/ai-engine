@@ -97,7 +97,7 @@ class Meow_MWAI_Engines_Core {
         }
 
         // Get the value related to this feedback (usually, a function call)
-        $value = apply_filters( 'mwai_ai_feedback', null, $needFeedback );
+        $value = apply_filters( 'mwai_ai_feedback', null, $needFeedback, $reply );
 
         if ( $value === null ) {
           Meow_MWAI_Logging::warn( "The returned value for '{$needFeedback['name']}' was null." );

@@ -1,9 +1,9 @@
-// Previous: 2.4.6
-// Current: 2.4.9
+// Previous: 2.4.9
+// Current: 2.5.7
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
-import Markdown from 'markdown-to-jsx';
+import { compiler } from 'markdown-to-jsx';
 
 import { useClasses, useInterval } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
@@ -77,14 +77,12 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     const options = {
       overrides: {
         BlinkingCursor: { component: BlinkingCursor },
-        a: {
-          component: LinkContainer
-        },
+        a: { component: LinkContainer },
         img: {
           props: {
             onError: (e) => {
               const src = e.target.src;
-              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/) !== null;
+              const isImage = /\.(jpeg|jpg|gif|png)$/i.test(src);
               if (isImage) {
                 e.target.src = "https://placehold.co/600x200?text=Expired+Image";
                 return;
@@ -98,10 +96,20 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     return options;
   }, []);
 
+  const renderedContent = useMemo(() => {
+    let out = "";
+    try {
+      out = compiler(content, markdownOptions);
+    } catch (e) {
+      console.error("Crash in markdown-to-jsx! Reverting to plain text.", { e, content });
+      out = content;
+    }
+    return out;
+  }, [content, markdownOptions]);
+
   if (isQuerying) {
     return (<BouncingDots />);
   }
-
   if (isStreaming && !content) {
     return (<BouncingDots />);
   }
@@ -110,7 +118,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     <>
       <ChatbotName role={message.role} />
       <ReplyActions content={message.content} enabled={copyButton} className="mwai-text">
-        <Markdown options={markdownOptions}>{content}</Markdown>
+        {renderedContent}
       </ReplyActions>
     </>
   );
@@ -135,7 +143,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
         <div className="mwai-gallery">
           {images?.map((image, index) => (
             <a key={index} href={image} target="_blank" rel="noopener noreferrer">
-              <img src={image} onError={() => handleImageError(index)} />
+              <img key={index} src={image} onError={() => handleImageError(index)} />
             </a>
           ))}
         </div>
@@ -187,6 +195,17 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
     return () => { typed.destroy(); };
   }, [message, message.isQuerying]);
 
+  const renderedContent = useMemo(() => {
+    let out = "";
+    try {
+      out = compiler(content);
+    } catch (e) {
+      console.error("Crash in markdown-to-jsx! Reverting to plain text.", { e, content });
+      out = content;
+    }
+    return out;
+  }, [content]);
+
   return (
     <>
       {message.isQuerying && <BouncingDots />}
@@ -197,7 +216,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
       {!message.isQuerying && !dynamic && <>
         <ChatbotName role={message.role} />
         <span className="mwai-text">
-          <Markdown>{content}</Markdown>
+          {renderedContent}
         </span>
       </>}
     </>
@@ -226,7 +245,6 @@ const ChatbotReply = ({ message, conversationRef }) => {
       mainElement.current.classList.add('mwai-rendered');
       const selector = mainElement.current.querySelectorAll('pre code');
       selector.forEach((el) => {
-        // eslint-disable-next-line no-undef
         hljs.highlightElement(el);
       });
     }
@@ -238,7 +256,6 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
-
     if (message.role === 'assistant') {
       if (isImages) {
         return <div ref={mainElement} className={classes}>
@@ -254,13 +271,11 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
-
     return (
       <div><i>Unhandled role.</i></div>
     );

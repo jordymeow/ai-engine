@@ -1,7 +1,6 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.5.7
 
-```jsx
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
 import { nekoStringify } from '@neko-ui';
@@ -22,6 +21,7 @@ const saveFormField = (props) => {
   const encodedOptions = encodeURIComponent(nekoStringify(options));
   const blockProps = useBlockProps.save();
 
+  // Build shortcode
   let shortcode = '[mwai-form-field';
   if (id) {
     shortcode += ` id="${id}"`;
@@ -58,7 +58,7 @@ const saveFormField = (props) => {
   return <div {...blockProps}>{shortcode}</div>;
 };
 
-const FormFieldBlock = (props) => {
+const FormFieldBlock = props => {
   const { attributes: { id, type, name, options = [], label, placeholder, rows,
     defaultValue, maxlength, required }, setAttributes } = props;
   const blockProps = useBlockProps();
@@ -82,7 +82,7 @@ const FormFieldBlock = (props) => {
     <>
       <div {...blockProps}>
         <AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
-          hint={<span className="mwai-pill">{'{' + name + '}'}</span>}>
+          hint={<span className="mwai-pill">{'{'}{name}{'}'}</span>}>
           <div>
             {label}
           </div>
@@ -129,6 +129,7 @@ const FormFieldBlock = (props) => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <div>{ __( 'Options' ) }</div>
           </div>}>
+
           {options.map((option, index) => {
             return <div key={index} style={{ display: 'flex', marginBottom: -25 }}>
               <div style={{ marginRight: 5 }}>
@@ -162,6 +163,7 @@ const FormFieldBlock = (props) => {
                   }} />
               </div>
             </div>;
+
           })}
 
           <Button isPrimary style={{ width: '100%', marginTop: 10 }} onClick={() => {
@@ -182,6 +184,7 @@ const createFormFieldBlock = () => {
   registerBlockType('ai-engine/form-field', {
     apiVersion: 3,
     title: 'AI Form Field',
+    description: 'An AI Field for your AI Form.',
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
@@ -238,4 +241,3 @@ const createFormFieldBlock = () => {
 };
 
 export default createFormFieldBlock;
-```

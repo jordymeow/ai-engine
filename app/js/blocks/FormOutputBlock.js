@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 2.0.3
+// Previous: 2.0.3
+// Current: 2.5.7
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -17,12 +17,12 @@ const saveFormField = (props) => {
   // Shortcode attributes
   const shortcodeAttributes = {
     id: { value: id, insertIfNull: true },
-    copy_button: { value: copyButton, insertIfNull: true },
+    copy_button: { value: copyButton, insertIfNull: false },
   };
 
   // Create the shortcode
   let shortcode = Object.entries(shortcodeAttributes)
-    .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
+    .filter(([, { value, insertIfNull }]) => (value !== false && value !== '') || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-output");
   shortcode = `${shortcode}]`;
 
@@ -66,7 +66,7 @@ const FormOutputBlock = props => {
 const createOutputBlock = () => {
   registerBlockType('ai-engine/form-output', {
     title: 'AI Form Output',
-    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
+    description: 'An Output Field for your AI Form.',
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],

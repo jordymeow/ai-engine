@@ -1,5 +1,5 @@
-// Previous: 1.9.8
-// Current: 2.1.5
+// Previous: 2.1.5
+// Current: 2.5.7
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -64,7 +64,7 @@ const ChatbotBlock = props => {
 const createChatbotBlock = () => {
   registerBlockType('ai-engine/chatbot', {
     title: 'AI Chatbot',
-    description: <>This feature is <b>being built</b>. I will allow to create a chatbot. Coming soon!</>,
+    description: "Embed an AI Engine Chatbot in your content.",
     icon: meowIcon,
     category: 'layout',
     keywords: [ 'ai', 'openai', 'chatbot' ],

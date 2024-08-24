@@ -1,25 +1,34 @@
-// Previous: 2.5.5
-// Current: 2.5.6
+// Previous: 2.5.6
+// Current: 2.5.7
 
 const { useState, useEffect } = wp.element;
 const { __ } = wp.i18n;
 const { registerPlugin } = wp.plugins;
 const { Button, ToolbarDropdownMenu, ToolbarGroup, Spinner, MenuGroup, MenuItem } = wp.components;
 const { BlockControls } = wp.blockEditor;
-const { PluginDocumentSettingPanel } = wp.editPost;
+const { PluginDocumentSettingPanel } = wp.editor;
+
 const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoWrapper, NekoUI } from '@neko-ui';
 
+// UI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
 import AiIcon from '../styles/AiIcon';
 import MagicWandModal from './modals/MagicWandModal';
 import { getPostContent } from '@app/helpers-admin';
+
+// SlotFills Reference
+// https://developer.wordpress.org/block-editor/reference-guides/slotfills/
+
+// Plugin Block Settings Menu Item Reference
+// https://developer.wordpress.org/block-editor/reference-guides/slotfills/plugin-block-settings-menu-item/
 
 function BlockAIWand() {
   const [ busy, setBusy ] = useState(false);
@@ -28,7 +37,7 @@ function BlockAIWand() {
 
   if (!selectedBlock) { return null; }
   if (selectedBlock.name !== 'core/paragraph') {
-    return null; // added return for consistency
+    return null;
   }
 
   const applyFadeOutStyle = (element) => {
@@ -80,12 +89,12 @@ function BlockAIWand() {
 
   const replaceText = (newText) => {
     const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
-    const selectedBlk = wp.data.select('core/block-editor').getSelectedBlock();
-    const blockContent = selectedBlk.attributes.content;
+    const selectedBlockData = wp.data.select('core/block-editor').getSelectedBlock();
+    const blockContent = selectedBlockData.attributes.content;
     const startOffset = getSelectionStart().offset;
     const endOffset = getSelectionEnd().offset;
     const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlk.clientId, { content: updatedContent });
+    wp.data.dispatch('core/block-editor').updateBlockAttributes(selectedBlockData.clientId, { content: updatedContent });
   };
 
   const updateText = (text) => {
@@ -98,7 +107,7 @@ function BlockAIWand() {
     replaceText(text);
   };
 
-  const { content } = selectedBlock.attributes;
+  const content = selectedBlock.attributes.content;
   const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
@@ -145,83 +154,85 @@ function BlockAIWand() {
     }
   };
 
-  return (<>
-    <style>
-      {`
-        @keyframes neko-fade-animation {
-          0% { opacity: 0.15; }
-          50% { opacity: 0.3; }
-          100% { opacity: 0.15; }
-        }
-    `}
-    </style>
-    <BlockControls>
-      <ToolbarGroup>
-        <ToolbarDropdownMenu
-          icon={busy ? <Spinner /> : <AiIcon icon="wand" style={{ marginRight: 0 }} />}
-          label={__('AI Wand')}>
-          {() => (<>
-            <MenuGroup>
-              <MenuItem onClick={() => doAction('correctText')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Correct Text</b>
-                  <small>Grammar & Spelling</small>
-                </div>
-              </MenuItem>
-              <MenuItem onClick={() => doAction('enhanceText')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Enhance Text</b>
-                  <small>Readibility & Quality</small>
-                </div>
-              </MenuItem>
-
-              <MenuItem onClick={() => doAction('longerText')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Longer Text</b>
-                  <small>Readibility</small>
-                </div>
-              </MenuItem>
-              <MenuItem onClick={() => doAction('shorterText')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Shorter Text</b>
-                  <small>Readibility</small>
-                </div>
-              </MenuItem>
-
-              <MenuItem onClick={() => doAction('translateText')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Translate Text</b>
-                  <small>To Post Language</small>
-                </div>
-              </MenuItem>
-            </MenuGroup>
-            <MenuGroup>
-              <MenuItem disabled={!selectedText} onClick={() => doAction('suggestSynonyms')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Suggest Synonyms</b>
-                  <small>For Selected Words</small>
-                </div>
-              </MenuItem>
-            </MenuGroup>
-            <MenuGroup>
-              <MenuItem  onClick={() => doAction('generateImage')}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <b>Generate Image</b>
-                  <small>For this Text</small>
-                </div>
-              </MenuItem>
-            </MenuGroup>
-          </>)}
-        </ToolbarDropdownMenu>
-      </ToolbarGroup>
-    </BlockControls>
-    <MagicWandModal
-      isOpen={results?.length > 0}
-      results={results}
-      onClick={onClick}
-      onClose={() => setResults([])}
-    />
-  </>);
+  return (
+    <>
+      <style>
+        {`
+          @keyframes neko-fade-animation {
+            0% { opacity: 0.15; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.15; }
+          }
+        `}
+      </style>
+      <BlockControls>
+        <ToolbarGroup>
+          <ToolbarDropdownMenu
+            icon={busy ? <Spinner /> : <AiIcon icon="wand" style={{ marginRight: 0 }} />}
+            label={__('AI Wand')}>
+            {() => (
+              <>
+                <MenuGroup>
+                  <MenuItem onClick={() => doAction('correctText')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Correct Text</b>
+                      <small>Grammar & Spelling</small>
+                    </div>
+                  </MenuItem>
+                  <MenuItem onClick={() => doAction('enhanceText')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Enhance Text</b>
+                      <small>Readibility & Quality</small>
+                    </div>
+                  </MenuItem>
+                  <MenuItem onClick={() => doAction('longerText')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Longer Text</b>
+                      <small>Readibility</small>
+                    </div>
+                  </MenuItem>
+                  <MenuItem onClick={() => doAction('shorterText')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Shorter Text</b>
+                      <small>Readibility</small>
+                    </div>
+                  </MenuItem>
+                  <MenuItem onClick={() => doAction('translateText')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Translate Text</b>
+                      <small>To Post Language</small>
+                    </div>
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup>
+                  <MenuItem disabled={!selectedText} onClick={() => doAction('suggestSynonyms')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Suggest Synonyms</b>
+                      <small>For Selected Words</small>
+                    </div>
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup>
+                  <MenuItem onClick={() => doAction('generateImage')}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <b>Generate Image</b>
+                      <small>For this Text</small>
+                    </div>
+                  </MenuItem>
+                </MenuGroup>
+              </>
+            )}
+          </ToolbarDropdownMenu>
+        </ToolbarGroup>
+      </BlockControls>
+      <MagicWandModal
+        isOpen={results?.length ? true : false}
+        results={results}
+        onClick={onClick}
+        onClose={() => setResults([])}
+      />
+    </>
+  );
 }
 
 const translateText = async (text, context) => {
@@ -238,7 +249,6 @@ const translateText = async (text, context) => {
   });
   const translation = res.data.result;
   return translation;
-  // return text.split(' ').map(word => word.split('').reverse().join('')).join(' ');
 };
 
 const translatePost = async () => {
@@ -274,6 +284,7 @@ const translatePost = async () => {
     element.style.animation = 'none';
   };
 
+  // Apply fade-out effect to all blocks and the title
   blocks.forEach(block => {
     const blockElement = document.querySelector(`[data-block="${block.clientId}"]`);
     if (blockElement) applyFadeOutStyle(blockElement);
@@ -283,7 +294,7 @@ const translatePost = async () => {
 
   await updateProgressNotice(0);
 
-  const totalItems = blocks.length + 2;
+  const totalItems = blocks.length + 2; 
   let translatedItems = 0;
   let translatedTitle = '';
 
@@ -388,8 +399,8 @@ const MWAI_DocumentSettings = () => {
   );
 };
 
+
 const BlockFeatures = () => {
-  // Note: registered plugin for sidebar settings
   registerPlugin('ai-engine-document-settings', {
     render: MWAI_DocumentSettings
   });

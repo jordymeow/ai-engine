@@ -1,5 +1,5 @@
-// Previous: 2.0.3
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.5.7
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -60,7 +60,7 @@ const FormContainerBlock = props => {
 const createContainerBlock = () => {
   registerBlockType('ai-engine/form-container', {
     title: 'AI Form Container',
-    //description: <>This feature is <b>extremely beta</b>. I am enhancing it based on your feedback.</>,
+    description: 'Container to embed the blocks relative to a specific AI Form.',
     icon: meowIcon,
     category: 'layout',
     keywords: [ __( 'ai' ), __( 'openai' ), __( 'form' ) ],
