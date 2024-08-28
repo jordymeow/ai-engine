@@ -85,8 +85,8 @@ class Meow_MWAI_Modules_Chatbot {
 		}
 
 		$length = strlen( empty( $newMessage ) ? "" : $newMessage );
-		if ( $length < 1 || $length > ( 4096 * 16 ) ) {
-			Meow_MWAI_Logging::warn( "The query was rejected - message was too short or too long." );
+		if ( $length < 1 ) {
+			Meow_MWAI_Logging::warn( "The query was rejected - message was too short." );
 			return false;
 		}
 		return true;

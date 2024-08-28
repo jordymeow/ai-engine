@@ -25,7 +25,7 @@ define( 'MWAI_ENGINES', [
   [
     'name' => 'Google',
     'type' => 'google',
-    'inputs' => ['apikey', 'region', 'projectId', 'dynamicModels'],
+    'inputs' => ['apikey', 'projectId', 'dynamicModels'],
     'internal' => true,
     'models' => []
   ],

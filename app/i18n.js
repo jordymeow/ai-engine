@@ -259,6 +259,9 @@ i18n.COMMON = {
   INSTRUCTIONS: __( 'Instructions', 'ai-engine' ),
   FUNCTIONS: __( 'Functions', 'ai-engine' ),
   BUBBLE: __( 'Bubble', 'ai-engine' ),
+  TABS: __( 'Tabs', 'ai-engine' ),
+  DROPDOWN: __( 'Dropdown', 'ai-engine' ),
+  CHATBOT_SELECT: __( 'Chatbot Select', 'ai-engine' ),
 };
 
 i18n.FORMS = {
@@ -320,6 +323,7 @@ i18n.HELP = {
   BUBBLE: __( 'The popup will be displayed as a bubble.', 'ai-engine' ),
   ICON_TEXT: __( 'If set, this text will appear next to the icon/bubble.', 'ai-engine' ),
   ICON_TEXT_DELAY: __( 'The delay before the text appears.', 'ai-engine' ),
+  CHATBOT_SELECT: __( 'Choose how you want to select the chatbot. By default, tabs are used, but you can also use a filterable dropdown if you have many chatbots.', 'ai-engine' ),
 };
 
 i18n.SETTINGS = {

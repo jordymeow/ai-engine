@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.5.9
+Stable tag: 2.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,11 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.6.0 (2024/08/28) =
+* Add: For those with many chatbots! You can now pick a new way to display the chatbots in the admin, it can be either tabs (default), or a filterable dropdown.
+* Fix: Google Gemini was not working properly.
+* Fix: There was a fixed max length defined for messages.
 
 = 2.5.9 (2024/08/24) =
 * Fix: Avoid crashes while rendering odd markdown in the chatbot.

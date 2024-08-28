@@ -1,5 +1,5 @@
-// Previous: 2.4.1
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.6.0
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -86,7 +86,7 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels,  }) => {
     <NekoSettings title={i18n.COMMON.HUGGINGFACE_MODELS} style={{ marginTop: 10 }}>
       {customModels.map((customModel, index) => (
         <div key={index} style={{ display: 'flex', flexDirection: 'column', marginBottom: 10 }}>
-          <div key={index} style={{ display: 'flex', marginBottom: 2 }}>
+          <div style={{ display: 'flex', marginBottom: 2 }}>
             <NekoInput style={{ flex: 1 }}
               value={customModel['name']}
               placeholder={i18n.COMMON.HUGGINGFACE_MODEL_NAME}
@@ -210,7 +210,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       console.log(err);
       setLoading(false);
     }
-  }, [updateOption, options?.ai_models]);
+  }, [updateOption]);
 
   const renderFields = (env) => {
     const currentEngine = aiEngines.find(engine => engine.type === env.type) || {};
@@ -295,7 +295,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
             {env.type === 'google' && <>
               <NekoMessage variant="danger">
-                Compared to OpenAI, Google's Gemini is less stable and clearly in beta, with limitations like single-message processing (in the case of Vision) and frequent unclear errors. Let's discuss about Gemini on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>.
+                Click <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">here</a> to access your Google AI. Gemini is still unstable, so if you encounter issues, let's discuss them on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>.
               </NekoMessage>
               <NekoSpacer />
             </>}
@@ -369,6 +369,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             </NekoCollapsableCategories>
 
           </NekoTab>);
+
         })}
       </NekoTabs>
     </div>

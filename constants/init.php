@@ -158,13 +158,16 @@ define( 'MWAI_OPTIONS', [
 	'debug_mode' => true,
 	'server_debug_mode' => true,
 	'logs_path' => null,
-	'intro_message' => true,
 	'resolve_shortcodes' => false,
 	'context_max_length' => 4096,
 	'banned_words' => [],
 	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES,
 	'clean_uninstall' => false,
+
+	// ADMIN UI
+	'intro_message' => true,
+	'chatbot_select' => 'tabs'
 ] );
 
 define( 'MWAI_ALL_LANGUAGES', [

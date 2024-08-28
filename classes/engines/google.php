@@ -248,10 +248,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       //$body['function_call'] = $query->functionCall;
     }
 
-    if ( $query->mode !== 'chat' ) { 
-      throw new Exception( 'Google models only support chat mode.' );
-    }
-
     $body['contents'] = $this->build_messages( $query );
     $url = $this->endpoint;
 

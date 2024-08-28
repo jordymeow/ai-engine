@@ -1,5 +1,5 @@
-// Previous: 2.5.4
-// Current: 2.5.5
+// Previous: 2.5.5
+// Current: 2.6.0
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
@@ -205,8 +205,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const options = await retrieveOptions();
-      setOptions(options);
+      const optionsData = await retrieveOptions();
+      setOptions(optionsData);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -254,6 +254,7 @@ const Settings = () => {
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
+    // eslint-disable-next-line no-console
     console.log('Updating', id, value);
     await updateOptions(newOptions);
   };
@@ -300,11 +301,10 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbotsPromise = retrieveChatbots();
-      const themesPromise = retrieveThemes();
-      const optionsPromise = retrieveOptions();
-      const [chatbots, themes, options] = await Promise.all([chatbotsPromise, themesPromise, optionsPromise]);
-      const data = { chatbots, themes, options };
+      const chatbotsData = await retrieveChatbots();
+      const themesData = await retrieveThemes();
+      const optionsData = await retrieveOptions();
+      const data = { chatbots: chatbotsData, themes: themesData, options: optionsData };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -331,7 +331,9 @@ const Settings = () => {
       fileInput.accept = 'application/json';
       fileInput.onchange = async (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+          return;
+        }
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
@@ -524,6 +526,15 @@ const Settings = () => {
           description={i18n.HELP.ADDONS}
           onChange={updateOption} />
       </NekoCheckboxGroup>
+    </NekoSettings>;
+
+  const jsxChatbotSelection =
+    <NekoSettings title={i18n.COMMON.CHATBOT_SELECT}>
+      <NekoSelect scrolldown name="chatbot_select" value={options?.chatbot_select} onChange={updateOption}
+        description={i18n.HELP.CHATBOT_SELECT}>
+        <NekoOption key='tabs' value='tabs' label={i18n.COMMON.TABS}></NekoOption>
+        <NekoOption key='dropdown' value='dropdown' label={i18n.COMMON.DROPDOWN}></NekoOption>
+      </NekoSelect>
     </NekoSettings>;
 
   const jsxWebSpeechAPI =
@@ -1125,6 +1136,7 @@ const Settings = () => {
                   <NekoBlock busy={busy} title={i18n.COMMON.USER_INTERFACE} className="primary">
                     {jsxIntroMessage}
                     {jsxAddOns}
+                    {jsxChatbotSelection}
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title={i18n.COMMON.CHATBOT} className="primary">
@@ -1170,15 +1182,6 @@ const Settings = () => {
                     {jsxBearerToken}
                     {jsxDevTools}
                     {jsxCleanUninstall}
-                  </NekoBlock>
-
-                  <NekoBlock busy={busy} title={i18n.COMMON.SECURITY} className="primary">
-                    {jsxBannedKeywords}
-                    {jsxBannedIPs}
-                  </NekoBlock>
-
-                  <NekoBlock busy={busy} title={i18n.COMMON.LEGACY_FEATURES} className="primary">
-                    {jsxShortcodeTypewriter}
                   </NekoBlock>
 
                 </NekoColumn>
