@@ -1,5 +1,5 @@
-// Previous: 2.5.7
-// Current: 2.6.0
+// Previous: 2.6.0
+// Current: 2.6.1
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -80,12 +80,12 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
 };
 
 const ChatbotParams = (props) => {
-  const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot,
+  const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot, blockMode,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
   const { completionModels, imageModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = useMemo(() => { return (shortcodeParams.mode ?? 'chat') === 'chat'; }, [shortcodeParams.mode]);
-  const isAssistant = useMemo(() => { return (shortcodeParams.mode ?? 'chat') === 'assistant'; }, [shortcodeParams.mode]);
-  const isImagesChat = useMemo(() => { return (shortcodeParams.mode ?? 'chat') === 'images'; }, [shortcodeParams.mode]);
+  const isChat = (shortcodeParams.mode === 'chat') ?? 'chat';
+  const isAssistant = (shortcodeParams.mode === 'assistant') ?? false;
+  const isImagesChat = (shortcodeParams.mode === 'images') ?? false;
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
@@ -98,14 +98,14 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = options?.ai_envs?.find(e => e.id === shortcodeParams.envId);
-    return env ?? null;
-  }, [options.ai_envs, shortcodeParams.envId]);
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
+    return env ? env : null;
+  }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId);
-    return aid ?? null;
+    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return assist ? assist : null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
@@ -140,7 +140,7 @@ const ChatbotParams = (props) => {
     } else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
-    } else if (modelSupportImage && !isChat) {
+    } else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
     } else if (isAssistant && shortcodeParams.model) {
@@ -167,7 +167,7 @@ const ChatbotParams = (props) => {
     } else if (!modelSupportsFunctions && functions.length) {
       console.warn("Update Params: Functions have been removed.");
       updateShortcodeParams([], 'functions');
-    } else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
+    } else if (isAssistant && !!shortcodeParams.fileSearch && !(assistant?.has_file_search)) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
     } else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
@@ -180,7 +180,7 @@ const ChatbotParams = (props) => {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
-  }, [shortcodeParams, functions, availableFunctions, modelSupportImage, currentModel, isChat, isAssistant, assistant, aiEnvironment, options]);
+  }, [shortcodeParams]);
 
   const updateFunctionsInAssistant = async () => {
     setBusyUpdatingFunctions(true);
@@ -201,7 +201,7 @@ const ChatbotParams = (props) => {
       console.error("This image model does not have resolutions.", currentModel);
       return [];
     }
-    return currentModel.resolutions;
+    return currentModel?.resolutions;
   }, [currentModel, modelSupportImage]);
 
   return (<>
@@ -286,8 +286,7 @@ const ChatbotParams = (props) => {
                   <NekoSelect scrolldown name="model"
                     value={shortcodeParams.model} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"Default"}></NekoOption>
-                    <NekoOption value={currentModel?.model ?? ''} label={currentModel?.name ?? ''} />
-                    {(isImagesChat ? imageModels : completionModels) ?? [].map((x) => (
+                    {((isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -360,7 +359,6 @@ const ChatbotParams = (props) => {
                     value={shortcodeParams.fileSearch} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"None"}></NekoOption>
                     <NekoOption value={"discussion"} label={"For Discussion"}></NekoOption>
-                    {/* <NekoOption value={"assistant"} label={"For Assistant"}></NekoOption> */}
                   </NekoSelect>
                 </div>
               </div>
@@ -404,7 +402,7 @@ const ChatbotParams = (props) => {
 
             </NekoCollapsableCategory>}
 
-            {modelSupportsFunctions && <NekoCollapsableCategory
+            {modelSupportsFunctions && !blockMode && <NekoCollapsableCategory
               title={i18n.COMMON.FUNCTIONS}>
 
               <p>
@@ -688,7 +686,7 @@ const ChatbotParams = (props) => {
 
             </NekoCollapsableCategory>
 
-            <NekoCollapsableCategory title={i18n.COMMON.SHORTCODES}>
+            {!blockMode && <NekoCollapsableCategory title={i18n.COMMON.SHORTCODES}>
               <Shortcode currentChatbot={shortcodeParams} style={{ marginTop: 10 }} />
               {shortcodeParams.botId !== 'default' && <>
                 <p>{i18n.HELP.CUSTOM_SHORTCODE}</p>
@@ -696,9 +694,9 @@ const ChatbotParams = (props) => {
                   defaultChatbot={defaultChatbot} style={{ marginTop: 10 }}
                 />
               </>}
-            </NekoCollapsableCategory>
+            </NekoCollapsableCategory>}
 
-            <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
+            {!blockMode && <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
               <div style={{ display: 'flex', marginTop: 10 }}>
                 <NekoButton className="primary" onClick={duplicateCurrentChatbot}>
                   {i18n.COMMON.DUPLICATE}
@@ -712,7 +710,7 @@ const ChatbotParams = (props) => {
                   {i18n.COMMON.DELETE}
                 </NekoButton>
               </div>
-            </NekoCollapsableCategory>
+            </NekoCollapsableCategory>}
 
           </NekoCollapsableCategories>
 

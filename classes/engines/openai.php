@@ -142,11 +142,20 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     if ( $query instanceof Meow_MWAI_Query_Text ) {
       $body = array(
         "model" => $query->model,
-        "n" => $query->maxResults,
-        "max_tokens" => $query->maxTokens,
-        "temperature" => $query->temperature,
         "stream" => !is_null( $streamCallback ),
       );
+
+      if ( !empty( $query->maxTokens ) ) {
+        $body['max_tokens'] = $query->maxTokens;
+      }
+
+      if ( !empty( $query->temperature ) ) {
+        $body['temperature'] = $query->temperature;
+      }
+
+      if ( !empty( $query->maxResults ) ) {
+        $body['n'] = $query->maxResults;
+      }
   
       if ( !empty( $query->stop ) ) {
         $body['stop'] = $query->stop;
@@ -157,7 +166,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           $body['response_format'] = [ 'type' => 'json_object' ];
         }
       }
-
 
       // Usage Data (only for OpenAI)
       // https://cookbook.openai.com/examples/how_to_stream_completions#4-how-to-get-token-usage-data-for-streamed-chat-completion-response

@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.5.7
+// Previous: 2.5.7
+// Current: 2.6.1
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -21,7 +21,6 @@ const saveFormField = (props) => {
   const encodedOptions = encodeURIComponent(nekoStringify(options));
   const blockProps = useBlockProps.save();
 
-  // Build shortcode
   let shortcode = '[mwai-form-field';
   if (id) {
     shortcode += ` id="${id}"`;
@@ -58,9 +57,9 @@ const saveFormField = (props) => {
   return <div {...blockProps}>{shortcode}</div>;
 };
 
-const FormFieldBlock = props => {
+const FormFieldBlock = (props) => {
   const { attributes: { id, type, name, options = [], label, placeholder, rows,
-    defaultValue, maxlength, required }, setAttributes } = props;
+    defaultValue, maxlength, required }, setAttributes, isSelected } = props;
   const blockProps = useBlockProps();
 
   useEffect(() => {
@@ -81,8 +80,8 @@ const FormFieldBlock = props => {
   return (
     <>
       <div {...blockProps}>
-        <AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field"
-          hint={<span className="mwai-pill">{'{'}{name}{'}'}</span>}>
+        <AiBlockContainer title={`${capitalizeFirstLetter(type)}`} type="field" isSelected={isSelected}
+          hint={<span className="mwai-pill">{('{')}{name}{'}'}</span>}>
           <div>
             {label}
           </div>

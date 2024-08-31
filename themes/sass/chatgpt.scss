@@ -43,6 +43,7 @@
 
 		.mwai-shortcut {
 			margin-right: calc(var(--mwai-spacing) / 2);
+			display: flex;
 
 			&.mwai-success {
 				color: #4caf50;
@@ -62,6 +63,15 @@
 			&.mwai-info {
 				color: #2196f3;
 				border: 1px solid #2196f3;
+			}
+
+			.mwai-icon {
+				margin-right: 5px;
+
+				img {
+					max-height: 16px;
+					width: auto;
+				}
 			}
 		}
 	}

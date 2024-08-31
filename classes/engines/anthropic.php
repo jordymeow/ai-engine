@@ -213,10 +213,20 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
     else if ( $query instanceof Meow_MWAI_Query_Text ) {
       $body = array(
         "model" => $query->model,
-        "max_tokens" => $query->maxTokens,
-        "temperature" => $query->temperature,
         "stream" => !is_null( $streamCallback ),
       );
+
+      if ( !empty( $query->maxTokens ) ) {
+        $body['max_tokens'] = $query->maxTokens;
+      }
+      else {
+        // https://docs.anthropic.com/en/docs/about-claude/models#model-comparison-table
+        $body['max_tokens'] = 4096;
+      }
+
+      if ( !empty( $query->temperature ) ) {
+        $body['temperature'] = $query->temperature;
+      }
   
       if ( !empty( $query->stop ) ) {
         $body['stop'] = $query->stop;

@@ -6,8 +6,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public ?Meow_MWAI_Query_DroppedFile $attachedFile = null;
 
   // Parameters
-  public float $temperature = 0.8;
-  public int $maxTokens = 1024;
+  public ?float $temperature = null;
+  public ?int $maxTokens = null;
   public ?string $stop = null;
   public ?string $responseFormat = null;
   

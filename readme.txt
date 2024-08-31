@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.6.0
+Stable tag: 2.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.6.1 (2024/08/31) =
+* Add: Vision for more Google models.
+* Add: Chatbot Block now supports params directly.
+* Add: Icon support in shortcuts.
+* Update: Max Tokens and Temperature are now unset by default. That avoids many little issues.
+* Fix: Better handling of the custom chatbot.
+* Fix: Random fixes and improvements.
 
 = 2.6.0 (2024/08/28) =
 * Add: For those with many chatbots! You can now pick a new way to display the chatbots in the admin, it can be either tabs (default), or a filterable dropdown.

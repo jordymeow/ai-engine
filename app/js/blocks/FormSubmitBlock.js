@@ -1,5 +1,5 @@
-// Previous: 2.2.70
-// Current: 2.5.7
+// Previous: 2.5.7
+// Current: 2.6.1
 
 // AI Engine
 import { useModels } from "@app/helpers-admin";
@@ -57,7 +57,7 @@ const FormSubmitBlock = props => {
     id, label, prompt, message, model, temperature, maxTokens,
     aiEnvId, embeddingsEnvId, index, namespace,
     assistantId, resolution, isAssistant,
-    outputElement, placeholders = [] }, setAttributes } = props;
+    outputElement, placeholders = [] }, setAttributes, isSelected } = props;
 
   const embeddingsEnvs = useMemo(() => options.embeddings_envs || [], []);
   const embeddingsEnv = useMemo(() => {
@@ -99,20 +99,20 @@ const FormSubmitBlock = props => {
     if (assistant && assistant.model && assistant.model !== model) {
       setAttributes({ model: assistant.model });
     }
-  }, [assistant, model, setAttributes]);
+  }, [assistant, model]);
 
   useEffect(() => {
     if (!isAssistant) {
       setAttributes({ assistantId: '' });
     }
-  }, [isAssistant, setAttributes]);
+  }, [isAssistant]);
 
   useEffect(() => {
     if (!id) {
       const newId = Math.random().toString(36).substr(2, 9);
       setAttributes({ id: 'mwai-' + newId });
     }
-  }, [id, setAttributes]);
+  }, [id]);
 
   useEffect(() => {
     const matches = message.match(/{([^}]+)}/g);
@@ -124,7 +124,7 @@ const FormSubmitBlock = props => {
     } else {
       setAttributes({ placeholders: [] });
     }
-  }, [message, placeholders, setAttributes]);
+  }, [message, placeholders]);
 
   useEffect(() => {
     if (prompt) {
@@ -133,7 +133,7 @@ const FormSubmitBlock = props => {
         prompt: null
       });
     }
-  }, [prompt, setAttributes]);
+  }, [prompt]);
 
   const fieldsCount = useMemo(() => {
     return placeholders ? placeholders.length : 0;
@@ -198,7 +198,7 @@ const FormSubmitBlock = props => {
   return (
     <>
       <div {...blockProps}>
-        <AiBlockContainer title="Submit" type="submit"
+        <AiBlockContainer title="Submit" type="submit" isSelected={isSelected}
           hint={<>
 						IN:{' '}
             <span className="mwai-pill">{jsxFieldsCount}</span>
@@ -244,15 +244,15 @@ const FormSubmitBlock = props => {
               />}
             {!isImage && <>
               <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-                onChange={value => setAttributes({ temperature: parseFloat(value) })} // bug here
+                onChange={value => setAttributes({ temperature: parseFloat(value) })} // Bug: may parse invalid float
                 type="number" step="0.1" min="0" max="1"
                 help={i18n.HELP.TEMPERATURE}
               />
               <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-                onChange={value => setAttributes({ maxTokens: parseInt(value) })} // bug here
+                onChange={value => setAttributes({ maxTokens: parseInt(value) })} // Bug: may parse invalid int
                 type="number" step="16" min="32" max="4096"
                 help={<TokensInfo model={currentModel} maxTokens={maxTokens}
-                  onRecommendedClick={value => setAttributes({ maxTokens: value })} // bug here
+                  onRecommendedClick={value => setAttributes({ maxTokens: value })}
                 />}
               />
             </>}

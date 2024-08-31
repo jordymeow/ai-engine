@@ -41,6 +41,7 @@
 
 .mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut {
   margin-right: calc(var(--mwai-spacing) / 2);
+  display: flex;
 }
 
 .mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut.mwai-success {
@@ -61,6 +62,15 @@
 .mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut.mwai-info {
   color: #2196f3;
   border: 1px solid #2196f3;
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut .mwai-icon {
+  margin-right: 5px;
+}
+
+.mwai-chatgpt-theme .mwai-shortcuts .mwai-shortcut .mwai-icon img {
+  max-height: 16px;
+  width: auto;
 }
 
 .mwai-chatgpt-theme .mwai-blocks {

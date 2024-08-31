@@ -1,5 +1,5 @@
-// Previous: 2.0.3
-// Current: 2.5.7
+// Previous: 2.5.7
+// Current: 2.6.1
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -31,7 +31,7 @@ const saveFormField = (props) => {
 };
 
 const FormOutputBlock = props => {
-  const { attributes: { id, copyButton }, setAttributes } = props;
+  const { attributes: { id, copyButton }, setAttributes, isSelected } = props;
   const blockProps = useBlockProps();
 
   useEffect(() => {
@@ -44,7 +44,7 @@ const FormOutputBlock = props => {
   return (
     <>
       <div {...blockProps}>
-        <AiBlockContainer title="Output" type="output"
+        <AiBlockContainer title="Output" type="output" isSelected={isSelected}
           hint={<span className="mwai-pill mwai-pill-purple">#{id}</span>}>
           <div></div>
           <div style={{ flex: 'auto' }}></div>

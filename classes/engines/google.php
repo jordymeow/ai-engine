@@ -405,6 +405,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       if ( preg_match( '/vision/i', $model['name'], $matches ) ) {
         $tags[] = 'vision';
       }
+      else if ( preg_match( '/(vision|multimodal)/i', $model['description'], $matches ) ) {
+        $tags[] = 'vision';
+      }
       $name = preg_replace( '/^models\//', '', $model['name'] );
       $model = array(
         'model' => $name,

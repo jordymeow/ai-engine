@@ -1,5 +1,5 @@
-// Previous: 2.5.0
-// Current: 2.5.7
+// Previous: 2.5.7
+// Current: 2.6.1
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -36,7 +36,7 @@ const FormContainerBlock = props => {
   return (
     <>
       <div {...blockProps}>
-        <AiBlockContainer title="Container" type="container">
+        <AiBlockContainer title="Container" type="container" isDisplayed={true}>
           <InnerBlocks />
         </AiBlockContainer>
       </div>

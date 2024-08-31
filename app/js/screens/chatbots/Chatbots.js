@@ -1,5 +1,5 @@
-// Previous: 2.5.0
-// Current: 2.6.0
+// Previous: 2.6.0
+// Current: 2.6.1
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -57,25 +57,26 @@ const Chatbots = (props) => {
         newKeyToBotId[`chatbot-key-${index}`] = chatbot.botId;
       });
       setKeyToBotId(newKeyToBotId);
+
       if (!currentKey || !(currentKey in newKeyToBotId)) {
         const firstKey = Object.keys(newKeyToBotId)[0];
         setCurrentKey(firstKey);
         setCurrentChatbotKey(firstKey);
       }
     }
-  }, [chatbots, currentKey, setCurrentKey, setCurrentChatbotKey]);
+  }, [chatbots, currentKey]);
 
   const defaultChatbot = useMemo(() => {
     if (chatbots) {
-      const chatbot = chatbots.find(chat => chat.botId === 'default');
+      const chatbot = chatbots.find(chatbot => chatbot.botId === 'default');
       return chatbot;
     }
   }, [chatbots]);
 
   const currentChatbot = useMemo(() => {
     if (chatbots && currentKey && keyToBotId[currentKey]) {
-      const botIdInMap = keyToBotId[currentKey];
-      return chatbots.find(chat => chat.botId === botIdInMap);
+      const botId = keyToBotId[currentKey];
+      return chatbots.find(chatbot => chatbot.botId === botId);
     }
     return null;
   }, [chatbots, currentKey, keyToBotId]);
@@ -93,14 +94,17 @@ const Chatbots = (props) => {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
+
     if (id === 'botId' && value === '') {
       alert("Your chatbot must have an ID.");
       return;
     }
-    if (id === 'botId' && chatbots.find(x => x.botId === value)) {
+
+    if (id === 'botId' && chatbots.some(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
+
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -205,21 +209,18 @@ const Chatbots = (props) => {
       <NekoColumn minimal style={{ margin: 10 }}>
 
         {editor === 'chatbots' && <>
-
           {chatbotSelect === 'dropdown' && <>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
               <NekoSelect scrolldown textFiltering name='botId' disabled={isBusy} style={{ flex: 'auto', marginRight: 10 }}
-                value={currentKey} onChange={(value) => {
-                  setCurrentKey(value);
-                  setCurrentChatbotKey(value);
-                }}>
+                value={currentKey} onChange={(val) => setCurrentKey(val)}>
                 {chatbots?.map((chat, index) =>
                   <NekoOption key={chat.botId} value={`chatbot-key-${index}`} label={chat.name} />)
                 }
               </NekoSelect>
-              <NekoButton rounded className="secondary" icon='plus' onClick={() => addNewChatbot()} />
+              <NekoButton rounded className="secondary" icon='plus' disabled={isBusy}
+                onClick={() => addNewChatbot()}
+              />
             </div>
-
             {currentChatbot && <NekoContainer style={{ borderRadius: 10 }}>
               <ChatbotParams style={{ margin: '-10px -10px' }}
                 options={options}
@@ -233,14 +234,15 @@ const Chatbots = (props) => {
               />
             </NekoContainer>}
           </>}
-
           {chatbotSelect === 'tabs' && <>
             <NekoTabs inversed onChange={onChangeTab} currentTab={currentKey}
-              action={<NekoButton rounded className="secondary" icon='plus' onClick={() => addNewChatbot()} />}>
+              action={<NekoButton rounded className="secondary" icon='plus' disabled={isBusy}
+                onClick={() => addNewChatbot()}
+              />}>
               {Object.entries(keyToBotId).map(([key, botId]) => {
                 const chatbotParams = chatbots.find(c => c.botId === botId);
                 return (
-                  <NekoTab key={key} title={chatbotParams?.name} busy={busyAction}>
+                  <NekoTab key={key} title={chatbotParams.name} busy={busyAction}>
                     <ChatbotParams
                       options={options}
                       themes={themes}
@@ -256,7 +258,6 @@ const Chatbots = (props) => {
               })}
             </NekoTabs>
           </>}
-
         </>}
 
         {editor === 'themes' && <Themes themes={themes}

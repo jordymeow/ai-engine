@@ -1,5 +1,5 @@
-// Previous: 2.5.0
-// Current: 2.5.1
+// Previous: 2.5.1
+// Current: 2.6.1
 
 const { useState, useMemo, useLayoutEffect, useCallback, useEffect, useRef } = wp.element;
 
@@ -168,7 +168,7 @@ const ChatbotUI = (props) => {
           console.warn(`This shortcut type is not supported: ${type}.`);
           return null;
         }
-        const { label, message, variant } = data;
+        const { label, message, variant, icon } = data;
         const baseClasses = css('mwai-shortcut', {
           'mwai-success': variant === 'success',
           'mwai-danger': variant === 'danger',
@@ -176,9 +176,20 @@ const ChatbotUI = (props) => {
           'mwai-info': variant === 'info',
         });
         const onClick = () => { onSubmit(message); };
-        return <button className={baseClasses} key={index} onClick={onClick}>
-          {label || "N/A"}
-        </button>;
+        const iconIsURL = icon && icon.startsWith('http');
+        const iconIsEmoji = icon && !iconIsURL && icon.length >= 1 && icon.length <= 2;
+        return (
+          <button className={baseClasses} key={index} onClick={onClick}>
+            {(iconIsURL || iconIsEmoji) && <>
+              <div className="mwai-icon">
+                {iconIsURL && <img src={icon} alt={label || "AI Shortcut"} />}
+                {iconIsEmoji && <span role="img" aria-label="AI Shortcut">{icon}</span>}
+              </div>
+              <div style={{ flex: 'auto' }} />
+            </>}
+            <div className="mwai-label">{label || "N/A"}</div>
+          </button>
+        );
       })}
     </div>;
   }, [css, onSubmit, shortcuts]);

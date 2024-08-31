@@ -95,11 +95,20 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     if ( $query instanceof Meow_MWAI_Query_Text ) {
       $body = array(
         "model" => $query->model,
-        "n" => $query->maxResults,
-        "max_tokens" => $query->maxTokens,
-        "temperature" => $query->temperature,
         "stream" => !is_null( $streamCallback ),
       );
+
+      if ( !empty( $query->maxTokens ) ) {
+        $body['max_tokens'] = $query->maxTokens;
+      }
+
+      if ( !empty( $query->temperature ) ) {
+        $body['temperature'] = $query->temperature;
+      }
+
+      if ( !empty( $query->maxResults ) ) {
+        $body['n'] = $query->maxResults;
+      }
   
       if ( !empty( $query->stop ) ) {
         $body['stop'] = $query->stop;
