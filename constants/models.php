@@ -31,7 +31,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000000,
-		"maxCompletionTokens" => 4096,
+		"maxCompletionTokens" => 16384,
 		"maxContextualTokens" => 128000,
 		"finetune" => [
 			"in" => 0.30,
@@ -39,6 +39,36 @@ define( 'MWAI_OPENAI_MODELS', [
 			"train" => 3.00
 		],
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+	],
+	[
+		"model" => "o1-preview",
+		"name" => "o1 Preview",
+		"family" => "o1",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 15.00,
+			"out" => 60.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 32768,
+		"maxContextualTokens" => 128000,
+		"tags" => ['core', 'chat', 'o1-model']
+	],
+	[
+		"model" => "o1-mini",
+		"name" => "o1 Mini",
+		"family" => "o1",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 3.00,
+			"out" => 12.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 65536,
+		"maxContextualTokens" => 128000,
+		"tags" => ['core', 'chat', 'o1-model']
 	],
 	[
 		"model" => "gpt-4-turbo",

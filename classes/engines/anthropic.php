@@ -143,6 +143,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
         "messages" => []
       );
 
+      if ( !empty( $query->instructions ) ) {
+        $body['system'] = $query->instructions;
+      }
+
       // Build the messages
       $body['messages'][] = [ 'role' => 'user', 'content' => $query->message ];
 

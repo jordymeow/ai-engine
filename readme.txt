@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.6.1
+Stable tag: 2.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
+= 2.6.2 (2024/09/18) =
+* Add: Support for the new o1 models from OpenAI (preview and mini).
+* Fix: A few minor fixes for developers.
+* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 2.6.1 (2024/08/31) =
 * Add: Vision for more Google models.
 * Add: Chatbot Block now supports params directly.
@@ -108,7 +116,6 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Add: You can now manually enter the model you would like to use for finetuning.
 * Update: Finetuning features in AI Engine has been improved, like the way they are handled, displayed, calculated, etc.
 * Fix: Max Messages was missing in the custom shortcode.
-* ☀️ If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
 
 = 2.5.3 (2024/08/01) =
 * Fix: The prices were not calculated properly. This was entirely reviewed.
@@ -134,9 +141,6 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Fix: Shortcuts were not pushed by the server-side.
 * Fix: The expiration 'Never' was crashing when used with Assistants Upload.
 * Update: If DevTools is disabled, all the related debug options are disabled as well.
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
-* 🎵 Discuss with others about AI Engine on [my Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 
 = 2.5.0 (2024/07/23) =
 * Update: A better and enhanced copy button, that also now works in forms.

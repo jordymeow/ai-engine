@@ -1,9 +1,11 @@
-// Previous: 2.6.0
-// Current: 2.6.1
+// Previous: 2.6.1
+// Current: 2.6.2
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { NekoTabs, NekoTab, NekoWrapper, NekoSwitch, NekoToolbar, NekoContainer,
   NekoColumn, NekoButton, NekoSelect, NekoOption, useNekoColors } from '@neko-ui';
 
@@ -94,17 +96,14 @@ const Chatbots = (props) => {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
     if (id === 'botId' && value === '') {
       alert("Your chatbot must have an ID.");
       return;
     }
-
-    if (id === 'botId' && chatbots.some(x => x.botId === value)) {
+    if (id === 'botId' && chatbots.find(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -153,15 +152,30 @@ const Chatbots = (props) => {
   const deleteCurrentChatbot = async () => {
     setBusyAction(true);
     const currentBotId = keyToBotId[currentKey];
-    let newChatbots = [...chatbots.filter(x => x.botId !== currentBotId)];
-    newChatbots = await updateChatbots(newChatbots);
-    queryClient.setQueryData(['chatbots'], newChatbots);
-    const newKeyToBotId = {...keyToBotId};
-    delete newKeyToBotId[currentKey];
-    setKeyToBotId(newKeyToBotId);
-    const newCurrentKey = Object.keys(newKeyToBotId)[0];
+
+    const keys = Object.keys(keyToBotId);
+    const index = keys.indexOf(currentKey);
+
+    let newCurrentKey;
+    if (index > 0) {
+      newCurrentKey = keys[index - 1];
+    } else if (keys.length > 1) {
+      newCurrentKey = keys[index + 1];
+    } else {
+      newCurrentKey = null;
+    }
+
     setCurrentKey(newCurrentKey);
     setCurrentChatbotKey(newCurrentKey);
+
+    let newChatbots = chatbots.filter((x) => x.botId !== currentBotId);
+    newChatbots = await updateChatbots(newChatbots);
+    queryClient.setQueryData(['chatbots'], newChatbots);
+
+    const newKeyToBotId = { ...keyToBotId };
+    delete newKeyToBotId[currentKey];
+    setKeyToBotId(newKeyToBotId);
+
     setBusyAction(false);
   };
 
@@ -169,7 +183,9 @@ const Chatbots = (props) => {
     setBusyAction(true);
     let newChatbots = [...chatbots];
     const botIndex = newChatbots.findIndex(x => x.botId === currentChatbot.botId);
-    newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    if (botIndex !== -1) {
+      newChatbots[botIndex] = { ...chatbotDefaults, botId: currentChatbot.botId, name: currentChatbot.name };
+    }
     newChatbots = await updateChatbots(newChatbots);
     queryClient.setQueryData(['chatbots'], newChatbots);
     setBusyAction(false);
@@ -181,7 +197,6 @@ const Chatbots = (props) => {
 
   return (<>
     <NekoWrapper>
-
       <NekoColumn minimal fullWidth style={{ margin: 10 }}>
         <NekoToolbar>
           <Shortcode currentChatbot={currentChatbot} />
@@ -206,13 +221,13 @@ const Chatbots = (props) => {
         </NekoToolbar>
       </NekoColumn>
 
-      <NekoColumn minimal style={{ margin: 10 }}>
+      <NekoColumn minimal style={{ margin: 10, maxWidth: '50%' }}>
 
         {editor === 'chatbots' && <>
           {chatbotSelect === 'dropdown' && <>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
               <NekoSelect scrolldown textFiltering name='botId' disabled={isBusy} style={{ flex: 'auto', marginRight: 10 }}
-                value={currentKey} onChange={(val) => setCurrentKey(val)}>
+                value={currentKey} onChange={setCurrentKey}>
                 {chatbots?.map((chat, index) =>
                   <NekoOption key={chat.botId} value={`chatbot-key-${index}`} label={chat.name} />)
                 }
@@ -234,6 +249,7 @@ const Chatbots = (props) => {
               />
             </NekoContainer>}
           </>}
+
           {chatbotSelect === 'tabs' && <>
             <NekoTabs inversed onChange={onChangeTab} currentTab={currentKey}
               action={<NekoButton rounded className="secondary" icon='plus' disabled={isBusy}
@@ -258,6 +274,7 @@ const Chatbots = (props) => {
               })}
             </NekoTabs>
           </>}
+
         </>}
 
         {editor === 'themes' && <Themes themes={themes}

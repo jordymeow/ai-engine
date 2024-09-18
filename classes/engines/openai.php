@@ -88,12 +88,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $this->envType === 'azure' ? 'Azure' : 'OpenAI';
   }
 
+  private function is_o1_model( $model ) {
+    $modelDef = $this->retrieve_model_info( $model );
+    return !empty( $modelDef['tags'] ) && in_array( 'o1-model', $modelDef['tags'] );
+  }
+
   protected function build_messages( $query ) {
     $messages = [];
 
     // First, we need to add the first message (the instructions).
     if ( !empty( $query->instructions ) ) {
-      $messages[] = [ 'role' => 'system', 'content' => $query->instructions ];
+      if ( !$this->is_o1_model( $query->model ) ) {
+        $messages[] = [ 'role' => 'system', 'content' => $query->instructions ];
+      }
     }
 
     // Then, if any, we need to add the 'messages', they are already formatted.
@@ -146,11 +153,21 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       );
 
       if ( !empty( $query->maxTokens ) ) {
-        $body['max_tokens'] = $query->maxTokens;
+        if ( !$this->is_o1_model( $query->model ) ) {
+          $body['max_tokens'] = $query->maxTokens;
+        }
+        else {
+          $body['max_completion_tokens'] = $query->maxTokens;
+        }
       }
 
       if ( !empty( $query->temperature ) ) {
-        $body['temperature'] = $query->temperature;
+        if ( !$this->is_o1_model( $query->model ) ) {
+          $body['temperature'] = $query->temperature;
+        }
+        else {
+          $body['temperature'] = 1;
+        }
       }
 
       if ( !empty( $query->maxResults ) ) {
@@ -573,6 +590,16 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
   
     return ( $content === '0' || !empty( $content ) ) ? $content : null;
+  }
+
+  public function run( $query, $streamCallback = null, $maxDepth = 5 ) {
+    if ( $streamCallback ) {
+      // Disable streaming for o1 models
+      if ( $this->is_o1_model( $query->model ) ) {
+        $streamCallback = null;
+      }
+    }
+    return parent::run( $query, $streamCallback, $maxDepth );
   }
 
   public function run_query( $url, $options, $isStream = false ) {
