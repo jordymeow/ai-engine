@@ -1,12 +1,10 @@
-// Previous: 2.4.5
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.6.3
 
-// React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nekoStringify } from '@neko-ui';
 
-// NekoUI Components
 import { NekoTable, NekoMessage, NekoButton, NekoSelect, NekoOption, NekoWrapper, NekoColumn, NekoIcon,
   NekoTabs, NekoTab, NekoModal, NekoSpacer, NekoBlock, NekoTypo, NekoPaging, useNekoColors } from '@neko-ui';
 import i18n from '@root/i18n';
@@ -94,11 +92,13 @@ const Assistants = ({ options, refreshOptions }) => {
   const [ errorModal, setErrorModal ] = useState(null);
   const [ busyAction, setBusyAction ] = useState(false);
   const [ envId, setEnvId ] = useState(options?.ai_envs?.[0]?.id);
-  const environments = useMemo(() => options?.ai_envs || [], [options]);
   const [ section, setSection ] = useState('assistants');
   const [ selectedIds, setSelectedIds ] = useState([]);
   const { colors } = useNekoColors();
 
+  const environments = useMemo(() => {
+    return options?.ai_envs?.filter(x => x.type === 'openai' || x.type === 'azure') || [];
+  }, [options]);
   const environment = useMemo(() => environments.find(x => x.id === envId), [envId, environments]);
   const allAssistants = useMemo(() => environment?.assistants || [], [environment]);
 
@@ -125,7 +125,7 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [envId]);
 
   useEffect(() => {
-    setFilesQueryParams({ ...filesQueryParams, envId });
+    setFilesQueryParams(prev => ({ ...prev, envId }));
   }, [envId]);
 
   const { isFetching: isBusyFiles, data: dataFiles } = useQuery({
@@ -174,7 +174,7 @@ const Assistants = ({ options, refreshOptions }) => {
     setBusyAction(true);
     try {
       await deleteFiles(fileIds);
-      await queryClient.invalidateQueries('assistants-files');
+      await queryClient.invalidateQueries(['assistants-files']);
       setSelectedIds([]);
     }
     catch (err) {
@@ -184,8 +184,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    if (!dataFiles || !dataFiles.files) return [];
-    return dataFiles.files.map(file => ({
+    return dataFiles?.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
@@ -197,21 +196,26 @@ const Assistants = ({ options, refreshOptions }) => {
         </NekoButton>
       </>
     }));
-  }, [dataFiles]);
+  }, [dataFiles, busy]);
 
   const fileTotal = useMemo(() => {
-    return dataFiles?.total ?? 0;
+    return dataFiles?.total || 0;
   }, [dataFiles]);
 
   const onRefreshAssistants = async () => {
     setBusyAction(true);
-    await retrieveAssistants(envId);
-    await refreshOptions();
+    try {
+      await retrieveAssistants(envId);
+      await refreshOptions();
+    }
+    catch (err) {
+      setErrorModal(err);
+    }
     setBusyAction(false);
   };
 
   const onRefreshFiles = async () => {
-    await queryClient.invalidateQueries('assistants-files');
+    await queryClient.invalidateQueries(['assistants-files']);
   };
 
   const assistantRows = useMemo(() => {
@@ -227,8 +231,11 @@ const Assistants = ({ options, refreshOptions }) => {
         <ul style={{ margin: 0, padding: 0 }}>
           <li style={{ margin: 0, display: 'flex' }}>
             <NekoIcon icon='check' width={16} color={colors.green} />
-            <span style={{ marginLeft: 3 }}>{assistant.model}</span>
+            <span style={{ marginLeft: 3 }}>{assistant.model ?? 'Unknown'}</span>
           </li>
+          {!assistant.model && <li style={{ margin: 0, display: 'flex', lineHeight: '12px' }}>
+            <small>The model could not be found in your AI environment. Please make sure it exists as a deployment, and Refresh the list of Assistants.</small>
+          </li>}
           <li style={{ margin: 0, display: 'flex' }}>
             <NekoIcon icon={assistant.has_file_search ? 'check' : 'close'} width={16}
               color={assistant.has_file_search ? colors.green : colors.gray}
@@ -244,13 +251,10 @@ const Assistants = ({ options, refreshOptions }) => {
               target="_blank" rel="noreferrer">Code Interpreter</a>
           </li>
         </ul>
-        <p style={{ lineHeight: '11px', margin: '5px 0' }}>
-          <small>Note: AI Engine currently uses the Assistants API v2. Retrieval have been deprecated by OpenAI. More information <a href="https://platform.openai.com/docs/assistants/whats-new" target="_blank" rel="noreferrer">here</a>.</small>
-        </p>
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [allAssistants, colors.gray, colors.green]);
+  }, [allAssistants, colors.green, colors.gray, colors.green]);
 
   const busy = busyAction;
 
@@ -264,7 +268,7 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams({ ...filesQueryParams, page }); }}
+          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
         />
       </div>
     </div>);

@@ -15,7 +15,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000000,
-		"maxCompletionTokens" => 4096,
+		"maxCompletionTokens" => 16384,
 		"maxContextualTokens" => 128000,
 		"finetune" => false,
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']

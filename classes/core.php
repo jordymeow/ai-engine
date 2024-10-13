@@ -1081,6 +1081,20 @@ class Meow_MWAI_Core
 				'install_url' => "https://meowapps.com/products/mwai-better-links/",
 				'settings_url' => null,
 				'enabled' => false
+			], [
+				'slug' => "mwai-woo-basics",
+				'name' => "Woo Basics",
+				'description' => "Handles basic WooCommerce functionalities with chatbots.",
+				'install_url' => "https://meowapps.com/products/mwai-woo-basics/",
+				'settings_url' => null,
+				'enabled' => false
+			], [
+				'slug' => "mwai-quick-actions",
+				'name' => "Quick Actions",
+				'description' => "Add dynamic quick actions to your chatbot, triggered by events or at chat start.",
+				'install_url' => "https://meowapps.com/products/mwai-quick-actions/",
+				'settings_url' => null,
+				'enabled' => false
 			]
 		] );
 

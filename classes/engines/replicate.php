@@ -216,6 +216,8 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
           $body['input']['safety_tolerance'] = 5;
           if ( !empty( $query->resolution ) ) {
             $body['input']['aspect_ratio'] = $query->resolution;
+            $body['input']['output_format'] = 'jpg';
+            $body['input']['output_quality'] = 85;
           }
         }
         else if ( strpos( $model, 'stability-ai/' ) === 0 ) {
@@ -748,40 +750,90 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
   }
 
   public function retrieve_models() {
-    $rawModels = [];
-    $next = '/models';
-    $cursor = null;
+    return $this->retrieve_recommended_models();
+  }
+
+  public function retrieve_recommended_models() {
+    $collections = [ 'flux', 'text-to-image' ];
     $allowed_owners = [ 'black-forest-labs', 'stability-ai' ];
-    while ( $next ) {
-      $query_args = $cursor ? [ 'cursor' => $cursor ] : [];
-      $response = $this->execute( 'GET', $next, $query_args );
-      if ( !is_array( $response ) || empty( $response['results'] ) ) {
-        break;
+    $rawModels = $this->_retrieve_models( $collections, $allowed_owners );
+    $models = $this->_process_raw_models( $rawModels );
+    return $models;
+  }
+  
+  public function retrieve_all_models() {
+    $allowed_owners = [ 'black-forest-labs', 'stability-ai' ];
+    $rawModels = $this->_retrieve_models( null, $allowed_owners );
+    $models = $this->_process_raw_models( $rawModels );
+    return $models;
+  }
+
+  // Private method to retrieve models, optionally filtered by collections
+  private function _retrieve_models( $collections = null, $allowed_owners = [] ) {
+    $rawModels = [];
+    if ( $collections ) {
+      foreach ( $collections as $collection ) {
+        $next = '/collections/' . $collection;
+        $cursor = null;
+        while ( $next ) {
+          $query_args = $cursor ? [ 'cursor' => $cursor ] : [];
+          $response = $this->execute( 'GET', $next, $query_args );
+          if ( !is_array( $response ) || empty( $response['models'] ) ) {
+            break;
+          }
+          $filtered_results = array_filter( $response['models'], function( $model ) use ( $allowed_owners ) {
+            $isAllowedOwner = isset( $model['owner'] ) && in_array( $model['owner'], $allowed_owners );
+            $isPublic = isset( $model['visibility'] ) && $model['visibility'] === 'public';
+            return $isAllowedOwner && $isPublic;
+          } );
+          $rawModels = array_merge( $rawModels, $filtered_results );
+          if ( empty( $response['next'] ) ) {
+            break;
+          }
+          $parsed_url = wp_parse_url( $response['next'] );
+          parse_str( $parsed_url['query'] ?? '', $query_params );
+          $cursor = $query_params['cursor'] ?? '';
+          $next = '/collections/' . $collection;
+        }
       }
-      $filtered_results = array_filter( $response['results'], function( $model ) use ( $allowed_owners ) {
-        $isAllowedOwner = isset( $model['owner'] ) && in_array( $model['owner'], $allowed_owners );
-        $isPublic = isset( $model['visibility'] ) && $model['visibility'] === 'public';
-        return $isAllowedOwner && $isPublic;
-      } );
-      $rawModels = array_merge( $rawModels, $filtered_results );
-      if ( empty( $response['next'] ) ) {
-        break;
-      }
-      $parsed_url = wp_parse_url( $response['next'] );
-      parse_str( $parsed_url['query'] ?? '', $query_params );
-      $cursor = $query_params['cursor'] ?? '';
-      $next = '/models';
     }
+    else {
+      $next = '/models';
+      $cursor = null;
+      while ( $next ) {
+        $query_args = $cursor ? [ 'cursor' => $cursor ] : [];
+        $response = $this->execute( 'GET', $next, $query_args );
+        if ( !is_array( $response ) || empty( $response['results'] ) ) {
+          break;
+        }
+        $filtered_results = array_filter( $response['results'], function( $model ) use ( $allowed_owners ) {
+          $isAllowedOwner = isset( $model['owner'] ) && in_array( $model['owner'], $allowed_owners );
+          $isPublic = isset( $model['visibility'] ) && $model['visibility'] === 'public';
+          return $isAllowedOwner && $isPublic;
+        } );
+        $rawModels = array_merge( $rawModels, $filtered_results );
+        if ( empty( $response['next'] ) ) {
+          break;
+        }
+        $parsed_url = wp_parse_url( $response['next'] );
+        parse_str( $parsed_url['query'] ?? '', $query_params );
+        $cursor = $query_params['cursor'] ?? '';
+        $next = '/models';
+      }
+    }
+    return $rawModels;
+  }
+
+  // Private method to process raw models
+  private function _process_raw_models( $rawModels ) {
     $models = array();
     foreach ( $rawModels as $rawModel ) {
-
       $name = trim( $rawModel['name'] );
       $family = trim( $rawModel['owner'] );
-      $tags = ['image', 'text-to-image'];
+      $tags = [ 'image', 'text-to-image' ];
       $model = $family . '/' . $name;
       $version = isset( $rawModel['latest_version']['id'] ) ? $rawModel['latest_version']['id'] : null;
 
-      // outpainting, super-resolution,
       if ( $family === 'stability-ai' ) {
         $tags[] = 'image-to-image';
         $tags[] = 'inpainting';
@@ -791,8 +843,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
 
       // Black Forest Labs
       if ( $family === 'black-forest-labs' ) {
-
-        // Those works at least for Flux Pro
+        // These work at least for Flux Pro
         $resolutions[] = [ 'name' => '1:1', 'label' => 'Square (1:1)' ];
         $resolutions[] = [ 'name' => '16:9', 'label' => 'Widescreen (16:9)' ];
         $resolutions[] = [ 'name' => '2:3', 'label' => 'Portrait (2:3)' ];
@@ -804,8 +855,8 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
 
       // Stability AI
       if ( $family === 'stability-ai' ) {
-        $heights = [64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1152, 1216, 1344, 1536];
-        $widths = [64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024];
+        $heights = [ 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 1152, 1216, 1344, 1536 ];
+        $widths = [ 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 ];
         $resolutions = $this->generate_resolutions( $widths, $heights );
       }
 
@@ -814,16 +865,16 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         'name' => $name,
         'family' => $family,
         'version' => $version,
-        'features' => ['text-to-image'],
+        'features' => [ 'text-to-image' ],
         'price' => null,
         'type' => 'image',
         'resolutions' => $resolutions,
-		    'unit' => 1 / 1000,
+        'unit' => 1 / 1000,
         'maxCompletionTokens' => null,
         'maxContextualTokens' => null,
         'tags' => $tags
       );
     }
-    return $models; 
+    return $models;
   }
 }

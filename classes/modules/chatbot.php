@@ -552,9 +552,11 @@ class Meow_MWAI_Modules_Chatbot {
 		// Server Params
 		// NOTE: We don't need the server params for the chatbot if there are no overrides, it means
 		// we are using the default or a specific chatbot.
+		$isSiteWide = $this->siteWideChatId && $botId === $this->siteWideChatId;
 		$hasServerOverrides = count( array_intersect( array_keys( $atts ), MWAI_CHATBOT_SERVER_PARAMS ) ) > 0;
 		$hasFrontOverrides = count( array_intersect( array_keys( $atts ), MWAI_CHATBOT_FRONT_PARAMS ) ) > 0;
-		$hasOverrides = $hasServerOverrides || $hasFrontOverrides;
+		$hasOverrides = !$isSiteWide && ( $hasServerOverrides || $hasFrontOverrides );
+
 		$serverParams = [];
 		if ( $hasOverrides ) {
 			foreach ( MWAI_CHATBOT_SERVER_PARAMS as $param ) {

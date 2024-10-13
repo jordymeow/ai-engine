@@ -21,16 +21,18 @@ class Meow_MWAI_Engines_Factory {
   }
 
   private static function get_env_from_type( $core, $type, $envId ) : ?array {
-    $type = is_array( $type ) ? $type : [ $type ];
+    $types = is_array( $type ) ? $type : [ $type ];
 
     // Try first to find the env with the ID provided.
     if ( !empty( $envId ) ) {
       $env = self::get_env_from_id( $core, $envId );
-      if ( in_array( $env['type'], $type ) ) {
+      if ( in_array( $env['type'], $types ) ) {
         return $env;
       }
       else {
-        throw new Exception( "AI Engine: Environment ID ($envId) is not of type ($type)." );
+        $toTypes = implode( ', ', $types );
+        $toTypes = trim( $toTypes );
+        throw new Exception( "AI Engine: Environment ID ($envId) is not of type $toTypes." );
       }
     }
     // If not, we will try to find the default one.
@@ -92,7 +94,7 @@ class Meow_MWAI_Engines_Factory {
   }
 
   public static function get_openai( $core, $envId = null ) : Meow_MWAI_Engines_OpenAI {
-    $env = self::get_env_from_type( $core, [ 'openai', 'azure '], $envId );
+    $env = self::get_env_from_type( $core, [ 'openai', 'azure' ], $envId );
     $engine = Meow_MWAI_Engines_OpenAI::create( $core, $env );
     return $engine;
   }

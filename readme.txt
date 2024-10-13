@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.6.2
+Stable tag: 2.6.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,13 +66,21 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
-= 2.6.2 (2024/09/18) =
-* Add: Support for the new o1 models from OpenAI (preview and mini).
-* Fix: A few minor fixes for developers.
+= 2.6.3 (2024/10/13) =
+* Add: Support for Assistants via Azure.
+* Fix: Site-wide chatbot was considered an override.
+* Fix: Fullscreen for chatbot should force the max-width and max-height.
+* Update: Gets the models via Replicate much faster.
+* Update: Set Replicate to use JPG.
+* Update: Architectural improvements for OpenAI Assistants.
 * 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 * 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
 * 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
+= 2.6.2 (2024/09/18) =
+* Add: Support for the new o1 models from OpenAI (preview and mini).
+* Fix: A few minor fixes for developers.
 
 = 2.6.1 (2024/08/31) =
 * Add: Vision for more Google models.

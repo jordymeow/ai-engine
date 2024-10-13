@@ -8,7 +8,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   // Azure
   private $azureDeployments = null;
-  private $azureApiVersion = 'api-version=2024-03-01-preview';
+  private $azureApiVersion = 'api-version=2024-05-01-preview';
 
   // Response
   protected $inModel = null;
@@ -650,7 +650,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
+      $service = $this->get_service_name();
+      Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
       throw $e;
     }
     finally {
@@ -700,9 +701,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       $service = $this->get_service_name();
-      throw new Exception( "From $service: " . $e->getMessage() );
+      Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
+      throw new Exception( "$service: " . $e->getMessage() );
     }
   }
 
@@ -731,9 +732,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       if ( !is_null( $error ) ) {
         $message = $error;
       }
-      Meow_MWAI_Logging::error( 'OpenAI: ' . $message );
       $service = $this->get_service_name();
-      throw new Exception( "From $service: " . $message );
+      Meow_MWAI_Logging::error( "$service: " . $message );
+      throw new Exception( "$service: " . $message );
     }
   }
 
@@ -802,7 +803,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           throw new Exception( 'No content received (res is null).' );
         }
         if ( !$data['model'] ) {
-          Meow_MWAI_Logging::error( 'OpenAI: Invalid response (no model information):' );
+          $service = $this->get_service_name();
+          Meow_MWAI_Logging::error( "$service: Invalid response (no model information)." );
           Meow_MWAI_Logging::error( print_r( $data, 1 ) );
           throw new Exception( 'Invalid response (no model information).' );
         }
@@ -834,9 +836,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       $service = $this->get_service_name();
-      $message = "From $service: " . $e->getMessage();
+      Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
+      $message = "$service: " . $e->getMessage();
       throw new Exception( $message );
     }
     finally {
@@ -906,9 +908,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $reply;
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
       $service = $this->get_service_name();
-      throw new Exception( "From $service: " . $e->getMessage() );
+      Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
+      throw new Exception( "$service: " . $e->getMessage() );
     }
   }
 
@@ -1226,19 +1228,38 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   public function execute( $method, $url, $query = null, $formFields = null,
     $json = true, $extraHeaders = null, $streamCallback = null )
   {
-    $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $this->apiKey . "\r\n";
-    if ( $this->organizationId ) {
-      $headers .= "OpenAI-Organization: " . $this->organizationId . "\r\n";
+    $isAzure = $this->envType === 'azure';
+    $isOpenAI = !$isAzure;
+
+    // Prepare the headers
+    $headers = "Content-Type: application/json\r\n";
+    if ( $isOpenAI ) {
+      $headers .= "Authorization: Bearer " . $this->apiKey . "\r\n";
+      if ( $this->organizationId ) {
+        $headers .= "OpenAI-Organization: " . $this->organizationId . "\r\n";
+      }
     }
+    else if ( $isAzure ) {
+      $headers .= "api-key: " . $this->apiKey . "\r\n";
+    }
+
+    // Prepare the body
     $body = $query ? json_encode( $query ) : null;
+
+    // If we have form fields, we need to change the headers and the body.
     if ( !empty( $formFields ) ) {
       $boundary = wp_generate_password( 24, false );
       $headers = [
-        'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
-        'Authorization' => 'Bearer ' . $this->apiKey
+        'Content-Type' => 'multipart/form-data; boundary=' . $boundary
       ];
-      if ( $this->organizationId ) {
-        $headers['OpenAI-Organization'] = $this->organizationId;
+      if ( $isOpenAI ) {
+        $headers['Authorization'] = 'Bearer ' . $this->apiKey;
+        if ( $this->organizationId ) {
+          $headers['OpenAI-Organization'] = $this->organizationId;
+        }
+      }
+      else if ( $isAzure ) {
+        $headers['api-key'] = $this->apiKey;
       }
       $body = $this->build_form_body( $formFields, $boundary );
     }
@@ -1255,15 +1276,25 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       }
     }
 
+    // Create the URL
+    if ( $isOpenAI ) {
+      $url = 'https://api.openai.com/v1' . $url;
+    }
+    else if ( $isAzure ) {
+      $url = trailingslashit( $this->env['endpoint'] ) . 'openai' . $url;
+      $hasQuery = strpos( $url, '?' ) !== false;
+      $url = $url . ( $hasQuery ? '&' : '?' ) . $this->azureApiVersion;
+    }
+
     // If it's a GET, body should be null, and we should append the query to the URL.
     if ( $method === 'GET' ) {
       if ( !empty( $query ) ) {
-        $url .= '?' . http_build_query( $query );
+        $hasQuery = strpos( $url, '?' ) !== false;
+        $url = $url . ( $hasQuery ? '&' : '?' ) . http_build_query( $query );
       }
       $body = null;
     }
 
-    $url = 'https://api.openai.com/v1' . $url;
     $options = [
       "headers" => $headers,
       "method" => $method,
@@ -1292,8 +1323,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       return $data;
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( 'OpenAI: ' . $e->getMessage() );
-      throw new Exception( 'From OpenAI: ' . $e->getMessage() );
+      $service = $this->get_service_name();
+      Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
+      throw new Exception( "$service: " . $e->getMessage() );
     }
     finally {
       if ( !is_null( $streamCallback ) ) {
