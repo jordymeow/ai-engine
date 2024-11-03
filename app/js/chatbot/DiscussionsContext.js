@@ -1,7 +1,8 @@
-// Previous: 2.3.1
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.6.5
 
-const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
+import { useContext, createContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { randomStr } from '@app/helpers';
 import { nekoStringify } from '@neko-ui';
 
 const DiscussionsContext = createContext();
@@ -16,9 +17,9 @@ export const useDiscussionsContext = () => {
 
 export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const { system, theme } = rest;
-  const [ discussions, setDiscussions ] = useState([]);
-  const [ discussion, setDiscussion ] = useState(null);
-  const [ busy, setBusy ] = useState(false);
+  const [discussions, setDiscussions] = useState([]);
+  const [discussion, setDiscussion] = useState(null);
+  const [busy, setBusy] = useState(false);
   const shortcodeStyles = useMemo(() => theme?.settings || {}, [theme]);
 
   const botId = system.botId;
@@ -29,12 +30,16 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const debugMode = system.debugMode;
 
   const cssVariables = useMemo(() => {
-    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const vars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return cssVariables;
+    return vars;
   }, [shortcodeStyles]);
+
+  const hasEmptyDiscussion = useMemo(() => {
+    return discussions.some(discussion => discussion.messages.length === 0);
+  }, [discussions]);
 
   const refresh = useCallback(async (silentRefresh = false) => {
     try {
@@ -45,11 +50,13 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       if (debugMode) {
         console.log('[DISCUSSIONS] OUT: ', body);
       }
-      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/list`, { method: 'POST', headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': restNonce,
-      },
-      body: nekoStringify(body),
+      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/list`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': restNonce,
+        },
+        body: nekoStringify(body),
       });
       const data = await response.json();
       if (!data.success) {
@@ -63,7 +70,29 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         const extra = JSON.parse(conversation.extra);
         return { ...conversation, messages, extra };
       });
-      setDiscussions(conversations);
+
+      setDiscussions((prevDiscussions) => {
+        const discussionMap = new Map();
+
+        prevDiscussions.forEach((disc) => {
+          discussionMap.set(disc.chatId, disc);
+        });
+
+        conversations.forEach((serverDisc) => {
+          discussionMap.set(serverDisc.chatId, serverDisc);
+        });
+
+        const newDiscussions = Array.from(discussionMap.values());
+
+        if (discussion) {
+          const updatedDiscussion = newDiscussions.find(disc => disc.chatId === discussion.chatId);
+          if (updatedDiscussion && updatedDiscussion !== discussion) {
+            setDiscussion(updatedDiscussion);
+          }
+        }
+
+        return newDiscussions;
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -71,7 +100,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setBusy(false);
       }
     }
-  }, []);
+  }, [discussion]);
 
   useEffect(() => {
     refresh();
@@ -81,32 +110,161 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (discussion) {
+      const updatedDiscussion = discussions.find(disc => disc.chatId === discussion.chatId);
+      if (updatedDiscussion && updatedDiscussion !== discussion) {
+        setDiscussion(updatedDiscussion);
+      }
+    }
+  }, [discussions]);
+
   const getChatbot = (botId) => {
-    const chatbot = MwaiAPI?.getChatbot(botId);
+    const chatbot = MwaiAPI.getChatbot(botId);
     if (!chatbot) {
-      throw new Error(`Chatbot not found.`, { botId, chatbots: MwaiAPI?.chatbots });
+      throw new Error(`Chatbot not found.`, { botId, chatbots: MwaiAPI.chatbots });
     }
     return chatbot;
   };
 
   const onDiscussionClick = async (chatId) => {
-    const discussion = discussions.find(x => x.chatId === chatId);
-    if (!discussion) {
+    const selectedDiscussion = discussions.find((x) => x.chatId === chatId);
+    if (!selectedDiscussion) {
       console.error(`Discussion not found.`, { chatId, discussions });
       return;
     }
+
+    setDiscussions((prevDiscussions) =>
+      prevDiscussions.filter(
+        (disc) => disc.messages.length > 0 || disc.chatId === chatId
+      )
+    );
+
     const chatbot = getChatbot(botId);
-    chatbot.setContext({ chatId, messages: discussion.messages });
-    setDiscussion(discussion);
+    chatbot.setContext({ chatId, messages: selectedDiscussion.messages });
+    setDiscussion(selectedDiscussion);
   };
+
+  const onEditDiscussion = async (discussionToEdit) => {
+    const newTitle = prompt('Enter a new title for the discussion:', discussionToEdit.title || '');
+    if (newTitle === null) {
+      return;
+    }
+    const trimmedTitle = newTitle.trim();
+    if (trimmedTitle === '') {
+      alert('Title cannot be empty.');
+      return;
+    }
+  
+    try {
+      setBusy(true);
+      const body = {
+        chatId: discussionToEdit.chatId,
+        title: trimmedTitle,
+      };
+  
+      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/edit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': restNonce,
+        },
+        body: nekoStringify(body),
+      });
+  
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(`Could not update the discussion: ${data.message}`);
+      }
+  
+      setDiscussions((prevDiscussions) =>
+        prevDiscussions.map((disc) =>
+          disc.chatId === discussionToEdit.chatId ? { ...disc, title: trimmedTitle } : disc
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while updating the discussion.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  
+  const onDeleteDiscussion = async (discussionToDelete) => {
+    const confirmed = confirm('Are you sure you want to delete this discussion?');
+    if (!confirmed) {
+      return;
+    }
+  
+    try {
+      setBusy(true);
+      const body = {
+        chatIds: [discussionToDelete.chatId],
+      };
+  
+      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': restNonce,
+        },
+        body: nekoStringify(body),
+      });
+  
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(`Could not delete the discussion: ${data.message}`);
+      }
+  
+      setDiscussions((prevDiscussions) =>
+        prevDiscussions.filter((disc) => disc.chatId !== discussionToDelete.chatId)
+      );
+
+      if (discussion?.chatId === discussionToDelete.chatId) {
+        setDiscussion(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while deleting the discussion.');
+    } finally {
+      setBusy(false);
+    }
+  };  
 
   const onNewChatClick = async () => {
+    const existingEmptyDiscussion = discussions.find(disc => disc.messages.length === 0);
+    if (existingEmptyDiscussion) {
+      setDiscussion(existingEmptyDiscussion);
+      return;
+    }
+
     const chatbot = getChatbot(botId);
-    chatbot.clear();
+    const newChatId = randomStr();
+    chatbot.clear({ chatId: newChatId });
+    const newDiscussion = {
+      id: newChatId,
+      chatId: newChatId,
+      messages: [],
+      title: 'New Chat',
+      extra: {},
+    };
+    setDiscussion(newDiscussion);
+    setDiscussions((prevDiscussions) => [newDiscussion, ...prevDiscussions]);
   };
 
-  const actions = { onDiscussionClick, onNewChatClick };
-  const state = { botId, pluginUrl, busy, setBusy, cssVariables, discussions, discussion, theme };
+  const actions = { onDiscussionClick, onNewChatClick, onEditDiscussion, onDeleteDiscussion };
+
+  const state = {
+    botId,
+    pluginUrl,
+    busy,
+    setBusy,
+    cssVariables,
+    discussions,
+    discussion,
+    theme,
+    hasEmptyDiscussion,
+  };
 
   return (
     <DiscussionsContext.Provider value={{ state, actions }}>

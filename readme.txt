@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: ai, chatbot, gpt, copilot, translate
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
-Tested up to: 6.6
+Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.6.3
+Stable tag: 2.6.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,20 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
+= 2.6.5 (2024/11/03) =
+* Add: Titles for Conversations. Those titles can be edited by the users.
+* Add: The user can also delete the conversations.
+* Update: Much smoother flow with the Discussions module.
+* Add: AI Discussions Block (and there was already a Chatbot Block if you didn't know).
+* Add: mwai_form_takeover filter to override the reply for AI Forms.
+* Fix: The customId issue when using the Chatbot Block.
+* Update: Re-organized the Anthropic models.
+* Fix: SQL injection issue in the Discussions module (really minor, as only admins could do it).
+* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 2.6.3 (2024/10/13) =
 * Add: Support for Assistants via Azure.
 * Fix: Site-wide chatbot was considered an override.
@@ -73,10 +87,6 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Update: Gets the models via Replicate much faster.
 * Update: Set Replicate to use JPG.
 * Update: Architectural improvements for OpenAI Assistants.
-* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 2.6.2 (2024/09/18) =
 * Add: Support for the new o1 models from OpenAI (preview and mini).

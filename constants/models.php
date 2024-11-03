@@ -304,8 +304,8 @@ define( 'MWAI_OPENAI_MODELS', [
 
 define ( 'MWAI_ANTHROPIC_MODELS', [
 	[
-		"model" => "claude-3-5-sonnet-20240620",
-		"name" => "Claude-3.5 Sonnet",
+		"model" => "claude-3-5-sonnet-latest",
+		"name" => "Claude-3.5 Sonnet (Latest)",
 		"family" => "claude",
 		"features" => ['completion'],
 		"price" => [
@@ -320,13 +320,29 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"tags" => ['core', 'chat', 'vision', 'functions']
 	],
 	[
-		"model" => "claude-3-opus-20240229",
-		"name" => "Claude-3 Opus",
+		"model" => "claude-3-5-sonnet-20241022",
+		"name" => "Claude-3.5 Sonnet (2024/10/22)",
 		"family" => "claude",
 		"features" => ['completion'],
 		"price" => [
-			"in" => 15.00,
-			"out" => 75.00,
+			"in" => 3.00,
+			"out" => 15.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 200000,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions']
+	],
+	[
+		"model" => "claude-3-5-sonnet-20240620",
+		"name" => "Claude-3.5 Sonnet (2024/06/20)",
+		"family" => "claude",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 3.00,
+			"out" => 15.00,
 		],
 		"type" => "token",
 		"unit" => 1 / 1000000,
@@ -337,7 +353,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 	],
 	[
 		"model" => "claude-3-sonnet-20240229",
-		"name" => "Claude-3 Sonnet",
+		"name" => "Claude-3 Sonnet (2024/02/29)",
 		"family" => "claude",
 		"features" => ['completion'],
 		"price" => [
@@ -352,8 +368,40 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"tags" => ['core', 'chat', 'vision', 'functions', 'deprecated']
 	],
 	[
+		"model" => "claude-3-opus-latest",
+		"name" => "Claude-3 Opus (Latest)",
+		"family" => "claude",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 15.00,
+			"out" => 75.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 200000,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions']
+	],
+	[
+		"model" => "claude-3-opus-20240229",
+		"name" => "Claude-3 Opus (2024/02/29)",
+		"family" => "claude",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 15.00,
+			"out" => 75.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 200000,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions']
+	],
+	[
 		"model" => "claude-3-haiku-20240307",
-		"name" => "Claude-3 Haiku",
+		"name" => "Claude-3 Haiku (2024/03/07)",
 		"family" => "claude",
 		"features" => ['completion'],
 		"price" => [
@@ -366,5 +414,5 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"maxContextualTokens" => 200000,
 		"finetune" => false,
 		"tags" => ['core', 'chat', 'vision', 'functions']
-	],
+	]
 ]);

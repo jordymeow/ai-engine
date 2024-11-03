@@ -21,6 +21,7 @@
     "csv-reader": "^1.0.11",
     "eslint-plugin-react": "^7.34.3",
     "eslint-plugin-react-hooks": "^4.6.2",
+    "lucide-react": "^0.454.0",
     "markdown-to-jsx": "^7.5.0",
     "papaparse": "^5.4.1",
     "preact": "^10.19.6",

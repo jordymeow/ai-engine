@@ -1,5 +1,5 @@
-// Previous: 2.3.9
-// Current: 2.5.1
+// Previous: 2.5.1
+// Current: 2.6.5
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -58,6 +58,14 @@ const DefaultCSS = `.mwai-THEME_ID-theme {
 }
 
 .mwai-THEME_ID-theme .mwai-input-text textarea {
+  flex: 1;
+}
+
+.mwai-THEME_ID-theme .mwai-input-text .mwai-microphone {
+  flex: 1;
+}
+
+.mwai-THEME_ID-theme .mwai-input-text .mwai-file-upload-icon {
   flex: 1;
 }
 
@@ -170,7 +178,7 @@ const CustomTheme = (props) => {
   const [ css, setCss ] = useState("");
 
   useEffect(() => {
-    setCss(theme.style);
+    setCss(theme.style || "");
   }, [theme]);
 
   const isDirty = useMemo(() => {
@@ -178,7 +186,7 @@ const CustomTheme = (props) => {
   }, [css, theme]);
 
   const setDefaultCSS = () => {
-    const newCss = DefaultCSS.replace(/THEME_ID/g, theme.themeId);
+    const newCss = DefaultCSS.replace(/THEME_ID/g, theme.themeId || "default");
     setCss(newCss);
   };
 
@@ -188,8 +196,8 @@ const CustomTheme = (props) => {
         <label>{i18n.COMMON.NAME}:</label>
         <NekoInput name="name" data-form-type="other"
           value={theme.name}
-          onBlur={onUpdateTheme}
-          onEnter={onUpdateTheme}
+          onBlur={() => onUpdateTheme({ name: theme.name })}
+          onEnter={() => onUpdateTheme({ name: theme.name })}
         />
       </div>
       <div className="mwai-builder-col">
@@ -197,17 +205,15 @@ const CustomTheme = (props) => {
           <label style={{ display: 'block' }}>{i18n.COMMON.ID}:</label>
           <NekoInput name="themeId" type="text" placeholder="Optional"
             value={theme.themeId}
-            onBlur={onUpdateTheme}
-            onEnter={onUpdateTheme}
+            onBlur={() => onUpdateTheme({ themeId: theme.themeId })}
+            onEnter={() => onUpdateTheme({ themeId: theme.themeId })}
           />
         </div>
       </div>
     </div>
     <NekoSpacer />
     <label>Custom CSS:</label>
-    <NekoTextArea name="css" value={css} onChange={(val) => {
-      setCss(val);
-    }} rows={16} tabToSpaces={2}></NekoTextArea>
+    <NekoTextArea name="css" value={css} onChange={(val) => setCss(val)} rows={16} tabToSpaces={2}></NekoTextArea>
 
     <div style={{ display: 'flex' }}>
       <NekoButton fullWidth onClick={setDefaultCSS}>

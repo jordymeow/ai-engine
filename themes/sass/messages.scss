@@ -465,6 +465,65 @@
 		box-sizing: border-box;
 	}
 
+	.mwai-discussion {
+		display: flex;
+		gap: 5px;
+		padding-left: calc(var(--mwai-spacing) / 2);
+		padding-right: calc(var(--mwai-spacing) / 2);
+		padding-bottom: calc(var(--mwai-spacing) / 2);
+		color: var(--mwai-conversationsTextColor);
+		opacity: 0.65;
+		justify-content: space-between;
+		align-items: center;
+
+		.mwai-discussion-title {
+			flex: auto;
+			padding: 5px;
+		}
+
+		.mwai-discussion-actions {
+			display: flex;
+			gap: 1px;
+	
+			.mwai-icon {
+				width: 30px;
+				height: 30px;
+				background: var(--mwai-iconTextBackgroundColor);
+				color: var(--mwai-iconTextColor);
+				border-radius: 50%;
+				cursor: pointer;
+				transition: all 0.2s ease-out;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+	
+				&:hover {
+					color: white;
+					background: var(--mwai-backgroundUserColor);
+	
+					&.mwai-danger {
+						background: #f44336;
+					}
+				}
+			}
+		}
+
+		&.mwai-active, &:hover {
+			cursor: pointer;
+
+			.mwai-discussion-title {
+				color: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundHeaderColor);
+				border-radius: var(--mwai-borderRadius);
+				opacity: 1;
+			}
+		}
+
+		&:first-child {
+			margin-top: calc(var(--mwai-spacing) / 2);
+		}
+	}
+
 	.mwai-header {
 		background: var(--mwai-backgroundAiSecondaryColor);
 		padding: var(--mwai-spacing);
@@ -478,28 +537,6 @@
 		list-style: none;
 		padding: 0;
 		margin: 0;
-
-		li {
-			margin-left: calc(var(--mwai-spacing) / 2);
-			margin-right: calc(var(--mwai-spacing) / 2);
-			margin-bottom: calc(var(--mwai-spacing) / 2);
-			color: var(--mwai-conversationsTextColor);
-			font-size: 75%;
-			padding: calc(var(--mwai-spacing) / 2);
-			opacity: 0.65;
-
-			&.mwai-active, &:hover {
-				color: var(--mwai-backgroundPrimaryColor);
-				background: var(--mwai-backgroundHeaderColor);
-				border-radius: var(--mwai-borderRadius);
-				opacity: 1;
-				cursor: pointer;
-			}
-		}
-
-		li:first-child {
-			margin-top: calc(var(--mwai-spacing) / 2);
-		}
 	}
 
 	button {

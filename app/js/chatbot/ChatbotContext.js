@@ -1,5 +1,5 @@
-// Previous: 2.5.3
-// Current: 2.5.6
+// Previous: 2.5.6
+// Current: 2.6.5
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -139,7 +139,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       setMessages(freshMessages);
     }
     else {
-      setMessages([]);}
+      setMessages([]);
+    }
   };
 
   const refreshRestNonce = useCallback(async (force = false) => {
@@ -205,8 +206,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         close: () => {
           setTasks((prevTasks) => [...prevTasks, { action: 'close' }]);
         },
-        clear: () => {
-          setTasks((prevTasks) => [...prevTasks, { action: 'clear' }]);
+        clear: ({ chatId }) => {
+          setTasks((prevTasks) => [...prevTasks, { action: 'clear', data: { chatId } }]);
         },
         toggle: () => {
           setTasks((prevTasks) => [...prevTasks, { action: 'toggle' }]);
@@ -290,6 +291,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         }) : [];
         try {
           if (debugMode) {
+            // eslint-disable-next-line no-console
             console.log(`[CHATBOT] CALL ${name}(${finalArgs.join(', ')})`);
           }
           eval(`${name}(${finalArgs.join(', ')})`);
@@ -378,10 +380,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
-  }, [serverReply]);
+  }, [serverReply, messages, saveMessages, handleActions, handleBlocks, handleShortcuts, chatId, botId, customId]);
 
-  const onClear = useCallback(async () => {
-    await setChatId(randomStr());
+  const onClear = useCallback(async ({ chatId = null }) => {
+    if (!chatId) {
+      chatId = randomStr();
+    }
+    await setChatId(chatId);
     if (localStorageKey) {
       localStorage.removeItem(localStorageKey);
     }
@@ -389,7 +394,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setInputText('');
     setShortcuts([]);
     setBlocks([]);
-  }, [botId, localStorageKey, resetMessages]);
+  }, [botId, localStorageKey]);
 
   const onSubmit = useCallback(async (textQuery) => {
 
@@ -422,7 +427,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setShortcuts([]);
     setBlocks([]);
     resetUploadedFile();
-
     const bodyMessages = [...messages, {
       id: randomStr(),
       role: 'user',
@@ -495,7 +499,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onSubmitAction = useCallback((forcedText = null) => {
     const hasFileUploaded = !!uploadedFile?.uploadedId;
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current.currentElement();
     if (forcedText) {
       onSubmit(forcedText);
     }
@@ -513,6 +517,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
       const params = { type, purpose };
       const url = `${restUrl}/mwai-ui/v1/files/upload`;
+
       const nonce = restNonce ?? await refreshRestNonce();
       const res = await mwaiFetchUpload(url, file, nonce, (progress) => {
         setUploadedFile({
@@ -548,7 +553,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const runTimer = useCallback(() => {
     const timer = setTimeout(() => {
-      setShowIconMessage((prev) => {
+      setShowIconMessage(prev => {
         if (!prev) {
           setShowIconMessage(true);
         }
@@ -565,7 +570,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     else if (iconText && iconTextDelay) {
       return runTimer();
     }
-  }, [iconText]);
+  }, [iconText, iconTextDelay]);
 
   const [ tasks, setTasks ] = useState([]);
 
@@ -581,7 +586,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         }
       }
       else if (task.action === 'toggle') {
-        setOpen((prevOpen) => !prevOpen);
+        setOpen(prevOpen => !prevOpen);
       }
       else if (task.action === 'open') {
         setOpen(true);
@@ -590,7 +595,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setOpen(false);
       }
       else if (task.action === 'clear') {
-        onClear();
+        const { chatId } = task.data;
+        onClear({ chatId });
       }
       else if (task.action === 'setContext') {
         const { chatId, messages } = task.data;
@@ -605,9 +611,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         const blocks = task.data;
         handleBlocks(blocks);
       }
-      setTasks((prevTasks) => prevTasks.slice(1));
+      setTasks(prev => prev.slice(1));
     }
-  }, [tasks, onClear, onSubmit, setChatId, setInputText, setMessages, setOpen, handleShortcuts, handleBlocks]);
+  }, [tasks, onClear, onSubmit, handleShortcuts, handleBlocks]);
 
   useEffect(() => {
     runTasks();
@@ -673,7 +679,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     submitButtonConf,
     draggingType,
     isBlocked,
-    busyNonce
+    busyNonce,
   };
 
   return (

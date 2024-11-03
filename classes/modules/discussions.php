@@ -8,16 +8,26 @@ class Meow_MWAI_Modules_Discussions {
   private $namespace_admin = 'mwai/v1';
   private $namespace_ui = 'mwai-ui/v1';
 
-  public function __construct() {
+  public function __construct(  ) {
     global $wpdb;
+    $this->wpdb = $wpdb;
     global $mwai_core;
     $this->core = $mwai_core;
-    $this->wpdb = $wpdb;
     $this->table_chats = $wpdb->prefix . 'mwai_chats';
 
     if ( $this->core->get_option( 'chatbot_discussions' ) ) {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
+
+      // TEMPORARY:
+      $timestamp = wp_next_scheduled( 'mwai_discussions' );
+      if ( $timestamp ) {
+          wp_unschedule_event( $timestamp, 'mwai_discussions' );
+      }
+      if ( !wp_next_scheduled( 'mwai_discussions' ) ) {
+        wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
+      }
+      add_action( 'mwai_discussions', [ $this, 'cron_discussions' ] );
     }
   }
 
@@ -41,7 +51,37 @@ class Meow_MWAI_Modules_Discussions {
 			'callback' => [ $this, 'rest_discussions_ui_list' ],
 			'permission_callback' => '__return_true'
 		] );
+    register_rest_route( $this->namespace_ui, '/discussions/edit', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_discussions_ui_edit' ],
+      'permission_callback' => '__return_true'
+    ] );
+    register_rest_route( $this->namespace_ui, '/discussions/delete', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_discussions_delete' ],
+      'permission_callback' => [ $this, 'can_delete_discussion' ],
+    ] );
 	}
+
+  function can_delete_discussion( $request ) {
+    $params = $request->get_json_params();
+    $chatIds = isset( $params['chatIds'] ) ? $params['chatIds'] : null;
+    $userId = get_current_user_id();
+    if ( !$userId ) {
+      return false;
+    }
+    foreach ( $chatIds as $chatId ) {
+      $chat = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
+        FROM $this->table_chats
+        WHERE chatId = %s", $chatId
+        )
+      );
+      if ( !$chat || (int)$chat->userId !== (int)$userId ) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   function rest_discussions_list( $request ) {
 		try {
@@ -57,6 +97,124 @@ class Meow_MWAI_Modules_Discussions {
 			return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
 		}
 	}
+
+  function rest_discussions_ui_edit( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $chatId = isset( $params['chatId'] ) ? sanitize_text_field( $params['chatId'] ) : null;
+      $title = isset( $params['title'] ) ? sanitize_text_field( $params['title'] ) : null;
+  
+      if ( is_null( $chatId ) || is_null( $title ) ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'chatId and title are required.' ], 400 );
+      }
+  
+      $userId = get_current_user_id();
+      if ( ! $userId ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
+      }
+  
+      // Update the discussion title for the current user
+      $updated = $this->wpdb->update(
+        $this->table_chats,
+        [ 'title' => $title ],
+        [ 'chatId' => $chatId, 'userId' => $userId ]
+      );
+  
+      if ( $updated === false ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'Failed to update the discussion.' ], 500 );
+      }
+  
+      return new WP_REST_Response( [ 'success' => true ], 200 );
+    } catch ( Exception $e ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }  
+
+  function cron_discussions() {
+    $this->check_db();
+    $now = date( 'Y-m-d H:i:s' );
+    $ten_days_ago = date( 'Y-m-d H:i:s', strtotime( '-10 days' ) );
+  
+    // Get 5 latest discussions, not older than 10 days, which have no 'title' yet (NULL)
+    $query = $this->wpdb->prepare(
+      "SELECT * FROM {$this->table_chats}
+       WHERE title IS NULL AND updated >= %s
+       ORDER BY updated DESC LIMIT 5",
+      $ten_days_ago
+    );
+    $discussions = $this->wpdb->get_results( $query );
+  
+    if ( empty( $discussions ) ) {
+      return;
+    }
+  
+    foreach ( $discussions as $discussion ) {
+      $messages = json_decode( $discussion->messages, true );
+      if ( ! is_array( $messages ) ) {
+        continue;
+      }
+  
+      $has_user_message = false;
+      $has_assistant_message = false;
+  
+      // Check for at least one message from 'user' and one from 'assistant'
+      foreach ( $messages as $message ) {
+        if ( isset( $message['role'] ) ) {
+          if ( $message['role'] === 'user' ) {
+            $has_user_message = true;
+          }
+          if ( $message['role'] === 'assistant' ) {
+            $has_assistant_message = true;
+          }
+        }
+        if ( $has_user_message && $has_assistant_message ) {
+          break;
+        }
+      }
+  
+      if ( ! ( $has_user_message && $has_assistant_message ) ) {
+        continue;
+      }
+  
+      // Prepare the conversation text for the prompt
+      $conversation_text = '';
+      foreach ( $messages as $message ) {
+        if ( isset( $message['role'] ) && isset( $message['content'] ) ) {
+          $role = ucfirst( $message['role'] );
+          $content = $message['content'];
+          $conversation_text .= "$role: $content\n";
+        }
+      }
+  
+      $base_prompt = "Based on the following conversation, generate a concise and specific title for the discussion, less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.\n\nConversation:\n$conversation_text\n";
+      $prompt = apply_filters( 'mwai_discussions_title_prompt', $base_prompt, $conversation_text, $discussion );
+  
+      // Run the AI query
+      global $mwai;
+      $answer = $mwai->simpleTextQuery( $prompt, [ "scope" => 'discussions' ] );
+  
+      // Clean up the answer
+      $title = trim( $answer );
+      $title = rtrim( $title, ".!?:;,—–-–" ); // Remove trailing punctuation
+      $title = substr( $title, 0, 100 ); // Ensure less than 100 characters
+  
+      // If the AI returns a title, update the discussion with it
+      if ( ! empty( $title ) ) {
+        $this->wpdb->update(
+          $this->table_chats,
+          [ 'title' => $title ],
+          [ 'id' => $discussion->id ]
+        );
+      } else {
+        // If the AI doesn't return a title, update the discussion with "Untitled"
+        $this->wpdb->update(
+          $this->table_chats,
+          [ 'title' => 'Untitled' ],
+          [ 'id' => $discussion->id ]
+        );
+      }
+    }
+  }  
 
   function rest_discussions_ui_list( $request ) {
 		try {
@@ -93,21 +251,26 @@ class Meow_MWAI_Modules_Discussions {
   function rest_discussions_delete( $request ) {
     try {
       $params = $request->get_json_params();
-      $chatsIds = $params['chatIds'];
-      if ( is_array( $chatsIds ) ) {
-        if ( count( $chatsIds ) === 0 ) {
-          $this->wpdb->query( "TRUNCATE TABLE $this->table_chats" );
-        }
-        foreach( $chatsIds as $chatId ) {
-          $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId ] );
-        }
+      $chatIds = isset( $params['chatIds'] ) ? $params['chatIds'] : null;
+  
+      if ( ! is_array( $chatIds ) || empty( $chatIds ) ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'chatIds is required.' ], 400 );
       }
-      return new WP_REST_Response([ 'success' => true ], 200 );
+  
+      $userId = get_current_user_id();
+      if ( ! $userId ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
+      }
+  
+      foreach ( $chatIds as $chatId ) {
+        $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId, 'userId' => $userId ] );
+      }
+  
+      return new WP_REST_Response( [ 'success' => true ], 200 );
+    } catch ( Exception $e ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
-    catch ( Exception $e ) {
-      return new WP_REST_Response([ 'success' => false, 'message' => $e->getMessage() ], 500 );
-    }
-  }
+  }  
   
   // Get latest discussion for the given parameter
   function get_discussion( $botId, $chatId ) {
@@ -129,60 +292,69 @@ class Meow_MWAI_Modules_Discussions {
     $limit = !empty( $limit ) ? intval( $limit ) : 5;
     $filters = !empty( $filters ) ? $filters : [];
     $this->core->sanitize_sort( $sort, 'updated', 'DESC' );
-    $query = "SELECT * FROM $this->table_chats";
-
-    // Filters
+  
+    $where_clauses = [];
+    $where_values = [];
+  
     if ( is_array( $filters ) ) {
-      $where = array();
       foreach ( $filters as $filter ) {
-        if ( $filter['accessor'] === 'user' ) {
-          $value = esc_sql( $filter['value'] );
-          if ( is_null( $value ) || $value === '' ) {
-            continue;
-          }
-          $isIP = filter_var( $value, FILTER_VALIDATE_IP );
-          if ( $isIP ) {
-            $where[] = "ip = '{$value}'";
-          }
-          else {
-            $where[] = "userId = '{$value}'";
-          }
+        $value = $filter['value'];
+        if ( is_null( $value ) || $value === '' ) {
+          continue;
         }
-        if ( $filter['accessor'] === 'botId' ) {
-          $value = esc_sql( $filter['value'] );
-          if ( is_null( $value ) || $value === '' ) {
-            continue;
-          }
-          $where[] = "botId = '{$value}'";
+  
+        switch ( $filter['accessor'] ) {
+          case 'user':
+            $isIP = filter_var( $value, FILTER_VALIDATE_IP );
+            if ( $isIP ) {
+              $where_clauses[] = 'ip = %s';
+              $where_values[] = $value;
+            } else {
+              $where_clauses[] = 'userId = %d';
+              $where_values[] = intval( $value );
+            }
+            break;
+  
+          case 'botId':
+            $where_clauses[] = 'botId = %s';
+            $where_values[] = $value;
+            break;
+  
+          case 'preview':
+            $like = '%' . $this->wpdb->esc_like( $value ) . '%';
+            $where_clauses[] = 'messages LIKE %s';
+            $where_values[] = $like;
+            break;
+  
+          // Add other cases as needed
         }
-        if ( $filter['accessor'] === 'preview' ) {
-          $value = $filter['value'];
-          if ( empty( $value ) ) {
-            continue;
-          }
-          $where[] = "messages LIKE '%{$value}%'";
-        }
-      }
-      if ( count( $where ) > 0 ) {
-        $query .= " WHERE " . implode( " AND ", $where );
       }
     }
-
-    // Count based on this query
-    $chats['total'] = $this->wpdb->get_var( "SELECT COUNT(*) FROM ($query) AS t" );
-
-    // Order by
-    $query .= " ORDER BY " . esc_sql( $sort['accessor'] ) . " " . esc_sql( $sort['by'] );
-
-    // Limits
+  
+    $where_sql = '';
+    if ( !empty( $where_clauses ) ) {
+      $where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
+    }
+  
+    $order_by = 'ORDER BY ' . esc_sql( $sort['accessor'] ) . ' ' . esc_sql( $sort['by'] );
+  
+    $limit_sql = '';
     if ( $limit > 0 ) {
-      $query .= " LIMIT $offset, $limit";
+      $limit_sql = $this->wpdb->prepare( 'LIMIT %d, %d', $offset, $limit );
     }
-
-    $chats['rows'] = $this->wpdb->get_results( $query, ARRAY_A );
+  
+    $query = "SELECT * FROM {$this->table_chats} {$where_sql} {$order_by} {$limit_sql}";
+  
+    // Execute the prepared statement
+    $chats['rows'] = $this->wpdb->get_results( $this->wpdb->prepare( $query, $where_values ), ARRAY_A );
+  
+    // Get the total count
+    $count_query = "SELECT COUNT(*) FROM {$this->table_chats} {$where_sql}";
+    $chats['total'] = $this->wpdb->get_var( $this->wpdb->prepare( $count_query, $where_values ) );
+  
     return $chats;
   }
-
+  
   public function chatbot_reply( $rawText, $query, $params, $extra ) {
     global $mwai_core;
     $userIp = $mwai_core->get_ip_address();
@@ -297,37 +469,11 @@ class Meow_MWAI_Modules_Discussions {
       );
     }
 
-    // LATER: REMOVE THIS AFTER SEPTEMBER 2023
-    // Make sure the column "userId" and "ip "exist in the $this->table_chats table
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'userId'" );
+    // LATER: REMOVE THIS AFTER MARCH 2025
+    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'title'" );
     if ( !$this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN userId BIGINT(20) NULL" );
-      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN ip VARCHAR(64) NULL" );
-      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN botId VARCHAR(64) NULL" );
+      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN title VARCHAR(64) NULL" );
       $this->db_check = true;
-    }
-
-    // LATER: REMOVE THIS AFTER JANUARY 2024
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'threadId'" );
-    if ( !$this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN threadId VARCHAR(64) NULL" );
-      $this->db_check = true;
-    }
-
-    // LATER: REMOVE THIS AFTER SEPTEMBER 2024
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'storeId'" );
-    if ( !$this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN storeId VARCHAR(64) NULL" );
-      $this->db_check = true;
-    }
-
-    // LATER: REMOVE THIS AFTER SEPTEMBER 2024
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'extra'" );
-    if ( $this->db_check ) {
-      $column = $this->wpdb->get_row( "SHOW COLUMNS FROM $this->table_chats WHERE Field = 'extra'" );
-      if ( $column->Type === 'text' ) {
-        $this->wpdb->query( "ALTER TABLE $this->table_chats MODIFY COLUMN extra LONGTEXT" );
-      }
     }
 
     return $this->db_check;
@@ -339,6 +485,7 @@ class Meow_MWAI_Modules_Discussions {
       id BIGINT(20) NOT NULL AUTO_INCREMENT,
       userId BIGINT(20) NULL,
       ip VARCHAR(64) NULL,
+      title VARCHAR(64) NULL,
       messages TEXT NOT NULL NULL,
       extra LONGTEXT NOT NULL NULL,
       botId VARCHAR(64) NULL,

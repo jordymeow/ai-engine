@@ -1,5 +1,5 @@
-// Previous: 2.4.1
-// Current: 2.5.7
+// Previous: 2.5.7
+// Current: 2.6.5
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -281,6 +281,7 @@ const Discussions = () => {
       const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
       const lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
       const chatbotName = chatbots.find(y => y.botId === x.botId)?.name;
+      const jsxPreview = x?.title ? <><div>{x.title}</div><small><i>{firstExchange}</i></small></> : <><div>{firstExchange}</div><small>{lastExchange}</small></>;
       return {
         id: x.id,
         botId: <>
@@ -289,10 +290,7 @@ const Discussions = () => {
         </>,
         user: user,
         messages: messages?.length ?? 0,
-        preview: <>
-          <div>{firstExchange}</div>
-          <small>{lastExchange}</small>
-        </>,
+        preview: jsxPreview,
         extra: extra.model,
         created: <div style={{ textAlign: 'right' }}>{formattedCreated}</div>,
         updated: <div style={{ textAlign: 'right' }}>{formattedUpdated}</div>
@@ -334,8 +332,8 @@ const Discussions = () => {
       await deleteDiscussions();
     }
     else {
-      const selectedChats = chatsData?.chats.filter(x => x.id === selectedIds[0]);
-      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
+      const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
+      const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -375,11 +373,8 @@ const Discussions = () => {
   const formattedUpdated = tableDateTimeFormatter(discussion?.updated);
 
   return (<>
-
     <NekoWrapper>
-
       <NekoColumn minimal style={{ flex: 2 }}>
-
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
@@ -396,7 +391,6 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
-
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
@@ -423,9 +417,8 @@ const Discussions = () => {
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
-
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
@@ -435,25 +428,16 @@ const Discussions = () => {
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
-
         </NekoBlock>
-
       </NekoColumn>
-
       <NekoColumn minimal style={{ flex: 1 }}>
-
-        <NekoBlock className="primary" title="Selected Discussion" action={<>
-        </>}>
-
+        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
-
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
-
         </NekoBlock>
-
-        {!!discussion && <NekoBlock className="primary" title="Information">
+        {discussion && <NekoBlock className="primary" title="Information">
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -490,15 +474,10 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{formattedUpdated}</div>
           </div>
-
         </NekoBlock>}
-
       </NekoColumn>
-
     </NekoWrapper>
-
     <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
-
   </>);
 }
 
