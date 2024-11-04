@@ -358,18 +358,16 @@
 }
 
 .mwai-messages-theme .mwai-input .mwai-input-text .mwai-microphone {
-  width: 32px;
-  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 5px;
 }
 
 .mwai-messages-theme .mwai-input .mwai-input-text .mwai-microphone svg {
-  width: 32px;
-  height: 32px;
-  fill: var(--mwai-fontColor);
   opacity: 0.5;
   filter: grayscale(100%);
   transition: opacity 0.3s ease-out;
-  padding: 5px 10px;
   cursor: pointer;
 }
 
@@ -442,7 +440,7 @@
 }
 
 .mwai-messages-theme .mwai-input .mwai-input-submit {
-  width: 110px;
+  width: 70px;
 }
 
 .mwai-messages-theme button {

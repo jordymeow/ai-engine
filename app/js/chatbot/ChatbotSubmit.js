@@ -1,10 +1,11 @@
-// Previous: 2.4.7
-// Current: 2.4.9
+// Previous: 2.4.9
+// Current: 2.6.6
 
 import { useChatbotContext } from "./ChatbotContext";
 
 // React & Vendor Libs
 const { useMemo, useCallback } = wp.element;
+import { Send, Eraser } from 'lucide-react';
 
 const ChatbotSubmit = () => {
   const { state, actions } = useChatbotContext();
@@ -20,9 +21,18 @@ const ChatbotSubmit = () => {
     if (busy) {
       return timeElapsed ? <div className="mwai-timer">{timeElapsed}</div> : null;
     }
+    // If there are text values for the button, use them
     if (submitButtonConf?.imageSend && submitButtonConf?.imageClear) {
       return <img src={clearMode ? submitButtonConf.imageClear : submitButtonConf.imageSend} alt={clearMode ? textClear : textSend} />;
     }
+    // If there are no text or images, use the default send icon
+    if (!clearMode && !textSend) {
+      return <Send size="20" />;
+    }
+    if (clearMode && !textClear) {
+      return <Eraser size="20" />;
+    }
+
     return <span>{clearMode ? textClear : textSend}</span>;
   }, [busy, timeElapsed, clearMode, textClear, textSend, submitButtonConf]);
 

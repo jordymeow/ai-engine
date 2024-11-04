@@ -8,7 +8,7 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
 	#region Constructors, Serialization
 
-  public function __construct( ?string $message = "", ?string $model = "dall-e-3" ) {
+  public function __construct( ?string $message = "", ?string $model = null ) {
 		parent::__construct( $message );
     $this->model = $model;
     $this->feature = "text-to-image"; // image-to-image, inpainting, etc

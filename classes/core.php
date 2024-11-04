@@ -144,25 +144,15 @@ class Meow_MWAI_Core
 
 	#region AI-Related Helpers
 	function run_query( $query, $streamCallback = null, $markdown = false ) {
-		$envId = !empty( $query->envId ) ? $query->envId : null;
-		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
+		
+		// Allow to modify the query before it is sent.
+    // Embedding and Feedback queries are not allowed to be modified.
+    if ( !( $query instanceof Meow_MWAI_Query_Embed ) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
+      $query = apply_filters( 'mwai_ai_query', $query );
+    }
 
-		// If the engine is not set, we need to set it to the default one.
-		if ( !$envId || !$engine->retrieve_model_info( $query->model ) ) {
-			if ( $query instanceof Meow_MWAI_Query_Text ) {
-				$this->set_if_empty_defaults( $query, 'ai_default_env', 'ai_default_model' );
-			}
-			if ( $query instanceof Meow_MWAI_Query_Embed ) {
-				$this->set_if_empty_defaults( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
-			}
-			else if ( $query instanceof Meow_MWAI_Query_Image ) {
-				$this->set_if_empty_defaults( $query, 'ai_images_default_env', 'ai_images_default_model' );
-			}
-			else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-				$this->set_if_empty_defaults( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
-			}
-			$engine = Meow_MWAI_Engines_Factory::get( $this, $query->envId );
-		}
+		// Let's check the default environment and model.
+		$engine = $this->validate_env_model( $query );
 
 		// Let's run the query.
 		$reply = $engine->run( $query, $streamCallback );
@@ -179,8 +169,29 @@ class Meow_MWAI_Core
 
 		return $reply;
 	}
+
+	public function validate_env_model( $query ) {
+		$envId = !empty( $query->envId ) ? $query->envId : null;
+		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
+		if ( !$envId || !$engine->retrieve_model_info( $query->model ) ) {
+			if ( $query instanceof Meow_MWAI_Query_Text ) {
+				$this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
+			}
+			if ( $query instanceof Meow_MWAI_Query_Embed ) {
+				$this->set_default_env_and_model( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
+			}
+			else if ( $query instanceof Meow_MWAI_Query_Image ) {
+				$this->set_default_env_and_model( $query, 'ai_images_default_env', 'ai_images_default_model' );
+			}
+			else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
+				$this->set_default_env_and_model( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
+			}
+			$engine = Meow_MWAI_Engines_Factory::get( $this, $query->envId );
+		}
+		return $engine;
+	}
 	
-	private function set_if_empty_defaults( $query, $envOption, $modelOption ) {
+	private function set_default_env_and_model( $query, $envOption, $modelOption ) {
 		$defaultEnv = $this->get_option( $envOption );
 		$defaultModel = $this->get_option( $modelOption );
 		if ( empty( $defaultEnv ) || empty( $defaultModel ) ) {

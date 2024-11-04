@@ -17,7 +17,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   // Parameters
   public int $maxMessages = 15;
   public int $maxResults = 1;
-  public string $model = '';
+  public ?string $model = null;
   //public string $mode = ''; //TODO: Let's get rid of this thing from the past
   public string $feature = 'completion';
 

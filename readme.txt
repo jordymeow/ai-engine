@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.6.5
+Stable tag: 2.6.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,14 +66,19 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
-= 2.6.5 (2024/11/03) =
+= 2.6.6 (2024/11/04) =
 * Add: Titles for Conversations. Those titles can be edited by the users.
 * Add: The user can also delete the conversations.
-* Update: Much smoother flow with the Discussions module.
+* Add: Added default icons when Send and Clear texts are empty.
+* Add: Resolution support in the chatbot shortcode.
 * Add: AI Discussions Block (and there was already a Chatbot Block if you didn't know).
 * Add: mwai_form_takeover filter to override the reply for AI Forms.
-* Fix: The customId issue when using the Chatbot Block.
+* Update: Much smoother flow with the Discussions module.
+* Update: Nicer icon for microphone.
+* Update: Better (earlier as well) handling of default envs and models.
 * Update: Re-organized the Anthropic models.
+* Fix: Issue with the Clear button (version 2.6.5).
+* Fix: The customId issue when using the Chatbot Block.
 * Fix: SQL injection issue in the Discussions module (really minor, as only admins could do it).
 * 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!

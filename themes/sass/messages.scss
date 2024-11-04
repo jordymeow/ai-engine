@@ -366,6 +366,7 @@
 
 			.mwai-microphone {
 				@include microphone;
+				margin-right: 5px;
 			}
 
 			.mwai-file-upload-icon {
@@ -383,7 +384,7 @@
 		}
 
 		.mwai-input-submit {
-			width: 110px;
+			width: 70px;
 		}
 	}
 

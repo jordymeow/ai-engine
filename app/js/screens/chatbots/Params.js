@@ -1,10 +1,8 @@
-// Previous: 2.6.1
-// Current: 2.6.3
+// Previous: 2.6.3
+// Current: 2.6.6
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
-// NekoUI
 import {
   NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoColumn, NekoTextArea, NekoButton, NekoCollapsableCategory, NekoCollapsableCategories
@@ -86,14 +84,13 @@ const ChatbotParams = (props) => {
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
   const { completionModels, imageModels, getModel } = useModels(options, shortcodeParams.envId || null);
   const isChat = (shortcodeParams.mode ?? 'chat') === 'chat';
-  const isAssistant = (shortcodeParams.mode ?? false) === 'assistant';
-  const isImagesChat = (shortcodeParams.mode ?? false) === 'images';
+  const isAssistant = (shortcodeParams.mode ?? 'assistant') === 'assistant';
+  const isImagesChat = (shortcodeParams.mode ?? 'images') === 'images';
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
   const availableFunctions = options?.functions || [];
   const functions = shortcodeParams.functions || [];
-
   const [ busyUpdatingFunctions, setBusyUpdatingFunctions ] = useState(false);
 
   const instructionsHasContent = useMemo(() => {
@@ -101,14 +98,14 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = options?.ai_envs?.find(e => e.id === shortcodeParams.envId);
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
     return env || null;
-  }, [options?.ai_envs, shortcodeParams.envId]);
+  }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
-    return assist || null;
+    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return aid || null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
@@ -139,8 +136,6 @@ const ChatbotParams = (props) => {
         const resolutions = currentModel.resolutions.map(x => x.name);
         const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
         updateShortcodeParams(bestResolution, 'resolution');
-      } else {
-        // intentionally missing; fallback to default
       }
     } else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
@@ -185,7 +180,7 @@ const ChatbotParams = (props) => {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
-  }, [shortcodeParams, functions, availableFunctions, modelSupportImage, currentModel, isChat, isAssistant, assistant, aiEnvironment, options?.ai_envs, shortcodeParams.envId, shortcodeParams.model, shortcodeParams.assistantId, shortcodeParams.imageUpload, shortcodeParams.fileSearch, shortcodeParams.embeddingsEnvId, module_embeddings, functions]);
+  }, [shortcodeParams]);
 
   const updateFunctionsInAssistant = async () => {
     setBusyUpdatingFunctions(true);
@@ -200,8 +195,7 @@ const ChatbotParams = (props) => {
   };
 
   const availableResolutions = useMemo(() => {
-    if (!modelSupportImage) return [];
-    if (!currentModel) return [];
+    if (!modelSupportImage || !currentModel) return [];
     if (!currentModel.resolutions) {
       console.error("This image model does not have resolutions.", currentModel);
       return [];
@@ -435,7 +429,8 @@ const ChatbotParams = (props) => {
                       const newFunctions = functions.filter(x => x.id !== func.id);
                       if (value) newFunctions.push({ type: func.type, id: func.id });
                       updateShortcodeParams(newFunctions, 'functions');
-                    }}
+                    }
+                    }
                   />
                 ))}
               </div>}

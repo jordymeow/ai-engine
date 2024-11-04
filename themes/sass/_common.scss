@@ -54,17 +54,14 @@
 
 @mixin microphone {
 
-	width: 32px;
-	height: 32px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 
 	svg {
-		width: 32px;
-		height: 32px;
-		fill: var(--mwai-fontColor);
 		opacity: 0.5;
 		filter: grayscale(100%);
 		transition: opacity 0.3s ease-out;
-		padding: 5px 10px;
 		cursor: pointer;
 	}
 
