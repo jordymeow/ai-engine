@@ -186,7 +186,7 @@ class Meow_MWAI_Modules_Discussions {
         }
       }
   
-      $base_prompt = "Based on the following conversation, generate a concise and specific title for the discussion, less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.\n\nConversation:\n$conversation_text\n";
+      $base_prompt = "Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.\n\nConversation:\n$conversation_text\n";
       $prompt = apply_filters( 'mwai_discussions_title_prompt', $base_prompt, $conversation_text, $discussion );
   
       // Run the AI query
@@ -196,22 +196,22 @@ class Meow_MWAI_Modules_Discussions {
       // Clean up the answer
       $title = trim( $answer );
       $title = rtrim( $title, ".!?:;,—–-–" ); // Remove trailing punctuation
-      $title = substr( $title, 0, 100 ); // Ensure less than 100 characters
+      $title = substr( $title, 0, 64 ); // Ensure less than 64 characters
+      if ( empty( $title ) ) {
+        $title = 'Untitled';
+      }
   
-      // If the AI returns a title, update the discussion with it
-      if ( ! empty( $title ) ) {
-        $this->wpdb->update(
-          $this->table_chats,
-          [ 'title' => $title ],
-          [ 'id' => $discussion->id ]
-        );
-      } else {
-        // If the AI doesn't return a title, update the discussion with "Untitled"
-        $this->wpdb->update(
-          $this->table_chats,
-          [ 'title' => 'Untitled' ],
-          [ 'id' => $discussion->id ]
-        );
+      // Update the discussion with the title
+      $updated = $this->wpdb->update(
+        $this->table_chats,
+        [ 'title' => $title ],
+        [ 'id' => $discussion->id ]
+      );
+  
+      // If the update fails, you can log an error (optional)
+      if ( $updated === false ) {
+        error_log( "Failed to update the title for discussion ID {$discussion->id}" );
+        // Optionally, you could set a default title or take other action
       }
     }
   }  

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.6.6
+Stable tag: 2.6.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,9 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.6.7 (2024/11/08) =
+* Fix: Enforcing discussions title length (and default title in case of error) to avoid repeated API calls.
 
 = 2.6.6 (2024/11/04) =
 * Add: Titles for Conversations. Those titles can be edited by the users.
