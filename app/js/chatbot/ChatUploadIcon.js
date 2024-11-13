@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.6.8
 
 import { useChatbotContext } from "./ChatbotContext";
 import { useClasses } from "./helpers";
@@ -10,13 +10,13 @@ const { useState, useMemo, useRef } = wp.element;
 const ChatUploadIcon = () => {
   const css = useClasses();
   const { state, actions } = useChatbotContext();
-  const { uploadedFile, busy, imageUpload, fileSearch, draggingType } = state;
+  const { uploadedFile, busy, imageUpload, fileUpload, fileSearch, draggingType } = state;
   const { onUploadFile } = actions;
   const [ isHovering, setIsHovering ] = useState(false);
 
   const fileInputRef = useRef();
   const hasUploadedFile = uploadedFile?.uploadedId;
-  const uploadEnabled = imageUpload || fileSearch;
+  const uploadEnabled = imageUpload || fileSearch || fileUpload;
 
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
@@ -69,7 +69,7 @@ const ChatUploadIcon = () => {
   }, [type, file, draggingType, isHovering, hasUploadedFile]);
 
   const uploadProgress = useMemo(() => {
-    if (file?.uploadProgress !== undefined) {
+    if (file?.uploadProgress) {
       if (file.uploadProgress > 99) {
         return 99;
       }

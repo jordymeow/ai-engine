@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.6.7
+Stable tag: 2.6.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,18 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
+= 2.6.8 (2024/11/13) =
+* Add: Similar to "Vision", support for "Files". For now, that means you can upload PDF in the chatbot while using Sonnet 3.5. This will be expanded to other models and features in the future. 
+* Add: Messages Integrity Check. This will help fighting against malicious attempts to modify the system/assistant messages in the chatbot. When a query to the chatbot will be detected as malicious, an entry will be added in the Logs of the Dev Tools (in AI Engine's UI). It's for testing purposes for now, for those who are interested in helping us testing this, and once bulletproof, it will be deployed as an option with kick/ban features.
+* Update: Discussions now include the start sentence as well.
+* Fix: The WP Cron related to discussions was running way too often (forgot to remove the debug).
+* Fix: Encode the data used in chatbot shortcodes to avoid issues with special characters.
+* Fix: Support for embeddings models without defined dimensions (hi, Ollama's embed models!).
+* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 2.6.7 (2024/11/08) =
 * Fix: Enforcing discussions title length (and default title in case of error) to avoid repeated API calls.
 
@@ -83,10 +95,6 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Fix: Issue with the Clear button (version 2.6.5).
 * Fix: The customId issue when using the Chatbot Block.
 * Fix: SQL injection issue in the Discussions module (really minor, as only admins could do it).
-* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 2.6.3 (2024/10/13) =
 * Add: Support for Assistants via Azure.

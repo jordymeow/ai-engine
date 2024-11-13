@@ -20,10 +20,10 @@ class Meow_MWAI_Modules_Discussions {
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 
       // TEMPORARY:
-      $timestamp = wp_next_scheduled( 'mwai_discussions' );
-      if ( $timestamp ) {
-          wp_unschedule_event( $timestamp, 'mwai_discussions' );
-      }
+      // $timestamp = wp_next_scheduled( 'mwai_discussions' );
+      // if ( $timestamp ) {
+      //     wp_unschedule_event( $timestamp, 'mwai_discussions' );
+      // }
       if ( !wp_next_scheduled( 'mwai_discussions' ) ) {
         wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
       }
@@ -413,13 +413,17 @@ class Meow_MWAI_Modules_Discussions {
        ], [ 'id' => $chat->id ] );
     }
     else {
+      $startSentence = isset( $params['startSentence'] ) ? $params['startSentence'] : null;
+      $messages = [];
+      if ( !empty( $startSentence ) ) {
+        $messages[] = [ 'role' => 'assistant', 'content' => $startSentence ];
+      }
+      $messages[] = [ 'role' => 'user', 'content' => $newMessage ];
+      $messages[] = [ 'role' => 'assistant', 'content' => $rawText, 'extra' => $messageExtra ];
       $chat = [
         'userId' => $userId,
         'ip' => $userIp,
-        'messages' => json_encode( [ 
-          [ 'role' => 'user', 'content' => $newMessage ],
-          [ 'role' => 'assistant', 'content' => $rawText, 'extra' => $messageExtra ]
-        ] ),
+        'messages' => json_encode( $messages ),
         'extra' => json_encode( $chatExtra ),
         'botId' => $botId,
         'chatId' => $chatId,

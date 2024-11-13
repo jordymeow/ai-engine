@@ -1,6 +1,7 @@
-// Previous: 2.6.5
-// Current: 2.6.6
+// Previous: 2.6.6
+// Current: 2.6.8
 
+// React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 import { nekoStringify } from '@neko-ui';
 
@@ -85,7 +86,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const { aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar } = processedParams;
   const { textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     window: isWindow, copyButton, fullscreen, localMemory: localMemoryParam,
-    icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble, imageUpload, fileSearch } = processedParams;
+    icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble, imageUpload, fileUpload, fileSearch } = processedParams;
   const localMemory = localMemoryParam && (!!customId || !!botId);
   const localStorageKey = localMemory ? `mwai-chat-${customId || botId}` : null;
   const { cssVariables, iconUrl, aiAvatarUrl, userAvatarUrl, guestAvatarUrl } = useMemo(() => {
@@ -220,7 +221,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         close: () => {
           setTasks((prevTasks) => [...prevTasks, { action: 'close' }]);
         },
-        clear: ({ chatId }) => {
+        clear: (params) => {
+          const { chatId = null } = params || {};
           setTasks((prevTasks) => [...prevTasks, { action: 'clear', data: { chatId } }]);
         },
         toggle: () => {
@@ -246,7 +248,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         },
       };
       if (existingChatbotIndex !== -1) {
-        mwaiAPI.chatbots[existingChatbotIndex] = chatbot;
+        mwaiAPI.chatbots.splice(existingChatbotIndex, 1, chatbot);
       }
       else {
         mwaiAPI.chatbots.push(chatbot);
@@ -344,11 +346,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     // Failure
     if (!serverReply.success) {
       // Remove the isQuerying placeholder for the assistant.
-      if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
         freshMessages.pop();
       }
       // Remove the user message.
-      freshMessages.pop();
+      if (lastMessage && lastMessage.role === 'user') {
+        freshMessages.pop();
+      }
       freshMessages.push({
         id: randomStr(),
         role: 'system',
@@ -362,7 +366,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     }
 
     // Success: Let's update the isQuerying/isStreaming or add a new message.
-    if (lastMessage.role === 'assistant' && lastMessage.isQuerying) {
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isQuerying) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -373,7 +377,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
     }
-    else if (lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+    else if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
       lastMessage.content = applyFilters('ai.reply', serverReply.reply, { chatId, botId });
       if (serverReply.images) {
         lastMessage.images = serverReply.images;
@@ -399,7 +403,13 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleActions(serverReply?.actions, newMessage);
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
-      freshMessages.push(newMessage);
+      if (!lastMessage || lastMessage.role !== 'assistant') {
+        // Bug: In case lastMessage is null or not assistant, push new message
+        freshMessages.push(newMessage);
+      } else {
+        // buggy: replace last message instead of pushing
+        freshMessages[freshMessages.length - 1] = newMessage;
+      }
     }
     setMessages(freshMessages);
     saveMessages(freshMessages);
@@ -532,7 +542,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onSubmitAction = useCallback((forcedText = null) => {
     const hasFileUploaded = !!uploadedFile?.uploadedId;
-    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement();
+    hasFocusRef.current = document.activeElement === chatbotInputRef.current?.currentElement(); // added optional chaining
     if (forcedText) {
       onSubmit(forcedText);
     }
@@ -574,7 +584,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   // TODO: Why don't we have the resetError in onFileUpload and remove this function?
   const onUploadFile = async (file) => {
     if (error) {
-      resetError();
+      resetError(); // If error exists, reset it
     }
     return onFileUpload(file);
   };
@@ -594,7 +604,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     const timer = setTimeout(() => {
       setShowIconMessage((prev) => {
         if (!prev) {
-          setShowIconMessage(true);
+          return true;
         }
         return prev;
       });
@@ -609,7 +619,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     else if (iconText && iconTextDelay) {
       return runTimer();
     }
-  }, [iconText]);
+  }, [iconText, iconTextDelay]);
   // #endregion
 
   // #region Tasks Queue
@@ -699,6 +709,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     virtualKeyboardFix,
     localMemory,
     imageUpload,
+    fileUpload,
     uploadedFile,
     fileSearch,
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,

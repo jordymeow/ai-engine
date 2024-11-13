@@ -1,5 +1,5 @@
-// Previous: 2.5.1
-// Current: 2.6.1
+// Previous: 2.6.1
+// Current: 2.6.8
 
 const { useState, useMemo, useLayoutEffect, useCallback, useEffect, useRef } = wp.element;
 
@@ -43,11 +43,11 @@ const ChatbotUI = (props) => {
   const [ autoScroll, setAutoScroll ] = useState(true);
   const { state, actions } = useChatbotContext();
   const { theme, botId, customId, messages, textCompliance, isWindow, fullscreen, iconPosition, iconBubble,
-    shortcuts, blocks, imageUpload, fileSearch, draggingType, isBlocked, virtualKeyboardFix,
+    shortcuts, blocks, imageUpload, fileSearch, fileUpload, draggingType, isBlocked, virtualKeyboardFix,
     windowed, cssVariables, error, conversationRef, open, busy, uploadIconPosition } = state;
   const { resetError, onSubmit, setIsBlocked, setDraggingType, onUploadFile } = actions;
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
-  const needTools = imageUpload || fileSearch;
+  const needTools = imageUpload || fileSearch || fileUpload;
   const needsFooter = needTools || textCompliance;
   const timeoutRef = useRef(null);
 
@@ -233,7 +233,7 @@ const ChatbotUI = (props) => {
         setDraggingType('image');
         setIsBlocked(false);
       }
-      else if (fileSearch && isDocument(file)) {
+      else if ((fileSearch || fileUpload) && isDocument(file)) {
         setDraggingType('document');
         setIsBlocked(false);
       }
@@ -252,7 +252,7 @@ const ChatbotUI = (props) => {
         }, 100); // Adjust this delay as needed
       }
     }
-  }, [imageUpload, fileSearch]);
+  }, [imageUpload, fileSearch, fileUpload, setDraggingType, setIsBlocked]);
 
   const handleDrop = useCallback((event) => {
     event.preventDefault();
@@ -262,9 +262,11 @@ const ChatbotUI = (props) => {
     if (file) {
       if (draggingType === 'image' && imageUpload) {
         onUploadFile(file);
+        setDraggingType(''); // potential bug: resetting draggingType here causes inconsistent state
       }
-      else if (draggingType === 'document' && fileSearch) {
+      else if (draggingType === 'document' && (fileSearch || fileUpload)) {
         onUploadFile(file);
+        setDraggingType(''); // same as above
       }
       else {
         // Indicate that the drop is not valid
@@ -272,7 +274,7 @@ const ChatbotUI = (props) => {
         setTimeout(() => setIsBlocked(false), 2000); // Reset after 2 seconds
       }
     }
-  }, [busy, draggingType, imageUpload, fileSearch, onUploadFile]);
+  }, [busy, draggingType, imageUpload, fileUpload, fileSearch, onUploadFile]);
 
   const inputClassNames = css('mwai-input', {
     'mwai-dragging': draggingType,

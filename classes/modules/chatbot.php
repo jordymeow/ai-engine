@@ -5,13 +5,13 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
 	'aiName', 'userName', 'guestName',
 	'aiAvatar', 'userAvatar', 'guestAvatar',
 	'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl',
-	'textSend', 'textClear', 'imageUpload', 'fileSearch',
+	'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
 	'fullscreen', 'copyButton'
 ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context',
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence',
 	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution',
 	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions'
 ] );
@@ -198,6 +198,86 @@ class Meow_MWAI_Modules_Chatbot {
 		return $this->sanitize_items( $shortcuts, $supported_shortcut_types, 'shortcut' );
 	}
 
+	#region Messages Integrity Check
+
+	function messages_integrity_diff(  $messages1,  $messages2 ) {
+		// Collect messages with role not 'user' from messages1
+		$messagesList1 = array();
+		foreach(  $messages1 as $msg ) {
+			$role = isset(  $msg->role ) ? $msg->role : ( isset(  $msg['role'] ) ? $msg['role'] : null );
+			$content = isset(  $msg->content ) ? $msg->content : ( isset(  $msg['content'] ) ? $msg['content'] : null );
+			if(  $role && $role != 'user' ) {
+				$messageData = array( 'role' => $role, 'content' => $content );
+				$messagesList1[] = $messageData;
+			}
+		}
+
+		// Collect messages with role not 'user' from messages2
+		$messagesList2 = array();
+		foreach(  $messages2 as $msg ) {
+			$role = isset(  $msg->role ) ? $msg->role : ( isset(  $msg['role'] ) ? $msg['role'] : null );
+			$content = isset(  $msg->content ) ? $msg->content : ( isset(  $msg['content'] ) ? $msg['content'] : null );
+			if(  $role && $role != 'user' ) {
+				$messageData = array( 'role' => $role, 'content' => $content );
+				$messagesList2[] = $messageData;
+			}
+		}
+
+		// Count occurrences of each message in messagesList1
+		$counts1 = array();
+		foreach(  $messagesList1 as $msg ) {
+			$key = serialize(  $msg );
+			if(  isset(  $counts1[ $key ] ) ) {
+				$counts1[ $key ]++;
+			} else {
+				$counts1[ $key ] = 1;
+			}
+		}
+
+		// Count occurrences of each message in messagesList2
+		$counts2 = array();
+		foreach(  $messagesList2 as $msg ) {
+			$key = serialize(  $msg );
+			if(  isset(  $counts2[ $key ] ) ) {
+				$counts2[ $key ]++;
+			} else {
+				$counts2[ $key ] = 1;
+			}
+		}
+
+		// Compare counts to find unmatched messages
+		$all_keys = array_unique( array_merge( array_keys(  $counts1 ), array_keys(  $counts2 ) ) );
+
+		$diffs = array();
+		foreach(  $all_keys as $key ) {
+			$count1 = isset(  $counts1[ $key ] ) ? $counts1[ $key ] : 0;
+			$count2 = isset(  $counts2[ $key ] ) ? $counts2[ $key ] : 0;
+			if(  $count1 != $count2 ) {
+				$message = unserialize(  $key );
+				$diffs[] = array(
+					'message' => $message,
+					'count_in_messages1' => $count1,
+					'count_in_messages2' => $count2
+				);
+			}
+		}
+
+		return $diffs;
+	}
+
+	private function calculate_messages_checksum( $messages ) {
+    $messages_to_hash = [];
+    foreach ( $messages as $msg ) {
+			$role = $msg['role'] ?? '';
+			if ( in_array( $role, ['assistant', 'system'] ) ) {
+				$messages_to_hash[] = [ 'role' => $role, 'content' => $msg['content'] ?? '' ];
+			}
+    }
+    return md5( json_encode( $messages_to_hash ) );
+	}
+
+	#endregion
+
 	public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false ) {
 		try {
 			$chatbot = null;
@@ -222,7 +302,44 @@ class Meow_MWAI_Modules_Chatbot {
 				Meow_MWAI_Logging::warn( "The query was rejected - message was too long." );
 				throw new Exception( 'Sorry, your query has been rejected.' );
 			}
-			
+
+			// We need to check the integrity of the messages sent by the client.
+			// This is important to ensure that the messages are not tampered with.
+
+			// Messages Integrity Check with Checksums
+			$chatId = $params['chatId'] ?? 'default';
+			$checksum_key = 'mwai_chatbot_checksum_' . $chatId;
+			$stored_checksum = get_transient( $checksum_key );
+			$client_messages = $params['messages'] ?? [];
+			$client_checksum = $this->calculate_messages_checksum( $client_messages );
+			if ( $stored_checksum && $stored_checksum !== $client_checksum ) {
+				Meow_MWAI_Logging::warn( "Integrity Check: Messages integrity check failed. Assistant or system messages sent by the client do not match stored messages. Please enable the Discussions module for better logs." );
+			}
+
+			// Messages Integrity Check with Discussions
+			if ( $this->core->get_option( 'chatbot_discussions' ) ) {
+				$discussion = $this->core->discussions->get_discussion( $botId ? $botId: $customId, $params['chatId'] );
+				if ( $discussion ) {
+					$messages = $discussion['messages'];
+					$diffs = $this->messages_integrity_diff( $messages, $params['messages'] );
+					if ( count( $diffs ) > 0 ) {
+						Meow_MWAI_Logging::warn( "Integrity Check: It seems the messages in the discussion #{$discussion['id']} do not match the ones sent by the client." );
+					}
+				}
+				else {
+					// No discussion yet? We still need to check the startSentence.
+					$startSentence = isset( $chatbot['startSentence'] ) ? $chatbot['startSentence'] : null;
+					$messages = [];
+					if ( !empty( $startSentence ) ) {
+						$messages[] = [ 'role' => 'assistant', 'content' => $startSentence ];
+					}
+					$diffs = $this->messages_integrity_diff( $messages, $params['messages'] );
+					if ( count( $diffs ) > 0 ) {
+						Meow_MWAI_Logging::warn( "Integrity Check: It seems the messages in the discussion do not match the ones sent by the client: " . json_encode( $diffs ) );
+					}
+				}
+			}
+
 			// Create QueryText
 			$context = null;
 			$mode = $chatbot['mode'] ?? 'chat';
@@ -325,10 +442,12 @@ class Meow_MWAI_Modules_Chatbot {
 					else {
 						$url = $this->core->files->get_url( $newFileId );
 						$mimeType = $this->core->files->get_mime_type( $newFileId );
-						$query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
+      			$isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
+						$purposeType = $isIMG ? 'vision' : 'files';
+						$query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, $purposeType, $mimeType ) );
 						$fileId = $this->core->files->get_id_from_refId( $newFileId );
 						$this->core->files->update_envId( $fileId, $query->envId );
-						$this->core->files->update_purpose( $fileId, 'vision' );
+						$this->core->files->update_purpose( $fileId, $purposeType );
 						$this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
 						$this->core->files->add_metadata( $fileId, 'query_session', $query->session );
 					}
@@ -391,6 +510,14 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
 
+			// Integrity Check: We need to store the checksum of the messages sent by the client.
+			$stored_messages = $client_messages;
+			$stored_messages[] = [ 'role' => 'user', 'content' => $newMessage ];
+			$stored_messages[] = [ 'role' => 'assistant', 'content' => $rawText ];
+			$stored_checksum = $this->calculate_messages_checksum( $stored_messages );
+			set_transient( $checksum_key, $stored_checksum, 60 * 60 * 24 * 30 );
+
+			// Actions
 			$actions = [];
 			if ( $reply->needClientActions ) {
 				foreach ( $reply->needClientActions as $action ) {
@@ -504,6 +631,10 @@ class Meow_MWAI_Modules_Chatbot {
 
 	public function chat_shortcode( $atts ) {
 		$atts = empty( $atts ) ? [] : $atts;
+
+    foreach ( $atts as $key => $value ) {
+			$atts[ $key ] = urldecode( $value );
+		}
 
 		// Let the user override the chatbot params
 		$atts = apply_filters( 'mwai_chatbot_params', $atts );

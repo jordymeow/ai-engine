@@ -4,7 +4,7 @@ class Meow_MWAI_Query_DroppedFile {
   private $data;
   private $rawData;
   private $type; // Defines what the data is about ('refId', 'url', or 'data')
-  private $purpose; // Can be 'assistant' or 'vision' => this needs to be checked
+  private $purpose; // Can be 'assistant', 'vision' or 'files' => this needs to be checked
   private $mimeType; // 'image/jpeg' or any other mime type
 
   static function from_url( $url, $purpose, $mimeType = null ) {
@@ -30,8 +30,8 @@ class Meow_MWAI_Query_DroppedFile {
     if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' ) {
       throw new Exception( "AI Engine: The file type can only be refId, url or data." );
     }
-    if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' ) {
-      throw new Exception( "AI Engine: The file purpose can only be assistant or vision." );
+    if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' && $purpose !== 'files' ) {
+      throw new Exception( "AI Engine: The file purpose can only be assistant, vision or files." );
     }
     $this->data = $data;
     $this->type = $type;

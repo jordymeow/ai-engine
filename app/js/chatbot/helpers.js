@@ -1,5 +1,5 @@
-// Previous: 2.5.6
-// Current: 2.6.6
+// Previous: 2.6.6
+// Current: 2.6.8
 
 const { useState, useMemo, useEffect, useRef, useCallback } = wp.element;
 import { Mic } from 'lucide-react';
@@ -123,16 +123,18 @@ const processParameters = (params, placeholders = []) => {
   const guestAvatarUrl = guestAvatar ? params?.guestAvatarUrl?.trim() ?? "" : null;
   const localMemory = Boolean(params.localMemory);
   const imageUpload = Boolean(params.imageUpload);
+  const fileUpload = Boolean(params.fileUpload);
   const fileSearch = Boolean(params.fileSearch);
 
   if (placeholders) {
     textCompliance = doPlaceholders(textCompliance, placeholders);
     iconText = doPlaceholders(iconText, placeholders);
+    // BUG: Missing reassign; placeholders won't be replaced properly here if parameters change
   }
 
   return {
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-    window, copyButton, fullscreen, localMemory, imageUpload, fileSearch,
+    window, copyButton, fullscreen, localMemory, imageUpload, fileUpload, fileSearch,
     icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble,
     aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar, aiAvatarUrl, userAvatarUrl, guestAvatarUrl
   };

@@ -54,7 +54,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       'Content-Type' => 'application/json',
       'x-api-key' => $this->apiKey,
       'anthropic-version' => '2023-06-01',
-      'anthropic-beta' => 'tools-2024-04-04',
+      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25',
       'User-Agent' => 'AI Engine',
     );
     return $headers;
@@ -90,27 +90,55 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       // Claude only supports upload by data (base64), not by URL.
       $data = $query->attachedFile->get_base64();
       $message = $query->get_message();
-      if ( empty( $message ) ) {
-        // Claude doesn't support messages with only images, so we add a text message.
-        $message = "I uploaded an image. Do not consider this message as part of the conversation.";
-      }
-      $messages[] = [ 
-        'role' => 'user',
-        'content' => [
-          [
-            "type" => "text",
-            "text" => $message
-          ],
-          [
-            "type" => "image",
-            "source" => [
-              "type" => "base64",
-              "media_type" => $mime,
-              "data" => $data
+      $isPDF = $mime === 'application/pdf';
+      $isIMG = in_array( $mime, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
+
+      if ( $isPDF ) {
+        if ( empty( $message ) ) {
+          // Claude doesn't support messages with only PDFs, so we add a text message.
+          $message = "I uploaded a PDF. Do not consider this message as part of the conversation.";
+        }
+        $messages[] = [
+          'role' => 'user',
+          'content' => [
+            [
+              "type" => "text",
+              "text" => $message
+            ],
+            [
+              "type" => "document",
+              "source" => [
+                "type" => "base64",
+                "media_type" => "application/pdf",
+                "data" => $data
+              ]
             ]
           ]
-        ]
-      ];
+        ];
+      }
+      else if ( $isIMG ) {
+        if ( empty( $message ) ) {
+          // Claude doesn't support messages with only images, so we add a text message.
+          $message = "I uploaded an image. Do not consider this message as part of the conversation.";
+        }
+        $messages[] = [ 
+          'role' => 'user',
+          'content' => [
+            [
+              "type" => "text",
+              "text" => $message
+            ],
+            [
+              "type" => "image",
+              "source" => [
+                "type" => "base64",
+                "media_type" => $mime,
+                "data" => $data
+              ]
+            ]
+          ]
+        ];
+      }
     }
     else {
       $messages[] = [ 'role' => 'user', 'content' => $query->get_message() ];

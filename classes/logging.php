@@ -71,7 +71,7 @@ class Meow_MWAI_Logging {
    * @param string $message The warning message to log.
    * @param string $icon An optional icon to prepend to the log message. Default is '⚠️'.
    */
-  public static function warn( $message = null, $icon = '⚠️' ) {
+  public static function warn( $message = null, $icon = '🥲' ) {
     self::add( $message, $icon );
   }
  

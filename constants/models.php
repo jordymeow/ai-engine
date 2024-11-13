@@ -333,7 +333,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"maxCompletionTokens" => 4096,
 		"maxContextualTokens" => 200000,
 		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'functions']
+		"tags" => ['core', 'chat', 'vision', 'files', 'functions']
 	],
 	[
 		"model" => "claude-3-5-sonnet-20240620",

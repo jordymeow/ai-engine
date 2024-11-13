@@ -897,18 +897,17 @@ class Meow_MWAI_Core
 					$chatbot[$key] = $value;
 				}
 			}
-			// TODO: After October 2024, let's remove this.
-			if ( isset( $chatbot['context'] ) ) {
-				$chatbot['instructions'] = $chatbot['context'];
-				unset( $chatbot['context'] );
-				$hasChanges = true;
-			}
-			// TODO: After October 2024, let's remove this.
-			if ( isset( $chatbot['fileUpload'] ) ) {
-				$chatbot['fileSearch'] = $chatbot['fileUpload'];
-				unset( $chatbot['fileUpload'] );
-				$hasChanges = true;
-			}
+
+			/*
+				This is the best section to rename fields.
+				We did this in 2024 for context to instructions, and fileUpload to fileSearch. fileSearch is for assistant file search, and fileUpload is now for chatbot file upload (similar to vision, but for files instead of images).
+			*/
+
+			// if ( isset( $chatbot['context'] ) ) {
+			// 	$chatbot['instructions'] = $chatbot['context'];
+			// 	unset( $chatbot['context'] );
+			// 	$hasChanges = true;
+			// }
 		}
 		if ( !$hasDefault ) {
 			$defaultBot = array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'botId' => 'default' ] );

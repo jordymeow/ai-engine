@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.6.8
 
 const { useMemo } = wp.element;
 
@@ -15,6 +15,13 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
   const currentEmbeddingsModel = useMemo(() => {
     return embeddingsModels.find(x => x.model === env.ai_embeddings_model);
   }, [embeddingsModels, env.ai_embeddings_model]);
+
+  const currentEmbeddingsModelDimensions = useMemo(() => {
+    if (currentEmbeddingsModel && !currentEmbeddingsModel.dimensions) {
+      console.error('This embeddings model does not have dimensions:', currentEmbeddingsModel);
+    }
+    return currentEmbeddingsModel?.dimensions || [];
+  }, [currentEmbeddingsModel]);
 
   return (
     <>
@@ -93,6 +100,7 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
             </NekoSettings>
 
             {env?.ai_embeddings_override && <>
+
               <NekoSettings title={i18n.COMMON.ENVIRONMENT}>
                 <NekoSelect scrolldown name="ai_embeddings_env" value={env?.ai_embeddings_env}
                   onChange={value => updateEnvironment(env.id, { ai_embeddings_env: value })}>
@@ -114,14 +122,15 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
               <NekoSettings title={i18n.COMMON.DIMENSIONS}>
                 <NekoSelect scrolldown name="ai_embeddings_dimensions" value={env.ai_embeddings_dimensions || null}
                   onChange={value => updateEnvironment(env.id, { ai_embeddings_dimensions: value })}>
-                  {currentEmbeddingsModel?.dimensions.map((x, i) => (
+                  {currentEmbeddingsModelDimensions.map((x, i) => (
                     <NekoOption key={x} value={x}
-                      label={i === currentEmbeddingsModel?.dimensions.length - 1 ? `${x} (Default)` : x}
+                      label={i === currentEmbeddingsModelDimensions.length - 1 ? `${x} (Default)` : x}
                     />
                   ))}
                   <NekoOption key={null} value={null} label="Not Set"></NekoOption>
                 </NekoSelect>
               </NekoSettings>
+
             </>}
           </div>
         </NekoCollapsableCategory>
@@ -141,6 +150,7 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
 };
 
 function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updateOption, options, busy }) {
+
 
   const addNewEnvironment = () => {
     const newEnv = {
