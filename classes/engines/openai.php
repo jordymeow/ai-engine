@@ -93,14 +93,21 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return !empty( $modelDef['tags'] ) && in_array( 'o1-model', $modelDef['tags'] );
   }
 
+  private function requires_developer_roles( $model ) {
+    if ( $model === 'o1' ) {
+      return true;
+    }
+    return false;
+  }
+
   protected function build_messages( $query ) {
     $messages = [];
 
     // First, we need to add the first message (the instructions).
     if ( !empty( $query->instructions ) ) {
-      if ( !$this->is_o1_model( $query->model ) ) {
+      //if ( !$this->is_o1_model( $query->model ) ) {
         $messages[] = [ 'role' => 'system', 'content' => $query->instructions ];
-      }
+      //}
     }
 
     // Then, if any, we need to add the 'messages', they are already formatted.
@@ -140,6 +147,29 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
     else {
       $messages[] = [ 'role' => 'user', 'content' => $query->get_message() ];
+    }
+
+    // We need to convert all the 'system' role into 'developer' role.
+    if ( $this->requires_developer_roles( $query->model ) ) {
+      foreach ( $messages as &$message ) {
+        if ( $message['role'] === 'system' ) {
+          $message['role'] = 'developer';
+        }
+      }
+    }
+    // But otherwise, if it's o1, we need to remove the message which are 'system'
+    else if ( $this->is_o1_model( $query->model ) ) {
+      $hasChanges = false;
+      foreach ( $messages as $index => $message ) {
+        if ( $message['role'] === 'system' ) {
+          unset( $messages[$index] );
+          $hasChanges = true;
+        }
+      }
+      if ( $hasChanges ) {
+        $messages = array_values( $messages );
+        Meow_MWAI_Logging::warn( 'The model ' . $query->model . ' doesn\'t support System nor Developer messages. They were removed.' );
+      }
     }
 
     return $messages;
@@ -594,8 +624,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   public function run( $query, $streamCallback = null, $maxDepth = 5 ) {
     if ( $streamCallback ) {
-      // Disable streaming for o1 models
-      if ( $this->is_o1_model( $query->model ) ) {
+      // Disable streaming only for "o1" (as December 2024, it works for preview and mini)
+      if ( $query->model === 'o1' ) {
         $streamCallback = null;
       }
     }
@@ -676,12 +706,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
   }
 
   public function run_transcribe_query( $query ) {
-    // Check if the URL is valid.
-    if ( !filter_var( $query->url, FILTER_VALIDATE_URL ) ) {
+    // TODO: This function currently only supports the URL method.
+    // But as with Vision, we should support the file upload method too.
+    $attachedFile = $query->attachedFile ?? null;
+    $audioUrl = $query->url ?? null;
+    if ( $attachedFile ) {
+      $audioUrl = $attachedFile->get_url();
+      $query->set_url( $audioUrl );
+    }
+    if ( !filter_var( $audioUrl, FILTER_VALIDATE_URL ) ) {
       throw new Exception( 'Invalid URL for transcription.' );
     }
 
-    $audioData = $this->get_audio( $query->url );
+    $audioData = $this->get_audio( $audioUrl );
     $body = $this->build_body( $query, null, $audioData['data'] );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );

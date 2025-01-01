@@ -46,6 +46,10 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
     }
   }
 
+  public function clear_feedback_blocks() {
+    $this->blocks = [];
+  }
+
   public function add_feedback_block( $block ) {
     $this->blocks[] = $block;
   }

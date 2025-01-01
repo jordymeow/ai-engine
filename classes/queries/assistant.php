@@ -21,7 +21,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
 
   #[\ReturnTypeWillChange]
   public function jsonSerialize(): array {
-    return [
+    $json = [
       'message' => $this->message,
 
       'ai' => [
@@ -31,9 +31,6 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
         'threadId' => $this->threadId,
         'storeId' => $this->storeId,
         'runId' => $this->runId,
-      ],
-
-      'context' => [
       ],
 
       'system' => [

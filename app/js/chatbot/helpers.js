@@ -1,8 +1,8 @@
-// Previous: 2.6.6
-// Current: 2.6.8
+// Previous: 2.6.8
+// Current: 2.6.9
 
 const { useState, useMemo, useEffect, useRef, useCallback } = wp.element;
-import { Mic } from 'lucide-react';
+import { Mic } from 'lucide-react";
 
 const Microphone = ({ active, disabled, ...rest }) => {
   return (
@@ -104,6 +104,7 @@ const processParameters = (params, placeholders = []) => {
   const textInputMaxLength = parseInt(params.textInputMaxLength);
   const textInputPlaceholder = params.textInputPlaceholder?.trim() ?? "";
   let textCompliance = params.textCompliance?.trim() ?? "";
+  let headerSubtitle = "";
   const window = Boolean(params.window);
   const copyButton = Boolean(params.copyButton);
   const fullscreen = Boolean(params.fullscreen);
@@ -126,16 +127,23 @@ const processParameters = (params, placeholders = []) => {
   const fileUpload = Boolean(params.fileUpload);
   const fileSearch = Boolean(params.fileSearch);
 
+  if (params.headerSubtitle === null || params.headerSubtitle === undefined) {
+    headerSubtitle = "Discuss with";
+  }
+  else {
+    headerSubtitle = params.headerSubtitle?.trim() ?? "";
+  }
+
+  // This is also executed on the PHP-side, but having this here allows for easier testing in the WP Admin
   if (placeholders) {
     textCompliance = doPlaceholders(textCompliance, placeholders);
     iconText = doPlaceholders(iconText, placeholders);
-    // BUG: Missing reassign; placeholders won't be replaced properly here if parameters change
   }
 
   return {
     textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
     window, copyButton, fullscreen, localMemory, imageUpload, fileUpload, fileSearch,
-    icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble,
+    icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble, headerSubtitle,
     aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar, aiAvatarUrl, userAvatarUrl, guestAvatarUrl
   };
 };

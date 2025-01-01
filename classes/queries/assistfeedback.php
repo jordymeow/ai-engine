@@ -55,6 +55,10 @@ class Meow_MWAI_Query_AssistFeedback extends Meow_MWAI_Query_Assistant implement
     }
   }
 
+  public function clear_feedback_blocks() {
+    $this->blocks = [];
+  }
+
   public function add_feedback_block( $block ) {
     $this->blocks[] = $block;
   }
@@ -72,7 +76,7 @@ class Meow_MWAI_Query_AssistFeedback extends Meow_MWAI_Query_Assistant implement
       'system' => [
         'class' => get_class( $this ),
         'envId' => $this->envId,
-        'mode' => $this->mode,
+        //'mode' => $this->mode,
         'scope' => $this->scope,
         'session' => $this->session,
       ]

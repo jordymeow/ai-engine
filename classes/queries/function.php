@@ -4,7 +4,7 @@ class Meow_MWAI_Query_Function {
   public string $name;
   public string $description;
   public array $parameters;
-  public string $type; // 'snippet-vault', etc...
+  public string $type; // 'code-engine', etc...
   public string $target; // 'server' or 'client'
   public ?string $id;
 

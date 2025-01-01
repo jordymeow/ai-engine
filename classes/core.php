@@ -977,7 +977,7 @@ class Meow_MWAI_Core
 	function update_chatbots( $chatbots ) {
 		$deprecatedFields = [ 'env', 'embeddingsIndex', 'embeddingsNamespace', 'service' ];
 		// TODO: I think some HTML fields are missing, guestName, maybe others.
-		$htmlFields = [ 'textCompliance', 'aiName', 'userName', 'startSentence' ];
+		$htmlFields = [ 'instructions', 'textCompliance', 'aiName', 'userName', 'startSentence' ];
 		$keepLineReturnsFields = [ 'instructions' ];
 		$whiteSpacedFields = [ 'context' ];
 		foreach ( $chatbots as &$chatbot ) {
@@ -1053,7 +1053,7 @@ class Meow_MWAI_Core
 			}
 		}
 
-		// Functions via Snippet Vault (or custom code)
+		// Functions via Code Engine (or custom code)
 		$json = [];
 		$functions = apply_filters( 'mwai_functions_list', [] );
 		foreach ( $functions as $function ) {
@@ -1064,48 +1064,86 @@ class Meow_MWAI_Core
 		// Addons
 		$options['addons'] = apply_filters( 'mwai_addons', [
 			[
-				'slug' => "mwai-notifications",
-				'name' => "Notifications",
-				'description' => "Add-on for AI Engine that adds notifications.",
-				'install_url' => "https://meowapps.com/products/mwai-notifications/",
-				'settings_url' => null,
-				'enabled' => false,
-			], [
-				'slug' => "mwai-ollama",
-				'name' => "Ollama",
-				'description' => "Support for local LLMs via Ollama. Select the 'Ollama' type in your 'Environments for AI', then you can 'Refresh Models' and use them!",
-				'install_url' => "https://meowapps.com/products/mwai-ollama/",
-				'settings_url' => null,
-				'enabled' => false
-			], [
-				'slug' => "mwai-websearch",
-				'name' => "Web Search",
-				'description' => "This add-on for AI Engine enhances the AI models' responses by incorporating additional context. It currently supports Google Search.",
-				'install_url' => "https://meowapps.com/products/mwai-websearch/",
-				'settings_url' => null,
-				'enabled' => false
-			], [
-				'slug' => "mwai-better-links",
-				'name' => "Better Links",
-				'description' => "This add-on for AI Engine adds link validation and term linking features.",
-				'install_url' => "https://meowapps.com/products/mwai-better-links/",
-				'settings_url' => null,
-				'enabled' => false
-			], [
-				'slug' => "mwai-woo-basics",
-				'name' => "Woo Basics",
-				'description' => "Handles basic WooCommerce functionalities with chatbots.",
-				'install_url' => "https://meowapps.com/products/mwai-woo-basics/",
-				'settings_url' => null,
-				'enabled' => false
-			], [
-				'slug' => "mwai-quick-actions",
-				'name' => "Quick Actions",
-				'description' => "Add dynamic quick actions to your chatbot, triggered by events or at chat start.",
-				'install_url' => "https://meowapps.com/products/mwai-quick-actions/",
-				'settings_url' => null,
-				'enabled' => false
-			]
+				"slug" => "mwai-notifications",
+				"name" => "Notifications",
+				"description" => "Get real-time alerts for new discussions in your chatbot, so you never miss a chance to engage.",
+				"install_url" => "https://meowapps.com/products/mwai-notifications/",
+				"settings_url" => null,
+				"stars" => 4,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-ollama",
+				"name" => "Ollama",
+				"description" => "Leverage local LLM integration through Ollama; refresh and use your own models for a flexible, cost-free approach.",
+				"install_url" => "https://meowapps.com/products/mwai-ollama/",
+				"settings_url" => null,
+				"stars" => 3,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-websearch",
+				"name" => "Web Search",
+				"description" => "Enhance chatbot responses by pulling context from Google and Tavily, delivering more accurate answers.",
+				"install_url" => "https://meowapps.com/products/mwai-websearch/",
+				"settings_url" => null,
+				"stars" => 5,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-better-links",
+				"name" => "Better Links",
+				"description" => "Validate internal and external links and map specific terms to custom URLs, ensuring smoother navigation and references.",
+				"install_url" => "https://meowapps.com/products/mwai-better-links/",
+				"settings_url" => null,
+				"stars" => 3,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-woo-basics",
+				"name" => "Woo Basics",
+				"description" => "Access essential WooCommerce data so your chatbot can understand products, orders, and more for a richer shopping experience.",
+				"install_url" => "https://meowapps.com/products/mwai-woo-basics/",
+				"settings_url" => null,
+				"stars" => 2,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-quick-actions",
+				"name" => "Quick Actions",
+				"description" => "Enable dynamic quick actions at chat start or during events, helping users find what they need faster.",
+				"install_url" => "https://meowapps.com/products/mwai-quick-actions/",
+				"settings_url" => null,
+				"stars" => 3,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-content-parser",
+				"name" => "Content Parser",
+				"description" => "Parse complex website content, including ACF fields and page builders, for more precise embeddings and knowledge retrieval.",
+				"install_url" => "https://meowapps.com/products/mwai-content-parser/",
+				"settings_url" => null,
+				"stars" => 2,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-visitor-form",
+				"name" => "Visitor Form",
+				"description" => "Add a customizable form triggered by specific events in your chatbot to collect key visitor information seamlessly.",
+				"install_url" => "https://meowapps.com/products/mwai-visitor-form/",
+				"settings_url" => null,
+				"stars" => 2,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-dynamic-keys",
+				"name" => "Dynamic Keys",
+				"description" => "Rotate multiple API keys dynamically for any environment, balancing usage and ensuring smooth performance.",
+				"install_url" => "https://meowapps.com/products/mwai-dynamic-keys/",
+				"settings_url" => null,
+				"stars" => 1,
+				"enabled" => false
+			],
 		] );
 
 		return $options;
@@ -1136,22 +1174,8 @@ class Meow_MWAI_Core
 	function sanitize_options( $options ) {
 		$needs_update = false;
 
-		// TODO: After October 2024, let's remove this.
-		$old_options = [
-			'openai_models',
-			'anthropic_models',
-			'${envType}_models',
-			'shortcode_chat_params',
-			'extra_models',
-			'fallback_model',
-			'mwai_advisor_data'
-		];
-		foreach ( $old_options as $old_option ) {
-			if ( isset( $options[$old_option] ) ) {
-				unset( $options[$old_option] );
-				$needs_update = true;
-			}
-		}
+		// Removing old options of options renaming should be done here, as it was done before.
+		// Check version 2.6.8 for an example.
 
 		// Avoid the logs_path to be a PHP file.
 		if ( isset( $options['logs_path'] ) ) {
@@ -1161,63 +1185,6 @@ class Meow_MWAI_Core
 				$needs_update = true;
 			}
 		}
-
-		// TODO: After October 2024, let's remove this.
-		#region Temporary Code
-		if ( isset( $options['openrouter_models'] ) ) {
-			foreach ( $options['openrouter_models'] as $model ) {
-				$model['envId'] = null;
-				$model['type'] = 'openrouter';
-				$options['ai_models'][] = $model;
-			}
-			$needs_update = true;
-			unset( $options['openrouter_models'] );
-		}
-		if ( isset( $options['google_models'] ) ) {
-			foreach ( $options['google_models'] as $model ) {
-				$model['envId'] = null;
-				$model['type'] = 'google';
-				$options['ai_models'][] = $model;
-			}
-			$needs_update = true;
-			unset( $options['google_models'] );
-		}
-		if ( isset( $options['shortcode_chat_stream'] ) ) {
-			$options['ai_streaming'] = $options['shortcode_chat_stream'];
-			unset( $options['shortcode_chat_stream'] );
-			$needs_update = true;
-		}
-		if ( isset( $options['shortcode_chat_syntax_highlighting'] ) ) {
-			$options['syntax_highlight'] = $options['shortcode_chat_syntax_highlighting'];
-			unset( $options['shortcode_chat_syntax_highlighting'] );
-			$needs_update = true;
-		}
-		if ( isset( $options['shortcode_chat_moderation'] ) ) {
-			$options['chatbot_moderation'] = $options['shortcode_chat_moderation'];
-			unset( $options['shortcode_chat_moderation'] );
-			$needs_update = true;
-		}
-		if ( isset( $options['shortcode_chat_discussions'] ) ) {
-			$options['chatbot_discussions'] = $options['shortcode_chat_discussions'];
-			unset( $options['shortcode_chat_discussions'] );
-			$needs_update = true;
-		}
-		if ( isset( $options['shortcode_chat_typewriter'] ) ) {
-			$options['chatbot_typewriter'] = $options['shortcode_chat_typewriter'];
-			unset( $options['shortcode_chat_typewriter'] );
-			$needs_update = true;
-		}
-		if ( isset( $options['shortcode_chat'] ) ) {
-			$options['module_chatbots'] = $options['shortcode_chat'];
-			unset( $options['shortcode_chat'] );
-			$needs_update = true;
-		}
-		if ( isset( $options['openai_usage'] ) ) {
-			$options['ai_models_usage'] = $options['openai_usage'];
-			unset( $options['openai_usage'] );
-			$needs_update = true;
-		}
-		#endregion
 
 		// The IDs for the embeddings environments are generated here.
 		// TODO: We should handle this more gracefully via an option in the Embeddings Settings.

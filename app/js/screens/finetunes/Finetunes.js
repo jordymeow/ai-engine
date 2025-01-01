@@ -1,5 +1,5 @@
-// Previous: 2.5.2
-// Current: 2.5.4
+// Previous: 2.5.4
+// Current: 2.6.9
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +15,8 @@ import { apiUrl, restNonce } from '@app/settings';
 import { toHTML, useModels } from '@app/helpers-admin';
 import Generator from '@app/screens/finetunes/Generator';
 import i18n from '@root/i18n';
-import { retrieveFilesFromOpenAI, retrieveFineTunes, retrieveDeletedFineTunes } from '@app/requests';
+import { retrieveFilesFromOpenAI, retrieveFineTunes } from '@app/requests';
+import { retrieveDeletedFineTunes } from '@app/requests';
 
 const EstimationMessage = ({ createdOn, estimatedOn }) => {
   if (!createdOn || !estimatedOn) return null;
@@ -96,11 +97,11 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
   case 'pending':
-  case 'running': // bug: falling through without break
+  case 'running':
     icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
     break;
   case 'succeeded':
-  case 'processed': // bug: fallthrough, treated same
+  case 'processed':
     icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
     break;
   case 'failed':
@@ -141,7 +142,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%', width: '100%' }}
         onEnter={onSave} onBlur={onSave} value={data} />
-      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
     </div>;
   }
 
@@ -263,7 +264,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries('datasets');
+    await queryClient.invalidateQueries(['datasets']);
   };
 
   const onRefreshFiles = async () => {
@@ -286,6 +287,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     if (hyperParams) {
       json = { ...json, nEpochs, batchSize, learningRateMultiplier, promptLossWeight };
     }
+
     try {
       const res = await nekoFetch(`${apiUrl}/openai/files/finetune`, {
         method: 'POST',
@@ -445,30 +447,33 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onDeleteDataRow = (row, messageRow) => {
     const updatedEntries = [...entries];
-    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+    if (updatedEntries[row - 1].messages) {
+      updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+    }
     setEntries(updatedEntries);
   };
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow) {
-          return { ...x, messages: x.messages.map((y, j) => {
+        if (messageRow !== null && x.messages) {
+          x.messages = x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content }; }
             return y;
-          })};
-        }
-        else if (role === 'assistant') {
-          return { ...x, messages: x.messages.map(y => {
+          });
+          return { ...x, messages: [...x.messages] };
+        } else if (role === 'assistant' && x.messages) {
+          x.messages = x.messages.map(y => {
             if (y.role === 'assistant') { return { ...y, content }; }
             return y;
-          })};
-        }
-        else if (role === 'user') {
-          return { ...x, messages: x.messages.map(y => {
+          });
+          return { ...x, messages: [...x.messages] };
+        } else if (role === 'user' && x.messages) {
+          x.messages = x.messages.map(y => {
             if (y.role === 'user') { return { ...y, content }; }
             return y;
-          })};
+          });
+          return { ...x, messages: [...x.messages] };
         }
       }
       return x;
@@ -483,17 +488,16 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
     return chunkOfBuilderData?.map(x => {
       const currentRow = ++row;
-
       let question = "";
       let answer = "";
       let messages = [];
 
       if (!isExpert) {
-        const potentialQuestion = x.messages.find(x => x.role === 'user');
+        const potentialQuestion = x.messages?.find(x => x.role === 'user');
         if (potentialQuestion) {
           question = potentialQuestion.content;
         }
-        const potentialAnswer = x.messages.find(x => x.role === 'assistant');
+        const potentialAnswer = x.messages?.find(x => x.role === 'assistant');
         if (potentialAnswer) {
           answer = potentialAnswer.content;
         }
@@ -726,22 +730,19 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     const link = document.createElement('a');
     link.href = url;
     const date = new Date();
-    const filename = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-WP.json`;
+    const filename = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}-WP.json`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
   };
 
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const data = entries.map(x => {
-        const json = nekoStringify(x);
-        return json;
-      }).join("\n");
+      const dataStr = entries.map(x => nekoStringify(x)).join("\n");
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce,
-        json: { envId: envId, filename, data }
+        json: { envId: envId, filename, data: dataStr }
       });
       await refreshFiles();
       if (res.success) {
@@ -789,7 +790,14 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         const fileContent = e.target.result;
         let data = [];
         if (isJson) {
-          data = JSON.parse(fileContent);
+          try {
+            data = JSON.parse(fileContent);
+          }
+          catch (e) {
+            console.error(e);
+            alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
+            return;
+          }
         }
         else if (isJsonl) {
           const lines = fileContent.split('\n');
@@ -824,8 +832,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             isMigration = true;
             const promptColumns = ['prompt', 'question', 'q'];
             const completionColumns = ['completion', 'reply', 'a'];
-            const promptKey = promptColumns.find(x => values[x]);
-            const completionKey = completionColumns.find(x => values[x]);
+            const promptKey = promptColumns.find(k => values[k]);
+            const completionKey = completionColumns.find(k => values[k]);
             const promptValue = values[promptKey];
             const completionValue = values[completionKey];
             const completionValueClean = completionValue?.replace(/\n\n$/g, '');
@@ -856,6 +864,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           alert(i18n.ALERTS.ONLY_SUPPORTS_FILES);
           return;
         }
+
         setEntries(data);
       };
       reader.readAsText(file);
@@ -1094,7 +1103,10 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
               <NekoCollapsableCategory title="Instructions">
                 <p>
-                  You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. To avoid losing your work, this data is kept in your browser's local storage. <b>This is actually complex, so learn how to write datasets by studying <a href="https://beta.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">case studies</a>. Please also check the <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>.</b> Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>! 😎
+                  You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. For the format, check this <a rel="noreferrer" target="_blank" href="https://gist.github.com/jordymeow/a855df4a1f644bb3df8c78ea87c1a2ca">JSON Example</a> (more complex) or this <a rel="noreferrer" target="_blank" href="https://gist.github.com/jordymeow/e0c80ebeefe4d4d07ae39995c561ba4a">CSV Example</a> (simpler). <b>Writing datasets is actually complex.</b> Please have a look at OpenAI's <a href="https://platform.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">tutorials</a>. And here is Meow Apps' <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>. Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>.
+                </p>
+                <p>
+                  To avoid losing your work, this data is kept in your browser's local storage.
                 </p>
               </NekoCollapsableCategory>
 

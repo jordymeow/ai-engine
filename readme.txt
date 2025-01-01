@@ -5,32 +5,33 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.6.8
+Stable tag: 2.6.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Chat, Create, Translate, Automate, Finetune with AI! Copilot, Internal API. Sleek UI. Hundreds of AI models supported. Build your dream project now!
+Kick off your AI journey with a brilliant chatbot, then take advantage of AI-driven content, automation, and multi-model support.
 
 == Description ==
-Create your own chatbot, craft content and images, coordinate AI-related work using templates, enjoy swift title and excerpt recommendations, play with AI Copilot in the editor for faster work, track statistic and usage, and more! The AI Playground offers a range of AI tools, including translation, correction, SEO, suggestions, and others. There is also an internal API so other plugins can tap into its capabilities. We'll be adding even more AI tools and features to the AI Engine based on your feedback.
+AI Engine takes WordPress to the next level, letting you explore the full potential of AI in your workflows. Instantly build powerful, customizable chatbots, generate and optimize content (including images), experiment with advanced AI forms, and even fine-tune your own models. AI Engine supports a wide range of AI providers—OpenAI, Anthropic, Google, OpenRouter, Replicate, Hugging Face, and more—ensuring you can use exactly the model you want. New features like file uploads in chatbots, function calling, and advanced streaming support make it easier than ever to integrate AI into every aspect of your site.
 
-It support a huge range of models via OpenAI, Anthropic, Google, OpenRouter, Replicate and Hugging Face. Ollama is also supported via an add-on. Of course, all the famous models are supported, such as GPT-4, GPT-4o, Claude, DALL-E, Flux, Gemini, and many more.
+For power users and developers, AI Engine offers internal APIs, flexible shortcodes, function calling, and built-in tools to manage embeddings, memory, analytics, and more. The plugin is constantly updated based on user feedback, ensuring you’ll always have access to cutting-edge AI capabilities. Dive into the AI Playground, set up advanced discussions and chat logs, or simply rely on AI Copilot to save time in your editor. The possibilities are endless—and entirely in your hands.
 
 Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more tutorial and information, check the official website: [AI Engine](https://meowapps.com/ai-engine/). Thank you!
 
 == Features ==
 
-* **Chatbot:** Create a highly engaging, powerful, fun, and customizable chatbot. From customer support to home automation, the possibilities are endless. Go wild!
-* **Generate:** Create content better and faster. AI Engine helps you to brainstorm, write and optimize your content. It also helps you to create images.
-* **Copilot:** Boost your efficiency with the AI Copilot, seamlessly integrated into the editor. Simply hit 'space' for instant assistance, or use the wand buttons to execute various actions.
-* **Translate:** Break the language barriers. The "Translate" button instantly transforms your content into another language.
-* **Playground:** Your dynamic space for experimentation. Create custom templates to streamline your AI-driven workflows.
-* **Finetuning:** Tailor models to your specific requirements.
-* **Internal APIs:** Integrate AI seamlessly into your WordPress with the internal APIs, REST API, and versatile filters. The possibilities are virtually limitless! You can transform your WordPress into a powerful SaaS, an AI-driven game, a dystopian never-ending story, or whatever you can dream up.
+* **Multi-Model Chatbots**: Easily create interactive chatbots that support GPT-4, GPT-4o, Claude, DALL-E, Flux, Gemini, and more. Customize themes, avatars, and conversation flows to fit your brand or use case.
+* **Enhanced AI Forms**: Build AI-driven forms that handle text, images, audio, or file uploads—perfect for advanced support tickets, creative prompts, or user submissions.
+* **Copilot Editing**: Transform the WordPress editor into your personal AI assistant. Simply hit “space” or use the wand icons to get real-time suggestions, quick translations, or content rewrites.
+* **Image Generation & Translation**: Create images from prompts, break language barriers with instant translations, and quickly refine existing text for clarity and SEO.
+* **Finetuning & Embeddings**: Fine-tune AI models to match your domain or style, and use embeddings for smarter AI interactions, content classification, or personalized recommendations.
+* **Discussions & Memory Tracking**: Let users engage in longer or more complex conversations with the chatbot. All data can be stored, analyzed, and even exported for further insights.
+* **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
+* **Analytics & Usage Control**: Track usage, monitor tokens, and manage costs with detailed analytics. Tools like role-based access, banned words, or content safety filters help you maintain a secure environment.
+* **Extensive Integration**: Seamlessly works with Media File Renamer, SEO Engine, Social Engine, Code Engine, and other WordPress plugins to power advanced AI features site-wide.
+* **Flexible Theming & Shortcodes**: Control the look and behavior of your AI integrations using pre-built themes or your own custom CSS. Place chatbots or AI-driven forms anywhere using simple shortcodes.
 
-🥰 Remember, any model can be used, included self-hosted LLMs. 
-
-And that's just the beginning! The Free Version offers incredible value, but the Pro Version adds features such as advanced metrics, AI forms, embeddings, assistants, and more. Check the [Pro Version](https://meowapps.com/ai-engine/).
+Please note that some features require a Pro license (AI Forms, Embeddings, Usage Control, etc.). For more information, check the [official website](https://meowapps.com/ai-engine/).
 
 == Beyond the Features ==
 
@@ -39,7 +40,7 @@ Since AI Engine has its own internal APIs, this allows you and others to integra
 * [Media File Renamer](https://wordpress.org/plugins/media-file-renamer/)
 * [SEO Engine](https://wordpress.org/plugins/seo-engine/)
 * [Social Engine](https://wordpress.org/plugins/social-engine/)
-* [Snippet Vault](https://wordpress.org/plugins/snippet-vault/)
+* [Code Engine](https://wordpress.org/plugins/code-engine/)
 
 == My Dream for AI ==
 
@@ -65,6 +66,35 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.6.9 (2025/01/01) =
+* Info: Happy New Year to you all, AI bro's and sis'! 🎉
+* Add: Support for o1 (if you have access to it).
+* Update: Handle streaming with o1 (depending on the exact model).
+* Info: o1 Preview and o1 Mini doesn't work with Instructions or Contexts (Embeddings, etc.). This is a limitation from OpenAI. AI Engine will handle this as soon as OpenAI allows it. However, it works with o1.
+* Add: o1 support in the Usage section.
+* Add: Option for the auto-titling feature for discussions.
+* Add: Option to modify the Header Subtitle for the Timeless Theme ("Discuss with").
+* Add: Option to Ignore Word Boundaries (= spaces!) in the Security section.
+* Add: Three new JS functions for the Chatbot API: getBlocks, addBlock and removeBlockById.
+* Add: New Upload Field in the AI Forms. Work with images, files, audios (one file per form for now).
+* Add: New 'callback' type for the Shortcuts. It requires an 'onClick' function.
+* Add: Added {CATEGORY}, {CATEGORIES}, {AUTHOR}, {PUBLISH_DATE} placeholders for embeddings' prompt.
+* Add: Local Memory for the AI Forms (check the parameters of the Submit Block).
+* Add: Reset Button for AI Forms.
+* Update: The auto-titling feature for discussions is now more reliable.
+* Update: HTML is allowed in the Instructions.
+* Update: Better instructions in the Finetunes Data Editor.
+* Update: Tiny enhancements on the Timeless Theme.
+* Add: Button to Reset Usage (Dashboard tab).
+* Fix: Issue related to initial HTML blocks (the GRDP block could reset all the blocks).
+* Fix: The Discussions Auto-Refresh only works if the browser tab is active.
+* Fix: Using chatId via the API was causing a crash.
+* Fix: Enhanced the internal API around takeovers.
+* Fix: Assistants were not behaving properly when a Function Call was not giving back the expected result.
+* Fix: Context in the Queries (Statistics Module) is now available for Assistants.
+* Fix: Handle RTL websites better.
+* Fix: If the environment is Default, then Model is also Default (for Chatbots and AI Forms).
 
 = 2.6.8 (2024/11/13) =
 * Add: Similar to "Vision", support for "Files". For now, that means you can upload PDF in the chatbot while using Sonnet 3.5. This will be expanded to other models and features in the future. 
@@ -324,7 +354,7 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Add: New GPT-4 Turbo model (GPT-4 Turbo) which supports Vision, Function Calling, JSON.
 
 = 2.2.70 (2024/04/15) =
-* Add: Support for Function and Tools Calls with OpenAI and Claude, with back-and-forth feedback loop. Models can now get values to functions in you WordPress. The Pro Version of AI Engine also connects to [Snippet Vault](https://wordpress.org/plugins/snippet-vault/) to make this much easier.
+* Add: Support for Function and Tools Calls with OpenAI and Claude, with back-and-forth feedback loop. Models can now get values to functions in you WordPress. The Pro Version of AI Engine also connects to [code-engine](https://wordpress.org/plugins/code-engine/) to make this much easier.
 * Update: The WooCommerce Assistant has been moved to [SEO Engine](https://wordpress.org/plugins/seo-engine/). We shouldn't bloat AI Engine with features related to SEO.
 * Fix: Copilot wasn't working with the latest version of WP.
 * Fix: Arbitrary File Upload security issue.

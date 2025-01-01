@@ -1,12 +1,12 @@
-// Previous: 2.3.9
-// Current: 2.5.5
+// Previous: 2.5.5
+// Current: 2.6.9
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
 import Styled from "styled-components";
 
 // NekoUI
-import { NekoTypo, NekoSpacer, NekoToolbar, NekoWrapper, NekoColumn,
+import { NekoLogo, NekoTypo, NekoSpacer, NekoToolbar, NekoWrapper, NekoColumn,
   NekoButton, NekoContainer, NekoQuickLinks, NekoLink } from '@neko-ui';
 
 import i18n from '@root/i18n';
@@ -64,7 +64,16 @@ const Addons = ({ addons }) => {
               )}
             </div>
           }>
-            <NekoTypo h3>{addon.name}</NekoTypo>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ width: 32, marginTop: -5 }}><NekoLogo /></div>
+              <NekoTypo h3 style={{ margin: 0, marginLeft: 8, fontWeight: 'bold' }}>{addon.name}</NekoTypo>
+              <div style={{ marginLeft: 5, marginTop: 3, fontSize: 10, color: '#fec74c' }}>
+                {// Based on addon.stars, display many ★}
+                  Array.from({ length: addon.stars }, (_, i) => (
+                    <span key={i}>★</span>
+                  ))}
+              </div>
+            </div>
             <div className="addon-description">
               {addon.description}
             </div>

@@ -45,11 +45,17 @@ class Meow_MWAI_Modules_Security {
       }
     }
     $text = $query->get_message();
+    $is_substring_match = $this->core->get_option( 'ignore_word_boundaries' );
     foreach ( $this->banned_words as $word ) {
       // Use preg_quote to escape any special characters in the word
       // This is necessary to safely include $word in the regex pattern
       // Add the 'u' modifier to enable Unicode support
-      $pattern = '/\\b' . preg_quote( $word, '/' ) . '\\b/iu';
+      if ( $is_substring_match ) {
+        $pattern = '/' . preg_quote( $word, '/' ) . '/iu'; // no \b
+      }
+      else {
+        $pattern = '/\b' . preg_quote( $word, '/' ) . '\b/iu';
+      }
       if ( preg_match( $pattern, $text ) ) {
         Meow_MWAI_Logging::warn( "Blocked word: $word", '🔒' );
         throw new Exception( "Your query has been rejected." );

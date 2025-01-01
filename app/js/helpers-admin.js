@@ -1,5 +1,5 @@
-// Previous: 2.5.6
-// Current: 2.5.9
+// Previous: 2.5.9
+// Current: 2.6.9
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -94,8 +94,8 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
-      return;
     }
+
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -120,7 +120,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -141,7 +141,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, isCustom, languages, disabled]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -162,6 +162,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         finetunes_deleted: [],
         deployments: [],
       };
+
       aiEnvs.forEach(env => {
         if (env.finetunes) fakeEnv.finetunes.push(...env.finetunes);
         if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...env.legacy_finetunes);
@@ -169,6 +170,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
         if (env.deployments) fakeEnv.deployments.push(...env.deployments);
       });
+
       return fakeEnv;
     }
     return null;
@@ -299,7 +301,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return allModels.filter(x => !deletedFineTunes.includes(x.model));
   }, [allModels, deletedFineTunes]);
 
-
   const coreModels = useMemo(() => {
     return allModels.filter(x => x?.tags?.includes('core'));
   }, [allModels]);
@@ -332,20 +333,26 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     if (!model) {
       return null;
     }
-    if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo') || model.startsWith('gpt-3.5-turbo-')) {
+    if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
     }
-    // Starts with gpt-4o-mini
     else if (model.startsWith('gpt-4o-mini')) {
       model = 'gpt-4o-mini';
     }
-    // Starts with gpt-4o
     else if (model.startsWith('gpt-4o')) {
       model = 'gpt-4o';
     }
-    // Starts with gpt-4
     else if (model.startsWith('gpt-4')) {
       model = 'gpt-4';
+    }
+    else if (model.startsWith('o1-preview')) {
+      model = 'o1-preview';
+    }
+    else if (model.startsWith('o1-mini')) {
+      model = 'o1-mini';
+    }
+    else if (model.startsWith('o1-')) {
+      model = 'o1';
     }
     const modelObj = allModels.find(x => x.model === model);
     if (!modelObj) {
@@ -362,7 +369,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const getModelName = (model, raw = false) => {
     const modelObj = getModel(model);
     if (!modelObj) {
-      //console.warn(`Model ${model} not found.`, { allModels, options });
       return model;
     }
     if (raw && modelObj) {
@@ -498,7 +504,7 @@ function tableDateTimeFormatter(value) {
 
 function tableUserIPFormatter(userId, ip) {
   const formattedIP = ip ? (() => {
-    const maxLength = 12;
+    const maxLength = 16;
     let substr = ip.substring(0, maxLength);
     if (substr.length < ip.length) {
       if (substr.endsWith('.')) {

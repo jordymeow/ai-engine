@@ -299,9 +299,14 @@ class Meow_MWAI_API {
 	 */
 	public function simpleChatbotQuery( $botId, $message, $params = [], $onlyReply = true ) {
 		if ( !isset( $params['messages'] ) && isset( $params['chatId'] ) ) {
-			$discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
-			if ( !empty( $discussion ) ) {
-				$params['messages'] = $discussion['messages'];
+			if ( $this->core->get_option( 'chatbot_discussions' ) ) {
+				$discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
+				if ( !empty( $discussion ) ) {
+					$params['messages'] = $discussion['messages'];
+				}
+			}
+			else {
+				$this->core->log( 'The chatId was provided; but the discussions are not enabled.' );
 			}
 		}
 		$data = $this->chatbot_module->chat_submit( $botId, $message, null, $params );

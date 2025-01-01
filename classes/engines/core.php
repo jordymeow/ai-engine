@@ -105,6 +105,7 @@ class Meow_MWAI_Engines_Core {
         ];
       }
 
+      $query->clear_feedback_blocks();
       foreach ( $feedback_blocks as $feedback_block ) {
         $query->add_feedback_block( $feedback_block );
       }

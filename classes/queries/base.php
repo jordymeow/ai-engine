@@ -311,16 +311,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     // Those are for the keys passed directly by the shortcode.
     $params = $this->convert_keys( $params );
 
-    // TODO: After September 2024, remove this context condition.
-    if ( !empty( $params['context'] ) ) {
-      Meow_MWAI_Logging::deprecated( '"context" is deprecated. Please use "instructions" instead.' );
-      $this->set_instructions( $params['context'] );
-    }
-    // TODO: After September 2024, remove this prompt condition.
-    if ( !empty( $params['prompt'] ) ) {
-      Meow_MWAI_Logging::deprecated( '"prompt" is deprecated. Please use "message" instead.' );
-      $this->set_message( $params['prompt'] );
-    }
     if ( !empty( $params['instructions'] ) ) {
       $this->set_instructions( $params['instructions'] );
     }

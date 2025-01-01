@@ -1,7 +1,7 @@
-// Previous: 2.5.7
-// Current: 2.6.5
+// Previous: 2.6.5
+// Current: 2.6.9
 
-const { useMemo, useState, useEffect } = wp.element;
+const { useMemo, useState, useEffect, useCallback } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import { compiler } from 'markdown-to-jsx';
@@ -247,7 +247,7 @@ const Discussions = () => {
 
   const [ filters, setFilters ] = useState(() => {
     return chatsColumns.filter(v => v.filters).map(v => {
-      return { accessor: v.accessor, value: null}
+      return { accessor: v.accessor, value: null };
     });
   });
   const [ selectedIds, setSelectedIds ] = useState([]);
@@ -256,8 +256,19 @@ const Discussions = () => {
     filters: filters,
     sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
   });
+
+  const refreshDiscussions = useCallback(async () => {
+    const isTabActive = !document.hidden;
+    if (isTabActive) {
+      return await retrieveDiscussions(chatsQueryParams);
+    }
+    else {
+      return new Promise(() => {}); // Keep the promise pending
+    }
+  }, [chatsQueryParams]);
+
   const { isFetching: isFetchingChats, data: chatsData, error: chatsError } = useQuery({
-    queryKey: ['chats', chatsQueryParams], queryFn: () => retrieveDiscussions(chatsQueryParams),
+    queryKey: ['chats', chatsQueryParams], queryFn: refreshDiscussions,
     refetchInterval: autoRefresh ? 1000 * 5 : null
   });
 
@@ -271,7 +282,7 @@ const Discussions = () => {
 
   const chatsRows = useMemo(() => {
     if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.sort((a, b) => b.created_at - a.created_at).map(x => {
+    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
       const messages = JSON.parse(x.messages);
       const extra = JSON.parse(x.extra);
       const formattedCreated = tableDateTimeFormatter(x.created);
@@ -333,12 +344,14 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
+      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
-    await queryClient.invalidateQueries({ queryKey: ['chats'] });
-    queryClient.refetchQueries({ queryKey: ['chats'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['chats'] }),
+      queryClient.refetchQueries({ queryKey: ['chats'] })
+    ]);
     setBusyAction(false);
   }
 
@@ -381,7 +394,7 @@ const Discussions = () => {
               disabled={isFetchingChats}
               onClick={async () => {
                 await queryClient.invalidateQueries({ queryKey: ['chats'] });
-                queryClient.refetchQueries({ queryKey: ['chats'] });
+                await queryClient.refetchQueries({ queryKey: ['chats'] });
               }}>{i18n.COMMON.REFRESH}</NekoButton>}
             {selectedIds.length > 0 && <>
               <NekoButton className="danger" disabled={false}
@@ -414,7 +427,7 @@ const Discussions = () => {
               }
               setSelectedIds([id]);
             }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]) }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids ]) }}
             onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -450,9 +463,9 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Context</div>
             <div>{discussion?.extra?.context}</div>
           </div>}
-          {discussion?.extra?.assistantId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
+          {discussion?.extra?.helperId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Assistant ID</div>
-            <div>{discussion?.extra?.assistantId}</div>
+            <div>{discussion?.extra?.helperId}</div>
           </div>}
           {discussion?.extra?.threadId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Thread ID</div>

@@ -19,8 +19,10 @@ class Meow_MWAI_Modules_GDPR {
     $botId = $args['botId'];
     $uniqueId = uniqid('mwai_gdpr_');
     $blocks[] = [
+      'id' => $uniqueId,
       'type' => 'content',
       'data' => [
+        'id' => $uniqueId,
         'html' => '<div>
             <p>' . $gdpr_text . '</p>
             <form id="mwai-gdpr-form-' . $botId . '">
@@ -31,7 +33,7 @@ class Meow_MWAI_Modules_GDPR {
           (function() {
             let chatbot_' . $uniqueId . ' = MwaiAPI.getChatbot("' . $botId . '");
             if (document.cookie.indexOf("mwai_gdpr_accepted=1") !== -1) {
-              chatbot_' . $uniqueId . '.setBlocks([]);
+              chatbot_' . $uniqueId . '.removeBlockById("' . $uniqueId . '");
               return;
             }
             chatbot_' . $uniqueId . '.lock();

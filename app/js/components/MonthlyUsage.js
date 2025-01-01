@@ -1,10 +1,11 @@
-// Previous: 2.3.9
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.6.9
 
 const { useState, useMemo } = wp.element;
 
 import { useModels } from '@app/helpers-admin';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale,
+  BarElement, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useNekoColors } from '@neko-ui';
 import {
@@ -28,20 +29,24 @@ const UsageDetails = ({ month, usageData }) => {
 
   return (
     <table style={{ width: 'calc(100% - 36px)', margin: '5px 18px 0px 18px', borderCollapse: 'collapse' }}>
+      {/* <thead>
+        <tr>
+          <th style={{ textAlign: 'left', paddingRight: 10 }}>Model</th>
+          <th style={{ textAlign: 'left', paddingRight: 10 }}>Unit</th>
+          <th style={{ textAlign: 'right', paddingRight: 10 }}>Value</th>
+          <th style={{ textAlign: 'right' }}>Price</th>
+        </tr>
+      </thead> */}
       <tbody>
         {usageData[month].map((data, index) => {
           const dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
           const formattedUnits = data.units.toLocaleString();
           return (
             <tr key={index}>
-              <td style={{ paddingRight: 10 }}>
-                {data.name === 'Unknown Model' ? `⚠️ ${data.rawName}` : data.name}
-              </td>
+              <td style={{ paddingRight: 10 }}>{data.name === 'Unknown Model' ? `⚠️ ${data.rawName}` : data.name}</td>
               <td style={{ textAlign: 'right', paddingRight: 10 }}>{formattedUnits}</td>
               <td style={{ paddingRight: 10 }}>{dataType}</td>
-              <td style={{ textAlign: 'right' }}>
-                {data.price > 0 ? `${data.price.toFixed(4)}$` : '-'}
-              </td>
+              <td style={{ textAlign: 'right' }}>{data.price > 0 ? `${data.price.toFixed(4)}$` : '-'}</td>
             </tr>
           );
         })}
@@ -60,6 +65,7 @@ const MonthlyUsage = ({ options }) => {
 
   const calculateUsageData = () => {
     const usageData = {};
+
     Object.keys(ai_models_usage).forEach((month) => {
       const monthUsage = ai_models_usage[month];
       if (!usageData[month]) usageData[month] = [];
@@ -70,8 +76,8 @@ const MonthlyUsage = ({ options }) => {
         const modelUsage = monthUsage[model];
         const modelObj = getModel(model);
 
-        let inUnits = null;
-        let outUnits = null;
+        let inUnits = 0;
+        let outUnits = 0;
         let isAudio = false;
         let isImage = false;
 
@@ -231,17 +237,18 @@ const MonthlyUsage = ({ options }) => {
 
   return (
     <>
+      {ai_models_usage && Object.keys(ai_models_usage).length === 0 && (
+        <div style={{ fontStyle: 'italic' }}>
+          No data available.
+        </div>
+      )}
       {ai_models_usage && Object.keys(ai_models_usage).length > 0 && (
         <>
-          <NekoQuickLinks
-            name="groupBy"
-            value={`${groupBy}-${metric}`}
-            onChange={(value) => {
-              const [newGroupBy, newMetric] = value.split('-');
-              setGroupBy(newGroupBy);
-              setMetric(newMetric);
-            }}
-          >
+          <NekoQuickLinks name="groupBy" value={`${groupBy}-${metric}`} onChange={(value) => {
+            const [newGroupBy, newMetric] = value.split('-');
+            setGroupBy(newGroupBy);
+            setMetric(newMetric);
+          }}>
             <NekoLink title="Units by Model" value="model-tokens" />
             <NekoLink title="Price by Model" value="model-price" />
             <NekoLink title="Units by Family" value="family-tokens" />
@@ -256,10 +263,7 @@ const MonthlyUsage = ({ options }) => {
 
           <NekoCollapsableCategories keepState="monthlyUsageCategories">
             {Object.keys(usageData).reverse().map((month, index) => (
-              <NekoCollapsableCategory
-                key={index}
-                title={`🗓️ ${month} (${usageData[month].reduce((acc, curr) => acc + curr.price, 0).toFixed(2)}$)`}
-              >
+              <NekoCollapsableCategory key={index} title={`🗓️ ${month} (${usageData[month].reduce((acc, curr) => acc + curr.price, 0).toFixed(2)}$)`}>
                 <UsageDetails month={month} usageData={usageData} />
               </NekoCollapsableCategory>
             ))}

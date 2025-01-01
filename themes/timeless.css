@@ -375,16 +375,14 @@
 }
 
 .mwai-timeless-theme .mwai-input button img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   margin: auto;
   display: block;
   filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg) brightness(1000%) contrast(100%);
 }
 
 .mwai-timeless-theme .mwai-input button .mwai-timer {
-  margin-left: 5px;
-  margin-right: 5px;
   font-size: 11px;
 }
 
@@ -565,7 +563,7 @@
   opacity: 0.25;
 }
 
-.mwai-timeless-theme.mwai-form-container .mwai-form-submit button {
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button, .mwai-timeless-theme.mwai-form-container .mwai-form-reset button {
   height: 45px;
   background: none;
   width: 100%;
@@ -579,24 +577,24 @@
   position: relative;
 }
 
-.mwai-timeless-theme.mwai-form-container .mwai-form-submit button:hover {
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button:hover, .mwai-timeless-theme.mwai-form-container .mwai-form-reset button:hover {
   filter: brightness(1.2);
 }
 
-.mwai-timeless-theme.mwai-form-container .mwai-form-submit button[disabled] span {
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button[disabled] span, .mwai-timeless-theme.mwai-form-container .mwai-form-reset button[disabled] span {
   opacity: 0.25;
 }
 
-.mwai-timeless-theme.mwai-form-container .mwai-form-submit button[disabled]:hover {
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit button[disabled]:hover, .mwai-timeless-theme.mwai-form-container .mwai-form-reset button[disabled]:hover {
   filter: brightness(1);
   cursor: not-allowed;
 }
 
-.mwai-timeless-theme.mwai-form-container .mwai-form-submit.mwai-loading button span {
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit.mwai-loading button span, .mwai-timeless-theme.mwai-form-container .mwai-form-reset.mwai-loading button span {
   opacity: 0;
 }
 
-.mwai-timeless-theme.mwai-form-container .mwai-form-submit.mwai-loading button::after {
+.mwai-timeless-theme.mwai-form-container .mwai-form-submit.mwai-loading button::after, .mwai-timeless-theme.mwai-form-container .mwai-form-reset.mwai-loading button::after {
   content: '';
   position: absolute;
   width: 18px;

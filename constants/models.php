@@ -41,6 +41,21 @@ define( 'MWAI_OPENAI_MODELS', [
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
 	],
 	[
+		"model" => "o1",
+		"name" => "o1",
+		"family" => "o1",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 15.00,
+			"out" => 60.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 100000,
+		"maxContextualTokens" => 200000,
+		"tags" => ['core', 'chat', 'o1-model']
+	],
+	[
 		"model" => "o1-preview",
 		"name" => "o1 Preview",
 		"family" => "o1",

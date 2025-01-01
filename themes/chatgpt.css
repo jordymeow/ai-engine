@@ -534,7 +534,7 @@
   opacity: 0.25;
 }
 
-.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button {
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button, .mwai-chatgpt-theme.mwai-form-container .mwai-form-reset button {
   height: 45px;
   background: none;
   width: 100%;
@@ -548,24 +548,24 @@
   position: relative;
 }
 
-.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button:hover {
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button:hover, .mwai-chatgpt-theme.mwai-form-container .mwai-form-reset button:hover {
   background: var(--mwai-backgroundPrimaryColor);
 }
 
-.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button[disabled] span {
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button[disabled] span, .mwai-chatgpt-theme.mwai-form-container .mwai-form-reset button[disabled] span {
   opacity: 0.25;
 }
 
-.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button[disabled]:hover {
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit button[disabled]:hover, .mwai-chatgpt-theme.mwai-form-container .mwai-form-reset button[disabled]:hover {
   background: none;
   cursor: not-allowed;
 }
 
-.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit.mwai-loading button span {
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit.mwai-loading button span, .mwai-chatgpt-theme.mwai-form-container .mwai-form-reset.mwai-loading button span {
   opacity: 0;
 }
 
-.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit.mwai-loading button::after {
+.mwai-chatgpt-theme.mwai-form-container .mwai-form-submit.mwai-loading button::after, .mwai-chatgpt-theme.mwai-form-container .mwai-form-reset.mwai-loading button::after {
   content: '';
   position: absolute;
   width: 18px;

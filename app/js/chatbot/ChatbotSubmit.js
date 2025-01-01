@@ -1,5 +1,5 @@
-// Previous: 2.4.9
-// Current: 2.6.6
+// Previous: 2.6.6
+// Current: 2.6.9
 
 import { useChatbotContext } from "./ChatbotContext";
 
@@ -27,7 +27,7 @@ const ChatbotSubmit = () => {
     }
     // If there are no text or images, use the default send icon
     if (!clearMode && !textSend) {
-      return <Send size="20" />;
+      return <Send size="20" style={{ marginLeft: 10 }} />;
     }
     if (clearMode && !textClear) {
       return <Eraser size="20" />;

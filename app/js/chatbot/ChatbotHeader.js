@@ -1,5 +1,5 @@
-// Previous: 2.4.5
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 2.6.9
 
 // React & Vendor Libs
 const { useMemo } = wp.element;
@@ -48,7 +48,8 @@ function formatAvatar(aiName, pluginUrl, iconUrl, aiAvatarUrl) {
 const ChatbotHeader = () => {
 
   const { state, actions } = useChatbotContext();
-  const { theme, isWindow, fullscreen, aiName, pluginUrl, open, iconUrl, aiAvatarUrl, windowed } = state;
+  const { theme, isWindow, fullscreen, aiName, pluginUrl, open, iconUrl,
+    aiAvatarUrl, windowed, headerSubtitle } = state;
   const { setOpen, setWindowed } = actions;
 
   const headerContent = useMemo(() => {
@@ -59,13 +60,15 @@ const ChatbotHeader = () => {
 
     const timelessStyle = theme?.themeId === 'timeless';
     const avatarImage = timelessStyle ? formatAvatar(aiName, pluginUrl, iconUrl, aiAvatarUrl) : null;
+    const finalHeaderSubtitle = headerSubtitle === null || headerSubtitle === undefined ?
+      "Discuss with" : headerSubtitle;
 
     return (<>
       {timelessStyle && (
         <>
           {avatarImage}
           <div className="mwai-name">
-            <small>Discuss with</small>
+            {finalHeaderSubtitle && <small className="mwai-subtitle">{finalHeaderSubtitle}</small>}
             <div>{aiName}</div>
           </div>
           <div style={{ flex: 'auto' }} />
@@ -78,7 +81,8 @@ const ChatbotHeader = () => {
         <div className="mwai-close-button" onClick={() => setOpen(!open)} />
       </div>
     </>);
-  }, [isWindow, theme?.themeId, aiName, pluginUrl, iconUrl, aiAvatarUrl, fullscreen, setWindowed, windowed, setOpen, open]);
+  }, [isWindow, theme?.themeId, aiName, pluginUrl, iconUrl, aiAvatarUrl, fullscreen,
+    setWindowed, windowed, setOpen, open, headerSubtitle]);
 
   return (
     <div className="mwai-header">

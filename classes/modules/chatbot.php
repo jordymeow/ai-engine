@@ -8,7 +8,7 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
 	'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
-	'fullscreen', 'copyButton'
+	'fullscreen', 'copyButton', 'headerSubtitle'
 ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence',
@@ -194,6 +194,7 @@ class Meow_MWAI_Modules_Chatbot {
 	public function sanitize_shortcuts( $shortcuts ) {
 		$supported_shortcut_types = [
 			'message' => ['label', 'message'],
+			'callback' => ['label', 'onClick'],
 		];
 		return $this->sanitize_items( $shortcuts, $supported_shortcut_types, 'shortcut' );
 	}
@@ -268,9 +269,10 @@ class Meow_MWAI_Modules_Chatbot {
 	private function calculate_messages_checksum( $messages ) {
     $messages_to_hash = [];
     foreach ( $messages as $msg ) {
-			$role = $msg['role'] ?? '';
+			$role = is_array( $msg ) ? ($msg['role'] ?? '') : (is_object( $msg ) ? ($msg->role ?? '') : '');
+			$content = is_array( $msg ) ? ($msg['content'] ?? '') : (is_object( $msg ) ? ($msg->content ?? '') : '');
 			if ( in_array( $role, ['assistant', 'system'] ) ) {
-				$messages_to_hash[] = [ 'role' => $role, 'content' => $msg['content'] ?? '' ];
+				$messages_to_hash[] = [ 'role' => $role, 'content' => $content ];
 			}
     }
     return md5( json_encode( $messages_to_hash ) );
@@ -456,9 +458,12 @@ class Meow_MWAI_Modules_Chatbot {
 				// Takeover
 				$takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
 				if ( !empty( $takeoverAnswer ) ) {
+					$rawText = apply_filters( 'mwai_chatbot_reply', $takeoverAnswer, $query, $params, [] );
 					return [
-						'reply' => $takeoverAnswer,
+						'reply' => $rawText,
+						'chatId' => $this->core->fix_chat_id( $query, $params ),
 						'images' => null,
+						'actions' => [],
 						'usage' => null
 					];
 				}

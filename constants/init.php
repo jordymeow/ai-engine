@@ -24,6 +24,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'iconBubble' => false,
 	'fullscreen' => false,
 	'copyButton' => false,
+	'headerSubtitle' => 'Discuss with',
 	'localMemory' => true,
 	// Chatbot System Parameters
 	'botId' => null,
@@ -103,6 +104,7 @@ define( 'MWAI_OPTIONS', [
 	'chatbot_gdpr_button' => 'I understand',
 	'chatbot_typewriter' => false,
 	'chatbot_discussions' => false,
+	'chatbot_discussions_titling' => true,
 	'chatbot_moderation' => false,
 	'syntax_highlight' => false,
 	'limits' => MWAI_LIMITS,
@@ -161,6 +163,7 @@ define( 'MWAI_OPTIONS', [
 	'resolve_shortcodes' => false,
 	'context_max_length' => 4096,
 	'banned_words' => [],
+	'ignore_word_boundaries' => false,
 	'banned_ips' => [],
 	'languages' => MWAI_LANGUAGES,
 	'clean_uninstall' => false,

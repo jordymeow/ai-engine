@@ -1,5 +1,5 @@
-// Previous: 2.6.6
-// Current: 2.6.8
+// Previous: 2.6.8
+// Current: 2.6.9
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -83,9 +83,9 @@ const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot, blockMode,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
   const { completionModels, imageModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
-  const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
-  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
+  const isChat = (shortcodeParams.mode === 'chat');
+  const isAssistant = (shortcodeParams.mode === 'assistant');
+  const isImagesChat = (shortcodeParams.mode === 'images');
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
@@ -98,14 +98,17 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
-    return env;
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
+    return env || null;
   }, [aiEnvironments, shortcodeParams.envId]);
 
-  const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
+  const allAssistants = useMemo(() => {
+    return aiEnvironment?.assistants || [];
+  }, [aiEnvironment]);
+
   const assistant = useMemo(() => {
-    const a = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
-    return a;
+    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return aid || null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
@@ -134,68 +137,53 @@ const ChatbotParams = (props) => {
     if (newFunctions.length !== functions.length) {
       console.warn("Update Params: Functions has been updated.");
       updateShortcodeParams(newFunctions, 'functions');
-    }
-    else if (modelSupportImage && !shortcodeParams.resolution) {
+    } else if (modelSupportImage && !shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
         const resolutions = currentModel.resolutions.map(x => x.name);
         const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
         updateShortcodeParams(bestResolution, 'resolution');
       }
-    }
-    else if (!modelSupportImage && shortcodeParams.resolution) {
+    } else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
-    }
-    else if (modelSupportImage && isChat) {
+    } else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (isAssistant && shortcodeParams.model) {
+    } else if (isAssistant && shortcodeParams.model) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (!isAssistant && shortcodeParams.assistantId) {
+    } else if (!isAssistant && shortcodeParams.assistantId) {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
-    }
-    else if (shortcodeParams.imageUpload && !modelSupportsVision) {
+    } else if (shortcodeParams.imageUpload && !modelSupportsVision) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
-    }
-    else if (shortcodeParams.fileSearch && !isAssistant) {
+    } else if (shortcodeParams.fileSearch && !isAssistant) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    }
-    else if (shortcodeParams.model && !shortcodeParams.envId) {  // <-- bug: should check for envId
+    } else if (shortcodeParams.model && !shortcodeParams.envId) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (shortcodeParams.envId && !aiEnvironment) {
+    } else if (shortcodeParams.envId && !aiEnvironment) {
       console.warn("Update Params: Environment has been removed.");
       updateShortcodeParams(null, 'envId');
-    }
-    else if (!module_embeddings && shortcodeParams.embeddingsEnvId) { // <-- bug: typo in key, should be embeddingsEnvId
+    } else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       console.warn("Update Params: Embeddings environment has been removed.");
       updateShortcodeParams(null, 'embeddingsEnvId');
-    }
-    else if (!modelSupportsFunctions && functions.length) {
+    } else if (!modelSupportsFunctions && functions.length) {
       console.warn("Update Params: Functions have been removed.");
       updateShortcodeParams([], 'functions');
-    }
-    else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
+    } else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    }
-    else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
+    } else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
       console.warn("Update Params: AI avatar has been set to true.");
       updateShortcodeParams(true, 'aiAvatar');
-    }
-    else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
+    } else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
       console.warn("Update Params: User avatar has been set to true.");
       updateShortcodeParams(true, 'userAvatar');
-    }
-    else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
+    } else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
@@ -223,6 +211,133 @@ const ChatbotParams = (props) => {
     return currentModel?.resolutions;
   }, [currentModel, modelSupportImage]);
 
+  const titleChatbotCategory = useMemo(() => {
+    const type = isChat ? 'Chat' : isAssistant ? 'Assistant' : 'Images';
+    const id = shortcodeParams.botId || defaultChatbot.id;
+
+    const info = [type, id].filter(Boolean).join(', ');
+    return (
+      <div>
+        {i18n.COMMON.CHATBOT}
+        <small style={{ opacity: 0.5 }}> {info}</small>
+      </div>
+    );
+  }, [isChat, isAssistant, shortcodeParams.botId, defaultChatbot.id]);
+
+  const titleAIModelCategory = useMemo(() => {
+    const getDisplay = (envId, modelName) => {
+      const env = aiEnvironments.find(x => x.id === envId);
+      if (!env) return null;
+      const model = getModel(modelName);
+      return [env.name, model?.rawName].filter(Boolean).join(', ');
+    };
+
+    if (shortcodeParams.envId) {
+      const extras = getDisplay(shortcodeParams.envId, shortcodeParams.model);
+      if (extras) {
+        return (
+          <div>
+            {i18n.COMMON.AI_MODEL}
+            <small style={{ opacity: 0.5 }}> {extras}</small>
+          </div>
+        );
+      }
+    } else {
+      const extras = getDisplay(options?.ai_default_env, options?.ai_default_model);
+      if (extras) {
+        return (
+          <div>
+            {i18n.COMMON.AI_MODEL}
+            <small style={{ opacity: 0.5 }}> {extras}</small>
+          </div>
+        );
+      }
+    }
+    return i18n.COMMON.AI_MODEL;
+  }, [
+    shortcodeParams.envId,
+    shortcodeParams.model,
+    aiEnvironments,
+    getModel,
+    options?.ai_default_env,
+    options?.ai_default_model
+  ]);
+
+  const titleContextCategory = useMemo(() => {
+    if (shortcodeParams.embeddingsEnvId) {
+      const env = environments.find(x => x.id === shortcodeParams.embeddingsEnvId);
+      if (env) {
+        const extras = [
+          env.name,
+          isContentAware ? 'Content Aware' : null
+        ].filter(Boolean).join(', ');
+
+        return (
+          <div>
+            {i18n.COMMON.CONTEXT}
+            <small style={{ opacity: 0.5 }}> {extras}</small>
+          </div>
+        );
+      }
+    }
+    return i18n.COMMON.CONTEXT;
+  }, [shortcodeParams.embeddingsEnvId, environments, isContentAware]);
+
+  const titleFunctionsCategory = useMemo(() => {
+    if (!functions.length) {
+      return i18n.COMMON.FUNCTIONS;
+    }
+    const countString = `Enabled: ${functions.length}, Total: ${availableFunctions.length}`;
+    return (
+      <div>
+        {i18n.COMMON.FUNCTIONS}
+        <small style={{ opacity: 0.5 }}> {countString}</small>
+      </div>
+    );
+  }, [functions, availableFunctions]);
+
+  const titleThresholdsCategory = useMemo(() => {
+    const contextMaxLength =
+    shortcodeParams.contextMaxLength || options?.context_max_length;
+
+    const info = [
+      shortcodeParams.maxMessages
+        ? `Messages: ${shortcodeParams.maxMessages}`
+        : null,
+      contextMaxLength ? `Context: ${contextMaxLength}` : null
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    return (
+      <div>
+        {i18n.COMMON.THRESHOLDS}
+        <small style={{ opacity: 0.5 }}> {info}</small>
+      </div>
+    );
+  }, [
+    shortcodeParams.contextMaxLength,
+    shortcodeParams.maxMessages,
+    options?.context_max_length
+  ]);
+
+  const titleAppearanceCategory = useMemo(() => {
+    const theme = themes.find(x => x.themeId === shortcodeParams.themeId);
+    const themeName = theme?.name || shortcodeParams.themeId;
+
+    const info = [
+      themeName,
+      shortcodeParams.window ? 'Popup' : null
+    ].filter(Boolean).join(', ');
+
+    return (
+      <div>
+        {i18n.COMMON.APPEARANCE}
+        <small style={{ opacity: 0.5 }}> {info}</small>
+      </div>
+    );
+  }, [shortcodeParams.themeId, shortcodeParams.window, themes]);
+
   return (<>
     <NekoWrapper>
       <NekoColumn minimal {...rest}>
@@ -230,7 +345,7 @@ const ChatbotParams = (props) => {
         <StyledBuilderForm>
 
           <NekoCollapsableCategories keepState="chatbotParams">
-            <NekoCollapsableCategory title={i18n.COMMON.CHATBOT}>
+            <NekoCollapsableCategory title={titleChatbotCategory}>
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col">
@@ -288,7 +403,7 @@ const ChatbotParams = (props) => {
 
             </NekoCollapsableCategory>
 
-            <NekoCollapsableCategory title={i18n.COMMON.AI_MODEL}>
+            <NekoCollapsableCategory title={titleAIModelCategory}>
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -302,10 +417,10 @@ const ChatbotParams = (props) => {
 
                 {(isChat || isImagesChat) && <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.MODEL}:</label>
-                  <NekoSelect scrolldown name="model"
+                  <NekoSelect scrolldown name="model" disabled={!shortcodeParams.envId}
                     value={shortcodeParams.model} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"Default"}></NekoOption>
-                    {((isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
+                    {(isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -389,7 +504,7 @@ const ChatbotParams = (props) => {
               </div>
             </NekoCollapsableCategory>}
 
-            {(isChat || isAssistant) && <NekoCollapsableCategory title={i18n.COMMON.CONTEXT}>
+            {(isChat || isAssistant) && <NekoCollapsableCategory title={titleContextCategory}>
 
               <div style={{ marginTop: 15, fontWeight: 'bold' }}>{i18n.COMMON.EMBEDDINGS}</div>
 
@@ -427,8 +542,7 @@ const ChatbotParams = (props) => {
 
             </NekoCollapsableCategory>}
 
-            {modelSupportsFunctions && !blockMode && <NekoCollapsableCategory
-              title={i18n.COMMON.FUNCTIONS}>
+            {modelSupportsFunctions && !blockMode && <NekoCollapsableCategory title={titleFunctionsCategory}>
 
               <p>
                 <OpenAiIcon style={{ marginRight: 3 }} />
@@ -473,7 +587,7 @@ const ChatbotParams = (props) => {
 
             </NekoCollapsableCategory>}
 
-            <NekoCollapsableCategory title={i18n.COMMON.THRESHOLDS}>
+            <NekoCollapsableCategory title={titleThresholdsCategory}>
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -509,7 +623,7 @@ const ChatbotParams = (props) => {
 
             </NekoCollapsableCategory>
 
-            <NekoCollapsableCategory title={i18n.COMMON.APPEARANCE}>
+            <NekoCollapsableCategory title={titleAppearanceCategory}>
 
               <div className="mwai-builder-row">
 
@@ -546,6 +660,17 @@ const ChatbotParams = (props) => {
                 </div>
 
               </div>
+
+              {shortcodeParams.themeId === 'timeless' && <div className="mwai-builder-row">
+                <div className="mwai-builder-col" style={{ flex: 1 }}>
+                  <label>{i18n.COMMON.HEADER_SUBTITLE}:</label>
+                  <NekoInput name="headerSubtitle" data-form-type="other"
+                    value={shortcodeParams.headerSubtitle}
+                    onBlur={updateShortcodeParams}
+                    onEnter={updateShortcodeParams}
+                  />
+                </div>
+              </div>}
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
