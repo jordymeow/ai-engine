@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.7.1
+Stable tag: 2.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,7 +68,7 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
-= 2.7.1 (2025/01/05) =
+= 2.7.2 (2025/01/05) =
 * Add: Realtime Audio Chatbot (Pro Version)! It works very well, including with function calling. Try it out! But be careful, those models are quite pricey. AI Engine doesn't handle the statistics yet (Queries / Discussions tabs).
 * Add: New attribute 'className' for the Shortcuts API.
 * Fix: Selectors in AI Forms now retrieve the content in divs correctly.

@@ -5,7 +5,7 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
 	'aiName', 'userName', 'guestName',
 	'aiAvatar', 'userAvatar', 'guestAvatar',
 	'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl',
-	'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch',
+	'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch', 'mode',
 	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
 	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
 	'fullscreen', 'copyButton', 'headerSubtitle'
