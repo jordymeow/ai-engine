@@ -1,5 +1,5 @@
-// Previous: 2.5.9
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.7.0
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -84,7 +84,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -113,14 +113,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom, languages]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value);
+    setCurrentLanguage(value, field);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -141,7 +141,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, customLanguage, isCustom, languages, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -278,6 +278,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
     if (fineTunes.length) {
       models = [ ...models, ...fineTunes.map(x => {
+
         const features = ['completion'];
         const splitted = x.model.split(':');
         const family = splitted[0];
@@ -329,9 +330,17 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     return models.filter(x => x?.tags?.includes('json'));
   }, [models]);
 
+  const realtimeModels = useMemo(() => {
+    return models.filter(x => x?.tags?.includes('realtime'));
+  }, [models]);
+
   const getModel = (model) => {
     if (!model) {
       return null;
+    }
+    let modelObj = allModels.find(x => x.model === model);
+    if (modelObj) {
+      return modelObj;
     }
     if (model.startsWith('gpt-3.5-turbo-') || model.startsWith('gpt-35-turbo')) {
       model = 'gpt-3.5-turbo';
@@ -354,7 +363,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     else if (model.startsWith('o1-')) {
       model = 'o1';
     }
-    const modelObj = allModels.find(x => x.model === model);
+    modelObj = allModels.find(x => x.model === model);
     if (!modelObj) {
       console.warn(`Model ${model} not found.`, { allModels, options });
     }
@@ -417,7 +426,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
   return { allModels, model, models,
     completionModels, imageModels, visionModels, coreModels, embeddingsModels, audioModels, jsonModels,
-    setModel, isFineTunedModel, getModelName,
+    realtimeModels, setModel, isFineTunedModel, getModelName,
     getFamilyName, getPrice, getModel, calculatePrice };
 };
 
@@ -452,7 +461,7 @@ const retrieveVectors = async (queryParams) => {
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
   if (isSearch && res?.vectors?.length) {
-    const sortedVectors = res.vectors.sort((a, b) => {
+    const sortedVectors = res.vectors.slice().sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
         return a.score - b.score;
       }
@@ -574,7 +583,7 @@ const getPostContent = (currentPositionMarker = null) => {
 
   let wholeContent = originalTitle + '\n\n';
   blocks.forEach((block, _index) => {
-    if (currentPositionMarker && block.clientId === getSelectedBlockClientId()) {
+    if (currentPositionMarker && block.clientId === selectedBlockClientId) {
       wholeContent += currentPositionMarker + '\n\n';
     } else {
       wholeContent += (block.attributes.content || '') + '\n\n';

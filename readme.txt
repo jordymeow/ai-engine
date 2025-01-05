@@ -5,14 +5,14 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.6.9
+Stable tag: 2.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Kick off your AI journey with a brilliant chatbot, then take advantage of AI-driven content, automation, and multi-model support.
 
 == Description ==
-AI Engine takes WordPress to the next level, letting you explore the full potential of AI in your workflows. Instantly build powerful, customizable chatbots, generate and optimize content (including images), experiment with advanced AI forms, and even fine-tune your own models. AI Engine supports a wide range of AI providers—OpenAI, Anthropic, Google, OpenRouter, Replicate, Hugging Face, and more—ensuring you can use exactly the model you want. New features like file uploads in chatbots, function calling, and advanced streaming support make it easier than ever to integrate AI into every aspect of your site.
+AI Engine takes WordPress to the next level, letting you explore the full potential of AI in your workflows. Instantly build powerful, customizable chatbots, generate and optimize content (including images), experiment with advanced AI forms, and even fine-tune your own models. AI Engine supports a wide range of AI providers—OpenAI, Anthropic, Google, OpenRouter, Replicate, Hugging Face, and more—ensuring you can use exactly the model you want. New features like file uploads in chatbots, function calling, realtime audio chat, and advanced streaming support make it easier than ever to integrate AI into every aspect of your site.
 
 For power users and developers, AI Engine offers internal APIs, flexible shortcodes, function calling, and built-in tools to manage embeddings, memory, analytics, and more. The plugin is constantly updated based on user feedback, ensuring you’ll always have access to cutting-edge AI capabilities. Dive into the AI Playground, set up advanced discussions and chat logs, or simply rely on AI Copilot to save time in your editor. The possibilities are endless—and entirely in your hands.
 
@@ -26,12 +26,13 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 * **Image Generation & Translation**: Create images from prompts, break language barriers with instant translations, and quickly refine existing text for clarity and SEO.
 * **Finetuning & Embeddings**: Fine-tune AI models to match your domain or style, and use embeddings for smarter AI interactions, content classification, or personalized recommendations.
 * **Discussions & Memory Tracking**: Let users engage in longer or more complex conversations with the chatbot. All data can be stored, analyzed, and even exported for further insights.
+* **Function Calling**: Connect the AI models to your WordPress functions, tools, or APIs. For example, you can use the chatbot to allow your users to interact with your store, book appointments, or get real-time data.
 * **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
 * **Analytics & Usage Control**: Track usage, monitor tokens, and manage costs with detailed analytics. Tools like role-based access, banned words, or content safety filters help you maintain a secure environment.
 * **Extensive Integration**: Seamlessly works with Media File Renamer, SEO Engine, Social Engine, Code Engine, and other WordPress plugins to power advanced AI features site-wide.
 * **Flexible Theming & Shortcodes**: Control the look and behavior of your AI integrations using pre-built themes or your own custom CSS. Place chatbots or AI-driven forms anywhere using simple shortcodes.
 
-Please note that some features require a Pro license (AI Forms, Embeddings, Usage Control, etc.). For more information, check the [official website](https://meowapps.com/ai-engine/).
+Please note that some features require a Pro license (AI Forms, Embeddings, Usage Control, Realtime Chatbot). For more information, check the [official website](https://meowapps.com/ai-engine/).
 
 == Beyond the Features ==
 
@@ -66,6 +67,12 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.7.0 (2025/01/05) =
+* Add: Realtime Audio Chatbot (Pro Version)! It works very well, including with function calling. Try it out! But be careful, those models are quite pricey. AI Engine doesn't handle the statistics yet (Queries / Discussions tabs).
+* Add: New attribute 'className' for the Shortcuts API.
+* Fix: Selectors in AI Forms now retrieve the content in divs correctly.
+* Fix: The Chat Block in Custom Mode was not working properly.
 
 = 2.6.9 (2025/01/01) =
 * Info: Happy New Year to you all, AI bro's and sis'! 🎉

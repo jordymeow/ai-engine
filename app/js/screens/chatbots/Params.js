@@ -1,5 +1,5 @@
-// Previous: 2.6.8
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.7.0
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -20,6 +20,7 @@ import { setAssistantFunctions } from '@app/requests';
 import { isEmoji } from '@app/helpers';
 
 const shadowFilter = 'drop-shadow(0 0 5px rgba(0,0,0,0.1))';
+const voices = [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse' ];
 
 const chatIcons = ['chat-openai.svg', 'chat-robot-1.svg', 'chat-robot-2.svg',
   'chat-nyao-1.svg', 'chat-nyao-2.svg', 'chat-nyao-3.svg',
@@ -82,10 +83,11 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
 const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot, blockMode,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
-  const { completionModels, imageModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = (shortcodeParams.mode === 'chat');
-  const isAssistant = (shortcodeParams.mode === 'assistant');
-  const isImagesChat = (shortcodeParams.mode === 'images');
+  const { completionModels, imageModels, realtimeModels, getModel } = useModels(options, shortcodeParams.envId || null);
+  const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
+  const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
+  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
+  const isRealtime = shortcodeParams.mode === 'realtime' ?? false;
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
@@ -98,17 +100,14 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
-    return env || null;
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
+    return env;
   }, [aiEnvironments, shortcodeParams.envId]);
 
-  const allAssistants = useMemo(() => {
-    return aiEnvironment?.assistants || [];
-  }, [aiEnvironment]);
-
+  const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId);
-    return aid || null;
+    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
+    return assist;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
@@ -119,7 +118,7 @@ const ChatbotParams = (props) => {
     return currentModel?.tags?.includes('functions');
   }, [currentModel]);
 
-  const modelSupportsVision= useMemo(() => {
+  const modelSupportsVision = useMemo(() => {
     return currentModel?.tags?.includes('vision');
   }, [currentModel]);
 
@@ -137,53 +136,68 @@ const ChatbotParams = (props) => {
     if (newFunctions.length !== functions.length) {
       console.warn("Update Params: Functions has been updated.");
       updateShortcodeParams(newFunctions, 'functions');
-    } else if (modelSupportImage && !shortcodeParams.resolution) {
+    }
+    else if (modelSupportImage && !shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
         const resolutions = currentModel.resolutions.map(x => x.name);
         const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
         updateShortcodeParams(bestResolution, 'resolution');
       }
-    } else if (!modelSupportImage && shortcodeParams.resolution) {
+    }
+    else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
-    } else if (modelSupportImage && isChat) {
+    }
+    else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    } else if (isAssistant && shortcodeParams.model) {
+    }
+    else if (isAssistant && shortcodeParams.model) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    } else if (!isAssistant && shortcodeParams.assistantId) {
+    }
+    else if (!isAssistant && shortcodeParams.assistantId) {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
-    } else if (shortcodeParams.imageUpload && !modelSupportsVision) {
+    }
+    else if (shortcodeParams.imageUpload && !modelSupportsVision) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
-    } else if (shortcodeParams.fileSearch && !isAssistant) {
+    }
+    else if (shortcodeParams.fileSearch && !isAssistant) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    } else if (shortcodeParams.model && !shortcodeParams.envId) {
+    }
+    else if (shortcodeParams.model && !shortcodeParams.envId) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    } else if (shortcodeParams.envId && !aiEnvironment) {
+    }
+    else if (shortcodeParams.envId && !aiEnvironment) {
       console.warn("Update Params: Environment has been removed.");
       updateShortcodeParams(null, 'envId');
-    } else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
+    }
+    else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       console.warn("Update Params: Embeddings environment has been removed.");
       updateShortcodeParams(null, 'embeddingsEnvId');
-    } else if (!modelSupportsFunctions && functions.length) {
+    }
+    else if (!modelSupportsFunctions && functions.length) {
       console.warn("Update Params: Functions have been removed.");
       updateShortcodeParams([], 'functions');
-    } else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
+    }
+    else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    } else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
+    }
+    else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
       console.warn("Update Params: AI avatar has been set to true.");
       updateShortcodeParams(true, 'aiAvatar');
-    } else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
+    }
+    else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
       console.warn("Update Params: User avatar has been set to true.");
       updateShortcodeParams(true, 'userAvatar');
-    } else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
+    }
+    else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
@@ -216,13 +230,14 @@ const ChatbotParams = (props) => {
     const id = shortcodeParams.botId || defaultChatbot.id;
 
     const info = [type, id].filter(Boolean).join(', ');
+
     return (
       <div>
         {i18n.COMMON.CHATBOT}
         <small style={{ opacity: 0.5 }}> {info}</small>
       </div>
     );
-  }, [isChat, isAssistant, shortcodeParams.botId, defaultChatbot.id]);
+  }, [isChat, isAssistant, shortcodeParams?.botId, defaultChatbot?.id]);
 
   const titleAIModelCategory = useMemo(() => {
     const getDisplay = (envId, modelName) => {
@@ -322,7 +337,7 @@ const ChatbotParams = (props) => {
   ]);
 
   const titleAppearanceCategory = useMemo(() => {
-    const theme = themes.find(x => x.themeId === shortcodeParams.themeId);
+    const theme = themes?.find(x => x.themeId === shortcodeParams.themeId);
     const themeName = theme?.name || shortcodeParams.themeId;
 
     const info = [
@@ -337,6 +352,7 @@ const ChatbotParams = (props) => {
       </div>
     );
   }, [shortcodeParams.themeId, shortcodeParams.window, themes]);
+
 
   return (<>
     <NekoWrapper>
@@ -368,13 +384,13 @@ const ChatbotParams = (props) => {
                     />
                   </div>
                 </div>
-                <div className="mwai-builder-col" style={{ flex: 1 }}>
+                {!isRealtime && <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.LOCAL_MEMORY}:</label>
                   <NekoCheckbox name="localMemory" label="Yes"
                     checked={shortcodeParams.localMemory} value="1"
                     onChange={updateShortcodeParams}
                   />
-                </div>
+                </div>}
               </div>
 
               <div className="mwai-builder-row">
@@ -385,12 +401,13 @@ const ChatbotParams = (props) => {
                     value={shortcodeParams.mode}
                     onChange={updateShortcodeParams}>
                     <NekoOption value="chat" label="Chat" />
-                    <NekoOption value="assistant" label="Assistant" isPro={true} requirePro={!isRegistered} />
                     <NekoOption value="images" label="Images" />
+                    <NekoOption value="assistant" label="Assistant" isPro={true} requirePro={!isRegistered} />
+                    <NekoOption value="realtime" label="Realtime" isPro={true} requirePro={!isRegistered} />
                   </NekoSelect>
                 </div>
 
-                {(isChat || isAssistant) && <div className="mwai-builder-col" style={{ flex: 5 }}>
+                {(isChat || isAssistant || isRealtime) && <div className="mwai-builder-col" style={{ flex: 5 }}>
                   <label>{i18n.COMMON.INSTRUCTIONS}:</label>
                   <NekoTextArea name="instructions" rows={10} textAreaStyle={{ resize: 'none' }}
                     value={shortcodeParams.instructions}
@@ -415,12 +432,12 @@ const ChatbotParams = (props) => {
                   </NekoSelect>
                 </div>
 
-                {(isChat || isImagesChat) && <div className="mwai-builder-col" style={{ flex: 2 }}>
+                {(isChat || isImagesChat || isRealtime) && <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.MODEL}:</label>
                   <NekoSelect scrolldown name="model" disabled={!shortcodeParams.envId}
                     value={shortcodeParams.model} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"Default"}></NekoOption>
-                    {(isImagesChat ? imageModels : completionModels) ?? []).map((x) => (
+                    {((isImagesChat ? imageModels : (isRealtime ? realtimeModels : completionModels)) ?? []).map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
                   </NekoSelect>
@@ -459,7 +476,16 @@ const ChatbotParams = (props) => {
 
               </div>
 
-              {isChat && <div className="mwai-builder-row">
+              {(isChat || isRealtime) && <div className="mwai-builder-row">
+
+                {isRealtime && <div className="mwai-builder-col" style={{ flex: 1 }}>
+                  <label>{i18n.COMMON.VOICE}:</label>
+                  <NekoSelect scrolldown name="voice"
+                    value={shortcodeParams.voice} onChange={updateShortcodeParams}>
+                    <NekoOption value={""} label={"Default"}></NekoOption>
+                    {voices.map(x => <NekoOption key={x} value={x} label={x} />)}
+                  </NekoSelect>
+                </div>}
 
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.TEMPERATURE}:</label>
@@ -600,7 +626,7 @@ const ChatbotParams = (props) => {
                     onEnter={updateShortcodeParams}
                   />
                 </div>
-                <div className="mwai-builder-col" style={{ flex: 1 }}>
+                {!isRealtime && <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.MAX_MESSAGES}:</label>
                   <NekoInput name="maxMessages" type="number"
                     description={i18n.HELP.MAX_MESSAGES}
@@ -609,7 +635,7 @@ const ChatbotParams = (props) => {
                     onBlur={updateShortcodeParams}
                     onEnter={updateShortcodeParams}
                   />
-                </div>
+                </div>}
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.CONTEXT_MAX_LENGTH}:</label>
                   <NekoInput name="contextMaxLength" type="number" step="1"

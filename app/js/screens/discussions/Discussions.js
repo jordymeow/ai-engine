@@ -1,5 +1,5 @@
-// Previous: 2.6.5
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.7.0
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import styled from 'styled-components';
 import { compiler } from 'markdown-to-jsx';
 
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
-  NekoColumn, NekoBlock } from '@neko-ui';
+  NekoColumn, NekoBlock, NekoIcon } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
 import i18n from '@root/i18n';
@@ -190,19 +190,19 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embeddings.id}>
+        {embeddings.map(embedding => <div key={embedding.id}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
       <StyledMessage content={message.content || message.text} />
     </div>
   );
-}
+};
 
 const deleteDiscussions = async (chatIds = []) => {
   const res = await nekoFetch(`${apiUrl}/discussions/delete`, { nonce: restNonce, method: 'POST', json: { chatIds } });
   return res;
-}
+};
 
 const Discussions = () => {
   const queryClient = useQueryClient();
@@ -216,11 +216,11 @@ const Discussions = () => {
 
   const chatsColumns = useMemo(() => {
     return [
-      { 
+      {
         accessor: 'updated', title: 'Time', width: '80px', sortable: true
       },
-      { 
-        accessor: 'user', title: 'User', width: '85px', 
+      {
+        accessor: 'user', title: 'User', width: '85px',
         filters: {
           type: 'text',
           description: i18n.HELP.USER_FILTER
@@ -228,18 +228,18 @@ const Discussions = () => {
       },
       {
         accessor: 'botId', title: 'Chatbot', width: '85px',
-        filters: { 
+        filters: {
           type: 'select',
           options: chatbots.map(x => ({ value: x.botId, label: x.name }))
         },
       },
-      { 
+      {
         accessor: 'preview', title: i18n.COMMON.PREVIEW,
         filters: {
           type: 'text'
         },
       },
-      { 
+      {
         accessor: 'messages', title: '#', width: '45px'
       },
     ];
@@ -259,12 +259,10 @@ const Discussions = () => {
 
   const refreshDiscussions = useCallback(async () => {
     const isTabActive = !document.hidden;
-    if (isTabActive) {
-      return await retrieveDiscussions(chatsQueryParams);
+    if (!isTabActive) {
+      return new Promise(() => {}); 
     }
-    else {
-      return new Promise(() => {}); // Keep the promise pending
-    }
+    return await retrieveDiscussions(chatsQueryParams);
   }, [chatsQueryParams]);
 
   const { isFetching: isFetchingChats, data: chatsData, error: chatsError } = useQuery({
@@ -281,33 +279,77 @@ const Discussions = () => {
   }, [chatsData]);
 
   const chatsRows = useMemo(() => {
-    if (!chatsData?.chats) { return []; }
-    return chatsData?.chats.slice().sort((a, b) => b.created_at - a.created_at).map(x => {
-      const messages = JSON.parse(x.messages);
-      const extra = JSON.parse(x.extra);
-      const formattedCreated = tableDateTimeFormatter(x.created);
-      const formattedUpdated = tableDateTimeFormatter(x.updated);
-      const user = tableUserIPFormatter(x.userId ?? extra?.userId, x.ip ?? extra?.ip);
-      const userMessages = messages?.filter(x => x.role === 'user' || x.type === 'user');
-      const firstExchange = userMessages?.length ? userMessages[0].content || userMessages[0].text : '';
-      const lastExchange = userMessages?.length ? userMessages[userMessages.length - 1].content || userMessages[userMessages.length - 1].text : '';
-      const chatbotName = chatbots.find(y => y.botId === x.botId)?.name;
-      const jsxPreview = x?.title ? <><div>{x.title}</div><small><i>{firstExchange}</i></small></> : <><div>{firstExchange}</div><small>{lastExchange}</small></>;
-      return {
-        id: x.id,
-        botId: <>
-          <div>{chatbotName}</div>
-          <div><small><i>{x.botId}</i></small></div>
-        </>,
-        user: user,
-        messages: messages?.length ?? 0,
-        preview: jsxPreview,
-        extra: extra.model,
-        created: <div style={{ textAlign: 'right' }}>{formattedCreated}</div>,
-        updated: <div style={{ textAlign: 'right' }}>{formattedUpdated}</div>
-      };
-    });
-  }, [chatsData]);
+    if (!chatsData?.chats) {
+      return [];
+    }
+    return chatsData.chats
+      .sort((a, b) => b.created_at - a.created_at)
+      .map(chat => {
+        const messages = JSON.parse(chat.messages);
+        const extra = JSON.parse(chat.extra);
+        const formattedCreated = tableDateTimeFormatter(chat.created);
+        const formattedUpdated = tableDateTimeFormatter(chat.updated);
+        const user = tableUserIPFormatter(chat.userId ?? extra?.userId, chat.ip ?? extra?.ip);
+        const userMessages = messages?.filter(m => m.role === 'user' || m.type === 'user');
+        const firstExchange = userMessages?.length
+          ? userMessages[0].content || userMessages[0].text
+          : '';
+        const lastExchange = userMessages?.length
+          ? userMessages[userMessages.length - 1].content ||
+            userMessages[userMessages.length - 1].text
+          : '';
+        const foundChatbot = chatbots.find(c => c.botId === chat.botId);
+        const parentBotId = extra?.parentBotId;
+        const foundParent = parentBotId
+          ? chatbots.find(c => c.botId === parentBotId)
+          : null;
+        let displayName;
+        let overrideIcon = null;
+        if (foundChatbot) {
+          displayName = foundChatbot.name;
+        } else if (foundParent) {
+          displayName = foundParent.name;
+          overrideIcon = <NekoIcon icon="tools" height="14"
+            style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Overriden Bot" />;
+        } else {
+          displayName = <><NekoIcon icon="cog" height="14"
+            style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Custom Bot" />Custom</>;
+        }
+        const jsxPreview = chat.title ? (
+          <>
+            <div>{chat.title}</div>
+            <small>
+              <i>{firstExchange}</i>
+            </small>
+          </>
+        ) : (
+          <>
+            <div>{firstExchange}</div>
+            <small>{lastExchange}</small>
+          </>
+        );
+        return {
+          id: chat.id,
+          botId: (
+            <>
+              <div>
+                {overrideIcon}
+                {displayName}
+              </div>
+              <div>
+                <small>{chat.botId}</small>
+              </div>
+            </>
+          ),
+          user: user,
+          messages: messages?.length ?? 0,
+          preview: jsxPreview,
+          extra: extra.model,
+          created: <div style={{ textAlign: 'right' }}>{formattedCreated}</div>,
+          updated: <div style={{ textAlign: 'right' }}>{formattedUpdated}</div>
+        };
+      });
+  }, [chatsData, chatbots]);
 
   const discussion = useMemo(() => {
     if (selectedIds?.length !== 1) { return null; }
@@ -330,13 +372,13 @@ const Discussions = () => {
       extra: extra,
       created: currentDiscussion.created,
       updated: currentDiscussion.updated
-    }
+    };
   }, [selectedIds, chatsData]);
 
   const onDeleteSelectedChats = async () => {
     setBusyAction(true);
     if (!selectedIds.length) {
-      if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) { 
+      if (!window.confirm(i18n.ALERTS.ARE_YOU_SURE)) {
         setBusyAction(false);
         return;
       }
@@ -344,23 +386,21 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats?.map(x => x.chatId) || [];
+      const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['chats'] }),
-      queryClient.refetchQueries({ queryKey: ['chats'] })
-    ]);
+    await queryClient.invalidateQueries({ queryKey: ['chats'] });
+    queryClient.refetchQueries({ queryKey: ['chats'] });
     setBusyAction(false);
-  }
+  };
 
   const jsxPaging = useMemo(() => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={chatsQueryParams.page} limit={chatsQueryParams.limit}
           onCurrentPageChanged={(page) => setChatsQueryParams({ ...chatsQueryParams, page })}
-          total={chatsTotal} onClick={page => { 
+          total={chatsTotal} onClick={page => {
             setChatsQueryParams({ ...chatsQueryParams, page });
           }}
         />
@@ -386,15 +426,18 @@ const Discussions = () => {
   const formattedUpdated = tableDateTimeFormatter(discussion?.updated);
 
   return (<>
+
     <NekoWrapper>
+
       <NekoColumn minimal style={{ flex: 2 }}>
+
         <NekoBlock className="primary" title={i18n.COMMON.DISCUSSIONS} action={<>
           <div>
             {!autoRefresh && <NekoButton className="secondary" style={{ marginLeft: 5 }}
               disabled={isFetchingChats}
               onClick={async () => {
                 await queryClient.invalidateQueries({ queryKey: ['chats'] });
-                await queryClient.refetchQueries({ queryKey: ['chats'] });
+                queryClient.refetchQueries({ queryKey: ['chats'] });
               }}>{i18n.COMMON.REFRESH}</NekoButton>}
             {selectedIds.length > 0 && <>
               <NekoButton className="danger" disabled={false}
@@ -404,6 +447,7 @@ const Discussions = () => {
             </>}
           </div>
         </>}>
+
           <NekoTable busy={(!autoRefresh && isFetchingChats) || busyAction}
             sort={chatsQueryParams.sort}
             onSortChange={(accessor, by) => {
@@ -420,18 +464,19 @@ const Discussions = () => {
             }}
             data={chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
-            onSelectRow={id => { 
+            onSelectRow={id => {
               if (selectedIds.length === 1 && selectedIds[0] === id) {
                 setSelectedIds([]);
                 return;
               }
               setSelectedIds([id]);
             }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids ]) }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]) }}
+            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
+            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
           />
+
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
@@ -441,16 +486,25 @@ const Discussions = () => {
             <div style={{ flex: 'auto' }} />
             {jsxPaging}
           </div>
+
         </NekoBlock>
+
       </NekoColumn>
+
       <NekoColumn minimal style={{ flex: 1 }}>
-        <NekoBlock className="primary" title="Selected Discussion" action={<></>}>
+
+        <NekoBlock className="primary" title="Selected Discussion" action={<>
+        </>}>
+
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.
           </div>}
+
           {discussion?.messages?.map((x, i) => <Message key={i} message={x} />)}
+
         </NekoBlock>
-        {discussion && <NekoBlock className="primary" title="Information">
+
+        {!!discussion && <NekoBlock className="primary" title="Information">
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Model</div>
             <div>{discussion?.extra?.model}</div>
@@ -459,13 +513,17 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Bot ID (or Custom ID)</div>
             <div>{discussion?.botId}</div>
           </div>
+          {discussion?.extra?.parentBotId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
+            <div style={{ fontWeight: 'bold' }}>Parent Bot ID</div>
+            <div>{discussion?.extra?.parentBotId}</div>
+          </div>}
           {discussion?.extra?.context && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Context</div>
             <div>{discussion?.extra?.context}</div>
           </div>}
-          {discussion?.extra?.helperId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
+          {discussion?.extra?.assistantId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Assistant ID</div>
-            <div>{discussion?.extra?.helperId}</div>
+            <div>{discussion?.extra?.assistantId}</div>
           </div>}
           {discussion?.extra?.threadId && <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 5 }}>
             <div style={{ fontWeight: 'bold' }}>Thread ID</div>
@@ -487,11 +545,16 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{formattedUpdated}</div>
           </div>
+
         </NekoBlock>}
+
       </NekoColumn>
+
     </NekoWrapper>
+
     <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
+
   </>);
-}
+};
 
 export default Discussions;

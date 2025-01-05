@@ -749,3 +749,115 @@
 		}
 	}
 }
+
+@mixin realtime {
+	.mwai-realtime {
+		padding: var(--mwai-spacing);
+
+		.mwai-visualizer {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+
+			hr {
+				width: 100px;
+				margin-right: var(--mwai-spacing);
+				margin-left: var(--mwai-spacing);
+				border: 1px solid var(--mwai-backgroundPrimaryColor);
+			}
+
+			.mwai-animation {
+				background: var(--mwai-backgroundPrimaryColor);
+			}
+		}
+
+		.mwai-controls {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			margin-bottom: var(--mwai-spacing);
+
+			> * + * {
+				margin-left: 10px;
+			}
+
+			button {
+				border-radius: 100%;
+				width: 50px;
+				height: 50px;
+				margin: 5px;
+				padding: 5px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: var(--mwai-fontColor);
+				border: 2px solid var(--mwai-backgroundPrimaryColor);
+				background: none;
+				cursor: pointer;
+				transition: all 0.2s ease-out;
+				min-width: inherit;
+				max-width: inherit;
+
+				&:hover:not(:disabled) {
+					background: var(--mwai-backgroundPrimaryColor);
+				}
+
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+					background: none;
+				}
+
+				&.mwai-active {
+					border: 2px solid var(--mwai-fontColor);
+				}
+			}
+		}
+
+		.mwai-last-transcript {
+			margin: var(--mwai-spacing);
+			margin-top: 0;
+			border: 2px solid var(--mwai-backgroundPrimaryColor); 
+			padding: calc(var(--mwai-spacing) / 2);
+			border-radius: var(--mwai-borderRadius);
+			display: flex;
+			justify-content: center;
+			font-size: 80%;
+		}
+
+		.mwai-statistics {
+			display: grid;
+			grid-template-columns: 1fr 1fr 1fr;
+			grid-row-gap: 10px;
+			font-size: 14px;
+
+			div {
+				display: flex;
+    		flex-direction: column;
+    		align-items: center;
+			}
+
+			label {
+				font-size: 11px;
+				opacity: 0.5;
+				text-transform: uppercase;
+			}
+		}
+
+		.mwai-options {
+			margin-top: var(--mwai-spacing);
+			display: flex;
+			align-items: center;
+
+			.mwai-option {
+				cursor: pointer;
+				opacity: 0.5;
+				margin-right: 2px;
+
+				&.mwai-active {
+					opacity: 1;
+				}
+			}
+		}
+	}
+}

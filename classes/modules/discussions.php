@@ -530,11 +530,14 @@ class Meow_MWAI_Modules_Discussions {
       'session' => $query->session,
       'model'   => $query->model,
     ];
-    if ( ! empty( $query->temperature ) ) {
+    if ( !empty( $query->temperature ) ) {
       $chatExtra['temperature'] = $query->temperature;
     }
-    if ( ! empty( $query->context ) ) {
+    if ( !empty( $query->context ) ) {
       $chatExtra['context'] = $query->context;
+    }
+    if ( !empty( $params['parentBotId'] ) ) {
+      $chatExtra['parentBotId'] = $params['parentBotId'];
     }
     if ( $query instanceof Meow_MWAI_Query_Assistant ) {
       $chatExtra['assistantId'] = $query->assistantId;

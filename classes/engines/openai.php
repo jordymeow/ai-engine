@@ -1280,8 +1280,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $headers .= "api-key: " . $this->apiKey . "\r\n";
     }
 
-    // Prepare the body
-    $body = $query ? json_encode( $query ) : null;
+    // Prepare the body with json_encode, if it's not a string or null, otherwise we keep it as is.
+    if ( !empty( $query ) && !is_string( $query ) ) {
+      $body = json_encode( $query );
+    }
+    else {
+      $body = $query;
+    }
 
     // If we have form fields, we need to change the headers and the body.
     if ( !empty( $formFields ) ) {

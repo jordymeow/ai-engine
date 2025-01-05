@@ -1,9 +1,11 @@
-// Previous: 2.3.8
-// Current: 2.3.9
+// Previous: 2.3.9
+// Current: 2.7.0
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoTable, NekoPaging, NekoBlock, NekoButton, NekoMessage } from '@neko-ui';
 import { tableDateTimeFormatter, tableUserIPFormatter, useModels } from '@app/helpers-admin';
@@ -14,6 +16,12 @@ import i18n from '@root/i18n';
 const logsColumns = [
   { accessor: 'id', visible: false },
   { accessor: 'time', title: 'Time', width: '80px', sortable: true },
+  { accessor: 'user', title: 'User', width: '85px',
+    filters: {
+      type: 'text',
+      description: "Type an User ID, or an IP."
+    }
+  },
   { accessor: 'scope',  title: 'Scope', width: '90px',
     filters: {
       type: 'checkbox',
@@ -23,12 +31,6 @@ const logsColumns = [
         { value: 'playground', label: 'Playground' }
       ]
     },
-  },
-  { accessor: 'user', title: 'User', width: '85px',
-    filters: {
-      type: 'text',
-      description: "Type an User ID, or an IP."
-    }
   },
   { accessor: 'model', title: 'Model' },
   { accessor: 'units', title: 'Units', width: '65px', align: 'right', sortable: true },
@@ -64,7 +66,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
   useEffect(() => {
     setLogsQueryParams({ ...logsQueryParams, filters: filters });
-  }, [filters, logsQueryParams]);
+  }, [filters]);
 
   const logsTotal = useMemo(() => {
     return logsData?.total || 0;
@@ -78,12 +80,14 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
 
       const simplifiedPrice = Math.round(x.price * 1000) / 1000;
       let jsxSimplifiedPrice = <>{`∞`}</>;
+      if (x.price >= 0.001) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
+      }
+      if (x.price >= 0.01) {
+        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
+      }
       if (x.price >= 0.10) {
         jsxSimplifiedPrice = <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>;
-      } else if (x.price >= 0.01) {
-        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
-      } else if (x.price >= 0.001) {
-        jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
       }
 
       const envName = options?.ai_envs?.find(v => v.id === x.envId)?.name || x.envId;
@@ -103,7 +107,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         time: <div style={{ textAlign: 'right' }}>{time}</div>
       };
     });
-  }, [logsData, getModelName, options?.ai_envs]);
+  }, [logsData]);
 
   const onDeleteSelectedLogs = async () => {
     setBusyAction(true);
@@ -159,11 +163,8 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
           setSelectedLogIds([id]);
         }}
         onSelect={ids => { 
-          setSelectedLogIds([ ...selectedLogIds, ...ids  ]);
-        }}
-        onUnselect={ids => { 
-          setSelectedLogIds([ ...selectedLogIds.filter(x => !ids.includes(x)) ]);
-        }}
+          setSelectedLogIds([ ...selectedLogIds, ...ids  ]); }}
+        onUnselect={ids => { setSelectedLogIds([ ...selectedLogIds?.filter(x => !ids.includes(x)) ]); }}
         selectedItems={selectedLogIds}
         sort={logsQueryParams.sort} onSortChange={(accessor, by) => {
           setLogsQueryParams({ ...logsQueryParams, sort: { accessor, by } });
@@ -181,7 +182,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: -5 }}>
-        <NekoButton className="danger" disabled={selectedLogIds.length === 0}
+        <NekoButton className="danger" disabled={selectedLogIds.length}
           onClick={onDeleteSelectedLogs}>
           {i18n.COMMON.DELETE_ALL}
         </NekoButton>
@@ -202,7 +203,7 @@ const Queries = ({ setSelectedLogIds, selectedLogIds }) => {
         </b>
       </p>
       <p>
-        For more information, check this: <a href="https://www.notion.so/meowarts/Cost-Usage-Calculation-d5ce4917d77f4939b232b20d0082368a?pvs=4" target="_blank" rel="noopener noreferrer">Cost & Usage Calculation</a>. You are also always welcome to discuss about it in the <a href="https://discord.gg/bHDGh38" target="_blank" rel="noopener noreferrer">Discord Server</a>.
+        For more information, check this: <a href="https://www.notion.so/meowarts/Cost-Usage-Calculation-d5ce4917d77f4939b232b20d0082368a?pvs=4" target="_blank">Cost & Usage Calculation</a>. You are also always welcome to discuss about it in the <a href="https://discord.gg/bHDGh38" target="_blank">Discord Server</a>.
       </p>
     </NekoBlock>
 

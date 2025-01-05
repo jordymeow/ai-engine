@@ -68,7 +68,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000000,
 		"maxCompletionTokens" => 32768,
 		"maxContextualTokens" => 128000,
-		"tags" => ['core', 'chat', 'o1-model']
+		"tags" => ['core', 'chat', 'o1-model', 'deprecated']
 	],
 	[
 		"model" => "o1-mini",
@@ -84,6 +84,52 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxCompletionTokens" => 65536,
 		"maxContextualTokens" => 128000,
 		"tags" => ['core', 'chat', 'o1-model']
+	],
+	[
+		"model" => "gpt-4o-realtime-preview",
+		"name" => "GPT-4o Realtime (Preview)",
+		"family" => "gpt4-o-realtime",
+		//"voices" => [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse' ],
+		"features" => ['core', 'realtime', 'functions'],
+		"price" => [
+			"in" => [
+				"text" => 5.00,
+				"audio" => 100.00,
+			],
+			"out" => [
+				"text" => 20.00,
+				"audio" => 200.00,
+			]
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"finetune" => false,
+		"tags" => ['core', 'realtime', 'functions']
+	],
+	[
+		"model" => "gpt-4o-mini-realtime-preview",
+		"name" => "GPT-4o Mini Realtime (Preview)",
+		"family" => "gpt4-o-realtime",
+		//"voices" => [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse' ],
+		"features" => ['core', 'realtime', 'functions'],
+		"price" => [
+			"in" => [
+				"text" => 0.60,
+				"audio" => 10.00,
+			],
+			"out" => [
+				"text" => 2.40,
+				"audio" => 20.00,
+			]
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 128000,
+		"finetune" => false,
+		"tags" => ['core', 'realtime', 'functions']
 	],
 	[
 		"model" => "gpt-4-turbo",

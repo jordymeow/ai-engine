@@ -41,6 +41,7 @@ i18n.COMMON = {
   ID: __( 'ID', 'ai-engine' ),
   POPUP: __( 'Popup', 'ai-engine' ),
   POSITION: __( 'Position', 'ai-engine' ),
+  VOICE: __( 'Voice', 'ai-engine' ),
   ICON: __( 'Icon', 'ai-engine' ),
   ICON_TEXT: __( 'Icon Text', 'ai-engine' ),
   ICON_TEXT_DELAY: __( 'Icon Text Delay', 'ai-engine' ),

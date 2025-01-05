@@ -12,8 +12,8 @@ define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
 ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence',
-	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution',
-	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions'
+	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice',
+	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'parentBotId'
 ] );
 
 // Params for the discussions (front and server)
@@ -604,7 +604,9 @@ class Meow_MWAI_Modules_Chatbot {
     $chatbot = null;
     $botId = $atts['id'] ?? null;
     $customId = $atts['custom_id'] ?? null;
-    if (!$botId && !$customId) {
+		$parentBotId = null;
+
+    if ( !$botId && !$customId ) {
       $botId = "default";
     }
     if ( $botId ) {
@@ -618,13 +620,17 @@ class Meow_MWAI_Modules_Chatbot {
     }
     $chatbot = $chatbot ?: $this->core->get_chatbot( 'default' );
     if ( !empty( $customId ) ) {
-      $botId = null;
+			if ( $botId !== null ) {
+				$parentBotId = $botId;
+      	$botId = null;
+			}
     }
 		unset( $atts['id'] );
     return [
       'chatbot' => $chatbot,
       'botId' => $botId,
       'customId' => $customId,
+			'parentBotId' => $parentBotId
     ];
   }
 
@@ -652,6 +658,7 @@ class Meow_MWAI_Modules_Chatbot {
     $chatbot = $resolvedBot['chatbot'];
     $botId = $resolvedBot['botId'];
     $customId = $resolvedBot['customId'];
+		$parentBotId = $resolvedBot['parentBotId'];
 
 		// Rename the keys of the atts into camelCase to match the internal params system.
 		$atts = array_map( function( $key, $value ) {
@@ -662,6 +669,10 @@ class Meow_MWAI_Modules_Chatbot {
 			return [ $key => $value ];
 		}, array_keys( $atts ), $atts );
 		$atts = array_merge( ...$atts );
+
+		if ( !empty( $parentBotId ) ) {
+			$atts['parentBotId'] = $parentBotId;
+		}
 
 		$frontParams = [];
 		foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {

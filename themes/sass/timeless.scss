@@ -23,6 +23,8 @@
 	--mwai-errorBackgroundColor: #6d2f2a;
 	--mwai-errorTextColor: #FFFFFF;
 
+	--mwai-headerHeight: 80px;
+
 	font-size: var(--mwai-fontSize);
 
 	* {
@@ -30,7 +32,7 @@
 	}
 
 	&.mwai-window .mwai-header { 
-		height: 80px;
+		height: var(--mwai-headerHeight);
 		padding: var(--mwai-spacing);
 
 		.mwai-avatar img {
@@ -719,10 +721,44 @@
 	@include common-styles;
 	@include code-light;
 	@include reply-actions;
+	@include realtime;
 }
 
 // Common Overrides
 .mwai-timeless-theme {
+
+	.mwai-realtime {
+
+		.mwai-visualizer {
+
+			hr {
+				border: 1px solid var(--mwai-backgroundAiSecondaryColor);
+			}
+
+			.mwai-animation {
+				background: var(--mwai-backgroundAiSecondaryColor);
+			}
+		}
+
+		.mwai-controls {
+			button {
+				color: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundUserColor);
+
+				&:hover {
+					color: var(--mwai-backgroundPrimaryColor) !important;
+					background: var(--mwai-backgroundUserColor) !important;
+					opacity: 0.8;
+				}
+
+				&[disabled] {
+					color: var(--mwai-backgroundPrimaryColor) !important;
+					background: var(--mwai-backgroundUserColor) !important;
+					opacity: 0.5;
+				}
+			}
+		}
+	}
 
 	.mwai-reply-actions {
 		top: 5px;
@@ -746,6 +782,10 @@
 		&.mwai-window {
 			width: calc(100% - 40px);
 			z-index: 9999999999;
+
+			&.mwai-open .mwai-content {
+				height: calc(100vh - var(--mwai-headerHeight));
+			}
 		}
 
 		.mwai-input {

@@ -1,5 +1,5 @@
-// Previous: 2.6.8
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.7.0
 
 const { useState, useMemo, useLayoutEffect, useCallback, useEffect, useRef } = wp.element;
 
@@ -12,6 +12,7 @@ import ChatbotSubmit from './ChatbotSubmit';
 import ChatbotHeader from './ChatbotHeader';
 import ChatbotTrigger from './ChatbotTrigger';
 import ChatUploadIcon from './ChatUploadIcon';
+import ChatbotRealtime from './ChatbotRealtime';
 
 const markdownOptions = {
   overrides: {
@@ -43,7 +44,7 @@ const ChatbotUI = (props) => {
   const [ autoScroll, setAutoScroll ] = useState(true);
   const { state, actions } = useChatbotContext();
   const { theme, botId, customId, messages, textCompliance, isWindow, fullscreen, iconPosition, iconBubble,
-    shortcuts, blocks, imageUpload, fileSearch, fileUpload, draggingType, isBlocked, virtualKeyboardFix,
+    shortcuts, blocks, imageUpload, fileSearch, fileUpload, draggingType, isBlocked, virtualKeyboardFix, isRealtime,
     windowed, cssVariables, error, conversationRef, open, busy, uploadIconPosition, chatbotInputRef } = state;
   const { resetError, onSubmit, setIsBlocked, setDraggingType, onUploadFile } = actions;
   const themeStyle = useMemo(() => theme?.type === 'css' ? theme?.style : null, [theme]);
@@ -85,8 +86,7 @@ const ChatbotUI = (props) => {
         scrollableDiv.style.height = '';
       }
     }
-  }, [fullscreen, isAndroid, isIOS, isWindow, windowed, open, viewportHeight, virtualKeyboardFix]);
-
+  }, [fullscreen, isAndroid, isIOS, isWindow, open, viewportHeight, virtualKeyboardFix]);
   const baseClasses = css('mwai-chatbot', {
     [`mwai-${theme?.themeId}-theme`]: true,
     'mwai-window': isWindow,
@@ -97,14 +97,11 @@ const ChatbotUI = (props) => {
     'mwai-top-right': iconPosition === 'top-right',
     'mwai-top-left': iconPosition === 'top-left',
   });
-
   useLayoutEffect(() => {
     if (autoScroll && conversationRef.current) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-      // Introduced bug: missing dependency on busy might cause inconsistent auto-scroll behavior.
     }
-  }, [messages, autoScroll, conversationRef]);
-
+  }, [messages, autoScroll, conversationRef, busy]);
   const onScroll = () => {
     if (conversationRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = conversationRef.current;
@@ -112,7 +109,6 @@ const ChatbotUI = (props) => {
       setAutoScroll(isAtBottom);
     }
   };
-
   const executedScripts = useRef(new Set());
 
   const simpleHash = (str) => {
@@ -131,11 +127,10 @@ const ChatbotUI = (props) => {
     if (executedScripts.current.has(scriptHash)) {
       return;
     }
-    // Bug introduced: using appendChild with script text directly may cause repeated execution due to hash mismatch.
+    // Introduced bug: using innerHTML instead of textContent, allowing injection
     const script = document.createElement('script');
     script.type = 'text/javascript';
-    script.textContent = scriptContent;
-    // Missing cleanup: this script tag is not removed after execution, possibly leading to re-execution on rerenders.
+    script.innerHTML = scriptContent;
     document.body.appendChild(script);
     executedScripts.current.add(scriptHash);
   };
@@ -159,18 +154,21 @@ const ChatbotUI = (props) => {
     if (!shortcuts || shortcuts.length === 0) {
       return null;
     }
+
     return (
       <div className="mwai-shortcuts">
         {shortcuts.map((action, index) => {
           const { type, data } = action;
-          const { label, variant, icon } = data ?? {};
-
-          const baseClasses = css('mwai-shortcut', {
+          const { label, variant, icon, className } = data ?? {};
+          let baseClasses = css('mwai-shortcut', {
             'mwai-success': variant === 'success',
             'mwai-danger': variant === 'danger',
             'mwai-warning': variant === 'warning',
             'mwai-info': variant === 'info',
           });
+          if (className) {
+            baseClasses += ` ${className}`;
+          }
 
           const iconIsURL = icon && icon.startsWith('http');
           const iconIsEmoji = icon && !iconIsURL && icon.length >= 1 && icon.length <= 2;
@@ -197,18 +195,17 @@ const ChatbotUI = (props) => {
               </button>
             );
           }
-
           case 'callback': {
             const { onClick: customOnClick } = data;
+
             const onClickHandler = () => {
               if (typeof customOnClick === 'function') {
                 customOnClick();
               }
               else if (typeof customOnClick === 'string') {
                 const replacedOnClick = customOnClick.replace(/{CHATBOT_ID}/g, botId);
-                // BUG: Here, creating a new Function inside onClickHandler leads to multiple instantiations on each render, potentially causing security issues or unintended side-effects.
                 const parsedFunction = new Function(`return (${replacedOnClick});`)();
-                data.onClick = parsedFunction; // Overwriting data.onClick directly (mutates props/state)
+                data.onClick = parsedFunction;
                 parsedFunction();
               }
               else {
@@ -231,7 +228,6 @@ const ChatbotUI = (props) => {
               </button>
             );
           }
-
           default: {
             console.warn(`This shortcut type is not supported: ${type}.`);
             return null;
@@ -240,7 +236,7 @@ const ChatbotUI = (props) => {
         })}
       </div>
     );
-  }, [css, onSubmit, shortcuts, botId]);
+  }, [css, onSubmit, shortcuts]);
 
   const jsxBlocks = useMemo(() => {
     if (!blocks || blocks.length === 0) {
@@ -269,7 +265,7 @@ const ChatbotUI = (props) => {
     event.preventDefault();
     event.stopPropagation();
     const file = event.dataTransfer.items[0];
-    // BUG: Using dataTransfer.items[0] directly can cause issues if the list is empty; should check length.
+
     if (dragState) {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -303,8 +299,7 @@ const ChatbotUI = (props) => {
     event.preventDefault();
     handleDrag(event, false);
     if (busy) return;
-    const files = event.dataTransfer.files;
-    const file = files && files[0];
+    const file = event.dataTransfer.files[0];
     if (file) {
       if (draggingType === 'image' && imageUpload) {
         onUploadFile(file);
@@ -335,26 +330,32 @@ const ChatbotUI = (props) => {
 
       <div className="mwai-content">
 
-        <div ref={conversationRef} className="mwai-conversation" onScroll={onScroll}>
-          {messageList}
-          {jsxShortcuts}
-        </div>
+        {!isRealtime && <>
+          <div ref={conversationRef} className="mwai-conversation" onScroll={onScroll}>
+            {messageList}
+            {jsxShortcuts}
+          </div>
 
-        {error && <div className="mwai-error" onClick={() => resetError()}>
-          <Markdown options={markdownOptions}>{error}</Markdown>
+          {error && <div className="mwai-error" onClick={() => resetError()}>
+            <Markdown options={markdownOptions}>{error}</Markdown>
+          </div>}
+
+          {jsxBlocks}
+
+          <div className={inputClassNames}
+            onClick={() => chatbotInputRef.current?.focusInput()}
+            onDrop={handleDrop}
+            onDragEnter={(event) => handleDrag(event, true)}
+            onDragLeave={(event) => handleDrag(event, false)}
+            onDragOver={(event) => handleDrag(event, true)}>
+            <ChatbotInput />
+            <ChatbotSubmit />
+          </div>
+        </>}
+
+        {isRealtime && <div className="mwai-realtime">
+          <ChatbotRealtime />
         </div>}
-
-        {jsxBlocks}
-
-        <div className={inputClassNames}
-          onClick={() => chatbotInputRef.current?.focusInput()}
-          onDrop={handleDrop}
-          onDragEnter={(event) => handleDrag(event, true)}
-          onDragLeave={(event) => handleDrag(event, false)}
-          onDragOver={(event) => handleDrag(event, true)}>
-          <ChatbotInput />
-          <ChatbotSubmit />
-        </div>
 
         {needsFooter && <div className="mwai-footer">
           {needTools && <div className="mwai-tools">
@@ -366,7 +367,6 @@ const ChatbotUI = (props) => {
         </div>}
 
       </div>
-
     </TransitionBlock>
   );
 };

@@ -1,8 +1,8 @@
-// Previous: 2.6.8
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.7.0
 
 const { useState, useMemo, useEffect, useRef, useCallback } = wp.element;
-import { Mic } from 'lucide-react";
+import { Mic } from 'lucide-react';
 
 const Microphone = ({ active, disabled, ...rest }) => {
   return (
@@ -126,6 +126,7 @@ const processParameters = (params, placeholders = []) => {
   const imageUpload = Boolean(params.imageUpload);
   const fileUpload = Boolean(params.fileUpload);
   const fileSearch = Boolean(params.fileSearch);
+  const mode = params.mode?.trim() ?? "chat";
 
   if (params.headerSubtitle === null || params.headerSubtitle === undefined) {
     headerSubtitle = "Discuss with";
@@ -134,14 +135,13 @@ const processParameters = (params, placeholders = []) => {
     headerSubtitle = params.headerSubtitle?.trim() ?? "";
   }
 
-  // This is also executed on the PHP-side, but having this here allows for easier testing in the WP Admin
   if (placeholders) {
     textCompliance = doPlaceholders(textCompliance, placeholders);
     iconText = doPlaceholders(iconText, placeholders);
   }
 
   return {
-    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
+    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance, mode,
     window, copyButton, fullscreen, localMemory, imageUpload, fileUpload, fileSearch,
     icon, iconText, iconTextDelay, iconAlt, iconPosition, iconBubble, headerSubtitle,
     aiName, userName, guestName, aiAvatar, userAvatar, guestAvatar, aiAvatarUrl, userAvatarUrl, guestAvatarUrl
