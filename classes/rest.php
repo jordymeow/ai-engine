@@ -190,6 +190,11 @@ class Meow_MWAI_Rest
 				'permission_callback' => [ $this->core, 'can_access_features' ],
 				'callback' => [ $this, 'rest_helpers_post_content' ],
 			) );
+			register_rest_route( $this->namespace, '/helpers/run_tasks', array(
+				'methods' => 'POST',
+				'permission_callback' => [ $this->core, 'can_access_features' ],
+				'callback' => [ $this, 'rest_helpers_run_tasks' ],
+			) );
 
 			// OpenAI Endpoints
 			register_rest_route( $this->namespace, '/openai/files/list', array(
@@ -759,6 +764,17 @@ class Meow_MWAI_Rest
 			return new WP_REST_Response([ 'success' => true, 'content' => $cleanPost['content'],
 				'checksum' => $cleanPost['checksum'], 'language' => $cleanPost['language'], 'excerpt' => $cleanPost['excerpt'],
 				'postId' => $cleanPost['postId'], 'title' => $cleanPost['title'], 'url' => $cleanPost['url'] ], 200 );
+		}
+		catch ( Exception $e ) {
+			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+		}
+	}
+
+	function rest_helpers_run_tasks( $request ) {
+		try {
+			do_action( 'mwai_tasks_run' );
+			return new WP_REST_Response([ 'success' => true ], 200 );
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

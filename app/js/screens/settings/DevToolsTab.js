@@ -1,5 +1,5 @@
-// Previous: 2.3.5
-// Current: 2.5.6
+// Previous: 2.5.6
+// Current: 2.7.3
 
 /* eslint-disable no-console */
 // React & Vendor Libs
@@ -9,7 +9,7 @@
 import { NekoButton, NekoBlock, NekoSettings, NekoCheckbox, NekoColumn, NekoWrapper, NekoLog } from '@neko-ui';
 
 import i18n from '@root/i18n';
-import { retrievePostContent } from '@app/helpers-admin';
+import { retrievePostContent, runTasks } from '@app/helpers-admin';
 
 import { refreshLogs, clearLogs } from '@app/requests';
 
@@ -33,6 +33,10 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
     }
   };
 
+  const onRunTask = async () => {
+    await runTasks();
+  };
+
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.CLIENT_DEBUG}>
       <NekoCheckbox name="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
@@ -53,6 +57,9 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
         <NekoBlock title="Debugging" className="primary">
           <NekoButton onClick={onGetContentClick}>Get Content</NekoButton>
           <p>This button will display the content of the post, as seen by AI Engine, in your Developer Tools Console. That allows you to check what AI Engine uses when using Content Aware, Embeddings Sync, etc.</p>
+          <NekoButton onClick={onRunTask}>Run Tasks</NekoButton>
+          <p>This button will force the AI Engine to run the tasks. Normally, the AI Engine runs the tasks every 10 minutes. This button will force the AI Engine to run the tasks immediately.
+          </p>
         </NekoBlock>
       </NekoColumn>
       <NekoColumn minimal>

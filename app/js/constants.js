@@ -1,5 +1,5 @@
-// Previous: 2.0.8
-// Current: 2.0.9
+// Previous: 2.0.9
+// Current: 2.7.3
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -113,7 +113,7 @@ const Templates_ImagesGenerator = [
     name: 'Nyao Illustration',
     model: 'dall-e-3',
     maxResults: 1,
-    prompt: 'The character is an anthropomorphic cat with a whimsical and endearing design, featuring a blend of white and blue fur. The right side of the cat\'s face has a patch of blue fur that also covers the outer part of the ear, while the left side remains predominantly white, except that the eye is surrounded by a green patch of fur. The tail mirrors this pattern with white fur leading to a blue tip. The character\'s facial expression is joyous, with a wide, open-mouthed smile showcasing a single front tooth and a small, black nose.  The cat\'s paws are also white, with defined fingers that suggest human-like dexterity. An orange collar encircles the neck, contrasting with the green and blue tones of the body. This collar is adorned with a blue and white emblem in the center, reminiscent of the WordPress logo. The drawing style of this image can be defined as a digital illustration with a cartoonish and whimsical aesthetic. It features bold outlines, flat colors, and simplified shapes which are typical of modern vector art, which is often used for web graphics, animation, and media aimed at a broad, family-friendly audience. The style is reminiscent of modern vector art, which is often used for web graphics, animation, and media aimed at engaging a casual viewer with its clear, approachable, and vibrant visuals.',
+    prompt: 'The character is an anthropomorphic cat with a whimsical and endearing design, featuring a blend of white and blue fur. The right side of the cat\'s face has a patch of blue fur that also covers the outer part of the ear, while the left side remains predominantly white, except that the eye is surrounded by a green patch of fur. The tail mirrors this pattern with white fur leading to a blue tip. The character\'s facial expression is joyous, with a wide, open-mouthed smile showcasing a single front tooth and a small, black nose.  The cat\'s paws are also white, with defined fingers that suggest human-like dexterity. An orange collar encircles the neck, contrasting with the green and blue tones of the body. This collar is adorned with a blue and white emblem in the center, reminiscent of the WordPress logo. The drawing style of this image can be defined as a digital illustration with a cartoonish and whimsical aesthetic. It features bold outlines, flat colors, and simplified shapes which are typical of contemporary character design aimed at a broad, family-friendly audience. The style is reminiscent of modern vector art, which is often used for web graphics, animation, and media aimed at engaging a casual viewer with its clear, approachable, and vibrant visuals.',
   },
 ];
 
@@ -136,7 +136,7 @@ const Templates_ContentGenerator = [
     customLanguage: '',
     writingStyle: 'creative',
     writingTone: 'cheerful',
-    titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
+    titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters. Only the title, no formatting, no Markdown, no special characters.`,
     sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Each heading is between 40 and 60 characters. Use Markdown for the headings (## ).`,
     contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following headings:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per heading. Use Markdown for formatting. Add an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ". Style: {WRITING_STYLE}. Tone: {WRITING_TONE}.`,
     excerptPromptFormat: `Write an excerpt for an article about "{TITLE}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,

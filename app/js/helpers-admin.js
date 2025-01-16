@@ -1,5 +1,5 @@
-// Previous: 2.6.9
-// Current: 2.7.0
+// Previous: 2.7.0
+// Current: 2.7.3
 
 const { useMemo, useState, useEffect } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -84,7 +84,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom, startLanguage]);
+  }, [startCustom]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
@@ -94,6 +94,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
+      return;
     }
 
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
@@ -113,14 +114,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage, isCustom, languages]);
+  }, [currentLanguage, customLanguage]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value, field);
+    setCurrentLanguage(value);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -141,7 +142,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, customLanguage, isCustom, languages, disabled]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
@@ -278,7 +279,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
     if (fineTunes.length) {
       models = [ ...models, ...fineTunes.map(x => {
-
         const features = ['completion'];
         const splitted = x.model.split(':');
         const family = splitted[0];
@@ -419,7 +419,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       priceOut = price['out'];
     }
     if (priceIn && priceOut) {
-      return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
+      return (priceIn * inUnits * (modelObj?.unit || 1)) + (priceOut * outUnits * (modelObj?.unit || 1));
     }
     return 0;
   };
@@ -461,7 +461,7 @@ const retrieveVectors = async (queryParams) => {
   const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
 
   if (isSearch && res?.vectors?.length) {
-    const sortedVectors = res.vectors.slice().sort((a, b) => {
+    const sortedVectors = res.vectors.sort((a, b) => {
       if (queryParams?.sort?.by === 'asc') {
         return a.score - b.score;
       }
@@ -486,6 +486,11 @@ const retrievePostsIds = async (postType, postStatus = 'publish') => {
 const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus = 'publish') => {
   const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`,
     { nonce: restNonce });
+  return res;
+};
+
+const runTasks = async () => {
+  const res = await nekoFetch(`${apiUrl}/helpers/run_tasks`, { nonce: restNonce, method: 'POST' });
   return res;
 };
 
@@ -583,7 +588,7 @@ const getPostContent = (currentPositionMarker = null) => {
 
   let wholeContent = originalTitle + '\n\n';
   blocks.forEach((block, _index) => {
-    if (currentPositionMarker && block.clientId === selectedBlockClientId) {
+    if (currentPositionMarker && block.clientId === getSelectedBlockClientId()) {
       wholeContent += currentPositionMarker + '\n\n';
     } else {
       wholeContent += (block.attributes.content || '') + '\n\n';
@@ -593,7 +598,7 @@ const getPostContent = (currentPositionMarker = null) => {
 };
 
 export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
-  retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent,
+  retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, runTasks,
   synchronizeEmbedding, retrievePostsIds, retrieveDiscussions, getPostContent,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon, JsIcon, PhpIcon,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR

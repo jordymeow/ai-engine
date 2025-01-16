@@ -1,5 +1,5 @@
-// Previous: 2.6.9
-// Current: 2.7.0
+// Previous: 2.7.0
+// Current: 2.7.3
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -100,14 +100,14 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
-    return env;
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
+    return env || null;
   }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
-    return assist;
+    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return assist || null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
@@ -136,68 +136,53 @@ const ChatbotParams = (props) => {
     if (newFunctions.length !== functions.length) {
       console.warn("Update Params: Functions has been updated.");
       updateShortcodeParams(newFunctions, 'functions');
-    }
-    else if (modelSupportImage && !shortcodeParams.resolution) {
+    } else if (modelSupportImage && !shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
         const resolutions = currentModel.resolutions.map(x => x.name);
         const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
         updateShortcodeParams(bestResolution, 'resolution');
       }
-    }
-    else if (!modelSupportImage && shortcodeParams.resolution) {
+    } else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
-    }
-    else if (modelSupportImage && isChat) {
+    } else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (isAssistant && shortcodeParams.model) {
+    } else if (isAssistant && shortcodeParams.model) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (!isAssistant && shortcodeParams.assistantId) {
+    } else if (!isAssistant && shortcodeParams.assistantId) {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
-    }
-    else if (shortcodeParams.imageUpload && !modelSupportsVision) {
+    } else if (shortcodeParams.imageUpload && !modelSupportsVision) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
-    }
-    else if (shortcodeParams.fileSearch && !isAssistant) {
+    } else if (shortcodeParams.fileSearch && !isAssistant) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    }
-    else if (shortcodeParams.model && !shortcodeParams.envId) {
+    } else if (shortcodeParams.model && !shortcodeParams.envId) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (shortcodeParams.envId && !aiEnvironment) {
+    } else if (shortcodeParams.envId && !aiEnvironment) {
       console.warn("Update Params: Environment has been removed.");
       updateShortcodeParams(null, 'envId');
-    }
-    else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
+    } else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       console.warn("Update Params: Embeddings environment has been removed.");
       updateShortcodeParams(null, 'embeddingsEnvId');
-    }
-    else if (!modelSupportsFunctions && functions.length) {
+    } else if (!modelSupportsFunctions && functions.length) {
       console.warn("Update Params: Functions have been removed.");
       updateShortcodeParams([], 'functions');
-    }
-    else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
+    } else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    }
-    else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
+    } else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
       console.warn("Update Params: AI avatar has been set to true.");
       updateShortcodeParams(true, 'aiAvatar');
-    }
-    else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
+    } else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
       console.warn("Update Params: User avatar has been set to true.");
       updateShortcodeParams(true, 'userAvatar');
-    }
-    else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
+    } else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
@@ -227,7 +212,7 @@ const ChatbotParams = (props) => {
 
   const titleChatbotCategory = useMemo(() => {
     const type = isChat ? 'Chat' : isAssistant ? 'Assistant' : 'Images';
-    const id = shortcodeParams.botId || defaultChatbot.id;
+    const id = shortcodeParams?.botId || defaultChatbot?.id || 'default';
 
     const info = [type, id].filter(Boolean).join(', ');
 
@@ -352,7 +337,6 @@ const ChatbotParams = (props) => {
       </div>
     );
   }, [shortcodeParams.themeId, shortcodeParams.window, themes]);
-
 
   return (<>
     <NekoWrapper>
@@ -539,7 +523,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.EMBEDDINGS_ENV}:</label>
                   <NekoSelect scrolldown name="embeddingsEnvId"
-                    requirePro={true} isPro={isRegistered}
+                    requirePro={true} isPro={true}
                     disabled={!module_embeddings || !environments?.length}
                     value={shortcodeParams.embeddingsEnvId} onChange={updateShortcodeParams}>
                     {environments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
@@ -555,7 +539,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                   <NekoCheckbox name="contentAware" label="Yes"
-                    requirePro={true} isPro={isRegistered}
+                    requirePro={true} isPro={true}
                     checked={shortcodeParams.contentAware} value="1" onChange={updateShortcodeParams} />
                 </div>
               </div>}

@@ -183,12 +183,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       );
 
       if ( !empty( $query->maxTokens ) ) {
-        if ( !$this->is_o1_model( $query->model ) ) {
-          $body['max_tokens'] = $query->maxTokens;
-        }
-        else {
-          $body['max_completion_tokens'] = $query->maxTokens;
-        }
+        // max_tokens has been deprecated in favor of max_completion_tokens in 2025.
+        $body['max_completion_tokens'] = $query->maxTokens;
       }
 
       if ( !empty( $query->temperature ) ) {

@@ -89,16 +89,17 @@ define( 'MWAI_OPENAI_MODELS', [
 		"model" => "gpt-4o-realtime-preview",
 		"name" => "GPT-4o Realtime (Preview)",
 		"family" => "gpt4-o-realtime",
-		//"voices" => [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse' ],
 		"features" => ['core', 'realtime', 'functions'],
 		"price" => [
-			"in" => [
-				"text" => 5.00,
-				"audio" => 100.00,
+			"text" => [
+				"in" => 5.00,
+				"cache" => 2.50,
+				"out" => 20.00,
 			],
-			"out" => [
-				"text" => 20.00,
-				"audio" => 200.00,
+			"audio" => [
+				"in" => 100.00,
+				"cache" => 20.00,
+				"out" => 200.00,
 			]
 		],
 		"type" => "token",
@@ -112,16 +113,17 @@ define( 'MWAI_OPENAI_MODELS', [
 		"model" => "gpt-4o-mini-realtime-preview",
 		"name" => "GPT-4o Mini Realtime (Preview)",
 		"family" => "gpt4-o-realtime",
-		//"voices" => [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse' ],
 		"features" => ['core', 'realtime', 'functions'],
 		"price" => [
-			"in" => [
-				"text" => 0.60,
-				"audio" => 10.00,
+			"text" => [
+				"in" => 0.60,
+				"cache" => 0.30,
+				"out" => 2.40,
 			],
-			"out" => [
-				"text" => 2.40,
-				"audio" => 20.00,
+			"audio" => [
+				"in" => 10.00,
+				"cache" => 0.30,
+				"out" => 20.00,
 			]
 		],
 		"type" => "token",

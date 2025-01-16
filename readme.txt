@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.7.2
+Stable tag: 2.7.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,16 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.7.3 (2025/01/16) =
+* Add: Realtime is now supported in Discussions and Queries (costs are calculated based on the tokens returned by OpenAI).
+* Update: Smarter way to handle the synchronization of embeddings. They are deleted if they have no content, and they only synchronize if it is needed.
+* Update: OpenAI now uses max_completion_tokens instead of max_tokens.
+* Fix: With AI Forms, the Select/Radio could show no option selected by default.
+* Fix: o1 wasn't working properly with the Content Generator (the issue was related to Max Tokens).
+* Add: In Content Generator, Max Tokens are now optional.
+* Fix: Avoid the Chatbot Block to crash when switching to Custom.
+* Add: A button to 'Run Tasks' in the 'Dev Tools'.
 
 = 2.7.2 (2025/01/05) =
 * Add: Realtime Audio Chatbot (Pro Version)! It works very well, including with function calling. Try it out! But be careful, those models are quite pricey. AI Engine doesn't handle the statistics yet (Queries / Discussions tabs).
