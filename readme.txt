@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.7.3
+Stable tag: 2.7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,15 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.7.4 (2025/01/26) =
+* Add: Support for Perplexity models.
+* Add: MwaiAPI works with AI Forms (ai.formReply filter, forms, getForm).
+* Update: Azure API set to 2024-12-01 version.
+* Update: Apply the tools and vision tags correctly on models from OpenRouter.
+* Fix: Re-added the shortcode related to statistics.
+* Fix: Fallback to default resolution if the model doesn't support the resolution.
+* Info: New add-on for DeepSeek: https://meowapps.com/products/deepseek/.
 
 = 2.7.3 (2025/01/16) =
 * Add: Realtime is now supported in Discussions and Queries (costs are calculated based on the tokens returned by OpenAI).

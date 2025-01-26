@@ -8,7 +8,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   // Azure
   private $azureDeployments = null;
-  private $azureApiVersion = 'api-version=2024-05-01-preview';
+  private $azureApiVersion = 'api-version=2024-12-01-preview';
 
   // Response
   protected $inModel = null;
@@ -484,7 +484,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
               if ( !empty( $text['annotations'] ) ) {
                 $this->streamAnnotations = array_merge( $this->streamAnnotations, $text['annotations'] );
               }
-              if ( !empty( $text['value'] ) ) {
+              if ( isset( $text['value'] ) ) {
                 $content = $text['value'];
               }
             }
@@ -779,6 +779,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return null;
   }
 
+  protected function finalize_choices( $choices, $responseData, $query ) {
+    return $choices;
+  }
+
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
     $isStreaming = !is_null( $streamCallback );
 
@@ -828,6 +832,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
           $returned_out_tokens = $this->streamOutTokens;
         }
         $returned_choices = [ [ 'message' => $message ] ];
+        $returned_choices = $this->finalize_choices( $returned_choices, null, $query );
       }
       // Standard Mode
       else {
@@ -850,6 +855,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         $returned_price = isset( $data['usage']['total_cost'] ) ?
           $data['usage']['total_cost'] : null;
         $returned_choices = $data['choices'];
+        $returned_choices = $this->finalize_choices( $returned_choices, $data, $query );
       }
       
       // Set the results.

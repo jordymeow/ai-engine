@@ -1,5 +1,5 @@
-// Previous: 2.0.7
-// Current: 2.4.9
+// Previous: 2.4.9
+// Current: 2.7.4
 
 class MwaiAPI {
   constructor() {
@@ -8,6 +8,7 @@ class MwaiAPI {
     }
 
     this.chatbots = [];
+    this.forms = [];
     this.filters = {};
     this.actions = {};
 
@@ -21,6 +22,13 @@ class MwaiAPI {
       return this.chatbots[0];
     }
     return this.chatbots.find(x => x.botId === botId || x.customId === botId);
+  }
+
+  getForm(formId = null) {
+    if (!formId) {
+      return this.forms[0];
+    }
+    return this.forms.find((f) => f.formId === formId);
   }
 
   addFilter(tag, callback, priority = 10) {

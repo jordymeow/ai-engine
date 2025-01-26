@@ -495,3 +495,42 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
 		"tags" => ['core', 'chat', 'vision', 'functions']
 	]
 ]);
+
+define('MWAI_PERPLEXITY_MODELS', [
+	[
+		"model" => "sonar-pro",
+		"name" => "Sonar Pro",
+		"family" => "sonar",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 3.00,
+			"out" => 15.00,
+			"search" => 5.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"searchUnit" => 1 / 1000,
+		"maxCompletionTokens" => 8192,
+		"maxContextualTokens" => 200000,
+		"finetune" => false,
+		"tags" => ['core', 'chat'],
+	],
+	[
+		"model" => "sonar",
+		"name" => "Sonar",
+		"family" => "sonar",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 1.00,
+			"out" => 1.00,
+			"search" => 5.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"searchUnit" => 1 / 1000,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 127000,
+		"finetune" => false,
+		"tags" => ['core', 'chat'],
+	],
+]);

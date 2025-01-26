@@ -1043,6 +1043,11 @@ class Meow_MWAI_Core
 					Meow_MWAI_Engines_Anthropic::get_models_static()
 				);
 			}
+			else if ( $engine['type'] === 'perplexity' ) {
+				$engine['models'] = apply_filters(  'mwai_perplexity_models',
+					Meow_MWAI_Engines_Perplexity::get_models_static()
+				);
+			}
 			else {
 				$engine['models'] = [];
 				foreach ( $options['ai_models'] as $model ) {
@@ -1077,6 +1082,15 @@ class Meow_MWAI_Core
 				"name" => "Ollama",
 				"description" => "Leverage local LLM integration through Ollama; refresh and use your own models for a flexible, cost-free approach.",
 				"install_url" => "https://meowapps.com/products/mwai-ollama/",
+				"settings_url" => null,
+				"stars" => 3,
+				"enabled" => false
+			],
+			[
+				"slug" => "mwai-deepseek",
+				"name" => "DeepSeek",
+				"description" => "Support for DeepSeek, a Chinese AI company that provides extremely powerful LLM models.",
+				"install_url" => "https://meowapps.com/products/mwai-deepseek/",
 				"settings_url" => null,
 				"stars" => 3,
 				"enabled" => false

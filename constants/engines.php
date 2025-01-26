@@ -49,5 +49,12 @@ define( 'MWAI_ENGINES', [
     'inputs' => ['apikey', 'dynamicModels'],
     'internal' => true,
     'models' => []
-  ]
+  ],
+  [
+    'name' => 'Perplexity',
+    'type' => 'perplexity',
+    'inputs' => ['apikey'],
+    'internal' => true,
+    'models' => []
+  ],
 ] );

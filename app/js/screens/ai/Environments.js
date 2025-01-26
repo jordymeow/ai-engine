@@ -1,5 +1,5 @@
-// Previous: 2.5.0
-// Current: 2.6.0
+// Previous: 2.6.0
+// Current: 2.7.4
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -86,7 +86,7 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels,  }) => {
     <NekoSettings title={i18n.COMMON.HUGGINGFACE_MODELS} style={{ marginTop: 10 }}>
       {customModels.map((customModel, index) => (
         <div key={index} style={{ display: 'flex', flexDirection: 'column', marginBottom: 10 }}>
-          <div style={{ display: 'flex', marginBottom: 2 }}>
+          <div key={index} style={{ display: 'flex', marginBottom: 2 }}>
             <NekoInput style={{ flex: 1 }}
               value={customModel['name']}
               placeholder={i18n.COMMON.HUGGINGFACE_MODEL_NAME}
@@ -154,6 +154,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
   const addNewEnvironment = () => {
     const newEnv = {
+      //id: Date.now(), // Assuming id is a timestamp for uniqueness
       name: 'New Environment',
       type: 'openai',
       apikey: ''
@@ -201,7 +202,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       }
       newModels = newModels.map(x => ({ ...x, envId, type: envType }));
       let freshModels = options?.ai_models ?? [];
-      freshModels = freshModels.filter(x => !(x.type === envType && (!x.envId || x.envId === envId)));
+      freshModels = freshModels.filter(x => !(x.type === envType && (x.envId === envId || !x.envId)));
       freshModels.push(...newModels);
       updateOption(freshModels, 'ai_models');
     }
@@ -210,7 +211,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       console.log(err);
       setLoading(false);
     }
-  }, [updateOption]);
+  }, [updateOption, options?.ai_models]);
 
   const renderFields = (env) => {
     const currentEngine = aiEngines.find(engine => engine.type === env.type) || {};
@@ -303,6 +304,13 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             {env.type === 'huggingface' && <>
               <NekoMessage variant="danger">
                 Support for Hugging Face is experimental and may not work as expected. Also, AI Engine is ready for Image and Vision but Hugging Face is not (hence the disabled checkboxes). Let's discuss about Hugging Face on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>.
+              </NekoMessage>
+              <NekoSpacer />
+            </>}
+
+            {env.type === 'perplexity' && (env.apikey === '' || !env.apikey) && <>
+              <NekoMessage variant="warning">
+                Perplexity.ai is a paid service. Click <a href="https://perplexity.ai/pro?referral_code=A1R94DGZ" target="_blank" rel="noreferrer">here</a> to create an account with 10$ free credit.
               </NekoMessage>
               <NekoSpacer />
             </>}

@@ -81,9 +81,40 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 	#region Final Checks
 
 	public function final_checks() {
-		parent::final_checks();
-		// Since DALL-E 3 only support 1 image, we force it. I guess it will be the same for other models.
-		$this->maxResults = 1;
+    parent::final_checks();
+    
+    // Since DALL-E 3 only supports 1 image, we force it. 
+    // (Likely the same limitation for other models.)
+    $this->maxResults = 1;
+
+    global $mwai_core;
+    $engine = Meow_MWAI_Engines_Factory::get( $mwai_core, $this->envId );
+    $modelInfo = $engine->retrieve_model_info( $this->model );
+    if ( empty( $modelInfo ) ) {
+			Meow_MWAI_Logging::error( 'No model info found for model: ' . $this->model, '🖼️' );
+			return; 
+    }
+    
+    // Let's check for resolutions.
+    if ( !isset( $modelInfo['resolutions'] ) || empty( $modelInfo['resolutions'] ) ) {
+			Meow_MWAI_Logging::error( 'No resolutions defined for model: ' . $this->model, '🖼️' );
+			return; 
+    }
+
+    // If we have a resolutions array ([ name, label ]), let’s ensure our current resolution (name) is supported
+    $resolutions = $modelInfo['resolutions'];
+		$found = false;
+		foreach ( $resolutions as $resolution ) {
+			if ( $resolution['name'] === $this->resolution ) {
+				$found = true;
+				break;
+			}
+		}
+    if ( !$found ) {
+			$error = sprintf( 'Resolution %s not supported by model: %s', $this->resolution, $this->model );
+			Meow_MWAI_Logging::error( $error, '🖼️'  );
+			$this->resolution = $resolutions[0]['name'];
+    }
 	}
 	
 	#endregion
