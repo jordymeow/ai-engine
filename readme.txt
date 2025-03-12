@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.7.4
+Stable tag: 2.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,6 +68,25 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
+= 2.7.5 (2025/03/12) =
+* Add: Introduced support for Claude 3.7.
+* Add: Updated pricing and added support for gpt-4.5-preview, o1-mini, and o3-mini.
+* Fix: OpenAI Assistants (tools) can now be updated without overwriting existing settings.
+* Fix: Prevented AI Forms from overriding HTML elements without a data-default-value attribute.
+* Fix: Required fields in AI Forms are now strictly enforced, even if not mentioned in the prompt.
+* Fix: Resolved issues with fields via selectors not being saved or re-applied on load.
+* Update: Added additional checks to ensure the store is processed before attaching it to a thread in OpenAI Assistants.
+* Update: Improved support for Assistants working with Forms and individual File Uploads, though OpenAI's Vector Store remains buggy.
+* Fix: Addressed an issue with AI Forms and MIME types—OpenAI only supports images, but Anthropic handles PDFs well.
+* Update: Replaced set_max_sentences with set_max_messages for better clarity.
+* Update: Links in the chatbot now always open in a new tab for better user experience.
+* Note: Function Calling is now expected to work, but Gemini remains unreliable.
+* Remove: No more OpenAI Status, as they have discontinued their RSS feed.
+* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 2.7.4 (2025/01/26) =
 * Add: Support for Perplexity models.
 * Add: MwaiAPI works with AI Forms (ai.formReply filter, forms, getForm).
@@ -129,10 +148,6 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Fix: The WP Cron related to discussions was running way too often (forgot to remove the debug).
 * Fix: Encode the data used in chatbot shortcodes to avoid issues with special characters.
 * Fix: Support for embeddings models without defined dimensions (hi, Ollama's embed models!).
-* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 2.6.7 (2024/11/08) =
 * Fix: Enforcing discussions title length (and default title in case of error) to avoid repeated API calls.

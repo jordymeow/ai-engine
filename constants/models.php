@@ -10,8 +10,8 @@ define( 'MWAI_OPENAI_MODELS', [
 		"family" => "gpt4",
 		"features" => ['completion'],
 		"price" => [
-			"in" => 5.00,
-			"out" => 15.00,
+			"in" => 2.50,
+			"out" => 10.00,
 		],
 		"type" => "token",
 		"unit" => 1 / 1000000,
@@ -34,11 +34,27 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxCompletionTokens" => 16384,
 		"maxContextualTokens" => 128000,
 		"finetune" => [
-			"in" => 0.30,
-			"out" => 1.20,
+			"in" => 0.15,
+			"out" => 0.60,
 			"train" => 3.00
 		],
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+	],
+	[
+		"model" => "gpt-4.5-preview",
+		"name" => "GPT-4.5 (Preview)",
+		"family" => "gpt4.5",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 75.00,
+			"out" => 150.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 16384,
+		"maxContextualTokens" => 128000,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
 	],
 	[
 		"model" => "o1",
@@ -53,22 +69,7 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1 / 1000000,
 		"maxCompletionTokens" => 100000,
 		"maxContextualTokens" => 200000,
-		"tags" => ['core', 'chat', 'o1-model']
-	],
-	[
-		"model" => "o1-preview",
-		"name" => "o1 Preview",
-		"family" => "o1",
-		"features" => ['completion'],
-		"price" => [
-			"in" => 15.00,
-			"out" => 60.00,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000000,
-		"maxCompletionTokens" => 32768,
-		"maxContextualTokens" => 128000,
-		"tags" => ['core', 'chat', 'o1-model', 'deprecated']
+		"tags" => ['core', 'chat', 'o1-model', 'reasoning']
 	],
 	[
 		"model" => "o1-mini",
@@ -76,14 +77,29 @@ define( 'MWAI_OPENAI_MODELS', [
 		"family" => "o1",
 		"features" => ['completion'],
 		"price" => [
-			"in" => 3.00,
-			"out" => 12.00,
+			"in" => 1.10,
+			"out" => 4.40,
 		],
 		"type" => "token",
 		"unit" => 1 / 1000000,
 		"maxCompletionTokens" => 65536,
 		"maxContextualTokens" => 128000,
-		"tags" => ['core', 'chat', 'o1-model']
+		"tags" => ['core', 'chat', 'o1-model', 'reasoning']
+	],
+	[
+		"model" => "o3-mini",
+		"name" => "o3 Mini",
+		"family" => "o3",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 1.10,
+			"out" => 4.40,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 100000,
+		"maxContextualTokens" => 200000,
+		"tags" => ['core', 'chat', 'o1-model', 'reasoning']
 	],
 	[
 		"model" => "gpt-4o-realtime-preview",
@@ -163,21 +179,6 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxTokens" => 8192,
 		"finetune" => false,
 		"tags" => ['core', 'chat', 'functions']
-	],
-	[ 
-		"model" => "gpt-4-32k",
-		"name" => "GPT-4 32k",
-		"family" => "gpt4-32k",
-		"features" => ['completion'],
-		"price" => [
-			"in" => 60.00,
-			"out" => 120.00,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000000,
-		"maxTokens" => 32768,
-		"finetune" => false,
-		"tags" => ['core', 'chat']
 	],
 	[ 
 		"model" => "gpt-3.5-turbo",
@@ -366,6 +367,22 @@ define( 'MWAI_OPENAI_MODELS', [
 ]);
 
 define ( 'MWAI_ANTHROPIC_MODELS', [
+	[
+		"model" => "claude-3-7-sonnet-latest",
+		"name" => "Claude-3.7 Sonnet (Latest)",
+		"family" => "claude",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 3.00,
+			"out" => 15.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 64000,
+		"maxContextualTokens" => 200000,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'reasoning']
+	],
 	[
 		"model" => "claude-3-5-sonnet-latest",
 		"name" => "Claude-3.5 Sonnet (Latest)",

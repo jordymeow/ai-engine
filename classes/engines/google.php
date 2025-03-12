@@ -33,7 +33,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       // $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://{$this->region}-aiplatform.googleapis.com/v1/projects/{$this->projectId}/locations/{$this->region}/publishers/google", $this->env );
 
       // Generative Language API (less issues with auth)
-      $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://generativelanguage.googleapis.com/v1", $this->env );
+      $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://generativelanguage.googleapis.com/v1beta", $this->env );
     }
     else {
       throw new Exception( 'Unknown environment type: ' . $this->envType );
@@ -120,11 +120,38 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     // Streamline the messages
     $messages = $this->streamline_messages( $messages, 'model', 'parts' );
 
+    // Add the feedback if it's a feedback query.
+    if ( $query instanceof Meow_MWAI_Query_Feedback ) {
+      if ( !empty( $query->blocks ) ) {
+        foreach ( $query->blocks as $feedback_block ) {
+          $messages[] = $feedback_block['rawMessage'];
+          foreach ( $feedback_block['feedbacks'] as $feedback ) {
+            $messages[] = [
+              'role' => "user",
+              'parts' => [
+                'functionResponse' => [
+                  'name' => $feedback['request']['name'],
+                  'response' => [
+                    'content' => $feedback['reply']['value']
+                  ]
+                ]
+              ]
+            ];
+          }
+        }
+      }
+    }
+
     return $messages;
   }
 
   protected function stream_data_handler( $json ) {
     $content = null;
+
+    // Is it a function call?
+    if ( isset( $json['candidates'][0]['content']['parts'][0]['functionCall'] ) ) {
+      $this->streamFunctionCall = $json['candidates'][0]['content']['parts'][0]['functionCall'];
+    }
 
     // Get the content
     if ( isset( $json['candidates'][0]['content']['parts'][0]['text'] ) ) {
@@ -243,12 +270,23 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     // }
 
     if ( !empty( $query->functions ) ) {
-      throw new Exception( 'AI Engine doesn\'t support Function Calling with Google models yet.' );
-      //$body['functions'] = $query->functions;
-      //$body['function_call'] = $query->functionCall;
+      //throw new Exception( 'AI Engine doesn\'t support Function Calling with Google models yet.' );
+      $body['tools'] = [[
+        'function_declarations' => []
+      ]];
+      // Dynamic function: they will interactively enhance the completion (tools).
+      foreach ( $query->functions as $function ) {
+        $body['tools'][0]['function_declarations'][] = $function->serializeForOpenAI();
+      }
+      $body['tool_config'] = [
+        'function_calling_config' => [
+          'mode' => 'AUTO'
+        ]
+      ];
     }
 
     $body['contents'] = $this->build_messages( $query );
+
     $url = $this->endpoint;
 
     // Streaming:
@@ -407,6 +445,11 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       }
       else if ( preg_match( '/(vision|multimodal)/i', $model['description'], $matches ) ) {
         $tags[] = 'vision';
+      }
+      if ( preg_match( '/flash/i', $model['name'], $matches ) ) {
+        $tags[] = 'vision';
+        $tags[] = 'functions';
+        $features[] = 'functions';
       }
       $name = preg_replace( '/^models\//', '', $model['name'] );
       $model = array(

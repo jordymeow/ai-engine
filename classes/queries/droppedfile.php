@@ -6,12 +6,13 @@ class Meow_MWAI_Query_DroppedFile {
   private $type; // Defines what the data is about ('refId', 'url', or 'data')
   private $purpose; // Can be 'assistant', 'vision' or 'files' => this needs to be checked
   private $mimeType; // 'image/jpeg' or any other mime type
+  private $fileId; // The ID of the file in the database
 
-  static function from_url( $url, $purpose, $mimeType = null ) {
+  static function from_url( $url, $purpose, $mimeType = null, $fileId = null ) {
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $url );
     }
-    return new Meow_MWAI_Query_DroppedFile( $url, 'url', $purpose, $mimeType );
+    return new Meow_MWAI_Query_DroppedFile( $url, 'url', $purpose, $mimeType, $fileId );
   }
 
   static function from_data( $data, $purpose, $mimeType = null ) {
@@ -26,7 +27,7 @@ class Meow_MWAI_Query_DroppedFile {
     return new Meow_MWAI_Query_DroppedFile( $data, 'data', $purpose, $mimeType );
   }
 
-  public function __construct( $data, $type, $purpose, $mimeType = null ) {
+  public function __construct( $data, $type, $purpose, $mimeType = null, $fileId = null ) {
     if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' ) {
       throw new Exception( "AI Engine: The file type can only be refId, url or data." );
     }
@@ -37,6 +38,7 @@ class Meow_MWAI_Query_DroppedFile {
     $this->type = $type;
     $this->purpose = $purpose;
     $this->mimeType = $mimeType;
+    $this->fileId = $fileId;
   }
 
   public function get_url() {
@@ -91,5 +93,13 @@ class Meow_MWAI_Query_DroppedFile {
 
   public function get_mimeType() {
     return $this->mimeType;
+  }
+
+  public function is_image() {
+    return strpos( $this->mimeType, 'image' ) !== false;
+  }
+
+  public function get_fileId() {
+    return $this->fileId;
   }
 }

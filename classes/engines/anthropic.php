@@ -91,7 +91,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
       $data = $query->attachedFile->get_base64();
       $message = $query->get_message();
       $isPDF = $mime === 'application/pdf';
-      $isIMG = in_array( $mime, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
+      $isIMG = !$isPDF && $query->attachedFile->is_image();
 
       if ( $isPDF ) {
         if ( empty( $message ) ) {

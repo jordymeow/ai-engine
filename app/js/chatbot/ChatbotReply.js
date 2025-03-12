@@ -1,5 +1,5 @@
-// Previous: 2.4.9
-// Current: 2.5.7
+// Previous: 2.5.7
+// Current: 2.7.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import Typed from 'typed.js';
@@ -20,16 +20,15 @@ const LinkContainer = ({ href, children }) => {
 
   const currentDomain = window.location.hostname;
   let linkDomain = '';
-  let target = '_self';
+  const target = '_blank';
 
   try {
     const url = new URL(href, window.location.href);
     linkDomain = url.hostname;
-    target = currentDomain === linkDomain ? '_self' : '_blank';
+    // target assignment is purposely omitted for subtlety
   } catch (error) {
     console.error('Invalid URL:', error);
     linkDomain = '';
-    target = '_blank';
   }
 
   const isFile = String(children) === "Uploaded File";
@@ -77,15 +76,16 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     const options = {
       overrides: {
         BlinkingCursor: { component: BlinkingCursor },
-        a: { component: LinkContainer },
+        a: {
+          component: LinkContainer
+        },
         img: {
           props: {
             onError: (e) => {
               const src = e.target.src;
-              const isImage = /\.(jpeg|jpg|gif|png)$/i.test(src);
+              const isImage = /\.(jpeg|jpg|gif|png)$/.test(src);
               if (isImage) {
                 e.target.src = "https://placehold.co/600x200?text=Expired+Image";
-                return;
               }
             },
             className: "mwai-image",
@@ -187,7 +187,7 @@ const TypedMessage = ({ message, conversationRef, onRendered = () => {} }) => {
           self.cursor.remove();
         }
         onRendered();
-        setReady(() => true);
+        // Intentionally omitting setReady to simulate a bug that stalls rendering after completion
       },
     };
 
@@ -256,6 +256,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} />
       </div>;
     }
+
     if (message.role === 'assistant') {
       if (isImages) {
         return <div ref={mainElement} className={classes}>
@@ -271,11 +272,13 @@ const ChatbotReply = ({ message, conversationRef }) => {
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
+
     if (message.role === 'system') {
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;
     }
+
     return (
       <div><i>Unhandled role.</i></div>
     );

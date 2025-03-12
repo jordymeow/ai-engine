@@ -1,5 +1,5 @@
-// Previous: 2.6.0
-// Current: 2.7.4
+// Previous: 2.7.4
+// Current: 2.7.5
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -154,7 +154,6 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
   const addNewEnvironment = () => {
     const newEnv = {
-      //id: Date.now(), // Assuming id is a timestamp for uniqueness
       name: 'New Environment',
       type: 'openai',
       apikey: ''
@@ -202,7 +201,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       }
       newModels = newModels.map(x => ({ ...x, envId, type: envType }));
       let freshModels = options?.ai_models ?? [];
-      freshModels = freshModels.filter(x => !(x.type === envType && (x.envId === envId || !x.envId)));
+      freshModels = freshModels.filter(x => !(x.type === envType && (!x.envId || x.envId === envId)));
       freshModels.push(...newModels);
       updateOption(freshModels, 'ai_models');
     }
@@ -211,7 +210,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       console.log(err);
       setLoading(false);
     }
-  }, [updateOption, options?.ai_models]);
+  }, [updateOption]);
 
   const renderFields = (env) => {
     const currentEngine = aiEngines.find(engine => engine.type === env.type) || {};
@@ -296,7 +295,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
             {env.type === 'google' && <>
               <NekoMessage variant="danger">
-                Click <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">here</a> to access your Google AI. Gemini is still unstable, so if you encounter issues, let's discuss them on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>.
+                Click <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">here</a> to access your Google AI. As of 2025, Gemini is still unstable, so if you encounter issues, let's discuss them on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>. Sorry, we will not be able to provide 1-1 support for this.
               </NekoMessage>
               <NekoSpacer />
             </>}

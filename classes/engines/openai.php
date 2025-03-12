@@ -1121,6 +1121,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     return $result['id'];
   }
 
+  public function get_vector_store( $vectorStoreId ) {
+    return $this->execute( 'GET', '/vector_stores/' . $vectorStoreId, null, null, true, [ 'OpenAI-Beta' => 'assistants=v2' ] );
+  }
+
   public function add_vector_store_file( $vectorStoreId, $fileId ) {
     $result = $this->execute( 'POST', '/vector_stores/' . $vectorStoreId . '/files', [
       'file_id' => $fileId
@@ -1487,28 +1491,5 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
     }
     Meow_MWAI_Logging::warn( "(OpenAI) Cannot calculate price for $model." );
     return null;
-  }
-
-  public function get_incidents() {
-    $url = 'https://status.openai.com/history.rss';
-    $response = wp_remote_get( $url );
-    if ( is_wp_error( $response ) ) {
-      throw new Exception( $response->get_error_message() );
-    }
-    $response = wp_remote_retrieve_body( $response );
-    $xml = simplexml_load_string( $response );
-    $incidents = array();
-    $oneWeekAgo = time() - 5 * 24 * 60 * 60;
-    foreach ( $xml->channel->item as $item ) {
-      $date = strtotime( $item->pubDate );
-      if ( $date > $oneWeekAgo ) {
-        $incidents[] = array(
-          'title' => (string) $item->title,
-          'description' => (string) $item->description,
-          'date' => $date
-        );
-      }
-    }
-    return $incidents;
   }
 }

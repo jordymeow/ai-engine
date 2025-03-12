@@ -260,7 +260,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     }
   }
 
-  public function set_max_sentences( int $maxMessages ): void {
+  public function set_max_messages( int $maxMessages ): void {
     if ( !empty( $maxMessages ) ) {
       $this->maxMessages = intval( $maxMessages );
     }
@@ -321,10 +321,7 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
       $this->set_messages( $params['messages'] );
     }
     if ( !empty( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
-      $this->set_max_sentences( intval( $params['maxMessages'] ) );
-    }
-    if ( !empty( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
-      $this->set_max_sentences( intval( $params['maxMessages'] ) );
+      $this->set_max_messages( intval( $params['maxMessages'] ) );
     }
     if ( !empty( $params['maxResults'] ) ) {
 			$this->set_max_results( $params['maxResults'] );

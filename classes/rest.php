@@ -249,11 +249,6 @@ class Meow_MWAI_Rest
 				'permission_callback' => [ $this->core, 'can_access_settings' ],
 				'callback' => [ $this, 'rest_openai_finetunes_cancel' ],
 			) );
-			register_rest_route( $this->namespace, '/openai/incidents', array(
-				'methods' => 'GET',
-				'permission_callback' => [ $this->core, 'can_access_settings' ],
-				'callback' => [ $this, 'rest_openai_incidents' ],
-			) );
 
 			// Logging Endpoints
 			register_rest_route( $this->namespace, '/get_logs', array(
@@ -674,23 +669,6 @@ class Meow_MWAI_Rest
 			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $envId );
 			$finetune = $openai->run_finetune( $fileId, $model, $suffix, $hyperparams );
 			return new WP_REST_Response([ 'success' => true, 'finetune' => $finetune ], 200 );
-		}
-		catch ( Exception $e ) {
-			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-			return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
-		}
-	}
-
-	function rest_openai_incidents() {
-		try {
-			$transient = get_transient( 'mwai_openai_incidents' );
-			if ( $transient ) {
-				return new WP_REST_Response([ 'success' => true, 'incidents' => $transient ], 200 );
-			}
-			$openai = Meow_MWAI_Engines_Factory::get_openai( $this->core );
-			$incidents = $openai->get_incidents();
-			set_transient( 'mwai_openai_incidents', $incidents, 60 * 10 );
-			return new WP_REST_Response([ 'success' => true, 'incidents' => $incidents ], 200 );
 		}
 		catch ( Exception $e ) {
 			$message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
