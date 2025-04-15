@@ -578,7 +578,7 @@ class Meow_MWAI_Core
 		return $placeholders;
 	}		
 
-	function get_ip_address( $params = null ) {
+	function get_ip_address( $force = false ) {
 		$ip = '127.0.0.1';
 		$headers = [
 			'HTTP_TRUE_CLIENT_IP',
@@ -595,7 +595,8 @@ class Meow_MWAI_Core
 	
 		if ( isset( $params ) && isset( $params[ 'ip' ] ) ) {
 			$ip = ( string )$params[ 'ip' ];
-		} else {
+		}
+		else {
 			foreach ( $headers as $header ) {
 				if ( array_key_exists( $header, $_SERVER ) && !empty( $_SERVER[ $header ] && $_SERVER[ $header ] != '::1' ) ) {
 					$address_chain = explode( ',', wp_unslash( $_SERVER [ $header ] ) );
@@ -605,8 +606,16 @@ class Meow_MWAI_Core
 			}
 		}
 	
-		return filter_var( apply_filters( 'mwai_get_ip_address', $ip ), FILTER_VALIDATE_IP );
-  	}
+		$ip = filter_var( apply_filters( 'mwai_get_ip_address', $ip ), FILTER_VALIDATE_IP );
+
+		// If privacy_first is enabled, we hash the IP address.
+		if ( !$force && $this->get_option( 'privacy_first' ) && !empty( $ip ) ) {
+			$hash = hash( 'sha256', $ip, true ); // binary output
+			$ip = substr( rtrim( strtr( base64_encode( $hash ), '+/', '-_'), '=' ), 0, 12 );
+		}		
+
+		return $ip;
+  }
 
 	#endregion
 
@@ -1090,7 +1099,7 @@ class Meow_MWAI_Core
 				"slug" => "mwai-deepseek",
 				"name" => "DeepSeek",
 				"description" => "Support for DeepSeek, a Chinese AI company that provides extremely powerful LLM models.",
-				"install_url" => "https://meowapps.com/products/mwai-deepseek/",
+				"install_url" => "https://meowapps.com/products/deepseek/",
 				"settings_url" => null,
 				"stars" => 3,
 				"enabled" => false

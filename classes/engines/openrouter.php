@@ -1,7 +1,23 @@
 <?php
 
+// If this isn't defined elsewhere, set it here by default. You can override
+// it in your theme's functions.php or your main wp-config.php. If set to true,
+// additional time will be spent fetching exact pricing info from OpenRouter
+// after each query, resulting in more accurate but potentially slower responses.
+if ( ! defined( 'MWAI_OPENROUTER_ACCURATE_PRICING' ) ) {
+  define( 'MWAI_OPENROUTER_ACCURATE_PRICING', false );
+}
+
 class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
 {
+  /**
+   * Keep a static dictionary (query -> price) so that if we see the same query
+   * again in another instance, we can immediately return the stored price
+   * instead of recomputing.
+   * @var array
+   */
+  private static $accuratePrices = array();
+
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
   }
@@ -46,38 +62,47 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
   /**
    * Requests usage data if streaming was used and the usage is incomplete.
    */
-  public function handle_tokens_usage( $reply, $query, $returned_model,
-    $returned_in_tokens, $returned_out_tokens, $returned_price = null ) {
-
+  public function handle_tokens_usage(
+    $reply,
+    $query,
+    $returned_model,
+    $returned_in_tokens,
+    $returned_out_tokens,
+    $returned_price = null
+  ) {
     // If streaming is not enabled, we might already have all usage data
-    $everything_is_set = !is_null( $returned_model ) && !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens );
+    $everything_is_set = !is_null( $returned_model )
+      && !is_null( $returned_in_tokens )
+      && !is_null( $returned_out_tokens );
 
     // Clean up the data
     $returned_in_tokens  = $returned_in_tokens  ?? $reply->get_in_tokens( $query );
     $returned_out_tokens = $returned_out_tokens ?? $reply->get_out_tokens();
     $returned_price      = $returned_price      ?? $reply->get_price();
 
-    // Fetch usage data from OpenRouter if needed
-    if ( !empty( $reply->id ) && !$everything_is_set ) {
+    // Fetch usage data from OpenRouter if needed AND if constant is set
+    if ( MWAI_OPENROUTER_ACCURATE_PRICING && !empty( $reply->id ) ) {
+      usleep( 1000 );
       $url = 'https://openrouter.ai/api/v1/generation?id=' . $reply->id;
       try {
         $ch = curl_init();
         curl_setopt( $ch, CURLOPT_URL, $url );
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, [ 'Authorization: Bearer ' . $this->apiKey ] );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [
+          'Authorization: Bearer ' . $this->apiKey
+        ] );
         curl_setopt( $ch, CURLOPT_USERAGENT, 'AI Engine' );
         $res = curl_exec( $ch );
         curl_close( $ch );
         $res = json_decode( $res, true );
         if ( isset( $res['data'] ) ) {
           $data = $res['data'];
-          $returned_model     = $data['model'] ?? $returned_model;
-          $returned_in_tokens = $data['tokens_prompt'] ?? $returned_in_tokens;
-          $returned_out_tokens= $data['tokens_completion'] ?? $returned_out_tokens;
-          $returned_price     = $data['total_cost'] ?? $returned_price;
+          $returned_model      = $data['model']            ?? $returned_model;
+          $returned_in_tokens  = $data['tokens_prompt']    ?? $returned_in_tokens;
+          $returned_out_tokens = $data['tokens_completion']?? $returned_out_tokens;
+          $returned_price      = $data['total_cost']       ?? $returned_price;
         }
-      }
-      catch ( Exception $e ) {
+      } catch ( Exception $e ) {
         Meow_MWAI_Logging::error( 'OpenRouter: ' . $e->getMessage() );
       }
     }
@@ -92,9 +117,20 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
 
     // Set the usage back on the reply
     $reply->set_usage( $usage );
+
+    // Store the price for this query in our static dictionary
+    $hash = spl_object_hash( $query );
+    self::$accuratePrices[ $hash ] = $reply->get_price();
   }
 
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
+    // If we already computed the price for this query, just return it
+    $hash = spl_object_hash( $query );
+    if ( isset( self::$accuratePrices[ $hash ] ) ) {
+      return self::$accuratePrices[ $hash ];
+    }
+
+    // Otherwise, get the price from the reply if it exists
     $price = $reply->get_price();
     return is_null( $price ) ? parent::get_price( $query, $reply ) : $price;
   }
@@ -158,7 +194,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
 
       // If the name contains (beta), (alpha) or (preview), add 'preview' tag and remove from name
       if ( preg_match( '/\((beta|alpha|preview)\)/i', $model['name'] ) ) {
-        $tags[] = 'preview';
+        $tags[]       = 'preview';
         $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
       }
 
@@ -171,11 +207,12 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
       // Check if the model supports "vision" (if "image" is in the left side of the arrow)
       // e.g. "text+image->text" or "image->text"
       $modality = $model['architecture']['modality'] ?? '';
-      // Lowercase for easier detection
       $modality_lc = strtolower( $modality );
-      if ( strpos( $modality_lc, 'image->' ) !== false ||
-           strpos( $modality_lc, 'image+' ) !== false ||
-           strpos( $modality_lc, '+image->' ) !== false ) {
+      if (
+        strpos( $modality_lc, 'image->' ) !== false ||
+        strpos( $modality_lc, 'image+' ) !== false ||
+        strpos( $modality_lc, '+image->' ) !== false
+      ) {
         // Means it can handle images as input, so we consider that "vision"
         $tags[] = 'vision';
       }
@@ -235,4 +272,3 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
     return floor( $number * $factor ) / $factor;
   }
 }
-

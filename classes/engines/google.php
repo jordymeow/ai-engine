@@ -1,79 +1,112 @@
 <?php
 
-class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
-{
-  // Base (Google)
+class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
+
+  // Base (Google).
   protected $apiKey = null;
   protected $region = null;
   protected $projectId = null;
   protected $endpoint = null;
 
-  // Response
+  // Response.
   protected $inModel = null;
   protected $inId = null;
 
-  // Streaming
+  // Streaming.
   private $streamFunctionCall = null;
 
-  public function __construct( $core, $env )
-  {
+  /** Constructor. */
+  public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
     $this->set_environment();
   }
 
+  /**
+   * Set environment variables based on $this->envType.
+   *
+   * @throws Exception If environment type is unknown.
+   */
   protected function set_environment() {
     $env = $this->env;
     $this->apiKey = $env['apikey'];
     if ( $this->envType === 'google' ) {
-      // https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{REGION}/publishers/google
-      $this->region = $env['region'];
+      $this->region = isset( $env['region'] ) ? $env['region'] : null;
       $this->projectId = $env['projectId'];
-
-      // Google Cloud API
-      // $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://{$this->region}-aiplatform.googleapis.com/v1/projects/{$this->projectId}/locations/{$this->region}/publishers/google", $this->env );
-
-      // Generative Language API (less issues with auth)
-      $this->endpoint = apply_filters( 'mwai_google_endpoint', "https://generativelanguage.googleapis.com/v1beta", $this->env );
+      $this->endpoint = apply_filters(
+        'mwai_google_endpoint',
+        'https://generativelanguage.googleapis.com/v1beta',
+        $this->env
+      );
     }
     else {
       throw new Exception( 'Unknown environment type: ' . $this->envType );
     }
   }
 
-  // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
+  /**
+   * Check for a JSON-formatted error in the data, and throw an exception if present.
+   *
+   * @param string $data
+   * @throws Exception
+   */
   function check_for_error( $data ) {
     if ( strpos( $data, 'error' ) === false ) {
       return;
     }
-    if ( strpos( $data, 'data: ' ) === 0 ) {
-      $jsonPart = substr( $data, strlen( 'data: ' ) );
-    }
-    else {
-      $jsonPart = $data;
-    }
+    $jsonPart = ( strpos( $data, 'data: ' ) === 0 ) ? substr( $data, strlen( 'data: ' ) ) : $data;
     $json = json_decode( $jsonPart, true );
-    if ( json_last_error() === JSON_ERROR_NONE ) {
-      if ( isset( $json['error'] ) ) {
-        $error = $json['error'];
-        $code = $error['code'];
-        $message = $error['message'];
-        throw new Exception( "Error $code: $message" );
-      }
+    if ( json_last_error() === JSON_ERROR_NONE && isset( $json['error'] ) ) {
+      $error = $json['error'];
+      $code = $error['code'];
+      $message = $error['message'];
+      throw new Exception( "Error $code: $message" );
     }
   }
 
+  /**
+   * Format a function call for internal usage.
+   *
+   * @param array $rawMessage
+   * @return array
+   */
+  private function format_function_call( $rawMessage ) {
+    if ( !isset( $rawMessage['function_call'] ) ) {
+      return $rawMessage;
+    }
+    $parts = [];
+    $functionCall = [ 'name' => $rawMessage['function_call']['name'] ];
+    if ( !empty( $rawMessage['function_call']['args'] ) ) {
+      $functionCall['args'] = $rawMessage['function_call']['args'];
+    }
+    $parts[] = [ 'functionCall' => $functionCall ];
+    if ( isset( $rawMessage['content'] ) && !empty( $rawMessage['content'] ) ) {
+      $parts[] = [ 'text' => $rawMessage['content'] ];
+    }
+    return [ 'role' => 'model', 'parts' => $parts ];
+  }
+
+  /**
+   * Build the messages for the Google API payload.
+   *
+   * @param Meow_MWAI_Query_Completion|Meow_MWAI_Query_Feedback $query
+   * @return array
+   */
   private function build_messages( $query ) {
     $messages = [];
 
-    // First, we need to add the first message (the instructions).
+    // 1. Instructions (if any).
     if ( !empty( $query->instructions ) ) {
-      $messages[] = [ 'role' => 'model', 'parts' => [ [ 'text' => $query->instructions ] ] ];
+      $messages[] = [
+        'role' => 'model',
+        'parts' => [
+          [ 'text' => $query->instructions ]
+        ]
+      ];
     }
 
-    // Then, if any, we need to add the 'messages', they are already formatted.
+    // 2. Existing messages (already partially formatted).
     foreach ( $query->messages as $message ) {
-      // messages contains role and content (as OpenAI does it, but we need to convert it to Google's format)
-      // role's assistant should be model, and user should be user.
+      // Convert roles: 'assistant' => 'model', 'user' => 'user'.
       $newMessage = [ 'role' => $message['role'], 'parts' => [] ];
       if ( isset( $message['content'] ) ) {
         $newMessage['parts'][] = [ 'text' => $message['content'] ];
@@ -84,89 +117,110 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       $messages[] = $newMessage;
     }
 
-    // If there is a context, we need to add it.
+    // 3. Context (if any).
     if ( !empty( $query->context ) ) {
-      $messages[] = [ 'role' => 'model', 'parts' => [ [ 'text' => $query->context ] ] ];
-    }
-
-    // Finally, we need to add the message, but if there is an image, we need to add it as a model message.
-    if ( $query->attachedFile) {
-      // Gemini doesn't handle URL uploads, so we need to convert it to base64.
-      //$remote_upload = $this->core->get_option( 'image_remote_upload' );
-      $data = $query->attachedFile->get_base64();
-      //$data = strpos( $data, 'data:' ) === 0;
-      $messages[] = [ 
-        'role' => 'user',
+      $messages[] = [
+        'role' => 'model',
         'parts' => [
-          [
-            "inlineData" => [
-              "mimeType" => "image/jpeg",
-              "data" => $data // We need to be careful here to get only the data part
-            ]
-          ],
-          [
-            "text" => $query->get_message()
-          ]
+          [ 'text' => $query->context ]
         ]
       ];
-      // TODO: Gemini doesn't support multiturn chat with Vision...
-      // So we only keep the message that goes with the image.
+    }
+
+    // 4. The final user message (check if there is an attached image).
+    if ( $query->attachedFile ) {
+      $data = $query->attachedFile->get_base64();
+      $messages[] = [
+        'role' => 'user',
+        'parts' => [
+          [ 'inlineData' => [ 'mimeType' => 'image/jpeg', 'data' => $data ] ],
+          [ 'text' => $query->get_message() ]
+        ]
+      ];
+      // Gemini doesn't support multi-turn chat with Vision.
       $messages = array_slice( $messages, -1 );
     }
     else {
-      $messages[] = [ 'role' => 'user', 'parts' => [ [ 'text' => $query->get_message() ] ] ];
+      $messages[] = [
+        'role' => 'user',
+        'parts' => [
+          [ 'text' => $query->get_message() ]
+        ]
+      ];
     }
 
-    // Streamline the messages
+    // 5. Streamline messages.
     $messages = $this->streamline_messages( $messages, 'model', 'parts' );
 
-    // Add the feedback if it's a feedback query.
-    if ( $query instanceof Meow_MWAI_Query_Feedback ) {
-      if ( !empty( $query->blocks ) ) {
-        foreach ( $query->blocks as $feedback_block ) {
-          $messages[] = $feedback_block['rawMessage'];
-          foreach ( $feedback_block['feedbacks'] as $feedback ) {
-            $messages[] = [
-              'role' => "user",
-              'parts' => [
+    // 6. Feedback data for Meow_MWAI_Query_Feedback.
+    if ( $query instanceof Meow_MWAI_Query_Feedback && !empty( $query->blocks ) ) {
+      foreach ( $query->blocks as $feedback_block ) {
+        $messages[] = $this->format_function_call( $feedback_block['rawMessage'] );
+        foreach ( $feedback_block['feedbacks'] as $feedback ) {
+          $messages[] = [
+            'role' => 'function',
+            'parts' => [
+              [
                 'functionResponse' => [
                   'name' => $feedback['request']['name'],
-                  'response' => [
-                    'content' => $feedback['reply']['value']
-                  ]
+                  'response' => [ 'content' => $feedback['reply']['value'] ]
                 ]
               ]
-            ];
-          }
+            ]
+          ];
         }
       }
     }
-
     return $messages;
   }
 
+  /**
+   * Handle each chunk of data when streaming the response.
+   *
+   * @param array $json
+   * @return string|null
+   */
   protected function stream_data_handler( $json ) {
     $content = null;
-
-    // Is it a function call?
-    if ( isset( $json['candidates'][0]['content']['parts'][0]['functionCall'] ) ) {
-      $this->streamFunctionCall = $json['candidates'][0]['content']['parts'][0]['functionCall'];
+    $isCompletedResponse = (
+      isset( $json['candidates'][0]['finishReason'] ) &&
+      (
+        $json['candidates'][0]['finishReason'] === 'STOP' ||
+        $json['candidates'][0]['finishReason'] === 'MAX_TOKENS'
+      )
+    );
+    if ( isset( $json['candidates'][0]['content']['parts'] ) ) {
+      foreach ( $json['candidates'][0]['content']['parts'] as $part ) {
+        if ( isset( $part['functionCall'] ) && $isCompletedResponse ) {
+          $this->streamFunctionCall = $part['functionCall'];
+        }
+        if ( isset( $part['text'] ) ) {
+          $content = ( $content === null ) ? $part['text'] : $content . $part['text'];
+        }
+      }
     }
-
-    // Get the content
-    if ( isset( $json['candidates'][0]['content']['parts'][0]['text'] ) ) {
-      $content = $json['candidates'][0]['content']['parts'][0]['text'];
+    if ( !$isCompletedResponse && isset( $json['candidates'][0]['content']['parts'] ) ) {
+      foreach ( $json['candidates'][0]['content']['parts'] as $part ) {
+        if ( isset( $part['functionCall'] ) ) {
+          // Wait for the final chunk to handle the function call fully.
+          return $content;
+        }
+      }
     }
-
-    // Avoid some endings
-    $endings = [ "<|im_end|>", "</s>" ];
-    if ( in_array( $content, $endings ) ) {
+    $endings = [ '<|im_end|>', '</s>' ];
+    if ( in_array( $content, $endings, true ) ) {
       $content = null;
     }
-
     return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
 
+  /**
+   * Build headers for the request.
+   *
+   * @param Meow_MWAI_Query_Completion|Meow_MWAI_Query_Feedback $query
+   * @throws Exception If no API Key is provided.
+   * @return array
+   */
   protected function build_headers( $query ) {
     if ( $query->apiKey ) {
       $this->apiKey = $query->apiKey;
@@ -174,67 +228,80 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     if ( empty( $this->apiKey ) ) {
       throw new Exception( 'No API Key provided. Please visit the Settings.' );
     }
-    $headers = array(
-      'Content-Type' => 'application/json',
-    );
-    return $headers;
+    return [ 'Content-Type' => 'application/json' ];
   }
 
+  /**
+   * Build WP remote request options.
+   *
+   * @param array  $headers
+   * @param array  $json
+   * @param array  $forms
+   * @param string $method
+   * @throws Exception If form-data requests are used (unsupported).
+   * @return array
+   */
   protected function build_options( $headers, $json = null, $forms = null, $method = 'POST' ) {
     $body = null;
     if ( !empty( $forms ) ) {
       throw new Exception( 'No support for form-data requests yet.' );
-      // $boundary = wp_generate_password ( 24, false );
-      // $headers['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
-      // $body = $this->build_form_body( $forms, $boundary );
     }
     else if ( !empty( $json ) ) {
       $body = json_encode( $json );
     }
-    $options = array(
+    return [
       'headers' => $headers,
       'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
       'sslverify' => false
-    );
-    return $options;
+    ];
   }
 
+  /**
+   * Run the query against the Google endpoint.
+   *
+   * @param string $url
+   * @param array  $options
+   * @param bool   $isStream
+   * @throws Exception
+   * @return array
+   */
   public function run_query( $url, $options, $isStream = false ) {
+
     try {
       $options['stream'] = $isStream;
       if ( $isStream ) {
         $options['filename'] = tempnam( sys_get_temp_dir(), 'mwai-stream-' );
       }
       $res = wp_remote_get( $url, $options );
-
       if ( is_wp_error( $res ) ) {
         throw new Exception( $res->get_error_message() );
       }
-
       if ( $isStream ) {
-        return [ 'stream' => true ]; 
+        return [ 'stream' => true ];
       }
-
       $response = wp_remote_retrieve_body( $res );
       $headersRes = wp_remote_retrieve_headers( $res );
       $headers = $headersRes->getAll();
-
-      // Check if Content-Type is 'multipart/form-data' or 'text/plain'
-      // If so, we don't need to decode the response
       $normalizedHeaders = array_change_key_case( $headers, CASE_LOWER );
       $resContentType = $normalizedHeaders['content-type'] ?? '';
-      if ( strpos( $resContentType, 'multipart/form-data' ) !== false || strpos( $resContentType, 'text/plain' ) !== false ) {
-        return [ 'stream' => false, 'headers' => $headers, 'data' => $response ];
+      if (
+        strpos( $resContentType, 'multipart/form-data' ) !== false ||
+        strpos( $resContentType, 'text/plain' ) !== false
+      ) {
+        return [
+          'stream' => false,
+          'headers' => $headers,
+          'data' => $response
+        ];
       }
-
       $data = json_decode( $response, true );
       $this->handle_response_errors( $data );
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( "(Google) " . $e->getMessage() );
+      Meow_MWAI_Logging::error( '(Google) ' . $e->getMessage() );
       throw $e;
     }
     finally {
@@ -244,62 +311,44 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     }
   }
 
-  public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
+  /**
+   * Run a completion query on the Google endpoint.
+   *
+   * @param Meow_MWAI_Query_Completion $query
+   * @param callable|null              $streamCallback
+   * @throws Exception
+   * @return Meow_MWAI_Reply
+   */
+  public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
     if ( !is_null( $streamCallback ) ) {
       $this->streamCallback = $streamCallback;
-      add_action( 'http_api_curl', array( $this, 'stream_handler' ), 10, 3 );
+      add_action( 'http_api_curl', [ $this, 'stream_handler' ], 10, 3 );
     }
 
-    $body = array(
-      "generationConfig" => [
-        "candidateCount" => $query->maxResults,
-        "maxOutputTokens" => $query->maxTokens,
-        "temperature" => $query->temperature,
-        "stopSequences" => [],
-      ],
-    );
-
-    // if ( !empty( $query->stop ) ) {
-    //   $body['generationConfig']['stop'] = $query->stop;
-    // }
-
-    // if ( !empty( $query->responseFormat ) ) {
-    //   if ( $query->responseFormat === 'json' ) {
-    //     $body['response_format'] = [ 'type' => 'json_object' ];
-    //   }
-    // }
+    $body = [
+      'generationConfig' => [
+        'candidateCount' => $query->maxResults,
+        'maxOutputTokens' => $query->maxTokens,
+        'temperature' => $query->temperature,
+        'stopSequences' => []
+      ]
+    ];
 
     if ( !empty( $query->functions ) ) {
-      //throw new Exception( 'AI Engine doesn\'t support Function Calling with Google models yet.' );
-      $body['tools'] = [[
-        'function_declarations' => []
-      ]];
-      // Dynamic function: they will interactively enhance the completion (tools).
+      $body['tools'] = [ [ 'function_declarations' => [] ] ];
       foreach ( $query->functions as $function ) {
         $body['tools'][0]['function_declarations'][] = $function->serializeForOpenAI();
       }
       $body['tool_config'] = [
-        'function_calling_config' => [
-          'mode' => 'AUTO'
-        ]
+        'function_calling_config' => [ 'mode' => 'AUTO' ]
       ];
     }
-
     $body['contents'] = $this->build_messages( $query );
+    $url = $this->endpoint . '/models/' . $query->model . ':generateContent';
 
-    $url = $this->endpoint;
-
-    // Streaming:
-    // $url .= '/models/' . $query->model . ':streamGenerateContent';
-
-    $url .= '/models/' . $query->model . ':generateContent';
-
-    // If streaming is enabled, we need to use the SSE endpoint.
     if ( !is_null( $streamCallback ) ) {
       $url .= '?alt=sse';
     }
-
-    // Add the API key
     if ( strpos( $url, '?' ) === false ) {
       $url .= '?key=' . $this->apiKey;
     }
@@ -321,7 +370,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
       $returned_choices = [];
 
       if ( !is_null( $streamCallback ) ) {
-        // Streamed data
         if ( empty( $this->streamContent ) ) {
           $json = json_decode( $this->streamBuffer, true );
           if ( isset( $json['error']['message'] ) ) {
@@ -330,77 +378,70 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
         }
         $returned_id = $this->inId;
         $returned_model = $this->inModel ? $this->inModel : $query->model;
-        $returned_choices = [
-          [ 
-            'message' => [ 
-              'content' => $this->streamContent,
-              'function_call' => $this->streamFunctionCall
-            ]
+        $returned_choices[] = [
+          'message' => [
+            'content' => $this->streamContent,
+            'function_call' => $this->streamFunctionCall
           ]
         ];
+        $this->streamFunctionCall = null;
       }
       else {
-        // Regular data
         $data = $res['data'];
         if ( empty( $data ) ) {
           throw new Exception( 'No content received (res is null).' );
         }
-
-        // Not much information from Google's API :(
-        $returned_id = null;
-        $returned_model = $query->model;
-        $returned_in_tokens = null;
-        $returned_out_tokens = null;
-
-        // We should return the candidates formatted as OpenAI does it.
-        $returned_choices = [];
         if ( isset( $data['candidates'] ) ) {
           $candidates = $data['candidates'];
           foreach ( $candidates as $candidate ) {
             $content = $candidate['content'];
-            $text = $content['parts'][0]['text'];
-            $returned_choices[] = [ 'role' => 'assistant', 'text' => $text ];
+            if ( isset( $content['parts'][0]['functionCall'] ) ) {
+              $function_call = $content['parts'][0]['functionCall'];
+              $returned_choices[] = [
+                'message' => [
+                  'content' => null,
+                  'function_call' => $function_call
+                ]
+              ];
+            }
+            else if ( isset( $content['parts'][0]['text'] ) ) {
+              $text = $content['parts'][0]['text'];
+              $returned_choices[] = [ 'role' => 'assistant', 'text' => $text ];
+            }
           }
         }
+        $returned_model = $query->model;
       }
-      
-      // Set the results.
+
       $reply->set_choices( $returned_choices );
       if ( !empty( $returned_id ) ) {
         $reply->set_id( $returned_id );
       }
-
-      // Handle tokens.
       $this->handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens );
-
       return $reply;
     }
     catch ( Exception $e ) {
-      Meow_MWAI_Logging::error( "(Google) " . $e->getMessage() );
-      $message = "From Google: " . $e->getMessage();
-      throw new Exception( $message );
+      Meow_MWAI_Logging::error( '(Google) ' . $e->getMessage() );
+      throw new Exception( 'From Google: ' . $e->getMessage() );
     }
   }
 
-  public function handle_tokens_usage( $reply, $query, $returned_model,
-    $returned_in_tokens, $returned_out_tokens ) {
-    $returned_in_tokens = !is_null( $returned_in_tokens ) ?
-      $returned_in_tokens : $reply->get_in_tokens( $query );
-    $returned_out_tokens = !is_null( $returned_out_tokens ) ?
-      $returned_out_tokens : $reply->get_out_tokens();
-    $usage = $this->core->record_tokens_usage(
-      $returned_model,
-      $returned_in_tokens,
-      $returned_out_tokens
-    );
+  /**
+   * Handle usage tokens.
+   */
+  public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens ) {
+    $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens : $reply->get_in_tokens( $query );
+    $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens : $reply->get_out_tokens();
+    $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
     $reply->set_usage( $usage );
   }
 
-  /*
-    This is the rest of the OpenAI API support, not related to the models directly.
-  */
-
-  // Check if there are errors in the response from OpenAI, and throw an exception if so.
+  /**
+   * Check if there are errors in the response from Google, and throw an exception if so.
+   *
+   * @param array $data
+   * @throws Exception
+   */
   public function handle_response_errors( $data ) {
     if ( isset( $data['error'] ) ) {
       $message = $data['error']['message'];
@@ -411,71 +452,80 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core
     }
   }
 
+  /**
+   * Get models via the core method.
+   *
+   * @return array
+   */
   public function get_models() {
     return $this->core->get_engine_models( 'google' );
   }
 
+  /**
+   * Retrieve models from Google's generative language endpoint.
+   *
+   * @throws Exception
+   * @return array
+   */
   public function retrieve_models() {
-    $url = "https://generativelanguage.googleapis.com/v1/models";
-    $url .= "?key=" . $this->apiKey;
+    $url = 'https://generativelanguage.googleapis.com/v1/models?key=' . $this->apiKey;
     $response = wp_remote_get( $url );
     if ( is_wp_error( $response ) ) {
       throw new Exception( 'AI Engine: ' . $response->get_error_message() );
     }
     $body = json_decode( $response['body'], true );
-    $models = array();
+    $models = [];
     foreach ( $body['models'] as $model ) {
       if ( strpos( $model['name'], 'gemini' ) === false ) {
         continue;
       }
-      $family = "gemini";
+      $family = 'gemini';
       $maxCompletionTokens = $model['outputTokenLimit'];
       $maxContextualTokens = $model['inputTokenLimit'];
       $priceIn = 0;
       $priceOut = 0;
       $tags = [ 'core', 'chat' ];
-      // If the name contains (beta), (alpha) or (preview), add 'preview' tag and remove from name
-      if ( preg_match( '/\((beta|alpha|preview)\)/i', $model['name'], $matches ) ) {
+
+      if ( preg_match( '/\((beta|alpha|preview)\)/i', $model['name'] ) ) {
         $tags[] = 'preview';
         $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
       }
-      // If the name includes 'Vision', add 'vision' tag
-      if ( preg_match( '/vision/i', $model['name'], $matches ) ) {
+      if ( preg_match( '/vision/i', $model['name'] ) ) {
         $tags[] = 'vision';
       }
-      else if ( preg_match( '/(vision|multimodal)/i', $model['description'], $matches ) ) {
+      else if ( preg_match( '/(vision|multimodal)/i', $model['description'] ) ) {
         $tags[] = 'vision';
       }
-      if ( preg_match( '/flash/i', $model['name'], $matches ) ) {
+      if ( preg_match( '/flash/i', $model['name'] ) ) {
         $tags[] = 'vision';
         $tags[] = 'functions';
-        $features[] = 'functions';
       }
       $name = preg_replace( '/^models\//', '', $model['name'] );
-      $model = array(
+      $model = [
         'model' => $name,
         'name' => $name,
         'family' => $family,
-        'features' => ['completion'],
+        'features' => [ 'completion' ],
         'type' => 'token',
-		    'unit' => 1 / 1000,
+        'unit' => 1 / 1000,
         'maxCompletionTokens' => $maxCompletionTokens,
         'maxContextualTokens' => $maxContextualTokens,
         'tags' => $tags
-      );
+      ];
       if ( $priceIn > 0 && $priceOut > 0 ) {
-        $model['price'] = array(
-          'in' => $priceIn,
-          'out' => $priceOut,
-        );
+        $model['price'] = [ 'in' => $priceIn, 'out' => $priceOut ];
       }
       $models[] = $model;
     }
-    return $models; 
+    return $models;
   }
 
+  /**
+   * Google pricing is not currently supported.
+   *
+   * @return null
+   */
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
-    // TODO: Not sure how to get the price from Google's API.
     return null;
   }
 }

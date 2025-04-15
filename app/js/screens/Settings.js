@@ -1,12 +1,11 @@
-// Previous: 2.6.9
-// Current: 2.7.5
+// Previous: 2.7.5
+// Current: 2.7.6
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
-// NekoUI
-import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoWrapper, NekoSettings, NekoSpacer, NekoTypo,
-  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoCollapsableCategory, NekoColumn, NekoModal } from '@neko-ui';
+import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
+  NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
+  NekoCollapsableCategory, NekoColumn, NekoModal, NekoMessage } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { nekoStringify } from '@neko-ui';
@@ -84,6 +83,7 @@ const Settings = () => {
   const ai_json_default_env = options?.ai_json_default_env;
   const ai_json_default_model = options?.ai_json_default_model;
   const ai_streaming = options?.ai_streaming;
+  const privacy_first = options?.privacy_first;
 
   const embeddings_envs = options?.embeddings_envs ? options?.embeddings_envs : [];
   const embeddings_default_env = options?.embeddings_default_env;
@@ -172,15 +172,14 @@ const Settings = () => {
         await updateOptions(newOptions);
       }
     };
-
     performChecks();
   }, [ai_envs, options, updateOptions, embeddingsModels]);
 
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsResp = await retrieveOptions();
-      setOptions(optionsResp);
+      const optionsData = await retrieveOptions();
+      setOptions(optionsData);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -196,9 +195,9 @@ const Settings = () => {
     }
   };
 
-  const updateOptions = useCallback(async (newOpts) => {
+  const updateOptions = useCallback(async (newOptions) => {
     try {
-      if (nekoStringify(newOpts) === nekoStringify(options)) {
+      if (nekoStringify(newOptions) === nekoStringify(options)) {
         return;
       }
       setBusyAction(true);
@@ -206,14 +205,14 @@ const Settings = () => {
         method: 'POST',
         nonce: restNonce,
         json: {
-          options: newOpts
+          options: newOptions
         }
       });
       setOptions(response.options);
     }
     catch (err) {
       console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ?
-        { message: err.message, options, newOpts } : { err, options, newOpts });
+        { message: err.message, options, newOptions } : { err, options, newOptions });
       if (err.message) {
         setError(<>
           <div>{i18n.ERROR.UPDATING_OPTIONS}</div>
@@ -228,28 +227,29 @@ const Settings = () => {
 
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
+    // eslint-disable-next-line no-console
     console.log('Updating', id, value);
     await updateOptions(newOptions);
   };
 
   const updateVectorDbEnvironment = async (id, updatedValue) => {
-    const updatedEnvs = embeddings_envs.map(env => {
+    const updatedEnvironments = embeddings_envs.map(env => {
       if (env.id === id) {
         return { ...env, ...updatedValue };
       }
       return env;
     });
-    updateOption(updatedEnvs, 'embeddings_envs');
+    updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
   const updateAIEnvironment = async (id, updatedValue) => {
-    const updatedEnvs = ai_envs.map(env => {
+    const updatedEnvironments = ai_envs.map(env => {
       if (env.id === id) {
         return { ...env, ...updatedValue };
       }
       return env;
     });
-    updateOption(updatedEnvs, 'ai_envs');
+    updateOption(updatedEnvironments, 'ai_envs');
   };
 
   const onResetSettings = async () => {
@@ -274,10 +274,10 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbotsResp = await retrieveChatbots();
-      const themesResp = await retrieveThemes();
-      const optionsResp = await retrieveOptions();
-      const data = { chatbots: chatbotsResp, themes: themesResp, options: optionsResp };
+      const chatbotsData = await retrieveChatbots();
+      const themesData = await retrieveThemes();
+      const optionsData = await retrieveOptions();
+      const data = { chatbots: chatbotsData, themes: themesData, options: optionsData };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -304,14 +304,16 @@ const Settings = () => {
       fileInput.accept = 'application/json';
       fileInput.onchange = async (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+          return;
+        }
         const reader = new FileReader();
         reader.onload = async (e) => {
-          const dataParsed = JSON.parse(e.target.result);
-          const { chatbots: importedChatbots, themes: importedThemes, options: importedOptions } = dataParsed;
-          await updateChatbots(importedChatbots);
-          await updateThemes(importedThemes);
-          await updateOptions(importedOptions);
+          const data = JSON.parse(e.target.result);
+          const { chatbots, themes, options } = data;
+          await updateChatbots(chatbots);
+          await updateThemes(themes);
+          await updateOptions(options);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -330,18 +332,20 @@ const Settings = () => {
 
   useEffect(() => {
     if (!isRegistered) {
-      const newOpts = { ...options };
-      let changed = false;
-      proOptions.forEach(opt => {
-        if (newOpts[opt]) {
-          newOpts[opt] = false;
-          console.warn(`Resetting ${opt}`);
-          changed = true;
+      const newOptions = { ...options };
+      let hasChanges = false;
+
+      proOptions.forEach(option => {
+        if (newOptions[option]) {
+          newOptions[option] = false;
+          console.warn(`Resetting ${option}`);
+          hasChanges = true;
         }
       });
-      if (changed) {
-        if (nekoStringify(newOpts) !== nekoStringify(options)) {
-          updateOptions(newOpts);
+
+      if (hasChanges) {
+        if (nekoStringify(newOptions) !== nekoStringify(options)) {
+          updateOptions(newOptions);
         }
       }
     }
@@ -562,6 +566,17 @@ const Settings = () => {
           checked={ai_streaming}
           description={i18n.HELP.STREAMING}
           onChange={updateOption} />
+      </NekoCheckboxGroup>
+    </NekoSettings>;
+
+  const jsxPrivacyFirst =
+    <NekoSettings title={i18n.COMMON.PRIVACY_FIRST}>
+      <NekoCheckboxGroup max="1">
+        <NekoCheckbox name="privacy_first" label={i18n.COMMON.ENABLE} value="1"
+          checked={privacy_first}
+          description={i18n.HELP.PRIVACY_FIRST}
+          onChange={updateOption}
+        />
       </NekoCheckboxGroup>
     </NekoSettings>;
 
@@ -1117,6 +1132,7 @@ const Settings = () => {
 
                   <NekoBlock busy={busy} title={i18n.COMMON.GENERAL} className="primary">
                     {jsxStream}
+                    {jsxPrivacyFirst}
                   </NekoBlock>
 
                   <NekoBlock busy={busy} title={i18n.COMMON.USER_INTERFACE} className="primary">
@@ -1127,7 +1143,7 @@ const Settings = () => {
 
                   <NekoBlock busy={busy} title={i18n.COMMON.CHATBOT} className="primary">
                     {jsxShortcodeDiscussions}
-                    {chatbot_discussions && jsxShortcodeDiscussionsTitling}
+                    {chatbot_discussion && jsxShortcodeDiscussionsTitling}
                     {jsxShortcodeSyntaxHighlighting}
                     {jsxWebSpeechAPI}
                     {jsxVirtualKeyboardFix}

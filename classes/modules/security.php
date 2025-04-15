@@ -27,7 +27,7 @@ class Meow_MWAI_Modules_Security {
         return $ok;
       }
     }
-    $ip = $this->core->get_ip_address();
+    $ip = $this->core->get_ip_address( true );
     if ( $this->is_blocked_ip( $ip, $this->banned_ips ) ) {
       Meow_MWAI_Logging::warn( "Blocked IP: $ip", '🔒' );
       throw new Exception( "Your query has been rejected." );

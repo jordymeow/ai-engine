@@ -3,7 +3,74 @@
 // Price as of June 2024: https://openai.com/api/pricing/
 
 define( 'MWAI_OPENAI_MODELS', [
-  // Base models:
+	/*
+		GPT 4.1
+		Flagship GPT model for complex tasks
+		https://platform.openai.com/docs/models/gpt-4.1
+	*/
+	[
+		"model" => "gpt-4.1",
+		"name" => "GPT-4.1",
+		"family" => "gpt41",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 2.00,
+			"out" => 8.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 32768,
+		"maxContextualTokens" => 1047576,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+	],
+	/*
+		GPT-4.1 mini
+		Balanced for intelligence, speed, and cost
+		https://platform.openai.com/docs/models/gpt-4.1-mini
+	*/
+	[
+		"model" => "gpt-4.1-mini",
+		"name" => "GPT-4.1 Mini",
+		"family" => "gpt41",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 0.40,
+			"out" => 1.60,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 32768,
+		"maxContextualTokens" => 1047576,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+	],
+	/*
+		GPT-4.1 nano
+		Fastest, most cost-effective GPT-4.1 model
+		https://platform.openai.com/docs/models/gpt-4.1-nano
+	*/
+	[
+		"model" => "gpt-4.1-nano",
+		"name" => "GPT-4.1 Nano",
+		"family" => "gpt41",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 0.10,
+			"out" => 0.40,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 32768,
+		"maxContextualTokens" => 1047576,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+	],
+	/*
+		GPT-4o
+		Fast, intelligent, flexible GPT model
+		https://platform.openai.com/docs/models/gpt-4o
+	*/
 	[
 		"model" => "gpt-4o",
 		"name" => "GPT-4o",
@@ -20,6 +87,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
 	],
+	/*
+		GPT-4o mini
+		Fast, affordable small model for focused tasks
+		https://platform.openai.com/docs/models/gpt-4o-mini
+	*/
 	[
 		"model" => "gpt-4o-mini",
 		"name" => "GPT-4o Mini",
@@ -40,22 +112,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
 	],
-	[
-		"model" => "gpt-4.5-preview",
-		"name" => "GPT-4.5 (Preview)",
-		"family" => "gpt4.5",
-		"features" => ['completion'],
-		"price" => [
-			"in" => 75.00,
-			"out" => 150.00,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000000,
-		"maxCompletionTokens" => 16384,
-		"maxContextualTokens" => 128000,
-		"finetune" => false,
-		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
-	],
+	/* 
+		o1
+		High-intelligence reasoning mode
+		https://platform.openai.com/docs/models/o1
+	*/
 	[
 		"model" => "o1",
 		"name" => "o1",
@@ -86,6 +147,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 128000,
 		"tags" => ['core', 'chat', 'o1-model', 'reasoning']
 	],
+	/* 
+		o3-mini
+		Fast, flexible, intelligent reasoning model
+		https://platform.openai.com/docs/models/o3-mini
+	*/
 	[
 		"model" => "o3-mini",
 		"name" => "o3 Mini",
@@ -101,6 +167,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"maxContextualTokens" => 200000,
 		"tags" => ['core', 'chat', 'o1-model', 'reasoning']
 	],
+	/* 
+		GPT-4o Realtime
+		Model capable of realtime text and audio inputs and outputs
+		https://platform.openai.com/docs/models/gpt-4o-realtime-preview
+	*/
 	[
 		"model" => "gpt-4o-realtime-preview",
 		"name" => "GPT-4o Realtime (Preview)",
@@ -125,6 +196,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'realtime', 'functions']
 	],
+	/* 
+		GPT-4o mini Realtime
+		Smaller realtime model for text and audio inputs and outputs
+		https://platform.openai.com/docs/models/gpt-4o-mini-realtime-preview
+	*/
 	[
 		"model" => "gpt-4o-mini-realtime-preview",
 		"name" => "GPT-4o Mini Realtime (Preview)",
@@ -149,6 +225,32 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'realtime', 'functions']
 	],
+	/* 
+		GPT-4
+		An older high-intelligence GPT model
+		https://platform.openai.com/docs/models/gpt-4
+	*/
+	[ 
+		"model" => "gpt-4",
+		"name" => "GPT-4",
+		"family" => "gpt4",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 30.00,
+			"out" => 60.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 8192,
+		"maxContextualTokens" => 8192,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'functions']
+	],
+	/* 
+		GPT-4 Turbo
+		An older high-intelligence GPT model
+		https://platform.openai.com/docs/models/gpt-4-turbo
+	*/
 	[
 		"model" => "gpt-4-turbo",
 		"name" => "GPT-4 Turbo",
@@ -165,21 +267,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		"finetune" => false,
 		"tags" => ['core', 'chat', 'vision', 'functions', 'json']
 	],
-	[ 
-		"model" => "gpt-4",
-		"name" => "GPT-4",
-		"family" => "gpt4",
-		"features" => ['completion'],
-		"price" => [
-			"in" => 30.00,
-			"out" => 60.00,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000000,
-		"maxTokens" => 8192,
-		"finetune" => false,
-		"tags" => ['core', 'chat', 'functions']
-	],
+	/* 
+		GPT-3.5 Turbo
+		Legacy GPT model for cheaper chat and non-chat tasks
+		https://platform.openai.com/docs/models/gpt-3.5-turbo
+	*/
 	[ 
 		"model" => "gpt-3.5-turbo",
 		"name" => "GPT-3.5 Turbo",
@@ -191,7 +283,8 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"type" => "token",
 		"unit" => 1 / 1000000,
-		"maxTokens" => 4096,
+		"maxCompletionTokens" => 4096,
+		"maxContextualTokens" => 16385,
 		"finetune" => [
 			"in" => 3.00,
 			"out" => 6.00,
@@ -199,68 +292,11 @@ define( 'MWAI_OPENAI_MODELS', [
 		],
 		"tags" => ['core', 'chat', '4k', 'finetune', 'functions']
 	],
-	[ 
-		"model" => "gpt-3.5-turbo-16k",
-		"description" => "Offers 4 times the context length of gpt-3.5-turbo at twice the price.",
-		"name" => "GPT-3.5 Turbo 16k",
-		"family" => "turbo",
-		"features" => ['completion'],
-		"price" => [
-			"in" => 30.00,
-			"out" => 40.0,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000000,
-		"maxTokens" => 16385,
-		"finetune" => false,
-		"tags" => ['core', 'chat', '16k']
-	],
-	[
-		"model" => "gpt-3.5-turbo-instruct",
-		"name" => "GPT-3.5 Turbo Instruct",
-		"family" => "turbo-instruct",
-		"features" => ['completion'],
-		"price" => [
-			"in" => 0.50,
-			"out" => 2.00,
-		],
-		"type" => "token",
-		"unit" => 1 / 1000000,
-		"finetune" => [
-			"in" => 0.03,
-			"out" => 0.06,
-		],
-		"maxTokens" => 4096,
-		"tags" => ['core', 'chat', '4k']
-	],
-  // Image models:
-  [
-		"model" => "dall-e",
-		"name" => "DALL-E 2",
-		"family" => "dall-e",
-		"features" => ['text-to-image'],
-		"resolutions" => [
-			[
-				"name" => "256x256",
-				"label" => "256x256",
-				"price" => 0.016
-			],
-			[
-				"name" => "512x512",
-				"label" => "512x512",
-				"price" => 0.018
-			],
-			[
-				"name" => "1024x1024",
-				"label" => "1024x1024",
-				"price" => 0.020
-			]
-		],
-		"type" => "image",
-		"unit" => 1,
-		"finetune" => false,
-		"tags" => ['core', 'image', 'deprecated']
-  ],
+	/* 
+		DALL·E 3
+		Our latest image generation model
+		https://platform.openai.com/docs/models/dall-e-3
+	*/
 	[
 		"model" => "dall-e-3",
 		"name" => "DALL-E 3",
@@ -363,7 +399,87 @@ define( 'MWAI_OPENAI_MODELS', [
 		"unit" => 1,
 		"finetune" => false,
 		"tags" => ['core', 'audio'],
-	]
+	],
+	/* 
+		Depecated Models
+	*/
+	[
+		"model" => "gpt-4.5-preview",
+		"name" => "GPT-4.5 (Preview)",
+		"family" => "gpt4.5",
+		"features" => ['completion'],
+		"price" => [
+			"in" => 75.00,
+			"out" => 150.00,
+		],
+		"type" => "token",
+		"unit" => 1 / 1000000,
+		"maxCompletionTokens" => 16384,
+		"maxContextualTokens" => 128000,
+		"finetune" => false,
+		"tags" => ['core', 'chat', 'vision', 'functions', 'json', 'deprecated']
+	],
+	[
+		"model" => "dall-e",
+		"name" => "DALL-E 2",
+		"family" => "dall-e",
+		"features" => ['text-to-image'],
+		"resolutions" => [
+			[
+				"name" => "256x256",
+				"label" => "256x256",
+				"price" => 0.016
+			],
+			[
+				"name" => "512x512",
+				"label" => "512x512",
+				"price" => 0.018
+			],
+			[
+				"name" => "1024x1024",
+				"label" => "1024x1024",
+				"price" => 0.020
+			]
+		],
+		"type" => "image",
+		"unit" => 1,
+		"finetune" => false,
+		"tags" => ['core', 'image', 'deprecated']
+  ],
+	// [ 
+	// 	"model" => "gpt-3.5-turbo-16k",
+	// 	"description" => "Offers 4 times the context length of gpt-3.5-turbo at twice the price.",
+	// 	"name" => "GPT-3.5 Turbo 16k",
+	// 	"family" => "turbo",
+	// 	"features" => ['completion'],
+	// 	"price" => [
+	// 		"in" => 30.00,
+	// 		"out" => 40.0,
+	// 	],
+	// 	"type" => "token",
+	// 	"unit" => 1 / 1000000,
+	// 	"maxTokens" => 16385,
+	// 	"finetune" => false,
+	// 	"tags" => ['core', 'chat', '16k']
+	// ],
+	// [
+	// 	"model" => "gpt-3.5-turbo-instruct",
+	// 	"name" => "GPT-3.5 Turbo Instruct",
+	// 	"family" => "turbo-instruct",
+	// 	"features" => ['completion'],
+	// 	"price" => [
+	// 		"in" => 0.50,
+	// 		"out" => 2.00,
+	// 	],
+	// 	"type" => "token",
+	// 	"unit" => 1 / 1000000,
+	// 	"finetune" => [
+	// 		"in" => 0.03,
+	// 		"out" => 0.06,
+	// 	],
+	// 	"maxTokens" => 4096,
+	// 	"tags" => ['core', 'chat', '4k']
+	// ],
 ]);
 
 define ( 'MWAI_ANTHROPIC_MODELS', [

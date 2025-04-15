@@ -107,6 +107,7 @@ define( 'MWAI_OPTIONS', [
 	'chatbot_discussions_titling' => true,
 	'chatbot_moderation' => false,
 	'syntax_highlight' => false,
+	'privacy_first' => false,
 	'limits' => MWAI_LIMITS,
 
 	// Settings for Images

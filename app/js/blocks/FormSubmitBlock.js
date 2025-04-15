@@ -1,6 +1,7 @@
-// Previous: 2.6.1
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.7.6
 
+// AI Engine
 import { useModels } from "@app/helpers-admin";
 import { options } from '@app/settings';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -14,15 +15,17 @@ const { PanelBody, TextControl, TextareaControl, SelectControl, CheckboxControl 
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 const saveFormField = (props) => {
-  const { attributes: { id, label, prompt, message, outputElement,
+  const { attributes: { id, scope, label, prompt, message, outputElement,
     aiEnvId, embeddingsEnvId, index, namespace, localMemory,
     model, temperature, maxTokens, isAssistant, assistantId, resolution } } = props;
   const encodedPrompt = encodeURIComponent(prompt);
   const encodedMessage = encodeURIComponent(message);
   const blockProps = useBlockProps.save();
 
+  // Shortcode attributes
   const shortcodeAttributes = {
     id: { value: id, insertIfNull: true },
+    scope: { value: scope, insertIfNull: false },
     local_memory: { value: localMemory, insertIfNull: false },
     label: { value: label, insertIfNull: true },
     prompt: { value: encodedPrompt, insertIfNull: false },
@@ -37,9 +40,10 @@ const saveFormField = (props) => {
     embeddings_index: { value: index, insertIfNull: false },
     embeddings_namespace: { value: namespace, insertIfNull: false },
     assistant_id: { value: assistantId, insertIfNull: false },
-    resolution: { value: resolution, insertIfNull: false }
+    resolution: { value: resolution, insertIfNull: false },
   };
 
+  // Create the shortcode
   let shortcode = Object.entries(shortcodeAttributes)
     .filter(([, { value, insertIfNull }]) => !!value || insertIfNull)
     .reduce((acc, [key, { value }]) => `${acc} ${key}="${value}"`, "[mwai-form-submit");
@@ -51,15 +55,15 @@ const saveFormField = (props) => {
 const FormSubmitBlock = (props) => {
   const blockProps = useBlockProps();
   const { attributes: {
-    id, label, message, model, temperature, maxTokens,
+    id, scope, label, message, model, temperature, maxTokens,
     aiEnvId, embeddingsEnvId, index, namespace,
     assistantId, resolution, isAssistant, localMemory,
     outputElement, placeholders = [] }, setAttributes, isSelected } = props;
 
   const embeddingsEnvs = useMemo(() => options.embeddings_envs || [], []);
   const embeddingsEnv = useMemo(() => {
-    const env = embeddingsEnvs.find(e => e.id === embeddingsEnvId) || null;
-    return env;
+    const freshEnvironment = embeddingsEnvs.find(e => e.id === embeddingsEnvId) || null;
+    return freshEnvironment;
   }, [embeddingsEnvs, embeddingsEnvId]);
   const indexes = useMemo(() => embeddingsEnv?.indexes || [], [embeddingsEnv]);
   const namespaces = useMemo(() => embeddingsEnv?.namespaces || [], [embeddingsEnv]);
@@ -70,33 +74,39 @@ const FormSubmitBlock = (props) => {
   const isImage = currentModel?.features?.includes('text-to-image');
 
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvs.find(e => e.id === aiEnvId) || null;
-    return env;
+    const freshEnvironment = aiEnvs.find(e => e.id === aiEnvId) || null;
+    return freshEnvironment;
   }, [aiEnvs, aiEnvId]);
 
   const allAssistants = useMemo(() => aiEnvironment?.assistants || [], [aiEnvironment]);
   const assistant = useMemo(() => {
-    const aid = allAssistants.find(e => e.id === assistantId) || null;
-    return aid;
+    const freshAssistant = allAssistants.find(e => e.id === assistantId) || null;
+    return freshAssistant;
   }, [allAssistants, assistantId]);
 
   useEffect(() => {
     if ((aiEnvId || model) && !aiEnvironment) {
       setAttributes({ aiEnvId: null, model: null });
     }
-  }, [aiEnvId, model, aiEnvironment]);
+  }, [aiEnvId]);
 
   useEffect(() => {
     if ((embeddingsEnvId || index || namespace) && !embeddingsEnv) {
       setAttributes({ embeddingsEnvId: null, index: null, namespace: null });
     }
-  }, [embeddingsEnvId, index, namespace, embeddingsEnv]);
+  }, [embeddingsEnvId]);
 
   useEffect(() => {
     if (assistant && assistant.model && assistant.model !== model) {
       setAttributes({ model: assistant.model });
     }
   }, [assistant, model]);
+
+  useEffect(() => {
+    if (!scope) {
+      setAttributes({ scope: 'form' });
+    }
+  }, [scope]);
 
   useEffect(() => {
     if (!isAssistant) {
@@ -194,14 +204,14 @@ const FormSubmitBlock = (props) => {
       <div {...blockProps}>
         <AiBlockContainer title="Submit" type="submit" isSelected={isSelected}
           hint={<>
-            IN:{' '}
+						IN:{' '}
             <span className="mwai-pill">{jsxFieldsCount}</span>
             {' '}OUT:{' '}
             <span className="mwai-pill mwai-pill-purple">{outputElement ? outputElement : "N/A"}</span></>
           }>
-          Input Fields: {placeholders.join(', ')}<br />
-          Prompt: {message}<br />
-          Output Element: {outputElement}
+					Input Fields: {placeholders.join(', ')}<br />
+					Prompt: {message}<br />
+					Output Element: {outputElement}
         </AiBlockContainer>
       </div>
       <InspectorControls>
@@ -238,12 +248,12 @@ const FormSubmitBlock = (props) => {
               />}
             {!isImage && <>
               <TextControl label={i18n.COMMON.TEMPERATURE} value={temperature}
-                onChange={value => setAttributes({ temperature: parseFloat(value) }) }
+                onChange={value => setAttributes({ temperature: parseFloat(value) })} // bug: parsing only on change
                 type="number" step="0.1" min="0" max="1"
                 help={i18n.HELP.TEMPERATURE}
               />
               <TextControl label={i18n.COMMON.MAX_TOKENS} value={maxTokens}
-                onChange={value => setAttributes({ maxTokens: parseInt(value) }) }
+                onChange={value => setAttributes({ maxTokens: parseInt(value) })} // bug: parseInt without radix
                 type="number" step="16" min="32" max="4096"
                 help={<TokensInfo model={currentModel} maxTokens={maxTokens}
                   onRecommendedClick={value => setAttributes({ maxTokens: value })}
@@ -284,6 +294,9 @@ const FormSubmitBlock = (props) => {
             onChange={value => setAttributes({ localMemory: value })}
             help="Store the forms data in the browser's local storage for 12 hours."
           />
+          <TextControl label="Scope" value={scope} onChange={value => setAttributes({ scope: value })}
+            help="The scope of the form. Different forms can have the same scope."
+          />
         </PanelBody>
 
       </InspectorControls>
@@ -307,6 +320,10 @@ const createSubmitBlock = () => {
       id: {
         type: 'string',
         default: ''
+      },
+      scope: {
+        type: 'string',
+        default: 'form'
       },
       localMemory: {
         type: 'boolean',

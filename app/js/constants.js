@@ -1,5 +1,5 @@
-// Previous: 2.0.9
-// Current: 2.7.3
+// Previous: 2.7.3
+// Current: 2.7.6
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -143,7 +143,7 @@ const Templates_ContentGenerator = [
   },
   {
     id: '',
-    name: 'Expore Japan',
+    name: 'Explore Japan',
     mode: 'single',
     topic: "Tokyo, its main areas and attractions, one day tour for a first-time visitor. Simple vocabulary, short paragraphs.",
     topics: "",

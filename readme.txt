@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: ai, chatbot, gpt, copilot, translate
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.7.5
+Stable tag: 2.7.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,20 @@ Please be aware that there may be conflicts with certain caching or performance 
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
 == Changelog ==
+
+= 2.7.6 (2025/04/15) =
+* Add: Added GPT 4.1 models, and set 4.1 Nano as the new default model.
+* Add: Privacy First option to set the amount of personal data to the minimum.
+* Add: Handle array properties for Function Calling.
+* Add: Scope can now be modified for chatbots and forms.
+* Add: Add a filter in the models dropdown if there are more than 16 models.
+* Add: Accurate pricing with OpenRouter can be enabled by adding MWAI_OPENROUTER_ACCURATE_PRICING to your wp-config.php, and setting it to true. This will add 1-2 seconds to the response time.
+* Update: Only define MWAI_TIMEOUT if it's not defined yet, that allows it to be overridden.
+* Fix: An AI form without any inputs should be always valid.
+* Fix: Give more info when an Pinecone upsert fails.
+* Fix: Improvements for Google Gemini. Now works with Function Calling. Special thanks to Anaheim!
+* Fix: Avoid a silent crash with Pinecone when a slash is added to the Server URL.
+* Fix: Prevent Meow_MWAI_Query_Parameter to crash WordPress entirely.
 
 = 2.7.5 (2025/03/12) =
 * Add: Introduced support for Claude 3.7.

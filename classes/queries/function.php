@@ -41,10 +41,18 @@ class Meow_MWAI_Query_Function {
   
       // Loop through each parameter to construct the properties object
       foreach ( $this->parameters as $parameter ) {
+
         $properties[$parameter->name] = [
           'type' => $parameter->type, // Assuming each parameter has a 'type' attribute
           'description' => $parameter->description, // Assuming each parameter has a 'description' attribute
         ];
+
+        // If the parameter type is "array" and has a "items" attribute, include it
+        if ( $parameter->type === 'array' ) {
+          $properties[$parameter->name]['items'] = [
+            'type' => 'string', // Assuming the items are strings
+          ];
+        }
   
         // If an enum is set for the parameter, include it
         if ( isset($parameter->enum) ) {

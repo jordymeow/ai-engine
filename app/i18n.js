@@ -39,6 +39,7 @@ i18n.COMMON = {
   CLEAR: __( 'Clear', 'ai-engine' ),
   SYSTEM_NAME: __( 'System Name', 'ai-engine' ),
   ID: __( 'ID', 'ai-engine' ),
+  SCOPE: __( 'Scope', 'ai-engine' ),
   POPUP: __( 'Popup', 'ai-engine' ),
   POSITION: __( 'Position', 'ai-engine' ),
   VOICE: __( 'Voice', 'ai-engine' ),
@@ -226,6 +227,7 @@ i18n.COMMON = {
   THEME_EDITOR: __( 'Theme Editor', 'ai-engine' ),
   STREAMING: __( 'Streaming', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Syntax Highlight', 'ai-engine' ),
+  PRIVACY_FIRST: __( 'Privacy First', 'ai-engine' ),
   DATA_NOT_AVAILABLE: __( 'Data not available.', 'ai-engine' ),
   EXPORT: __( 'Export', 'ai-engine' ),
   IMPORT: __( 'Import', 'ai-engine' ),
@@ -307,11 +309,12 @@ i18n.HELP = {
   USER_FILTER: __( 'Type an User ID, or an IP.', 'ai-engine' ),
   STREAMING: __( 'The AI\'s response will appear as it\'s being created. Be cautious: this feature\'s ability to manage statistics, limits, and filters is still in its beta phase.', 'ai-engine' ),
   SYNTAX_HIGHLIGHT: __( 'Enable syntax highlighting for the code blocks.', 'ai-engine' ),
+  PRIVACY_FIRST: __( 'Only essential data is stored. IPs, conversations, and other private details are minimized and kept as anonymous as possible.', 'ai-engine' ),
   DEV_TOOLS: __( 'Enable a new tab with debugging tools. For developers only.', 'ai-engine' ),
   PUBLIC_API: __( 'Enable the Public REST API.', 'ai-engine' ),
   INTRO_MESSAGE: __( 'Enable the introduction text at the top of this page.', 'ai-engine' ),
   ADDONS: __( 'Enable the AI Addons section under the Meow Apps menu.', 'ai-engine' ),
-  OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
+  OPENAI_API_KEY: __( 'You can get your API Keys in your <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Account</a>.', 'ai-engine' ),
   OPENAI_ORGANIZATION_ID: __( 'You can link this environment to an <a href="https://platform.openai.com/account/organization" target="_blank">Organization</a>. This is optional.', 'ai-engine' ),
   AZURE_API_KEY: __( 'You can get your API Keys in your <a href="https://oai.azure.com/portal" target="_blank">Azure Account</a>.', 'ai-engine' ),
   ANTHROPIC_API_KEY: __( 'You can get your API Keys in your <a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Account</a>.', 'ai-engine' ),
@@ -335,7 +338,7 @@ i18n.HELP = {
 };
 
 i18n.SETTINGS = {
-  AI_ENV_SETUP: __( 'To leverage the functionalities of AI Engine, it needs to be connected directly to AI services. We recommend starting with OpenAI. Create an account and generate an API Key by visiting the <a href="https://beta.openai.com/account/api-keys" target="_blank">OpenAI</a> website. Once obtained, navigate to the <b>Settings</b> tab and input your OpenAI API Key in the "Environments for AI" section.', 'ai-engine' ),
+  AI_ENV_SETUP: __( 'To leverage the functionalities of AI Engine, it needs to be connected directly to AI services. We recommend starting with OpenAI. Create an account and generate an API Key by visiting the <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a> website. Once obtained, navigate to the <b>Settings</b> tab and input your OpenAI API Key in the "Environments for AI" section.', 'ai-engine' ),
   PINECONE_SETUP: __( 'You choose to use Embeddings. To use them, you need to a Pinecone account. Visit the <a href="https://app.pinecone.io" target="_blank">Pinecone</a> website to create an account, then insert your Pinecone API Key in the <b>Settings</b> tab.', 'ai-engine' ),
   INTRO: __( 'Boost your WordPress with AI, now! Please start with our <a href="https://meowapps.com/ai-engine/tutorial/" target="_blank">tutorial</a>. Then move to our <a href="https://docs.meowapps.com/" target="_blank">documentation</a>. Have a look at our <a href="https://meowapps.com/products/category/ai-add-ons/" target="_blank">add-ons</a>. And make sure you read the <a href="https://meowapps.com/ai-engine/disclaimer/" target="_blank">disclaimer</a>. Have fun! 🎵', 'ai-engine' ),
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),

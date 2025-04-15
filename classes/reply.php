@@ -176,12 +176,14 @@ class Meow_MWAI_Reply implements JsonSerializable {
           // If it's a function call (Open-AI style; usually for a final execution)
           if ( isset( $choice['message']['function_call'] ) ) {
             $content = $choice['message']['function_call'];
+            $name = trim( $content['name'] );
+            $args = $content['arguments'] ?? $content['args'] ?? null;
             $toolCalls[] = [
               'toolId' => null,
               'mode' => 'static',
               'type' => 'function_call',
-              'name' => trim( $choice['message']['function_call']['name'] ),
-              'arguments' => $this->extract_arguments( $tool['message']['function_call']['arguments'] ),
+              'name' => $name,
+              'arguments' => $this->extract_arguments( $args ),
               'rawMessage' => $rawMessage ? $rawMessage : $choice['message'],
             ];
           }
