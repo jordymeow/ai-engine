@@ -3,7 +3,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
-Version: 2.7.7
+Version: 2.7.8
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -13,7 +13,7 @@ http://www.opensource.org/licenses/mit-license.php
 http://www.gnu.org/licenses/gpl.html
 */
 
-define( 'MWAI_VERSION', '2.7.7' );
+define( 'MWAI_VERSION', '2.7.8' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
