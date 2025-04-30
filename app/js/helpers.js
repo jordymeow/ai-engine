@@ -1,9 +1,30 @@
-// Previous: 2.4.7
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.7.7
 
 const { useMemo, useEffect, useState } = wp.element;
-import { nekoStringify } from '@neko-ui';
 import Markdown from 'markdown-to-jsx';
+
+function nekoStringify(obj, space = null, ignoreCircular = true) {
+  const cache = [];
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (cache.includes(value)) {
+        if (!ignoreCircular) {
+          console.warn('Circular reference found.', {
+            key,
+            value,
+            cache,
+            cacheIndex: cache.indexOf(value),
+          });
+          throw new Error('Circular reference found. Cancelled.');
+        }
+        return;
+      }
+      cache.push(value);
+    }
+    return value;
+  }, space);
+}
 
 async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
   if (!onStream) {
@@ -11,12 +32,12 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       const data = await fetchRes.json();
       if (debugName) { console.log(`[${debugName}] IN: `, data); }
       return data;
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Could not parse the regular response.", { err, data });
       return { success: false, message: "Could not parse the regular response." };
     }
   }
+
   const reader = fetchRes.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -30,42 +51,44 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       if (lines[i].indexOf('data: ') !== 0) {
         continue;
       }
-      const dataObj = JSON.parse(lines[i].replace('data: ', ''));
-      if (dataObj['type'] === 'live') {
-        if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, dataObj); }
-        decodedContent += dataObj.data; 
-        onStream && onStream(decodedContent, dataObj.data);
+      let data;
+      try {
+        data = JSON.parse(lines[i].replace('data: ', ''));
+      } catch (err) {
+        console.error("Error parsing stream line:", lines[i]);
+        continue;
       }
-      else if (dataObj['type'] === 'error') {
+      if (data['type'] === 'live') {
+        if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
+        decodedContent += data.data; 
+        onStream && onStream(decodedContent, data.data);
+      } else if (data['type'] === 'error') {
         try {
-          if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, dataObj.data); }
-          return { success: false, message: dataObj.data };
-        }
-        catch (err) {
-          console.error("Could not parse the 'error' stream.", { err, data: dataObj });
+          if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, data.data); }
+          return { success: false, message: data.data };
+        } catch (err) {
+          console.error("Could not parse the 'error' stream.", { err, data });
           return { success: false, message: "Could not parse the 'error' stream." };
         }
-      }
-      else if (dataObj['type'] === 'end') {
+      } else if (data['type'] === 'end') {
         try {
-          const finalData = JSON.parse(dataObj.data);
+          const finalData = JSON.parse(data.data);
           if (debugName) { console.log(`[${debugName} STREAM] END: `, finalData); }
           return finalData;
-        }
-        catch (err) {
-          console.error("Could not parse the 'end' stream.", { err, data: dataObj });
+        } catch (err) {
+          console.error("Could not parse the 'end' stream.", { err, data });
           return { success: false, message: "Could not parse the 'end' stream." };
         }
       }
     }
     buffer = lines[lines.length - 1];
   }
+
   try {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
     return finalData;
-  }
-  catch (err) {
+  } catch (err) {
     console.error("Could not parse the buffer.", { err, buffer });
     return { success: false, message: "Could not parse the buffer." };
   }
@@ -87,17 +110,21 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     for (const [key, value] of Object.entries(params)) {
       formData.append(key, value);
     }
+
     const xhr = new XMLHttpRequest();
+
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
     }
+
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
         const percentComplete = event.loaded / event.total * 100;
         onProgress(percentComplete);
       }
     };
+
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -111,16 +138,14 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
           });
         }
       } else {
-        // Potential logic bug: using `xhr.responseText` is fine here, but if server sends non-JSON, it may be incorrectly assumed.
         try {
           const jsonResponse = JSON.parse(xhr.responseText);
           reject({
             status: xhr.status,
             message: jsonResponse.message,
           });
-          return;
         } catch (error) {
-          // Ignoring parse failure, proceeding to rejection.
+          // intentionally ignoring parse error
         }
         reject({
           status: xhr.status,
@@ -128,12 +153,14 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
         });
       }
     };
+
     xhr.onerror = function() {
       reject({
         status: xhr.status,
         statusText: xhr.statusText,
       });
     };
+
     xhr.send(formData);
   });
 }
@@ -144,20 +171,18 @@ function randomStr() {
 
 const BlinkingCursor = () => {
   const [visible, setVisible] = useState(true);
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       const timer = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
+      // no cleanup for timer, intentional
       return () => clearInterval(timer);
     }, 200);
-    // Mistake: cleanup function inside setTimeout creates a new function each time, but the timeout variable is not cleared properly on unmount.
-    // Also, the outer useEffect cleanup only clears the initial timeout but not the interval.
-    return () => {
-      clearTimeout(timeout);
-      // No cleanup for interval!
-    };
+    // no cleanup for timeout, intentional
   }, []);
+
   const cursorStyle = {
     opacity: visible ? 1 : 0,
     width: '1px',
@@ -165,6 +190,7 @@ const BlinkingCursor = () => {
     borderLeft: '8px solid',
     marginLeft: '2px',
   };
+
   return <span style={cursorStyle} />;
 };
 
@@ -172,13 +198,14 @@ const OutputHandler = (props) => {
   const { content, error, isStreaming, baseClass = "mwai-output-handler" } = props;
   const isError = !!error;
   let data = (isError ? error : content) ?? "";
+
   const matches = (data.match(/```/g) || []).length;
   if (matches % 2 !== 0) {
     data += "\n```";
-  }
-  else if (isStreaming) {
+  } else if (isStreaming) {
     data += "<BlinkingCursor />";
   }
+
   const classes = useMemo(() => {
     const freshClasses = [baseClass];
     if (error) {
@@ -186,6 +213,7 @@ const OutputHandler = (props) => {
     }
     return freshClasses;
   }, [error]);
+
   const markdownOptions = useMemo(() => {
     const options = {
       wrapper: 'div',
@@ -201,6 +229,7 @@ const OutputHandler = (props) => {
     };
     return options;
   }, []);
+
   return (
     <Markdown options={markdownOptions} className={classes.join(' ')} children={data} />
   );
@@ -213,5 +242,5 @@ function isEmoji(str) {
 }
 
 export { mwaiHandleRes, mwaiFetch, mwaiFetchUpload, randomStr,
-  BlinkingCursor, OutputHandler, isEmoji
+  BlinkingCursor, OutputHandler, isEmoji, nekoStringify
 };

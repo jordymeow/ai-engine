@@ -96,6 +96,7 @@ define( 'MWAI_OPTIONS', [
 	'module_embeddings' => false,
 	'module_transcription' => false,
 	'module_advisor' => false,
+	'module_mcp' => false,
 	'speech_recognition' => false,
 	'speech_synthesis' => false,
 	'virtual_keyboard_fix' => false,

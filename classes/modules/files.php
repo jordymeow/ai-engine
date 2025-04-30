@@ -184,6 +184,49 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
+  /**
+   * Handle a base-64 PNG returned by gpt-image-1: save as a temp file,
+   * register it in the Files DB, and give back a public URL.
+   *
+   * @param string $b64_json Raw base-64 image payload from OpenAI.
+   * @param string $purpose  Optional purpose flag. Default 'generated'.
+   * @param int    $ttl      Time-to-live in seconds. Default 1 hour.
+   *
+   * @return string|WP_Error Public URL or WP_Error on failure.
+   */
+  public function save_temp_image_from_b64( string $b64_json,
+  string $purpose = 'generated', int $ttl = HOUR_IN_SECONDS )
+  {
+    // 1) Decode → binary.
+    $binary = base64_decode( $b64_json );
+    if ( !$binary ) {
+      return new WP_Error( 'mwai_bad_b64', 'Invalid base-64 payload.' );
+    }
+
+    // 2) Make a transient file in the server tmp dir.
+    $tmp_path = wp_tempnam( 'mwai-image' );   // Creates an empty file.
+    $filename = basename( $tmp_path ) . '.png';
+    file_put_contents( $tmp_path, $binary );
+
+    // 3) Reuse the normal upload flow (target uploads, expiry = $ttl).
+    try {
+      $refId = $this->upload_file(
+        $tmp_path,        // path on disk
+        $filename,        // desired filename
+        $purpose,         // purpose
+        null,             // metadata
+        null,             // envId
+        'uploads',        // target
+        $ttl              // expiry in seconds
+      );
+      // 4) Turn refId → URL.
+      return $this->get_url( $refId );
+    }
+    catch ( Exception $e ) {
+      return new WP_Error( 'mwai_upload_failed', $e->getMessage() );
+    }
+  }
+
   #region REST endpoints
 
   public function rest_api_init() {

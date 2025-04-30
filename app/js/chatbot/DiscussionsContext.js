@@ -1,9 +1,10 @@
-// Previous: 2.4.5
-// Current: 2.6.5
+// Previous: 2.6.5
+// Current: 2.7.7
 
-import { useContext, createContext, useState, useMemo, useEffect, useCallback } from 'react';
-import { randomStr } from '@app/helpers';
-import { nekoStringify } from '@neko-ui';
+// React & Vendor Libs
+const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
+
+import { randomStr, nekoStringify } from '@app/helpers';
 
 const DiscussionsContext = createContext();
 
@@ -30,11 +31,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const debugMode = system.debugMode;
 
   const cssVariables = useMemo(() => {
-    const vars = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return vars;
+    return cssVars;
   }, [shortcodeStyles]);
 
   const hasEmptyDiscussion = useMemo(() => {
@@ -100,7 +101,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setBusy(false);
       }
     }
-  }, [discussion]);
+  }, [discussion]); // Included 'discussion' in dependencies
 
   useEffect(() => {
     refresh();
@@ -141,6 +142,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     );
 
     const chatbot = getChatbot(botId);
+    // Potential bug: The messages array might be mutable and shared
     chatbot.setContext({ chatId, messages: selectedDiscussion.messages });
     setDiscussion(selectedDiscussion);
   };
@@ -155,14 +157,14 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       alert('Title cannot be empty.');
       return;
     }
-  
+
     try {
       setBusy(true);
       const body = {
         chatId: discussionToEdit.chatId,
         title: trimmedTitle,
       };
-  
+
       const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/edit`, {
         method: 'POST',
         headers: {
@@ -171,12 +173,12 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         },
         body: nekoStringify(body),
       });
-  
+
       const data = await response.json();
       if (!data.success) {
         throw new Error(`Could not update the discussion: ${data.message}`);
       }
-  
+
       setDiscussions((prevDiscussions) =>
         prevDiscussions.map((disc) =>
           disc.chatId === discussionToEdit.chatId ? { ...disc, title: trimmedTitle } : disc
@@ -189,19 +191,19 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       setBusy(false);
     }
   };
-  
+
   const onDeleteDiscussion = async (discussionToDelete) => {
     const confirmed = confirm('Are you sure you want to delete this discussion?');
     if (!confirmed) {
       return;
     }
-  
+
     try {
       setBusy(true);
       const body = {
         chatIds: [discussionToDelete.chatId],
       };
-  
+
       const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/delete`, {
         method: 'POST',
         headers: {
@@ -210,12 +212,12 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         },
         body: nekoStringify(body),
       });
-  
+
       const data = await response.json();
       if (!data.success) {
         throw new Error(`Could not delete the discussion: ${data.message}`);
       }
-  
+
       setDiscussions((prevDiscussions) =>
         prevDiscussions.filter((disc) => disc.chatId !== discussionToDelete.chatId)
       );
@@ -229,7 +231,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     } finally {
       setBusy(false);
     }
-  };  
+  };
 
   const onNewChatClick = async () => {
     const existingEmptyDiscussion = discussions.find(disc => disc.messages.length === 0);
@@ -240,11 +242,12 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
     const chatbot = getChatbot(botId);
     const newChatId = randomStr();
+    // bug: Not clearing previous context
     chatbot.clear({ chatId: newChatId });
     const newDiscussion = {
       id: newChatId,
       chatId: newChatId,
-      messages: [],
+      messages: [], // messages is an empty array here, and might cause issues if not handled properly
       title: 'New Chat',
       extra: {},
     };

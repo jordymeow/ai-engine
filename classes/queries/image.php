@@ -101,6 +101,11 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 			return; 
     }
 
+		// If we have no resolution set, we will use the first one
+		if ( empty( $this->resolution ) ) {
+			$this->resolution = $modelInfo['resolutions'][0]['name'];
+		}
+
     // If we have a resolutions array ([ name, label ]), let’s ensure our current resolution (name) is supported
     $resolutions = $modelInfo['resolutions'];
 		$found = false;
@@ -110,6 +115,8 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 				break;
 			}
 		}
+
+		// If we don't find the resolution, we will set it to the first one.
     if ( !$found ) {
 			$error = sprintf( 'Resolution %s not supported by model: %s', $this->resolution, $this->model );
 			Meow_MWAI_Logging::error( $error, '🖼️'  );

@@ -31,7 +31,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     $this->apiKey = $env['apikey'];
     if ( $this->envType === 'google' ) {
       $this->region = isset( $env['region'] ) ? $env['region'] : null;
-      $this->projectId = $env['projectId'];
+      $this->projectId = isset( $env['project_id'] ) ? $env['project_id'] : null;
       $this->endpoint = apply_filters(
         'mwai_google_endpoint',
         'https://generativelanguage.googleapis.com/v1beta',

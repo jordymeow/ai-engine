@@ -1,11 +1,11 @@
-// Previous: 2.6.6
-// Current: 2.6.9
-
-import { useChatbotContext } from "./ChatbotContext";
+// Previous: 2.6.9
+// Current: 2.7.7
 
 // React & Vendor Libs
 const { useMemo, useCallback } = wp.element;
 import { Send, Eraser } from 'lucide-react';
+
+import { useChatbotContext } from "./ChatbotContext";
 
 const ChatbotSubmit = () => {
   const { state, actions } = useChatbotContext();

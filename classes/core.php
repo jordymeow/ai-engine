@@ -89,6 +89,15 @@ class Meow_MWAI_Core
 
 		// Simple API
 		$mwai = new Meow_MWAI_API( $this->chatbot, $this->discussions );
+
+		// MCP
+		if ( $this->get_option( 'module_mcp' ) ) {
+			new Meow_MWAI_Labs_MCP( $this );
+			new Meow_MWAI_Labs_MCP_Core( $this );
+			if ( class_exists( 'MeowPro_MWAI_MCP_Theme' ) ) {
+				new MeowPro_MWAI_MCP_Theme( $this );
+			}
+		}
 	}
 
 	public function register_scripts() {
@@ -139,7 +148,6 @@ class Meow_MWAI_Core
 		$logged_in = is_user_logged_in();
 		return apply_filters( 'mwai_allow_public_api', $logged_in, $feature, $extra );
 	}
-
 	#endregion
 
 	#region AI-Related Helpers

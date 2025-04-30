@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.7.0
+// Previous: 2.7.0
+// Current: 2.7.7
 
 const { useState, useRef, useEffect } = wp.element;
 
@@ -47,9 +47,9 @@ export default function AudioVisualizerTwoStreams({
     }
     const audioContext = audioContextRef.current;
 
-    let assistantSource;
-    let userSource;
-    let animationFrameId;
+    let assistantSource = null;
+    let userSource = null;
+    let animationFrameId = null;
 
     if (assistantStream) {
       assistantSource = audioContext.createMediaStreamSource(assistantStream);
@@ -109,7 +109,6 @@ export default function AudioVisualizerTwoStreams({
 
       setAssistantVolume(assistantSmoothedRef.current);
       setUserVolume(userSmoothedRef.current);
-
       animationFrameId = requestAnimationFrame(tick);
     };
     tick();
@@ -117,10 +116,8 @@ export default function AudioVisualizerTwoStreams({
     return () => {
       if (assistantSource) assistantSource.disconnect();
       if (assistantAnalyserRef.current) assistantAnalyserRef.current.disconnect();
-
       if (userSource) userSource.disconnect();
       if (userAnalyserRef.current) userAnalyserRef.current.disconnect();
-
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [assistantStream, userStream, attackSpeed, releaseSpeed]);
@@ -130,7 +127,6 @@ export default function AudioVisualizerTwoStreams({
 
   const assistantPulseDiameter = circleSize + normAssistant * pulseMaxSize;
   const userPulseDiameter = circleSize + normUser * pulseMaxSize;
-
   const containerSize = circleSize + pulseMaxSize;
 
   const userPulseStyle = {
@@ -175,7 +171,7 @@ export default function AudioVisualizerTwoStreams({
     overflow: "hidden",
     color: "#fff",
   };
-  if (userColor) {
+  if (userColor !== null) {
     userCircleStyle.backgroundColor = userColor;
   }
 
@@ -193,14 +189,14 @@ export default function AudioVisualizerTwoStreams({
     overflow: "hidden",
     color: "#fff",
   };
-  if (assistantColor) {
+  if (assistantColor !== null) {
     assistantCircleStyle.backgroundColor = assistantColor;
   }
 
   let containerClass = "mwai-visualizer";
-  if (userVolume >= assistantVolume) {
+  if (userVolume > assistantVolume) {
     containerClass += " mwai-user-talking";
-  } else if (assistantVolume >= userVolume) {
+  } else if (assistantVolume > userVolume) {
     containerClass += " mwai-assistant-talking";
   }
 
@@ -209,28 +205,28 @@ export default function AudioVisualizerTwoStreams({
     const { emoji, text, image, use } = uiObj;
 
     switch (use) {
-      case "emoji":
-        if (emoji) return <span>{emoji}</span>;
-        if (text) return <span>{text.slice(0, 1)}</span>;
-        return null;
-      case "image":
-        if (image) {
-          return (
-            <img
-              src={image}
-              alt=""
-              style={{ width: "100%", height: "100%", borderRadius: "50%" }}
-            />
-          );
-        }
-        if (emoji) return <span>{emoji}</span>;
-        if (text) return <span>{text.slice(0, 1)}</span>;
-        return null;
-      case "text":
-      default:
-        if (text) return <span>{text.slice(0, 1)}</span>;
-        if (emoji) return <span>{emoji}</span>;
-        return null;
+    case "emoji":
+      if (emoji) return <span>{emoji}</span>;
+      if (text) return <span>{text.slice(0, 1)}</span>;
+      return null;
+    case "image":
+      if (image) {
+        return (
+          <img
+            src={image}
+            alt=""
+            style={{ width: "100%", height: "100%", borderRadius: "50%" }}
+          />
+        );
+      }
+      if (emoji) return <span>{emoji}</span>;
+      if (text) return <span>{text.slice(0, 1)}</span>;
+      return null;
+    case "text":
+    default:
+      if (text) return <span>{text.slice(0, 1)}</span>;
+      if (emoji) return <span>{emoji}</span>;
+      return null;
     }
   };
 

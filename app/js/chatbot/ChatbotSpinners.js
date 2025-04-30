@@ -1,7 +1,7 @@
-// Previous: 1.4.8
-// Current: 1.5.5
+// Previous: 1.5.5
+// Current: 2.7.7
 
-const BouncingDots = (props) => {
+const BouncingDots = () => {
   const bouncingLoaderStyles = {
     display: 'flex',
     justifyContent: 'center',
@@ -49,4 +49,4 @@ const BouncingDots = (props) => {
   );
 };
 
-export { BouncingDots }
+export { BouncingDots };

@@ -1,7 +1,8 @@
-// Previous: 2.7.0
-// Current: 2.7.3
+// Previous: 2.7.3
+// Current: 2.7.7
 
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+const { useState, useRef, useCallback, useMemo, useEffect } = wp.element;
+
 import { Users, Play, Pause, Square, Loader, Captions, Bug } from 'lucide-react';
 import { useChatbotContext } from './ChatbotContext';
 import AudioVisualizer from './AudioVisualizer';
@@ -168,8 +169,6 @@ const ChatbotRealtime = () => {
         console.error('Callback failed.', result?.message);
         return;
       }
-
-      // Introduced bug: potential undefined functionOutput
       const functionOutput = result.data;
       if (dataChannelRef.current?.readyState === 'open') {
         debugLog(DEBUG_LEVELS.low, 'Send callback value:', functionOutput);
@@ -197,7 +196,6 @@ const ChatbotRealtime = () => {
 
   const startRealtimeConnection = useCallback(async (clientSecret, model) => {
     setIsConnecting(true);
-
     const pc = new RTCPeerConnection();
     pcRef.current = pc;
 
@@ -264,8 +262,6 @@ const ChatbotRealtime = () => {
         const itemId = msg.item_id;
         const transcript = (msg.transcript || '[Audio]').trim();
         setWhoIsSpeaking('assistant');
-
-        // BUG: possible infinite loop or misplaced setMessages causing stale closure
         if (!processedItemIdsRef.current.has(itemId)) {
           processedItemIdsRef.current.add(itemId);
           setMessages(prev => [...prev, { id: itemId, role: 'assistant', content: transcript }]);
@@ -284,7 +280,7 @@ const ChatbotRealtime = () => {
           const usageStats = parseUsage(resp.usage);
           if (usageStats) {
             setStatistics(prev => {
-              // bug: merge previous stats but not reset in other places, leading to cumulative miscounts
+              // Introducing a bug: using prev directly in multiple setState calls
               const updated = {
                 text_input_tokens:  (prev.text_input_tokens  || 0) + usageStats.text_input_tokens,
                 audio_input_tokens: (prev.audio_input_tokens || 0) + usageStats.audio_input_tokens,
@@ -366,6 +362,7 @@ const ChatbotRealtime = () => {
         text_cached_tokens: 0,
         audio_cached_tokens: 0,
       });
+
       debugLog(DEBUG_LEVELS.low, 'Stopped Realtime connection.');
     }
     catch (err) {
@@ -398,10 +395,7 @@ const ChatbotRealtime = () => {
         setIsConnecting(false);
         return;
       }
-      // bug: missing cleanup of previous callback refs (if any)
-      // but no effect unless multiple calls occur? keep subtle
-      // intentionally not resetting current callbacks array fully
-      // instead just overwrite with new
+      // Introducing a bug: accidentally overwriting callbacks with empty array
       functionCallbacksRef.current = data.function_callbacks || [];
       setSessionId(data.session_id);
       await startRealtimeConnection(data.client_secret, data.model);

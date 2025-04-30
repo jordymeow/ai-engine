@@ -1,53 +1,141 @@
 <?php
 
+/**
+ * Class Meow_MWAI_Logging
+ *
+ * A logging utility that uses the WordPress Filesystem API for storage,
+ * with fallback to PHP error_log when necessary.
+ */
 class Meow_MWAI_Logging {
   private static $plugin_name;
   private static $option_name;
   private static $log_file_path;
-  private static $log_count = 0;
-  private static $rotate_check_frequency = 10;
-  private static $max_log_size = 5 * 1024 * 1024; // 5 MB
+  private static $fs;
+  private static $log_count               = 0;
+  private static $rotate_check_frequency  = 10;
+  private static $max_log_size            = 5 * 1024 * 1024; // 5 MB
 
   /**
-   * Initializes the Meow Logging class.
+   * Initialize the logger.
    *
-   * @param string $option_name The name of the option where logging settings are stored.
-   * @param string $plugin_name The name of the plugin, used in the PHP Error Logs.
+   * @param string $option_name Option key for settings.
+   * @param string $plugin_name Plugin identifier for error log prefix.
    */
   public static function init( $option_name, $plugin_name ) {
     self::$plugin_name = $plugin_name;
     self::$option_name = $option_name;
-    self::$log_file_path = self::get_logs_path();
+
+    if ( ! function_exists( 'request_filesystem_credentials' ) ) {
+      require_once ABSPATH . 'wp-admin/includes/file.php';
+    }
+
+    $creds = request_filesystem_credentials( site_url(), '', false, false, [] );
+    if ( ! WP_Filesystem( $creds ) ) {
+      error_log( self::$plugin_name . " : Unable to initialize WP_Filesystem." );
+      self::$fs = null;
+    }
+    else {
+      global $wp_filesystem;
+      self::$fs = $wp_filesystem;
+    }
+
+    self::$log_file_path = self::get_logs_path( true );
   }
 
+  /**
+   * Determine or create the log file path using WP_Filesystem.
+   *
+   * @param bool $create Whether to generate a new file if none exists.
+   * @return string|false Path to log file or false if unavailable.
+   */
+  private static function get_logs_path( $create = false ) {
+    $options = get_option( self::$option_name, null );
+    if ( is_null( $options ) ) {
+      return null;
+    }
+
+    if ( empty( self::$fs ) ) {
+      return null;
+    }
+
+    $path = empty( $options['logs_path'] ) ? '' : $options['logs_path'];
+
+    if ( $path && self::$fs->exists( $path ) ) {
+      return $path;
+    }
+
+    if ( ! $create ) {
+      return null;
+    }
+
+    $uploads  = wp_upload_dir();
+    $base_dir = trailingslashit( $uploads['basedir'] );
+
+    if ( ! self::$fs->is_dir( $base_dir ) ) {
+      self::$fs->mkdir( $base_dir );
+    }
+
+    $filename = MWAI_PREFIX . '_' . self::random_ascii_chars() . '.log';
+    $new_path = $base_dir . $filename;
+
+    self::$fs->put_contents( $new_path, '', FS_CHMOD_FILE );
+
+    $options['logs_path'] = $new_path;
+    update_option( self::$option_name, $options );
+
+    return $new_path;
+  }
+
+  /**
+   * Check if logging is enabled via plugin options and FS availability.
+   *
+   * @return bool
+   */
+  private static function is_logging_enabled() {
+    $options           = get_option( self::$option_name, null );
+    if ( is_null( $options ) ) {
+      return false;
+    }
+
+    $module_devtools   = empty( $options['module_devtools'] ) ? false : $options['module_devtools'];
+    $server_debug_mode = empty( $options['server_debug_mode'] ) ? false : $options['server_debug_mode'];
+
+    return ( $module_devtools && $server_debug_mode && ! empty( self::$fs ) );
+  }
+
+  /**
+   * Internal log writer. Appends to file and/or error_log.
+   */
   private static function add( $message = null, $icon = '', $error_log = false ) {
-    // Log to a local file
+    $date    = date( 'Y-m-d H:i:s' );
+    $message = is_string( $message ) ? strip_tags( $message ) : $message;
+
+    if ( empty( $message ) ) {
+      $entry = "\n";
+    }
+    else if ( ! empty( $icon ) ) {
+      $entry = "$date: $icon $message\n";
+    }
+    else {
+      $entry = "$date: $message\n";
+    }
+
     if ( self::is_logging_enabled() && self::$log_file_path ) {
-      $fh = @fopen( self::$log_file_path, 'a' );
-      if ( $fh ) {
-        $date = date( "Y-m-d H:i:s" );
-        $message = self::sanitize_message( $message );
-        if ( empty( $message ) ) {
-          fwrite( $fh, "\n" );
-        }
-        else {
-          if ( !empty( $icon ) ) {
-            fwrite( $fh, "$date: $icon $message\n" );
-          }
-          else {
-            fwrite( $fh, "$date: $message\n" );
-          }
-        }
-        fclose( $fh );
-      } else {
-        error_log( self::$plugin_name . ": Failed to open log file for writing." );
+      if ( self::$fs->exists( self::$log_file_path ) ) {
+        $current = self::$fs->get_contents( self::$log_file_path );
+        self::$fs->put_contents( self::$log_file_path, $current . $entry, FS_CHMOD_FILE );
+      }
+      else {
+        self::$fs->put_contents( self::$log_file_path, $entry, FS_CHMOD_FILE );
       }
     }
-    // Log to the PHP Error Logs
-    if ( $error_log === true && !empty( $message ) ) {
-      error_log( self::$plugin_name . ": $message" );
+
+    if ( $error_log && ! empty( $message ) ) {
+      error_log( self::$plugin_name . " : $message" );
     }
+
     self::$log_count++;
+
     if ( self::$log_count >= self::$rotate_check_frequency ) {
       self::maybe_rotate_log();
       self::$log_count = 0;
@@ -55,137 +143,111 @@ class Meow_MWAI_Logging {
   }
 
   /**
-   * Logs an error message.
-   * It will also be logged to the PHP Error Logs.
-   *
-   * @param string $message The error message to log.
-   * @param string $icon An optional icon to prepend to the log message. Default is '❌'.
-   */
-  public static function error( $message = null, $icon = '❌' ) {
-    self::add( $message, $icon, true );
-  }
-
-  /**
-   * Logs a warning message.
-   *
-   * @param string $message The warning message to log.
-   * @param string $icon An optional icon to prepend to the log message. Default is '⚠️'.
-   */
-  public static function warn( $message = null, $icon = '🥲' ) {
-    self::add( $message, $icon );
-  }
- 
-  /**
    * Logs a general message.
    *
    * @param string $message The message to log.
-   * @param string $icon An optional icon to prepend to the log message. Default is empty.
+   * @param string $icon Optional icon to prepend.
    */
   public static function log( $message = null, $icon = '' ) {
     self::add( $message, $icon );
   }
 
   /**
-   * Logs a notice of a deprecated feature.
+   * Logs a warning message.
+   *
+   * @param string $message The warning message to log.
+   * @param string $icon Optional icon to prepend (default ⚠️).
+   */
+  public static function warn( $message = null, $icon = '⚠️' ) {
+    self::add( $message, $icon );
+  }
+
+  /**
+   * Logs an error message and sends to PHP error_log.
+   *
+   * @param string $message The error message to log.
+   * @param string $icon Optional icon to prepend (default ❌).
+   */
+  public static function error( $message = null, $icon = '❌' ) {
+    self::add( $message, $icon, true );
+  }
+
+  /**
+   * Logs a deprecated feature notice.
    *
    * @param string $message The message to log.
-   * @param string $icon An optional icon to prepend to the log message. Default is '🐞'.
    */
   public static function deprecated( $message = null ) {
     self::add( $message, '🚨', true );
   }
 
-  private static function is_logging_enabled() {
-    $options = get_option( self::$option_name, null );
-    if ( is_null( $options ) ) {
-      return false;
-    }
-    $module_devtools = empty( $options['module_devtools'] ) ? false : $options['module_devtools'];
-    $server_debug_mode = empty( $options['server_debug_mode'] ) ? false : $options['server_debug_mode'];
-    return $module_devtools && $server_debug_mode;
-  }
-
-  private static function get_logs_path() {
-    $uploads_dir = wp_upload_dir();
-    $uploads_dir_path = trailingslashit( $uploads_dir['basedir'] );
-    $options = get_option( self::$option_name, null );
-    if ( is_null( $options ) ) {
-      return null;
-    }
-    $path = empty( $options['logs_path'] ) ? null : $options['logs_path'];
-    if ( $path && file_exists( $path ) ) {
-      // Ensure the path is legal (within the uploads directory with the MWAI_PREFIX and log extension)
-      if ( strpos( $path, $uploads_dir_path ) !== 0 ||
-        strpos( $path, MWAI_PREFIX ) === false || substr( $path, -4 ) !== '.log' ) {
-        $path = null;
-      }
-      else {
-        return $path;
-      }
-    }
-    if ( !$path ) {
-      $path = $uploads_dir_path . MWAI_PREFIX . "_" . self::random_ascii_chars() . ".log";
-      if ( !file_exists( $path ) ) {
-        touch( $path );
-      }
-      $options['logs_path'] = $path;
-      update_option( self::$option_name, $options );
-    }
-    return $path;
-  }
-
-  private static function random_ascii_chars( $length = 8 ) {
-    $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    $result = '';
-    for ( $i = 0; $i < $length; $i++ ) {
-      $result .= $characters[rand( 0, strlen( $characters ) - 1 )];
-    }
-    return $result;
-  }
-
   /**
-   * Clears the log file and resets the log path.
+   * Clears the log file and resets the option.
    */
   public static function clear() {
-    if ( self::$log_file_path ) {
-      if ( substr( self::$log_file_path, -4 ) === '.log' ) {
-        unlink( self::$log_file_path );
-      }
-      $options = get_option( self::$option_name, null );
-      if ( $options ) {
-        $options['logs_path'] = null;
-        update_option( self::$option_name, $options );
-        self::$log_file_path = null;
-      }
+    if ( self::$fs && self::$log_file_path && self::$fs->exists( self::$log_file_path ) ) {
+      self::$fs->delete( self::$log_file_path );
+      $options              = get_option( self::$option_name, null );
+      $options['logs_path'] = '';
+      update_option( self::$option_name, $options );
+      self::$log_file_path  = '';
     }
   }
 
   /**
-   * Retrieves the contents of the log file.
-   * The lines are returned in reverse order (newest first).
+   * Retrieves the log contents in reverse order (newest first).
+   *
+   * @return string
    */
   public static function get() {
-    if ( self::$log_file_path && file_exists( self::$log_file_path ) ) {
-      $content = file_get_contents( self::$log_file_path );
-      $lines = explode( "\n", $content );
-      $lines = array_filter( $lines );
-      $lines = array_reverse( $lines );
-      $content = implode( "\n", $lines );
-      return $content;
+    if ( self::$fs && self::$log_file_path && self::$fs->exists( self::$log_file_path ) ) {
+      $content = self::$fs->get_contents( self::$log_file_path );
+      $lines   = explode( "\n", $content );
+      $lines   = array_filter( $lines );
+      $lines   = array_reverse( $lines );
+
+      return implode( "\n", $lines );
     }
+
     return 'Empty log file.';
   }
 
+  /**
+   * Checks file size and rotates if exceeding maximum.
+   */
   private static function maybe_rotate_log() {
-    if ( file_exists( self::$log_file_path ) && filesize( self::$log_file_path ) > self::$max_log_size ) {
-      $info = pathinfo( self::$log_file_path );
-      $new_name = $info['dirname'] . '/' . $info['filename'] . '_' . date( 'Y-m-d_H-i-s' ) . '.' . $info['extension'];
-      rename( self::$log_file_path, $new_name );
-      touch( self::$log_file_path );
+    if ( empty( self::$fs ) || empty( self::$log_file_path ) ) {
+      return;
+    }
+
+    if ( self::$fs->exists( self::$log_file_path ) ) {
+      $size = self::$fs->size( self::$log_file_path );
+
+      if ( $size > self::$max_log_size ) {
+
+        $info     = pathinfo( self::$log_file_path );
+        $archived = $info['dirname'] . '/' . $info['filename'] . '_' . date( 'Y-m-d_H-i-s' ) . '.' . $info['extension'];
+
+        self::$fs->move( self::$log_file_path, $archived, true );
+        self::$fs->put_contents( self::$log_file_path, '', FS_CHMOD_FILE );
+      }
     }
   }
 
-  private static function sanitize_message( $message ) {
-    return is_string( $message ) ? strip_tags( $message ) : $message;
+  /**
+   * Generates a random ASCII string.
+   *
+   * @param int $length String length.
+   * @return string
+   */
+  private static function random_ascii_chars( $length = 8 ) {
+    $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    $result     = '';
+
+    for ( $i = 0; $i < $length; $i++ ) {
+      $result .= $characters[ rand( 0, strlen( $characters ) - 1 ) ];
+    }
+
+    return $result;
   }
 }

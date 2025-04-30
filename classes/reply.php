@@ -242,7 +242,19 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
         // It's url/image
         else if ( isset( $choice['url'] ) ) {
+          // TODO: DALL-E 2 and 3 were using URLs, but now they are using b64_json (gpt-image-1 kind of enforced it)
           $url = trim( $choice['url'] );
+          $this->results[] = $url;
+          $this->result = $url;
+        }
+
+        else if ( isset( $choice['b64_json'] ) ) {
+          // In that case we need to create a temporary file in WordPress to store the image, and return the URL for it.
+          global $mwai_core;
+          $url = $mwai_core->files->save_temp_image_from_b64( $choice['b64_json'] );
+          if ( is_wp_error( $url ) ) {
+            return $url;
+          }
           $this->results[] = $url;
           $this->result = $url;
         }

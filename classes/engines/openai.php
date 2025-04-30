@@ -24,6 +24,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
 
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
+  protected $streamCost = null;
 
   // Static
   private static $creating = false;
@@ -290,15 +291,29 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         "n" => $query->maxResults,
         "size" => $resolution,
       );
-      if ( $model === 'dall-e-3' ) { 
-        $body['model'] = 'dall-e-3';
+
+      // TODO: Let's clean this up; with a better Query Image class.
+      // https://platform.openai.com/docs/api-reference/images/create#images-create-quality
+
+      if ( $model === 'gpt-image-1' ) {
+        // If it's GPT Image 1, we need to set the quality and moderation.
+        $body['model'] = 'gpt-image-1';
+        $body['quality'] = 'high';
+        $body['moderation'] = 'low';
       }
-      if ( $model === 'dall-e-3-hd' ) {
-        $body['model'] = 'dall-e-3';
-        $body['quality'] = 'hd';
-      }
-      if ( !empty( $query->style ) && strpos( $model, 'dall-e-3' ) === 0 ) {
-        $body['style'] = $query->style;
+      else {
+        // If it's DALL-E 3, we need to set the response format.
+        $body['response_format'] = 'b64_json';
+        if ( $model === 'dall-e-3' ) { 
+          $body['model'] = 'dall-e-3';
+        }
+        if ( $model === 'dall-e-3-hd' ) {
+          $body['model'] = 'dall-e-3';
+          $body['quality'] = 'hd';
+        }
+        if ( !empty( $query->style ) && strpos( $model, 'dall-e-3' ) === 0 ) {
+          $body['style'] = $query->style;
+        }
       }
       return $body;
     }
@@ -593,10 +608,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       }
     }
   
-    if ( !empty( $json['usage'] ) && isset( $json['usage']['prompt_tokens'] )
-      && isset( $json['usage']['completion_tokens'] ) ) {
-      $this->streamInTokens = $json['usage']['prompt_tokens'];
-      $this->streamOutTokens = $json['usage']['completion_tokens'];
+    $usage = $json['usage'] ?? [];
+    if ( isset( $usage['prompt_tokens'], $usage['completion_tokens'] ) ) {
+      $this->streamInTokens  = (int)$usage['prompt_tokens'];
+      $this->streamOutTokens = (int)$usage['completion_tokens'];
+      if ( isset($usage['cost'] ) ) {
+        $this->streamCost = (float)$usage['cost'];
+      }
     }
 
     // If content is an array, let's try to convert it into a string. Normally, there would be a 'value' key.
@@ -831,6 +849,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         if ( !is_null( $this->streamOutTokens ) ) {
           $returned_out_tokens = $this->streamOutTokens;
         }
+        if ( !is_null( $this->streamCost ) ) {
+          $returned_price = $this->streamCost;
+        }
         $returned_choices = [ [ 'message' => $message ] ];
         $returned_choices = $this->finalize_choices( $returned_choices, null, $query );
       }
@@ -848,12 +869,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
         $returned_id = $data['id'];
         $returned_model = $data['model'];
-        $returned_in_tokens = isset( $data['usage']['prompt_tokens'] ) ?
-          $data['usage']['prompt_tokens'] : null;
-        $returned_out_tokens = isset( $data['usage']['completion_tokens'] ) ?
-          $data['usage']['completion_tokens'] : null;
-        $returned_price = isset( $data['usage']['total_cost'] ) ?
-          $data['usage']['total_cost'] : null;
+        $usage = $data['usage'] ?? [];
+        $returned_in_tokens = $usage['prompt_tokens'] ?? null;
+        $returned_out_tokens = $usage['completion_tokens'] ?? null;
+        $returned_price = $usage['total_cost'] ?? $usage['cost'] ?? null;
         $returned_choices = $data['choices'];
         $returned_choices = $this->finalize_choices( $returned_choices, $data, $query );
       }
@@ -921,6 +940,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
         }
       }
       else {
+
+        // With DALL-E, I receive this:
+        // created =
+        // 1745468700
+        // data =
+        // array(1)
+        // 0 =
+        // array(2)
+        // revised_prompt =
+        // "Create an image like an oil painting, capturing the resonance of a quaint, old house in the Japanese countryside. This house, bearing the components of a traditional izakaya, is nestled among plentiful trees and appraisal of vibrant rice fields. The environment is awash with the comforting, mellow sparkle of a descending sun, resulting in delicate shadows and constructing a peaceful, wistful air. The composition should be abundant in texture, embodying the quiet splendor of rural Japan in a whimsical, romantic style reminiscent of late 19th century impressionism."
+        // url =
+        // "https://oaidalleapiprodscus.blob.core.windows.net/private/org-q35wZ0EjtCYovYqCQa19Gm3d/user-ueEri5XabAqm2Gy4rsJsEGwt/img-04OkUKnMX0msUFGzREiqzG5F.png?st=2025-04-24T03%3A25%3A00Z&se=2025-04-24T05%3A25%3A00Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=cc612491-d948-4d2e-9821-2683df3719f5&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-24T02%3A48%3A27Z&ske=2025-04-25T02%3A48%3A27Z&sks=b&skv=2024-08-04&sig=ACJD7%2BSDaQrJPVZmYO2szr/8p57krdGI0CdeQu1FX0Q%3D"
+
         $choices = $data['data'];
       }
 

@@ -21,7 +21,7 @@ module.exports = function (env, options) {
   if (isProduction) {
     plugins.push(cleanPlugin);
   }
-  if (isAnalysis) {
+  if (isAnalysis && env && env.entry === 'chatbot') {
     plugins.push(new BundleAnalyzerPlugin());
   }
   plugins.push({
@@ -77,7 +77,16 @@ module.exports = function (env, options) {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ["@babel/preset-env", "@babel/preset-react"]
+            presets: [
+              ["@babel/preset-env", {
+                targets: {
+                  chrome: "90", // or "defaults", "last 2 Chrome versions", etc.
+                },
+                useBuiltIns: false, // 👈 disables core-js/polyfill injection
+                modules: false, // for tree-shaking if needed
+              }],
+              "@babel/preset-react"
+            ]
           }
         },
       }, {

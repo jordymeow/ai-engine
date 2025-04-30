@@ -33,6 +33,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 				$this->suggestionsEnabled = $this->core->get_option( 'module_suggestions' );
 				if ( $this->suggestionsEnabled ) {
 					add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
+					add_filter( 'page_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
 				}
 
 				add_action( 'admin_footer', [ $this, 'admin_footer' ] );

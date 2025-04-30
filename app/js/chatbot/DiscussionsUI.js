@@ -1,7 +1,7 @@
-// Previous: 2.4.5
-// Current: 2.6.5
+// Previous: 2.6.5
+// Current: 2.7.7
 
-import { useMemo, useEffect, useState, useCallback } from 'react';
+const { useMemo, useEffect, useState, useCallback } = wp.element;
 import { Pencil, Trash } from 'lucide-react';
 
 import { useClasses } from '@app/chatbot/helpers';
@@ -64,6 +64,7 @@ const DiscussionsUI = (props) => {
 
   const { textNewChat } = params;
 
+  const open = useState(false);
   useEffect(() => {
     // Prepare the API
     // mwaiAPI.open = () => setOpen(true);

@@ -1,5 +1,5 @@
-// Previous: 2.7.5
-// Current: 2.7.6
+// Previous: 2.7.6
+// Current: 2.7.7
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
@@ -122,79 +122,6 @@ const Settings = () => {
 
   const busy = busyAction;
 
-  useEffect(() => {
-    const performChecks = async () => {
-      let updatesNeeded = false;
-      const newOptions = { ...options };
-
-      defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
-        let exists = false;
-        if (options[envKey]) {
-          exists = !!ai_envs.find(x => x.id === options[envKey]);
-        }
-        if (!exists) {
-          const foundEnv = ai_envs.find(x => x?.type === 'openai');
-          if (foundEnv) {
-            if (newOptions[envKey] !== foundEnv.id || newOptions[modelKey] !== defaultModel) {
-              console.warn(`Updating ${envKey} and ${modelKey} to ${foundEnv.id} and ${defaultModel}`);
-              updatesNeeded = true;
-              newOptions[envKey] = foundEnv.id;
-              newOptions[modelKey] = defaultModel;
-            }
-          }
-          else {
-            if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
-              console.warn(`Updating ${envKey} and ${modelKey} to null`);
-              updatesNeeded = true;
-              newOptions[envKey] = null;
-              newOptions[modelKey] = null;
-            }
-          }
-        }
-
-        if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
-          const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
-          if (dimensions !== null) {
-            const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
-            if (!model?.dimensions.includes(dimensions)) {
-              const newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
-              if (newDimensions !== null) {
-                newOptions.ai_embeddings_default_dimensions = newDimensions;
-                console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
-                updatesNeeded = true;
-              }
-            }
-          }
-        }
-      });
-
-      if (updatesNeeded) {
-        await updateOptions(newOptions);
-      }
-    };
-    performChecks();
-  }, [ai_envs, options, updateOptions, embeddingsModels]);
-
-  const refreshOptions = async () => {
-    setBusyAction(true);
-    try {
-      const optionsData = await retrieveOptions();
-      setOptions(optionsData);
-    }
-    catch (err) {
-      console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
-      if (err.message) {
-        setError(<>
-          <div>{i18n.ERROR.GETTING_OPTIONS}</div>
-          <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
-        </>);
-      }
-    }
-    finally {
-      setBusyAction(false);
-    }
-  };
-
   const updateOptions = useCallback(async (newOptions) => {
     try {
       if (nekoStringify(newOptions) === nekoStringify(options)) {
@@ -225,6 +152,81 @@ const Settings = () => {
     }
   }, [options]);
 
+  useEffect(() => {
+    const performChecks = async () => {
+    let updatesNeeded = false;
+    const newOptions = { ...options };
+
+    defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
+      let exists = false;
+      if (options[envKey]) {
+        exists = !!ai_envs.find(x => x.id === options[envKey]);
+      }
+      if (!exists) {
+        const foundEnv = ai_envs.find(x => x?.type === 'openai');
+        if (foundEnv) {
+          if (newOptions[envKey] !== foundEnv.id || newOptions[modelKey] !== defaultModel) {
+            console.warn(`Updating ${envKey} and ${modelKey} to ${foundEnv.id} and ${defaultModel}`);
+            updatesNeeded = true;
+            newOptions[envKey] = foundEnv.id;
+            newOptions[modelKey] = defaultModel;
+          }
+        }
+        else {
+          if (newOptions[envKey] !== null || newOptions[modelKey] !== null) {
+            console.warn(`Updating ${envKey} and ${modelKey} to null`);
+            updatesNeeded = true;
+            newOptions[envKey] = null;
+            newOptions[modelKey] = null;
+          }
+        }
+      }
+
+      // We need to make sure the dimensions are valid
+      if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
+        const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
+        if (dimensions !== null) {
+          const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
+          if (!model?.dimensions.includes(dimensions)) {
+            const newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
+            if (newDimensions !== null) {
+              newOptions.ai_embeddings_default_dimensions = newDimensions;
+              console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
+              updatesNeeded = true;
+            }
+          }
+        }
+      }
+    });
+
+    if (updatesNeeded) {
+      await updateOptions(newOptions);
+    }
+  };
+
+    performChecks();
+  }, [ai_envs, options, updateOptions, embeddingsModels]);
+
+  const refreshOptions = async () => {
+    setBusyAction(true);
+    try {
+      const options = await retrieveOptions();
+      setOptions(options);
+    }
+    catch (err) {
+      console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
+      if (err.message) {
+        setError(<>
+          <div>{i18n.ERROR.GETTING_OPTIONS}</div>
+          <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
+        </>);
+      }
+    }
+    finally {
+      setBusyAction(false);
+    }
+  };
+
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
     // eslint-disable-next-line no-console
@@ -239,6 +241,7 @@ const Settings = () => {
       }
       return env;
     });
+    // BUG: This updates 'embeddings_envs' but calls updateOption with the wrong parameter
     updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
@@ -249,6 +252,7 @@ const Settings = () => {
       }
       return env;
     });
+    // BUG: This updates 'ai_envs' but calls updateOption with 'ai_envs' as id - wrong
     updateOption(updatedEnvironments, 'ai_envs');
   };
 
@@ -274,10 +278,10 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbotsData = await retrieveChatbots();
-      const themesData = await retrieveThemes();
+      const chatbots = await retrieveChatbots();
+      const themes = await retrieveThemes();
       const optionsData = await retrieveOptions();
-      const data = { chatbots: chatbotsData, themes: themesData, options: optionsData };
+      const data = { chatbots, themes, options: optionsData };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -477,7 +481,7 @@ const Settings = () => {
   const jsxStatisticsFormsData =
     <NekoSettings title={i18n.COMMON.QUERIES_FORMS_DATA}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="statistics_forms_data" label={i18n.COMMON.ENABLE} value="1" checked={statistics_forms_data}
+        <NekoCheckbox name="statistics_forms_data" label={i18n.COMMON.GENERATE} value="1" checked={statistics_forms_data}
           description={i18n.HELP.QUERIES_FORMS_DATA}
           onChange={updateOption} />
       </NekoCheckboxGroup>
@@ -580,15 +584,15 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  const jsxShortcodeTypewriter =
-    <NekoSettings title={i18n.SETTINGS.TYPEWRITER_EFFECT}>
-      <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="chatbot_typewriter" label={i18n.COMMON.ENABLE} value="1"
-          checked={chatbot_typewriter}
-          description={toHTML(i18n.SETTINGS.TYPEWRITER_EFFECT_HELP)}
-          onChange={updateOption} />
-      </NekoCheckboxGroup>
-    </NekoSettings>;
+  // const jsxShortcodeTypewriter =
+  //   <NekoSettings title={i18n.SETTINGS.TYPEWRITER_EFFECT}>
+  //     <NekoCheckboxGroup max="1">
+  //       <NekoCheckbox name="chatbot_typewriter" label={i18n.COMMON.ENABLE} value="1"
+  //         checked={chatbot_typewriter}
+  //         description={toHTML(i18n.SETTINGS.TYPEWRITER_EFFECT_HELP)}
+  //         onChange={updateOption} />
+  //     </NekoCheckboxGroup>
+  //   </NekoSettings>;
 
   const jsxShortcodeDiscussions =
     <NekoSettings title={i18n.COMMON.DISCUSSIONS}>
@@ -1143,7 +1147,7 @@ const Settings = () => {
 
                   <NekoBlock busy={busy} title={i18n.COMMON.CHATBOT} className="primary">
                     {jsxShortcodeDiscussions}
-                    {chatbot_discussion && jsxShortcodeDiscussionsTitling}
+                    {chatbot_discussions && jsxShortcodeDiscussionsTitling}
                     {jsxShortcodeSyntaxHighlighting}
                     {jsxWebSpeechAPI}
                     {jsxVirtualKeyboardFix}
@@ -1186,6 +1190,16 @@ const Settings = () => {
                     {jsxDevTools}
                     {jsxCleanUninstall}
                   </NekoBlock>
+
+                  <NekoBlock busy={busy} title={i18n.COMMON.SECURITY} className="primary">
+                    {jsxBannedKeywords}
+                    {banned_words?.length > 0 && jsxIgnoreWordBoundaries}
+                    {jsxBannedIPs}
+                  </NekoBlock>
+
+                  {/* <NekoBlock busy={busy} title={i18n.COMMON.LEGACY_FEATURES} className="primary">
+                    {jsxShortcodeTypewriter}
+                  </NekoBlock> */}
 
                 </NekoColumn>
 

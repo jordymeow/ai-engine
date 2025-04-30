@@ -48,6 +48,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
     $body = parent::build_body( $query, $streamCallback, $extra );
     // Use transforms from OpenRouter docs
     $body['transforms'] = ['middle-out'];
+    $body['usage'] = [ 'include' => true ];
     return $body;
   }
 
@@ -76,36 +77,9 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
       && !is_null( $returned_out_tokens );
 
     // Clean up the data
-    $returned_in_tokens  = $returned_in_tokens  ?? $reply->get_in_tokens( $query );
+    $returned_in_tokens = $returned_in_tokens ?? $reply->get_in_tokens( $query );
     $returned_out_tokens = $returned_out_tokens ?? $reply->get_out_tokens();
-    $returned_price      = $returned_price      ?? $reply->get_price();
-
-    // Fetch usage data from OpenRouter if needed AND if constant is set
-    if ( MWAI_OPENROUTER_ACCURATE_PRICING && !empty( $reply->id ) ) {
-      usleep( 1000 );
-      $url = 'https://openrouter.ai/api/v1/generation?id=' . $reply->id;
-      try {
-        $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, $url );
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, [
-          'Authorization: Bearer ' . $this->apiKey
-        ] );
-        curl_setopt( $ch, CURLOPT_USERAGENT, 'AI Engine' );
-        $res = curl_exec( $ch );
-        curl_close( $ch );
-        $res = json_decode( $res, true );
-        if ( isset( $res['data'] ) ) {
-          $data = $res['data'];
-          $returned_model      = $data['model']            ?? $returned_model;
-          $returned_in_tokens  = $data['tokens_prompt']    ?? $returned_in_tokens;
-          $returned_out_tokens = $data['tokens_completion']?? $returned_out_tokens;
-          $returned_price      = $data['total_cost']       ?? $returned_price;
-        }
-      } catch ( Exception $e ) {
-        Meow_MWAI_Logging::error( 'OpenRouter: ' . $e->getMessage() );
-      }
-    }
+    $returned_price = $returned_price ?? $reply->get_price();
 
     // Record the usage in the database
     $usage = $this->core->record_tokens_usage(
@@ -117,20 +91,9 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
 
     // Set the usage back on the reply
     $reply->set_usage( $usage );
-
-    // Store the price for this query in our static dictionary
-    $hash = spl_object_hash( $query );
-    self::$accuratePrices[ $hash ] = $reply->get_price();
   }
 
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
-    // If we already computed the price for this query, just return it
-    $hash = spl_object_hash( $query );
-    if ( isset( self::$accuratePrices[ $hash ] ) ) {
-      return self::$accuratePrices[ $hash ];
-    }
-
-    // Otherwise, get the price from the reply if it exists
     $price = $reply->get_price();
     return is_null( $price ) ? parent::get_price( $query, $reply ) : $price;
   }

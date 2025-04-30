@@ -1,6 +1,7 @@
-// Previous: 2.4.9
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.7.7
 
+// React & Vendor Libs
 const { useRef, useState, useEffect, useImperativeHandle } = wp.element;
 
 import TextAreaAutosize from 'react-textarea-autosize';
