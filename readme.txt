@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.7.8
+Stable tag: 2.7.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,7 +74,7 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
-= 2.7.8 (2025/04/30) =
+= 2.7.9 (2025/04/30) =
 * Add: Support for gpt-image (the latest OpenAI model).
 * Add: Support for MCP (Model Context Protocol). Check the [tutorial](https://meowapps.com/claude-wordpress-mcp/)! It's awesome, but remember it's a beta feature.
 * Fix: Avoid a few warnings and notices.
