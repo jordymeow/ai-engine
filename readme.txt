@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.7.9
+Stable tag: 2.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -74,6 +74,14 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Changelog ==
 
+= 2.8.0 (2025/05/03) =
+* Fix: Resolve issue with DALL-E model usage on Azure platforms.
+* Add: Allow API Key override through query parameter for OpenRouter integration.
+* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 2.7.9 (2025/04/30) =
 * Add: Support for gpt-image (the latest OpenAI model).
 * Add: Support for MCP (Model Context Protocol). Check the [tutorial](https://meowapps.com/claude-wordpress-mcp/)! It's awesome, but remember it's a beta feature.
@@ -111,10 +119,6 @@ Please be aware that there may be conflicts with certain caching or performance 
 * Update: Links in the chatbot now always open in a new tab for better user experience.
 * Note: Function Calling is now expected to work, but Gemini remains unreliable.
 * Remove: No more OpenAI Status, as they have discontinued their RSS feed.
-* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 2.7.4 (2025/01/26) =
 * Add: Support for Perplexity models.

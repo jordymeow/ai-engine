@@ -35,6 +35,12 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
   protected function build_headers( $query ) {
     $site_url  = apply_filters( 'mwai_openrouter_site_url', get_site_url(), $query );
     $site_name = apply_filters( 'mwai_openrouter_site_name', get_bloginfo( 'name' ), $query );
+    if ( $query->apiKey ) {
+      $this->apiKey = $query->apiKey;
+    }
+    if ( empty( $this->apiKey ) ) {
+      throw new Exception( 'No API Key provided. Please visit the Settings.' );
+    }
     return array(
       'Content-Type'  => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,

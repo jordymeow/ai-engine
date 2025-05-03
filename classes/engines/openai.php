@@ -934,28 +934,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_Core
       $res = $this->run_query( $url, $options );
       $data = $res['data'];
       $choices = [];
-      if ( $this->envType === 'azure' ) {
-        foreach ( $data['data'] as $entry ) {
-          $choices[] = [ 'url' => $entry['url'] ];
-        }
-      }
-      else {
-
-        // With DALL-E, I receive this:
-        // created =
-        // 1745468700
-        // data =
-        // array(1)
-        // 0 =
-        // array(2)
-        // revised_prompt =
-        // "Create an image like an oil painting, capturing the resonance of a quaint, old house in the Japanese countryside. This house, bearing the components of a traditional izakaya, is nestled among plentiful trees and appraisal of vibrant rice fields. The environment is awash with the comforting, mellow sparkle of a descending sun, resulting in delicate shadows and constructing a peaceful, wistful air. The composition should be abundant in texture, embodying the quiet splendor of rural Japan in a whimsical, romantic style reminiscent of late 19th century impressionism."
-        // url =
-        // "https://oaidalleapiprodscus.blob.core.windows.net/private/org-q35wZ0EjtCYovYqCQa19Gm3d/user-ueEri5XabAqm2Gy4rsJsEGwt/img-04OkUKnMX0msUFGzREiqzG5F.png?st=2025-04-24T03%3A25%3A00Z&se=2025-04-24T05%3A25%3A00Z&sp=r&sv=2024-08-04&sr=b&rscd=inline&rsct=image/png&skoid=cc612491-d948-4d2e-9821-2683df3719f5&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-24T02%3A48%3A27Z&ske=2025-04-25T02%3A48%3A27Z&sks=b&skv=2024-08-04&sig=ACJD7%2BSDaQrJPVZmYO2szr/8p57krdGI0CdeQu1FX0Q%3D"
-
-        $choices = $data['data'];
-      }
-
+      $choices = $data['data'];
       $reply = new Meow_MWAI_Reply( $query );
       $model = $query->model;
       $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
