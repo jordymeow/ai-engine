@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.0
+Stable tag: 2.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,9 +72,51 @@ Please be aware that there may be conflicts with certain caching or performance 
 3. Enjoy the features of AI Engine!
 5. ... and always keep an eye on [your OpenAI usage](https://platform.openai.com/usage)!
 
+== Frequently Asked Questions ==
+
+= Where can I find tutorials and documentation for AI Engine? =
+
+Start with the [main tutorial](https://meowapps.com/ai-engine/tutorial/) or browse the full [documentation](https://docs.meowapps.com/).
+
+= Where can I ask questions or get support? =
+
+Visit the [AI Engine Support Forum](https://wordpress.org/support/plugin/ai-engine/) or join the [community on Discord](https://discord.com/invite/bHDGh38).
+
+= Can I contribute to the plugin? =
+
+Yes! Contributions are welcome on the [GitHub repository](https://github.com/jordymeow/ai-engine).
+
+= Why am I getting “Error 429: You exceeded your current quota”? =
+
+This means your OpenAI API key has reached its limit or has no billing enabled. Check your [OpenAI billing settings](https://platform.openai.com/account/billing).
+
+= The chatbot doesn’t show responses until I refresh the page. What’s wrong? =
+
+This may be caused by a caching plugin. Try excluding the chatbot container or relevant pages from caching.
+
+= AI Engine is giving me “Sorry, you are not allowed...” errors. What should I do? =
+
+This is usually a REST API permission issue. Make sure you’re logged in and that your roles and tokens are set up correctly.
+
+= Does AI Engine conflict with other plugins? =
+
+Some plugins like caching tools (SiteGround Optimizer, WP Fastest Cache), TranslatePress, or The Events Calendar may interfere. Check plugin settings or disable specific features if needed.
+
+= I'm seeing issues after updating WordPress or Chrome. Why? =
+
+Sometimes updates introduce temporary compatibility issues. Make sure you’re using the latest version of AI Engine and clear your browser cache.
+
+= Why isn’t my image generation working with Azure/OpenAI? =
+
+Check that your API key has permissions for image generation, and that the model and endpoint are correctly set. See documentation for more.
+
+= My question isn’t listed here. Where else can I find help? =
+
+Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
+
 == Changelog ==
 
-= 2.8.0 (2025/05/03) =
+= 2.8.1 (2025/05/03) =
 * Fix: Resolve issue with DALL-E model usage on Azure platforms.
 * Add: Allow API Key override through query parameter for OpenRouter integration.
 * 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
