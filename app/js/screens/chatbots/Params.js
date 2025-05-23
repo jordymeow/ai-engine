@@ -1,5 +1,5 @@
-// Previous: 2.7.3
-// Current: 2.7.6
+// Previous: 2.7.6
+// Current: 2.8.2
 
 const { useMemo, useState, useEffect } = wp.element;
 
@@ -45,16 +45,21 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
         <div className="mwai-builder-col" style={{ flex: 2 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
             {chatIcons.map(x =>
-              <img key={x} style={{ marginRight: 2, marginBottom: 2, cursor: 'pointer', filter: shadowFilter }}
-                width={24} height={24} src={`${pluginUrl}/images/${x}`}
-                onClick={() => {
+              <div key={x} style={{ cursor: 'pointer' }}
+                onMouseDown={(ev) => ev.stopPropagation()}
+                onClick={(ev) => {
+                  ev.stopPropagation();
                   updateShortcodeParams(x, valueName);
-                }}
-              />
+                }}>
+                <img style={{ marginRight: 2, marginBottom: 2, filter: shadowFilter }}
+                  width={24} height={24} src={`${pluginUrl}/images/${x}`}
+                />
+              </div>
             )}
             <div style={{ width: 24, height: 24, border: '1px solid #d2e4f3', background: '#f5fcff',
               borderRadius: 5, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            onClick={() => { updateShortcodeParams(`${pluginUrl}/images/chat-traditional-1.svg`, valueName); }}
+            onMouseDown={(ev) => ev.stopPropagation()}
+            onClick={(ev) => { ev.stopPropagation(); updateShortcodeParams(`${pluginUrl}/images/chat-traditional-1.svg`, valueName); }}
             >...</div>
           </div>
         </div>
@@ -84,10 +89,10 @@ const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot, blockMode,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
   const { completionModels, imageModels, realtimeModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = (shortcodeParams.mode === 'chat') ?? false;
-  const isAssistant = (shortcodeParams.mode === 'assistant') ?? false;
-  const isImagesChat = (shortcodeParams.mode === 'images') ?? false;
-  const isRealtime = (shortcodeParams.mode === 'realtime') ?? false;
+  const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
+  const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
+  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
+  const isRealtime = shortcodeParams.mode === 'realtime' ?? false;
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
@@ -101,91 +106,117 @@ const ChatbotParams = (props) => {
 
   const aiEnvironment = useMemo(() => {
     const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
-    return env || null;
+    return env;
   }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
-    return assist || null;
+    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return aid;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
 
   const environments = options.embeddings_envs || [];
-
   const modelSupportsFunctions = useMemo(() => {
     return currentModel?.tags?.includes('functions');
   }, [currentModel]);
-
   const modelSupportsVision = useMemo(() => {
     return currentModel?.tags?.includes('vision');
   }, [currentModel]);
-
   const modelSupportsFiles = useMemo(() => {
     return currentModel?.tags?.includes('files');
   }, [currentModel]);
-
   const modelSupportImage = useMemo(() => {
     return currentModel?.tags?.includes('image');
   }, [currentModel]);
 
   useEffect(() => {
     const newFunctions = functions.filter(x => availableFunctions.some(y => y.id === x.id));
-
     if (newFunctions.length !== functions.length) {
       console.warn("Update Params: Functions has been updated.");
       updateShortcodeParams(newFunctions, 'functions');
-    } else if (modelSupportImage && !shortcodeParams.resolution) {
+    }
+
+    else if (modelSupportImage && !shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
         const resolutions = currentModel.resolutions.map(x => x.name);
         const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
         updateShortcodeParams(bestResolution, 'resolution');
       }
-    } else if (!modelSupportImage && shortcodeParams.resolution) {
+    }
+
+    else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
-    } else if (modelSupportImage && isChat) {
+    }
+
+    else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    } else if (isAssistant && shortcodeParams.model) {
+    }
+
+    else if (isAssistant && shortcodeParams.model) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    } else if (!isAssistant && shortcodeParams.assistantId) {
+    }
+
+    else if (!isAssistant && shortcodeParams.assistantId) {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
-    } else if (shortcodeParams.imageUpload && !modelSupportsVision) {
+    }
+
+    else if (shortcodeParams.imageUpload && !modelSupportsVision) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
-    } else if (shortcodeParams.fileSearch && !isAssistant) {
+    }
+
+    else if (shortcodeParams.fileSearch && !isAssistant) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    } else if (shortcodeParams.model && !shortcodeParams.envId) {
+    }
+
+    else if (shortcodeParams.model && !shortcodeParams.envId) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    } else if (shortcodeParams.envId && !aiEnvironment) {
+    }
+
+    else if (shortcodeParams.envId && !aiEnvironment) {
       console.warn("Update Params: Environment has been removed.");
       updateShortcodeParams(null, 'envId');
-    } else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
+    }
+
+    else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       console.warn("Update Params: Embeddings environment has been removed.");
       updateShortcodeParams(null, 'embeddingsEnvId');
-    } else if (!modelSupportsFunctions && functions.length) {
+    }
+
+    else if (!modelSupportsFunctions && functions.length) {
       console.warn("Update Params: Functions have been removed.");
       updateShortcodeParams([], 'functions');
-    } else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
+    }
+
+    else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    } else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
+    }
+
+    else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
       console.warn("Update Params: AI avatar has been set to true.");
       updateShortcodeParams(true, 'aiAvatar');
-    } else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
+    }
+
+    else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
       console.warn("Update Params: User avatar has been set to true.");
       updateShortcodeParams(true, 'userAvatar');
-    } else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
+    }
+
+    else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
+
   }, [shortcodeParams]);
 
   const updateFunctionsInAssistant = async () => {
@@ -211,11 +242,10 @@ const ChatbotParams = (props) => {
   }, [currentModel, modelSupportImage]);
 
   const titleChatbotCategory = useMemo(() => {
-    const type = isChat ? 'Chat' : isAssistant ? 'Assistant' : isImagesChat ? 'Images' : isRealtime ? 'Realtime' : '';
+    const type = isChat ? 'Chat' : isAssistant ? 'Assistant' : isImagesChat ? 'Images' : isRealtime ? 'Realtime' : null;
     const id = shortcodeParams?.botId || defaultChatbot?.id || 'default';
 
-    const infoArr = [type, id].filter(Boolean);
-    const info = infoArr.join(', ');
+    const info = [type, id].filter(Boolean).join(', ');
 
     return (
       <div>
@@ -288,6 +318,7 @@ const ChatbotParams = (props) => {
     if (!functions.length) {
       return i18n.COMMON.FUNCTIONS;
     }
+
     const countString = `Enabled: ${functions.length}, Total: ${availableFunctions.length}`;
     return (
       <div>
@@ -299,7 +330,7 @@ const ChatbotParams = (props) => {
 
   const titleThresholdsCategory = useMemo(() => {
     const contextMaxLength =
-      shortcodeParams.maxMessages || options?.context_max_length;
+    shortcodeParams.contextMaxLength || options?.context_max_length;
 
     const info = [
       shortcodeParams.maxMessages
@@ -317,8 +348,8 @@ const ChatbotParams = (props) => {
       </div>
     );
   }, [
-    shortcodeParams.maxMessages,
     shortcodeParams.contextMaxLength,
+    shortcodeParams.maxMessages,
     options?.context_max_length
   ]);
 
@@ -701,7 +732,8 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="aiAvatar" label="Yes"
-                    checked={shortcodeParams.aiAvatar} value="1" onChange={updateShortcodeParams} />
+                    checked={shortcodeParams.aiAvatar} value="1" onChange={updateShortcodeParams}
+                    disabled={!shortcodeParams.aiName} />
                 </div>
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
                   <label>{i18n.COMMON.AI_NAME}:</label>
@@ -732,7 +764,8 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="userAvatar" label="Yes"
-                    checked={shortcodeParams.userAvatar} value="1" onChange={updateShortcodeParams} />
+                    checked={shortcodeParams.userAvatar} value="1" onChange={updateShortcodeParams}
+                    disabled={!shortcodeParams.userName} />
                 </div>
 
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
@@ -776,7 +809,8 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="guestAvatar" label="Yes"
-                    checked={shortcodeParams.guestAvatar} value="1" onChange={updateShortcodeParams} />
+                    checked={shortcodeParams.guestAvatar} value="1" onChange={updateShortcodeParams}
+                    disabled={!shortcodeParams.guestName} />
                 </div>
 
                 <div className="mwai-builder-col" style={{ flex: 3 }}>

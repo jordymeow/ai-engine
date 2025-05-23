@@ -1,8 +1,12 @@
-// Previous: 2.5.2
-// Current: 2.7.3
+// Previous: none
+// Current: 2.8.2
 
 const { useMemo, useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { JsonViewer } from '@textea/json-viewer';
 
 import { nekoFetch } from '@neko-ui';
@@ -24,7 +28,8 @@ import {
 
 import { apiUrl, restNonce } from '@app/settings';
 import i18n from '@root/i18n';
-import { toHTML } from '@app/helpers-admin';
+import { toHTML, retrieveLogsActivityDaily } from '@app/helpers-admin';
+import { useNekoColors } from '@neko-ui';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
 import QueriesExplorer from '@app/screens/queries/Queries';
 
@@ -41,7 +46,7 @@ const retrieveLogsMeta = async (logId) => {
   return res.data;
 };
 
-const Statistics = ({ options, updateOption, busy }) => {
+const Insights = ({ options, updateOption, busy }) => {
   const [logs, setLogs] = useState([]);
   const [selectedLogIds, setSelectedLogIds] = useState([]);
   const [limitSection, setLimitSection] = useState('users');
@@ -73,6 +78,26 @@ const Statistics = ({ options, updateOption, busy }) => {
     staleTime: 1000 * 60 * 60 * 24
   });
 
+  const { colors } = useNekoColors();
+  const { data: activity } = useQuery({
+    queryKey: ['logsActivityDaily'],
+    queryFn: () => retrieveLogsActivityDaily(31),
+    staleTime: 1000 * 60 * 60
+  });
+
+  const activityChart = useMemo(() => {
+    if (!activity) return null;
+    const labels = activity.map((_, idx) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (activity.length - 1 - idx));
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    return {
+      labels,
+      datasets: [{ label: 'Queries', data: activity, backgroundColor: colors.blue }]
+    };
+  }, [activity, colors]);
+
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
     await updateOption(newParams, 'limits');
@@ -82,13 +107,13 @@ const Statistics = ({ options, updateOption, busy }) => {
     return limits?.[limitSection]
       ? limits[limitSection]
       : {
-          credits: 1,
-          creditType: 'price',
-          timeFrame: 'month',
-          isAbsolute: false,
-          overLimitMessage: 'You have reached the limit.',
-          ignoredUsers: ''
-        };
+        credits: 1,
+        creditType: 'price',
+        timeFrame: 'month',
+        isAbsolute: false,
+        overLimitMessage: 'You have reached the limit.',
+        ignoredUsers: ''
+      };
   }, [limits, limitSection]);
 
   const updateLimitSection = async (value, id) => {
@@ -123,12 +148,13 @@ const Statistics = ({ options, updateOption, busy }) => {
             onDataFetched={setLogs}
           />
         </NekoColumn>
+
         <NekoColumn minimal>
           {logId && (
             <>
               <NekoSpacer large />
               <NekoTabs inversed style={{ marginRight: 10, marginLeft: 10 }}>
-                <NekoTab title="Query">
+                <NekoTab title={i18n.COMMON.QUERY}>
                   <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                     {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
                     {!isFetchingMeta && !meta && (
@@ -148,7 +174,8 @@ const Statistics = ({ options, updateOption, busy }) => {
                     )}
                   </div>
                 </NekoTab>
-                <NekoTab title="Reply">
+
+                <NekoTab title={i18n.COMMON.REPLY}>
                   <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                     {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
                     {!isFetchingMeta && !meta && (
@@ -168,6 +195,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                     )}
                   </div>
                 </NekoTab>
+
                 {meta && meta['fields'] && (
                   <NekoTab title="Fields">
                     <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
@@ -190,6 +218,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                     </div>
                   </NekoTab>
                 )}
+
                 {selectedLog?.stats && (
                   <NekoTab title="Stats">
                     <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
@@ -209,8 +238,26 @@ const Statistics = ({ options, updateOption, busy }) => {
               </NekoTabs>
             </>
           )}
-          <StyledBuilderForm>
-            <NekoBlock className="primary" busy={busy} title="Limits" style={{ flex: 1 }}>
+
+          {activityChart && (
+            <>
+              <NekoSpacer />
+              <NekoBlock className="primary" title={i18n.COMMON.ACTIVITY} style={{ flex: 1 }}>
+                <div>
+                  <Bar
+                    options={{
+                      responsive: true,
+                      plugins: { legend: { display: false } }
+                    }}
+                    data={activityChart}
+                  />
+                </div>
+              </NekoBlock>
+            </>
+          )}
+
+          <StyledBuilderForm style={{ marginTop: -25 }}>
+            <NekoBlock className="primary" busy={busy} title={i18n.COMMON.LIMITS} style={{ flex: 1 }}>
               <NekoCheckbox
                 name="enabled"
                 label={i18n.STATISTICS.ENABLE_LIMITS}
@@ -218,9 +265,11 @@ const Statistics = ({ options, updateOption, busy }) => {
                 value="1"
                 onChange={updateLimits}
               />
+
               {limits?.enabled && (
                 <>
                   <NekoSpacer />
+
                   <NekoQuickLinks
                     value={limitSection}
                     busy={busy}
@@ -234,6 +283,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                     <NekoLink title={i18n.COMMON.GUESTS} value="guests" />
                     <NekoLink title={i18n.COMMON.SYSTEM} value="system" />
                   </NekoQuickLinks>
+
                   {limits?.target === 'userId' && (
                     <div className="mwai-builder-row">
                       <div className="mwai-builder-col">
@@ -249,6 +299,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                       </div>
                     </div>
                   )}
+
                   <div className="mwai-builder-row">
                     <div className="mwai-builder-col">
                       <label>{i18n.COMMON.CREDITS}:</label>
@@ -272,7 +323,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                         name="creditType"
                         disabled={!limits?.enabled}
                         value={limitSectionParams.creditType}
-                        onChange={updateLimitSection}
+                        onChange={(v) => updateLimitSection(v, 'creditType')}
                       >
                         <NekoOption key="queries" id="queries" value="queries" label="Queries" />
                         <NekoOption key="units" id="units" value="units" label="Tokens" />
@@ -280,6 +331,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                       </NekoSelect>
                     </div>
                   </div>
+
                   {limitSectionParams.credits !== 0 && (
                     <p>
                       If you want to apply variable amount of credits,{' '}
@@ -293,16 +345,19 @@ const Statistics = ({ options, updateOption, busy }) => {
                       .
                     </p>
                   )}
+
                   {limitSectionParams.credits !== 0 &&
                     limitSectionParams.creditType === 'price' && (
-                      <p>The dollars represent the budget you spent through OpenAI.</p>
-                    )}
+                    <p>The dollars represent the budget you spent through OpenAI.</p>
+                  )}
+
                   {limitSectionParams.credits === 0 && (
                     <p>
                       Since there are no credits, the Message for No Credits Message will be
                       displayed.
                     </p>
                   )}
+
                   <div className="mwai-builder-row">
                     <div className="mwai-builder-col">
                       <label>{i18n.COMMON.TIMEFRAME}:</label>
@@ -312,7 +367,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                         name="timeFrame"
                         disabled={!limits?.enabled}
                         value={limitSectionParams.timeFrame}
-                        onChange={updateLimitSection}
+                        onChange={(v) => updateLimitSection(v, 'timeFrame')}
                       >
                         <NekoOption key="second" id="second" value="second" label="Second" />
                         <NekoOption key="minute" id="minute" value="minute" label="Minute" />
@@ -331,13 +386,15 @@ const Statistics = ({ options, updateOption, busy }) => {
                         disabled={!limits?.enabled}
                         checked={limitSectionParams.isAbsolute}
                         value="1"
-                        onChange={updateLimitSection}
+                        onChange={(v) => updateLimitSection(v, 'isAbsolute')}
                       />
                     </div>
                   </div>
+
                   {limitSectionParams.isAbsolute && (
                     <p>{toHTML(i18n.STATISTICS.ABSOLUTE_HELP)}</p>
                   )}
+
                   <div className="mwai-builder-row">
                     <div className="mwai-builder-col">
                       <label>{i18n.STATISTICS.NO_CREDITS_MESSAGE}:</label>
@@ -346,11 +403,12 @@ const Statistics = ({ options, updateOption, busy }) => {
                         name="overLimitMessage"
                         disabled={!limits?.enabled}
                         value={limitSectionParams.overLimitMessage}
-                        onEnter={updateLimitSection}
-                        onBlur={updateLimitSection}
+                        onEnter={(v) => updateLimitSection(v, 'overLimitMessage')}
+                        onBlur={(v) => updateLimitSection(v, 'overLimitMessage')}
                       />
                     </div>
                   </div>
+
                   {limitSection === 'users' && (
                     <div className="mwai-builder-row">
                       <div className="mwai-builder-col">
@@ -361,8 +419,7 @@ const Statistics = ({ options, updateOption, busy }) => {
                           name="ignoredUsers"
                           disabled={!limits?.enabled}
                           value={limits?.users?.ignoredUsers}
-                          description=""
-                          onChange={updateLimitSection}
+                          onChange={(v) => updateLimitSection(v, 'ignoredUsers')}
                         >
                           <NekoOption key="none" id="none" value="" label={i18n.COMMON.NONE} />
                           <NekoOption
@@ -381,7 +438,9 @@ const Statistics = ({ options, updateOption, busy }) => {
                       </div>
                     </div>
                   )}
+
                   <NekoSpacer />
+
                   <NekoButton fullWidth className="danger" onClick={onResetLimits}>
                     {i18n.COMMON.RESET_LIMITS}
                   </NekoButton>
@@ -395,4 +454,4 @@ const Statistics = ({ options, updateOption, busy }) => {
   );
 };
 
-export default Statistics;
+export default Insights;

@@ -135,7 +135,7 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 		}
 
 		static function test_error( $error = 'timeout', $diceSides = 1 ) {
-			if ( rand( 1, $diceSides ) === 1 ) {
+			if ( mt_rand( 1, $diceSides ) === 1 ) {
 				if ( $error === 'timeout' ) {
 					header("HTTP/1.0 408 Request Timeout");
 					die();

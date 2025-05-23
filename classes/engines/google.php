@@ -12,11 +12,27 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
   protected $inModel = null;
   protected $inId = null;
 
-  // Streaming.
-  private $streamFunctionCall = null;
+  // Static
+  private static $creating = false;
+
+  public static function create( $core, $env ) {
+    self::$creating = true;
+    if ( class_exists( 'MeowPro_MWAI_Google' ) ) {
+      $instance = new MeowPro_MWAI_Google( $core, $env );
+    }
+    else {
+      $instance = new self( $core, $env );
+    }
+    self::$creating = false;
+    return $instance;
+  }
 
   /** Constructor. */
   public function __construct( $core, $env ) {
+    $isOwnClass = get_class( $this ) === 'Meow_MWAI_Engines_Google';
+    if ( $isOwnClass && !self::$creating ) {
+      throw new Exception( 'Please use the create() method to instantiate the Meow_MWAI_Engines_Google class.' );
+    }
     parent::__construct( $core, $env );
     $this->set_environment();
   }
@@ -91,7 +107,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
    * @param Meow_MWAI_Query_Completion|Meow_MWAI_Query_Feedback $query
    * @return array
    */
-  private function build_messages( $query ) {
+  protected function build_messages( $query ) {
     $messages = [];
 
     // 1. Instructions (if any).
@@ -175,46 +191,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
   }
 
   /**
-   * Handle each chunk of data when streaming the response.
-   *
-   * @param array $json
-   * @return string|null
-   */
-  protected function stream_data_handler( $json ) {
-    $content = null;
-    $isCompletedResponse = (
-      isset( $json['candidates'][0]['finishReason'] ) &&
-      (
-        $json['candidates'][0]['finishReason'] === 'STOP' ||
-        $json['candidates'][0]['finishReason'] === 'MAX_TOKENS'
-      )
-    );
-    if ( isset( $json['candidates'][0]['content']['parts'] ) ) {
-      foreach ( $json['candidates'][0]['content']['parts'] as $part ) {
-        if ( isset( $part['functionCall'] ) && $isCompletedResponse ) {
-          $this->streamFunctionCall = $part['functionCall'];
-        }
-        if ( isset( $part['text'] ) ) {
-          $content = ( $content === null ) ? $part['text'] : $content . $part['text'];
-        }
-      }
-    }
-    if ( !$isCompletedResponse && isset( $json['candidates'][0]['content']['parts'] ) ) {
-      foreach ( $json['candidates'][0]['content']['parts'] as $part ) {
-        if ( isset( $part['functionCall'] ) ) {
-          // Wait for the final chunk to handle the function call fully.
-          return $content;
-        }
-      }
-    }
-    $endings = [ '<|im_end|>', '</s>' ];
-    if ( in_array( $content, $endings, true ) ) {
-      $content = null;
-    }
-    return ( $content === '0' || !empty( $content ) ) ? $content : null;
-  }
-
-  /**
    * Build headers for the request.
    *
    * @param Meow_MWAI_Query_Completion|Meow_MWAI_Query_Feedback $query
@@ -263,23 +239,15 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
    *
    * @param string $url
    * @param array  $options
-   * @param bool   $isStream
    * @throws Exception
    * @return array
    */
-  public function run_query( $url, $options, $isStream = false ) {
+  public function run_query( $url, $options ) {
 
     try {
-      $options['stream'] = $isStream;
-      if ( $isStream ) {
-        $options['filename'] = tempnam( sys_get_temp_dir(), 'mwai-stream-' );
-      }
       $res = wp_remote_get( $url, $options );
       if ( is_wp_error( $res ) ) {
         throw new Exception( $res->get_error_message() );
-      }
-      if ( $isStream ) {
-        return [ 'stream' => true ];
       }
       $response = wp_remote_retrieve_body( $res );
       $headersRes = wp_remote_retrieve_headers( $res );
@@ -291,7 +259,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         strpos( $resContentType, 'text/plain' ) !== false
       ) {
         return [
-          'stream' => false,
           'headers' => $headers,
           'data' => $response
         ];
@@ -304,26 +271,16 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       Meow_MWAI_Logging::error( '(Google) ' . $e->getMessage() );
       throw $e;
     }
-    finally {
-      if ( $isStream && file_exists( $options['filename'] ) ) {
-        unlink( $options['filename'] );
-      }
-    }
   }
 
   /**
    * Run a completion query on the Google endpoint.
    *
    * @param Meow_MWAI_Query_Completion $query
-   * @param callable|null              $streamCallback
    * @throws Exception
    * @return Meow_MWAI_Reply
    */
   public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
-    if ( !is_null( $streamCallback ) ) {
-      $this->streamCallback = $streamCallback;
-      add_action( 'http_api_curl', [ $this, 'stream_handler' ], 10, 3 );
-    }
 
     $body = [
       'generationConfig' => [
@@ -345,10 +302,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     }
     $body['contents'] = $this->build_messages( $query );
     $url = $this->endpoint . '/models/' . $query->model . ':generateContent';
-
-    if ( !is_null( $streamCallback ) ) {
-      $url .= '?alt=sse';
-    }
     if ( strpos( $url, '?' ) === false ) {
       $url .= '?key=' . $this->apiKey;
     }
@@ -360,64 +313,36 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     $options = $this->build_options( $headers, $body );
 
     try {
-      $res = $this->run_query( $url, $options, $streamCallback );
+      $res = $this->run_query( $url, $options );
       $reply = new Meow_MWAI_Reply( $query );
 
-      $returned_id = null;
-      $returned_model = $this->inModel;
-      $returned_in_tokens = null;
-      $returned_out_tokens = null;
-      $returned_choices = [];
-
-      if ( !is_null( $streamCallback ) ) {
-        if ( empty( $this->streamContent ) ) {
-          $json = json_decode( $this->streamBuffer, true );
-          if ( isset( $json['error']['message'] ) ) {
-            throw new Exception( $json['error']['message'] );
-          }
-        }
-        $returned_id = $this->inId;
-        $returned_model = $this->inModel ? $this->inModel : $query->model;
-        $returned_choices[] = [
-          'message' => [
-            'content' => $this->streamContent,
-            'function_call' => $this->streamFunctionCall
-          ]
-        ];
-        $this->streamFunctionCall = null;
+      $data = $res['data'];
+      if ( empty( $data ) ) {
+        throw new Exception( 'No content received (res is null).' );
       }
-      else {
-        $data = $res['data'];
-        if ( empty( $data ) ) {
-          throw new Exception( 'No content received (res is null).' );
-        }
-        if ( isset( $data['candidates'] ) ) {
-          $candidates = $data['candidates'];
-          foreach ( $candidates as $candidate ) {
-            $content = $candidate['content'];
-            if ( isset( $content['parts'][0]['functionCall'] ) ) {
-              $function_call = $content['parts'][0]['functionCall'];
-              $returned_choices[] = [
-                'message' => [
-                  'content' => null,
-                  'function_call' => $function_call
-                ]
-              ];
-            }
-            else if ( isset( $content['parts'][0]['text'] ) ) {
-              $text = $content['parts'][0]['text'];
-              $returned_choices[] = [ 'role' => 'assistant', 'text' => $text ];
-            }
+
+      $returned_choices = [];
+      if ( isset( $data['candidates'] ) ) {
+        foreach ( $data['candidates'] as $candidate ) {
+          $content = $candidate['content'];
+          if ( isset( $content['parts'][0]['functionCall'] ) ) {
+            $function_call = $content['parts'][0]['functionCall'];
+            $returned_choices[] = [
+              'message' => [
+                'content' => null,
+                'function_call' => $function_call
+              ]
+            ];
+          }
+          elseif ( isset( $content['parts'][0]['text'] ) ) {
+            $text = $content['parts'][0]['text'];
+            $returned_choices[] = [ 'role' => 'assistant', 'text' => $text ];
           }
         }
-        $returned_model = $query->model;
       }
 
       $reply->set_choices( $returned_choices );
-      if ( !empty( $returned_id ) ) {
-        $reply->set_id( $returned_id );
-      }
-      $this->handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens );
+      $this->handle_tokens_usage( $reply, $query, $query->model, null, null );
       return $reply;
     }
     catch ( Exception $e ) {
@@ -468,7 +393,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
    * @return array
    */
   public function retrieve_models() {
-    $url = 'https://generativelanguage.googleapis.com/v1/models?key=' . $this->apiKey;
+    $url = $this->endpoint . '/models?key=' . $this->apiKey;
     $response = wp_remote_get( $url );
     if ( is_wp_error( $response ) ) {
       throw new Exception( 'AI Engine: ' . $response->get_error_message() );

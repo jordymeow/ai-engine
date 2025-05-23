@@ -53,7 +53,7 @@
     --neko-input-background: var(--neko-main-color-98);
     --neko-input-border: var(--neko-main-color-80);
   }
-`,s=()=>({colors:i}),a=({children:e})=>React.createElement(React.Fragment,null,React.createElement(o,{key:"neko-ui-styles"}),e),l=({children:e})=>React.createElement(a,null,e)},9296:(e,t,n)=>{"use strict";n.d(t,{M:()=>m});var r=n(1594),i=n(6365),o=n.n(i),s=n(3185),a=n(5977),l=n(6087),c=n(8922),u=n(1329),h=n(6897);function d(){return d=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},d.apply(this,arguments)}const f=(0,s.Ay)((e=>{let{className:t="primary",disabled:n=!1,icon:i=null,color:o=null,onClick:s=(()=>{}),rounded:a,isBusy:f=!1,spinning:p=!1,disabledColor:m=null,busyText:g,hideBusyIcon:y=!1,busyIconSize:b,requirePro:v=!1,isPro:x=!1,small:k,width:w,height:_,fullWidth:S,startTime:C=null,children:E,...A}=e;n=n&&!f;const O=!!i,M=v&&!x,R=(0,r.useMemo)((()=>{let e=w??30;return k&&(e*=.8),a?e-10:e-6}),[w,a,k]),P=(0,r.useMemo)((()=>b||"22px"),[b]),[T,I]=(0,r.useState)(null);(0,h.$$)((()=>I(new Date)),C?1e3:null),(0,r.useEffect)((()=>{C||I(null)}),[C]);const L=(0,r.useMemo)((()=>{if(!C||!T)return null;const e=Math.floor((T-C)/1e3),t=e%60;return`${Math.floor(e/60).toString().padStart(2,"0")}:${t.toString().padStart(2,"0")}`}),[T,C]),j=(0,h.gR)("neko-button",t,{"has-icon":O},{"custom-color":o},{small:k},{rounded:a},{busy:f},{"is-pro":M},{full:S});return React.createElement("button",d({type:"button",className:j,onClick:e=>{n||s(),e.stopPropagation(),e.preventDefault()},disabled:n||M},A),f&&!y&&React.createElement(React.Fragment,null,React.createElement(l.X,{type:"circle",color:"#fff",size:P})),f&&L&&React.createElement("span",{className:"chrono-time"},L),f&&!!g&&React.createElement("span",{style:{marginLeft:y?0:"4px",marginRight:"2px"}},g),O&&!f&&React.createElement(c.z,{raw:!0,icon:i,width:R,height:R,spinning:p,style:a?{margin:"0 auto"}:{}}),!!E&&!f&&React.createElement("span",{style:{marginLeft:O?"4px":0,marginRight:O?"2px":0}},E),M&&React.createElement(u.K,{style:{marginLeft:"8px"}}))}))`
+`,s=()=>({colors:i}),a=({children:e})=>React.createElement(React.Fragment,null,React.createElement(o,{key:"neko-ui-styles"}),e),l=({children:e})=>React.createElement(a,null,e)},9296:(e,t,n)=>{"use strict";n.d(t,{M:()=>m});var r=n(1594),i=n(6365),o=n.n(i),s=n(3185),a=n(5977),l=n(6087),c=n(8922),u=n(1329),h=n(6897);function d(){return d=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},d.apply(this,arguments)}const f=(0,s.Ay)((e=>{let{className:t="primary",disabled:n=!1,icon:i=null,color:o=null,onClick:s=(()=>{}),onStopClick:a=null,rounded:f,isBusy:p=!1,spinning:m=!1,disabledColor:g=null,busyText:y,hideBusyIcon:b=!1,busyIconSize:v,requirePro:x=!1,isPro:k=!1,small:w,width:_,height:S,fullWidth:C,startTime:E=null,children:A,...O}=e;n=n&&!p;const M=!!i,R=x&&!k,P=!!a&&p,T=(0,r.useMemo)((()=>{let e=_??30;return w&&(e*=.8),f?e-10:e-6}),[_,f,w]),I=(0,r.useMemo)((()=>v||"22px"),[v]),[L,j]=(0,r.useState)(null);(0,h.$$)((()=>j(new Date)),E?1e3:null),(0,r.useEffect)((()=>{E||j(null)}),[E]);const N=(0,r.useMemo)((()=>{if(!E||!L)return null;const e=Math.floor((L-E)/1e3),t=e%60;return`${Math.floor(e/60).toString().padStart(2,"0")}:${t.toString().padStart(2,"0")}`}),[L,E]),z=(0,h.gR)("neko-button",t,{"has-icon":M},{"custom-color":o},{small:w},{rounded:f},{busy:p},{"is-pro":R},{full:C},{"has-stop":P});return React.createElement("button",d({type:"button",className:z,onClick:e=>{n||(P?a():s()),e.stopPropagation(),e.preventDefault()},disabled:n||R},O),p&&!P&&!b&&React.createElement(React.Fragment,null,React.createElement(l.X,{type:"circle",color:"#fff",size:I})),p&&!P&&N&&React.createElement("span",{className:"chrono-time"},N),p&&!P&&!!y&&React.createElement("span",{style:{marginLeft:b?0:"4px",marginRight:"2px"}},y),P&&React.createElement("div",{className:"button-content"},React.createElement("span",{className:"button-text"},y||A),React.createElement("button",{type:"button",className:"stop-button",onClick:e=>{a&&a(),e.stopPropagation(),e.preventDefault()},"aria-label":"Stop"},React.createElement(c.z,{raw:!0,icon:"stop",width:"16",height:"16"}))),M&&!p&&React.createElement(c.z,{raw:!0,icon:i,width:T,height:T,spinning:m,style:f?{margin:"0 auto"}:{}}),!!A&&!p&&React.createElement("span",{style:{marginLeft:M?"4px":0,marginRight:M?"2px":0}},A),R&&React.createElement(u.K,{style:{marginLeft:"8px"}}))}))`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -68,6 +68,7 @@
   vertical-align: middle;
   background-color: var(--neko-main-color);
   color: white;
+  transition: padding 0.3s ease;
 
   span {
     white-space: nowrap;
@@ -180,12 +181,59 @@
     pointer-events: none;
   }
 
+  &.has-stop {
+    pointer-events: auto;
+    padding-right: 15px;
+    
+    .button-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      
+      .button-text {
+        flex: 1;
+        text-align: left;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        opacity: 0.6;
+        transition: text-align 0.3s ease;
+      }
+      
+      .stop-button {
+        background: var(--neko-danger);
+        border: none;
+        border-radius: 3px;
+        color: white;
+        padding: 2px;
+        margin-left: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        cursor: pointer;
+        pointer-events: auto;
+        
+        &:hover {
+          background: var(--neko-danger);
+          filter: brightness(1.1);
+        }
+        
+        svg {
+          color: white;
+        }
+      }
+    }
+  }
+
   &.full {
     width: 100%;
   }
 
   ${e=>p(e.color)}
-`,p=e=>{if(e){const t=/^#|^rgb\(|^rgba\(|^hsl\(/.test(e),n=t?e:`var(--neko-${e})`;return`\n      &.custom-color {\n        background-color: ${n};\n        border: 1px solid ${t?e:`var(--neko-${e})`};\n\n        &:hover {\n          background-color: ${n};\n          filter: brightness(1.1);\n        }\n      }\n    `}},m=e=>React.createElement(f,e);m.propTypes={className:o().oneOf(["primary","primary-block","secondary","danger","success","header"]),disabled:o().bool,icon:o().oneOfType([o().instanceOf(a.In),o().oneOf(["setting","edit","trash"])]),color:o().string,onClick:o().func.isRequired,rounded:o().bool,isBusy:o().bool,spinning:o().bool,busyText:o().string,hideBusyIcon:o().bool,busyIconSize:o().string,requirePro:o().bool,isPro:o().bool,disabledColor:o().string}},2557:(e,t,n)=>{"use strict";n.d(t,{A:()=>u});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(6897);function l(){return l=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},l.apply(this,arguments)}const c=e=>{const{spinner:t=!0,busy:n=!1,overlayStyle:o}=e,[s,c]=(0,r.useState)(!0);(0,r.useEffect)((()=>{let e;return n?c(!0):e=setTimeout((()=>{c(!1),e=null}),250),()=>{e&&clearTimeout(e)}}),[n]);const u=(0,a.gR)("neko-overlay",{overlayHidden:!n}),h=s?i().createElement(i().Fragment,null,i().createElement("div",{className:u,style:o},Boolean(t)&&i().createElement("div",{className:"lds-ellipsis "+(n?"":"spinnerHidden")},i().createElement("div",null),i().createElement("div",null),i().createElement("div",null),i().createElement("div",null))),i().createElement("style",{jsx:"true"},"\n        .neko-overlay {\n          position: absolute;\n          top: 0;\n          left: 0;\n          bottom: 0;\n          width: 100%;\n          height: 100%;\n          background: var(--neko-main-overlay-color);\n          border-radius: 8px;\n          transition: opacity 1s ease-out;\n          z-index: 10;\n          display: flex;\n          align-items: center;\n          flex-direction: column;\n          justify-content: center;\n          overflow: hidden;\n        }\n\n        .overlayHidden {\n          opacity: 0;\n          transition: opacity 0.25s ease-out;\n        }\n        .spinnerHidden {\n          opacity: 0;\n          transition: opacity 0.25s ease-out;\n        }\n        .lds-ellipsis {\n          position: relative;\n          width: 80px;\n          height: 80px;\n          display: flex;\n          justify-items: center;\n          align-items: center;\n        }\n        .lds-ellipsis div {\n          position: absolute;\n          width: 13px;\n          height: 13px;\n          border-radius: 50%;\n          background: white;\n          animation-timing-function: cubic-bezier(0, 1, 1, 0);\n        }\n        .lds-ellipsis div:nth-child(1) {\n          left: 8px;\n          animation: lds-ellipsis1 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(2) {\n          left: 8px;\n          animation: lds-ellipsis2 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(3) {\n          left: 32px;\n          animation: lds-ellipsis2 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(4) {\n          left: 56px;\n          animation: lds-ellipsis3 0.6s infinite;\n        }\n        @keyframes lds-ellipsis1 {\n          0% {\n            transform: scale(0);\n          }\n          100% {\n            transform: scale(1);\n          }\n        }\n        @keyframes lds-ellipsis3 {\n          0% {\n            transform: scale(1);\n          }\n          100% {\n            transform: scale(0);\n          }\n        }\n        @keyframes lds-ellipsis2 {\n          0% {\n            transform: translate(0, 0);\n          }\n          100% {\n            transform: translate(24px, 0);\n          }\n        }\n      ")):null,d={...e,busy:void 0,spinner:void 0};return i().createElement("div",l({style:{position:"relative"}},d),h,e.children)};c.propTypes={busy:s().bool.isRequired,spinner:s().bool,children:s().oneOfType([s().arrayOf(s().node),s().node]).isRequired};const u=c},5263:(e,t,n)=>{"use strict";n.d(t,{R:()=>f});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(1329),c=n(6087),u=n(6897);function h(){return h=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},h.apply(this,arguments)}const d=a.Ay.div`
+`,p=e=>{if(e){const t=/^#|^rgb\(|^rgba\(|^hsl\(/.test(e),n=t?e:`var(--neko-${e})`;return`\n      &.custom-color {\n        background-color: ${n};\n        border: 1px solid ${t?e:`var(--neko-${e})`};\n\n        &:hover {\n          background-color: ${n};\n          filter: brightness(1.1);\n        }\n      }\n    `}},m=e=>React.createElement(f,e);m.propTypes={className:o().oneOf(["primary","primary-block","secondary","danger","success","header"]),disabled:o().bool,icon:o().oneOfType([o().instanceOf(a.In),o().oneOf(["setting","edit","trash"])]),color:o().string,onClick:o().func.isRequired,onStopClick:o().func,rounded:o().bool,isBusy:o().bool,spinning:o().bool,busyText:o().string,hideBusyIcon:o().bool,busyIconSize:o().string,requirePro:o().bool,isPro:o().bool,disabledColor:o().string}},2557:(e,t,n)=>{"use strict";n.d(t,{A:()=>u});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(6897);function l(){return l=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},l.apply(this,arguments)}const c=e=>{const{spinner:t=!0,busy:n=!1,overlayStyle:o}=e,[s,c]=(0,r.useState)(!0);(0,r.useEffect)((()=>{let e;return n?c(!0):e=setTimeout((()=>{c(!1),e=null}),250),()=>{e&&clearTimeout(e)}}),[n]);const u=(0,a.gR)("neko-overlay",{overlayHidden:!n}),h=s?i().createElement(i().Fragment,null,i().createElement("div",{className:u,style:o},Boolean(t)&&i().createElement("div",{className:"lds-ellipsis "+(n?"":"spinnerHidden")},i().createElement("div",null),i().createElement("div",null),i().createElement("div",null),i().createElement("div",null))),i().createElement("style",{jsx:"true"},"\n        .neko-overlay {\n          position: absolute;\n          top: 0;\n          left: 0;\n          bottom: 0;\n          width: 100%;\n          height: 100%;\n          background: var(--neko-main-overlay-color);\n          border-radius: 8px;\n          transition: opacity 1s ease-out;\n          z-index: 10;\n          display: flex;\n          align-items: center;\n          flex-direction: column;\n          justify-content: center;\n          overflow: hidden;\n        }\n\n        .overlayHidden {\n          opacity: 0;\n          transition: opacity 0.25s ease-out;\n        }\n        .spinnerHidden {\n          opacity: 0;\n          transition: opacity 0.25s ease-out;\n        }\n        .lds-ellipsis {\n          position: relative;\n          width: 80px;\n          height: 80px;\n          display: flex;\n          justify-items: center;\n          align-items: center;\n        }\n        .lds-ellipsis div {\n          position: absolute;\n          width: 13px;\n          height: 13px;\n          border-radius: 50%;\n          background: white;\n          animation-timing-function: cubic-bezier(0, 1, 1, 0);\n        }\n        .lds-ellipsis div:nth-child(1) {\n          left: 8px;\n          animation: lds-ellipsis1 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(2) {\n          left: 8px;\n          animation: lds-ellipsis2 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(3) {\n          left: 32px;\n          animation: lds-ellipsis2 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(4) {\n          left: 56px;\n          animation: lds-ellipsis3 0.6s infinite;\n        }\n        @keyframes lds-ellipsis1 {\n          0% {\n            transform: scale(0);\n          }\n          100% {\n            transform: scale(1);\n          }\n        }\n        @keyframes lds-ellipsis3 {\n          0% {\n            transform: scale(1);\n          }\n          100% {\n            transform: scale(0);\n          }\n        }\n        @keyframes lds-ellipsis2 {\n          0% {\n            transform: translate(0, 0);\n          }\n          100% {\n            transform: translate(24px, 0);\n          }\n        }\n      ")):null,d={...e,busy:void 0,spinner:void 0};return i().createElement("div",l({style:{position:"relative"}},d),h,e.children)};c.propTypes={busy:s().bool.isRequired,spinner:s().bool,children:s().oneOfType([s().arrayOf(s().node),s().node]).isRequired};const u=c},5263:(e,t,n)=>{"use strict";n.d(t,{R:()=>f});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(1329),c=n(6087),u=n(6897);function h(){return h=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},h.apply(this,arguments)}const d=a.Ay.div`
   user-select: none;
   transition: color 0.3s ease;
 
@@ -1235,6 +1283,14 @@
     font-weight: bold;
   }
 
+  &.inversed {
+    color: var(--neko-main-color-80);
+
+    &.active {
+      color: var(--neko-white);
+    }
+  }
+
   &::after {
     content: "|";
     color: var(--neko-disabled-color);
@@ -1251,7 +1307,7 @@
     font-weight: normal;
     margin-left: 4px;
   }
-`,d=e=>{const{name:t,value:n,onChange:r,busy:o=!1,className:s}=e,a=(0,c.gR)("neko-quick-links",s),l=i().Children.toArray(e.children).filter((e=>!!e)).map((e=>i().cloneElement(e,{busy:o,isActive:e.props.value===n,onClick:e=>{e!==n&&r(e,t)}})));return i().createElement(u,{className:a},l)},f=e=>{const{title:t,value:n=0,count:r,onClick:o,busy:s,isActive:a=!1,className:u}=e,d=(0,c.gR)("neko-link",u,{active:a});return i().createElement(h,{onClick:()=>o(n),className:d},t,void 0===r?null:i().createElement("span",null,"(",s?i().createElement(l.z,{icon:"replay",spinning:!0,width:12,containerStyle:{display:"inline"}}):r,")"))},p=e=>i().createElement(d,e);p.propTypes={name:s().string,value:s().string,onChange:s().func};const m=e=>i().createElement(f,e);m.propTypes={title:s().string,value:s().string,count:s().number,onClick:s().func,isActive:s().bool}},7392:(e,t,n)=>{"use strict";n.d(t,{k:()=>h});var r=n(6365),i=n.n(r),o=n(4461),s=n(9296);const{useEffect:a,useRef:l,useState:c}=wp.element,u={marginTop:10,background:"rgb(0, 72, 88)",padding:10,color:"rgb(58, 212, 58)",maxHeight:400,minHeight:200,display:"block",fontFamily:"monospace",fontSize:12,whiteSpace:"pre",overflowX:"auto",borderRadius:10,textWrap:"balance"},h=({refreshQuery:e,clearQuery:t,onRefresh:n=null,onClear:r=null,i18n:i,refreshOnMount:h=!0,scrollToBottom:d=!1,blockMaxWidth:f=800})=>{const p=l(null),[m,g]=c(""),[y,b]=c(!1),v=async()=>{b(!0);const t=await e();n&&n(t),g(t),b(!1)};return a((()=>{h&&v()}),[]),a((()=>{d&&p.current&&p.current.scrollTo(0,p.current.scrollHeight)}),[m]),React.createElement(o.z,{title:i.COMMON.LOGS,busy:y,className:"primary",style:{maxWidth:f}},React.createElement(s.M,{onClick:()=>v()},i.COMMON.REFRESH_LOGS),React.createElement(s.M,{className:"danger",onClick:()=>(async()=>{b(!0);const e=await t();r&&r(e),g(""),b(!1)})()},i.COMMON.CLEAR_LOGS),React.createElement("div",{style:u,ref:p},m))};h.propTypes={refreshQuery:i().func,clearQuery:i().func,onRefresh:i().func,onClear:i().func,i18n:i().object,refreshOnMount:i().bool,scrollToBottom:i().bool,blockMaxWidth:i().number}},9491:(e,t,n)=>{"use strict";n.d(t,{r:()=>a});var r=n(1594),i=n.n(r);const o=n(3185).Ay.div`
+`,d=e=>{const{name:t,value:n,onChange:r,busy:o=!1,className:s,inversed:a}=e,l=(0,c.gR)("neko-quick-links",s,{inversed:a}),h=i().Children.toArray(e.children).filter((e=>!!e)).map((e=>i().cloneElement(e,{busy:o,inversed:a,isActive:e.props.value===n,onClick:e=>{e!==n&&r(e,t)}})));return i().createElement(u,{className:l},h)},f=e=>{const{title:t,value:n=0,count:r,onClick:o,busy:s,isActive:a=!1,className:u,inversed:d}=e,f=(0,c.gR)("neko-link",u,{active:a,inversed:d});return i().createElement(h,{onClick:()=>o(n),className:f},t,void 0===r?null:i().createElement("span",null,"(",s?i().createElement(l.z,{icon:"replay",spinning:!0,width:12,containerStyle:{display:"inline"}}):r,")"))},p=e=>i().createElement(d,e);p.propTypes={name:s().string,value:s().string,onChange:s().func,inversed:s().bool};const m=e=>i().createElement(f,e);m.propTypes={title:s().string,value:s().string,count:s().number,onClick:s().func,isActive:s().bool,inversed:s().bool}},7392:(e,t,n)=>{"use strict";n.d(t,{k:()=>h});var r=n(6365),i=n.n(r),o=n(4461),s=n(9296);const{useEffect:a,useRef:l,useState:c}=wp.element,u={marginTop:10,background:"rgb(0, 72, 88)",padding:10,color:"rgb(58, 212, 58)",maxHeight:400,minHeight:200,display:"block",fontFamily:"monospace",fontSize:12,whiteSpace:"pre",overflowX:"auto",borderRadius:10,textWrap:"balance"},h=({refreshQuery:e,clearQuery:t,onRefresh:n=null,onClear:r=null,i18n:i,refreshOnMount:h=!0,scrollToBottom:d=!1,blockMaxWidth:f=800})=>{const p=l(null),[m,g]=c(""),[y,b]=c(!1),v=async()=>{b(!0);const t=await e();n&&n(t),g(t),b(!1)};return a((()=>{h&&v()}),[]),a((()=>{d&&p.current&&p.current.scrollTo(0,p.current.scrollHeight)}),[m]),React.createElement(o.z,{title:i.COMMON.LOGS,busy:y,className:"primary",style:{maxWidth:f}},React.createElement(s.M,{onClick:()=>v()},i.COMMON.REFRESH_LOGS),React.createElement(s.M,{className:"danger",onClick:()=>(async()=>{b(!0);const e=await t();r&&r(e),g(""),b(!1)})()},i.COMMON.CLEAR_LOGS),React.createElement("div",{style:u,ref:p},m))};h.propTypes={refreshQuery:i().func,clearQuery:i().func,onRefresh:i().func,onClear:i().func,i18n:i().object,refreshOnMount:i().bool,scrollToBottom:i().bool,blockMaxWidth:i().number}},9491:(e,t,n)=>{"use strict";n.d(t,{r:()=>a});var r=n(1594),i=n.n(r);const o=n(3185).Ay.div`
   display: flex;
   max-width: 128px;
   max-height: 128px;
@@ -1542,15 +1598,19 @@
     transform: scale(0.85);
     opacity: 0;
   }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Base modal shell                                            */
+  /* ──────────────────────────────────────────────────────────── */
   .neko-modal {
     background: white;
     color: var(--neko-font-color);
     position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.07), 
-                0 2px 4px rgba(0,0,0,0.07), 
-                0 4px 8px rgba(0,0,0,0.07), 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.07),
+                0 2px 4px rgba(0,0,0,0.07),
+                0 4px 8px rgba(0,0,0,0.07),
                 0 8px 16px rgba(0,0,0,0.07),
-                0 16px 32px rgba(0,0,0,0.07), 
+                0 16px 32px rgba(0,0,0,0.07),
                 0 32px 64px rgba(0,0,0,0.07);
     outline: none;
     padding: 15px;
@@ -1559,22 +1619,26 @@
     display: flex;
     flex-direction: column;
   }
+
+  .neko-modal.large   { max-width: 700px; }
+  .neko-modal.larger  { max-width: 900px; }
   .neko-modal.full-size {
     margin-top: 32px;
+    padding: 15px 0 0 0;
     width: 90vw;
     height: 85vh;
     max-width: none;
     max-height: none;
   }
 `,p=c.Ay.div`
-  width: ${e=>e.fullSize?"100%":e.width??"518px"};
+  /* Width adapts to the chosen size or explicit contentWidth */
+  width: ${e=>{if("full-size"===e.size)return"100%";if(e.contentWidth)return e.contentWidth;switch(e.size){case"large":return"700px";case"larger":return"900px";default:return"518px"}}};
   flex: 1;
   display: flex;
   flex-direction: column;
 
-  p {
-    margin: 0;
-  }
+  p { margin: 0; }
+
   .title {
     font-family: var(--neko-font-family);
     font-style: normal;
@@ -1583,6 +1647,7 @@
     line-height: 22px;
     margin-bottom: 15px;
   }
+
   .content-container {
     display: flex;
     position: relative;
@@ -1601,6 +1666,7 @@
         object-fit: cover;
       }
     }
+
     .content {
       flex: auto;
       font-family: var(--neko-font-family);
@@ -1609,19 +1675,42 @@
       font-size: var(--neko-font-size);
       line-height: 14px;
       width: 100%;
-      margin: 0px !important;
-      padding: 0px !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
   }
+
+  /* Bottom‑footer buttons – new grey bar for better separation */
   .button-group {
     align-items: center;
     display: flex;
     justify-content: flex-end;
-    margin-top: 15px;
     font-size: inherit;
     white-space: normal;
+
+    background: #f0f0f0;
+    padding: 10px;
+    margin: 15px -15px -15px -15px;
   }
-`,m=["disabled","ok","okOnClick","okDisabled","cancel","cancelOnClick","cancelDisabled"],g=e=>{const{className:t,style:n,title:o="",content:s="",contentWidth:a,customButtons:c=null,okOnEnter:g=!1,thumbnail:y,okButton:b={},cancelButton:v={},isOpen:x,children:k,customButtonsPosition:w="right",fullSize:_=!1,...S}=e,C=null!==c,E=(0,h.gR)("neko-modal",t,{"custom-modal":n,"full-size":_}),{label:A="OK",...O}=b,{label:M="Cancel",...R}=v;(0,r.useEffect)((()=>{const t=[];m.forEach((n=>{void 0!==e[n]&&t.push(n)})),t.length>0&&console.warn(`[Deprecated] NekoUI: The button attributes, ${t.join(", ")}, are deprecated in the NekoModal. Please use an object attribute like this: okButton={{ label: “OK", onClick, disabled }} cancelButton={{ label: “OK", onClick, disabled }}'`,{props:e})}),[e]);const P=(0,r.useRef)(null),T=((0,r.useCallback)((()=>P.current),[]),(0,r.useCallback)((({key:e})=>{"Enter"===e&&O.onClick()}),[O.onClick]));(0,r.useEffect)((()=>{if(g&&x)return window.addEventListener("keyup",T),()=>{window.removeEventListener("keyup",T)}}),[g,x,T]);const I=k||i().createElement(p,{width:a,fullSize:_},o&&i().createElement("p",{className:"title"},o),i().createElement("div",{className:"content-container"},y&&i().createElement("div",{className:"thumbnail"},y),s&&i().createElement("p",{className:"content"},s)),i().createElement("div",{className:`button-group ${t}`},C&&"left"===w&&c,R.onClick&&i().createElement(u.M,d({className:"danger"},R),M),O.onClick&&i().createElement(u.M,O,A),C&&"right"===w&&c));return i().createElement(i().Fragment,null,i().createElement(f,null),i().createElement(l(),d({ariaHideApp:!1,closeTimeoutMS:200,className:E,isOpen:x},S),I))},y=e=>i().createElement(g,e);y.propTypes={className:s().string,style:s().object,title:s().string,content:s().string,contentWidth:s().string,customButtons:s().object,okOnEnter:s().bool,thumbnail:s().element,okButton:s().object,cancelButton:s().object,fullSize:s().bool}},5900:(e,t,n)=>{"use strict";n.d(t,{o:()=>P});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(5977),c=n(4555),u=n(6382),h=n(2557),d=n(5263),f=n(6897),p=n(8922),m=n(374),g=n(4536),y=n(4677),b=n(9296),v=n(6734),x=n(8696);const k=a.Ay.div`
+
+  /* Header variation inside full‑size mode – no grey footer */
+  .full-size-header .button-group {
+    background: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .full-size-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 0 15px;
+
+    .title { margin-bottom: 0; align-self: center; }
+    .button-group { gap: 5px; }
+  }
+`,m=["disabled","ok","okOnClick","okDisabled","cancel","cancelOnClick","cancelDisabled"],g=e=>{const{className:t,style:n,title:o="",content:s="",contentWidth:a,customButtons:c=null,okOnEnter:g=!1,thumbnail:y,okButton:b={},cancelButton:v={},isOpen:x,children:k,customButtonsPosition:w="right",size:_="normal",fullSize:S=!1,...C}=e,E=_||(S?"full-size":"normal"),A="full-size"===E,O=(0,h.gR)("neko-modal",t,{large:"large"===E,larger:"larger"===E,"full-size":A,"custom-modal":n}),{label:M="OK",...R}=b,{label:P="Cancel",...T}=v;(0,r.useEffect)((()=>{const t=m.filter((t=>void 0!==e[t]));t.length&&console.warn(`[Deprecated] NekoUI: Button attributes ${t.join(", ")} are deprecated in NekoModal.\nPlease use: okButton={{ label, onClick, disabled }} and cancelButton={{ ... }}`,{props:e})}),[e]);const I=(0,r.useCallback)((({key:e})=>{"Enter"===e&&R.onClick&&R.onClick()}),[R]);(0,r.useEffect)((()=>{if(g&&x)return window.addEventListener("keyup",I),()=>window.removeEventListener("keyup",I)}),[g,x,I]);const L=()=>i().createElement(i().Fragment,null,c&&"left"===w&&c,T.onClick&&i().createElement(u.M,d({className:"danger"},T),P),R.onClick&&i().createElement(u.M,R,M),c&&"right"===w&&c),j=k||i().createElement(p,{size:E,contentWidth:a},A&&o&&i().createElement("div",{className:"full-size-header"},i().createElement("p",{className:"title"},o),i().createElement("div",{className:"button-group"},L())),!A&&o&&i().createElement("p",{className:"title"},o),i().createElement("div",{className:"content-container"},y&&i().createElement("div",{className:"thumbnail"},y),s&&i().createElement("p",{className:"content"},s)),!A&&i().createElement("div",{className:"button-group"},L()));return i().createElement(i().Fragment,null,i().createElement(f,null),i().createElement(l(),d({ariaHideApp:!1,closeTimeoutMS:200,className:O,isOpen:x},C),j))},y=e=>i().createElement(g,e);y.propTypes={className:s().string,style:s().object,title:s().string,content:s().string,contentWidth:s().string,customButtons:s().object,okOnEnter:s().bool,thumbnail:s().element,okButton:s().object,cancelButton:s().object,size:s().oneOf(["normal","large","larger","full-size"]),fullSize:s().bool,isOpen:s().bool.isRequired}},5900:(e,t,n)=>{"use strict";n.d(t,{o:()=>P});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(5977),c=n(4555),u=n(6382),h=n(2557),d=n(5263),f=n(6897),p=n(8922),m=n(374),g=n(4536),y=n(4677),b=n(9296),v=n(6734),x=n(8696);const k=a.Ay.div`
   min-width: 160px;
   padding: 8px;
   border-radius: 8px;

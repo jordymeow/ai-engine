@@ -47,6 +47,9 @@ class Meow_MWAI_Engines_Core {
     else if ( $query instanceof Meow_MWAI_Query_Embed ) {
       $reply = $this->run_embedding_query( $query );
     }
+    else if ( $query instanceof Meow_MWAI_Query_EditImage ) {
+      $reply = $this->run_editimage_query( $query );
+    }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
       $reply = $this->run_image_query( $query );
     }
@@ -229,48 +232,57 @@ class Meow_MWAI_Engines_Core {
     if ( strpos( $data, 'error' ) === false ) {
       return;
     }
+
     $data = trim( $data );
-    $jsonPart = $data;
+    $jsonPart  = $data;
     if ( strpos( $jsonPart, 'data:' ) === 0 ) {
       $jsonPart = trim( substr( $jsonPart, strlen( 'data:' ) ) );
     }
+
     $json = json_decode( $jsonPart, true );
-    if ( json_last_error() === JSON_ERROR_NONE ) {
-      if ( isset( $json['error'] ) ) {
-        $error = $json['error'];
-        $code = null;
-        $type = null;
-        $message = null;
-        if ( isset( $error['message'] ) ) {
-          $message = $error['message'];
+    if ( json_last_error() !== JSON_ERROR_NONE ) {
+      return; // not valid JSON, nothing to do
+    }
+    // 1. OpenAI style: { error: {...} }
+    $error = null;
+    if ( isset( $json['error'] ) ) {
+      $error = $json['error'];
+    }
+    // 2. Google style: [ { error: {...} } ]
+    else if ( is_array( $json ) ) {
+      foreach ( $json as $item ) {
+        if ( isset( $item['error'] ) ) {
+          $error = $item['error'];
+          break;
         }
-        else if ( is_string( $error ) ) {
-          throw new Exception( "Error: $error" );
-        }
-        else {
-          throw new Exception( "Unknown error (stream_error_check)." );
-        }
-        if ( isset( $error['code'] ) ) {
-          $code = $error['code'];
-        }
-        if ( isset( $error['type'] ) ) {
-          $type = $error['type'];
-        }
-        $errorMessage = "Error: $message";
-        if ( !is_null( $code ) ) {
-          $errorMessage .= " ($code)";
-        }
-        if ( !is_null( $type ) ) {
-          $errorMessage .= " ($type)";
-        }
-        throw new Exception( $errorMessage );
-      }
-      else if ( isset( $json['type'] ) && $json['type'] === 'error' ) {
-        $type = $json['error']['type'];
-        $message = $json['error']['message'];
-        throw new Exception( "Error: $message ($type)" );
       }
     }
+    // 3. Some APIs return { type: "error", message: ... }
+    else if ( isset( $json['type'] ) && $json['type'] === 'error' ) {
+      $error = $json;
+    }
+
+    if ( is_null( $error ) ) {
+      return;
+    }
+
+    $message = $error['message'] ?? ( is_string( $error ) ? $error : null );
+    $code = $error['code']    ?? null;
+    // Google uses "status" instead of "type" – accept both
+    $type = $error['type'] ?? ( $error['status'] ?? null );
+    if ( is_null( $message ) ) {
+      throw new Exception( 'Unknown error (stream_error_check).' );
+    }
+
+    $errorMessage = "Error: $message";
+    if ( !is_null( $code ) ) {
+      $errorMessage .= " ($code)";
+    }
+    if ( !is_null( $type ) ) {
+      $errorMessage .= " ($type)";
+    }
+
+    throw new Exception( $errorMessage );
   }
 
   public function stream_handler( $handle, $args, $url ) {
@@ -362,6 +374,10 @@ class Meow_MWAI_Engines_Core {
   }
 
   public function run_image_query( Meow_MWAI_Query_Base $query ) {
+    throw new Exception( 'Not implemented.' );
+  }
+
+  public function run_editimage_query( Meow_MWAI_Query_Base $query ) {
     throw new Exception( 'Not implemented.' );
   }
 

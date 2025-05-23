@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_OpenAI
+class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
 {
 
   public function __construct( $core, $env )

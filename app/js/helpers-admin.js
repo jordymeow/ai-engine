@@ -1,7 +1,7 @@
-// Previous: 2.7.0
-// Current: 2.7.3
+// Previous: 2.7.3
+// Current: 2.8.2
 
-const { useMemo, useState, useEffect } = wp.element;
+const { useMemo, useState, useEffect, useRef } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
 import { pluginUrl, apiUrl, restNonce } from '@app/settings';
 
@@ -96,7 +96,6 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCurrentLanguage(preferredLanguage);
       return;
     }
-
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -150,6 +149,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
 
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
+  const warnedModelsRef = useRef(new Set());
   const envId = overrideDefaultEnvId ? overrideDefaultEnvId : options?.ai_default_env;
   const aiEnvs = options?.ai_envs ?? [];
 
@@ -279,6 +279,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
     if (fineTunes.length) {
       models = [ ...models, ...fineTunes.map(x => {
+
         const features = ['completion'];
         const splitted = x.model.split(':');
         const family = splitted[0];
@@ -364,8 +365,9 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       model = 'o1';
     }
     modelObj = allModels.find(x => x.model === model);
-    if (!modelObj) {
+    if (!modelObj && !warnedModelsRef.current.has(model)) {
       console.warn(`Model ${model} not found.`, { allModels, options });
+      warnedModelsRef.current.add(model);
     }
     return modelObj;
   };
@@ -419,7 +421,7 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
       priceOut = price['out'];
     }
     if (priceIn && priceOut) {
-      return (priceIn * inUnits * (modelObj?.unit || 1)) + (priceOut * outUnits * (modelObj?.unit || 1));
+      return (priceIn * inUnits * modelObj['unit']) + (priceOut * outUnits * modelObj['unit']);
     }
     return 0;
   };
@@ -446,6 +448,16 @@ const retrieveDiscussions = async (chatsQueryParams) => {
   chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
   const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
   return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
+};
+
+const retrieveLogsActivity = async (hours = 24) => {
+  const res = await nekoFetch(`${apiUrl}/system/logs/activity`, { nonce: restNonce, method: 'POST', json: { hours } });
+  return res?.data ? res.data : [];
+};
+
+const retrieveLogsActivityDaily = async (days = 31) => {
+  const res = await nekoFetch(`${apiUrl}/system/logs/activity_daily`, { nonce: restNonce, method: 'POST', json: { days } });
+  return res?.data ? res.data : [];
 };
 
 const retrieveVectors = async (queryParams) => {
@@ -599,7 +611,7 @@ const getPostContent = (currentPositionMarker = null) => {
 
 export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, runTasks,
-  synchronizeEmbedding, retrievePostsIds, retrieveDiscussions, getPostContent,
+  synchronizeEmbedding, retrievePostsIds, retrieveDiscussions, retrieveLogsActivity, retrieveLogsActivityDaily, getPostContent,
   tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon, JsIcon, PhpIcon,
   ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR
 };

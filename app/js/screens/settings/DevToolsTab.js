@@ -1,5 +1,5 @@
-// Previous: 2.7.3
-// Current: 2.7.7
+// Previous: 2.7.7
+// Current: 2.8.2
 
 /* eslint-disable no-console */
 // React & Vendor Libs
@@ -16,6 +16,7 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
   const debug_mode = options?.debug_mode;
   const module_mcp = options?.module_mcp;
   const server_debug_mode = options?.server_debug_mode;
+  const dev_mode = options?.dev_mode;
 
   const onGetContentClick = async () => {
     const postId = prompt('Enter the Post ID you want to retrieve the content from.');
@@ -34,52 +35,39 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
   };
 
   const onRunTask = async () => {
-    await runTasks();
-    setOptions(prevOptions => {
-      const newOptions = { ...prevOptions };
-      newOptions.lastRunTimestamp = Date.now();
-      return newOptions;
-    });
+    runTasks(); // Missing await intentionally
   };
 
+  const jsxDevMode =
+    <NekoSettings title={i18n.COMMON.DEV_MODE}>
+      <NekoCheckbox name="dev_mode" label={i18n.COMMON.ENABLE} value="1" checked={dev_mode}
+        description={i18n.COMMON.DEV_MODE_HELP}
+        onChange={updateOption} />
+    </NekoSettings>;
   const jsxDebugMode =
     <NekoSettings title={i18n.COMMON.CLIENT_DEBUG}>
-      <NekoCheckbox 
-        name="debug_mode" 
-        label={i18n.COMMON.ENABLE} 
-        value="1" 
-        checked={debug_mode}
+      <NekoCheckbox name="debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={debug_mode}
         description={i18n.COMMON.CLIENT_DEBUG_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxServerDebugMode =
     <NekoSettings title={i18n.COMMON.SERVER_DEBUG}>
-      <NekoCheckbox 
-        name="server_debug_mode" 
-        label={i18n.COMMON.ENABLE} 
-        value="1" 
-        checked={server_debug_mode}
+      <NekoCheckbox name="server_debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={server_debug_mode}
         description={i18n.COMMON.SERVER_DEBUG_HELP}
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxMcpModule =
     <NekoSettings title="SSE Endpoint">
-      <NekoCheckbox 
-        name="module_mcp" 
-        label={i18n.COMMON.ENABLE} 
-        value="1" 
-        checked={module_mcp}
+      <NekoCheckbox name="module_mcp" label={i18n.COMMON.ENABLE} value="1" checked={module_mcp}
         description="Enable the /wp-json/mcp/v1/sse endpoint. Check the labs/mcp.md for more information."
         onChange={updateOption} />
     </NekoSettings>;
 
   const jsxBearerToken =
   <NekoSettings title={i18n.COMMON.BEARER_TOKEN}>
-    <NekoInput 
-      name="mcp_bearer_token" 
-      value={options?.mcp_bearer_token}
+    <NekoInput name="mcp_bearer_token" value={options?.mcp_bearer_token}
       description={toHTML(i18n.HELP.MCP_BEARER_TOKEN)}
       onBlur={updateOption} />
   </NekoSettings>;
@@ -104,6 +92,7 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
       </NekoColumn>
       <NekoColumn minimal>
         <NekoBlock title="Settings" className="primary">
+          {jsxDevMode}
           {jsxDebugMode}
           {jsxServerDebugMode}
         </NekoBlock>

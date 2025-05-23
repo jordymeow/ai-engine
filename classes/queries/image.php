@@ -118,9 +118,14 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
 		// If we don't find the resolution, we will set it to the first one.
     if ( !$found ) {
-			$error = sprintf( 'Resolution %s not supported by model: %s', $this->resolution, $this->model );
-			Meow_MWAI_Logging::error( $error, '🖼️'  );
+			$supportedResolutions = [];
+			foreach ( $resolutions as $resolution ) {
+				$supportedResolutions[] = $resolution['name'];
+			}
+			$supportedResolutions = implode( ', ', $supportedResolutions );
+			$error = sprintf( 'The model %s does not support the resolution %s (using %s instead). Supported resolutions are: %s.', $this->model, $this->resolution, $resolutions[0]['name'], $supportedResolutions );
 			$this->resolution = $resolutions[0]['name'];
+			Meow_MWAI_Logging::error( $error, '🖼️'  );
     }
 	}
 	

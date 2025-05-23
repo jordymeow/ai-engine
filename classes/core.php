@@ -117,16 +117,21 @@ class Meow_MWAI_Core
 		}
 	}
 
-	public function enqueue_themes() {
-		// TODO: We should optimize and only load the themes that are used.
-		$themes = $this->get_themes();
-		foreach ( $themes as $theme ) {
-			if ( $theme['type'] === 'internal' ) {
-				$themeId = $theme['themeId'];
-				wp_enqueue_style( "mwai_chatbot_theme_$themeId" );
-			}
-		}
-	}
+       public function enqueue_theme( $themeId ) {
+               if ( empty( $themeId ) ) {
+                       return;
+               }
+               wp_enqueue_style( "mwai_chatbot_theme_$themeId" );
+       }
+
+       public function enqueue_themes() {
+               $themes = $this->get_themes();
+               foreach ( $themes as $theme ) {
+                       if ( $theme['type'] === 'internal' ) {
+                               $this->enqueue_theme( $theme['themeId'] );
+                       }
+               }
+       }
 
 	#endregion
 
@@ -167,7 +172,7 @@ class Meow_MWAI_Core
 		
 		// Let's allow to modify the reply before it is sent.
 		if ( $markdown ) {
-			if ( $query instanceof Meow_MWAI_Query_Image ) {
+			if ( $query instanceof Meow_MWAI_Query_Image || $query instanceof Meow_MWAI_Query_EditImage ) {
 				$reply->result = "";
 				foreach ( $reply->results as $result ) {
 					$reply->result .= "![Image]($result)\n";
@@ -181,16 +186,21 @@ class Meow_MWAI_Core
 	public function validate_env_model( $query ) {
 		$envId = !empty( $query->envId ) ? $query->envId : null;
 		$engine = Meow_MWAI_Engines_Factory::get( $this, $envId );
-		if ( !$envId || !$engine->retrieve_model_info( $query->model ) ) {
+
+		if ( empty( $envId ) || !$engine->retrieve_model_info( $query->model ) ) {
+			if ( !empty( $envId ) ) {
+				$error = sprintf( 'The model %s is not available in the environment %s.', $query->model, $envId );
+				Meow_MWAI_Logging::warn( $error );
+			}
 			if ( $query instanceof Meow_MWAI_Query_Text ) {
 				$this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
 			}
 			if ( $query instanceof Meow_MWAI_Query_Embed ) {
 				$this->set_default_env_and_model( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
 			}
-			else if ( $query instanceof Meow_MWAI_Query_Image ) {
-				$this->set_default_env_and_model( $query, 'ai_images_default_env', 'ai_images_default_model' );
-			}
+                        else if ( $query instanceof Meow_MWAI_Query_Image || $query instanceof Meow_MWAI_Query_EditImage ) {
+                                $this->set_default_env_and_model( $query, 'ai_images_default_env', 'ai_images_default_model' );
+                        }
 			else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
 				$this->set_default_env_and_model( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
 			}
@@ -380,16 +390,11 @@ class Meow_MWAI_Core
 	}
 
 	function download_image( $url ) {
-		$args = array( 'timeout' => 60, );
-		$response = wp_safe_remote_get( $url, $args );
-		if ( is_wp_error( $response ) ) {
+		$response = wp_safe_remote_get( $url, [ 'timeout' => 60 ] );
+		if ( is_wp_error( $response ) ) { 
 			throw new Exception( $response->get_error_message() );
 		}
-		$output = wp_remote_retrieve_body( $response );
-		if ( is_wp_error( $output ) ) {
-			throw new Exception( $output->get_error_message() );
-		}
-		return $output;
+		return wp_remote_retrieve_body( $response );
 	}
 
 	/**
@@ -675,7 +680,7 @@ class Meow_MWAI_Core
 		$charactersLength = strlen( $characters );
 		$randomId = '';
 		for ( $i = 0; $i < $length; $i++ ) {
-			$randomId .= $characters[rand( 0, $charactersLength - 1 )];
+			$randomId .= $characters[ mt_rand( 0, $charactersLength - 1 ) ];
 		}
 		if ( in_array( $randomId, $excludeIds ) ) {
 			return $this->get_random_id( $length, $excludeIds );
@@ -1325,5 +1330,3 @@ class Meow_MWAI_Core
 	}
 	#endregion
 }
-
-?>

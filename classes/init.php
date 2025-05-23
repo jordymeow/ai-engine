@@ -46,5 +46,3 @@ require_once( MWAI_PATH . '/common/helpers.php');
 
 global $mwai_core;
 $mwai_core = new Meow_MWAI_Core();
-
-?>

@@ -11,9 +11,9 @@ class Meow_MWAI_Modules_Tasks {
 
   public function __construct( $core ) {
 		global $wpdb;
-		$this->core = $core;
+    $this->core = $core;
     $this->wpdb = $wpdb;
-    //$this->dev_mode = defined('MEOWAPPS_DEV_MODE') && MEOWAPPS_DEV_MODE;
+    $this->dev_mode = $this->core->get_option( 'dev_mode' );
     // $this->table_tasks = $this->wpdb->prefix . 'mwai_tasks';
     // $this->table_taskmeta = $this->wpdb->prefix . 'mwai_taskmeta';
     add_filter( 'cron_schedules', [ $this, 'custom_cron_schedule' ] );

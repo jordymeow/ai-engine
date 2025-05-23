@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_OpenAI
+class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
 {
   // Streaming
   protected $streamInTokens = null;

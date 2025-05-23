@@ -102,4 +102,22 @@ class Meow_MWAI_Query_DroppedFile {
   public function get_fileId() {
     return $this->fileId;
   }
+
+  // Return a filename for this file. If the file is an URL, use the basename of
+  // its path. If the file is raw data, generate a generic name based on the mime type.
+  public function get_filename() {
+    if ( $this->type === 'url' ) {
+      $path = parse_url( $this->data, PHP_URL_PATH );
+      return basename( $path );
+    }
+    if ( $this->type === 'data' ) {
+      if ( !empty( $this->mimeType ) ) {
+        $parts = explode( '/', $this->mimeType );
+        $ext = end( $parts );
+        return 'file.' . $ext;
+      }
+      return 'file.bin';
+    }
+    return 'file';
+  }
 }

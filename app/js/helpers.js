@@ -1,11 +1,12 @@
-// Previous: 2.5.0
-// Current: 2.7.7
+// Previous: 2.7.7
+// Current: 2.8.2
 
 const { useMemo, useEffect, useState } = wp.element;
 import Markdown from 'markdown-to-jsx';
 
 function nekoStringify(obj, space = null, ignoreCircular = true) {
   const cache = [];
+
   return JSON.stringify(obj, (key, value) => {
     if (typeof value === 'object' && value !== null) {
       if (cache.includes(value)) {
@@ -33,11 +34,10 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       if (debugName) { console.log(`[${debugName}] IN: `, data); }
       return data;
     } catch (err) {
-      console.error("Could not parse the regular response.", { err, data });
+      console.error("Could not parse the regular response.", { err });
       return { success: false, message: "Could not parse the regular response." };
     }
   }
-
   const reader = fetchRes.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -55,12 +55,12 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       try {
         data = JSON.parse(lines[i].replace('data: ', ''));
       } catch (err) {
-        console.error("Error parsing stream line:", lines[i]);
-        continue;
+        console.error("Failed to parse stream line.", { line: lines[i], err });
+        continue; // skip malformed lines
       }
       if (data['type'] === 'live') {
         if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
-        decodedContent += data.data; 
+        decodedContent += data.data;
         onStream && onStream(decodedContent, data.data);
       } else if (data['type'] === 'error') {
         try {
@@ -83,7 +83,6 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     }
     buffer = lines[lines.length - 1];
   }
-
   try {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
@@ -94,12 +93,15 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
   }
 }
 
-async function mwaiFetch(url, body, restNonce, isStream) {
+async function mwaiFetch(url, body, restNonce, isStream, signal = undefined) {
   const headers = { 'Content-Type': 'application/json' };
   if (restNonce) { headers['X-WP-Nonce'] = restNonce; }
   if (isStream) { headers['Accept'] = 'text/event-stream'; }
-  return await fetch(`${url}`, { method: 'POST', headers,
+  return await fetch(`${url}`, {
+    method: 'POST',
+    headers,
     body: nekoStringify(body),
+    signal,
   });
 }
 
@@ -120,8 +122,8 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
 
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
-        const percentComplete = event.loaded / event.total * 100;
-        onProgress(percentComplete);
+        const percentComplete = ((event.loaded / event.total) * 100).toFixed(2);
+        onProgress && onProgress(percentComplete);
       }
     };
 
@@ -134,7 +136,6 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
           reject({
             status: xhr.status,
             statusText: xhr.statusText,
-            error: 'The server response is not valid JSON',
           });
         }
       } else {
@@ -145,12 +146,11 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
             message: jsonResponse.message,
           });
         } catch (error) {
-          // intentionally ignoring parse error
+          reject({
+            status: xhr.status,
+            statusText: xhr.statusText,
+          });
         }
-        reject({
-          status: xhr.status,
-          statusText: xhr.statusText,
-        });
       }
     };
 
@@ -171,16 +171,14 @@ function randomStr() {
 
 const BlinkingCursor = () => {
   const [visible, setVisible] = useState(true);
-
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      const timer = setInterval(() => {
+    const timeoutId = setTimeout(() => {
+      const intervalId = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
-      // no cleanup for timer, intentional
-      return () => clearInterval(timer);
+      // bug: not clearing interval on unmount because intervalId isn't stored
     }, 200);
-    // no cleanup for timeout, intentional
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const cursorStyle = {

@@ -1,5 +1,5 @@
-// Previous: 2.6.5
-// Current: 2.7.7
+// Previous: 2.7.7
+// Current: 2.8.2
 
 // React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
@@ -23,6 +23,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const [busy, setBusy] = useState(false);
   const shortcodeStyles = useMemo(() => theme?.settings || {}, [theme]);
 
+  // System Parameters
   const botId = system.botId;
   const customId = system.customId;
   const restNonce = system.restNonce;
@@ -30,12 +31,13 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const restUrl = system.restUrl;
   const debugMode = system.debugMode;
 
+  // UI Parameters
   const cssVariables = useMemo(() => {
-    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return cssVars;
+    return cssVariables;
   }, [shortcodeStyles]);
 
   const hasEmptyDiscussion = useMemo(() => {
@@ -72,19 +74,23 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         return { ...conversation, messages, extra };
       });
 
+      // Merge server conversations with local discussions
       setDiscussions((prevDiscussions) => {
         const discussionMap = new Map();
 
+        // Add local discussions to the map
         prevDiscussions.forEach((disc) => {
           discussionMap.set(disc.chatId, disc);
         });
 
+        // Update or add server discussions
         conversations.forEach((serverDisc) => {
           discussionMap.set(serverDisc.chatId, serverDisc);
         });
 
         const newDiscussions = Array.from(discussionMap.values());
 
+        // Update the selected discussion if necessary
         if (discussion) {
           const updatedDiscussion = newDiscussions.find(disc => disc.chatId === discussion.chatId);
           if (updatedDiscussion && updatedDiscussion !== discussion) {
@@ -101,15 +107,17 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setBusy(false);
       }
     }
-  }, [discussion]); // Included 'discussion' in dependencies
+  }, [discussion]);
+
+  const refreshInterval = system?.refreshInterval || 5000;
 
   useEffect(() => {
     refresh();
     const interval = setInterval(() => {
       refresh(true);
-    }, 5000);
+    }, refreshInterval);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshInterval]);
 
   useEffect(() => {
     if (discussion) {
@@ -135,6 +143,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       return;
     }
 
+    // Remove empty discussions that are not the selected one
     setDiscussions((prevDiscussions) =>
       prevDiscussions.filter(
         (disc) => disc.messages.length > 0 || disc.chatId === chatId
@@ -142,7 +151,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     );
 
     const chatbot = getChatbot(botId);
-    // Potential bug: The messages array might be mutable and shared
     chatbot.setContext({ chatId, messages: selectedDiscussion.messages });
     setDiscussion(selectedDiscussion);
   };
@@ -150,6 +158,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const onEditDiscussion = async (discussionToEdit) => {
     const newTitle = prompt('Enter a new title for the discussion:', discussionToEdit.title || '');
     if (newTitle === null) {
+      // User cancelled the prompt
       return;
     }
     const trimmedTitle = newTitle.trim();
@@ -179,6 +188,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         throw new Error(`Could not update the discussion: ${data.message}`);
       }
 
+      // Update the discussions state
       setDiscussions((prevDiscussions) =>
         prevDiscussions.map((disc) =>
           disc.chatId === discussionToEdit.chatId ? { ...disc, title: trimmedTitle } : disc
@@ -218,10 +228,12 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         throw new Error(`Could not delete the discussion: ${data.message}`);
       }
 
+      // Update the discussions state
       setDiscussions((prevDiscussions) =>
         prevDiscussions.filter((disc) => disc.chatId !== discussionToDelete.chatId)
       );
 
+      // If the deleted discussion was selected, deselect it
       if (discussion?.chatId === discussionToDelete.chatId) {
         setDiscussion(null);
       }
@@ -242,12 +254,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
     const chatbot = getChatbot(botId);
     const newChatId = randomStr();
-    // bug: Not clearing previous context
     chatbot.clear({ chatId: newChatId });
     const newDiscussion = {
       id: newChatId,
       chatId: newChatId,
-      messages: [], // messages is an empty array here, and might cause issues if not handled properly
+      messages: [],
       title: 'New Chat',
       extra: {},
     };

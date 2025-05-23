@@ -1,5 +1,5 @@
-// Previous: 2.7.4
-// Current: 2.7.5
+// Previous: 2.7.5
+// Current: 2.8.2
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
@@ -86,7 +86,7 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels,  }) => {
     <NekoSettings title={i18n.COMMON.HUGGINGFACE_MODELS} style={{ marginTop: 10 }}>
       {customModels.map((customModel, index) => (
         <div key={index} style={{ display: 'flex', flexDirection: 'column', marginBottom: 10 }}>
-          <div key={index} style={{ display: 'flex', marginBottom: 2 }}>
+          <div style={{ display: 'flex', marginBottom: 2 }}>
             <NekoInput style={{ flex: 1 }}
               value={customModel['name']}
               placeholder={i18n.COMMON.HUGGINGFACE_MODEL_NAME}
@@ -201,7 +201,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       }
       newModels = newModels.map(x => ({ ...x, envId, type: envType }));
       let freshModels = options?.ai_models ?? [];
-      freshModels = freshModels.filter(x => !(x.type === envType && (!x.envId || x.envId === envId)));
+      freshModels = freshModels.filter(x => !(x.type === envType && (x.envId || x.envId === envId)));
       freshModels.push(...newModels);
       updateOption(freshModels, 'ai_models');
     }
@@ -294,8 +294,14 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
             {renderFields(env)}
 
             {env.type === 'google' && <>
+              {(env.apikey === '' || !env.apikey) &&
+              <NekoMessage variant="info" style={{ marginBottom: 10 }}>
+                Click <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">here</a> to access AI Studio and create your API Key.
+              </NekoMessage>
+              }
+
               <NekoMessage variant="danger">
-                Click <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">here</a> to access your Google AI. As of 2025, Gemini is still unstable, so if you encounter issues, let's discuss them on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>. Sorry, we will not be able to provide 1-1 support for this.
+                Streaming is only supported in the Pro Version of AI Engine. As of 2025, Gemini is still unstable. If you encounter issues, let's discuss them on <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord</a>. 
               </NekoMessage>
               <NekoSpacer />
             </>}

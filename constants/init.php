@@ -61,14 +61,14 @@ define ( 'MWAI_LIMITS', [
 		'creditType' => 'queries',
 		'timeFrame' => 'day',
 		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit (check the Queries Tab > Limits > Guests).",
+                'overLimitMessage' => "You have reached the limit (check the Insights Tab > Limits > Guests).",
 	],
 	'users' => [
 		'credits' => 10,
 		'creditType' => 'price',
 		'timeFrame' => 'month',
 		'isAbsolute' => false,
-		'overLimitMessage' => "You have reached the limit (check the Queries Tab > Limits > Users).",
+                'overLimitMessage' => "You have reached the limit (check the Insights Tab > Limits > Users).",
 		'ignoredUsers' => "administrator,editor",
 	],
 	'system' => [
@@ -119,6 +119,8 @@ define( 'MWAI_OPTIONS', [
 	'ai_models' => [],
 	'ai_models_usage' => [],
 	'ai_streaming' => false,
+	'ai_fast_default_env' => null,
+	'ai_fast_default_model' => MWAI_FALLBACK_MODEL,
 	'ai_default_env' => null,
 	'ai_default_model' => MWAI_FALLBACK_MODEL,
 	'ai_envs' => [
@@ -159,6 +161,7 @@ define( 'MWAI_OPTIONS', [
 		'syncPostCategories' => [],
 	],
 	'public_api' => false,
+        'dev_mode' => false,
 	'debug_mode' => true,
 	'server_debug_mode' => true,
 	'logs_path' => null,

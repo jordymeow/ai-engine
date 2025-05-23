@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.6.1
+// Previous: 2.6.1
+// Current: 2.8.2
 
 import { useClasses } from '@neko-ui';
 import styled from "styled-components";
@@ -46,6 +46,10 @@ const BlockContainer = styled.div`
 
       .mwai-pill-purple {
         background: var(--wp--preset--color--vivid-purple);
+      }
+
+      .mwai-pill-red {
+        background: var(--wp--preset--color--vivid-red);
       }
     }
   }

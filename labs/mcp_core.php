@@ -644,10 +644,13 @@ class Meow_MWAI_Labs_MCP_Core {
           'comment_approved'     => $a['comment_approved'] ?? 1,
         ];
         $cid = wp_insert_comment( $ins );
-        if ( is_wp_error( $cid ) )
+        if ( is_wp_error( $cid ) ) {
+          /** @var WP_Error $cid */
           $r['error'] = [ 'code' => $cid->get_error_code(), 'message' => $cid->get_error_message() ];
-        else
+        }
+        else {
           $this->add_result_text( $r, 'Comment created ID '.$cid );
+        }
       break;
 
       case 'wp_update_comment':

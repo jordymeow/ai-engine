@@ -513,6 +513,13 @@
 		}
 	}
 
+	// Safari-specific fix for spinner cleanup
+	button:not(.mwai-busy):before {
+		content: none !important;
+		display: none !important;
+		animation: none !important;
+	}
+
 	// WordPress Admin Bar
 
 	.admin-bar .mwai-fullscreen:not(.mwai-window),

@@ -8,7 +8,7 @@ if ( ! defined( 'MWAI_OPENROUTER_ACCURATE_PRICING' ) ) {
   define( 'MWAI_OPENROUTER_ACCURATE_PRICING', false );
 }
 
-class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_OpenAI
+class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
 {
   /**
    * Keep a static dictionary (query -> price) so that if we see the same query

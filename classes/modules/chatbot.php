@@ -1,20 +1,9 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId',
-	'aiName', 'userName', 'guestName',
-	'aiAvatar', 'userAvatar', 'guestAvatar',
-	'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl',
-	'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch', 'mode',
-	'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory',
-	'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble',
-	'fullscreen', 'copyButton', 'headerSubtitle'
-] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle' ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence',
-	'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice',
-	'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'parentBotId'
-] );
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'parentBotId' ] );
 
 // Params for the discussions (front and server)
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
@@ -31,7 +20,6 @@ class Meow_MWAI_Modules_Chatbot {
 		$this->siteWideChatId = $this->core->get_option( 'botId' );
 
 		add_shortcode( 'mwai_chatbot', array( $this, 'chat_shortcode' ) );
-		add_shortcode( 'mwai_chatbot_v2', array( $this, 'old_chat_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'register_scripts' ) );
@@ -47,24 +35,36 @@ class Meow_MWAI_Modules_Chatbot {
 		wp_register_script( 'mwai_chatbot', trailingslashit( MWAI_URL )
 			. 'app/chatbot.js', [ 'wp-element' ], $cache_buster, false );
 
-		// Actual loading of the scripts
-		$hasSiteWideChat = $this->siteWideChatId && $this->siteWideChatId !== 'none';
-		if ( is_admin() || $hasSiteWideChat ) {
-			$this->enqueue_scripts();
-			if ( $hasSiteWideChat ) {
-				// Chatbot Injection
-				add_action( 'wp_footer', array( $this, 'inject_chat' ) );
-			}
-		}
-	}
+    // Actual loading of the scripts
+    $hasSiteWideChat = $this->siteWideChatId && $this->siteWideChatId !== 'none';
+    if ( is_admin() || $hasSiteWideChat ) {
+      $themeId = null;
+      if ( $hasSiteWideChat ) {
+        $bot = $this->core->get_chatbot( $this->siteWideChatId );
+        if ( $bot && isset( $bot['themeId'] ) ) {
+          $themeId = $bot['themeId'];
+        }
+      }
+      $this->enqueue_scripts( is_admin() ? null : $themeId );
+      if ( $hasSiteWideChat ) {
+        // Chatbot Injection
+        add_action( 'wp_footer', array( $this, 'inject_chat' ) );
+      }
+    }
+  }
 
-	public function enqueue_scripts() {
-		wp_enqueue_script( "mwai_chatbot" );
-		if ( $this->core->get_option( 'syntax_highlight' ) ) {
-			wp_enqueue_script( "mwai_highlight" );
-		}
-		$this->core->enqueue_themes();
-	}
+  public function enqueue_scripts( $themeId = null ) {
+    wp_enqueue_script( "mwai_chatbot" );
+    if ( $this->core->get_option( 'syntax_highlight' ) ) {
+      wp_enqueue_script( "mwai_highlight" );
+    }
+    if ( $themeId ) {
+      $this->core->enqueue_theme( $themeId );
+    }
+    else {
+      $this->core->enqueue_themes();
+    }
+  }
 
 	public function rest_api_init() {
 		register_rest_route( $this->namespace, '/chats/submit', array(
@@ -634,12 +634,6 @@ class Meow_MWAI_Modules_Chatbot {
     ];
   }
 
-	// TODO: After January 2025, remove this.
-	public function old_chat_shortcode( $atts ) {
-		Meow_MWAI_Logging::deprecated( "The shortcode 'mwai_chatbot_v2' is deprecated. Please use 'mwai_chatbot' instead." );
-		return $this->chat_shortcode( $atts );
-	}
-
 	public function chat_shortcode( $atts ) {
 		$atts = empty( $atts ) ? [] : $atts;
 
@@ -753,7 +747,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$jsonFrontTheme = htmlspecialchars( json_encode( $theme ), ENT_QUOTES, 'UTF-8' );
 		//$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
 
-		$this->enqueue_scripts();
+               $this->enqueue_scripts( $frontParams['themeId'] ?? null );
 
 		return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
 	}
@@ -801,6 +795,7 @@ class Meow_MWAI_Modules_Chatbot {
 
 		// Front System
 		$frontSystem = $this->build_front_params( $botId, $customId );
+		$frontSystem['refreshInterval'] = apply_filters( 'mwai_discussions_refresh_interval', 5000 );
 
     // Clean Params
 		$frontParams = $this->clean_params( $frontParams );

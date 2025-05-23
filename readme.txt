@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.1
+Stable tag: 2.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,7 +34,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 * **Function Calling**: Connect the AI models to your WordPress functions, tools, or APIs. For example, you can use the chatbot to allow your users to interact with your store, book appointments, or get real-time data.
 * **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
 - **MCP (Model Context Protocol)**: Allow powerful AI agents (like Claude) to fully control and manage your WordPress site. Automate posts, content updates, manage media, and seamlessly integrate advanced AI workflows.
-* **Analytics & Usage Control**: Track usage, monitor tokens, and manage costs with detailed analytics. Tools like role-based access, banned words, or content safety filters help you maintain a secure environment.
+* **Insights & Usage Control**: Track usage, monitor tokens, and manage costs with detailed analytics. Tools like role-based access, banned words, or content safety filters help you maintain a secure environment.
 * **Extensive Integration**: Seamlessly works with Media File Renamer, SEO Engine, Social Engine, Code Engine, and other WordPress plugins to power advanced AI features site-wide.
 * **Flexible Theming & Shortcodes**: Control the look and behavior of your AI integrations using pre-built themes or your own custom CSS. Place chatbots or AI-driven forms anywhere using simple shortcodes.
 
@@ -116,9 +116,17 @@ Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.
 
 == Changelog ==
 
+= 2.8.2 (2025/05/23) =
+* Add: New Claude 4 models for enhanced AI capabilities.
+* Update: Settings reorganized for improved usability, and Statistics and Embeddings renamed to Insights and Knowledge for better clarity.
+* Fix: Hotfix for streaming issues and added a filter to customize the discussions refresh interval.
+* Update: More consistent and user-friendly UI in Content and Image Generators, including a clean modal for Image Generator and improved custom chatbot block.
+* Add: Multi-condition support for AI Forms with new operators, and better handling of required fields within conditional containers.
+
 = 2.8.1 (2025/05/03) =
 * Fix: Resolve issue with DALL-E model usage on Azure platforms.
 * Add: Allow API Key override through query parameter for OpenRouter integration.
+* Add: Filter `mwai_discussions_refresh_interval` to control how often the discussions list refreshes.
 * 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 * 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!

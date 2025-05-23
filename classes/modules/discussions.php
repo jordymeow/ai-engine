@@ -137,9 +137,13 @@ class Meow_MWAI_Modules_Discussions {
     $base_prompt = "Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.\n\nConversation:\n$conversation_text\n";
     $prompt = apply_filters( 'mwai_discussions_title_prompt', $base_prompt, $conversation_text, $discussion );
 
-    // Run the AI query
+    // Run the AI query using the fast environment
     global $mwai;
-    $answer = $mwai->simpleTextQuery( $prompt, [ 'scope' => 'discussions' ] );
+    $answer = $mwai->simpleTextQuery( $prompt, [
+      'scope' => 'discussions',
+      'envId' => $this->core->get_option( 'ai_fast_default_env' ),
+      'model' => $this->core->get_option( 'ai_fast_default_model' ),
+    ] );
 
     // Clean up the answer
     $title = trim( $answer );
@@ -159,6 +163,7 @@ class Meow_MWAI_Modules_Discussions {
       error_log( "Failed to update the title for discussion ID {$discussion->id}" );
     }
   }
+
 
   /**
    * Admin route for listing discussions. No forced logic here.
@@ -293,6 +298,8 @@ class Meow_MWAI_Modules_Discussions {
         $chats = $this->chats_query( [], $offset, $limit, $filters );
       }
       // END NEW CHECK
+
+
 
       return new WP_REST_Response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
     }
@@ -613,11 +620,11 @@ class Meow_MWAI_Modules_Discussions {
     }
 
     // LATER: REMOVE THIS AFTER MARCH 2025
-    $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'title'" );
-    if ( ! $this->db_check ) {
-      $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN title VARCHAR(64) NULL" );
-      $this->db_check = true;
-    }
+    // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'title'" );
+    // if ( ! $this->db_check ) {
+    //   $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN title VARCHAR(64) NULL" );
+    //   $this->db_check = true;
+    // }
 
     return $this->db_check;
   }

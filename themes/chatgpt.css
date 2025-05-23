@@ -1112,6 +1112,12 @@
   }
 }
 
+.mwai-chatgpt-theme button:not(.mwai-busy):before {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+}
+
 .mwai-chatgpt-theme .admin-bar .mwai-fullscreen:not(.mwai-window),
 .mwai-chatgpt-theme .admin-bar .mwai-fullscreen.mwai-window.mwai-open {
   top: 32px;

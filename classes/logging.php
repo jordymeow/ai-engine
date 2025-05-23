@@ -25,20 +25,27 @@ class Meow_MWAI_Logging {
     self::$plugin_name = $plugin_name;
     self::$option_name = $option_name;
 
-    if ( ! function_exists( 'request_filesystem_credentials' ) ) {
+    // Attempt to use WP_Filesystem only if the 'direct' method is available.
+    if ( ! function_exists( 'WP_Filesystem' ) ) {
       require_once ABSPATH . 'wp-admin/includes/file.php';
     }
 
-    $creds = request_filesystem_credentials( site_url(), '', false, false, [] );
-    if ( ! WP_Filesystem( $creds ) ) {
-      error_log( self::$plugin_name . " : Unable to initialize WP_Filesystem." );
+    if ( function_exists( 'get_filesystem_method' ) && 'direct' === get_filesystem_method() ) {
+      // If 'direct' is allowed, try to initialize the filesystem (no credentials prompt).
+      if ( WP_Filesystem() ) {
+        global $wp_filesystem;
+        self::$fs = $wp_filesystem;
+      } else {
+        // Could not initialize
+        error_log( self::$plugin_name . " : Could not init direct WP_Filesystem. Falling back to error_log only." );
+        self::$fs = null;
+      }
+    } else {
+      // Not 'direct' or not available; skip filesystem usage
       self::$fs = null;
     }
-    else {
-      global $wp_filesystem;
-      self::$fs = $wp_filesystem;
-    }
 
+    // Attempt to determine or create the log file path
     self::$log_file_path = self::get_logs_path( true );
   }
 
@@ -54,6 +61,7 @@ class Meow_MWAI_Logging {
       return null;
     }
 
+    // If we don't have a filesystem reference, we can't create or write a file
     if ( empty( self::$fs ) ) {
       return null;
     }
@@ -75,6 +83,7 @@ class Meow_MWAI_Logging {
       self::$fs->mkdir( $base_dir );
     }
 
+    // Adjust MWAI_PREFIX to whatever your actual constant or value is
     $filename = MWAI_PREFIX . '_' . self::random_ascii_chars() . '.log';
     $new_path = $base_dir . $filename;
 
@@ -120,6 +129,7 @@ class Meow_MWAI_Logging {
       $entry = "$date: $message\n";
     }
 
+    // Write to file if enabled and if a log file path exists
     if ( self::is_logging_enabled() && self::$log_file_path ) {
       if ( self::$fs->exists( self::$log_file_path ) ) {
         $current = self::$fs->get_contents( self::$log_file_path );
@@ -130,8 +140,9 @@ class Meow_MWAI_Logging {
       }
     }
 
+    // Always send to PHP error_log if $error_log is true
     if ( $error_log && ! empty( $message ) ) {
-      error_log( self::$plugin_name . " : $message" );
+      \error_log( self::$plugin_name . " : $message" );
     }
 
     self::$log_count++;
@@ -224,7 +235,6 @@ class Meow_MWAI_Logging {
       $size = self::$fs->size( self::$log_file_path );
 
       if ( $size > self::$max_log_size ) {
-
         $info     = pathinfo( self::$log_file_path );
         $archived = $info['dirname'] . '/' . $info['filename'] . '_' . date( 'Y-m-d_H-i-s' ) . '.' . $info['extension'];
 
@@ -245,9 +255,24 @@ class Meow_MWAI_Logging {
     $result     = '';
 
     for ( $i = 0; $i < $length; $i++ ) {
-      $result .= $characters[ rand( 0, strlen( $characters ) - 1 ) ];
+      $result .= $characters[ mt_rand( 0, strlen( $characters ) - 1 ) ];
     }
 
     return $result;
+  }
+
+  /**
+   * Shortens a string to a specified length, adding ellipsis if needed.
+   *
+   * @param int $length String length.
+   * @return string
+   */
+  public static function shorten( $string, $length = 50 ) {
+    if ( strlen( $string ) > $length ) {
+      $string = rtrim( $string, " \t\n\r\0\x0B,." );
+      $string = substr( $string, 0, $length - 3 ) . '...';
+    }
+
+    return $string;
   }
 }

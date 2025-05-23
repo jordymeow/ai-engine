@@ -1,5 +1,5 @@
-// Previous: 2.3.8
-// Current: 2.7.0
+// Previous: 2.7.0
+// Current: 2.8.2
 
 import Styled from "styled-components";
 import { NekoHeader, NekoButton, NekoIcon } from '@neko-ui';
@@ -43,9 +43,8 @@ const AiButton = Styled(NekoButton)`
 
 const StyledTitleWithButton = Styled.div`
   display: flex;
-  justify-content: unset;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 0 0 2px 0;
 
   h2 {
@@ -63,6 +62,39 @@ const StyledGallery = Styled.div`
 
   img, div {
     width: 100%;
+    cursor: pointer;
+  }
+  .image-wrapper {
+    position: relative;
+  }
+  .delete-icon {
+    display: flex;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .image-wrapper:hover .delete-icon {
+    display: none;
+  }
+  .media-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    text-align: center;
+    font-size: 12px;
+    padding: 2px 0;
+    text-decoration: underline;
     cursor: pointer;
   }
   .empty-image {

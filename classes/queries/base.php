@@ -165,6 +165,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
    * @param string $instructions The instructions.
    */
   public function set_instructions( string $instructions ): void {
+    // Decode HTML entities in case the instructions were sanitized at the UI level
+    // and ended up encoded when reaching the server.
+    $instructions = html_entity_decode( $instructions );
+
     $this->instructions = apply_filters( 'mwai_ai_context', $instructions, $this );
     if ( $this->instructions !== $instructions ) {
       Meow_MWAI_Logging::deprecated( '"mwai_ai_context" filter is deprecated. Please use "mwai_ai_instructions" instead.' );

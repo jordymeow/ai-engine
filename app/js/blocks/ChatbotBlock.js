@@ -1,13 +1,15 @@
-// Previous: 2.6.5
-// Current: 2.6.8
+// Previous: 2.6.8
+// Current: 2.8.2
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
 import { chatbots, options } from '@app/settings';
+
+const defaultShortcodeParams = options?.chatbot_defaults || {};
 import ChatbotParams from '@app/screens/chatbots/Params';
 
 const { registerBlockType } = wp.blocks;
-const { useMemo, useState } = wp.element;
+const { useMemo, useState, useEffect } = wp.element;
 const { PanelBody, SelectControl, ToggleControl } = wp.components;
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
@@ -45,9 +47,19 @@ const saveChatbot = (props) => {
   }
 };
 
+
 const ChatbotBlock = (props) => {
   const { attributes: { chatbotId, isCustomChatbot, shortcodeParams }, setAttributes, isSelected } = props;
-  const [localShortcodeParams, setLocalShortcodeParams] = useState(shortcodeParams);
+  const [localShortcodeParams, setLocalShortcodeParams] = useState(() => {
+    return Object.keys(shortcodeParams || {}).length ? shortcodeParams : defaultShortcodeParams;
+  });
+
+  useEffect(() => {
+    if (isCustomChatbot && (!shortcodeParams || !Object.keys(shortcodeParams).length)) {
+      setLocalShortcodeParams(shortcodeParams || defaultShortcodeParams);
+      setAttributes({ shortcodeParams: shortcodeParams || defaultShortcodeParams });
+    }
+  }, [isCustomChatbot]);
   const blockProps = useBlockProps();
 
   const chatbotsOptions = useMemo(() => {
@@ -139,7 +151,7 @@ const createChatbotBlock = () => {
       },
       shortcodeParams: {
         type: 'object',
-        default: {}
+        default: defaultShortcodeParams
       }
     },
     edit: ChatbotBlock,

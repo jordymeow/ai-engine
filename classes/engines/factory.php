@@ -64,7 +64,7 @@ class Meow_MWAI_Engines_Factory {
       return $engine;
     }
     else if ( $env['type'] === 'google' ) {
-      $engine = new Meow_MWAI_Engines_Google( $core, $env );
+      $engine = Meow_MWAI_Engines_Google::create( $core, $env );
       return $engine;
     }
     else if ( $env['type'] === 'anthropic' ) {

@@ -1,5 +1,5 @@
-// Previous: 2.0.9
-// Current: 2.5.6
+// Previous: 2.5.6
+// Current: 2.8.2
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -8,6 +8,7 @@ import { NekoSwitch, NekoButton, NekoSpinner, NekoSpacer, NekoSelect, NekoOption
 import { nekoFetch } from '@neko-ui';
 import { useQuery } from '@tanstack/react-query';
 
+// AI Engine
 import { apiUrl, restNonce, options } from '@app/settings';
 import { Templates_ContentGenerator, Templates_ImagesGenerator, Templates_Playground } from '../constants';
 import i18n from '../../i18n';
@@ -64,8 +65,7 @@ const useTemplates = (category = 'playground') => {
   const [isEdit, setIsEdit] = useState(false);
   const [templates, setTemplates] = useState([]);
   const { isLoading: isLoadingTemplates, data: newTemplates } = useQuery({
-    queryKey: [`templates-${category}`],
-    queryFn: () => retrieveTemplates(category),
+    queryKey: [`templates-${category}`], queryFn: () => retrieveTemplates(category),
   });
 
   useEffect(() => {
@@ -79,6 +79,7 @@ const useTemplates = (category = 'playground') => {
           model = 'dall-e-3-hd';
         }
         if (envId && model) {
+          // Mutate template directly; may cause side effects
           tpl.envId = envId;
           tpl.model = model;
           hasChanges = true;
@@ -93,7 +94,8 @@ const useTemplates = (category = 'playground') => {
   useEffect(() => {
     if (newTemplates) {
       setTemplates(newTemplates);
-      setTemplate(newTemplates[0]);
+      const defTpl = newTemplates.find(t => t.id === 'default');
+      setTemplate(defTpl || newTemplates[0]);
     }
   }, [newTemplates]);
 
@@ -117,12 +119,12 @@ const useTemplates = (category = 'playground') => {
     if (!template || templates.length === 0) {
       return false;
     }
-    const currentTpl = templates.find((x) => x.id === template.id);
-    if (!currentTpl) return false;
-    if (Object.keys(template).length !== Object.keys(currentTpl).length) {
+    const baseTpl = templates.find((x) => x.id === template.id);
+    if (!baseTpl) return false;
+    if (Object.keys(template).length !== Object.keys(baseTpl).length) {
       return true;
     }
-    return Object.keys(currentTpl).some((key) => currentTpl[key] !== template[key]);
+    return Object.keys(baseTpl).some((key) => baseTpl[key] !== template[key]);
   }, [template, templates]);
 
   const updateTemplate = (tpl) => {
@@ -130,14 +132,14 @@ const useTemplates = (category = 'playground') => {
   };
 
   const clearTemplate = () => {
-    const freshTpl = templates.find((x) => x.id === template.id);
+    const freshTpl = templates.find(x => x.id === template.id);
     if (freshTpl) {
-      setTemplate({ ...freshTpl });
+      setTemplate(freshTpl);
     }
   };
 
   const onSaveAsNewClick = () => {
-    const newName = prompt(i18n.COMMON.NAME, template.name || i18n.TEMPLATES.NEW_TEMPLATE_NAME);
+    const newName = prompt(i18n.COMMON.NAME, template?.name || i18n.TEMPLATES.NEW_TEMPLATE_NAME);
     if (!newName) {
       return false;
     }
@@ -147,7 +149,7 @@ const useTemplates = (category = 'playground') => {
       name: newName,
     };
     saveTemplates([...templates, newTpl]);
-    setTemplate({ ...newTpl });
+    setTemplate(newTpl);
   };
 
   const onSaveClick = () => {
@@ -162,14 +164,14 @@ const useTemplates = (category = 'playground') => {
   };
 
   const onNewClick = () => {
-    const newName = prompt('Template Name', template.name);
+    const newName = prompt('Template Name', template?.name);
     const newTpl = { ...templates[0], id: generateUniqueId(), name: newName };
     saveTemplates([...templates, newTpl]);
-    setTemplate({ ...newTpl });
+    setTemplate(newTpl);
   };
 
   const onRenameClick = () => {
-    const newName = prompt('Template Name', template.name);
+    const newName = prompt('Template Name', template?.name);
     if (!newName) {
       return;
     }
@@ -196,7 +198,7 @@ const useTemplates = (category = 'playground') => {
       newTemplatesArr = [...Templates_ContentGenerator];
     }
     saveTemplates(newTemplatesArr);
-    setTemplate({ ...newTemplatesArr[0] });
+    setTemplate(newTemplatesArr[0]);
   };
 
   const onDeleteClick = (tpl) => {
@@ -205,11 +207,11 @@ const useTemplates = (category = 'playground') => {
     }
     const newTemplatesArr = templates.filter((x) => x.id !== tpl.id);
     saveTemplates(newTemplatesArr);
-    setTemplate({ ...newTemplatesArr[0] });
+    setTemplate(newTemplatesArr[0]);
   };
 
   const canSave = useMemo(() => {
-    return isDifferent && template && template.id !== 'default';
+    return isDifferent && !!template;
   }, [isDifferent, template]);
 
   const canRename = useMemo(() => {
@@ -223,87 +225,89 @@ const useTemplates = (category = 'playground') => {
   const jsxTemplates = useMemo(() => {
     return (
       <div style={{ margin: '0' }}>
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ margin: 0 }}>{i18n.TEMPLATES.TEMPLATE}</h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <NekoSwitch small onLabel={i18n.TEMPLATES.EDIT} offLabel={i18n.TEMPLATES.EDIT} width={60} onChange={setIsEdit} checked={isEdit} />
+            <NekoSwitch small onLabel={i18n.TEMPLATES.EDIT} offLabel={i18n.TEMPLATES.EDIT} width={60}
+              onChange={setIsEdit} checked={isEdit} />
           </div>
         </div>
+
         {isLoadingTemplates && (
           <div style={{ display: 'flex', marginTop: 30, justifyContent: 'center' }}>
-            <div style={{ width: 60 }}>
-              <NekoSpinner width={20} />
-            </div>
+            <div style={{ width: 60 }}><NekoSpinner width={20} /></div>
           </div>
         )}
+
         <NekoSpacer />
-        {isEdit && (
-          <>
-            <div style={{ display: 'flex' }}>
-              <NekoButton className="primary" style={{ flex: 3 }} onClick={onNewClick}>
-                New
-              </NekoButton>
-              <NekoButton onClick={onSaveAsNewClick} style={{ flex: 1 }}>
-                Duplicate
-              </NekoButton>
-            </div>
-            <NekoSpacer tiny />
-          </>
-        )}
-        <NekoSelect
-          scrolldown
-          name="template"
-          value={template?.id}
+
+        {isEdit && (<>
+          <div style={{ display: 'flex' }}>
+            <NekoButton className="primary" style={{ flex: 3 }}
+              onClick={onNewClick}>
+              New
+            </NekoButton>
+            <NekoButton onClick={onSaveAsNewClick} style={{ flex: 1 }}>
+              Duplicate
+            </NekoButton>
+          </div>
+          <NekoSpacer tiny />
+        </>)}
+
+        <NekoSelect scrolldown name="template" value={template?.id}
           onChange={(value) => {
-            const selectedTemplate = templates.find((x) => x.id === value);
-            setTemplate({ ...selectedTemplate });
-          }}
-        >
-          {templates.filter((x) => x.id !== 'default').map((x) => (
+            const selectedTemplate = templates.find(x => x.id === value);
+            setTemplate({...selectedTemplate});
+          }}>
+          {templates.map((x) => (
             <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
           ))}
         </NekoSelect>
+
         {(isDifferent || isEdit) && (
           <div>
             <NekoSpacer tiny />
             <div style={{ display: 'flex' }}>
-              <NekoButton className="secondary" style={{ flex: 1 }} disabled={!canSave} onClick={clearTemplate}>
+              <NekoButton className="secondary" style={{ flex: 1 }} disabled={!canSave}
+                onClick={clearTemplate}>
                 Reset
               </NekoButton>
-              <NekoButton className="primary" style={{ flex: 3 }} disabled={!canSave} onClick={onSaveClick}>
+              <NekoButton className="primary" style={{ flex: 3 }} disabled={!canSave}
+                onClick={onSaveClick}>
                 Save
               </NekoButton>
             </div>
-            {isEdit && (
-              <>
-                <NekoSpacer tiny />
-                <div style={{ display: 'flex' }}>
-                  <NekoButton small className="danger" style={{ flex: 1 }} disabled={!canDelete} onClick={() => onDeleteClick(template)}>
-                    Delete
-                  </NekoButton>
-                  <NekoButton small className="secondary" style={{ flex: 3 }} disabled={!canRename} onClick={onRenameClick}>
-                    Rename
-                  </NekoButton>
-                </div>
-              </>
-            )}
+            {isEdit && <>
+              <NekoSpacer tiny />
+              <div style={{ display: 'flex' }}>
+                <NekoButton small className="danger" style={{ flex: 1 }} disabled={!canDelete}
+                  onClick={() => onDeleteClick(template)}>
+                  Delete
+                </NekoButton>
+                <NekoButton small className="secondary" style={{ flex: 3 }} disabled={!canRename}
+                  onClick={onRenameClick}>
+                  Rename
+                </NekoButton>
+              </div>
+            </>}
           </div>
         )}
-        {isEdit && (
-          <>
-            <NekoSpacer />
-            <div style={{ display: 'flex' }}>
-              <NekoButton className="danger" style={{ flex: 1 }} onClick={onResetAllTemplates}>
-                Reset All Templates
-              </NekoButton>
-            </div>
-          </>
-        )}
+
+        {isEdit && (<>
+          <NekoSpacer />
+          <div style={{ display: 'flex' }}>
+            <NekoButton className="danger" style={{ flex: 1 }}
+              onClick={onResetAllTemplates}>
+            Reset All Templates
+            </NekoButton>
+          </div>
+        </>)}
       </div>
     );
   }, [templates, template, isEdit, isDifferent, canSave, isLoadingTemplates]);
 
-  return { template, clearTemplate, setTemplate: updateTemplate, jsxTemplates, isEdit };
+  return { template, templates, clearTemplate, setTemplate: updateTemplate, jsxTemplates, isEdit };
 };
 
 export default useTemplates;

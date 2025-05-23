@@ -1,5 +1,5 @@
-// Previous: 2.6.9
-// Current: 2.7.0
+// Previous: 2.7.0
+// Current: 2.8.2
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -190,7 +190,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embedding.id}>
+        {embeddings.map(embedding => <div key={embeddings.id}>
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -254,15 +254,17 @@ const Discussions = () => {
 
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
     filters: filters,
-    sort: { accessor: 'created', by: 'desc' }, page: 1, limit: 10
+    sort: { accessor: 'updated', by: 'desc' }, page: 1, limit: 10
   });
 
   const refreshDiscussions = useCallback(async () => {
     const isTabActive = !document.hidden;
-    if (!isTabActive) {
-      return new Promise(() => {}); 
+    if (isTabActive) {
+      return await retrieveDiscussions(chatsQueryParams);
     }
-    return await retrieveDiscussions(chatsQueryParams);
+    else {
+      return new Promise((resolve) => {}); // Keep the promise pending indefinitely
+    }
   }, [chatsQueryParams]);
 
   const { isFetching: isFetchingChats, data: chatsData, error: chatsError } = useQuery({
@@ -282,13 +284,15 @@ const Discussions = () => {
     if (!chatsData?.chats) {
       return [];
     }
+
     return chatsData.chats
-      .sort((a, b) => b.created_at - a.created_at)
+      .sort((a, b) => new Date(b.updated) - new Date(a.updated))
       .map(chat => {
         const messages = JSON.parse(chat.messages);
         const extra = JSON.parse(chat.extra);
         const formattedCreated = tableDateTimeFormatter(chat.created);
         const formattedUpdated = tableDateTimeFormatter(chat.updated);
+
         const user = tableUserIPFormatter(chat.userId ?? extra?.userId, chat.ip ?? extra?.ip);
         const userMessages = messages?.filter(m => m.role === 'user' || m.type === 'user');
         const firstExchange = userMessages?.length
@@ -298,13 +302,16 @@ const Discussions = () => {
           ? userMessages[userMessages.length - 1].content ||
             userMessages[userMessages.length - 1].text
           : '';
+
         const foundChatbot = chatbots.find(c => c.botId === chat.botId);
         const parentBotId = extra?.parentBotId;
         const foundParent = parentBotId
           ? chatbots.find(c => c.botId === parentBotId)
           : null;
+
         let displayName;
         let overrideIcon = null;
+
         if (foundChatbot) {
           displayName = foundChatbot.name;
         } else if (foundParent) {
@@ -312,9 +319,12 @@ const Discussions = () => {
           overrideIcon = <NekoIcon icon="tools" height="14"
             style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Overriden Bot" />;
         } else {
-          displayName = <><NekoIcon icon="cog" height="14"
-            style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Custom Bot" />Custom</>;
+          displayName = <>
+            <NekoIcon icon="cog" height="14"
+              style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Custom Bot" />Custom
+          </>;
         }
+
         const jsxPreview = chat.title ? (
           <>
             <div>{chat.title}</div>
@@ -328,6 +338,7 @@ const Discussions = () => {
             <small>{lastExchange}</small>
           </>
         );
+
         return {
           id: chat.id,
           botId: (
@@ -386,7 +397,7 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
+      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -476,7 +487,7 @@ const Discussions = () => {
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
@@ -545,15 +556,10 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{formattedUpdated}</div>
           </div>
-
         </NekoBlock>}
-
       </NekoColumn>
-
     </NekoWrapper>
-
     <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
-
   </>);
 };
 
