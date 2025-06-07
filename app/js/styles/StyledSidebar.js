@@ -1,5 +1,5 @@
-// Previous: 1.3.73
-// Current: 1.6.0
+// Previous: 1.6.0
+// Current: 2.8.3
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
@@ -82,6 +82,58 @@ const StyledNekoInput = Styled(NekoInput)`
   }
 `;
 
+const StyledSidebarBlock = Styled.div`
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 20px;
+  margin-bottom: 20px;
+  height: auto;
+  
+  p {
+    margin: 10px 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  label {
+    font-weight: 600;
+    color: #333;
+  }
+`;
+
+const StyledMainContentBlock = Styled.div`
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 20px;
+  height: auto;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+  
+  .content-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+`;
+
 const StyledBuilderForm = Styled.div`
   display: flex;
   flex-direction: column;
@@ -130,6 +182,8 @@ const StyledBuilderForm = Styled.div`
 
   .nui-select-option {
   }
+
+
 `;
 
-export { StyledSidebar, StyledNekoInput, StyledBuilderForm }
+export { StyledSidebar, StyledNekoInput, StyledBuilderForm, StyledSidebarBlock, StyledMainContentBlock }

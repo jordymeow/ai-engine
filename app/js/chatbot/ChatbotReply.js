@@ -1,5 +1,5 @@
-// Previous: 2.7.5
-// Current: 2.7.7
+// Previous: 2.7.7
+// Current: 2.8.3
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { compiler } from 'markdown-to-jsx';
@@ -10,95 +10,25 @@ import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { BlinkingCursor } from '@app/helpers';
 import ReplyActions from '@app/components/ReplyActions';
 import ChatbotName from './ChatbotName';
-
-const LinkContainer = ({ href, children }) => {
-  if (!href) {
-    return <span>{children}</span>;
-  }
-
-  const target = '_blank';
-  const isFile = String(children) === "Uploaded File";
-
-  if (isFile) {
-    const filename = href.split('/').pop();
-    return (
-      <a href={href} target={target} rel="noopener noreferrer" className="mwai-filename">
-        <span>✓ {filename}</span>
-      </a>
-    );
-  }
-
-  return (
-    <a href={href} target={target} rel="noopener noreferrer">
-      {children}
-    </a>
-  );
-};
+import ChatbotContent from './ChatbotContent';
 
 const RawMessage = ({ message, onRendered = () => {} }) => {
   const { state } = useChatbotContext();
-  const { copyButton } = state;
+  const { copyButton, debugMode } = state;
   const [ isLongProcess ] = useState(message.isQuerying || message.isStreaming);
   const isQuerying = message.isQuerying;
   const isStreaming = message.isStreaming;
-  let content = message.content ?? "";
-
-  const matches = (content.match(/```/g) || []).length;
-  if (matches % 2 !== 0) {
-    content += "\n```";
-  } else if (message.isStreaming) {
-    content += "<BlinkingCursor />";
-  }
 
   useEffect(() => {
     if (!isLongProcess) {
       onRendered();
-    } else if (isLongProcess && !isQuerying && !isStreaming) {
+    }
+    else if (isLongProcess && !isQuerying && !isStreaming) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
 
-  const markdownOptions = useMemo(() => {
-    const options = {
-      overrides: {
-        BlinkingCursor: { component: BlinkingCursor },
-        a: {
-          component: LinkContainer
-        },
-        img: {
-          props: {
-            onError: (e) => {
-              const src = e.target.src;
-              const isImage = /\.(jpeg|jpg|gif|png)$/.test(src);
-              if (isImage) {
-                e.target.src = "https://placehold.co/600x200?text=Expired+Image";
-                return;
-              }
-            },
-            className: "mwai-image",
-          },
-        }
-      }
-    };
-    return options;
-  }, []);
-
-  const renderedContent = useMemo(() => {
-    let out = "";
-    try {
-      out = compiler(content, markdownOptions);
-    }
-    catch (e) {
-      console.error("Crash in markdown-to-jsx! Reverting to plain text.", { e, content });
-      out = content;
-    }
-    return out;
-  }, [content, markdownOptions]);
-
   if (isQuerying) {
-    return (<BouncingDots />);
-  }
-  if (isStreaming && !content) {
     return (<BouncingDots />);
   }
 
@@ -106,7 +36,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     <>
       <ChatbotName role={message.role} />
       <ReplyActions content={message.content} enabled={copyButton} className="mwai-text">
-        {renderedContent}
+        <ChatbotContent message={message} />
       </ReplyActions>
     </>
   );
@@ -114,7 +44,13 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
 
 const ImagesMessage = ({ message, onRendered = () => {} }) => {
   const [ images, setImages ] = useState(message?.images);
-  useEffect(() => { onRendered(); });
+  const hasRendered = useRef(false);
+  useEffect(() => {
+    if (!hasRendered.current) {
+      onRendered();
+      hasRendered.current = true;
+    }
+  }, []);
 
   const handleImageError = (index) => {
     const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
@@ -162,6 +98,7 @@ const ChatbotReply = ({ message, conversationRef }) => {
       mainElement.current.classList.add('mwai-rendered');
       const selector = mainElement.current.querySelectorAll('pre code');
       selector.forEach((el) => {
+        // eslint-disable-next-line no-undef
         hljs.highlightElement(el);
       });
     }
@@ -181,12 +118,12 @@ const ChatbotReply = ({ message, conversationRef }) => {
           <ImagesMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
         </div>;
       }
-      // else if (typewriter && !message.isStreaming) {
-      //   console.warn("The Typewriter effect is deprecated. Use Streaming instead.");
-      //   return <div ref={mainElement} className={classes}>
-      //     <TypedMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
-      //   </div>;
-      // }
+
+      if (typewriter && !message.isStreaming) {
+        return <div ref={mainElement} className={classes}>
+          <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
+        </div>;
+      }
       return <div ref={mainElement} className={classes}>
         <RawMessage message={message} conversationRef={conversationRef} onRendered={onRendered} />
       </div>;

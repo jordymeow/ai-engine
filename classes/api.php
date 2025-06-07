@@ -39,20 +39,20 @@ class Meow_MWAI_API {
         return $this->core->can_access_public_api( 'simpleTextQuery', $request );
       },
     ) );
-                register_rest_route( 'mwai/v1', '/simpleImageQuery', array(
-                        'methods' => 'POST',
-                        'callback' => array( $this, 'rest_simpleImageQuery' ),
-                        'permission_callback' => function( $request ) {
-                                return $this->core->can_access_public_api( 'simpleImageQuery', $request );
-                        },
-                ) );
-                register_rest_route( 'mwai/v1', '/simpleImageEditQuery', array(
-                        'methods' => 'POST',
-                        'callback' => array( $this, 'rest_simpleImageEditQuery' ),
-                        'permission_callback' => function( $request ) {
-                                return $this->core->can_access_public_api( 'simpleImageEditQuery', $request );
-                        },
-                ) );
+    register_rest_route( 'mwai/v1', '/simpleImageQuery', array(
+      'methods' => 'POST',
+      'callback' => array( $this, 'rest_simpleImageQuery' ),
+      'permission_callback' => function( $request ) {
+        return $this->core->can_access_public_api( 'simpleImageQuery', $request );
+      },
+    ) );
+    register_rest_route( 'mwai/v1', '/simpleImageEditQuery', array(
+      'methods' => 'POST',
+      'callback' => array( $this, 'rest_simpleImageEditQuery' ),
+      'permission_callback' => function( $request ) {
+        return $this->core->can_access_public_api( 'simpleImageEditQuery', $request );
+      },
+    ) );
     register_rest_route( 'mwai/v1', '/simpleVisionQuery', array(
       'methods' => 'POST',
       'callback' => array( $this, 'rest_simpleVisionQuery' ),
@@ -184,7 +184,7 @@ class Meow_MWAI_API {
     }
   }
 
-        public function rest_simpleImageQuery( $request ) {
+  public function rest_simpleImageQuery( $request ) {
     try {
       $params = $request->get_params();
       $message = isset( $params['message'] ) ? $params['message'] : '';

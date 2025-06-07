@@ -22,7 +22,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 32768,
     "maxContextualTokens" => 1047576,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp']
   ],
   /*
     GPT-4.1 mini
@@ -43,7 +43,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 32768,
     "maxContextualTokens" => 1047576,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp']
   ],
   /*
     GPT-4.1 nano
@@ -64,7 +64,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 32768,
     "maxContextualTokens" => 1047576,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp']
   ],
   /*
     GPT-4o
@@ -85,7 +85,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 16384,
     "maxContextualTokens" => 128000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp']
   ],
   /*
     GPT-4o mini
@@ -110,7 +110,7 @@ define( 'MWAI_OPENAI_MODELS', [
       "out" => 0.60,
       "train" => 3.00
     ],
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp']
   ],
   /* 
     o1
@@ -130,7 +130,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "unit" => 1 / 1000000,
     "maxCompletionTokens" => 100000,
     "maxContextualTokens" => 200000,
-    "tags" => ['core', 'chat', 'o1-model', 'reasoning']
+    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'mcp']
   ],
   [
     "model" => "o1-mini",
@@ -145,7 +145,27 @@ define( 'MWAI_OPENAI_MODELS', [
     "unit" => 1 / 1000000,
     "maxCompletionTokens" => 65536,
     "maxContextualTokens" => 128000,
-    "tags" => ['core', 'chat', 'o1-model', 'reasoning']
+    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'mcp']
+  ],
+  /* 
+    o3
+    Advanced reasoning model
+    https://platform.openai.com/docs/models/o3
+  */
+  [
+    "model" => "o3",
+    "name" => "o3",
+    "family" => "o3",
+    "features" => ['completion'],
+    "price" => [
+      "in" => 15.00,
+      "out" => 60.00,
+    ],
+    "type" => "token",
+    "unit" => 1 / 1000000,
+    "maxCompletionTokens" => 100000,
+    "maxContextualTokens" => 200000,
+    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp']
   ],
   /* 
     o3-mini
@@ -165,7 +185,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "unit" => 1 / 1000000,
     "maxCompletionTokens" => 100000,
     "maxContextualTokens" => 200000,
-    "tags" => ['core', 'chat', 'o1-model', 'reasoning']
+    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp']
   ],
   /* 
     GPT-4o Realtime
@@ -322,7 +342,7 @@ define( 'MWAI_OPENAI_MODELS', [
     "type" => "image",
     "unit" => 1,
     "finetune" => false,
-    "tags" => ['core', 'image', 'image-edit']
+    "tags" => ['core', 'image', 'image-edit', 'responses']
   ],
   [
     "model" => "dall-e-3",
@@ -416,6 +436,28 @@ define( 'MWAI_OPENAI_MODELS', [
     "tags" => ['core', 'embedding'],
   ],
   // Audio Models:
+  [
+    "model" => "gpt-4o-transcribe",
+    "name" => "GPT-4o Transcribe",
+    "family" => "gpt-4o-transcribe",
+    "features" => ['speech-to-text'],
+    "price" => 0.006,
+    "type" => "second",
+    "unit" => 1,
+    "finetune" => false,
+    "tags" => ['core', 'audio'],
+  ],
+  [
+    "model" => "gpt-4o-mini-transcribe",
+    "name" => "GPT-4o Mini Transcribe",
+    "family" => "gpt-4o-transcribe",
+    "features" => ['speech-to-text'],
+    "price" => 0.003,
+    "type" => "second",
+    "unit" => 1,
+    "finetune" => false,
+    "tags" => ['core', 'audio'],
+  ],
   [
     "model" => "whisper-1",
     "name" => "Whisper",
@@ -524,7 +566,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
     "maxCompletionTokens" => 32000,
     "maxContextualTokens" => 200000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'reasoning']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'reasoning', 'mcp']
   ],
   [
     "model" => "claude-sonnet-4-20250514",
@@ -540,7 +582,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
     "maxCompletionTokens" => 64000,
     "maxContextualTokens" => 200000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'reasoning']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'reasoning', 'mcp']
   ],
   [
     "model" => "claude-3-7-sonnet-latest",
@@ -556,7 +598,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
     "maxCompletionTokens" => 64000,
     "maxContextualTokens" => 200000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'reasoning']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'reasoning', 'mcp']
   ],
   [
     "model" => "claude-3-5-sonnet-latest",
@@ -572,7 +614,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
     "maxCompletionTokens" => 4096,
     "maxContextualTokens" => 200000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'mcp']
   ],
   [
     "model" => "claude-3-5-sonnet-20241022",
@@ -588,7 +630,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
     "maxCompletionTokens" => 4096,
     "maxContextualTokens" => 200000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'files', 'functions']
+    "tags" => ['core', 'chat', 'vision', 'files', 'functions', 'mcp']
   ],
   [
     "model" => "claude-3-5-sonnet-20240620",
@@ -604,7 +646,7 @@ define ( 'MWAI_ANTHROPIC_MODELS', [
     "maxCompletionTokens" => 4096,
     "maxContextualTokens" => 200000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'mcp']
   ],
   [
     "model" => "claude-3-sonnet-20240229",

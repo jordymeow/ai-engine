@@ -1,3 +1,129 @@
+.mwai-context-menu-portal .mwai-context-menu {
+  background: var(--mwai-backgroundHeaderColor);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--mwai-borderRadius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 13px;
+  color: var(--mwai-fontColor);
+}
+.mwai-context-menu-portal .mwai-context-menu .mwai-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.mwai-context-menu-portal .mwai-context-menu .mwai-menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.mwai-context-menu-portal .mwai-context-menu .mwai-menu-item.mwai-danger {
+  color: #dc3545;
+}
+.mwai-context-menu-portal .mwai-context-menu .mwai-menu-item.mwai-danger:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+.mwai-context-menu-portal .mwai-context-menu .mwai-menu-item svg {
+  flex-shrink: 0;
+}
+
+.mwai-chunks {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  font-size: 11px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+.mwai-chunks.mwai-chunks-collapsed .mwai-chunks-header {
+  margin-bottom: 0 !important;
+}
+.mwai-chunks .mwai-chunks-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #6b7280;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.mwai-chunks .mwai-chunks-header .mwai-chunks-title {
+  flex: 1;
+}
+.mwai-chunks .mwai-chunks-header .mwai-chunks-toggle {
+  background: none;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  padding: 2px;
+  width: 30px;
+  height: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+}
+.mwai-chunks .mwai-chunks-header .mwai-chunks-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+.mwai-chunks .mwai-chunk {
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-header .mwai-chunk-time {
+  color: #9ca3af;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-header .mwai-chunk-type {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  color: white;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-header .mwai-chunk-data {
+  flex: 1;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-header .mwai-chunk-expand {
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-details {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 3px;
+  overflow-x: auto;
+}
+.mwai-chunks .mwai-chunk .mwai-chunk-details pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #4b5563;
+}
+
 .mwai-messages-theme {
   --mwai-spacing: 10px;
   --mwai-fontSize: 13px;
@@ -22,7 +148,7 @@
 .mwai-messages-theme * {
   box-sizing: border-box;
 }
-.mwai-messages-theme .mwai-content {
+.mwai-messages-theme .mwai-body {
   display: flex;
   background: var(--mwai-backgroundPrimaryColor);
   font-size: var(--mwai-fontSize);
@@ -429,82 +555,6 @@
   width: 100%;
 }
 
-.mwai-messages-theme.mwai-discussions {
-  border-radius: var(--mwai-borderRadius);
-  background: var(--mwai-conversationsBackgroundColor);
-  color: var(--mwai-backgroundPrimaryColor);
-  overflow: hidden;
-}
-.mwai-messages-theme.mwai-discussions * {
-  box-sizing: border-box;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion {
-  display: flex;
-  gap: 5px;
-  padding-left: calc(var(--mwai-spacing) / 2);
-  padding-right: calc(var(--mwai-spacing) / 2);
-  padding-bottom: calc(var(--mwai-spacing) / 2);
-  color: var(--mwai-conversationsTextColor);
-  opacity: 0.65;
-  justify-content: space-between;
-  align-items: center;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-title {
-  flex: auto;
-  padding: 5px;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions {
-  display: flex;
-  gap: 1px;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions .mwai-icon {
-  width: 30px;
-  height: 30px;
-  background: var(--mwai-iconTextBackgroundColor);
-  color: var(--mwai-iconTextColor);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions .mwai-icon:hover {
-  color: white;
-  background: var(--mwai-backgroundUserColor);
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions .mwai-icon:hover.mwai-danger {
-  background: #f44336;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion.mwai-active, .mwai-messages-theme.mwai-discussions .mwai-discussion:hover {
-  cursor: pointer;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion.mwai-active .mwai-discussion-title, .mwai-messages-theme.mwai-discussions .mwai-discussion:hover .mwai-discussion-title {
-  color: var(--mwai-backgroundPrimaryColor);
-  background: var(--mwai-backgroundHeaderColor);
-  border-radius: var(--mwai-borderRadius);
-  opacity: 1;
-}
-.mwai-messages-theme.mwai-discussions .mwai-discussion:first-child {
-  margin-top: calc(var(--mwai-spacing) / 2);
-}
-.mwai-messages-theme.mwai-discussions .mwai-header {
-  background: var(--mwai-backgroundAiSecondaryColor);
-  padding: var(--mwai-spacing);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.mwai-messages-theme.mwai-discussions .mwai-content {
-  background: var(--mwai-conversationsBackgroundColor);
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.mwai-messages-theme.mwai-discussions button {
-  margin-left: 0;
-}
-
 .mwai-messages-theme.mwai-transition, .mwai-messages-theme .mwai-transition {
   opacity: 0;
   transition: opacity 350ms ease-in-out;
@@ -553,7 +603,7 @@
   color: var(--mwai-iconTextColor);
   background: var(--mwai-iconTextBackgroundColor);
   padding: 5px;
-  width: 20px;
+  width: 30px;
   height: 20px;
   border-radius: 100%;
   display: none;
@@ -655,7 +705,7 @@
   opacity: 1;
   transform: translate(16px, 5px) rotate(45deg);
 }
-.mwai-messages-theme.mwai-window .mwai-content {
+.mwai-messages-theme.mwai-window .mwai-body {
   display: none;
   opacity: 0;
   max-height: var(--mwai-maxHeight);
@@ -731,19 +781,19 @@
 .mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-header, .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-header {
   border-radius: 0;
 }
-.mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-content, .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-content {
+.mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-body, .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-body {
   height: 100%;
   max-height: inherit;
   border-radius: 0;
 }
-.mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-content .mwai-conversation, .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-content .mwai-conversation {
+.mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-body .mwai-conversation, .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-body .mwai-conversation {
   flex: auto;
   max-height: none;
 }
 .mwai-messages-theme.mwai-window.mwai-open .mwai-header {
   display: flex;
 }
-.mwai-messages-theme.mwai-window.mwai-open .mwai-content {
+.mwai-messages-theme.mwai-window.mwai-open .mwai-body {
   display: flex;
   transition: opacity 200ms ease-in-out 0s;
   opacity: 1;
@@ -807,12 +857,12 @@
   .mwai-messages-theme.mwai-window.mwai-open .mwai-header {
     border-radius: 0;
   }
-  .mwai-messages-theme.mwai-window.mwai-open .mwai-content {
+  .mwai-messages-theme.mwai-window.mwai-open .mwai-body {
     height: 100%;
     max-height: inherit;
     border-radius: 0;
   }
-  .mwai-messages-theme.mwai-window.mwai-open .mwai-content .mwai-conversation {
+  .mwai-messages-theme.mwai-window.mwai-open .mwai-body .mwai-conversation {
     flex: auto;
     max-height: none;
   }
@@ -830,14 +880,14 @@
   .mwai-messages-theme.mwai-window.mwai-open .mwai-input .mwai-input-text input, .mwai-messages-theme.mwai-window.mwai-open .mwai-input .mwai-input-text textarea {
     font-size: 16px;
   }
-  .mwai-messages-theme.mwai-window.mwai-open .mwai-content {
+  .mwai-messages-theme.mwai-window.mwai-open .mwai-body {
     display: flex;
     transition: opacity 200ms ease-in-out 0s;
     opacity: 1;
     height: 100%;
     max-height: inherit;
   }
-  .mwai-messages-theme.mwai-window.mwai-open .mwai-content .mwai-conversation {
+  .mwai-messages-theme.mwai-window.mwai-open .mwai-body .mwai-conversation {
     flex: auto;
     max-height: none;
   }
@@ -1043,6 +1093,176 @@
 .mwai-messages-theme .mwai-realtime .mwai-options .mwai-option.mwai-active {
   opacity: 1;
 }
+.mwai-messages-theme.mwai-discussions {
+  border-radius: var(--mwai-borderRadius);
+  background: var(--mwai-backgroundHeaderColor);
+  overflow: hidden;
+}
+.mwai-messages-theme.mwai-discussions * {
+  box-sizing: border-box;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion {
+  display: flex;
+  position: relative;
+  padding-left: calc(var(--mwai-spacing) / 2);
+  padding-right: calc(var(--mwai-spacing) / 2);
+  padding-bottom: calc(var(--mwai-spacing) / 2);
+  color: var(--mwai-conversationsTextColor);
+  opacity: 0.65;
+  align-items: center;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-title {
+  flex: 1;
+  padding: 5px;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--mwai-spacing) / 2);
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  z-index: 100;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions .mwai-menu-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--mwai-conversationsTextColor);
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion.mwai-active {
+  cursor: pointer;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion.mwai-active .mwai-discussion-title {
+  background: var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  opacity: 1;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion:hover {
+  cursor: pointer;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion:hover .mwai-discussion-title {
+  background: var(--mwai-backgroundPrimaryColor);
+  border-radius: var(--mwai-borderRadius);
+  opacity: 1;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion:hover .mwai-discussion-actions {
+  opacity: 1;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion:has(.mwai-context-menu) .mwai-discussion-actions {
+  opacity: 1;
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussion:first-child {
+  margin-top: calc(var(--mwai-spacing) / 2);
+}
+.mwai-messages-theme.mwai-discussions .mwai-header {
+  color: var(--mwai-headerButtonsColor);
+  padding: var(--mwai-spacing);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.mwai-messages-theme.mwai-discussions .mwai-header button {
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--mwai-borderRadius);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+.mwai-messages-theme.mwai-discussions .mwai-header button:hover:not(:disabled) {
+  background: var(--mwai-iconTextBackgroundColor);
+}
+.mwai-messages-theme.mwai-discussions .mwai-header button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.mwai-messages-theme.mwai-discussions .mwai-header .mwai-refresh-btn {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mwai-messages-theme.mwai-discussions .mwai-body {
+  background: var(--mwai-conversationsBackgroundColor);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  z-index: 1;
+}
+.mwai-messages-theme.mwai-discussions .mwai-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--mwai-conversationsBackgroundColor);
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.mwai-messages-theme.mwai-discussions .mwai-spinner {
+  animation: spin 1s linear infinite;
+  color: var(--mwai-fontColor);
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mwai-messages-theme.mwai-discussions .mwai-pagination {
+  background: var(--mwai-backgroundHeaderColor);
+  padding: var(--mwai-spacing);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--mwai-backgroundPrimaryColor);
+}
+.mwai-messages-theme.mwai-discussions .mwai-pagination button {
+  background: var(--mwai-backgroundPrimaryColor);
+  color: var(--mwai-fontColor);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--mwai-borderRadius);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mwai-messages-theme.mwai-discussions .mwai-pagination button:hover:not(:disabled) {
+  background: var(--mwai-iconTextBackgroundColor);
+}
+.mwai-messages-theme.mwai-discussions .mwai-pagination button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.mwai-messages-theme.mwai-discussions .mwai-pagination span {
+  color: var(--mwai-headerButtonsColor);
+  font-size: var(--mwai-fontSize);
+  font-weight: 500;
+}
+.mwai-messages-theme.mwai-discussions .mwai-pagination .mwai-page-indicator {
+  color: var(--mwai-headerButtonsColor);
+  font-size: calc(var(--mwai-fontSize) * 0.85);
+  font-weight: 400;
+  opacity: 0.8;
+}
 
 .mwai-messages-theme .mwai-realtime .mwai-visualizer hr {
   border: 1px solid var(--mwai-backgroundAiSecondaryColor);
@@ -1091,5 +1311,3 @@
     margin: 15px 0 0 0;
   }
 }
-
-/*# sourceMappingURL=messages.css.map */

@@ -1,13 +1,13 @@
-// Previous: 2.5.7
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 import Styled from "styled-components";
 
 import { nekoFetch } from '@neko-ui';
-import { NekoPage, NekoSelect, NekoOption, NekoModal, NekoButton, NekoCheckbox, NekoContainer, NekoSpacer,
+import { NekoPage, NekoSelect, NekoOption, NekoModal, NekoButton, NekoCheckbox, NekoSpacer,
   NekoProgress, NekoTextArea, NekoWrapper, NekoColumn,
-  NekoInput, NekoMessage, NekoQuickLinks, NekoLink } from '@neko-ui';
+  NekoInput, NekoQuickLinks, NekoLink, NekoContainer, NekoTypo } from '@neko-ui';
 import { apiUrl, restNonce, session, options, restUrl } from '@app/settings';
 import { toHTML, useModels, OptionsCheck } from '@app/helpers-admin';
 import { AiNekoHeader, StyledGallery,
@@ -43,7 +43,7 @@ const StyledInputWrapper = Styled.div`
 `;
 
 const ImageGenerator = () => {
-  const { template, templates, setTemplate, jsxTemplates } = useTemplates('imagesGenerator');
+  const { template, setTemplate, jsxTemplates } = useTemplates('imagesGenerator');
   const [ error, setError ] = useState();
   const searchParams = new URLSearchParams(window.location.search);
   const editId = searchParams.get('editId');
@@ -115,7 +115,7 @@ const ImageGenerator = () => {
       setCaption('');
       setAlt('');
     }
-  }, [selectedUrl, urls, prompt]);
+  }, [selectedUrl]);
 
   useEffect(() => {
     if (editId) {
@@ -123,7 +123,7 @@ const ImageGenerator = () => {
         .then(res => res.json())
         .then(data => setEditImageUrl(data.source_url));
     }
-  }, [editId, restUrl]);
+  }, [editId]);
 
   const addToQueue = () => {
     if (!prompt) {
@@ -247,7 +247,7 @@ const ImageGenerator = () => {
           url: selectedUrl, title, description,
           caption, alt, filename,
         }});
-      setCreatedMediaIds(prevIds => [...prevIds, {
+      setCreatedMediaIds(prev => [...prev, {
         id: res.attachmentId,
         url: selectedUrl
       }]);
@@ -264,11 +264,6 @@ const ImageGenerator = () => {
     }
   };
 
-  const currentCreatedMediaId = useMemo(() => {
-    const found = createdMediaIds.find(media => media.url === selectedUrl);
-    return found ? found.id : null;
-  }, [selectedUrl, createdMediaIds]);
-
   return (
     <NekoPage nekoErrors={[]}>
 
@@ -278,7 +273,14 @@ const ImageGenerator = () => {
 
         <OptionsCheck options={options} />
 
-        {/* Left column: Templates, Prompt */}
+        {options?.intro_message && (
+          <NekoColumn fullWidth>
+            <NekoContainer style={{ marginBottom: 0 }}>
+              <NekoTypo p>{toHTML(i18n.COMMON.IMAGES_GENERATOR_INTRO)}</NekoTypo>
+            </NekoContainer>
+          </NekoColumn>
+        )}
+
         <NekoColumn style={{ flex: 1 }}>
           <StyledSidebar>
             {mode === 'edit' && editImageUrl &&
@@ -292,7 +294,7 @@ const ImageGenerator = () => {
           <StyledSidebar>
             {!selectedUrl && <>
               <h2 style={{ marginTop: 0 }}>{toHTML(i18n.COMMON.PROMPT)}</h2>
-              <NekoTextArea value={prompt} onChange={setPrompt} rows={10}
+              <NekoTextArea value={prompt} onChange={(val) => setPrompt(val)} rows={10}
                 placeholder="Enter your prompt here..." />
               <NekoSpacer tiny />
               <StyledTitleWithButton>
@@ -308,12 +310,12 @@ const ImageGenerator = () => {
                   <div style={{ marginTop: 5 }}>
                     <NekoSelect scrolldown id="totalImagesToGenerate" name="totalImagesToGenerate"
                       style={{ width: '100%' }}
-                      value={totalImagesToGenerate} onChange={value => setTotalImagesToGenerate(value)}>
-                      {ImagesCount.map((count) => {
-                        return <NekoOption key={count} id={count} value={count}
+                      value={totalImagesToGenerate} onChange={(value) => setTotalImagesToGenerate(Number(value))}>
+                      {ImagesCount.map((count) => (
+                        <NekoOption key={count} id={count} value={count}
                           label={`${count} ${count > 1 ? 'Images' : 'Image'}`}
-                        />;
-                      })}
+                        />
+                      ))}
                     </NekoSelect>
                   </div>
                 </div>
@@ -329,7 +331,6 @@ const ImageGenerator = () => {
               {i18n.COMMON.GENERATE}
             </NekoButton>
           </StyledSidebar>
-
         </NekoColumn>
 
         {/* Center Column: Results */}
@@ -353,7 +354,6 @@ const ImageGenerator = () => {
           </NekoQuickLinks>
 
           <NekoSpacer />
-
 
           <NekoProgress busy={busy} value={processedTasks} max={totalTasks}
             onStopClick={onStop}
@@ -388,23 +388,23 @@ const ImageGenerator = () => {
                   <div style={{ flex: 1, marginLeft: 10, display: 'flex', flexDirection: 'column' }}>
                     <StyledInputWrapper>
                       <label>Title:</label>
-                      <NekoInput value={title} onChange={setTitle} />
+                      <NekoInput value={title} onChange={(e) => setTitle(e.target.value)} />
                     </StyledInputWrapper>
                     <StyledInputWrapper>
                       <label>Caption:</label>
-                      <NekoTextArea value={caption} onBlur={setCaption} rows={2} />
+                      <NekoTextArea value={caption} onChange={(e) => setCaption(e.target.value)} rows={2} />
                     </StyledInputWrapper>
                     <StyledInputWrapper>
                       <label>Description:</label>
-                      <NekoTextArea value={description} onBlur={setDescription} rows={2} />
+                      <NekoTextArea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
                     </StyledInputWrapper>
                     <StyledInputWrapper>
                       <label>Alternative Text:</label>
-                      <NekoTextArea value={alt} onBlur={setAlt} rows={2} />
+                      <NekoTextArea value={alt} onChange={(e) => setAlt(e.target.value)} rows={2} />
                     </StyledInputWrapper>
                     <StyledInputWrapper>
                       <label>Filename:</label>
-                      <NekoInput value={filename} onChange={setFilename} />
+                      <NekoInput value={filename} onChange={(e) => setFilename(e.target.value)} />
                     </StyledInputWrapper>
                     <NekoSpacer tiny />
                     <NekoButton onClick={onGenerateMeta} isBusy={busyMetadata}>
@@ -424,13 +424,13 @@ const ImageGenerator = () => {
                     <div key={url} className="image-wrapper" onClick={() => setSelectedUrl(url)}>
                       <img src={url} />
                       {media && (
-                        <div className="media-label" onClick={e => { e.stopPropagation(); window.open(`/wp-admin/post.php?post=${media.id}&action=edit`, '_blank'); }}>
+                        <div className="media-label" onClick={(e) => { e.stopPropagation(); window.open(`/wp-admin/post.php?post=${media.id}&action=edit`, '_blank'); }}>
                           Media #{media.id}
                         </div>
                       )}
-                      <div className="delete-icon" onClick={e => {
+                      <div className="delete-icon" onClick={(e) => {
                         e.stopPropagation();
-                        setUrls(urls.filter(u => u !== url));
+                        setUrls(prevUrls => prevUrls.filter(u => u !== url));
                         setCreatedMediaIds(prevIds => prevIds.filter(m => m.url !== url));
                       }}>&times;</div>
                     </div>
@@ -451,7 +451,7 @@ const ImageGenerator = () => {
             <label>{i18n.COMMON.ENVIRONMENT}:</label>
             <NekoSpacer tiny />
             <NekoSelect scrolldown name="envId"
-              value={template?.envId ?? ""} onChange={setTemplateProperty}>
+              value={template?.envId ?? ""} onChange={(e) => setTemplateProperty(e.target.value, 'envId')}>
               {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
               <NekoOption value={""} label={"None"}></NekoOption>
             </NekoSelect>
@@ -459,7 +459,7 @@ const ImageGenerator = () => {
             <label>{i18n.COMMON.MODEL}:</label>
             <NekoSpacer tiny />
             <NekoSelect scrolldown name="model"
-              value={template?.model} onChange={setTemplateProperty}>
+              value={template?.model} onChange={(e) => setTemplateProperty(e.target.value, 'model')}>
               {imageModels.map((x) => (
                 <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
               ))}
@@ -468,7 +468,7 @@ const ImageGenerator = () => {
             <label>{i18n.COMMON.RESOLUTION}:</label>
             <NekoSpacer tiny />
             <NekoSelect scrolldown name="resolution"
-              value={template?.resolution} onChange={setTemplateProperty}>
+              value={template?.resolution} onChange={(e) => setTemplateProperty(e.target.value, 'resolution')}>
               {currentModel?.resolutions?.map((x) => (
                 <NekoOption key={x.name} value={x.name} label={x.label}></NekoOption>
               ))}
@@ -478,13 +478,13 @@ const ImageGenerator = () => {
               <label>Custom Resolution:</label>
               <NekoSpacer tiny />
               <NekoInput name="customResolution" value={template?.customResolution}
-                onChange={(value) => setTemplateProperty(value, 'customResolution')} />
-            </>}
+                onChange={(e) => setTemplateProperty(e.target.value, 'customResolution')} />
+            </NekoFragment>}
             {currentModel?.model?.startsWith('dall-e-3') && <>
               <NekoSpacer tiny />
               <label>{i18n.COMMON.STYLE}:</label>
               <NekoSpacer tiny />
-              <NekoSelect scrolldown name="style" value={currentStyle} onChange={setTemplateProperty}>
+              <NekoSelect scrolldown name="style" value={currentStyle} onChange={(e) => setTemplateProperty(e.target.value, 'style')}>
                 <NekoOption key={'none'} value={null} label={'None'}></NekoOption>
                 <NekoOption key={'natural'} value={'natural'} label={'Natural'}></NekoOption>
                 <NekoOption key={'vivid'} value={'vivid'} label={'Vivid'}></NekoOption>

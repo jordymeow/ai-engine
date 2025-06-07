@@ -164,6 +164,13 @@ class Meow_MWAI_Rest
         'callback' => [ $this, 'rest_ai_json' ],
       ) );
 
+      // MCP Endpoints
+      register_rest_route( $this->namespace, '/mcp/functions', array(
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_functions' ],
+      ) );
+
       // Helpers Endpoints
       register_rest_route( $this->namespace, '/helpers/update_post_title', array(
         'methods' => 'POST',
@@ -1010,6 +1017,26 @@ class Meow_MWAI_Rest
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() ); 
+      return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  function rest_mcp_functions( $request ) {
+    try {
+      // Get all registered MCP tools
+      $tools = apply_filters( 'mwai_mcp_tools', [] );
+      
+      // Format the response
+      $response = [
+        'success' => true,
+        'count' => count( $tools ),
+        'functions' => $tools
+      ];
+      
+      return new WP_REST_Response( $response, 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
       return new WP_REST_Response([ 'success' => false, 'message' => $message ], 500 );
     }
   }

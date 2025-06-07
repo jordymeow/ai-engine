@@ -1,5 +1,5 @@
-// Previous: 2.3.1
-// Current: 2.3.5
+// Previous: 2.3.5
+// Current: 2.8.3
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
@@ -160,6 +160,11 @@ const retrieveOptions = async () => {
   return res?.options;
 };
 
+const retrieveEmbeddingsEnvironments = async () => {
+  const options = await retrieveOptions();
+  return options?.embeddings_envs || [];
+};
+
 //#endregion
 
 //#region Logs
@@ -189,5 +194,5 @@ export { retrievePostTypes, retrievePostsCount, retrievePostContent,
   retrieveFilesFromOpenAI, retrieveFiles, deleteFiles, setAssistantFunctions,
   retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
   retrieveChatbots, retrieveThemes, updateChatbots, updateThemes,
-  refreshLogs, clearLogs
+  refreshLogs, clearLogs, retrieveEmbeddingsEnvironments
 };

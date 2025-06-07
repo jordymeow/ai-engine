@@ -22,7 +22,6 @@
 	--mwai-backgroundAiSecondaryColor: #ddd;
 	--mwai-errorBackgroundColor: #6d2f2a;
 	--mwai-errorTextColor: #FFFFFF;
-
 	--mwai-headerHeight: 80px;
 
 	font-size: var(--mwai-fontSize);
@@ -52,7 +51,7 @@
 		}
 	}
 
-	.mwai-content {
+	.mwai-body {
 		display: flex;
 		background: var(--mwai-backgroundPrimaryColor);
 		font-size: var(--mwai-fontSize);
@@ -627,94 +626,6 @@
 }
 
 // Discussions
-.mwai-timeless-theme.mwai-discussions {
-	border-radius: var(--mwai-borderRadius);
-	background: var(--mwai-conversationsBackgroundColor);
-	color: var(--mwai-backgroundPrimaryColor);
-	overflow: hidden;
-
-	* {
-		box-sizing: border-box;
-	}
-
-	.mwai-discussion {
-		display: flex;
-		gap: 5px;
-		padding-left: calc(var(--mwai-spacing) / 2);
-		padding-right: calc(var(--mwai-spacing) / 2);
-		padding-bottom: calc(var(--mwai-spacing) / 2);
-		color: var(--mwai-conversationsTextColor);
-		opacity: 0.65;
-		justify-content: space-between;
-		align-items: center;
-
-		.mwai-discussion-title {
-			flex: auto;
-			padding: 5px;
-		}
-
-		.mwai-discussion-actions {
-			display: flex;
-			gap: 1px;
-	
-			.mwai-icon {
-				width: 30px;
-				height: 30px;
-				background: var(--mwai-iconTextBackgroundColor);
-				color: var(--mwai-iconTextColor);
-				border-radius: 50%;
-				cursor: pointer;
-				transition: all 0.2s ease-out;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-	
-				&:hover {
-					color: white;
-					background: blue;
-	
-					&.mwai-danger {
-						background: red;
-					}
-				}
-			}
-		}
-
-		&.mwai-active, &:hover {
-			cursor: pointer;
-
-			.mwai-discussion-title {
-				color: var(--mwai-backgroundPrimaryColor);
-				background: var(--mwai-backgroundHeaderColor);
-				border-radius: var(--mwai-borderRadius);
-				opacity: 1;
-			}
-		}
-
-		&:first-child {
-			margin-top: calc(var(--mwai-spacing) / 2);
-		}
-	}
-
-	.mwai-header {
-		background: var(--mwai-backgroundAiSecondaryColor);
-		padding: var(--mwai-spacing);
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.mwai-content {
-		background: var(--mwai-conversationsBackgroundColor);
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	button {
-		margin-left: 0;
-	}
-}
 
 // Common
 .mwai-timeless-theme {
@@ -722,6 +633,7 @@
 	@include code-light;
 	@include reply-actions;
 	@include realtime;
+	@include discussions-styles;
 }
 
 // Common Overrides
@@ -783,7 +695,7 @@
 			width: calc(100% - 40px);
 			z-index: 9999999999;
 
-			&.mwai-open .mwai-content {
+			&.mwai-open .mwai-body {
 				height: calc(100vh - var(--mwai-headerHeight));
 			}
 		}

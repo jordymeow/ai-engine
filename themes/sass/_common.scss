@@ -1,5 +1,205 @@
 // main: chatgpt.scss, messages.scss
 
+@mixin discussions-styles {
+	&.mwai-discussions {
+		border-radius: var(--mwai-borderRadius);
+		background: var(--mwai-backgroundHeaderColor);
+		overflow: hidden;
+
+		* {
+			box-sizing: border-box;
+		}
+
+		.mwai-discussion {
+			display: flex;
+			position: relative;
+			padding-left: calc(var(--mwai-spacing) / 2);
+			padding-right: calc(var(--mwai-spacing) / 2);
+			padding-bottom: calc(var(--mwai-spacing) / 2);
+			color: var(--mwai-conversationsTextColor);
+			opacity: 0.65;
+			align-items: center;
+
+			.mwai-discussion-title {
+				flex: 1;
+				padding: 5px;
+			}
+
+			.mwai-discussion-actions {
+				position: absolute;
+				top: 50%;
+				right: calc(var(--mwai-spacing) / 2);
+				transform: translateY(-50%);
+				opacity: 0;
+				transition: opacity 0.2s ease-out;
+				z-index: 100;
+	
+				.mwai-menu-icon {
+					width: 28px;
+					height: 28px;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					cursor: pointer;
+					color: var(--mwai-conversationsTextColor);
+				}
+
+			}
+
+			&.mwai-active {
+				cursor: pointer;
+
+				.mwai-discussion-title {
+					background: var(--mwai-backgroundPrimaryColor);
+					border-radius: var(--mwai-borderRadius);
+					opacity: 1;
+				}
+			}
+			
+			&:hover {
+				cursor: pointer;
+
+				.mwai-discussion-title {
+					background: var(--mwai-backgroundPrimaryColor);
+					border-radius: var(--mwai-borderRadius);
+					opacity: 1;
+				}
+
+				.mwai-discussion-actions {
+					opacity: 1;
+				}
+			}
+
+			// Keep actions visible when menu is open
+			&:has(.mwai-context-menu) {
+				.mwai-discussion-actions {
+					opacity: 1;
+				}
+			}
+
+			&:first-child {
+				margin-top: calc(var(--mwai-spacing) / 2);
+			}
+		}
+
+		.mwai-header {
+			color: var(--mwai-headerButtonsColor);
+			padding: var(--mwai-spacing);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 10px;
+
+			button {
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
+				border: none;
+				padding: 8px 16px;
+				border-radius: var(--mwai-borderRadius);
+				cursor: pointer;
+				transition: all 0.2s ease-out;
+
+				&:hover:not(:disabled) {
+					background: var(--mwai-iconTextBackgroundColor);
+				}
+
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+				}
+			}
+
+			.mwai-refresh-btn {
+				padding: 8px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+		}
+
+		.mwai-body {
+			background: var(--mwai-conversationsBackgroundColor);
+			list-style: none;
+			padding: 0;
+			margin: 0;
+			position: relative;
+			min-height: 200px;
+			display: flex;
+			flex-direction: column;
+			border-radius: 0;
+			z-index: 1;
+		}
+
+		.mwai-loading-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--mwai-conversationsBackgroundColor);
+			opacity: 0.9;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 10;
+		}
+
+		.mwai-spinner {
+			animation: spin 1s linear infinite;
+			color: var(--mwai-fontColor);
+		}
+
+		@keyframes spin {
+			from { transform: rotate(0deg); }
+			to { transform: rotate(360deg); }
+		}
+
+		.mwai-pagination {
+			background: var(--mwai-backgroundHeaderColor);
+			padding: var(--mwai-spacing);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			border-top: 1px solid var(--mwai-backgroundPrimaryColor);
+
+			button {
+				background: var(--mwai-backgroundPrimaryColor);
+				color: var(--mwai-fontColor);
+				border: none;
+				padding: 8px 12px;
+				border-radius: var(--mwai-borderRadius);
+				cursor: pointer;
+				transition: all 0.2s ease-out;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+
+				&:hover:not(:disabled) {
+					background: var(--mwai-iconTextBackgroundColor);
+				}
+
+				&:disabled {
+					opacity: 0.3;
+					cursor: not-allowed;
+				}
+			}
+
+			span {
+				color: var(--mwai-headerButtonsColor);
+				font-size: var(--mwai-fontSize);
+				font-weight: 500;
+			}
+
+			.mwai-page-indicator {
+				color: var(--mwai-headerButtonsColor);
+				font-size: calc(var(--mwai-fontSize) * 0.85);
+				font-weight: 400;
+				opacity: 0.8;
+			}
+		}
+	}
+}
+
 @mixin file-upload-icon-sprites {
 	$icon-size: 32px;
 
@@ -95,7 +295,7 @@
 		border-radius: 0;
 	} 
 
-  .mwai-content {
+  .mwai-body {
     height: 100%;
     max-height: inherit;
 		border-radius: 0;
@@ -169,7 +369,7 @@
 				color: var(--mwai-iconTextColor);
 				background: var(--mwai-iconTextBackgroundColor);
 				padding: 5px;
-				width: 20px;
+				width: 30px;
 				height: 20px;
 				border-radius: 100%;
 				display: none;
@@ -299,7 +499,7 @@
 			}
 		}
 
-		.mwai-content {
+		.mwai-body {
 			display: none;
 			opacity: 0;
 			max-height: var(--mwai-maxHeight);
@@ -400,7 +600,7 @@
 			display: flex;
 		}
 
-		.mwai-content {
+		.mwai-body {
 			display: flex;
 			transition: opacity 200ms ease-in-out 0s;
 			opacity: 1;
@@ -478,7 +678,7 @@
 				}
 			}
 	
-			.mwai-content {
+			.mwai-body {
 				display: flex;
 				transition: opacity 200ms ease-in-out 0s;
 				opacity: 1;
@@ -864,6 +1064,165 @@
 				&.mwai-active {
 					opacity: 1;
 				}
+			}
+		}
+	}
+}
+
+// Context Menu Portal (appears at document body level)
+.mwai-context-menu-portal {
+	.mwai-context-menu {
+		background: var(--mwai-backgroundHeaderColor);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		border-radius: var(--mwai-borderRadius);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		font-size: 13px;
+		color: var(--mwai-fontColor);
+
+		.mwai-menu-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px 12px;
+			cursor: pointer;
+			transition: background-color 0.2s;
+
+			&:hover {
+				background-color: rgba(0, 0, 0, 0.05);
+			}
+
+			&.mwai-danger {
+				color: #dc3545;
+
+				&:hover {
+					background-color: rgba(220, 53, 69, 0.1);
+				}
+			}
+
+			svg {
+				flex-shrink: 0;
+			}
+		}
+	}
+}
+
+
+// ChatbotChunks - Debug Stream Events Display
+.mwai-chunks {
+	padding: 8px;
+	background: rgba(0, 0, 0, 0.03);
+	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	font-size: 11px;
+	border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+	&.mwai-chunks-collapsed {
+		.mwai-chunks-header {
+			margin-bottom: 0 !important;
+		}
+	}
+
+	.mwai-chunks-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 8px;
+		color: #6b7280;
+		font-size: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+
+		.mwai-chunks-title {
+			flex: 1; // This pushes the buttons to the right
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.mwai-chunks-status {
+			margin-left: 4px;
+			font-weight: 500;
+		}
+
+		.mwai-chunks-toggle {
+			background: none;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 3px;
+			padding: 2px;
+			width: 30px;
+			height: 20px;
+			cursor: pointer;
+			color: #6b7280;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s ease;
+			margin-left: 4px;
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.05);
+				color: #374151;
+			}
+		}
+	}
+
+	.mwai-chunk {
+		margin-bottom: 4px;
+		padding: 6px 8px;
+		background: white;
+		border-radius: 4px;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+		transition: all 0.2s ease;
+
+		.mwai-chunk-header {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			cursor: pointer;
+			user-select: none;
+
+			.mwai-chunk-time {
+				color: #9ca3af;
+				font-size: 10px;
+				font-variant-numeric: tabular-nums;
+			}
+
+			.mwai-chunk-type {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				padding: 2px 6px;
+				border-radius: 3px;
+				font-size: 10px;
+				font-weight: 500;
+				color: white;
+			}
+
+			.mwai-chunk-data {
+				flex: 1;
+				color: #374151;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.mwai-chunk-expand {
+				color: #9ca3af;
+				transition: transform 0.2s ease;
+			}
+		}
+
+		.mwai-chunk-details {
+			margin-top: 8px;
+			padding: 8px;
+			background: rgba(0, 0, 0, 0.02);
+			border-radius: 3px;
+			overflow-x: auto;
+
+			pre {
+				margin: 0;
+				white-space: pre-wrap;
+				word-break: break-word;
+				color: #4b5563;
 			}
 		}
 	}

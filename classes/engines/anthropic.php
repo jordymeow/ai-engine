@@ -7,10 +7,37 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
   protected $streamOutTokens = null;
   protected $streamBlocks;
   protected $streamIsThinking = false;
+  protected $mcpServerNames = [];
+  protected $mcpTools = []; // Track MCP tools by ID
+  protected $mcpToolCount = 0;
 
   public function __construct( $core, $env )
   {
     parent::__construct( $core, $env );
+  }
+  
+  protected function isMCPTool( $toolName ) {
+    // Get all MCP tools from the filter
+    $mcpTools = apply_filters( 'mwai_mcp_tools', [] );
+    
+    // Log available MCP tools for debugging
+    if ( empty( $mcpTools ) ) {
+      Meow_MWAI_Logging::log( "Anthropic: No MCP tools available from filter" );
+    }
+    
+    foreach ( $mcpTools as $tool ) {
+      if ( isset( $tool['name'] ) && $tool['name'] === $toolName ) {
+        Meow_MWAI_Logging::log( "Anthropic: Found MCP tool match: {$toolName}" );
+        return true;
+      }
+    }
+    
+    // If we have MCP servers but tool not found, it might be an issue
+    if ( !empty( $this->mcpServerNames ) && !empty( $toolName ) ) {
+      Meow_MWAI_Logging::log( "Anthropic: Tool '{$toolName}' not found in MCP tools list" );
+    }
+    
+    return false;
   }
 
   public function reset_stream() {
@@ -22,6 +49,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
     $this->streamInTokens = null;
     $this->streamOutTokens = null;
     $this->streamIsThinking = false;
+    $this->mcpTools = []; // Reset MCP tools tracking
+    $this->textStarted = false; // Reset text started flag
+    $this->requestSentEmitted = false; // Reset request sent flag
+    $this->emittedFunctionResults = []; // Reset function result tracking
 
     $this->streamBlocks = [
       'role' => 'assistant',
@@ -54,7 +85,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
       'Content-Type' => 'application/json',
       'x-api-key' => $this->apiKey,
       'anthropic-version' => '2023-06-01',
-      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25',
+      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04',
       'User-Agent' => 'AI Engine',
     );
     return $headers;
@@ -216,6 +247,26 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
                 ]
               ]
             ];
+            
+            // Emit function result event if streaming and debug mode are enabled
+            if ( $this->currentDebugMode && !empty( $this->streamCallback ) ) {
+              $toolId = $feedback['request']['toolId'] ?? null;
+              // Only emit if we haven't already emitted for this tool
+              if ( $toolId && !isset( $this->emittedFunctionResults[$toolId] ) ) {
+                $this->emittedFunctionResults[$toolId] = true;
+                
+                $functionName = $feedback['request']['name'];
+                $resultPreview = (string)$feedbackValue;
+                if ( strlen( $resultPreview ) > 100 ) {
+                  $resultPreview = substr( $resultPreview, 0, 100 ) . '...';
+                }
+                
+                $event = Meow_MWAI_Event::function_result( $functionName )
+                  ->set_metadata( 'result', $resultPreview )
+                  ->set_metadata( 'tool_use_id', $toolId );
+                call_user_func( $this->streamCallback, $event );
+              }
+            }
           }
         }
       }
@@ -296,6 +347,38 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
       }
 
       $body['messages'] = $this->build_messages( $query );
+
+      // Add MCP servers if available
+      if ( isset( $query->mcpServers ) && is_array( $query->mcpServers ) && ! empty( $query->mcpServers ) ) {
+        $body['mcp_servers'] = [];
+        $mcp_envs = $this->core->get_option( 'mcp_envs' );
+        $this->mcpServerNames = []; // Reset MCP server names
+        
+        foreach ( $query->mcpServers as $mcpServer ) {
+          if ( isset( $mcpServer['id'] ) ) {
+            // Find the full MCP server configuration by ID
+            foreach ( $mcp_envs as $env ) {
+              if ( $env['id'] === $mcpServer['id'] ) {
+                $mcp_config = [
+                  'type' => 'url',
+                  'url' => $env['url'],
+                  'name' => $env['name']
+                ];
+                
+                // Add authorization token if available
+                if ( ! empty( $env['token'] ) ) {
+                  $mcp_config['authorization_token'] = $env['token'];
+                }
+                
+                $body['mcp_servers'][] = $mcp_config;
+                $this->mcpServerNames[] = $env['name']; // Track MCP server names
+                break;
+              }
+            }
+          }
+        }
+      }
+
       return $body;
     }
     else {
@@ -315,20 +398,59 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
       $this->streamInTokens = $usage['input_tokens'];
       $this->inModel = $json['message']['model'];
       $this->inId = $json['message']['id'];
+      
+      // Send MCP discovery event if MCP servers are configured
+      if ( $this->currentDebugMode && $this->streamCallback ) {
+        if ( !empty( $this->mcpServerNames ) ) {
+          $serverCount = count( $this->mcpServerNames );
+          
+          // Get MCP tools count
+          $mcpTools = apply_filters( 'mwai_mcp_tools', [] );
+          $toolCount = count( $mcpTools );
+          
+          $event = Meow_MWAI_Event::mcp_discovery( $serverCount, $toolCount )
+            ->set_metadata( 'servers', $this->mcpServerNames );
+          call_user_func( $this->streamCallback, $event );
+        }
+      }
     }
     else if ( $type === 'content_block_start' ) {
       $this->streamBlocks['content'][] = $json['content_block'];
+      
+      // Send "Generating response..." when we start a text block
+      if ( $this->currentDebugMode && $this->streamCallback ) {
+        $block = $json['content_block'];
+        if ( $block['type'] === 'text' && !isset( $this->textStarted ) ) {
+          $this->textStarted = true;
+          $event = Meow_MWAI_Event::generating_response();
+          call_user_func( $this->streamCallback, $event );
+        }
+      }
     }
     else if ( $type === 'content_block_delta' ) { 
       $index = $json['index'];
       $block = $this->streamBlocks['content'][$index];
       if ( $json['delta']['type'] === 'text_delta' ) { 
         $block['text'] .= $json['delta']['text'];
-        if ( strpos( $block['text'], '<thinking' ) === 0 ) {
+        $isThinkingStart = strpos( $block['text'], '<thinking' ) === 0;
+        $isThinkingEnd = strpos( $block['text'], '</thinking>' ) === 0;
+        
+        if ( $isThinkingStart ) {
           $this->streamIsThinking = true;
+          // Send thinking start event
+          if ( $this->currentDebugMode && $this->streamCallback ) {
+            $event = Meow_MWAI_Event::thinking( 'Thinking...' );
+            call_user_func( $this->streamCallback, $event );
+          }
         }
-        if ( strpos( $block['text'], '</thinking>' ) === 0 ) {
+        if ( $isThinkingEnd ) {
           $this->streamIsThinking = false;
+          // Send thinking end event
+          if ( $this->currentDebugMode && $this->streamCallback ) {
+            $event = Meow_MWAI_Event::thinking( 'Thinking completed.' )
+              ->set_metadata( 'status', 'completed' );
+            call_user_func( $this->streamCallback, $event );
+          }
         }
         $content = $json['delta']['text'];
       }
@@ -336,6 +458,15 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
         // Somehow, the input is set as an array, but it should be a string since it's JSON.
         $block['input'] = is_array( $block['input'] ) ? "" : $block['input'];
         $block['input'] .= $json['delta']['partial_json'];
+        
+        // Skip sending tool arguments event - too verbose
+        // if ( $this->currentDebugMode && $this->streamCallback && isset($block['type']) && $block['type'] === 'tool_use' ) {
+        //   $event = ( new Meow_MWAI_Event( 'live', MWAI_STREAM_TYPES['TOOL_ARGS'] ) )
+        //     ->set_content( 'Streaming tool arguments...' )
+        //     ->set_metadata( 'tool_name', $block['name'] ?? 'unknown' )
+        //     ->set_metadata( 'partial_args', $json['delta']['partial_json'] );
+        //   call_user_func( $this->streamCallback, $event );
+        // }
       }
       $this->streamBlocks['content'][$index] = $block;
     }
@@ -347,6 +478,43 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
         $block['input'] = json_decode( $block['input'], true );
       }
       $this->streamBlocks['content'][$index] = $block;
+      
+      // Send event for content block completion
+      if ( $this->currentDebugMode && $this->streamCallback ) {
+        if ( $block['type'] === 'mcp_tool_use' ) {
+          // Store the tool name for later lookup when we get the result
+          $this->mcpTools[$block['id']] = $block['name'];
+          
+          $event = Meow_MWAI_Event::mcp_calling( $block['name'], $block['id'], $block['input'] ?? [] )
+            ->set_metadata( 'server_name', $block['server_name'] ?? 'unknown' );
+          call_user_func( $this->streamCallback, $event );
+        }
+        else if ( $block['type'] === 'mcp_tool_result' ) {
+          // Look up the tool name from the tool_use_id
+          $tool_use_id = $block['tool_use_id'] ?? '';
+          $tool_name = isset( $this->mcpTools[$tool_use_id] ) ? $this->mcpTools[$tool_use_id] : 'unknown';
+          
+          $event = Meow_MWAI_Event::mcp_result( $tool_name, $tool_use_id )
+            ->set_metadata( 'content', $block['content'] ?? '' );
+          call_user_func( $this->streamCallback, $event );
+        }
+        else if ( $block['type'] === 'tool_use' ) {
+          // Regular tool use (non-MCP)
+          $event = Meow_MWAI_Event::function_calling( $block['name'] ?? 'unknown', $block['input'] ?? [] )
+            ->set_metadata( 'tool_id', $block['id'] ?? '' );
+          call_user_func( $this->streamCallback, $event );
+        }
+        else if ( $block['type'] === 'text' ) {
+          // Don't send any event here - the text generation is handled by content deltas
+          // and completion is handled by message_stop
+        }
+        else if ( $block['type'] === 'ping' ) {
+          // https://docs.anthropic.com/en/docs/build-with-claude/streaming#ping-events
+        }
+        else {
+          Meow_MWAI_Logging::log( "Anthropic: Unknown block type in content_block_stop: " . $block['type'] );
+        }
+      }
     }
     else if ( $type === 'message_delta' ) {
       $usage = $json['usage'];
@@ -355,7 +523,26 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
     else if ( $type === 'error' ) {
       $error = $json['error'];
       $message = $error['message'];
+      
+      // Send error event
+      if ( $this->currentDebugMode && $this->streamCallback ) {
+        $event = Meow_MWAI_Event::error( $message )
+          ->set_metadata( 'error_type', $error['type'] ?? 'unknown' );
+        call_user_func( $this->streamCallback, $event );
+      }
+      
       throw new Exception( $message );
+    }
+    else if ( $type === 'message_stop' ) {
+      // Skip sending completion event - too verbose
+      // if ( $this->currentDebugMode && $this->streamCallback ) {
+      //   $event = Meow_MWAI_Event::stream_completed()
+      //     ->set_metadata( 'total_tokens', ($this->streamInTokens ?? 0) + ($this->streamOutTokens ?? 0) );
+      //   call_user_func( $this->streamCallback, $event );
+      // }
+    }
+    else {
+      Meow_MWAI_Logging::log( "Anthropic: Unknown stream data type: $type" );
     }
 
     // Avoid some endings
@@ -378,6 +565,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
     $returned_choices = [];
     foreach ( $data['content'] as $content ) {
       if ( $content['type'] === 'tool_use' ) {
+        // Regular function calls need local execution
         $returned_choices[] = [ 
           'message' => [ 
             'tool_calls' => [
@@ -407,6 +595,9 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
 
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
     $isStreaming = !is_null( $streamCallback );
+    
+    // Initialize debug mode
+    $this->init_debug_mode( $query );
 
     if ( $isStreaming ) {
       $this->streamCallback = $streamCallback;
@@ -486,6 +677,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML
   protected function get_service_name() {
     return "Anthropic";
   }
+
 
   public function get_models() {
     return apply_filters( 'mwai_anthropic_models', MWAI_ANTHROPIC_MODELS );

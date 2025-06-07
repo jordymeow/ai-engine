@@ -1,5 +1,5 @@
-// Previous: 2.4.5
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.8.3
 
 const { useState, useMemo } = wp.element;
 
@@ -12,8 +12,8 @@ import {
   NekoSpacer,
   NekoQuickLinks,
   NekoLink,
-  NekoCollapsableCategories,
-  NekoCollapsableCategory,
+  NekoAccordions,
+  NekoAccordion,
 } from '@neko-ui';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -29,14 +29,6 @@ const UsageDetails = ({ month, usageData }) => {
 
   return (
     <table style={{ width: 'calc(100% - 36px)', margin: '5px 18px 0px 18px', borderCollapse: 'collapse' }}>
-      {/* <thead>
-        <tr>
-          <th style={{ textAlign: 'left', paddingRight: 10 }}>Model</th>
-          <th style={{ textAlign: 'left', paddingRight: 10 }}>Unit</th>
-          <th style={{ textAlign: 'right', paddingRight: 10 }}>Value</th>
-          <th style={{ textAlign: 'right' }}>Price</th>
-        </tr>
-      </thead> */}
       <tbody>
         {usageData[month].map((data, index) => {
           const dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
@@ -76,8 +68,8 @@ const MonthlyUsage = ({ options }) => {
         const modelUsage = monthUsage[model];
         const modelObj = getModel(model);
 
-        let inUnits = 0;
-        let outUnits = 0;
+        let inUnits = null;
+        let outUnits = null;
         let isAudio = false;
         let isImage = false;
 
@@ -261,13 +253,13 @@ const MonthlyUsage = ({ options }) => {
 
           <NekoSpacer size="medium" />
 
-          <NekoCollapsableCategories keepState="monthlyUsageCategories">
+          <NekoAccordions keepState="monthlyUsageCategories">
             {Object.keys(usageData).reverse().map((month, index) => (
-              <NekoCollapsableCategory key={index} title={`🗓️ ${month} (${usageData[month].reduce((acc, curr) => acc + curr.price, 0).toFixed(2)}$)`}>
+              <NekoAccordion key={index} title={`🗓️ ${month} (${usageData[month].reduce((acc, curr) => acc + curr.price, 0).toFixed(2)}$)`}>
                 <UsageDetails month={month} usageData={usageData} />
-              </NekoCollapsableCategory>
+              </NekoAccordion>
             ))}
-          </NekoCollapsableCategories>
+          </NekoAccordions>
         </>
       )}
     </>

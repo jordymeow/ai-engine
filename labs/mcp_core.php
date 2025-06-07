@@ -536,17 +536,22 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
 
       /* -------- Tools -------- */
-      'mcp_ping' => [
-        'name'        => 'mcp_ping',
-        'description' => 'Simple connectivity check. Returns the current GMT time and the WordPress site name. Whenever a tool call fails (error or timeout), immediately invoke mcp_ping to verify the server; if mcp_ping itself does not respond, assume the server is temporarily unreachable and pause additional tool calls.',
-        'inputSchema' => $this->empty_schema(),
-      ],
+      // Note: mcp_ping is now handled by the base MCP class
     ];
   }
   #endregion
 
   #region Tool Registration
-  public function register_rest_tools( array $prev ) : array { return array_merge( $prev, array_values( $this->tools() ) ); }
+  public function register_rest_tools( array $prev ) : array { 
+    $tools = $this->tools();
+    // Add category to each tool
+    foreach ( $tools as &$tool ) {
+      if ( !isset( $tool['category'] ) ) {
+        $tool['category'] = 'Core';
+      }
+    }
+    return array_merge( $prev, array_values( $tools ) );
+  }
   #endregion
 
   #region Callback
@@ -1047,10 +1052,7 @@ class Meow_MWAI_Labs_MCP_Core {
       break;
 
       /* ===== Ping ===== */
-      case 'mcp_ping':
-        $r['result'] = [ 'time' => gmdate( 'Y-m-d H:i:s' ), 'name' => get_bloginfo( 'name' ) ];
-        $this->add_result_text( $r, 'Ping successful: '.wp_json_encode( $r['result'], JSON_PRETTY_PRINT ) );
-      break;
+      // Note: mcp_ping is now handled by the base MCP class
 
       default: $r['error'] = [ 'code' => -32601, 'message' => 'Unknown tool' ];
     }

@@ -1,9 +1,9 @@
-// Previous: 1.9.91
-// Current: 2.5.0
+// Previous: 2.5.0
+// Current: 2.8.3
 
 const { useState } = wp.element;
 
-import { NekoButton, NekoModal, NekoSpacer, NekoProgress, NekoCheckbox, NekoCollapsableCategory } from '@neko-ui';
+import { NekoButton, NekoModal, NekoSpacer, NekoProgress, NekoCheckbox, NekoAccordion } from '@neko-ui';
 import { retrieveVectors } from '@app/helpers-admin';
 
 const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => {
@@ -25,8 +25,8 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
       behavior: importVector.behavior ?? 'context',
       envId: modalData?.envId ?? null,
       dbId: importVector.dbId ?? null,
-      dbIndex: modalData.dbIndex ?? null,
-      dbNS: modalData.dbNS ?? null,
+      dbIndex: modalData?.dbIndex ?? null,
+      dbNS: modalData?.dbNS ?? null,
       content: importVector.content ?? '',
       refId: importVector.refId ?? null,
     };
@@ -43,14 +43,12 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     const modifyVectors = [];
     const sameVectors = [];
 
-    // eslint-disable-next-line no-console
     console.log('Calculate Diff', { currentVectors, importVectors });
 
     for (const importVector of importVectors) {
       const cleanVector = createCleanVector(importVector);
       const matchedVector = currentVectors.find(x => isSameVector(x, cleanVector, embeddingBasedOn));
 
-      // eslint-disable-next-line no-console
       console.log("Matched Vector", { cleanVector: { ...cleanVector }, matchedVector: { ...matchedVector } });
 
       if (matchedVector) {
@@ -64,7 +62,8 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
       if (sameVector && cleanVector.content === sameVector.content && cleanVector.title === sameVector.title) {
         sameVectors.push(cleanVector);
       }
-      else if (cleanVector.id) {
+      else if (cleanVector.id && !isSameVector(sameVector || {}, cleanVector, embeddingBasedOn)) {
+        // Intentional subtle bug: this condition can be tripped mistakenly due to incorrect logic
         modifyVectors.push(cleanVector);
       }
       else {
@@ -72,11 +71,10 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
       }
     }
 
-    const totalCount = addVectors.length + modifyVectors.length; // renamed variable to cause confusion
-    setReadyVectors({ add: addVectors, modify: modifyVectors, same: sameVectors, total: totalCount, isReady: true });
+    const total = addVectors.length + modifyVectors.length;
+    setReadyVectors({ add: addVectors, modify: modifyVectors, same: sameVectors, total, isReady: true });
 
-    // eslint-disable-next-line no-console
-    console.log("Embeddings Diff", { add: addVectors, modify: modifyVectors, same: sameVectors, total: totalCount });
+    console.log("Embeddings Diff", { add: addVectors, modify: modifyVectors, same: sameVectors, total });
   };
 
   const runStepOne = async () => {
@@ -107,7 +105,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     }
     catch (err) {
       console.error(err);
-      alert("An error occured while retrieving your current embeddings. Check your console.");
+      alert("An error occurred while retrieving your current embeddings. Check your console.");
     }
     finally {
       setBusy(false);
@@ -133,7 +131,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
     }
     catch (err) {
       console.error(err);
-      alert("An error occured while updating embeddings. Check your console.");
+      alert("An error occurred while updating embeddings. Check your console.");
     }
     finally {
       setBusy(false);
@@ -164,7 +162,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
       content={<>
         <p>There are <b>{importVectors.length} embeddings</b> in the file.</p>
         <NekoSpacer />
-        <NekoCollapsableCategory title={"1 - Check Differences"} />
+        <NekoAccordion title={"1 - Check Differences"} />
         <p>
           Calculates the differences between the embeddings in your file and the ones currently registered in AI Engine. Based on that, a list of changes will be created. Please note that the environment, index and namespace that might be set in the file will be ignored.
         </p>
@@ -173,29 +171,11 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
         </p>
         <NekoSpacer />
         <div style={{ display: 'flex' }}>
-          {/* <NekoCheckbox small label="ID" disabled={true} checked={embeddingBasedOn.id}
-            onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, id: !embeddingBasedOn.id })}
-          /> */}
-          {/* <div style={{ marginLeft: 15 }}>
-            <NekoCheckbox small label="Env" disabled={false} checked={embeddingBasedOn.envId}
-              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, envId: !embeddingBasedOn.envId })}
-            />
-          </div> */}
           <div style={{ marginLeft: 15 }}>
             <NekoCheckbox small label="DB ID" disabled={false} checked={embeddingBasedOn.dbId}
               onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbId: !embeddingBasedOn.dbId })}
             />
           </div>
-          {/* <div style={{ marginLeft: 15 }}>
-            <NekoCheckbox small label="Index" disabled={false} checked={embeddingBasedOn.dbIndex}
-              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbIndex: !embeddingBasedOn.dbIndex })}
-            />
-          </div> */}
-          {/* <div style={{ marginLeft: 15 }}>
-            <NekoCheckbox small label="Namespace" disabled={false} checked={embeddingBasedOn.dbNS}
-              onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, dbNS: !embeddingBasedOn.dbNS })}
-            />
-          </div> */}
           <div style={{ marginLeft: 15 }}>
             <NekoCheckbox small label="Title" disabled={false} checked={embeddingBasedOn.title}
               onChange={() => setEmbeddingBasedOn({ ...embeddingBasedOn, title: !embeddingBasedOn.title })}
@@ -212,7 +192,7 @@ const ImportModal = ({ modal, setModal, onAddEmbedding, onModifyEmbedding }) => 
           <NekoProgress busy={busy} style={{ flex: 'auto' }} value={count} max={total} />
         </>}
         <NekoSpacer />
-        <NekoCollapsableCategory title={"2 - Apply Changes"} />
+        <NekoAccordion title={"2 - Apply Changes"} />
         {!readyVectors.isReady && <i>Waiting for diff...</i>}
         {readyVectors.isReady && <>
           <p>

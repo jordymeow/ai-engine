@@ -3,7 +3,7 @@
 // Params for the chatbot (front and server)
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle' ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'parentBotId' ] );
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'parentBotId' ] );
 
 // Params for the discussions (front and server)
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
@@ -479,8 +479,27 @@ class Meow_MWAI_Modules_Chatbot {
 					}
 				}
 
+				// Setup streaming if enabled (before embeddings to capture those events)
+				$streamCallback = null;
+				if ( $stream ) {
+					$streamCallback = function( $reply ) use ( $query ) {
+						// Support both legacy string data and new Event objects
+						if ( is_string( $reply ) ) {
+							$this->core->stream_push( [ 'type' => 'live', 'data' => $reply ], $query );
+						} else {
+							$this->core->stream_push( $reply, $query );
+						}
+					};
+					header( 'Cache-Control: no-cache' );
+					header( 'Content-Type: text/event-stream' );
+					// This is useful to disable buffering in nginx through headers.
+					header( 'X-Accel-Buffering: no' );
+					ob_implicit_flush( true );
+					ob_end_flush();
+				}
+
 				// Awareness & Embeddings
-				$context = $this->core->retrieve_context( $params, $query );
+				$context = $this->core->retrieve_context( $params, $query, $streamCallback );
 				if ( !empty( $context ) ) {
 					$query->set_context( $context['content'] );
 				}
@@ -490,22 +509,6 @@ class Meow_MWAI_Modules_Chatbot {
 			}
 
 			// Process Query
-			if ( $stream ) { 
-				$streamCallback = function( $reply ) use ( $query ) {
-					$raw = $reply;
-					$this->core->stream_push( [ 'type' => 'live', 'data' => $raw ], $query );
-					// if ( ob_get_level() > 0 ) {
-					// 	ob_flush();
-					// }
-					// flush();
-				};
-				header( 'Cache-Control: no-cache' );
-				header( 'Content-Type: text/event-stream' );
-				// This is useful to disable buffering in nginx through headers.
-				header( 'X-Accel-Buffering: no' );
-				ob_implicit_flush( true );
-				ob_end_flush();
-			}
 
 			$reply = $this->core->run_query( $query, $streamCallback, true );
 			$rawText = $reply->result;
@@ -795,7 +798,26 @@ class Meow_MWAI_Modules_Chatbot {
 
 		// Front System
 		$frontSystem = $this->build_front_params( $botId, $customId );
-		$frontSystem['refreshInterval'] = apply_filters( 'mwai_discussions_refresh_interval', 5000 );
+		// Get refresh interval from settings
+		$refresh_interval = $this->core->get_option( 'chatbot_discussions_refresh_interval' );
+		if ( $refresh_interval === 'Never' ) {
+			$frontSystem['refreshInterval'] = 0;
+		} elseif ( $refresh_interval === 'Manual' ) {
+			$frontSystem['refreshInterval'] = -1;
+		} elseif ( is_numeric( $refresh_interval ) ) {
+			$frontSystem['refreshInterval'] = intval( $refresh_interval ) * 1000; // Convert to milliseconds
+		} else {
+			$frontSystem['refreshInterval'] = 5000; // Default to 5 seconds
+		}
+		$frontSystem['refreshInterval'] = apply_filters( 'mwai_discussions_refresh_interval', $frontSystem['refreshInterval'] );
+		
+		// Get paging setting
+		$paging_option = $this->core->get_option( 'chatbot_discussions_paging' );
+		if ( $paging_option === 'None' ) {
+			$frontSystem['paging'] = 0; // No pagination
+		} else {
+			$frontSystem['paging'] = is_numeric( $paging_option ) ? intval( $paging_option ) : 10; // Default to 10
+		}
 
     // Clean Params
 		$frontParams = $this->clean_params( $frontParams );

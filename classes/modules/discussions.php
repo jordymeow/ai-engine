@@ -256,7 +256,14 @@ class Meow_MWAI_Modules_Discussions {
     try {
       $params = $request->get_json_params();
       $offset = isset( $params['offset'] ) ? $params['offset'] : 0;
-      $limit = isset( $params['limit'] ) ? $params['limit'] : 10;
+      // Get paging setting from options
+      $paging_option = $this->core->get_option( 'chatbot_discussions_paging' );
+      if ( $paging_option === 'None' ) {
+        $default_limit = 999; // Show all discussions
+      } else {
+        $default_limit = is_numeric( $paging_option ) ? intval( $paging_option ) : 10; // Fallback to 10
+      }
+      $limit = isset( $params['limit'] ) ? $params['limit'] : $default_limit;
       $botId = isset( $params['botId'] ) ? $params['botId'] : null;
       $customId = isset( $params['customId'] ) ? $params['customId'] : null;
 

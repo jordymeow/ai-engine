@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 const regexNodeModules = /[\\/]node_modules[\\/]/;
 const regexNekoUI = /[\\/]neko-ui[\\/]/;
 
@@ -14,7 +15,8 @@ module.exports = function (env, options) {
     protectWebpackAssets: false,
     cleanOnceBeforeBuildPatterns: ["!app/"],
     cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
-      '!forms.js', '*.LICENSE.txt', '*.map'],
+      '!forms.js', '!pdfjs.js', '*.LICENSE.txt', '*.map'],
+    dangerouslyAllowCleanPatternsOutsideProject: true
   });
 
   const plugins = [];
@@ -24,13 +26,35 @@ module.exports = function (env, options) {
   if (isAnalysis && env && env.entry === 'chatbot') {
     plugins.push(new BundleAnalyzerPlugin());
   }
+  // Copy PDF.js worker (loaded dynamically when needed)
+  plugins.push(new CopyPlugin({
+    patterns: [
+      { 
+        from: path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
+        to: path.resolve(__dirname, 'app/vendor/pdf.worker.min.js')
+      }
+    ]
+  }));
   plugins.push({
     apply: (compiler) => {
-      compiler.hooks.emit.tapAsync('AfterEmitPlugin', (compilation, callback) => {
-        const filePath = path.join(__dirname, 'premium', 'forms.js.LICENSE.txt');
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
+      compiler.hooks.afterEmit.tapAsync('CleanupLicenseFiles', (compilation, callback) => {
+        // Remove all LICENSE.txt files
+        const licenseFiles = [
+          path.join(__dirname, 'app', 'vendor.js.LICENSE.txt'),
+          path.join(__dirname, 'app', 'index.js.LICENSE.txt'),
+          path.join(__dirname, 'app', 'chatbot.js.LICENSE.txt'),
+          path.join(__dirname, 'app', 'pdfjs.js.LICENSE.txt'),
+          path.join(__dirname, 'app', 'vendor', 'pdf.worker.min.js.LICENSE.txt'),
+          path.join(__dirname, 'premium', 'forms.js.LICENSE.txt')
+        ];
+        
+        licenseFiles.forEach(filePath => {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log('Removed LICENSE file:', filePath);
+          }
+        });
+        
         callback();
       });
     }
@@ -103,13 +127,27 @@ module.exports = function (env, options) {
     cache: { type: "filesystem" },
     optimization: {
       minimize: isProduction ? true : false,
+      minimizer: isProduction ? [
+        new (require('terser-webpack-plugin'))({
+          extractComments: false, // Don't extract LICENSE comments to separate files
+        })
+      ] : [],
       splitChunks: {
         chunks: 'all',
-        name: 'vendor',
         cacheGroups: {
+          pdfjs: {
+            test: /[\\/]node_modules[\\/]pdfjs-dist[\\/]/,
+            name: 'pdfjs',
+            chunks: 'async',
+            priority: 20
+          },
           vendor: {
             test: function (module) {
               if (module.resource) {
+                // Exclude PDF.js from vendor bundle to allow dynamic loading
+                if (module.context.includes('pdfjs-dist')) {
+                  return false;
+                }
                 return (module.context.match(regexNodeModules) || module.context.match(regexNekoUI));
               }
             },

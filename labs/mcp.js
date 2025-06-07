@@ -30,6 +30,26 @@ const toDomain = s => new URL(/^https?:/.test(s) ? s : `https://${s}`).hostname.
 const sseURL   = u => u.replace(/\/+$/, '') + '/wp-json/mcp/v1/sse/';
 const die      = m => { console.error(m); process.exit(1); };
 
+/* colors for terminal output */
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  green: '\x1b[32m',     // server data
+  blue: '\x1b[34m',      // info
+  lightblue: '\x1b[94m', // test commands
+  white: '\x1b[37m'      // script messages
+};
+const c = (color, text) => `${colors[color]}${text}${colors.reset}`;
+
+/* ASCII cat welcome */
+const showWelcome = () => {
+  console.error(c('white', ''));
+  console.error(c('white', '  /\\_/\\'));
+  console.error(c('white', ' ( o.o )'));
+  console.error(c('white', '  > ^ <   Welcome to MCP by AI Engine'));
+  console.error(c('white', ''));
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // paths & persistent state
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,7 +98,8 @@ add    <site-url> [token]      Register / update site (and set Claude target)
 remove <domain|url>           Unregister site
 list                          Show sites
 claude [domain|url]           Show / change Claude target
-start  [domain|url]           Verbose relay
+select                        Interactively select a site for Claude
+start  [domain|url] [--raw]   Verbose relay (add --raw for JSON responses)
 relay  <domain|url>           Silent relay (for Claude Desktop)
 post   <domain> <json> <sid>  Fire raw JSON-RPC (debug)
 help                          This help
@@ -89,6 +110,7 @@ switch (cmd) {
   case 'remove': removeSite(args[0]);   break;
   case 'list':   listSites();           break;
   case 'claude': claudeCmd(args[0]);    break;
+  case 'select': selectSite();          break;
   case 'start':
   case 'relay':  launchRelay(cmd, args[0]); break;
   case 'post':   firePost(args);        break;
@@ -115,8 +137,16 @@ function removeSite(ref) {
 }
 function listSites() {
   if (!Object.keys(sites).length) return console.log('(no sites)');
-  for (const s of Object.values(sites))
-    console.log('•', s.url, s.token ? '(token set)' : '');
+  
+  const active = activeDomain();
+  if (!active) {
+    console.log('Claude is not configured to use any of your sites.');
+  }
+  
+  for (const [domain, site] of Object.entries(sites)) {
+    const marker = active === domain ? '→' : '•';
+    console.log(marker, site.url);
+  }
 }
 function claudeCmd(ref) {
   if (!ref) return console.log(activeDomain()
@@ -126,6 +156,35 @@ function claudeCmd(ref) {
   sites[dom] = sites[dom] || { url: full, token: '' };
   saveSites(); setClaudeTarget(dom);
   console.log('✓ Claude →', sites[dom].url);
+}
+function selectSite() {
+  const siteList = Object.entries(sites);
+  if (!siteList.length) return console.log('No sites registered. Use "add" to register a site first.');
+  
+  if (siteList.length === 1) {
+    const [domain, site] = siteList[0];
+    setClaudeTarget(domain);
+    return console.log('✓ Claude →', site.url);
+  }
+  
+  console.log('Select a site for Claude:');
+  siteList.forEach(([domain, site], i) => {
+    const current = activeDomain() === domain ? ' (current)' : '';
+    console.log(`  ${i + 1}. ${site.url}${current}`);
+  });
+  
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  rl.question('\nEnter selection (1-' + siteList.length + '): ', (answer) => {
+    const choice = parseInt(answer) - 1;
+    if (choice >= 0 && choice < siteList.length) {
+      const [domain, site] = siteList[choice];
+      setClaudeTarget(domain);
+      console.log('✓ Claude →', site.url);
+    } else {
+      console.log('Invalid selection');
+    }
+    rl.close();
+  });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,21 +210,27 @@ async function firePost([dom, json, sid]) {
 ////////////////////////////////////////////////////////////////////////////////
 function launchRelay(mode, ref) {
   const dom = pickSite(ref);
-  runRelay(sites[dom], mode === 'start')
+  const isVerbose = mode === 'start';
+  const showRaw = process.argv.includes('--raw');
+  runRelay(sites[dom], isVerbose, showRaw)
     .catch(e => { logError('fatal', e); process.exit(1); });
 }
 function pickSite(ref) {
   if (ref) return toDomain(ref);
+  
+  const active = activeDomain();
+  if (active && sites[active]) return active;
+  
   const keys = Object.keys(sites);
   if (!keys.length) die('no sites registered');
   if (keys.length === 1) return keys[0];
-  die('multiple sites: ' + keys.join(', '));
+  die('multiple sites: ' + keys.join(', ') + ' (use "select" to choose)');
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // relay core
 ////////////////////////////////////////////////////////////////////////////////
-async function runRelay(site, verbose) {
+async function runRelay(site, verbose, showRaw = false) {
   const fetchFn = global.fetch || (await import('node-fetch')).default;
 
   /* ---- tiny disk logs ---- */
@@ -249,7 +314,14 @@ async function runRelay(site, verbose) {
 
   /* ---- connect to SSE ---- */
   const endpoint = sseURL(site.url);
-  verbose ? console.error('▶ connect', endpoint) : process.stderr.write('AI Engine relay started\n');
+  if (verbose) {
+    showWelcome();
+    console.error(c('white', '▶ Connecting to MCP server'));
+    console.error(c('blue', endpoint));
+    console.error('');
+  } else {
+    process.stderr.write('AI Engine relay started\n');
+  }
 
   while (!closing) {
     messagesURL = null;
@@ -290,7 +362,7 @@ async function runRelay(site, verbose) {
         return;
       }
 
-      verbose && console.error('SSE connected');
+      verbose && console.error(c('white', '✓ SSE connection established'));
 
       const dec = new TextDecoder();
       let buf = '';
@@ -321,12 +393,127 @@ async function runRelay(site, verbose) {
 
     if (evt === 'endpoint') {
       messagesURL = data;
-      verbose && console.error('↪ messages', data);
+      if (verbose) {
+        console.error(c('white', '✓ MCP server connected'));
+        console.error(c('green', data));
+        console.error('');
+        
+        // Extract session_id from URL
+        const sessionMatch = data.match(/session_id=([^&]+)/);
+        if (sessionMatch) {
+          const sessionId = sessionMatch[1];
+          const domain = toDomain(site.url);
+          const toolsCmd = `${SELF} post ${domain} '{"jsonrpc":"2.0","method":"tools/list","id":1}' ${sessionId}`;
+          const pingCmd = `${SELF} post ${domain} '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"mcp_ping","arguments":{}},"id":2}' ${sessionId}`;
+          
+          console.error(c('white', 'Test the connection in another terminal:'));
+          console.error(c('white', 'Simple ping test:'));
+          console.error(c('lightblue', pingCmd));
+          console.error('');
+          console.error(c('white', 'List all available tools:'));
+          console.error(c('lightblue', toolsCmd));
+          console.error('');
+          console.error(c('white', 'For raw JSON responses, add'), c('lightblue', '--raw'), c('white', 'to any command'));
+          console.error(c('blue', 'Results will appear in this terminal.'));
+          console.error('');
+        }
+      }
       backlog.splice(0).forEach(b => forward(b.rawLine, b.id));
       return;
     }
 
     if (evt === 'message' && !data) return;     // heartbeat
+    
+    // Show received data message in verbose mode
+    if (verbose) {
+      try {
+        const obj = JSON.parse(data);
+        if ('id' in obj) {
+          console.error(c('white', `▼ Response for ID ${obj.id}:`));
+          
+          // Show raw JSON if requested
+          if (showRaw) {
+            console.error(c('green', JSON.stringify(obj, null, 2)));
+          }
+          // Format MCP tool results nicely
+          else if (obj.result) {
+            console.error(c('green', '✓ Success'));
+            
+            // Special formatting for mcp_ping
+            if (obj.result.data && obj.result.data.time && obj.result.data.name) {
+              console.error(c('white', `Time: ${obj.result.data.time}`));
+              console.error(c('white', `Site: ${obj.result.data.name}`));
+              if (obj.result.data.tools_count !== undefined) {
+                console.error(c('white', `Tools: ${obj.result.data.tools_count} available`));
+              }
+            }
+            // Special formatting for tools/list
+            else if (obj.result.tools && Array.isArray(obj.result.tools)) {
+              console.error(c('white', `Found ${obj.result.tools.length} tools:\n`));
+              
+              obj.result.tools.forEach((tool, index) => {
+                // Tool name and description
+                console.error(c('bright', `${index + 1}. ${tool.name || 'unnamed'}`));
+                if (tool.description) {
+                  console.error(c('white', `   ${tool.description}`));
+                }
+                
+                // Input parameters
+                if (tool.inputSchema && tool.inputSchema.properties) {
+                  const props = tool.inputSchema.properties;
+                  const required = tool.inputSchema.required || [];
+                  const propKeys = Object.keys(props);
+                  
+                  if (propKeys.length > 0) {
+                    console.error(c('blue', '   Parameters:'));
+                    propKeys.forEach(key => {
+                      const prop = props[key];
+                      const isRequired = required.includes(key);
+                      const reqIcon = isRequired ? '*' : '-';
+                      const typeInfo = prop.type ? ` (${prop.type})` : '';
+                      const desc = prop.description ? ` - ${prop.description}` : '';
+                      console.error(c('white', `     ${reqIcon} ${key}${typeInfo}${desc}`));
+                    });
+                  } else {
+                    console.error(c('blue', '   No parameters required'));
+                  }
+                } else {
+                  console.error(c('blue', '   No parameters required'));
+                }
+                console.error(''); // Empty line between tools
+              });
+            }
+            // Fallback for other structured data
+            else if (obj.result.data) {
+              console.error(c('white', 'Data:'));
+              console.error(c('green', JSON.stringify(obj.result.data, null, 2)));
+            }
+            // Generic result display
+            else {
+              console.error(c('green', JSON.stringify(obj.result, null, 2)));
+            }
+          } 
+          // Handle errors
+          else if (obj.error) {
+            console.error(c('white', '✗ Error:'));
+            console.error(c('green', `${obj.error.code}: ${obj.error.message}`));
+          }
+          // Fallback to raw JSON for other responses
+          else {
+            console.error(c('green', JSON.stringify(obj, null, 2)));
+          }
+          
+          console.error('');
+          // Don't forward to console.log in verbose mode for responses with IDs
+          return;
+        }
+      } catch (e) {
+        console.error(c('white', 'Received Data:'));
+        console.error(c('green', data));
+        console.error('');
+      }
+    }
+    
     console.log(data);                          // forward as-is
 
     try {

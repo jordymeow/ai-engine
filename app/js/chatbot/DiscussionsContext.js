@@ -1,5 +1,5 @@
-// Previous: 2.7.7
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
 // React & Vendor Libs
 const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
@@ -20,7 +20,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const { system, theme } = rest;
   const [discussions, setDiscussions] = useState([]);
   const [discussion, setDiscussion] = useState(null);
+  const [currentChatId, setCurrentChatId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [paginationBusy, setPaginationBusy] = useState(false);
   const shortcodeStyles = useMemo(() => theme?.settings || {}, [theme]);
 
   // System Parameters
@@ -33,23 +37,52 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
   // UI Parameters
   const cssVariables = useMemo(() => {
-    const cssVariables = Object.keys(shortcodeStyles).reduce((acc, key) => {
+    const cssVars = Object.keys(shortcodeStyles).reduce((acc, key) => {
       acc[`--mwai-${key}`] = shortcodeStyles[key];
       return acc;
     }, {});
-    return cssVariables;
+    return cssVars;
   }, [shortcodeStyles]);
 
   const hasEmptyDiscussion = useMemo(() => {
     return discussions.some(discussion => discussion.messages.length === 0);
   }, [discussions]);
 
-  const refresh = useCallback(async (silentRefresh = false) => {
+  const getStoredChatId = useCallback(() => {
+    const chatbot = MwaiAPI.getChatbot(botId);
+    const localStorageKey = chatbot?.localStorageKey;
+    if (localStorageKey) {
+      try {
+        const storedData = localStorage.getItem(localStorageKey);
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          return parsedData.chatId;
+        }
+      } catch (e) {
+        console.error('Error reading chatbot storage:', e);
+      }
+    }
+    return null;
+  }, [botId]);
+
+  const refresh = useCallback(async (silentRefresh = false, page = currentPage, isPagination = false) => {
+    let startTime;
     try {
       if (!silentRefresh) {
-        setBusy(true);
+        startTime = Date.now();
+        if (isPagination) {
+          setPaginationBusy(true);
+        } else {
+          setBusy(true);
+        }
       }
-      const body = { botId: botId || customId };
+      const paging = system?.paging || 0;
+      const limit = paging > 0 ? paging : undefined;
+      const offset = paging > 0 ? page * paging : 0;
+      const body = { 
+        botId: botId || customId,
+        ...(limit && { limit, offset })
+      };
       if (debugMode) {
         console.log('[DISCUSSIONS] OUT: ', body);
       }
@@ -73,60 +106,85 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         const extra = JSON.parse(conversation.extra);
         return { ...conversation, messages, extra };
       });
+      
+      if (data.total !== undefined) {
+        setTotalCount(data.total);
+      }
 
-      // Merge server conversations with local discussions
       setDiscussions((prevDiscussions) => {
-        const discussionMap = new Map();
+        const paging = system?.paging || 0;
+        if (paging > 0) {
+          return conversations;
+        } else {
+          const discussionMap = new Map();
 
-        // Add local discussions to the map
-        prevDiscussions.forEach((disc) => {
-          discussionMap.set(disc.chatId, disc);
-        });
+          prevDiscussions.forEach((disc) => {
+            discussionMap.set(disc.chatId, disc);
+          });
 
-        // Update or add server discussions
-        conversations.forEach((serverDisc) => {
-          discussionMap.set(serverDisc.chatId, serverDisc);
-        });
+          conversations.forEach((serverDisc) => {
+            discussionMap.set(serverDisc.chatId, serverDisc);
+          });
 
-        const newDiscussions = Array.from(discussionMap.values());
+          const newDiscussions = Array.from(discussionMap.values());
 
-        // Update the selected discussion if necessary
-        if (discussion) {
-          const updatedDiscussion = newDiscussions.find(disc => disc.chatId === discussion.chatId);
-          if (updatedDiscussion && updatedDiscussion !== discussion) {
-            setDiscussion(updatedDiscussion);
+          if (discussion) {
+            const updatedDiscussion = newDiscussions.find(disc => disc.chatId === discussion.chatId);
+            // BUG: Missing null check, potentially sets same object
+            if (updatedDiscussion && updatedDiscussion !== discussion) {
+              setDiscussion(updatedDiscussion);
+            }
           }
-        }
 
-        return newDiscussions;
+          return newDiscussions;
+        }
       });
     } catch (err) {
       console.error(err);
     } finally {
-      if (!silentRefresh) {
-        setBusy(false);
+      if (!silentRefresh && startTime) {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 200 - elapsedTime);
+        setTimeout(() => {
+          if (isPagination) {
+            setPaginationBusy(false);
+          } else {
+            setBusy(false);
+          }
+        }, remainingTime);
       }
     }
-  }, [discussion]);
+  }, [discussion, currentPage, system?.paging, restNonce, restUrl, defaultDiscussion, debugMode, customId, botId]);
 
   const refreshInterval = system?.refreshInterval || 5000;
 
   useEffect(() => {
+    const storedChatId = getStoredChatId();
+    if (storedChatId && !currentChatId) {
+      setCurrentChatId(storedChatId);
+    }
     refresh();
-    const interval = setInterval(() => {
-      refresh(true);
-    }, refreshInterval);
-    return () => clearInterval(interval);
-  }, [refreshInterval]);
+    if (refreshInterval > 0) {
+      const interval = setInterval(() => {
+        refresh(true);
+      }, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [refreshInterval, currentPage]);
 
   useEffect(() => {
-    if (discussion) {
+    if (currentChatId && !discussion) {
+      const foundDiscussion = discussions.find(disc => disc.chatId === currentChatId);
+      if (foundDiscussion) {
+        setDiscussion(foundDiscussion);
+      }
+    } else if (discussion) {
       const updatedDiscussion = discussions.find(disc => disc.chatId === discussion.chatId);
       if (updatedDiscussion && updatedDiscussion !== discussion) {
         setDiscussion(updatedDiscussion);
       }
     }
-  }, [discussions]);
+  }, [discussions, currentChatId, discussion]);
 
   const getChatbot = (botId) => {
     const chatbot = MwaiAPI.getChatbot(botId);
@@ -143,22 +201,15 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    // Remove empty discussions that are not the selected one
-    setDiscussions((prevDiscussions) =>
-      prevDiscussions.filter(
-        (disc) => disc.messages.length > 0 || disc.chatId === chatId
-      )
-    );
-
     const chatbot = getChatbot(botId);
     chatbot.setContext({ chatId, messages: selectedDiscussion.messages });
     setDiscussion(selectedDiscussion);
+    setCurrentChatId(chatId);
   };
 
   const onEditDiscussion = async (discussionToEdit) => {
     const newTitle = prompt('Enter a new title for the discussion:', discussionToEdit.title || '');
     if (newTitle === null) {
-      // User cancelled the prompt
       return;
     }
     const trimmedTitle = newTitle.trim();
@@ -188,7 +239,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         throw new Error(`Could not update the discussion: ${data.message}`);
       }
 
-      // Update the discussions state
       setDiscussions((prevDiscussions) =>
         prevDiscussions.map((disc) =>
           disc.chatId === discussionToEdit.chatId ? { ...disc, title: trimmedTitle } : disc
@@ -228,14 +278,21 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         throw new Error(`Could not delete the discussion: ${data.message}`);
       }
 
-      // Update the discussions state
       setDiscussions((prevDiscussions) =>
         prevDiscussions.filter((disc) => disc.chatId !== discussionToDelete.chatId)
       );
 
-      // If the deleted discussion was selected, deselect it
       if (discussion?.chatId === discussionToDelete.chatId) {
         setDiscussion(null);
+        setCurrentChatId(null);
+      }
+
+      if (discussions.length === 1 && currentPage > 0) {
+        const newPage = currentPage - 1;
+        setCurrentPage(newPage);
+        refresh(false, newPage, true);
+      } else {
+        refresh(false, currentPage, true);
       }
     } catch (err) {
       console.error(err);
@@ -246,27 +303,15 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   };
 
   const onNewChatClick = async () => {
-    const existingEmptyDiscussion = discussions.find(disc => disc.messages.length === 0);
-    if (existingEmptyDiscussion) {
-      setDiscussion(existingEmptyDiscussion);
-      return;
-    }
-
     const chatbot = getChatbot(botId);
     const newChatId = randomStr();
-    chatbot.clear({ chatId: newChatId });
-    const newDiscussion = {
-      id: newChatId,
-      chatId: newChatId,
-      messages: [],
-      title: 'New Chat',
-      extra: {},
-    };
-    setDiscussion(newDiscussion);
-    setDiscussions((prevDiscussions) => [newDiscussion, ...prevDiscussions]);
+    // BUG: clearing context with non-existent chatId
+    chatbot.clear({ chatId: newChatId, extraneousProp: true });
+    setDiscussion(null);
+    setCurrentChatId(newChatId);
   };
 
-  const actions = { onDiscussionClick, onNewChatClick, onEditDiscussion, onDeleteDiscussion };
+  const actions = { onDiscussionClick, onNewChatClick, onEditDiscussion, onDeleteDiscussion, refresh, setCurrentPage };
 
   const state = {
     botId,
@@ -278,6 +323,10 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     discussion,
     theme,
     hasEmptyDiscussion,
+    currentPage,
+    totalCount,
+    system,
+    paginationBusy,
   };
 
   return (

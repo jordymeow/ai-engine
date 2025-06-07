@@ -1,5 +1,5 @@
-// Previous: 2.5.4
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 2.8.3
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { nekoStringify } from '@neko-ui';
 import Papa from 'papaparse';
 
 import { NekoTable, NekoPaging , NekoSwitch, NekoContainer, NekoButton, NekoIcon, NekoWrapper, NekoColumn,
-  NekoTabs, NekoTab, NekoToolbar, NekoCollapsableCategory, NekoCollapsableCategories,
+  NekoTabs, NekoTab, NekoToolbar, NekoAccordion, NekoAccordions,
   NekoSpacer, NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoMessage,
   NekoLink, NekoQuickLinks, NekoModal, NekoTextArea, NekoUploadDropArea } from '@neko-ui';
 import { nekoFetch, formatBytes, useNekoColors } from '@neko-ui';
@@ -142,7 +142,7 @@ const EditableText = ({ children, data, onChange = () => {} }) => {
     return <div onKeyUp={onKeyPress} style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
       <NekoTextArea onBlurForce autoFocus fullHeight rows={3} style={{ height: '100%', width: '100%' }}
         onEnter={onSave} onBlur={onSave} value={data} />
-      <NekoButton onClick={() => onSave(data)} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
+      <NekoButton onClick={onSave} fullWidth style={{ marginTop: 2, height: 35 }}>Save</NekoButton>
     </div>;
   }
 
@@ -264,7 +264,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   };
 
   const refreshFiles = async () => {
-    await queryClient.invalidateQueries(['datasets']);
+    await queryClient.invalidateQueries('datasets');
   };
 
   const onRefreshFiles = async () => {
@@ -447,33 +447,30 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onDeleteDataRow = (row, messageRow) => {
     const updatedEntries = [...entries];
-    if (updatedEntries[row - 1].messages) {
-      updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
-    }
+    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
     setEntries(updatedEntries);
   };
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow !== null && x.messages) {
-          x.messages = x.messages.map((y, j) => {
+        if (messageRow) {
+          return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content }; }
             return y;
-          });
-          return { ...x, messages: [...x.messages] };
-        } else if (role === 'assistant' && x.messages) {
-          x.messages = x.messages.map(y => {
+          })};
+        }
+        else if (role === 'assistant') {
+          return { ...x, messages: x.messages.map(y => {
             if (y.role === 'assistant') { return { ...y, content }; }
             return y;
-          });
-          return { ...x, messages: [...x.messages] };
-        } else if (role === 'user' && x.messages) {
-          x.messages = x.messages.map(y => {
+          })};
+        }
+        else if (role === 'user') {
+          return { ...x, messages: x.messages.map(y => {
             if (y.role === 'user') { return { ...y, content }; }
             return y;
-          });
-          return { ...x, messages: [...x.messages] };
+          })};
         }
       }
       return x;
@@ -488,16 +485,17 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
     return chunkOfBuilderData?.map(x => {
       const currentRow = ++row;
+
       let question = "";
       let answer = "";
       let messages = [];
 
       if (!isExpert) {
-        const potentialQuestion = x.messages?.find(x => x.role === 'user');
+        const potentialQuestion = x.messages.find(x => x.role === 'user');
         if (potentialQuestion) {
           question = potentialQuestion.content;
         }
-        const potentialAnswer = x.messages?.find(x => x.role === 'assistant');
+        const potentialAnswer = x.messages.find(x => x.role === 'assistant');
         if (potentialAnswer) {
           answer = potentialAnswer.content;
         }
@@ -603,8 +601,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateEnv('finetunes_deleted', [...deletedFineTunes, modelId]);
-        }
-        else {
+        } else {
           alert(res.message);
         }
       }
@@ -730,17 +727,20 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     const link = document.createElement('a');
     link.href = url;
     const date = new Date();
-    const filename = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}-WP.json`;
+    const filename = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-WP.json`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
-    link.remove();
+    document.body.removeChild(link);
   };
 
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataStr = entries.map(x => nekoStringify(x)).join("\n");
+      const dataStr = entries.map(x => {
+        const json = nekoStringify(x);
+        return json;
+      }).join("\n");
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce,
         json: { envId: envId, filename, data: dataStr }
       });
@@ -832,8 +832,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
             isMigration = true;
             const promptColumns = ['prompt', 'question', 'q'];
             const completionColumns = ['completion', 'reply', 'a'];
-            const promptKey = promptColumns.find(k => values[k]);
-            const completionKey = completionColumns.find(k => values[k]);
+            const promptKey = promptColumns.find(x => values[x]);
+            const completionKey = completionColumns.find(x => values[x]);
             const promptValue = values[promptKey];
             const completionValue = values[completionKey];
             const completionValueClean = completionValue?.replace(/\n\n$/g, '');
@@ -1045,9 +1045,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
               <NekoSpacer />
             </>}
 
-            <NekoCollapsableCategories keepState="datasetEditor">
+            <NekoAccordions keepState="datasetEditor">
 
-              <NekoCollapsableCategory title="Dataset">
+              <NekoAccordion title="Dataset">
 
                 <NekoSpacer tiny />
 
@@ -1075,9 +1075,9 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
                   </NekoButton>
                 </div>
 
-              </NekoCollapsableCategory>
+              </NekoAccordion>
 
-              <NekoCollapsableCategory title={i18n.COMMON.CONTEXT}>
+              <NekoAccordion title={i18n.COMMON.CONTEXT}>
 
                 <NekoSpacer />
 
@@ -1091,26 +1091,26 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
                   value={instructions} onBlur={updateInstructions} onEnter={updateInstructions}
                 />
 
-              </NekoCollapsableCategory>
+              </NekoAccordion>
 
-              <NekoCollapsableCategory title="Generator">
+              <NekoAccordion title="Generator">
                 <NekoSpacer />
                 <Generator options={options} instructions={instructions} setMessages={setEntries} />
                 <NekoMessage variant="danger">
                   Use this feature with caution. The AI will generate questions and answers for each of your post based on the given prompt, and they will be added to your dataset. Keep in mind that this process may be <u>extremely slow</u> and require a <u>significant number of API calls</u>, resulting in a <u>high cost</u>.
                 </NekoMessage>
-              </NekoCollapsableCategory>
+              </NekoAccordion>
 
-              <NekoCollapsableCategory title="Instructions">
+              <NekoAccordion title="Instructions">
                 <p>
                   You can create your dataset by importing a file (two columns, in the CSV, JSON or JSONL format) or manually by clicking <b>Add Entry</b>. For the format, check this <a rel="noreferrer" target="_blank" href="https://gist.github.com/jordymeow/a855df4a1f644bb3df8c78ea87c1a2ca">JSON Example</a> (more complex) or this <a rel="noreferrer" target="_blank" href="https://gist.github.com/jordymeow/e0c80ebeefe4d4d07ae39995c561ba4a">CSV Example</a> (simpler). <b>Writing datasets is actually complex.</b> Please have a look at OpenAI's <a href="https://platform.openai.com/docs/guides/fine-tuning/conditional-generation" target="_blank" rel="noreferrer">tutorials</a>. And here is Meow Apps' <a href="https://meowapps.com/wordpress-chatbot-finetuned-model-ai/" target="_blank" rel="noreferrer">simplified tutorial</a>. Is your dataset ready? Modify the filename to your liking and click <b>Upload to OpenAI</b>.
                 </p>
                 <p>
                   To avoid losing your work, this data is kept in your browser's local storage.
                 </p>
-              </NekoCollapsableCategory>
+              </NekoAccordion>
 
-            </NekoCollapsableCategories>
+            </NekoAccordions>
 
           </NekoTab>
 

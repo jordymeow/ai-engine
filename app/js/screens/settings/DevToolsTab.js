@@ -1,5 +1,5 @@
-// Previous: 2.7.7
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
 /* eslint-disable no-console */
 // React & Vendor Libs
@@ -35,7 +35,7 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
   };
 
   const onRunTask = async () => {
-    runTasks(); // Missing await intentionally
+    await runTasks();
   };
 
   const jsxDevMode =
@@ -58,19 +58,6 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
         onChange={updateOption} />
     </NekoSettings>;
 
-  const jsxMcpModule =
-    <NekoSettings title="SSE Endpoint">
-      <NekoCheckbox name="module_mcp" label={i18n.COMMON.ENABLE} value="1" checked={module_mcp}
-        description="Enable the /wp-json/mcp/v1/sse endpoint. Check the labs/mcp.md for more information."
-        onChange={updateOption} />
-    </NekoSettings>;
-
-  const jsxBearerToken =
-  <NekoSettings title={i18n.COMMON.BEARER_TOKEN}>
-    <NekoInput name="mcp_bearer_token" value={options?.mcp_bearer_token}
-      description={toHTML(i18n.HELP.MCP_BEARER_TOKEN)}
-      onBlur={updateOption} />
-  </NekoSettings>;
 
   return (<>
     <NekoWrapper>
@@ -81,13 +68,6 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
           <NekoButton onClick={onRunTask}>Run Tasks</NekoButton>
           <p>This button will force the AI Engine to run the tasks. Normally, the AI Engine runs the tasks every 10 minutes. This button will force the AI Engine to run the tasks immediately.
           </p>
-        </NekoBlock>
-        <NekoBlock title="Model Context Protocol (MCP)" className="primary">
-          <p>
-            Check the tutorial <a href="https://meowapps.com/claude-wordpress-mcp/" target="_blank" rel="noopener noreferrer">here</a> for more information about MCP and how to use it with AI Engine. The Pro version of AI Engine adds theme support, allowing Claude (or other agents) to fork, create, and modify WordPress themes directly.
-          </p>
-          {jsxMcpModule}
-          {jsxBearerToken}
         </NekoBlock>
       </NekoColumn>
       <NekoColumn minimal>

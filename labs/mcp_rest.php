@@ -31,6 +31,7 @@ class Meow_MWAI_Labs_MCP_Rest {
               $tools[ "list_{$resource}" ] = [
                 'name' => "list_{$resource}",
                 'description' => "List {$resource}",
+                'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
               ];
@@ -45,6 +46,7 @@ class Meow_MWAI_Labs_MCP_Rest {
               $tools[ "get_{$resource}" ] = [
                 'name' => "get_{$resource}",
                 'description' => "Get single {$resource} by ID",
+                'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
               ];
@@ -59,6 +61,7 @@ class Meow_MWAI_Labs_MCP_Rest {
               $tools[ "create_{$resource}" ] = [
                 'name' => "create_{$resource}",
                 'description' => "Create {$resource}",
+                'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
               ];
@@ -74,6 +77,7 @@ class Meow_MWAI_Labs_MCP_Rest {
               $tools[ "update_{$resource}" ] = [
                 'name' => "update_{$resource}",
                 'description' => "Update {$resource}",
+                'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
               ];
@@ -88,6 +92,7 @@ class Meow_MWAI_Labs_MCP_Rest {
               $tools[ "delete_{$resource}" ] = [
                 'name' => "delete_{$resource}",
                 'description' => "Delete {$resource}",
+                'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
               ];
@@ -209,11 +214,12 @@ class Meow_MWAI_Labs_MCP_Rest {
     }
 
     $response = rest_do_request( $request );
-    $reply = [ 'jsonrpc' => '2.0', 'id' => $id ];
 
     if ( is_wp_error( $response ) || $response->get_status() >= 400 ) {
       $error_obj = is_wp_error( $response ) ? $response : $response->as_error();
 
+      // Return error in old format for backward compatibility
+      // The execute_tool method will detect this and not re-wrap it
       return [
         'jsonrpc' => '2.0',
         'id' => $id,
@@ -227,16 +233,7 @@ class Meow_MWAI_Labs_MCP_Rest {
 
     $data = $response->get_data();
 
-    $reply['result'] = [
-      'content' => [
-        [
-          'type' => 'text',
-          'text' => wp_json_encode( $data, JSON_PRETTY_PRINT ),
-        ],
-      ],
-      'data' => $data,
-    ];
-
-    return $reply;
+    // Return just the data - execute_tool will wrap it properly
+    return $data;
   }
 }

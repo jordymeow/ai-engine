@@ -24,6 +24,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   // Functions
   public array $functions = [];
   public ?string $functionCall = null;
+  
+  // MCP Servers
+  public array $mcpServers = [];
 
   // Overrides for env
   public array $envSettings = [];
@@ -93,6 +96,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function set_functions( array $functions ): void {
     $this->functions = $functions;
     $this->functionCall = "auto";
+  }
+
+  public function set_mcp_servers( array $mcpServers ): void {
+    $this->mcpServers = $mcpServers;
   }
 
   #endregion

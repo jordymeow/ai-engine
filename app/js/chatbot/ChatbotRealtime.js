@@ -1,5 +1,5 @@
-// Previous: 2.7.3
-// Current: 2.7.7
+// Previous: 2.7.7
+// Current: 2.8.3
 
 const { useState, useRef, useCallback, useMemo, useEffect } = wp.element;
 
@@ -8,6 +8,8 @@ import { useChatbotContext } from './ChatbotContext';
 import AudioVisualizer from './AudioVisualizer';
 import { isURL } from './helpers';
 import { isEmoji } from '../helpers';
+import RealtimeEventEmitter from '../helpers/RealtimeEventEmitter';
+import { STREAM_TYPES } from '../constants/streamTypes';
 
 const DEBUG_LEVELS = {
   none: 0,
@@ -91,10 +93,11 @@ function formatName(template, guestName, userData) {
   }, template);
 }
 
-const ChatbotRealtime = () => {
+const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
   const { state, actions } = useChatbotContext();
-  const { busy, locked, open, popup } = state;
+  const { busy, locked, open, popup, system } = state;
   const { onStartRealtimeSession, onRealtimeFunctionCallback, onCommitStats, onCommitDiscussions } = actions;
+  const debugMode = system?.debugMode || false;
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -114,6 +117,21 @@ const ChatbotRealtime = () => {
   const [messages, setMessages] = useState([]);
   const processedItemIdsRef = useRef(new Set());
 
+  const handleStreamEvent = useCallback((content, eventData) => {
+    if (eventData && eventData.subtype && onStreamEvent) {
+      onStreamEvent({
+        ...eventData,
+        timestamp: eventData.timestamp || new Date().getTime(),
+        messageId: 'realtime-session'
+      });
+    }
+  }, [onStreamEvent]);
+
+  const eventEmitterRef = useRef(null);
+  useEffect(() => {
+    eventEmitterRef.current = new RealtimeEventEmitter(handleStreamEvent, debugMode);
+  }, [handleStreamEvent, debugMode]);
+
   const pcRef = useRef(null);
   const dataChannelRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -124,6 +142,7 @@ const ChatbotRealtime = () => {
   const [showStatistics, setShowStatistics] = useState(false);
 
   const [assistantStream, setAssistantStream] = useState(null);
+
   const functionCallbacksRef = useRef([]);
 
   const userUI = useMemo(() => getChatbotRepresentation(state, 'user'), [state]);
@@ -132,6 +151,12 @@ const ChatbotRealtime = () => {
   useEffect(() => {
     if (!open && isSessionActive && popup) stopRealtimeConnection();
   }, [open, popup, isSessionActive]);
+
+  useEffect(() => {
+    if (onMessagesUpdate) {
+      onMessagesUpdate(messages);
+    }
+  }, [messages, onMessagesUpdate]);
 
   const commitStatsToServer = useCallback(async (usageStats) => {
     await onCommitStats(usageStats);
@@ -170,6 +195,24 @@ const ChatbotRealtime = () => {
         return;
       }
       const functionOutput = result.data;
+      
+      if (debugMode && eventEmitterRef.current) {
+        const resultPreview = typeof functionOutput === 'string' 
+          ? functionOutput 
+          : JSON.stringify(functionOutput);
+        const previewText = resultPreview.length > 100 
+          ? resultPreview.substring(0, 100) + '...' 
+          : resultPreview;
+        
+        eventEmitterRef.current.emit(STREAM_TYPES.TOOL_RESULT, `Got result from ${functionName}.`, {
+          metadata: { 
+            tool_name: functionName,
+            result: previewText,
+            call_id: callId
+          }
+        });
+      }
+      
       if (dataChannelRef.current?.readyState === 'open') {
         debugLog(DEBUG_LEVELS.low, 'Send callback value:', functionOutput);
         dataChannelRef.current.send(
@@ -192,10 +235,17 @@ const ChatbotRealtime = () => {
     } catch (err) {
       console.error('Error in handleFunctionCall.', err);
     }
-  }, [onRealtimeFunctionCallback]);
+  }, [onRealtimeFunctionCallback, debugMode]);
 
   const startRealtimeConnection = useCallback(async (clientSecret, model) => {
     setIsConnecting(true);
+    
+    if (debugMode && eventEmitterRef.current) {
+      eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Starting realtime session...', {
+        visibility: 'visible'
+      });
+    }
+
     const pc = new RTCPeerConnection();
     pcRef.current = pc;
 
@@ -221,6 +271,13 @@ const ChatbotRealtime = () => {
 
     dataChannel.addEventListener('open', () => {
       debugLog(DEBUG_LEVELS.low, 'Data channel open.');
+      
+      if (debugMode && eventEmitterRef.current) {
+        eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Realtime session connected', {
+          visibility: 'visible'
+        });
+      }
+      
       enableAudioTranscription();
     });
 
@@ -240,6 +297,58 @@ const ChatbotRealtime = () => {
           || msg.type === 'conversation.item.input_audio_transcription.completed'
           || msg.type === 'response.done';
         if (isMajor) console.log('Key event from Realtime API.', msg);
+      }
+
+      if (debugMode && msg.type && eventEmitterRef.current) {
+        let eventMessage = '';
+        let eventSubtype = STREAM_TYPES.STATUS;
+        let shouldEmit = false;
+        
+        switch (msg.type) {
+          case 'input_audio_buffer.speech_started':
+            eventMessage = 'User started talking...';
+            shouldEmit = true;
+            break;
+          case 'input_audio_buffer.speech_stopped':
+            eventMessage = 'User stopped speaking.';
+            shouldEmit = true;
+            break;
+          case 'response.audio.started':
+            eventMessage = 'Assistant started speaking.';
+            shouldEmit = true;
+            break;
+          case 'response.audio.done':
+            eventMessage = 'Assistant stopped speaking.';
+            shouldEmit = true;
+            break;
+          case 'conversation.item.input_audio_transcription.completed':
+            eventMessage = 'Got transcript from user.';
+            eventSubtype = STREAM_TYPES.TRANSCRIPT;
+            shouldEmit = true;
+            break;
+          case 'response.audio_transcript.done':
+            eventMessage = 'Got transcript from assistant.';
+            eventSubtype = STREAM_TYPES.TRANSCRIPT;
+            shouldEmit = true;
+            break;
+          case 'response.function_call_arguments.done':
+            eventMessage = `Calling ${msg.name}...`;
+            eventSubtype = STREAM_TYPES.TOOL_CALL;
+            shouldEmit = true;
+            break;
+          case 'response.done':
+            break;
+        }
+        
+        if (shouldEmit) {
+          eventEmitterRef.current.emit(eventSubtype, eventMessage, {
+            visibility: 'visible',
+            metadata: { 
+              event_type: msg.type,
+              event_id: msg.event_id
+            }
+          });
+        }
       }
 
       switch (msg.type) {
@@ -280,7 +389,6 @@ const ChatbotRealtime = () => {
           const usageStats = parseUsage(resp.usage);
           if (usageStats) {
             setStatistics(prev => {
-              // Introducing a bug: using prev directly in multiple setState calls
               const updated = {
                 text_input_tokens:  (prev.text_input_tokens  || 0) + usageStats.text_input_tokens,
                 audio_input_tokens: (prev.audio_input_tokens || 0) + usageStats.audio_input_tokens,
@@ -333,6 +441,11 @@ const ChatbotRealtime = () => {
   }, [enableAudioTranscription, handleFunctionCall, commitStatsToServer]);
 
   const stopRealtimeConnection = useCallback(() => {
+    if (debugMode && eventEmitterRef.current) {
+      eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Ending realtime session...', {
+        visibility: 'visible'
+      });
+    }
     try {
       if (pcRef.current) {
         pcRef.current.close();
@@ -347,12 +460,9 @@ const ChatbotRealtime = () => {
       setIsSessionActive(false);
       setIsPaused(false);
       setWhoIsSpeaking(null);
-
-      console.log('Messages:', messages);
-      console.log('Statistics:', statistics);
-
+      
       onCommitDiscussions(messages);
-
+      
       setMessages([]);
       setStatistics({
         text_input_tokens: 0,
@@ -362,7 +472,7 @@ const ChatbotRealtime = () => {
         text_cached_tokens: 0,
         audio_cached_tokens: 0,
       });
-
+      
       debugLog(DEBUG_LEVELS.low, 'Stopped Realtime connection.');
     }
     catch (err) {
@@ -395,8 +505,9 @@ const ChatbotRealtime = () => {
         setIsConnecting(false);
         return;
       }
-      // Introducing a bug: accidentally overwriting callbacks with empty array
-      functionCallbacksRef.current = data.function_callbacks || [];
+      // BUG: intentional - missing assignment to functionCallbacksRef.current
+      // functionCallbacksRef.current = data.function_callbacks || [];
+      // BUG: The above line is omitted intentionally to cause mismatch
       setSessionId(data.session_id);
       await startRealtimeConnection(data.client_secret, data.model);
     } catch (err) {

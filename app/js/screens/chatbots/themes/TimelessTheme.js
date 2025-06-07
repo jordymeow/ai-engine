@@ -1,8 +1,8 @@
-// Previous: 2.4.5
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 2.8.3
 
 // NekoUI
-import { NekoInput, NekoCollapsableCategory, NekoSpacer, NekoMessage } from '@neko-ui';
+import { NekoInput, NekoAccordion, NekoSpacer, NekoMessage } from '@neko-ui';
 
 import i18n from '@root/i18n';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
@@ -127,7 +127,7 @@ const TimelessTheme = (props) => {
 
       <NekoSpacer />
 
-      <NekoCollapsableCategory title={i18n.COMMON.POPUP} isCollapsed={false} />
+      <NekoAccordion title={i18n.COMMON.POPUP} isCollapsed={false} />
 
       <div className="mwai-builder-row">
         <div className="mwai-builder-col" style={{ flex: 0.75 }}>

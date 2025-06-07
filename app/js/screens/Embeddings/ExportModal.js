@@ -1,5 +1,5 @@
-// Previous: 2.2.95
-// Current: 2.3.1
+// Previous: 2.3.1
+// Current: 2.8.3
 
 const { useState } = wp.element;
 import Papa from 'papaparse';
@@ -34,11 +34,11 @@ const ExportModal = ({ modal, setModal }) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       downloadAsFile(json, `vectors-${year}-${month}-${day}.json`);
-      setTimeout(() => { setTotal(0); }, 1500);
+      setTimeout(() => { setTotal(0); }, 1000);
     }
     catch (err) {
       console.error(err);
-      alert("An error occured while exporting vectors. Check your console.");
+      alert("An error occurred while exporting vectors. Check your console.");
     }
     finally {
       setBusy(false);
@@ -55,11 +55,11 @@ const ExportModal = ({ modal, setModal }) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       downloadAsFile(csv, `vectors-${year}-${month}-${day}.csv`);
-      setTimeout(() => { setTotal(0); }, 1500);
+      setTimeout(() => { setTotal(0); }, 1000);
     }
     catch (err) {
       console.error(err);
-      alert("An error occured while exporting vectors. Check your console.");
+      alert("An error occurred while exporting vectors. Check your console.");
     }
     finally {
       setBusy(false);
@@ -86,6 +86,9 @@ const ExportModal = ({ modal, setModal }) => {
       vectors = vectors.concat(res.vectors);
       setCount(vectors.length);
       params.page++;
+      if (vectors.length > 1000) {
+        break;
+      }
     }
 
     return vectors;

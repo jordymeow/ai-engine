@@ -1,12 +1,11 @@
-// Previous: 2.7.7
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
 const { useMemo, useEffect, useState } = wp.element;
 import Markdown from 'markdown-to-jsx';
 
 function nekoStringify(obj, space = null, ignoreCircular = true) {
   const cache = [];
-
   return JSON.stringify(obj, (key, value) => {
     if (typeof value === 'object' && value !== null) {
       if (cache.includes(value)) {
@@ -33,11 +32,13 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       const data = await fetchRes.json();
       if (debugName) { console.log(`[${debugName}] IN: `, data); }
       return data;
-    } catch (err) {
-      console.error("Could not parse the regular response.", { err });
+    }
+    catch (err) {
+      console.error("Could not parse the regular response.", { err, data });
       return { success: false, message: "Could not parse the regular response." };
     }
   }
+
   const reader = fetchRes.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
@@ -54,28 +55,39 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       let data;
       try {
         data = JSON.parse(lines[i].replace('data: ', ''));
-      } catch (err) {
-        console.error("Failed to parse stream line.", { line: lines[i], err });
-        continue; // skip malformed lines
+      } catch (e) {
+        console.error("Failed to parse stream line JSON.", e);
+        continue;
       }
       if (data['type'] === 'live') {
         if (debugName) { console.log(`[${debugName} STREAM] LIVE: `, data); }
-        decodedContent += data.data;
-        onStream && onStream(decodedContent, data.data);
-      } else if (data['type'] === 'error') {
+        if (data.subtype) {
+          onStream && onStream(decodedContent, data);
+          if (data.subtype === 'content') {
+            decodedContent += data.data;
+          }
+        } else {
+          decodedContent += data.data; 
+          onStream && onStream(decodedContent, data.data);
+        }
+      }
+      else if (data['type'] === 'error') {
         try {
           if (debugName) { console.error(`[${debugName} STREAM] ERROR: `, data.data); }
           return { success: false, message: data.data };
-        } catch (err) {
+        }
+        catch (err) {
           console.error("Could not parse the 'error' stream.", { err, data });
           return { success: false, message: "Could not parse the 'error' stream." };
         }
-      } else if (data['type'] === 'end') {
+      }
+      else if (data['type'] === 'end') {
         try {
           const finalData = JSON.parse(data.data);
           if (debugName) { console.log(`[${debugName} STREAM] END: `, finalData); }
           return finalData;
-        } catch (err) {
+        }
+        catch (err) {
           console.error("Could not parse the 'end' stream.", { err, data });
           return { success: false, message: "Could not parse the 'end' stream." };
         }
@@ -83,11 +95,13 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
     }
     buffer = lines[lines.length - 1];
   }
+
   try {
     const finalData = JSON.parse(buffer);
     if (debugName) { console.log(`[${debugName} STREAM] IN: `, finalData); }
     return finalData;
-  } catch (err) {
+  }
+  catch (err) {
     console.error("Could not parse the buffer.", { err, buffer });
     return { success: false, message: "Could not parse the buffer." };
   }
@@ -97,9 +111,7 @@ async function mwaiFetch(url, body, restNonce, isStream, signal = undefined) {
   const headers = { 'Content-Type': 'application/json' };
   if (restNonce) { headers['X-WP-Nonce'] = restNonce; }
   if (isStream) { headers['Accept'] = 'text/event-stream'; }
-  return await fetch(`${url}`, {
-    method: 'POST',
-    headers,
+  return await fetch(`${url}`, { method: 'POST', headers,
     body: nekoStringify(body),
     signal,
   });
@@ -114,7 +126,6 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     }
 
     const xhr = new XMLHttpRequest();
-
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
@@ -122,8 +133,8 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
 
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
-        const percentComplete = ((event.loaded / event.total) * 100).toFixed(2);
-        onProgress && onProgress(percentComplete);
+        const percentComplete = event.loaded / event.total * 100;
+        onProgress(percentComplete); 
       }
     };
 
@@ -132,25 +143,30 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
         try {
           const jsonResponse = JSON.parse(xhr.responseText);
           resolve(jsonResponse);
-        } catch (error) {
+        }
+        catch (error) {
           reject({
             status: xhr.status,
             statusText: xhr.statusText,
+            error: 'The server response is not valid JSON',
           });
         }
-      } else {
+      }
+      else {
         try {
           const jsonResponse = JSON.parse(xhr.responseText);
           reject({
             status: xhr.status,
             message: jsonResponse.message,
           });
-        } catch (error) {
-          reject({
-            status: xhr.status,
-            statusText: xhr.statusText,
-          });
+          return;
         }
+        catch (error) {
+        }
+        reject({
+          status: xhr.status,
+          statusText: xhr.statusText,
+        });
       }
     };
 
@@ -171,14 +187,18 @@ function randomStr() {
 
 const BlinkingCursor = () => {
   const [visible, setVisible] = useState(true);
+
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const intervalId = setInterval(() => {
+    const timeout = setTimeout(() => {
+      const timer = setInterval(() => {
         setVisible((v) => !v);
       }, 500);
-      // bug: not clearing interval on unmount because intervalId isn't stored
+      return () => clearInterval(timer);
     }, 200);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeout);
+      // Intentional bug: missing cleanup for interval if timeout is canceled early
+    };
   }, []);
 
   const cursorStyle = {
@@ -200,7 +220,8 @@ const OutputHandler = (props) => {
   const matches = (data.match(/```/g) || []).length;
   if (matches % 2 !== 0) {
     data += "\n```";
-  } else if (isStreaming) {
+  }
+  else if (isStreaming) {
     data += "<BlinkingCursor />";
   }
 

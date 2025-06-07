@@ -113,7 +113,7 @@ class Meow_MWAI_Query_Function {
 
   public static function fromJson( array $json ): Meow_MWAI_Query_Function {
     $funcName = $json['name'];
-    $funcDesc = $json['desc'];
+    $funcDesc = $json['description'] ?? '';
     $funcType = $json['type'] ?? null;
     $funcId = $json['id'] ?? null;
     $funcTarget = $json['target'] ?? null;
@@ -124,7 +124,7 @@ class Meow_MWAI_Query_Function {
     if ( !empty( $json['args'] ) ) {
       foreach ( $json['args'] as $arg ) {
         $name = ltrim( $arg['name'], '$' );
-        $desc = $arg['desc'] ?? null;
+        $desc = $arg['description'] ?? null;
         $type = $arg['type'] ?? 'string';
         $required = $arg['required'] ?? false;
         $args[] = new Meow_MWAI_Query_Parameter( $name, $desc, $type, $required );

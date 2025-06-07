@@ -24,8 +24,9 @@ class Meow_MWAI_Core
 	private $chatbots_option_name = 'mwai_chatbots';
 	private $nonce = null;
 
-	public $chatbot = null;
-	public $discussions = null;
+        public $chatbot = null;
+        public $discussions = null;
+        public $search = null;
 
 	public function __construct() {
 		Meow_MWAI_Logging::init( 'mwai_options', 'AI Engine' );
@@ -76,11 +77,16 @@ class Meow_MWAI_Core
 			}
 		}
 
-		// Chatbots & Discussions
-		if ( $this->get_option( 'module_chatbots' ) ) {
-			$this->chatbot = new Meow_MWAI_Modules_Chatbot();
-			$this->discussions = new Meow_MWAI_Modules_Discussions();
-		}
+                // Chatbots & Discussions
+                if ( $this->get_option( 'module_chatbots' ) ) {
+                        $this->chatbot = new Meow_MWAI_Modules_Chatbot();
+                        $this->discussions = new Meow_MWAI_Modules_Discussions();
+                }
+
+                // Search
+                if ( $this->get_option( 'module_search' ) ) {
+                        $this->search = new Meow_MWAI_Modules_Search( $this );
+                }
 
 		// Advanced Core
 		if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
@@ -93,9 +99,26 @@ class Meow_MWAI_Core
 		// MCP
 		if ( $this->get_option( 'module_mcp' ) ) {
 			new Meow_MWAI_Labs_MCP( $this );
-			new Meow_MWAI_Labs_MCP_Core( $this );
-			if ( class_exists( 'MeowPro_MWAI_MCP_Theme' ) ) {
+			
+			// Core - Core WordPress MCP tools
+			if ( $this->get_option( 'mcp_core' ) ) {
+				new Meow_MWAI_Labs_MCP_Core( $this );
+			}
+			
+			// Dynamic REST - WordPress REST API MCP tools
+			if ( $this->get_option( 'mcp_dynamic_rest' ) ) {
+				require_once MWAI_PATH . '/labs/mcp_rest.php';
+				new Meow_MWAI_Labs_MCP_Rest();
+			}
+			
+			// Themes - Pro theme management MCP tools
+			if ( $this->get_option( 'mcp_themes' ) && class_exists( 'MeowPro_MWAI_MCP_Theme' ) ) {
 				new MeowPro_MWAI_MCP_Theme( $this );
+			}
+
+			// Plugins - Pro plugin management MCP tools
+			if ( $this->get_option( 'mcp_plugins' ) && class_exists( 'MeowPro_MWAI_MCP_Plugin' ) ) {
+				new MeowPro_MWAI_MCP_Plugin( $this );
 			}
 		}
 	}
@@ -492,12 +515,29 @@ class Meow_MWAI_Core
  	#endregion
 
 	#region Context-Related Helpers
-	function retrieve_context( $params, $query ) {
+	function retrieve_context( $params, $query, $streamCallback = null ) {
 		$contextMaxLength = $params['contextMaxLength'] ?? $this->get_option( 'context_max_length', 4096 );
     $embeddingsEnvId = $params['embeddingsEnvId'] ?? null;
+		
 		$context = apply_filters( 'mwai_context_search', [], $query, [
-			'embeddingsEnvId' => $embeddingsEnvId
+			'embeddingsEnvId' => $embeddingsEnvId,
+			'streamCallback' => $streamCallback
 		]);
+		
+		// Emit embeddings event if streaming and context was found
+		if ( $streamCallback && !empty( $context ) ) {
+			$count = 0;
+			if ( isset( $context['embeddings'] ) && is_array( $context['embeddings'] ) ) {
+				$count = count( $context['embeddings'] );
+			} else if ( isset( $context['content'] ) ) {
+				$count = 1;
+			}
+			if ( $count > 0 ) {
+				$event = Meow_MWAI_Event::embeddings( $count );
+				$streamCallback( $event );
+			}
+		}
+		
 		if ( empty( $context ) ) {
 			return null;
 		}
@@ -856,6 +896,11 @@ class Meow_MWAI_Core
 
 	#region Streaming
 	public function stream_push( $data, $query = null ) {
+		// Handle new Event objects
+		if ( is_object( $data ) && method_exists( $data, 'to_array' ) ) {
+			$data = $data->to_array();
+		}
+		
 		$data = apply_filters( 'mwai_stream_push', $data, $query );
 		$out = "data: " . json_encode( $data );
 		echo $out;
@@ -1026,6 +1071,17 @@ class Meow_MWAI_Core
 					}
 					$value = $functions;
 				}
+				else if ( $key === 'mcpServers' ) {
+					$mcpServers = [];
+					foreach ( $value as $server ) {
+						if ( isset( $server['id'] ) ) {
+							$mcpServers[] = [
+								'id' => sanitize_text_field( $server['id'] ),
+							];
+						}
+					}
+					$value = $mcpServers;
+				}
 				else {
 					if ( in_array( $key, $keepLineReturnsFields ) ) {
 						$value = preg_replace( '/\r\n/', "[==LINE_RETURN==]", $value );
@@ -1047,6 +1103,15 @@ class Meow_MWAI_Core
 	}
 
 	function populate_dynamic_options( $options ) {
+		static $populating = false;
+		
+		// Prevent infinite recursion
+		if ( $populating ) {
+			return $options;
+		}
+		
+		$populating = true;
+		
 		// Languages
 		$options['languages'] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
 
@@ -1182,6 +1247,7 @@ class Meow_MWAI_Core
 			],
 		] );
 
+		$populating = false;
 		return $options;
 	}
 
@@ -1259,6 +1325,16 @@ class Meow_MWAI_Core
 		if ( !$ai_default_exists ) {
 			$options['ai_default_env'] = $options['ai_envs'][0]['id'] ?? null;
 			$needs_update = true;
+		}
+
+		// The IDs for the MCP environments are generated here.
+		if ( isset( $options['mcp_envs'] ) ) {
+			foreach ( $options['mcp_envs'] as &$env ) {
+				if ( !isset( $env['id'] ) ) {
+					$env['id'] = $this->get_random_id();
+					$needs_update = true;
+				}
+			}
 		}
 
 		// All the models with an envId that does not exist anymore are removed.

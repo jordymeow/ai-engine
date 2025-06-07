@@ -1,11 +1,13 @@
-// Previous: 2.7.6
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
+// NekoUI
 import {
   NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage,
-  NekoColumn, NekoTextArea, NekoButton, NekoCollapsableCategory, NekoCollapsableCategories
+  NekoColumn, NekoTextArea, NekoButton, NekoAccordion, NekoAccordions
 } from '@neko-ui';
 
 import { isRegistered } from '@app/settings';
@@ -99,45 +101,64 @@ const ChatbotParams = (props) => {
   const availableFunctions = options?.functions || [];
   const functions = shortcodeParams.functions || [];
   const [ busyUpdatingFunctions, setBusyUpdatingFunctions ] = useState(false);
+  const availableMCPServers = options?.mcp_envs || [];
+  const mcpServers = shortcodeParams.mcpServers || [];
 
   const instructionsHasContent = useMemo(() => {
     return shortcodeParams.instructions && shortcodeParams.instructions.includes('{CONTENT}');
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
     return env;
   }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId);
-    return aid;
+    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
+    return assist;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
 
   const environments = options.embeddings_envs || [];
+
   const modelSupportsFunctions = useMemo(() => {
     return currentModel?.tags?.includes('functions');
   }, [currentModel]);
+
   const modelSupportsVision = useMemo(() => {
     return currentModel?.tags?.includes('vision');
   }, [currentModel]);
+
   const modelSupportsFiles = useMemo(() => {
     return currentModel?.tags?.includes('files');
   }, [currentModel]);
+
   const modelSupportImage = useMemo(() => {
     return currentModel?.tags?.includes('image');
   }, [currentModel]);
 
+  const modelSupportsMCP = useMemo(() => {
+    const hasMCP = currentModel?.tags?.includes('mcp') || false;
+    if (currentModel) {
+      console.log('Current model:', currentModel.model, 'Tags:', currentModel.tags, 'Has MCP:', hasMCP);
+    }
+    return hasMCP;
+  }, [currentModel]);
+
   useEffect(() => {
     const newFunctions = functions.filter(x => availableFunctions.some(y => y.id === x.id));
+    const newMCPServers = mcpServers.filter(x => availableMCPServers.some(y => y.id === x.id));
+
     if (newFunctions.length !== functions.length) {
       console.warn("Update Params: Functions has been updated.");
       updateShortcodeParams(newFunctions, 'functions');
     }
-
+    else if (newMCPServers.length !== mcpServers.length) {
+      console.warn("Update Params: MCP Servers has been updated.");
+      updateShortcodeParams(newMCPServers, 'mcpServers');
+    }
     else if (modelSupportImage && !shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
@@ -146,78 +167,71 @@ const ChatbotParams = (props) => {
         updateShortcodeParams(bestResolution, 'resolution');
       }
     }
-
     else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
     }
-
     else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
     }
-
     else if (isAssistant && shortcodeParams.model) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
     }
-
     else if (!isAssistant && shortcodeParams.assistantId) {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
     }
-
     else if (shortcodeParams.imageUpload && !modelSupportsVision) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
     }
-
     else if (shortcodeParams.fileSearch && !isAssistant) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
     }
-
     else if (shortcodeParams.model && !shortcodeParams.envId) {
       console.warn("Update Params: Model has been removed.");
-      updateShortcodeParams(null, 'model');
+      updateShortcodeParams("", 'model');
     }
-
     else if (shortcodeParams.envId && !aiEnvironment) {
       console.warn("Update Params: Environment has been removed.");
       updateShortcodeParams(null, 'envId');
     }
-
+    else if (shortcodeParams.model && shortcodeParams.envId && !currentModel) {
+      console.warn("Update Params: Model has been removed because it doesn't exist in the current environment.");
+      updateShortcodeParams("", 'model');
+    }
     else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       console.warn("Update Params: Embeddings environment has been removed.");
       updateShortcodeParams(null, 'embeddingsEnvId');
     }
-
     else if (!modelSupportsFunctions && functions.length) {
       console.warn("Update Params: Functions have been removed.");
       updateShortcodeParams([], 'functions');
     }
-
+    else if (!modelSupportsMCP && mcpServers.length) {
+      console.warn("Update Params: MCP Servers have been removed.");
+      updateShortcodeParams([], 'mcpServers');
+    }
     else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
     }
-
     else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
       console.warn("Update Params: AI avatar has been set to true.");
       updateShortcodeParams(true, 'aiAvatar');
     }
-
     else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
       console.warn("Update Params: User avatar has been set to true.");
       updateShortcodeParams(true, 'userAvatar');
     }
-
     else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
-
-  }, [shortcodeParams]);
+  }, [shortcodeParams, mcpServers, availableMCPServers, currentModel]);
 
   const updateFunctionsInAssistant = async () => {
     setBusyUpdatingFunctions(true);
@@ -328,6 +342,20 @@ const ChatbotParams = (props) => {
     );
   }, [functions, availableFunctions]);
 
+  const titleMCPServersCategory = useMemo(() => {
+    if (!mcpServers.length) {
+      return i18n.COMMON.MCP_SERVERS;
+    }
+
+    const countString = `Enabled: ${mcpServers.length}, Total: ${availableMCPServers.length}`;
+    return (
+      <div>
+        {i18n.COMMON.MCP_SERVERS}
+        <small style={{ opacity: 0.5 }}> {countString}</small>
+      </div>
+    );
+  }, [mcpServers, availableMCPServers]);
+
   const titleThresholdsCategory = useMemo(() => {
     const contextMaxLength =
     shortcodeParams.contextMaxLength || options?.context_max_length;
@@ -380,8 +408,8 @@ const ChatbotParams = (props) => {
 
         <StyledBuilderForm>
 
-          <NekoCollapsableCategories keepState="chatbotParams">
-            <NekoCollapsableCategory title={titleChatbotCategory}>
+          <NekoAccordions keepState="chatbotParams">
+            <NekoAccordion title={titleChatbotCategory}>
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col">
@@ -448,9 +476,9 @@ const ChatbotParams = (props) => {
 
               </div>
 
-            </NekoCollapsableCategory>
+            </NekoAccordion>
 
-            <NekoCollapsableCategory title={titleAIModelCategory}>
+            <NekoAccordion title={titleAIModelCategory}>
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -465,7 +493,7 @@ const ChatbotParams = (props) => {
                 {(isChat || isImagesChat || isRealtime) && <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.MODEL}:</label>
                   <NekoSelect scrolldown textFiltering={modelsForDropdown.length > 16} name="model" disabled={!shortcodeParams.envId}
-                    value={shortcodeParams.model} onChange={updateShortcodeParams}>
+                    value={shortcodeParams.model || ""} onChange={updateShortcodeParams}>
                     <NekoOption value={""} label={"Default"}></NekoOption>
                     {modelsForDropdown.map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
@@ -544,9 +572,9 @@ const ChatbotParams = (props) => {
 
               </div>}
 
-            </NekoCollapsableCategory>
+            </NekoAccordion>
 
-            {isAssistant && <NekoCollapsableCategory title={i18n.COMMON.ASSISTANT}>
+            {isAssistant && <NekoAccordion title={i18n.COMMON.ASSISTANT}>
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.FILE_SEARCH}:</label>
@@ -558,9 +586,9 @@ const ChatbotParams = (props) => {
                   </NekoSelect>
                 </div>
               </div>
-            </NekoCollapsableCategory>}
+            </NekoAccordion>}
 
-            {(isChat || isAssistant) && <NekoCollapsableCategory title={titleContextCategory}>
+            {(isChat || isAssistant) && <NekoAccordion title={titleContextCategory}>
 
               <div style={{ marginTop: 15, fontWeight: 'bold' }}>{i18n.COMMON.EMBEDDINGS}</div>
 
@@ -596,9 +624,9 @@ const ChatbotParams = (props) => {
                 </NekoMessage>
               }
 
-            </NekoCollapsableCategory>}
+            </NekoAccordion>}
 
-            {modelSupportsFunctions && !blockMode && <NekoCollapsableCategory title={titleFunctionsCategory}>
+            {modelSupportsFunctions && !blockMode && <NekoAccordion title={titleFunctionsCategory}>
 
               <p>
                 <OpenAiIcon style={{ marginRight: 3 }} />
@@ -641,9 +669,42 @@ const ChatbotParams = (props) => {
                 </NekoButton>
               </>}
 
-            </NekoCollapsableCategory>}
+            </NekoAccordion>}
 
-            <NekoCollapsableCategory title={titleThresholdsCategory}>
+            {modelSupportsMCP && !blockMode && <NekoAccordion title={titleMCPServersCategory}>
+
+              <p>
+                <AnthropicIcon style={{ marginRight: 5 }} />
+                {toHTML(i18n.HELP.MCP_SERVERS || 'MCP (Model Context Protocol) servers enable AI models to interact with external tools and systems.')}
+              </p>
+
+              {!availableMCPServers?.length && <NekoMessage variant="danger">
+                {toHTML(i18n.HELP.MCP_SERVERS_UNAVAILABLE || 'No MCP servers are available. Configure them in the MCP Servers section under Orchestration.')}
+              </NekoMessage>}
+
+              {!!availableMCPServers?.length && <div style={{ maxHeight: 200, overflowY: 'auto',
+                border: '1px solid #d1e3f2', marginTop: 10, padding: '5px 6px', borderRadius: 5 }}>
+                {availableMCPServers?.map((server) => (
+                  <NekoCheckbox key={server.id} name="mcpServers"
+                    label={<>
+                      <AnthropicIcon style={{ marginRight: 5 }} />
+                      <span>{server.name}</span>
+                    </>}
+                    description={server.url || 'MCP Server'}
+                    checked={mcpServers.some(x => x.id === server.id)} value={server.id}
+                    onChange={value => {
+                      const newMCPServers = mcpServers.filter(x => x.id !== server.id);
+                      if (value) newMCPServers.push({ id: server.id });
+                      updateShortcodeParams(newMCPServers, 'mcpServers');
+                    }
+                    }
+                  />
+                ))}
+              </div>}
+
+            </NekoAccordion>}
+
+            <NekoAccordion title={titleThresholdsCategory}>
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -677,9 +738,9 @@ const ChatbotParams = (props) => {
                 </div>
               </div>
 
-            </NekoCollapsableCategory>
+            </NekoAccordion>
 
-            <NekoCollapsableCategory title={titleAppearanceCategory}>
+            <NekoAccordion title={titleAppearanceCategory}>
 
               <div className="mwai-builder-row">
 
@@ -732,7 +793,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="aiAvatar" label="Yes"
-                    checked={shortcodeParams.aiAvatar} value="1" onChange={updateShortcodeParams}
+                    checked={shortcodeParams.aiAvatar} val="1" onChange={updateShortcodeParams}
                     disabled={!shortcodeParams.aiName} />
                 </div>
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
@@ -764,7 +825,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="userAvatar" label="Yes"
-                    checked={shortcodeParams.userAvatar} value="1" onChange={updateShortcodeParams}
+                    checked={shortcodeParams.userAvatar} val="1" onChange={updateShortcodeParams}
                     disabled={!shortcodeParams.userName} />
                 </div>
 
@@ -809,7 +870,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="guestAvatar" label="Yes"
-                    checked={shortcodeParams.guestAvatar} value="1" onChange={updateShortcodeParams}
+                    checked={shortcodeParams.guestAvatar} val="1" onChange={updateShortcodeParams}
                     disabled={!shortcodeParams.guestName} />
                 </div>
 
@@ -838,9 +899,9 @@ const ChatbotParams = (props) => {
                 />
               }
 
-            </NekoCollapsableCategory>
+            </NekoAccordion>
 
-            <NekoCollapsableCategory title={i18n.COMMON.POPUP} hide={!shortcodeParams.window}>
+            <NekoAccordion title={i18n.COMMON.POPUP} hide={!shortcodeParams.window}>
 
               <div className="mwai-builder-row">
 
@@ -858,7 +919,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.BUBBLE}:</label>
                   <NekoCheckbox name="iconBubble" label="Yes"
-                    checked={shortcodeParams.iconBubble} value="1"
+                    checked={shortcodeParams.iconBubble} val="1"
                     onChange={updateShortcodeParams}
                   />
                 </div>
@@ -893,9 +954,9 @@ const ChatbotParams = (props) => {
 
               </div>
 
-            </NekoCollapsableCategory>
+            </NekoAccordion>
 
-            {!blockMode && <NekoCollapsableCategory title={i18n.COMMON.SHORTCODES}>
+            {!blockMode && <NekoAccordion title={i18n.COMMON.SHORTCODES}>
               <Shortcode currentChatbot={shortcodeParams} style={{ marginTop: 10 }} />
               {shortcodeParams.botId !== 'default' && <>
                 <p>{i18n.HELP.CUSTOM_SHORTCODE}</p>
@@ -903,9 +964,9 @@ const ChatbotParams = (props) => {
                   defaultChatbot={defaultChatbot} style={{ marginTop: 10 }}
                 />
               </>}
-            </NekoCollapsableCategory>}
+            </NekoAccordion>}
 
-            {!blockMode && <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
+            {!blockMode && <NekoAccordion title={i18n.COMMON.ACTIONS}>
               <div style={{ display: 'flex', marginTop: 10 }}>
                 <NekoButton className="primary" onClick={duplicateCurrentChatbot}>
                   {i18n.COMMON.DUPLICATE}
@@ -919,9 +980,9 @@ const ChatbotParams = (props) => {
                   {i18n.COMMON.DELETE}
                 </NekoButton>
               </div>
-            </NekoCollapsableCategory>}
+            </NekoAccordion>}
 
-          </NekoCollapsableCategories>
+          </NekoAccordions>
 
         </StyledBuilderForm>
 

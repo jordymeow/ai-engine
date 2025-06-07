@@ -1,11 +1,11 @@
-// Previous: 2.7.5
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoCheckbox,
-  NekoCollapsableCategories, NekoCollapsableCategory, NekoMessage, NekoSpacer,
+  NekoAccordions, NekoAccordion, NekoMessage, NekoSpacer,
   NekoSelect, NekoOption, nekoFetch } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import i18n from '@root/i18n';
@@ -201,7 +201,7 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       }
       newModels = newModels.map(x => ({ ...x, envId, type: envType }));
       let freshModels = options?.ai_models ?? [];
-      freshModels = freshModels.filter(x => !(x.type === envType && (x.envId || x.envId === envId)));
+      freshModels = freshModels.filter(x => !(x.type === envType && (!x.envId || x.envId === envId)));
       freshModels.push(...newModels);
       updateOption(freshModels, 'ai_models');
     }
@@ -320,8 +320,8 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
               <NekoSpacer />
             </>}
 
-            <NekoCollapsableCategories keepState="environmentCategories">
-              {hasDynamicModels && <NekoCollapsableCategory title={i18n.COMMON.MODELS}>
+            <NekoAccordions keepState="environmentCategories">
+              {hasDynamicModels && <NekoAccordion title={i18n.COMMON.MODELS}>
                 {env.type === 'openrouter' && <p>
                   There are currently <b>{modelsCount}</b> models available. OpenRouter models need to be refresh regularly. This button will fetch the latest models and their prices.
                 </p>}
@@ -335,24 +335,24 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                   onClick={() => fetchModels(env.id, env.type)}>
                   {i18n.COMMON.REFRESH_MODELS}
                 </NekoButton>
-              </NekoCollapsableCategory>}
+              </NekoAccordion>}
 
               {env.type === 'azure' && <>
                 <p>
                   {i18n.HELP.AZURE_DEPLOYMENTS}
                 </p>
-                <NekoCollapsableCategory title={i18n.COMMON.OPENAI_AZURE_DEPLOYMENTS}>
+                <NekoAccordion title={i18n.COMMON.OPENAI_AZURE_DEPLOYMENTS}>
                   <Deployments
                     deployments={env.deployments ?? []}
                     environmentId={env.id}
                     updateEnvironment={updateEnvironment}
                     options={options}
                   />
-                </NekoCollapsableCategory>
+                </NekoAccordion>
               </>}
 
               {env.type === 'huggingface' &&
-                <NekoCollapsableCategory title={i18n.COMMON.HUGGINGFACE_MODELS}>
+                <NekoAccordion title={i18n.COMMON.HUGGINGFACE_MODELS}>
                   <p>Browse the <a href="https://huggingface.co/models" target="_blank" rel="noreferrer">Models on Hugging Face</a>. Use the Deploy button (Inference API Serverless) in order to get the API URL. Paste it below with the name of your choice and you're done!</p>
                   <CustomModels
                     customModels={env.customModels ?? []}
@@ -360,16 +360,16 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                     updateEnvironment={updateEnvironment}
                     options={options}
                   />
-                </NekoCollapsableCategory>
+                </NekoAccordion>
               }
 
-              <NekoCollapsableCategory title={i18n.COMMON.ENVIRONMENT_ID}>
+              <NekoAccordion title={i18n.COMMON.ENVIRONMENT_ID}>
                 <p>
                   The EnvID is "<b>{env.id}</b>".
                 </p>
-              </NekoCollapsableCategory>
+              </NekoAccordion>
 
-              <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
+              <NekoAccordion title={i18n.COMMON.ACTIONS}>
                 <div style={{ display: 'flex', marginTop: 10 }}>
                   <div style={{ flex: 'auto' }} />
                   <NekoButton className="danger"
@@ -377,9 +377,9 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
                     {i18n.COMMON.DELETE}
                   </NekoButton>
                 </div>
-              </NekoCollapsableCategory>
+              </NekoAccordion>
 
-            </NekoCollapsableCategories>
+            </NekoAccordions>
 
           </NekoTab>);
 

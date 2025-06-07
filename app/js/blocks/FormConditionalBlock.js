@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
@@ -32,6 +32,7 @@ const operatorOptions = [
   { label: 'Equals', value: 'eq' },
   { label: 'Not Equals', value: 'neq' },
   { label: 'Contains', value: 'contains' },
+  { label: 'Does Not Contain', value: 'not_contains' },
   { label: 'Is Empty', value: 'empty' },
   { label: 'Is Not Empty', value: 'not_empty' },
 ];
@@ -104,18 +105,83 @@ const FormConditionalBlock = (props) => {
     );
   }, [conditions]);
 
+  const conditionsSummary = useMemo(() => {
+    if (!conditions.length) return null;
+    
+    const operatorLabels = {
+      'eq': '=',
+      'neq': '≠',
+      'contains': 'contains',
+      'not_contains': 'does not contain',
+      'empty': 'is empty',
+      'not_empty': 'is not empty'
+    };
+
+    return conditions.map((cond, index) => {
+      if (!cond.field) return null;
+      
+      const operator = operatorLabels[cond.operator] || cond.operator;
+      let conditionText = `${cond.field} ${operator}`;
+      
+      if (cond.operator !== 'empty' && cond.operator !== 'not_empty' && cond.value) {
+        conditionText += ` "${cond.value}"`;
+      }
+      
+      return (
+        <div key={index} style={{ 
+          fontSize: '12px', 
+          color: '#666', 
+          marginBottom: '4px',
+          fontFamily: 'monospace',
+          padding: '4px 8px',
+          background: '#f5f5f5',
+          borderRadius: '3px'
+        }}>
+          {conditionText}
+          {index < conditions.length - 1 && (
+            <span style={{ 
+              color: '#0073aa', 
+              fontWeight: 'bold',
+              marginLeft: '8px'
+            }}>{logic}</span>
+          )}
+        </div>
+      );
+    }).filter(Boolean);
+  }, [conditions, logic]);
+
   return (
     <>
       <div {...blockProps}>
         <AiBlockContainer title="Conditional" type="conditional" isDisplayed={true} hint={hint}>
+          {conditionsSummary && conditionsSummary.length > 0 && (
+            <div style={{ 
+              marginBottom: '12px',
+              padding: '8px',
+              background: '#fafafa',
+              border: '1px solid #e0e0e0',
+              borderRadius: '4px'
+            }}>
+              <div style={{ 
+                fontSize: '11px', 
+                textTransform: 'uppercase',
+                color: '#999',
+                marginBottom: '6px',
+                fontWeight: '600'
+              }}>
+                Conditions:
+              </div>
+              {conditionsSummary}
+            </div>
+          )}
           <InnerBlocks />
         </AiBlockContainer>
       </div>
       <InspectorControls>
-        <PanelBody title={__('Conditions')}>
+        <PanelBody title={i18n.COMMON.CONDITIONS}>
           {conditions.map((cond, index) => (
             <div key={index} style={{ marginBottom: '8px' }} className="mwai-condition-panel">
-              <PanelBody title={`Condition ${index + 1}`} initialOpen={true}>
+              <PanelBody title={`${i18n.COMMON.CONDITION} ${index + 1}`} initialOpen={true}>
                 <SelectControl
                   label="Field"
                   value={cond.field}
@@ -157,7 +223,7 @@ const FormConditionalBlock = (props) => {
                     setAttributes({ conditions: newConds });
                   }}
                 >
-                  {__('Remove')}
+                  {i18n.COMMON.REMOVE}
                 </Button>
               </PanelBody>
               {index < conditions.length - 1 && (
@@ -179,7 +245,7 @@ const FormConditionalBlock = (props) => {
               setAttributes({ conditions: [...conditions, { field: defaultField, operator: 'eq', value: '' }] });
             }}
           >
-            {__('Add Condition')}
+            {i18n.COMMON.ADD_CONDITION}
           </Button>
           <TextControl label="ID" value={id} onChange={(value) => setAttributes({ id: value })} />
         </PanelBody>
@@ -199,9 +265,6 @@ const createConditionalBlock = () => {
       id: { type: 'string', default: '' },
       conditions: { type: 'array', default: [] },
       logic: { type: 'string', default: 'AND' },
-      // Legacy attributes
-      conditionField: { type: 'string', default: '' },
-      conditionValue: { type: 'string', default: '' },
     },
     edit: FormConditionalBlock,
     save: saveConditionalBlock,

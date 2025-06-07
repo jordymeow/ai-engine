@@ -26,7 +26,7 @@
 		box-sizing: border-box;
 	}
 
-	.mwai-content {
+	.mwai-body {
 		background: var(--mwai-backgroundSecondaryColor);
 		color: var(--mwai-fontColor);
 		font-size: var(--mwai-fontSize);
@@ -582,90 +582,46 @@
 			margin: 0;
 		}
 	}
-}
 
-// Discussions
-.mwai-chatgpt-theme.mwai-discussions {
-	border-radius: var(--mwai-borderRadius);
-	background: var(--mwai-backgroundHeaderColor);
-	overflow: hidden;
+	// ChatbotChunks - Dark theme overrides
+	.mwai-chunks {
+		background: rgba(255, 255, 255, 0.05);
+		border-top: 1px solid rgba(255, 255, 255, 0.1);	
 
-	* {
-		box-sizing: border-box;
-	}
-
-	.mwai-discussion {
-		display: flex;
-		gap: 5px;
-		padding-left: calc(var(--mwai-spacing) / 2);
-		padding-right: calc(var(--mwai-spacing) / 2);
-		padding-bottom: calc(var(--mwai-spacing) / 2);
-		color: var(--mwai-conversationsTextColor);
-		opacity: 0.65;
-		justify-content: space-between;
-		align-items: center;
-
-		.mwai-discussion-title {
-			flex: auto;
-			padding: 5px;
+		.mwai-chunks-header {
+			color: #9ca3af;
 		}
 
-		.mwai-discussion-actions {
-			display: flex;
-			gap: 3px;
-	
-			.mwai-icon {
-				width: 32px;
-				height: 32px;
-				background: var(--mwai-iconTextBackgroundColor);
-				color: var(--mwai-iconTextColor);
-				border-radius: 50%;
-				cursor: pointer;
-				transition: all 0.2s ease-out;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-	
-				&:hover {
-					background: var(--mwai-backgroundPrimaryColor);
-	
-					&.mwai-danger {
-						background: var(--mwai-errorBackgroundColor);
-					}
+		.mwai-chunk {
+			background: rgba(255, 255, 255, 0.08);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+
+			.mwai-chunk-header {
+				.mwai-chunk-time {
+					color: #6b7280;
+				}
+
+				.mwai-chunk-data {
+					color: #e5e7eb;
+				}
+
+				.mwai-chunk-expand {
+					color: #6b7280;
+				}
+			}
+
+			.mwai-chunk-details {
+				background: rgba(0, 0, 0, 0.2);
+
+				pre {
+					color: #d1d5db;
 				}
 			}
 		}
-
-		&.mwai-active, &:hover {
-			cursor: pointer;
-
-			.mwai-discussion-title {
-				background: var(--mwai-backgroundPrimaryColor);
-				border-radius: var(--mwai-borderRadius);
-				opacity: 1;
-			}
-		}
-
-		&:first-child {
-			margin-top: calc(var(--mwai-spacing) / 2);
-		}
-	}
-
-	.mwai-header {
-		color: var(--mwai-headerButtonsColor);
-		padding: var(--mwai-spacing);
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.mwai-content {
-		background: var(--mwai-conversationsBackgroundColor);
-		list-style: none;
-		padding: 0;
-		margin: 0;
 	}
 }
+
+// Discussions
 
 // Common
 .mwai-chatgpt-theme {
@@ -673,6 +629,52 @@
 	@include code-dark;
 	@include reply-actions;
 	@include realtime;
+	@include discussions-styles;
+
+	// ChatbotChunks - Dark theme overrides
+	.mwai-chunks {
+		background: rgba(255, 255, 255, 0.05);
+
+		.mwai-chunks-header {
+			color: #9ca3af;
+
+			.mwai-chunks-toggle {
+				border-color: rgba(255, 255, 255, 0.1);
+				color: #9ca3af;
+
+				&:hover {
+					background: rgba(255, 255, 255, 0.05);
+					color: #e5e7eb;
+				}
+			}
+		}
+
+		.mwai-chunk {
+			background: rgba(255, 255, 255, 0.08);
+
+			.mwai-chunk-header {
+				.mwai-chunk-time {
+					color: #e5e7eb; // Same as chunk-data
+				}
+
+				.mwai-chunk-data {
+					color: #e5e7eb;
+				}
+
+				.mwai-chunk-expand {
+					color: #e5e7eb; // Same as chunk-data
+				}
+			}
+
+			.mwai-chunk-details {
+				background: rgba(0, 0, 0, 0.2);
+
+				pre {
+					color: #d1d5db;
+				}
+			}
+		}
+	}
 }
 
 // Mobile
@@ -701,3 +703,28 @@
 		}
 	}
 }
+
+// Context Menu Overrides for ChatGPT Theme
+.mwai-context-menu-portal.mwai-chatgpt-theme {
+	.mwai-context-menu {
+		background: var(--mwai-backgroundSecondaryColor);
+		border: 1px solid var(--mwai-backgroundPrimaryColor);
+		color: var(--mwai-fontColor);
+
+		.mwai-menu-item {
+			&:hover {
+				background-color: var(--mwai-backgroundPrimaryColor);
+			}
+
+			&.mwai-danger {
+				color: var(--mwai-errorTextColor);
+
+				&:hover {
+					background-color: var(--mwai-errorBackgroundColor);
+				}
+			}
+		}
+	}
+}
+
+

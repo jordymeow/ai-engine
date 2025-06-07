@@ -1,10 +1,10 @@
-// Previous: 2.6.8
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.3
 
-const { useMemo, useState, useEffect } = wp.element;
+const { useMemo } = wp.element;
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput,
-  NekoCollapsableCategories, NekoCollapsableCategory, NekoCheckbox,
+  NekoAccordions, NekoAccordion, NekoCheckbox,
   NekoSelect, NekoOption } from '@neko-ui';
 import i18n from '@root/i18n';
 import { useModels, toHTML } from '@app/helpers-admin';
@@ -23,99 +23,87 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
     return currentEmbeddingsModel?.dimensions || [];
   }, [currentEmbeddingsModel]);
 
-  const [localEnv, setLocalEnv] = useState(env);
-
-  useEffect(() => {
-    setLocalEnv(env);
-  }, [env]);
-
-  const handleFinalChange = (field, value) => {
-    const updatedEnv = { ...localEnv, [field]: value };
-    setLocalEnv(updatedEnv);
-    updateEnvironment(env.id, { [field]: value });
-  };
-
   return (
     <>
       <NekoSettings title={i18n.COMMON.NAME}>
-        <NekoInput name="name" value={localEnv.name}
-          onFinalChange={value => handleFinalChange('name', value)}
+        <NekoInput name="name" value={env.name}
+          onFinalChange={value => updateEnvironment(env.id, { name: value })}
         />
       </NekoSettings>
 
       <NekoSettings title={i18n.COMMON.TYPE}>
-        <NekoSelect scrolldown name="type" value={localEnv.type}
-          description={localEnv.type === 'qdrant' ? toHTML(i18n.HELP.QDRANT) : null}
-          onChange={value => handleFinalChange('type', value)}>
+        <NekoSelect scrolldown name="type" value={env.type}
+          description={env.type === 'qdrant' ? toHTML(i18n.HELP.QDRANT) : null}
+          onChange={value => updateEnvironment(env.id, { type: value })}>
           <NekoOption value="pinecone" label="Pinecone" />
           <NekoOption value="qdrant" label="Qdrant" />
         </NekoSelect>
       </NekoSettings>
 
       <NekoSettings title={i18n.COMMON.API_KEY}>
-        <NekoInput  name="apikey" value={localEnv.apikey}
-          description={toHTML(localEnv.type === 'pinecone' ? i18n.COMMON.PINECONE_APIKEY_HELP :
+        <NekoInput  name="apikey" value={env.apikey}
+          description={toHTML(env.type === 'pinecone' ? i18n.COMMON.PINECONE_APIKEY_HELP :
             i18n.COMMON.QDRANT_APIKEY_HELP)}
-          onFinalChange={value => handleFinalChange('apikey', value)}
+          onFinalChange={value => updateEnvironment(env.id, { apikey: value })}
         />
       </NekoSettings>
 
       <NekoSettings title={i18n.COMMON.SERVER}>
-        <NekoInput name="server" value={localEnv.server}
-          description={toHTML(localEnv.type === 'qdrant' ? i18n.COMMON.QDRANT_SERVER_HELP : i18n.COMMON.PINECONE_SERVER_HELP)}
-          onFinalChange={value => handleFinalChange('server', value)}
+        <NekoInput name="server" value={env.server}
+          description={toHTML(env.type === 'qdrant' ? i18n.COMMON.QDRANT_SERVER_HELP : i18n.COMMON.PINECONE_SERVER_HELP)}
+          onFinalChange={value => updateEnvironment(env.id, { server: value })}
         />
       </NekoSettings>
 
-      {localEnv.type === 'pinecone' && <>
+      {env.type === 'pinecone' && <>
         <NekoSettings title={i18n.COMMON.NAMESPACE}>
-          <NekoInput name="namespace" value={localEnv.namespace}
+          <NekoInput name="namespace" value={env.namespace}
             description={toHTML(i18n.COMMON.PINECONE_NAMESPACE_HELP)}
-            onFinalChange={value => handleFinalChange('namespace', value)}
+            onFinalChange={value => updateEnvironment(env.id, { namespace: value })}
           />
         </NekoSettings>
       </>}
 
-      {localEnv.type === 'qdrant' && <>
+      {env.type === 'qdrant' && <>
         <NekoSettings title={i18n.COMMON.QDRANT_COLLECTION}>
-          <NekoInput name="collection" value={localEnv.collection}
+          <NekoInput name="collection" value={env.collection}
             description={toHTML(i18n.COMMON.QDRANT_COLLECTION_HELP)}
-            onFinalChange={value => handleFinalChange('collection', value)}
+            onFinalChange={value => updateEnvironment(env.id, { collection: value })}
           />
         </NekoSettings>
       </>}
 
       <NekoSettings title={i18n.COMMON.MIN_SCORE}>
-        <NekoInput name="min_score" value={localEnv.min_score || 35} type="number" min="0" max="100" step="1"
+        <NekoInput name="min_score" value={env.min_score || 35} type="number" min="0" max="100" step="1"
           description={toHTML(i18n.HELP.MIN_SCORE)}
-          onFinalChange={value => handleFinalChange('min_score', value)}
+          onFinalChange={value => updateEnvironment(env.id, { min_score: value })}
         />
       </NekoSettings>
 
       <NekoSettings title={i18n.COMMON.MAX_SELECT}>
-        <NekoInput name="max_select" value={localEnv.max_select || 10} type="number" min="1" max="100" step="1"
+        <NekoInput name="max_select" value={env.max_select || 10} type="number" min="1" max="100" step="1"
           description={toHTML(i18n.HELP.MAX_SELECT)}
-          onFinalChange={value => handleFinalChange('max_select', value)}
+          onFinalChange={value => updateEnvironment(env.id, { max_select: value })}
         />
       </NekoSettings>
 
-      <NekoCollapsableCategories keepState="embeddingsEnvs">
+      <NekoAccordions keepState="embeddingsEnvs">
 
-        <NekoCollapsableCategory title={i18n.COMMON.AI_ENVIRONMENT}>
+        <NekoAccordion title={i18n.COMMON.AI_ENVIRONMENT}>
           <div style={{ marginTop: 10 }}>
 
             <NekoSettings title={i18n.COMMON.OVERRIDE_DEFAULTS}>
               <NekoCheckbox label={i18n.COMMON.ENABLE} value="1"
-                checked={localEnv?.ai_embeddings_override}
-                onChange={value => handleFinalChange('ai_embeddings_override', value)}
+                checked={env?.ai_embeddings_override}
+                onChange={value => updateEnvironment(env.id, { ai_embeddings_override: value })}
               />
             </NekoSettings>
 
-            {localEnv?.ai_embeddings_override && <>
+            {env?.ai_embeddings_override && <>
 
               <NekoSettings title={i18n.COMMON.ENVIRONMENT}>
-                <NekoSelect scrolldown name="ai_embeddings_env" value={localEnv?.ai_embeddings_env}
-                  onChange={value => handleFinalChange('ai_embeddings_env', value)}>
+                <NekoSelect scrolldown name="ai_embeddings_env" value={env?.ai_embeddings_env}
+                  onChange={value => updateEnvironment(env.id, { ai_embeddings_env: value })}>
                   {ai_envs.map((x) => (
                     <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
                   ))}
@@ -123,8 +111,8 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
               </NekoSettings>
 
               <NekoSettings title={i18n.COMMON.MODEL}>
-                <NekoSelect scrolldown name="ai_embeddings_model" value={localEnv.ai_embeddings_model}
-                  onChange={value => handleFinalChange('ai_embeddings_model', value)}>
+                <NekoSelect scrolldown name="ai_embeddings_model" value={env.ai_embeddings_model}
+                  onChange={value => updateEnvironment(env.id, { ai_embeddings_model: value })}>
                   {embeddingsModels.map((x) => (
                     <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                   ))}
@@ -132,8 +120,8 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
               </NekoSettings>
 
               <NekoSettings title={i18n.COMMON.DIMENSIONS}>
-                <NekoSelect scrolldown name="ai_embeddings_dimensions" value={localEnv.ai_embeddings_dimensions || null}
-                  onChange={value => handleFinalChange('ai_embeddings_dimensions', value)}>
+                <NekoSelect scrolldown name="ai_embeddings_dimensions" value={env.ai_embeddings_dimensions || null}
+                  onChange={value => updateEnvironment(env.id, { ai_embeddings_dimensions: value })}>
                   {currentEmbeddingsModelDimensions.map((x, i) => (
                     <NekoOption key={x} value={x}
                       label={i === currentEmbeddingsModelDimensions.length - 1 ? `${x} (Default)` : x}
@@ -145,27 +133,29 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
 
             </>}
           </div>
-        </NekoCollapsableCategory>
+        </NekoAccordion>
 
-        <NekoCollapsableCategory title={i18n.COMMON.ACTIONS}>
+        <NekoAccordion title={i18n.COMMON.ACTIONS}>
           <div style={{ display: 'flex', marginTop: 10 }}>
             <div style={{ flex: 'auto' }} />
-            <NekoButton className="danger" onClick={() => deleteEnvironment(localEnv.id)}>
+            <NekoButton className="danger" onClick={() => deleteEnvironment(env.id)}>
               {i18n.COMMON.DELETE}
             </NekoButton>
           </div>
-        </NekoCollapsableCategory>
+        </NekoAccordion>
 
-      </NekoCollapsableCategories>
+      </NekoAccordions>
     </>
   );
 };
 
 function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updateOption, options, busy }) {
 
+
   const addNewEnvironment = () => {
+    //alert("Coming soon! Please give us a bit of time to beta test this.");
+    //return;
     const newEnv = {
-      id: Math.random().toString(36).substring(2, 9),
       name: 'New Environment',
       type: 'pinecone',
       apikey: '',
@@ -178,7 +168,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
   };
 
   const deleteEnvironment = (id) => {
-    if (environments.length <= 1) {
+    if (environments.length === 1) {
       alert("You can't delete the last environment.");
       return;
     }

@@ -4,6 +4,7 @@ class Meow_MWAI_Labs_MCP {
   private $core = null;
   private $namespace = 'mcp/v1';
   private $server_version = '0.0.1';
+  private $protocol_version = '2025-03-26';
   private $queue_key = 'mwai_mcp_msg';
   private $session_id = null;
   private $logging = false;
@@ -22,16 +23,24 @@ class Meow_MWAI_Labs_MCP {
 			add_filter( 'mwai_allow_mcp', [ $this, 'auth_via_bearer_token' ], 10, 2 );
 		}
     register_rest_route( $this->namespace, '/sse', [
-      'methods'             => 'GET',
-      'callback'            => [ $this, 'handle_sse' ],
+      'methods' => 'GET',
+      'callback' => [ $this, 'handle_sse' ],
+      'permission_callback' => function( $request ) {
+				return $this->can_access_mcp( $request );
+			},
+    ] );
+
+    register_rest_route( $this->namespace, '/sse', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'handle_sse' ],
       'permission_callback' => function( $request ) {
 				return $this->can_access_mcp( $request );
 			},
     ] );
 
     register_rest_route( $this->namespace, '/messages', [
-      'methods'             => 'POST',
-      'callback'            => [ $this, 'handle_message' ],
+      'methods' => 'POST',
+      'callback' => [ $this, 'handle_message' ],
       'permission_callback' => function( $request ) {
 				return $this->can_access_mcp( $request );
 			},
@@ -46,6 +55,9 @@ class Meow_MWAI_Labs_MCP {
 	}
 
   public function auth_via_bearer_token( $allow, $request ) {
+    if ( empty( $this->bearer_token ) ) {
+      return false;
+    }
 		$hdr = $request->get_header( 'authorization' );
     if ( $hdr && preg_match( '/Bearer\s+(.+)/i', $hdr, $m ) &&
         hash_equals( $this->bearer_token, trim( $m[1] ) ) ) {
@@ -63,7 +75,9 @@ class Meow_MWAI_Labs_MCP {
 
   #region Helpers (log / JSON-RPC utils)
   private function log( $msg ) {
-    if ( $this->logging ) error_log( "MCP ({$this->session_id}): {$msg}" );
+    if ( $this->logging ) {
+      Meow_MWAI_Logging::log( "[MCP] ({$this->session_id}): {$msg}" );
+    }
   }
 
   /** Wrap a JSON-RPC error object */
@@ -76,6 +90,146 @@ class Meow_MWAI_Labs_MCP {
   /** Queue an error for SSE delivery */
   private function queue_error( $sess, $id, int $code, string $msg, $extra = null ): void {
     $this->store_message( $sess, $this->rpc_error( $id, $code, $msg, $extra ) );
+  }
+  
+  /** Format tool result for MCP protocol */
+  private function format_tool_result( $result ) : array {
+    // If result is a string, wrap it in the MCP content format
+    if ( is_string( $result ) ) {
+      return [
+        'content' => [
+          [
+            'type' => 'text',
+            'text' => $result,
+          ],
+        ],
+      ];
+    }
+    
+    // If result has 'content' key, assume it's already properly formatted
+    if ( is_array( $result ) && isset( $result['content'] ) ) {
+      return $result;
+    }
+    
+    // If result is an array without 'content' key, wrap it as JSON
+    if ( is_array( $result ) ) {
+      return [
+        'content' => [
+          [
+            'type' => 'text',
+            'text' => wp_json_encode( $result, JSON_PRETTY_PRINT ),
+          ],
+        ],
+        'data' => $result,
+      ];
+    }
+    
+    // For any other type, convert to string and wrap
+    return [
+      'content' => [
+        [
+          'type' => 'text',
+          'text' => (string) $result,
+        ],
+      ],
+    ];
+  }
+  #endregion
+
+  #region Handle direct JSON-RPC (for Claude's MCP client)
+  /**
+   * Claude's MCP client (via Anthropic API) sends JSON-RPC requests directly to the SSE endpoint
+   * as POST requests, rather than following the typical SSE flow:
+   * - Normal flow: GET /sse → establish SSE stream → POST /messages for JSON-RPC
+   * - Claude's flow: POST /sse with JSON-RPC body → expect immediate JSON response
+   * 
+   * This method handles the direct JSON-RPC requests to maintain compatibility with Claude.
+   */
+  private function handle_direct_jsonrpc( WP_REST_Request $request, $data ) {
+    $id = $data['id'] ?? null;
+    $method = $data['method'] ?? null;
+    
+    if ( json_last_error() !== JSON_ERROR_NONE ) {
+      return new WP_REST_Response( [
+        'jsonrpc' => '2.0',
+        'id' => null,
+        'error' => [ 'code' => -32700, 'message' => 'Parse error: invalid JSON' ]
+      ], 200 );
+    }
+    
+    if ( ! is_array( $data ) || !$method ) {
+      return new WP_REST_Response( [
+        'jsonrpc' => '2.0',
+        'id' => $id,
+        'error' => [ 'code' => -32600, 'message' => 'Invalid Request' ]
+      ], 200 );
+    }
+
+    try {
+      $reply = null;
+
+      switch ( $method ) {
+        case 'initialize':
+          // Check if client requests a specific protocol version
+          $params = $data['params'] ?? [];
+          $requested_version = $params['protocolVersion'] ?? null;
+          
+          if ( $requested_version && $requested_version !== $this->protocol_version ) {
+            if ( $this->logging ) {
+              Meow_MWAI_Logging::warn( "[MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
+            }
+          }
+          
+          $reply = [
+            'jsonrpc' => '2.0',
+            'id'      => $id,
+            'result'  => [
+              'protocolVersion' => $this->protocol_version,
+              'serverInfo'      => (object)[
+                'name'    => get_bloginfo( 'name' ) . ' MCP',
+                'version' => $this->server_version,
+              ],
+              'capabilities'    => [
+                'tools'     => [ 'listChanged' => true ],
+                'prompts'   => [ 'subscribe'   => false, 'listChanged' => false ],
+                'resources' => [ 'listChanged' => false ],
+              ],
+            ],
+          ];
+          break;
+
+        case 'tools/list':
+          $reply = [
+            'jsonrpc' => '2.0',
+            'id'      => $id,
+            'result'  => [ 'tools' => $this->get_tools_list() ],
+          ];
+          break;
+
+        case 'tools/call':
+          $params    = $data['params']      ?? [];
+          $tool      = $params['name']     ?? '';
+          $arguments = $params['arguments']?? [];
+          $reply     = $this->execute_tool( $tool, $arguments, $id );
+          break;
+
+        default:
+          $reply = [
+            'jsonrpc' => '2.0',
+            'id' => $id,
+            'error' => [ 'code' => -32601, 'message' => "Method not found: {$method}" ]
+          ];
+      }
+
+      return new WP_REST_Response( $reply, 200 );
+
+    } catch ( Exception $e ) {
+      return new WP_REST_Response( [
+        'jsonrpc' => '2.0',
+        'id' => $id,
+        'error' => [ 'code' => -32603, 'message' => 'Internal error', 'data' => $e->getMessage() ]
+      ], 200 );
+    }
   }
   #endregion
 
@@ -103,6 +257,28 @@ class Meow_MWAI_Labs_MCP {
   }
 
   public function handle_sse( WP_REST_Request $request ) {
+
+    $raw_body = $request->get_body();
+    if ( $this->logging ) {
+      Meow_MWAI_Logging::log( '[MCP] Raw Body: ' . $raw_body );
+    }
+
+    // Handle POST request with JSON-RPC body (Claude's MCP client behavior)
+    // Claude's API sends JSON-RPC requests directly to the SSE endpoint instead of
+    // establishing an SSE connection first. This is non-standard but we need to support it.
+    // Expected: GET /sse (establish stream) → POST /messages (send JSON-RPC)
+    // Claude: POST /sse with JSON-RPC body → expects immediate JSON response
+    if ( $request->get_method() === 'POST' && !empty( $raw_body ) ) {
+      $data = json_decode( $raw_body, true );
+      if ( $data && isset( $data['method'] ) ) {
+        if ( $this->logging ) {
+          Meow_MWAI_Logging::log( '[MCP] Handling direct JSON-RPC for method: ' . $data['method'] );
+        }
+        // Process as a direct JSON-RPC request instead of starting SSE stream
+        return $this->handle_direct_jsonrpc( $request, $data );
+      }
+    }
+
     @ini_set( 'zlib.output_compression', '0' );
     @ini_set( 'output_buffering',        '0' );
     @ini_set( 'implicit_flush',          '1' );
@@ -149,7 +325,6 @@ class Meow_MWAI_Labs_MCP {
 
   #region Handle /messages (JSON-RPC ingress)
   public function handle_message( WP_REST_Request $request ) {
-
     $sess = sanitize_text_field( $request->get_param( 'session_id' ) );
     $raw  = $request->get_body();
     $dat  = json_decode( $raw, true );
@@ -188,11 +363,21 @@ class Meow_MWAI_Labs_MCP {
       switch ( $method ) {
 
         case 'initialize':
+          // Check if client requests a specific protocol version
+          $params = $data['params'] ?? [];
+          $requested_version = $params['protocolVersion'] ?? null;
+          
+          if ( $requested_version && $requested_version !== $this->protocol_version ) {
+            if ( $this->logging ) {
+              Meow_MWAI_Logging::warn( "[MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
+            }
+          }
+          
           $reply = [
             'jsonrpc' => '2.0',
             'id'      => $id,
             'result'  => [
-              'protocolVersion' => '2025-03-26',
+              'protocolVersion' => $this->protocol_version,
               'serverInfo'      => (object)[
                 'name'    => get_bloginfo( 'name' ) . ' MCP',
                 'version' => $this->server_version,
@@ -254,7 +439,14 @@ class Meow_MWAI_Labs_MCP {
 
   #region Tools Definitions
   private function get_tools_list() {
-    return apply_filters( 'mwai_mcp_tools', [] );
+    $base_tools = [
+      [
+        'name'        => 'mcp_ping',
+        'description' => 'Simple connectivity check. Returns the current GMT time and the WordPress site name. Whenever a tool call fails (error or timeout), immediately invoke mcp_ping to verify the server; if mcp_ping itself does not respond, assume the server is temporarily unreachable and pause additional tool calls.',
+        'inputSchema' => [ 'type' => 'object', 'properties' => (object) [] ],
+      ],
+    ];
+    return apply_filters( 'mwai_mcp_tools', $base_tools );
   }
   #endregion
 
@@ -273,8 +465,44 @@ class Meow_MWAI_Labs_MCP {
   #region Tools Call (execute_tool)
   private function execute_tool( $tool, $args, $id ) {
     try {
+      // Handle built-in tools first
+      if ( $tool === 'mcp_ping' ) {
+        $ping_data = [
+          'time' => gmdate( 'Y-m-d H:i:s' ),
+          'name' => get_bloginfo( 'name' ),
+        ];
+        return [
+          'jsonrpc' => '2.0',
+          'id' => $id,
+          'result' => [
+            'content' => [
+              [
+                'type' => 'text',
+                'text' => 'Ping successful: ' . wp_json_encode( $ping_data, JSON_PRETTY_PRINT ),
+              ],
+            ],
+            'data' => $ping_data,
+          ],
+        ];
+      }
+      
+      // Let other modules handle their tools
       $filtered = apply_filters( 'mwai_mcp_callback', null, $tool, $args, $id, $this );
-      if ( is_array( $filtered ) && isset( $filtered['id'] ) ) return $filtered;
+      
+      if ( $filtered !== null ) {
+        // Check if it's already a full JSON-RPC response (backward compatibility)
+        if ( is_array( $filtered ) && isset( $filtered['jsonrpc'] ) && isset( $filtered['id'] ) ) {
+          return $filtered;
+        }
+        
+        // Otherwise, wrap the result in proper JSON-RPC format
+        return [
+          'jsonrpc' => '2.0',
+          'id' => $id,
+          'result' => $this->format_tool_result( $filtered ),
+        ];
+      }
+      
       throw new Exception( "Unknown tool: {$tool}" );
     } catch ( Exception $e ) {
       return $this->rpc_error( $id, -32603, $e->getMessage() );

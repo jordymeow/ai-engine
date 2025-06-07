@@ -12,6 +12,11 @@ class Meow_MWAI_Engines_Core {
   protected $streamBuffer = "";
   protected $streamHeaders = [];
   protected $streamContent = "";
+  
+  // Debug mode for stream events
+  protected $currentDebugMode = false;
+  protected $currentQuery = null;
+  protected $emittedFunctionResults = [];
 
   public function __construct( $core, $env ) {
     $this->core = $core;
@@ -99,6 +104,18 @@ class Meow_MWAI_Engines_Core {
         if ( $value === null ) {
           Meow_MWAI_Logging::warn( "The returned value for '{$needFeedback['name']}' was null." );
           $value = "[NO VALUE RETURNED - DO NOT SHOW THIS]";
+        }
+
+        // Log function result for debugging (events are emitted by engines when building feedback messages)
+        if ( $this->currentDebugMode ) {
+          // Format the result preview
+          $resultPreview = is_array( $value ) ? json_encode( $value ) : (string)$value;
+          if ( strlen( $resultPreview ) > 100 ) {
+            $resultPreview = substr( $resultPreview, 0, 100 ) . '...';
+          }
+          
+          // Log the function result for debugging
+          Meow_MWAI_Logging::log( "Function '{$needFeedback['name']}' returned: " . $resultPreview );
         }
 
         // Add the feedback information to the appropriate feedback block
@@ -284,6 +301,12 @@ class Meow_MWAI_Engines_Core {
 
     throw new Exception( $errorMessage );
   }
+  
+  protected function init_debug_mode( $query ) {
+    // Check if debug mode is enabled in settings
+    $this->currentDebugMode = $this->core->get_option('module_devtools') && $this->core->get_option( 'debug_mode' );
+    $this->currentQuery = $query;
+  }
 
   public function stream_handler( $handle, $args, $url ) {
     curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, false );
@@ -324,16 +347,25 @@ class Meow_MWAI_Engines_Core {
           if ( json_last_error() === JSON_ERROR_NONE ) {
             $content = $this->stream_data_handler( $json );
             if ( !is_null( $content ) ) {
+              
+              // Check if content is an Event object
+              if ( is_object( $content ) && $content instanceof Meow_MWAI_Event ) {
+                // For Event objects, pass the object directly to callback
+                // Don't accumulate in streamContent as it's not regular text
+                call_user_func( $this->streamCallback, $content );
+              } else {
+                // For regular string content
+                
+                // TO CHECK: Not sure why we need to do this to make sure there is a line return in the chatbot
+                // If we don't do this, HuggingFace streams "\n" as a token without anything else, and the
+                // chatbot doesn't display it.
+                if ( $content === "\n" ) {
+                  $content = "  \n";
+                }
 
-              // TO CHECK: Not sure why we need to do this to make sure there is a line return in the chatbot
-              // If we don't do this, HuggingFace streams "\n" as a token without anything else, and the
-              // chatbot doesn't display it.
-              if ( $content === "\n" ) {
-                $content = "  \n";
+                $this->streamContent .= $content;
+                call_user_func( $this->streamCallback, $content );
               }
-
-              $this->streamContent .= $content;
-              call_user_func( $this->streamCallback, $content );
             }
           }
           else if ( $line !== '[DONE]' && !empty( $line ) ) {

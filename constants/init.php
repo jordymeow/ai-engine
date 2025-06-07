@@ -39,7 +39,10 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'maxMessages' => 15,
 	'maxTokens' => 1024,
 	'maxResults' => 1,
-	'apiKey' => null
+	'apiKey' => null,
+	// Orchestration
+	'functions' => [],
+	'mcpServers' => []
 ] );
 
 define( 'MWAI_LANGUAGES', [
@@ -84,8 +87,12 @@ define ( 'MWAI_LIMITS', [
 define( 'MWAI_OPTIONS', [
 	'module_addons' => true,
 	'module_suggestions' => true,
-	'module_chatbots' => true,
-	'module_forms' => false,
+        'module_chatbots' => true,
+        'module_search' => false,
+        'search_frontend_method' => 'wordpress',
+        'search_frontend_env_id' => null,
+        'search_website_context' => 'This is a website with useful information and content.',
+        'module_forms' => false,
 	'module_blocks' => false,
 	'module_playground' => true,
 	'module_generator_content' => true,
@@ -96,6 +103,7 @@ define( 'MWAI_OPTIONS', [
 	'module_embeddings' => false,
 	'module_transcription' => false,
 	'module_advisor' => false,
+	'module_orchestration' => false,
 	'module_mcp' => false,
 	'speech_recognition' => false,
 	'speech_synthesis' => false,
@@ -106,6 +114,8 @@ define( 'MWAI_OPTIONS', [
 	'chatbot_typewriter' => false,
 	'chatbot_discussions' => false,
 	'chatbot_discussions_titling' => true,
+	'chatbot_discussions_paging' => 10,
+	'chatbot_discussions_refresh_interval' => 5,
 	'chatbot_moderation' => false,
 	'syntax_highlight' => false,
 	'privacy_first' => false,
@@ -119,6 +129,7 @@ define( 'MWAI_OPTIONS', [
 	'ai_models' => [],
 	'ai_models_usage' => [],
 	'ai_streaming' => false,
+	'ai_responses_api' => true,
 	'ai_fast_default_env' => null,
 	'ai_fast_default_model' => MWAI_FALLBACK_MODEL,
 	'ai_default_env' => null,
@@ -140,6 +151,8 @@ define( 'MWAI_OPTIONS', [
 			'apikey' => '',
 		]
 	],
+
+	'mcp_envs' => [],
 
 	'embeddings_default_env' => null,
 	'embeddings_envs' => [

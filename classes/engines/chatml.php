@@ -48,6 +48,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     $this->streamOutTokens = null;
     $this->inModel = null;
     $this->inId = null;
+    $this->emittedFunctionResults = [];
   }
 
   protected function set_environment() {
@@ -241,6 +242,26 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
                 'name' => $feedback['request']['name'],
                 'content' => $feedback['reply']['value']
               ];
+              
+              // Emit function result event if streaming and debug mode are enabled
+              if ( $this->currentDebugMode && !empty( $this->streamCallback ) ) {
+                $toolId = $feedback['request']['toolId'] ?? null;
+                // Only emit if we haven't already emitted for this tool
+                if ( $toolId && !isset( $this->emittedFunctionResults[$toolId] ) ) {
+                  $this->emittedFunctionResults[$toolId] = true;
+                  
+                  $functionName = $feedback['request']['name'];
+                  $resultPreview = (string)($feedback['reply']['value'] ?? '');
+                  if ( strlen( $resultPreview ) > 100 ) {
+                    $resultPreview = substr( $resultPreview, 0, 100 ) . '...';
+                  }
+                  
+                  $event = Meow_MWAI_Event::function_result( $functionName )
+                    ->set_metadata( 'result', $resultPreview )
+                    ->set_metadata( 'tool_id', $toolId );
+                  call_user_func( $this->streamCallback, $event );
+                }
+              }
             }
           }
         }
@@ -442,6 +463,14 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     }
     if ( isset( $json['id'] ) ) {
       $this->inId = $json['id'];
+      
+      // Send start event if debug mode is enabled
+      if ( $this->currentDebugMode && $this->streamCallback ) {
+        $event = Meow_MWAI_Event::status( 'Starting stream...' )
+          ->set_metadata( 'model', $this->inModel )
+          ->set_metadata( 'id', $this->inId );
+        call_user_func( $this->streamCallback, $event );
+      }
     }
   
     $object = $json['object'] ?? null;
@@ -470,6 +499,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
             ];
             end( $this->streamToolCalls );
             $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
+            
+            // Send tool call initiated event
+            if ( $this->currentDebugMode && $this->streamCallback ) {
+              $event = Meow_MWAI_Event::status( 'Initiating tool call...' );
+              call_user_func( $this->streamCallback, $event );
+            }
           }
           if ( !empty( $tool_call['id'] ) ) {
             $currentStreamToolCall['id'] = $tool_call['id'];
@@ -628,6 +663,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     if ( isset( $usage['prompt_tokens'], $usage['completion_tokens'] ) ) {
       $this->streamInTokens  = (int)$usage['prompt_tokens'];
       $this->streamOutTokens = (int)$usage['completion_tokens'];
+      
       if ( isset($usage['cost'] ) ) {
         $this->streamCost = (float)$usage['cost'];
       }
@@ -678,13 +714,23 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       if ( $responseCode === 404 ) {
         throw new Exception( 'The model\'s API URL was not found: ' . $url );
       }
-      if ( $responseCode === 400 ) {
+      else if ( $responseCode === 400 ) {
         $message = wp_remote_retrieve_body( $res );
         if ( empty( $message ) ) {
           $message = wp_remote_retrieve_response_message( $res );
         }
         if ( empty( $message ) ) {
           $message = 'Bad Request';
+        }
+        throw new Exception( $message );
+      }
+      else if ( $responseCode === 500 ) {
+        $message = wp_remote_retrieve_body( $res );
+        if ( empty( $message ) ) {
+          $message = wp_remote_retrieve_response_message( $res );
+        }
+        if ( empty( $message ) ) {
+          $message = 'Internal Server Error';
         }
         throw new Exception( $message );
       }
@@ -819,6 +865,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
 
   public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
     $isStreaming = !is_null( $streamCallback );
+    
+    // Initialize debug mode
+    $this->init_debug_mode( $query );
 
     if ( $isStreaming ) {
       $this->streamCallback = $streamCallback;

@@ -1,8 +1,7 @@
-// Previous: 2.3.9
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.8.3
 
-// NekoUI
-import { NekoInput, NekoCollapsableCategory, NekoSpacer } from '@neko-ui';
+import { NekoInput, NekoAccordion, NekoSpacer } from '@neko-ui';
 
 import i18n from '@root/i18n';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
@@ -10,11 +9,6 @@ import { NekoColorPicker } from "@app/components/NekoColorPicker";
 
 const MessagesTheme = (props) => {
   const { settings, onUpdateSettings } = props;
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    onUpdateSettings({ ...settings, [name]: value });
-  };
 
   return (<>
     <StyledBuilderForm>
@@ -25,7 +19,6 @@ const MessagesTheme = (props) => {
             value={settings?.spacing ?? '15px'}
             onBlur={onUpdateSettings}
             onEnter={onUpdateSettings}
-            onChange={handleChange}
           />
         </div>
         <div className="mwai-builder-col" style={{ flex: 0.66 }}>
@@ -34,7 +27,6 @@ const MessagesTheme = (props) => {
             value={settings?.borderRadius ?? '10px'}
             onBlur={onUpdateSettings}
             onEnter={onUpdateSettings}
-            onChange={handleChange}
           />
         </div>
         <div className="mwai-builder-col" style={{ flex: 0.66 }}>
@@ -43,7 +35,6 @@ const MessagesTheme = (props) => {
             value={settings?.fontSize ?? '15px'}
             onBlur={onUpdateSettings}
             onEnter={onUpdateSettings}
-            onChange={handleChange}
           />
         </div>
         <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -53,7 +44,6 @@ const MessagesTheme = (props) => {
               value={settings?.fontColor ?? '#FFFFFF'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="fontColor" name="fontColor"
               value={settings?.fontColor ?? '#FFFFFF'}
@@ -72,11 +62,11 @@ const MessagesTheme = (props) => {
               value={settings?.backgroundPrimaryColor ?? '#fafafa'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="backgroundPrimaryColor" name="backgroundPrimaryColor"
               value={settings?.backgroundPrimaryColor ?? '#fafafa'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -88,11 +78,11 @@ const MessagesTheme = (props) => {
               value={settings?.backgroundSecondaryColor ?? '#0084ff'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="backgroundUserColor" name="backgroundUserColor"
               value={settings?.backgroundSecondaryColor ?? '#0084ff'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -104,11 +94,11 @@ const MessagesTheme = (props) => {
               value={settings?.backgroundSecondaryColor ?? '#eee'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="backgroundAiColor" name="backgroundAiColor"
               value={settings?.backgroundSecondaryColor ?? '#eee'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -120,11 +110,11 @@ const MessagesTheme = (props) => {
               value={settings?.backgroundSecondaryColor ?? '#ddd'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="backgroundAiSecondaryColor" name="backgroundAiSecondaryColor"
               value={settings?.backgroundSecondaryColor ?? '#ddd'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -133,7 +123,7 @@ const MessagesTheme = (props) => {
 
       <NekoSpacer />
 
-      <NekoCollapsableCategory title={i18n.COMMON.POPUP} isCollapsed={false} />
+      <NekoAccordion title={i18n.COMMON.POPUP} isCollapsed={false} />
 
       <div className="mwai-builder-row">
         <div className="mwai-builder-col" style={{ flex: 0.75 }}>
@@ -142,7 +132,6 @@ const MessagesTheme = (props) => {
             value={settings?.width ?? '460px'}
             onBlur={onUpdateSettings}
             onEnter={onUpdateSettings}
-            onChange={handleChange}
           />
         </div>
         <div className="mwai-builder-col" style={{ flex: 0.75 }}>
@@ -151,7 +140,6 @@ const MessagesTheme = (props) => {
             value={settings?.maxHeight ?? '40vh'}
             onBlur={onUpdateSettings}
             onEnter={onUpdateSettings}
-            onChange={handleChange}
           />
         </div>
 
@@ -162,11 +150,11 @@ const MessagesTheme = (props) => {
               value={settings?.iconTextBackgroundColor ?? '#0084ff'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="iconTextBackgroundColor" name="iconTextBackgroundColor"
               value={settings?.iconTextBackgroundColor ?? '#0084ff'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -177,11 +165,11 @@ const MessagesTheme = (props) => {
               value={settings?.iconTextColor ?? '#FFFFFF'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="iconTextColor" name="iconTextColor"
               value={settings?.iconTextColor ?? '#FFFFFF'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -195,11 +183,11 @@ const MessagesTheme = (props) => {
               value={settings?.bubbleColor ?? '#0084ff'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="bubbleColor" name="bubbleColor"
               value={settings?.bubbleColor ?? '#0084ff'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -210,11 +198,11 @@ const MessagesTheme = (props) => {
               value={settings?.backgroundHeaderColor ?? '#0084ff'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="backgroundHeaderColor" name="backgroundHeaderColor"
               value={settings?.backgroundHeaderColor ?? '#0084ff'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>
@@ -225,11 +213,11 @@ const MessagesTheme = (props) => {
               value={settings?.headerButtonsColor ?? '#FFFFFF'}
               onBlur={onUpdateSettings}
               onEnter={onUpdateSettings}
-              onChange={handleChange}
             />
             <NekoColorPicker id="headerButtonsColor" name="headerButtonsColor"
               value={settings?.headerButtonsColor ?? '#FFFFFF'}
               onChange={onUpdateSettings}
+              onEnter={onUpdateSettings}
             />
           </div>
         </div>

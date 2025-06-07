@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.2
+Stable tag: 2.8.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,12 +33,24 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 * **Discussions & Memory Tracking**: Let users engage in longer or more complex conversations with the chatbot. All data can be stored, analyzed, and even exported for further insights.
 * **Function Calling**: Connect the AI models to your WordPress functions, tools, or APIs. For example, you can use the chatbot to allow your users to interact with your store, book appointments, or get real-time data.
 * **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
-- **MCP (Model Context Protocol)**: Allow powerful AI agents (like Claude) to fully control and manage your WordPress site. Automate posts, content updates, manage media, and seamlessly integrate advanced AI workflows.
+- **MCP (Model Context Protocol)**: Allow powerful AI agents (like Claude) to fully control and manage your WordPress site. Automate posts, content updates, manage media, and seamlessly integrate advanced AI workflows. AI Engine can also connect to external MCP servers, expanding your AI's capabilities beyond WordPress.
+* **AI-Powered Search**: Enhance WordPress search with three intelligent methods: standard WordPress search, AI-generated progressive keyword search that creates multiple search variations with decreasing specificity, and embeddings-based semantic search for meaning-based results.
+* **PDF Import for Embeddings**: Import PDF documents with automatic chunking, title generation, and intelligent content extraction for building comprehensive knowledge bases.
 * **Insights & Usage Control**: Track usage, monitor tokens, and manage costs with detailed analytics. Tools like role-based access, banned words, or content safety filters help you maintain a secure environment.
 * **Extensive Integration**: Seamlessly works with Media File Renamer, SEO Engine, Social Engine, Code Engine, and other WordPress plugins to power advanced AI features site-wide.
 * **Flexible Theming & Shortcodes**: Control the look and behavior of your AI integrations using pre-built themes or your own custom CSS. Place chatbots or AI-driven forms anywhere using simple shortcodes.
 
 Please note that some features require a Pro license (AI Forms, Embeddings, Usage Control, Realtime Chatbot). For more information, check the [official website](https://meowapps.com/ai-engine/).
+
+== MCP (Model Context Protocol) ==
+
+While WordPress core may one day add MCP support, AI Engine is already there. We've built a smart wrapper around WordPress's Core API that turns your site into an intelligent MCP server.
+
+This means AI agents like Claude and ChatGPT can connect directly to your WordPress site and actually understand how it works. They can browse your content, edit articles, check SEO, manage your media files, and handle complex tasks without getting confused or lost like they do with regular APIs.
+
+The best part? Other plugins can easily add their own features to this MCP system. [SEO Engine](https://wordpress.org/plugins/seo-engine/), [Social Engine](https://wordpress.org/plugins/social-engine/), and [Code Engine](https://wordpress.org/plugins/code-engine/) are already connecting (or will be soon), so AI agents can manage your entire WordPress site just like a skilled human would.
+
+AI Engine also works the other way around—it can connect to external MCP servers, giving your AI access to tools and services beyond WordPress. This means your chatbots and AI assistants can tap into a growing ecosystem of MCP-enabled applications and APIs.
 
 == Beyond the Features ==
 
@@ -116,6 +128,28 @@ Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.
 
 == Changelog ==
 
+= 2.8.3 (2025/06/07) =
+* Add: Support for the new OpenAI Responses API (function calling, vision, feedback, MCP) – enable it in Settings when you’re ready.
+Add: Vector-Aware Search – override the default WordPress search with either AI-generated keywords or Embeddings for sharper results.
+* Add: PDF Import – upload a PDF, tweak the chunk size, and auto-create embeddings in one flow.
+* Add: Embeddings stream event that shows when external context is pulled in.
+* Add: Stream-events viewer now appears under each chatbot whenever Client Debug is on (and streaming is enabled).
+* Add: Claude MCP support, MCP-server picker in Chatbots, per-category Show Details buttons, and copy-to-clipboard endpoint fields; you can even create or edit plugins via MCP.
+* Add: “Does Not Contain” operator for AI Conditional Blocks.
+* Add: Extensible context menus in Discussions through new MwaiAPI filters.
+* Add: dev-notes.md packed with tips for developers who want to extend AI Engine.
+* Update: Replaced NekoCollapsableCategories with NekoAccordions and refreshed the whole Settings navigation.
+* Update: Streaming debugger renamed to ChatbotEvents, unified wording, and clearer status messages.
+* Fix: Function-execution mapping, duplicate result events, and double fires in React.
+* Fix: Error and input states are now fully isolated per chatbot instance.
+* Fix: Clear button and reset logic in the event viewer.
+* Security: Patched a potential MCP injection vector.
+* Misc: Many small optimisations, typo/translation fixes, and cleaner source comments.
+* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 2.8.2 (2025/05/23) =
 * Add: New Claude 4 models for enhanced AI capabilities.
 * Update: Settings reorganized for improved usability, and Statistics and Embeddings renamed to Insights and Knowledge for better clarity.
@@ -127,10 +161,6 @@ Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.
 * Fix: Resolve issue with DALL-E model usage on Azure platforms.
 * Add: Allow API Key override through query parameter for OpenRouter integration.
 * Add: Filter `mwai_discussions_refresh_interval` to control how often the discussions list refreshes.
-* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 2.7.9 (2025/04/30) =
 * Add: Support for gpt-image (the latest OpenAI model).

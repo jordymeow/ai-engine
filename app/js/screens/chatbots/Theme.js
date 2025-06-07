@@ -1,9 +1,9 @@
-// Previous: 1.6.93
-// Current: 2.4.5
+// Previous: 2.4.5
+// Current: 2.8.3
 
 // NekoUI
 import { NekoButton, NekoSpacer } from '@neko-ui';
-import { NekoCollapsableCategory } from '@neko-ui';
+import { NekoAccordion } from '@neko-ui';
 
 import i18n from '@root/i18n';
 
@@ -43,7 +43,7 @@ const Theme = (props) => {
 
     <NekoSpacer />
 
-    <NekoCollapsableCategory title={i18n.COMMON.ACTIONS} />
+    <NekoAccordion title={i18n.COMMON.ACTIONS} />
 
     <div style={{ display: 'flex', marginTop: 10 }}>
       {/* <NekoButton className="primary" onClick={duplicateCurrentTheme}>
