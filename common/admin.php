@@ -27,8 +27,8 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
           // Check potential issues with this WordPress install, other plugins, etc.
           new MeowCommon_Issues( $prefix, $mainfile, $domain );
 
-          // Create the Meow Apps Menu
-          add_action( 'admin_menu', array( $this, 'admin_menu_start' ) );
+          // Create the Meow Apps Menu (priority 5 to ensure it's created early)
+          add_action( 'admin_menu', array( $this, 'admin_menu_start' ), 5 );
           $page = isset( $_GET["page"] ) ? sanitize_text_field( $_GET["page"] ) : null;
           if ( $page === 'meowapps-main-menu' ) {
             add_filter( 'admin_footer_text',  array( $this, 'admin_footer_text' ), 100000, 1 );

@@ -305,6 +305,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       if ( !empty( $mimeType ) ) {
         $body['mime'] = $mimeType;
       }
+      
+      // Add mask if provided
+      if ( !empty( $query->mask ) ) {
+        $maskData = $query->mask->get_data();
+        $maskFilename = 'mask.png';
+        $maskMimeType = $query->mask->get_mimeType();
+        
+        $body['mask'] = $maskFilename;
+        $body['mask_data'] = $maskData;
+        if ( !empty( $maskMimeType ) ) {
+          $body['mask_mime'] = $maskMimeType;
+        }
+      }
       // 'response_format' => 'b64_json',
       if ( !empty( $query->model ) ) {
         $body['model'] = $query->model;
@@ -1055,6 +1068,18 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       $reply->set_usage( $usage );
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
+      
+      if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
+        foreach ( $reply->results as &$result ) {
+          $fileId = $this->core->files->upload_file( $result, null, 'generated', [
+            'query_envId' => $query->envId,
+            'query_session' => $query->session,
+            'query_model' => $query->model,
+          ], $query->envId, $query->localDownload, $query->localDownloadExpiry );
+          $fileUrl = $this->core->files->get_url( $fileId );
+          $result = $fileUrl;
+        }
+      }
       $reply->result = $reply->results[0];
       return $reply;
     }
@@ -1351,16 +1376,22 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   {
     $body = '';
     foreach ( $fields as $name => $value ) {
-      if ( in_array( $name, [ 'data', 'mime' ] ) ) {
+      if ( in_array( $name, [ 'data', 'mime', 'mask_data', 'mask_mime' ] ) ) {
         continue;
       }
       $body .= "--$boundary\r\n";
       $body .= "Content-Disposition: form-data; name=\"$name\"";
-      if ( in_array( $name, [ 'file', 'image', 'mask' ] ) ) {
+      if ( $name === 'image' || $name === 'file' ) {
         $body .= "; filename=\"{$value}\"\r\n";
         $mime = !empty( $fields['mime'] ) ? $fields['mime'] : 'application/octet-stream';
         $body .= "Content-Type: {$mime}\r\n\r\n";
         $body .= $fields['data'] . "\r\n";
+      }
+      else if ( $name === 'mask' ) {
+        $body .= "; filename=\"{$value}\"\r\n";
+        $mime = !empty( $fields['mask_mime'] ) ? $fields['mask_mime'] : 'application/octet-stream';
+        $body .= "Content-Type: {$mime}\r\n\r\n";
+        $body .= $fields['mask_data'] . "\r\n";
       }
       else {
         $body .= "\r\n\r\n$value\r\n";

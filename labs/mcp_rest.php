@@ -166,10 +166,8 @@ class Meow_MWAI_Labs_MCP_Rest {
       return $existing;
     }
 
-    $current_user = wp_get_current_user();
-    if ( ! $current_user->has_cap( 'administrator' ) ) {
-      wp_set_current_user( 1 );
-    }
+    // Security check is already done in the MCP auth layer
+    // If we reach here, the user is authorized to use MCP
 
     list( $action, $resource ) = explode( '_', $tool, 2 );
     $path = "/wp/v2/{$resource}";

@@ -251,12 +251,44 @@ class Meow_MWAI_Reply implements JsonSerializable {
         else if ( isset( $choice['b64_json'] ) ) {
           // In that case we need to create a temporary file in WordPress to store the image, and return the URL for it.
           global $mwai_core;
-          $url = $mwai_core->files->save_temp_image_from_b64( $choice['b64_json'] );
+          
+          // Check if the query has explicitly disabled local download
+          if ( !empty( $this->query ) && $this->query instanceof Meow_MWAI_Query_Image && $this->query->localDownload === null ) {
+            // Query explicitly doesn't want local download, save as temporary upload
+            $localDownload = 'uploads';
+            $expiry = 1 * HOUR_IN_SECONDS; // 1 hour for temporary images
+          } else {
+            // Use the user's AI-generated image settings (same as DALL-E uses)
+            $localDownload = $mwai_core->get_option( 'image_local_download' );
+            $expiry = (int)$mwai_core->get_option( 'image_expires_download' );
+          }
+          
+          // The expiry is already in seconds
+          $ttl = $expiry;
+          
+          // Use 'library' or 'uploads' based on user settings
+          $target = ( $localDownload === 'library' ) ? 'library' : 'uploads';
+          
+          
+          // Prepare metadata similar to regular image queries
+          $metadata = [];
+          if ( !empty( $this->query ) ) {
+            $metadata['query_envId'] = $this->query->envId ?? null;
+            $metadata['query_session'] = $this->query->session ?? null;
+            $metadata['query_model'] = $this->query->model ?? 'gpt-image-1';
+          }
+          
+          $url = $mwai_core->files->save_temp_image_from_b64( $choice['b64_json'], 'generated', $ttl, $target, $metadata );
           if ( is_wp_error( $url ) ) {
             return $url;
           }
           $this->results[] = $url;
-          $this->result = $url;
+          
+          // For chatbot display, append image markdown to the result
+          if ( !empty( $this->result ) ) {
+            $this->result .= "\n\n";
+          }
+          $this->result .= "![Generated Image]($url)";
         }
 
         // It's embedding

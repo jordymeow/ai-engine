@@ -1,5 +1,5 @@
-// Previous: 2.5.0
-// Current: 2.6.3
+// Previous: 2.6.3
+// Current: 2.8.4
 
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,22 +17,25 @@ const assistantColumns = [
   {
     accessor: 'name',
     title: 'Name',
+    width: '30%',
     verticalAlign: 'top'
   },
   {
     accessor: 'instructions',
     title: 'Instructions',
-    width: 220,
+    width: '40%',
     verticalAlign: 'top'
   },
   {
     accessor: 'parameters',
     title: 'Parameters',
+    width: '20%',
     verticalAlign: 'top'
   },
   {
     accessor: 'createdOn',
     title: 'Created On',
+    width: '10%',
     verticalAlign: 'top'
   }
 ];
@@ -41,31 +44,37 @@ const fileColumns = [
   {
     accessor: 'file',
     title: 'File',
+    width: '30%',
     verticalAlign: 'top'
   },
   {
     accessor: 'metadata',
     title: 'Metadata',
+    width: '30%',
     verticalAlign: 'top'
   },
   {
     accessor: 'userId',
     title: 'User ID',
+    width: '80px',
     verticalAlign: 'top'
   },
   {
     accessor: 'purpose',
     title: 'Purpose',
+    width: '20%',
     verticalAlign: 'top'
   },
   {
     accessor: 'created',
     title: 'Created On',
+    width: '20%',
     verticalAlign: 'top'
   },
   {
     accessor: 'actions',
     title: 'Actions',
+    width: '60px',
     verticalAlign: 'top'
   }
 ];
@@ -125,7 +134,7 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [envId]);
 
   useEffect(() => {
-    setFilesQueryParams(prev => ({ ...prev, envId }));
+    setFilesQueryParams({ ...filesQueryParams, envId });
   }, [envId]);
 
   const { isFetching: isBusyFiles, data: dataFiles } = useQuery({
@@ -174,7 +183,7 @@ const Assistants = ({ options, refreshOptions }) => {
     setBusyAction(true);
     try {
       await deleteFiles(fileIds);
-      await queryClient.invalidateQueries(['assistants-files']);
+      await queryClient.invalidateQueries('assistants-files');
       setSelectedIds([]);
     }
     catch (err) {
@@ -184,7 +193,8 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    return dataFiles?.files.map(file => ({
+    if (!dataFiles) return [];
+    return dataFiles.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
@@ -215,7 +225,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const onRefreshFiles = async () => {
-    await queryClient.invalidateQueries(['assistants-files']);
+    await queryClient.invalidateQueries('assistants-files');
   };
 
   const assistantRows = useMemo(() => {
@@ -254,7 +264,7 @@ const Assistants = ({ options, refreshOptions }) => {
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [allAssistants, colors.green, colors.gray, colors.green]);
+  }, [allAssistants, colors.gray, colors.green]);
 
   const busy = busyAction;
 
@@ -268,7 +278,7 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
+          total={fileTotal} onClick={page => { setFilesQueryParams({ ...filesQueryParams, page }); }}
         />
       </div>
     </div>);
@@ -348,3 +358,5 @@ const Assistants = ({ options, refreshOptions }) => {
     </NekoColumn>
   </NekoWrapper>);
 };
+
+export default Assistants;

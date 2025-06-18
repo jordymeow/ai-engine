@@ -188,14 +188,16 @@ class Meow_MWAI_Modules_Files {
    * Handle a base-64 PNG returned by gpt-image-1: save as a temp file,
    * register it in the Files DB, and give back a public URL.
    *
-   * @param string $b64_json Raw base-64 image payload from OpenAI.
-   * @param string $purpose  Optional purpose flag. Default 'generated'.
-   * @param int    $ttl      Time-to-live in seconds. Default 1 hour.
+   * @param string $b64_json  Raw base-64 image payload from OpenAI.
+   * @param string $purpose   Optional purpose flag. Default 'generated'.
+   * @param int    $ttl       Time-to-live in seconds. Default 1 hour.
+   * @param string $target    Target location: 'uploads' or 'library'. Default 'uploads'.
+   * @param array  $metadata  Additional metadata to store with the file.
    *
    * @return string|WP_Error Public URL or WP_Error on failure.
    */
   public function save_temp_image_from_b64( string $b64_json,
-  string $purpose = 'generated', int $ttl = HOUR_IN_SECONDS )
+  string $purpose = 'generated', int $ttl = HOUR_IN_SECONDS, string $target = 'uploads', array $metadata = [] )
   {
     // 1) Decode → binary.
     $binary = base64_decode( $b64_json );
@@ -205,24 +207,37 @@ class Meow_MWAI_Modules_Files {
 
     // 2) Make a transient file in the server tmp dir.
     $tmp_path = wp_tempnam( 'mwai-image' );   // Creates an empty file.
-    $filename = basename( $tmp_path ) . '.png';
+    $filename = 'mwai-generated-' . time() . '-' . wp_generate_password( 8, false ) . '.png';
     file_put_contents( $tmp_path, $binary );
 
-    // 3) Reuse the normal upload flow (target uploads, expiry = $ttl).
+    // 3) Reuse the normal upload flow (target based on user preference, expiry = $ttl).
     try {
+      // Extract envId from metadata if available
+      $envId = isset( $metadata['query_envId'] ) ? $metadata['query_envId'] : null;
+      
       $refId = $this->upload_file(
         $tmp_path,        // path on disk
         $filename,        // desired filename
         $purpose,         // purpose
-        null,             // metadata
-        null,             // envId
-        'uploads',        // target
+        $metadata,        // metadata (now includes query info)
+        $envId,           // envId from query
+        $target,          // target (uploads or library based on user settings)
         $ttl              // expiry in seconds
       );
-      // 4) Turn refId → URL.
+      // 4) Clean up temp file if it was uploaded to library (but not if uploads)
+      // For uploads target, the temp file IS the final file
+      if ( $target === 'library' && file_exists( $tmp_path ) ) {
+        @unlink( $tmp_path );
+      }
+      
+      // 5) Turn refId → URL.
       return $this->get_url( $refId );
     }
     catch ( Exception $e ) {
+      // Clean up temp file on error
+      if ( file_exists( $tmp_path ) ) {
+        @unlink( $tmp_path );
+      }
       return new WP_Error( 'mwai_upload_failed', $e->getMessage() );
     }
   }
@@ -355,6 +370,7 @@ class Meow_MWAI_Modules_Files {
       
     }
     else if ( $target === 'library' ) {
+      
       if ( filter_var( $path, FILTER_VALIDATE_URL ) ) {
         $tmp = download_url( $path );
         if ( is_wp_error( $tmp ) ) {
@@ -365,13 +381,31 @@ class Meow_MWAI_Modules_Files {
       else {
         $file_array = [ 'name' => $unique_filename, 'tmp_name' => $path ];
       }
+      
+      
       $id = media_handle_sideload( $file_array, 0 );
       if ( is_wp_error( $id ) ) {
         throw new Exception( $id->get_error_message() );
       }
+      
       $url = wp_get_attachment_url( $id );
       update_post_meta( $id, '_mwai_file_id', $refId );
       update_post_meta( $id, '_mwai_file_expires', $expires );
+      
+      // Store additional metadata
+      if ( $metadata && is_array( $metadata ) ) {
+        foreach ( $metadata as $metaKey => $metaValue ) {
+          update_post_meta( $id, '_mwai_' . $metaKey, $metaValue );
+        }
+      }
+      
+      // Store purpose and envId as post meta
+      if ( $purpose ) {
+        update_post_meta( $id, '_mwai_purpose', $purpose );
+      }
+      if ( $envId ) {
+        update_post_meta( $id, '_mwai_envId', $envId );
+      }
     }
 
     return $refId;

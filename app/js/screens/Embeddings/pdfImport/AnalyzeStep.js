@@ -1,19 +1,18 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 const { useState } = wp.element;
 
-// NekoUI
 import { NekoBlock, NekoButton, NekoTypo, NekoIcon } from '@neko-ui';
 import { useNekoColors, nekoFetch } from '@neko-ui';
 
-import { apiUrl, restNonce } from '@app/settings';
+import { apiUrl, restNonce, pluginUrl } from '@app/settings';
 
 let pdfjsLib = null;
 const loadPDFjs = async () => {
   if (!pdfjsLib) {
     pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = window.location.origin + '/wp-content/plugins/ai-engine-pro/app/vendor/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `${pluginUrl}/app/vendor/pdf.worker.min.js`;
   }
   return pdfjsLib;
 };

@@ -427,17 +427,62 @@ class Meow_MWAI_Rest
 
   function rest_ai_image_edit( $request ) {
       try {
-        $params = $request->get_json_params();
+        // Check if this is a multipart request with files
+        $files = $request->get_file_params();
+        $params = null;
+        
+        // Log all request data
+        error_log( "Image Edit Request - Method: " . $request->get_method() );
+        $content_type = $request->get_content_type();
+        if ( is_array( $content_type ) ) {
+          error_log( "Image Edit Request - Content-Type: " . $content_type['value'] );
+        } else {
+          error_log( "Image Edit Request - Content-Type: " . $content_type );
+        }
+        error_log( "Image Edit Request - Has files: " . ( !empty( $files ) ? 'yes (' . count($files) . ')' : 'no' ) );
+        
+        if ( !empty( $files ) ) {
+          // Handle multipart form data - get all params including POST data
+          $params = $request->get_params();
+          error_log( "Image Edit Request - Using form data params" );
+        } else {
+          // Try to get body params first (for form data without files)
+          $body_params = $request->get_body_params();
+          if ( !empty( $body_params ) ) {
+            $params = $body_params;
+            error_log( "Image Edit Request - Using body params" );
+          } else {
+            // Handle JSON request
+            $params = $request->get_json_params();
+            error_log( "Image Edit Request - Using JSON params" );
+          }
+        }
+        
+        // Ensure params is always an array
+        if ( empty( $params ) ) {
+          $params = [];
+        }
+        
+        // Debug logging
+        error_log( "Image Edit Request - Has files: " . ( !empty( $files ) ? 'yes' : 'no' ) );
+        error_log( "Image Edit Request - Params: " . json_encode( $params ) );
+        
         $message = $this->retrieve_message( $params );
         $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
         $query = new Meow_MWAI_Query_EditImage( $message );
+        
+        // The inject_params method will handle setting the file from mediaId
         $query->inject_params( $params );
-        if ( $mediaId ) {
-          $path = get_attached_file( $mediaId );
-          if ( $path ) {
-            $query->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+        
+        // Handle mask file if provided
+        if ( !empty( $files['mask'] ) ) {
+          $mask_file = $files['mask'];
+          if ( $mask_file['error'] === UPLOAD_ERR_OK ) {
+            $mask_data = file_get_contents( $mask_file['tmp_name'] );
+            $query->set_mask( Meow_MWAI_Query_DroppedFile::from_data( $mask_data, 'vision', $mask_file['type'] ) );
           }
         }
+        
         $reply = $this->core->run_query( $query );
         return new WP_REST_Response([ 'success' => true, 'data' => $reply->results, 'usage' => $reply->usage ], 200 );
       }

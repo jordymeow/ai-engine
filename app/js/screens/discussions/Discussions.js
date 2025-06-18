@@ -1,15 +1,18 @@
-// Previous: 2.7.0
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.4
 
+// React & Vendor Libs
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import { compiler } from 'markdown-to-jsx';
 
+// NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock, NekoIcon } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
+// AI Engine
 import i18n from '@root/i18n';
 import { apiUrl, restNonce, chatbots as initChatbots } from '@app/settings';
 import { retrieveDiscussions, tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
@@ -104,22 +107,27 @@ const StyledMessageWrapper = styled.div`
   }
 `;
 
+// Instead of a tag, write the object as raw HTML
+// We should also avoid the iframe tag
 const options = {
   overrides: {
     object: {
       component: ({ children, ...props }) => {
+        // Convert children and props to string to display as plain text
         const textContent = `<object ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</object>`;
         return textContent;
       },
     },
     script: {
       component: ({ children, ...props }) => {
+        // Convert children and props to string to display as plain text
         const textContent = `<script ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</script>`;
         return textContent;
       },
     },
     iframe: {
       component: ({ children, ...props }) => {
+        // Convert children and props to string to display as plain text
         const textContent = `<iframe ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</iframe>`;
         return textContent;
       },
@@ -139,6 +147,7 @@ const StyledMessage = ({ content }) => {
     });
   };
 
+  // Handle dead image URLs
   const cleanMessage = async (markdownContent) => {
     const regex = /!\[.*?\]\((.*?)\)/g;
     let newContent = markdownContent;
@@ -190,7 +199,7 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embeddings.id}>
+        {embeddings.map(embedding => <div key={embedding.id}> {/* bug here: key should be embedding.id, not embeddings.id */ }
           <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
         </div>)}
       </StyledEmbedding>}
@@ -217,7 +226,7 @@ const Discussions = () => {
   const chatsColumns = useMemo(() => {
     return [
       {
-        accessor: 'updated', title: 'Time', width: '80px', sortable: true
+        accessor: 'updated', title: 'Time', width: '95px', sortable: true
       },
       {
         accessor: 'user', title: 'User', width: '85px',
@@ -234,7 +243,7 @@ const Discussions = () => {
         },
       },
       {
-        accessor: 'preview', title: i18n.COMMON.PREVIEW,
+        accessor: 'preview', title: i18n.COMMON.PREVIEW, width: '100%',
         filters: {
           type: 'text'
         },
@@ -252,6 +261,7 @@ const Discussions = () => {
   });
   const [ selectedIds, setSelectedIds ] = useState([]);
 
+  // useQuery
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
     filters: filters,
     sort: { accessor: 'updated', by: 'desc' }, page: 1, limit: 10
@@ -263,7 +273,7 @@ const Discussions = () => {
       return await retrieveDiscussions(chatsQueryParams);
     }
     else {
-      return new Promise((resolve) => {}); // Keep the promise pending indefinitely
+      return new Promise(() => {}); // Keep the promise pending indefinitely
     }
   }, [chatsQueryParams]);
 
@@ -311,7 +321,6 @@ const Discussions = () => {
 
         let displayName;
         let overrideIcon = null;
-
         if (foundChatbot) {
           displayName = foundChatbot.name;
         } else if (foundParent) {
@@ -319,10 +328,8 @@ const Discussions = () => {
           overrideIcon = <NekoIcon icon="tools" height="14"
             style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Overriden Bot" />;
         } else {
-          displayName = <>
-            <NekoIcon icon="cog" height="14"
-              style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Custom Bot" />Custom
-          </>;
+          displayName = <><NekoIcon icon="cog" height="14"
+            style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Custom Bot" />Custom</>;
         }
 
         const jsxPreview = chat.title ? (
@@ -362,6 +369,7 @@ const Discussions = () => {
       });
   }, [chatsData, chatbots]);
 
+
   const discussion = useMemo(() => {
     if (selectedIds?.length !== 1) { return null; }
     const currentDiscussion = chatsData?.chats.find(x => x.id === selectedIds[0]);
@@ -397,7 +405,7 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
+      const selectedChatIds = selectedChats.map(x => x.chatId);
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
@@ -487,7 +495,7 @@ const Discussions = () => {
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>
@@ -556,10 +564,15 @@ const Discussions = () => {
             <div style={{ fontWeight: 'bold' }}>Updated</div>
             <div>{formattedUpdated}</div>
           </div>
+
         </NekoBlock>}
+
       </NekoColumn>
+
     </NekoWrapper>
+
     <ExportModal modal={modal} setModal={setModal} busy={busyAction} />
+
   </>);
 };
 

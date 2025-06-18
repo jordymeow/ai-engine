@@ -456,10 +456,33 @@ class Meow_MWAI_API {
     $reply = $this->core->run_query( $query );
     preg_match( '/\!\[Image\]\((.*?)\)/', $reply->result, $matches );
     $url = $matches[1] ?? $reply->result;
-    $attachmentId = $this->core->add_image_from_url( $url, null, null, null, null, null, $postId );
-    if ( empty( $attachmentId ) ) {
-      throw new Exception( 'Could not add the image to the Media Library.' );
+    
+    // Check if the URL is already a WordPress attachment URL to avoid duplicates
+    $attachmentId = null;
+    $upload_dir = wp_upload_dir();
+    if ( strpos( $url, $upload_dir['baseurl'] ) === 0 ) {
+      // This is already a local WordPress upload, try to find the attachment ID
+      // First try by GUID
+      global $wpdb;
+      $attachmentId = $wpdb->get_var( $wpdb->prepare( 
+        "SELECT ID FROM {$wpdb->posts} WHERE guid = %s AND post_type = 'attachment'", 
+        $url 
+      ) );
+      
+      // If not found by GUID, try by attachment URL (more reliable)
+      if ( empty( $attachmentId ) ) {
+        $attachmentId = attachment_url_to_postid( $url );
+      }
     }
+    
+    // If not found or not a local URL, add it to the media library
+    if ( empty( $attachmentId ) ) {
+      $attachmentId = $this->core->add_image_from_url( $url, null, null, null, null, null, $postId );
+      if ( empty( $attachmentId ) ) {
+        throw new Exception( 'Could not add the image to the Media Library.' );
+      }
+    }
+    
     // TODO: We should create a nice title, caption, and alt.
     $media = [
       'id' => $attachmentId,

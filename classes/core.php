@@ -1082,6 +1082,19 @@ class Meow_MWAI_Core
 					}
 					$value = $mcpServers;
 				}
+				else if ( $key === 'tools' ) {
+					// Sanitize tools array (web_search, image_generation, etc)
+					$tools = [];
+					if ( is_array( $value ) ) {
+						foreach ( $value as $tool ) {
+							$sanitized_tool = sanitize_text_field( $tool );
+							if ( in_array( $sanitized_tool, ['web_search', 'image_generation'] ) ) {
+								$tools[] = $sanitized_tool;
+							}
+						}
+					}
+					$value = $tools;
+				}
 				else {
 					if ( in_array( $key, $keepLineReturnsFields ) ) {
 						$value = preg_replace( '/\r\n/', "[==LINE_RETURN==]", $value );

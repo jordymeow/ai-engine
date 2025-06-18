@@ -261,6 +261,8 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
 `,p=e=>{if(e){const t=/^#|^rgb\(|^rgba\(|^hsl\(/.test(e),n=t?e:`var(--neko-${e})`;return`\n      &.custom-color {\n        background-color: ${n};\n        border: 1px solid ${t?e:`var(--neko-${e})`};\n\n        &:hover {\n          background-color: ${n};\n          filter: brightness(1.1);\n        }\n      }\n    `}},m=e=>React.createElement(f,e);m.propTypes={className:o().oneOf(["primary","primary-block","secondary","danger","success","header"]),disabled:o().bool,icon:o().oneOfType([o().instanceOf(a.In),o().oneOf(["setting","edit","trash"])]),color:o().string,onClick:o().func.isRequired,onStopClick:o().func,rounded:o().bool,isBusy:o().bool,spinning:o().bool,busyText:o().string,hideBusyIcon:o().bool,busyIconSize:o().string,requirePro:o().bool,isPro:o().bool,disabledColor:o().string}},2557:(e,t,n)=>{"use strict";n.d(t,{A:()=>u});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(6897);function l(){return l=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},l.apply(this,arguments)}const c=e=>{const{spinner:t=!0,busy:n=!1,overlayStyle:o}=e,[s,c]=(0,r.useState)(!0);(0,r.useEffect)((()=>{let e;return n?c(!0):e=setTimeout((()=>{c(!1),e=null}),250),()=>{e&&clearTimeout(e)}}),[n]);const u=(0,a.gR)("neko-overlay",{overlayHidden:!n}),h=s?i().createElement(i().Fragment,null,i().createElement("div",{className:u,style:o},Boolean(t)&&i().createElement("div",{className:"lds-ellipsis "+(n?"":"spinnerHidden")},i().createElement("div",null),i().createElement("div",null),i().createElement("div",null),i().createElement("div",null))),i().createElement("style",{jsx:"true"},"\n        .neko-overlay {\n          position: absolute;\n          top: 0;\n          left: 0;\n          bottom: 0;\n          width: 100%;\n          height: 100%;\n          background: var(--neko-main-overlay-color);\n          border-radius: 8px;\n          transition: opacity 1s ease-out;\n          z-index: 10;\n          display: flex;\n          align-items: center;\n          flex-direction: column;\n          justify-content: center;\n          overflow: hidden;\n        }\n\n        .overlayHidden {\n          opacity: 0;\n          transition: opacity 0.25s ease-out;\n        }\n        .spinnerHidden {\n          opacity: 0;\n          transition: opacity 0.25s ease-out;\n        }\n        .lds-ellipsis {\n          position: relative;\n          width: 80px;\n          height: 80px;\n          display: flex;\n          justify-items: center;\n          align-items: center;\n        }\n        .lds-ellipsis div {\n          position: absolute;\n          width: 13px;\n          height: 13px;\n          border-radius: 50%;\n          background: white;\n          animation-timing-function: cubic-bezier(0, 1, 1, 0);\n        }\n        .lds-ellipsis div:nth-child(1) {\n          left: 8px;\n          animation: lds-ellipsis1 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(2) {\n          left: 8px;\n          animation: lds-ellipsis2 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(3) {\n          left: 32px;\n          animation: lds-ellipsis2 0.6s infinite;\n        }\n        .lds-ellipsis div:nth-child(4) {\n          left: 56px;\n          animation: lds-ellipsis3 0.6s infinite;\n        }\n        @keyframes lds-ellipsis1 {\n          0% {\n            transform: scale(0);\n          }\n          100% {\n            transform: scale(1);\n          }\n        }\n        @keyframes lds-ellipsis3 {\n          0% {\n            transform: scale(1);\n          }\n          100% {\n            transform: scale(0);\n          }\n        }\n        @keyframes lds-ellipsis2 {\n          0% {\n            transform: translate(0, 0);\n          }\n          100% {\n            transform: translate(24px, 0);\n          }\n        }\n      ")):null,d={...e,busy:void 0,spinner:void 0};return i().createElement("div",l({style:{position:"relative"}},d),h,e.children)};c.propTypes={busy:s().bool.isRequired,spinner:s().bool,children:s().oneOfType([s().arrayOf(s().node),s().node]).isRequired};const u=c},5263:(e,t,n)=>{"use strict";n.d(t,{R:()=>f});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(1329),c=n(6087),u=n(6897);function h(){return h=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},h.apply(this,arguments)}const d=a.Ay.div`
   user-select: none;
   transition: color 0.3s ease;
+  
+  ${({color:e})=>e?`\n      --checkbox-color: var(--neko-${e});\n    `:""}
 
   &.disabled {
     color: var(--neko-disabled-color);
@@ -302,7 +304,7 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
 
       .neko-label {
         display: block;
-        ${({checked:e,disabled:t})=>!t&&e?"color: var(--neko-main-color); font-weight: 600;":""}
+        ${({checked:e,disabled:t,color:n})=>{if(t)return"";if(e){return`color: ${n?"var(--checkbox-color, var(--neko-main-color))":"var(--neko-main-color)"}; font-weight: 600;`}return""}}
       }
     }
 
@@ -379,10 +381,10 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
   }
 
   .neko-checked {
-    border: 2px solid var(--neko-main-color);
+    border: 2px solid var(--checkbox-color, var(--neko-main-color));
 
     &.neko-checkbox {
-      background-color: var(--neko-main-color);
+      background-color: var(--checkbox-color, var(--neko-main-color));
 
       .neko-checked-mark {
         opacity: 1;
@@ -392,7 +394,7 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
 
   .neko-indeterminate {
     &.neko-checkbox {
-      background-color: var(--neko-main-color);
+      background-color: var(--checkbox-color, var(--neko-main-color));
 
       .neko-indeterminate-mark {
         opacity: 1;
@@ -405,10 +407,10 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
       ${({checked:e,disabled:t})=>!t&&e?"filter: brightness(1.1);":""}
     }
 
-    ${({checked:e,disabled:t})=>t||e?"":"border-color: var(--neko-main-color);"}
+    ${({checked:e,disabled:t,color:n})=>{if(t||e)return"";return`border-color: ${n?"var(--checkbox-color, var(--neko-main-color))":"var(--neko-main-color)"};`}}
     }
   }
-`,f=e=>{const{name:t,checked:n=!1,indeterminate:r=!1,onChange:o,label:s,description:a,isPro:f=!1,disabled:p,requirePro:m=!1,isBusy:g=!1,small:y=!1,...b}=e,v=m&&!f,x=p||v,k=(0,u.gR)("neko-checkbox",e.className,{disabled:x},{small:y}),w=(0,u.gR)("neko-checkbox",{disabled:x,"neko-checked":n,"neko-indeterminate":r,small:y}),_=(0,u.gR)("neko-checked-mark"),S=(0,u.gR)("neko-indeterminate-mark");return i().createElement(d,h({className:k,checked:n,disabled:x,onClick:e=>e.stopPropagation()},b),i().createElement("div",{className:"neko-checkbox-container"},i().createElement("div",{className:"neko-content",onClick:r=>{x||(o?o(!n,t,r):console.log("The onChange handler is not set for the NekoCheckbox.",e))}},i().createElement("div",{className:"neko-checkbox-check-container"},g&&i().createElement("div",{className:"neko-checkbox-busy-container"},i().createElement("div",{className:w},i().createElement(c.X,{type:"circle",size:"16px"}))),!g&&i().createElement(i().Fragment,null,i().createElement("div",{className:w},i().createElement("div",{className:_}),i().createElement("div",{className:S})))),(s||v||a)&&i().createElement("div",{className:"neko-checkbox-inner-container"},i().createElement("span",{className:"neko-label-container"},i().createElement("span",{className:"neko-label"},s),i().createElement(l.K,{className:"inline",show:v,style:{position:"relative",top:-1}})),a?i().createElement("small",{className:"description"},a):null))))};f.propTypes={name:s().string,checked:s().bool,label:s().string,description:s().string,isPro:s().bool,requirePro:s().bool,isBusy:s().bool,small:s().bool}},4536:(e,t,n)=>{"use strict";n.d(t,{E:()=>l});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o);const a=(0,n(3185).Ay)((e=>{const{name:t,max:n=-1,isPro:r=!1}=e,o=i().Children.map(e.children,(e=>e.props.name?e:i().cloneElement(e,{name:t,isPro:r})));return i().createElement("div",{className:"neko-checkbox-group"},o)}))`
+`,f=e=>{const{name:t,checked:n=!1,indeterminate:r=!1,onChange:o,label:s,description:a,isPro:f=!1,disabled:p,requirePro:m=!1,isBusy:g=!1,small:y=!1,color:b,...v}=e,x=m&&!f,k=p||x,w=(0,u.gR)("neko-checkbox",e.className,{disabled:k},{small:y}),_=(0,u.gR)("neko-checkbox",{disabled:k,"neko-checked":n,"neko-indeterminate":r,small:y}),S=(0,u.gR)("neko-checked-mark"),C=(0,u.gR)("neko-indeterminate-mark");return i().createElement(d,h({className:w,checked:n,disabled:k,color:b,onClick:e=>e.stopPropagation()},v),i().createElement("div",{className:"neko-checkbox-container"},i().createElement("div",{className:"neko-content",onClick:r=>{k||(o?o(!n,t,r):console.log("The onChange handler is not set for the NekoCheckbox.",e))}},i().createElement("div",{className:"neko-checkbox-check-container"},g&&i().createElement("div",{className:"neko-checkbox-busy-container"},i().createElement("div",{className:_},i().createElement(c.X,{type:"circle",size:"16px"}))),!g&&i().createElement(i().Fragment,null,i().createElement("div",{className:_},i().createElement("div",{className:S}),i().createElement("div",{className:C})))),(s||x||a)&&i().createElement("div",{className:"neko-checkbox-inner-container"},i().createElement("span",{className:"neko-label-container"},i().createElement("span",{className:"neko-label"},s),i().createElement(l.K,{className:"inline",show:x,style:{position:"relative",top:-1}})),a?i().createElement("small",{className:"description"},a):null))))};f.propTypes={name:s().string,checked:s().bool,label:s().string,description:s().string,isPro:s().bool,requirePro:s().bool,isBusy:s().bool,small:s().bool,color:s().oneOf(["blue","purple","green","red","orange","yellow","gray"])}},4536:(e,t,n)=>{"use strict";n.d(t,{E:()=>l});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o);const a=(0,n(3185).Ay)((e=>{const{name:t,max:n=-1,isPro:r=!1}=e,o=i().Children.map(e.children,(e=>e.props.name?e:i().cloneElement(e,{name:t,isPro:r})));return i().createElement("div",{className:"neko-checkbox-group"},o)}))`
 `,l=e=>i().createElement(a,e);l.propTypes={name:s().string,max:s().number,isPro:s().bool}},8696:(e,t,n)=>{"use strict";n.d(t,{A:()=>p});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(8922),c=n(6897);function u(){return u=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},u.apply(this,arguments)}const h=e=>e.split(",").map((e=>e.trim())).filter((e=>e.length>0)),d=(e,t)=>{const{type:n="text",name:o,value:s="",description:a,placeholder:d="",onChange:f,onEnter:p,onBlur:m,onFinalChange:g,readOnly:y=!1,step:b=1,min:v=0,max:x=null,maxLength:k,natural:w=!1,onReset:_,isCommaSeparatedArray:S=!1,className:C,style:E,inputStyle:A,...O}=e,[M,R]=(0,r.useState)(s||0===s?s:""),P=!!f,T=k||("number"===n?3:void 0);(0,r.useEffect)((()=>{g&&(p||m)&&console.warn("NekoInput: Since onFinalChange is used, onEnter and onBlur are redundant.")}),[g,p,m]),(0,r.useEffect)((()=>{var e;P||R(S?(e=s,Array.isArray(e)||(console.warn("The provided value is not an array. Falling back to an empty array."),e=[]),e.join(", ")):s)}),[s]);const I=e=>{const t=e.target.value,n=S?h(t):t;e.stopPropagation(),e.preventDefault(),P?f(n,o):R(t)},L=e=>{if("Enter"===e.key){e.preventDefault();const t=e.target.value,n=S?h(t):t;g?g(n,o):p&&p(n,o)}},j=e=>{const t=e.target.value,n=S?h(t):t;(S?((e,t)=>{if(!Array.isArray(e)||!Array.isArray(t)||e.length!==t.length)return!1;for(let n=0;n<e.length;n++)if(e[n]!==t[n])return!1;return!0})(s,n):s===n)||(g?g(n,o):m&&m(n,o))},N=(0,c.gR)("neko-input",{natural:w});return i().createElement("div",{className:C,style:E},i().createElement("div",{style:{position:"relative"}},"number"===n?i().createElement("input",u({ref:t,className:N,name:o,value:P?s:M,type:n,disabled:y,step:b,min:v,max:x,maxLength:T,autoComplete:"off","data-form-type":"other",placeholder:d,style:A,onChange:I,onKeyPress:L,onBlur:e=>{(e=>{const t=Number(e.target.value);v&&t<Number(v)?e.target.value=v:x&&t>Number(x)&&(e.target.value=x)})(e),j(e)},readOnly:y},O)):i().createElement("input",u({ref:t,className:N},O,{name:o,value:P?s:M,type:n,disabled:y,spellCheck:"false",autoComplete:"off","data-form-type":"other",placeholder:d,style:A,maxLength:T,onChange:I,onKeyPress:L,onBlur:j,readOnly:y},O)),!!s&&!!_&&i().createElement(l.z,{icon:"close",width:24,style:{position:"absolute",top:"3px",right:"3px"},variant:"blue",onClick:()=>_()})),a&&i().createElement("p",{className:"neko-input-description"},a))},f=(0,a.Ay)((0,r.forwardRef)(d))`
   .neko-input {
     font-family: var(--neko-font-family);
@@ -814,6 +816,11 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
     }
   }
 
+  .neko-block-action {
+    margin-bottom: 5px;
+    margin-right: 5px;
+  }
+
   &.primary {
     padding: 8px;
     background-color: var(--neko-main-color);
@@ -852,7 +859,7 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
       box-shadow: none;
     }
   }
-`,d=e=>{const{title:t,children:n,className:r="",busy:o=!1,style:s={},contentStyle:a={},action:d}=e,f=(0,u.gR)("neko-block",r);return i().createElement(h,{className:f,style:s},t&&i().createElement("div",{className:"neko-block-header"},i().createElement(l.s,{h2:!0,className:"neko-block-title"},t),!!d&&d),i().createElement(c.A,{busy:o},i().createElement("div",{className:"neko-block-content",style:a},n)))},f=e=>i().createElement(d,e);f.propTypes={title:s().string,className:s().oneOf(["","primary","standard","raw"]),style:s().object,action:s().element}},8668:(e,t,n)=>{"use strict";n.d(t,{Zc:()=>m,y2:()=>p});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185);const l=a.Ay.div`
+`,d=e=>{const{title:t,children:n,className:r="",busy:o=!1,style:s={},contentStyle:a={},action:d}=e,f=(0,u.gR)("neko-block",r);return i().createElement(h,{className:f,style:s},t&&i().createElement("div",{className:"neko-block-header"},i().createElement(l.s,{h2:!0,className:"neko-block-title"},t),!!d&&i().createElement("div",{className:"neko-block-action"},d)),i().createElement(c.A,{busy:o},i().createElement("div",{className:"neko-block-content",style:a},n)))},f=e=>i().createElement(d,e);f.propTypes={title:s().string,className:s().oneOf(["","primary","standard","raw"]),style:s().object,action:s().element}},8668:(e,t,n)=>{"use strict";n.d(t,{Zc:()=>m,y2:()=>p});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185);const l=a.Ay.div`
   margin-bottom: 10px;
 `,c=a.Ay.div`
   margin-bottom: 0px;
@@ -953,9 +960,11 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
       }
     }
   }
-`,h=e=>{const{className:t,children:n,nekoErrors:o=[],style:s={}}=e,[a,h]=(0,r.useState)(!1),[d,f]=(0,r.useState)(!1),p=(0,c.gR)("neko-page",t);if(o&&!a)for(let e of o)if(e){h(e);break}return i().createElement(u,{className:p,style:s},a&&i().createElement("div",{className:"neko-rest-error"},i().createElement("div",{className:"container"},!d&&i().createElement(i().Fragment,null,i().createElement("h3",null,"The Rest API is disabled or broken 😢"),i().createElement("p",null,"The Rest API is required for this plugin to work. It is enabled in WordPress by default since December 2016 and used by the Gutenberg Editor since 2019. In short, it allows more robustness and a much cleaner infrastructure. Soon, Wordpress will entirely depends on it, so it is important to keep it enabled."),i().createElement("p",null,i().createElement("i",null,"Last but not least: check your PHP Error Logs and your Debugging Console.")),i().createElement("p",{className:"neko-debug"},i().createElement("small",null,"URL: ",a.url,i().createElement("br",null),"CODE: ",a.code,i().createElement("br",null),"MESSAGE: ",a.message,i().createElement("br",null)))),a.body&&d&&i().createElement("p",{className:"neko-debug"},i().createElement("div",{dangerouslySetInnerHTML:{__html:a.body}})),a.body&&i().createElement(l.M,{color:"#a94242",onClick:()=>f(!d)},d?"Hide":"Display"," response from server"),i().createElement(l.M,{color:"#a94242",onClick:()=>{window.open("https://meowapps.com/fix-wordpress-rest-api/","_blank")}},"Learn about WordPress Debugging"))),n)},d=e=>i().createElement(h,e);d.propTypes={className:s().string,style:s().object,nekoErrors:s().bool}},7039:(e,t,n)=>{"use strict";n.d(t,{d:()=>h});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(6897);function c(){return c=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},c.apply(this,arguments)}const u=(0,a.Ay)((e=>{const{title:t="",contentAlign:n="left",titleStyle:r={},...o}=e,s=(0,l.gR)("neko-settings",e.className);return i().createElement("div",c({className:s},o),t?i().createElement("div",{className:"neko-settings-head",style:r},t):null,i().createElement("div",{className:`neko-settings-content neko-settings-content-align-${n}`},e.children))}))`
+`,h=e=>{const{className:t,children:n,nekoErrors:o=[],style:s={}}=e,[a,h]=(0,r.useState)(!1),[d,f]=(0,r.useState)(!1),p=(0,c.gR)("neko-page",t);if(o&&!a)for(let e of o)if(e){h(e);break}return i().createElement(u,{className:p,style:s},a&&i().createElement("div",{className:"neko-rest-error"},i().createElement("div",{className:"container"},!d&&i().createElement(i().Fragment,null,i().createElement("h3",null,"The Rest API is disabled or broken 😢"),i().createElement("p",null,"The Rest API is required for this plugin to work. It is enabled in WordPress by default since December 2016 and used by the Gutenberg Editor since 2019. In short, it allows more robustness and a much cleaner infrastructure. Soon, Wordpress will entirely depends on it, so it is important to keep it enabled."),i().createElement("p",null,i().createElement("i",null,"Last but not least: check your PHP Error Logs and your Debugging Console.")),i().createElement("p",{className:"neko-debug"},i().createElement("small",null,"URL: ",a.url,i().createElement("br",null),"CODE: ",a.code,i().createElement("br",null),"MESSAGE: ",a.message,i().createElement("br",null)))),a.body&&d&&i().createElement("p",{className:"neko-debug"},i().createElement("div",{dangerouslySetInnerHTML:{__html:a.body}})),a.body&&i().createElement(l.M,{color:"#a94242",onClick:()=>f(!d)},d?"Hide":"Display"," response from server"),i().createElement(l.M,{color:"#a94242",onClick:()=>{window.open("https://meowapps.com/fix-wordpress-rest-api/","_blank")}},"Learn about WordPress Debugging"))),n)},d=e=>i().createElement(h,e);d.propTypes={className:s().string,style:s().object,nekoErrors:s().bool}},7039:(e,t,n)=>{"use strict";n.d(t,{d:()=>h});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(6897);function c(){return c=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},c.apply(this,arguments)}const u=(0,a.Ay)((e=>{const{title:t="",contentAlign:n="left",titleStyle:r={},color:o,...s}=e,a=(0,l.gR)("neko-settings",e.className);return i().createElement("div",c({className:a},s),i().createElement("div",{className:"neko-settings-head",style:r},t||" "),i().createElement("div",{className:`neko-settings-content neko-settings-content-align-${n}`},e.children))}))`
   display: flex;
   font-family: var(--neko-font-family);
+  
+  ${({color:e})=>e?`\n      --settings-color: var(--neko-${e});\n    `:""}
 
   > .neko-settings-head {
     font-family: var(--neko-font-family);
@@ -964,7 +973,7 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
     width: 120px;
     margin-right: 16px;
     font-weight: 500;
-    color: var(--neko-main-color);
+    color: var(--settings-color, var(--neko-main-color));
   }
 
   /* Select, Checkbox, Input need to be a bit higher to be in front of the settings title */
@@ -1006,7 +1015,7 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
   & + div {
     margin-top: 10px;
   }
-`,h=e=>i().createElement(u,e);h.propTypes={title:s().string,className:s().string,contentAlign:s().string,titleStyle:s().object}},6734:(e,t,n)=>{"use strict";n.d(t,{g:()=>d});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185);function l(){return l=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},l.apply(this,arguments)}const c=a.Ay.div`
+`,h=e=>i().createElement(u,e);h.propTypes={title:s().string,className:s().string,contentAlign:s().string,titleStyle:s().object,color:s().oneOf(["blue","purple","green","red","orange","yellow","gray"])}},6734:(e,t,n)=>{"use strict";n.d(t,{g:()=>d});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185);function l(){return l=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},l.apply(this,arguments)}const c=a.Ay.div`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1378,11 +1387,6 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
   user-select: none;
 
   .neko-paging-text {
-    font-family: var(--neko-font-family);
-    font-style: normal;
-    font-weight: normal;
-    font-size: 15px;
-    line-height: 14px;
     margin-right: 15px;
   }
 
@@ -1786,13 +1790,27 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
   border-spacing: 0;
   width: 100%;
   word-break: break-all;
+  display: block;
+
+  thead, tbody, tfoot {
+    display: block;
+  }
+
+  tr {
+    display: grid;
+    grid-template-columns: ${e=>e.$gridColumns||"repeat(auto-fit, minmax(0, 1fr))"};
+  }
 
   th, td {
     margin: 0;
     padding: 5px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     border-right: 1px solid rgba(0, 0, 0, 0.05);
-    height: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 
     a {
       text-decoration: none;
@@ -1812,11 +1830,14 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
     font-size: var(--neko-font-size);
     line-height: 16px;
     text-align: left;
+    flex-direction: row;
+    align-items: center;
 
-    div {
+    > div {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      width: 100%;
 
       &.neko-column-action {
         cursor: pointer;
@@ -1876,6 +1897,10 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
         a {
           color: #81e8ff;
         }
+
+        .neko-button {
+          border: 1px solid white;
+        }
     }
     
     img {
@@ -1909,8 +1934,8 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
   }
 
   .table-checkbox-cell {
-    width: 23px;
     text-align: center;
+    justify-content: center;
 
     svg {
       padding: 5px;
@@ -1923,7 +1948,7 @@ var n="none",r="contents",i=/input|select|textarea|button|object|iframe/;functio
       cursor: pointer;
     }
   }
-`,C=e=>{const{checked:t,indeterminate:n,onSelect:r=(()=>{}),onUnselect:o=(()=>{}),isBusy:s=!1}=e;return i().createElement(d.R,{small:!0,onChange:(e,t,n)=>e?r(n):o(n),checked:t,indeterminate:n,isBusy:t&&s,disabled:s})},E={left:"start",center:"center",right:"end"},A=(e,t=!1)=>{let n={};return e.align&&(n={textAlign:e.align,justifyContent:E[e.align]}),t&&e.verticalAlign&&(n={...n,verticalAlign:e.verticalAlign}),e.width&&(n={...n,width:e.width}),e.style&&(n={...n,...e.style}),n},O=e=>!0===e?"#edf8ff":e,M=(e,t)=>{console.log("[NekoUI] Missing implementation for onFilterChange.",{filter:e,value:t})},R=e=>{const{data:t=[],selectedItems:n=[],selectedRow:o,filters:s,onFilterChange:a=M}=e,{columns:d=[],busy:p=!1,onSelect:m,onSelectRow:g,selectOnRowClick:y=!0,onUnselect:b,onSortChange:v=(()=>{}),variant:x="default",alternateRowColor:k=!1,sort:E,emptyMessage:R="Empty."}=e,P=d.length+(m?1:0);t.some((e=>void 0===e.id))&&(console.warn('Table data is missing the "id" field. Using the index as id instead, and disabling the row selection.'),t.forEach(((e,t)=>{e.id||(e.disabled_row=!0,e.id=-t)})));const T=(e=>e?{backgroundColor:O(e)}:{})(k),I=t.map((e=>{const t=d.map((t=>({value:e[t.accessor],style:A(t,!0)})));return{id:e.id,disabled_row:null==e?void 0:e.disabled_row,isBusy:e.isBusy||!1,cells:t}})),L=t.map((e=>({id:e.id}))),{onSelect:j}=(({list:e,selectedList:t,callback:n,key:i="id"})=>{const{pressShift:o}=(0,f.v_)(),s=(0,r.useMemo)((()=>{if(!o||!t.length)return null;const n=t[t.length-1];return e.findIndex((e=>e[i]===n))}),[i,e,o,t]);return{onSelect:(0,r.useCallback)((r=>{if(!n)return;if(null===s)return void n([...r]);const o=r[0],a=e.findIndex((e=>e[i]===o)),l=(s<a?s:a)+1,c=s<a?a:s,u=e.slice(l,c).map((e=>e[i])).filter((e=>!t.some((t=>t===e))));n([...u,...r])}),[s,e,n,t,i])}})({list:L,selectedList:n,callback:m}),N=I.map((e=>e.id)),z=0===N.length,D=N.filter((e=>n.includes(e))),F=!z&&D.length===N.length,$=!F&&n.length>0,B=d.reduce((function(e,t,n){return!1===t.visible&&e.push(n),e}),[]),H=i().createElement("tr",null,m&&!z&&i().createElement("th",{className:"table-checkbox-cell"},i().createElement(C,{checked:F,indeterminate:$,onSelect:e=>m(N,e),onUnselect:e=>{b($?n:N,e)}})),d.filter(((e,t)=>!B.includes(t))).map((e=>{let t=E&&E.accessor===e.accessor,n=E&&"asc"===E.by;const r=A(e);return i().createElement("th",{style:r,key:e.accessor},i().createElement("div",{style:{...r,width:"auto"}},i().createElement("div",null,e.title),i().createElement("div",{style:{flex:"auto"}}),i().createElement("div",{className:"neko-column-action"},e.filters&&i().createElement(w,_({accessor:e.accessor},e.filters,{onChange:(e,t)=>a(e,t),filters:(()=>{let t=(null==s?void 0:s.find((t=>t.accessor===e.accessor)))??null;return(null==t?void 0:t.value)??null})()}))),i().createElement("div",{className:"neko-column-action",onClick:e.sortable?r=>{let i=E&&E.accessor!==e.accessor;v(e.accessor,i||t&&n?"desc":"asc",r)}:void 0},e.sortable&&i().createElement(l.In,{className:t?"neko-active":"",icon:t&&n?u.A:c.A,width:"26px",height:"26px"}))))}))),W=(0,f.gR)("neko-table",`neko-table-${x}`,{"neko-row-selectable":!!g});return i().createElement(h.A,{busy:p,overlaystyle:{top:"36px",height:"calc(100% - 76px)"}},i().createElement(S,{className:W},i().createElement("thead",null,H),i().createElement("tbody",null,!I.length&&i().createElement("tr",null,i().createElement("td",{colspan:P,style:{textAlign:"center",height:40,color:"gray"}},R)),I.map(((e,t)=>{const r=t%2==0?T:{},s=!!o&&o===e.id||n.includes(e.id);return i().createElement("tr",{key:`neko-row-${e.id}`,className:s?"selected":"",style:r,onClick:t=>{t.stopPropagation(),g&&y&&g(e.id,t)}},m&&i().createElement("td",{className:"table-checkbox-cell"},i().createElement(C,{checked:n.includes(e.id),onSelect:t=>{t.stopPropagation(),j([e.id],t)},onUnselect:t=>{t.stopPropagation(),b([e.id],t)},isBusy:e.isBusy||(null==e?void 0:e.disabled_row)})),e.cells.filter(((e,t)=>!B.includes(t))).map(((n,r)=>i().createElement("td",{key:`${e.id}${t}${r}`,style:n.style},n.value))))}))),"default"===x&&i().createElement("tfoot",null,H)))},P=e=>i().createElement(R,e);P.propTypes={columns:s().arrayOf(s().any),data:s().arrayOf(s().any),busy:s().bool,onSelect:s().func,onSelectRow:s().func,selectOnRowClick:s().bool,onUnselect:s().func,selectedItems:s().arrayOf(s().any),onSortChange:s().func,variant:s().string,alternateRowColor:s().oneOfType([s().bool,s().string])}},3676:(e,t,n)=>{"use strict";n.d(t,{V:()=>_,_:()=>w});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(1329),c=n(8922),u=n(6897),h=n(2557),d=n(9296);function f(){return f=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},f.apply(this,arguments)}const p=a.Ay.div`
+`,C=e=>{const{checked:t,indeterminate:n,onSelect:r=(()=>{}),onUnselect:o=(()=>{}),isBusy:s=!1}=e;return i().createElement(d.R,{small:!0,onChange:(e,t,n)=>e?r(n):o(n),checked:t,indeterminate:n,isBusy:t&&s,disabled:s})},E={left:"start",center:"center",right:"end"},A=(e,t=!1)=>{let n={};return e.align&&(n={textAlign:e.align,justifyContent:E[e.align]}),t&&e.verticalAlign&&(n={...n,verticalAlign:e.verticalAlign}),e.style&&(n={...n,...e.style}),n},O=e=>!0===e?"#edf8ff":e,M=(e,t)=>{console.log("[NekoUI] Missing implementation for onFilterChange.",{filter:e,value:t})},R=e=>{const{data:t=[],selectedItems:n=[],selectedRow:o,filters:s,onFilterChange:a=M}=e,{columns:d=[],busy:p=!1,onSelect:m,onSelectRow:g,selectOnRowClick:y=!0,onUnselect:b,onSortChange:v=(()=>{}),variant:x="default",alternateRowColor:k=!1,sort:E,emptyMessage:R="Empty."}=e;d.length;t.some((e=>void 0===e.id))&&(console.warn('Table data is missing the "id" field. Using the index as id instead, and disabling the row selection.'),t.forEach(((e,t)=>{e.id||(e.disabled_row=!0,e.id=-t)})));const P=(e=>e?{backgroundColor:O(e)}:{})(k),T=t.map((e=>{const t=d.map((t=>({value:e[t.accessor],style:A(t,!0)})));return{id:e.id,disabled_row:null==e?void 0:e.disabled_row,isBusy:e.isBusy||!1,cells:t}})),I=t.map((e=>({id:e.id}))),{onSelect:L}=(({list:e,selectedList:t,callback:n,key:i="id"})=>{const{pressShift:o}=(0,f.v_)(),s=(0,r.useMemo)((()=>{if(!o||!t.length)return null;const n=t[t.length-1];return e.findIndex((e=>e[i]===n))}),[i,e,o,t]);return{onSelect:(0,r.useCallback)((r=>{if(!n)return;if(null===s)return void n([...r]);const o=r[0],a=e.findIndex((e=>e[i]===o)),l=(s<a?s:a)+1,c=s<a?a:s,u=e.slice(l,c).map((e=>e[i])).filter((e=>!t.some((t=>t===e))));n([...u,...r])}),[s,e,n,t,i])}})({list:I,selectedList:n,callback:m}),j=T.map((e=>e.id)),N=0===j.length,z=j.filter((e=>n.includes(e))),D=!N&&z.length===j.length,F=!D&&n.length>0,$=d.reduce((function(e,t,n){return!1===t.visible&&e.push(n),e}),[]),B=!!m&&!N,H=i().createElement("tr",null,B&&i().createElement("th",{className:"table-checkbox-cell"},i().createElement(C,{checked:D,indeterminate:F,onSelect:e=>m(j,e),onUnselect:e=>{b(F?n:j,e)}})),d.filter(((e,t)=>!$.includes(t))).map((e=>{let t=E&&E.accessor===e.accessor,n=E&&"asc"===E.by;const r=A(e);return i().createElement("th",{style:r,key:e.accessor},i().createElement("div",null,i().createElement("div",null,e.title),i().createElement("div",{style:{flex:"auto"}}),i().createElement("div",{className:"neko-column-action"},e.filters&&i().createElement(w,_({accessor:e.accessor},e.filters,{onChange:(e,t)=>a(e,t),filters:(()=>{let t=(null==s?void 0:s.find((t=>t.accessor===e.accessor)))??null;return(null==t?void 0:t.value)??null})()}))),i().createElement("div",{className:"neko-column-action",onClick:e.sortable?r=>{let i=E&&E.accessor!==e.accessor;v(e.accessor,i||t&&n?"desc":"asc",r)}:void 0},e.sortable&&i().createElement(l.In,{className:t?"neko-active":"",icon:t&&n?u.A:c.A,width:"26px",height:"26px"}))))}))),W=(0,f.gR)("neko-table",`neko-table-${x}`,{"neko-row-selectable":!!g}),q=((e,t)=>{const n=e.filter((e=>!1!==e.visible)),r=t?["34px"]:[];return n.forEach((e=>{if(e.width)if(e.width.endsWith("%")){const t=parseFloat(e.width)/100;r.push(`${t}fr`)}else r.push(e.width);else r.push("1fr")})),r.join(" ")})(d,B);return i().createElement(h.A,{busy:p,overlaystyle:{top:"36px",height:"calc(100% - 76px)"}},i().createElement(S,{className:W,$gridColumns:q},i().createElement("thead",null,H),i().createElement("tbody",null,!T.length&&i().createElement("tr",null,i().createElement("td",{style:{gridColumn:"1 / -1",textAlign:"center",height:40,color:"gray"}},R)),T.map(((e,t)=>{const r=t%2==0?P:{},s=!!o&&o===e.id||n.includes(e.id);return i().createElement("tr",{key:`neko-row-${e.id}`,className:s?"selected":"",style:r,onClick:t=>{t.stopPropagation(),g&&y&&g(e.id,t)}},B&&i().createElement("td",{className:"table-checkbox-cell"},i().createElement(C,{checked:n.includes(e.id),onSelect:t=>{t.stopPropagation(),L([e.id],t)},onUnselect:t=>{t.stopPropagation(),b([e.id],t)},isBusy:e.isBusy||(null==e?void 0:e.disabled_row)})),e.cells.filter(((e,t)=>!$.includes(t))).map(((n,r)=>i().createElement("td",{key:`${e.id}${t}${r}`,style:n.style},n.value))))}))),"default"===x&&i().createElement("tfoot",null,H)))},P=e=>i().createElement(R,e);P.propTypes={columns:s().arrayOf(s().any),data:s().arrayOf(s().any),busy:s().bool,onSelect:s().func,onSelectRow:s().func,selectOnRowClick:s().bool,onUnselect:s().func,selectedItems:s().arrayOf(s().any),onSortChange:s().func,variant:s().string,alternateRowColor:s().oneOfType([s().bool,s().string])}},3676:(e,t,n)=>{"use strict";n.d(t,{V:()=>_,_:()=>w});var r=n(1594),i=n.n(r),o=n(6365),s=n.n(o),a=n(3185),l=n(1329),c=n(8922),u=n(6897),h=n(2557),d=n(9296);function f(){return f=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},f.apply(this,arguments)}const p=a.Ay.div`
   display: flex;
   align-items: stretch;
   position: relative;

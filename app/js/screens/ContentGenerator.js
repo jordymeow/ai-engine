@@ -1,5 +1,5 @@
-// Previous: 2.8.2
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 
@@ -95,7 +95,6 @@ const ContentGenerator = () => {
   const topicsAreTitles = template?.topicsAreTitles ?? false;
   const noSections = !sectionsPromptFormat || !sectionsCount;
   const useMaxTokens = template?.useMaxTokens ?? false;
-
   const { completionModels, calculatePrice } = useModels(options, envId || null);
   const { addUsage, jsxUsageCosts } = UsageCosts(calculatePrice);
   const aiEnvironments = options?.ai_envs || [];
@@ -109,7 +108,13 @@ const ContentGenerator = () => {
   const titleMessage = useMemo(() => getSeoMessage(title), [title]);
 
   const setTemplateProperty = (value, property) => {
-    setTemplate(x => ({ ...x, [property]: value }));
+    setTemplate(x => {
+      const newTemplate = { ...x, [property]: value };
+      if (property === 'envId' && (value === '' || value === null)) {
+        newTemplate.model = '';
+      }
+      return newTemplate;
+    });
   };
 
   useEffect(() => {
@@ -140,7 +145,7 @@ const ContentGenerator = () => {
     if (template.language !== currentLanguage) {
       setTemplateProperty(currentLanguage, 'language');
     }
-  }, [isCustom, currentLanguage, currentHumanLanguage, template]);
+  }, [isCustom, currentLanguage, currentHumanLanguage]);
 
   const finalizePrompt = (prompt) => {
     return prompt
@@ -422,9 +427,9 @@ const ContentGenerator = () => {
             <NekoTextArea
               name="topic"
               disabled={isBusy || mode === 'bulk' || isLoadingPostTypes}
-              rows={5}
+              rows={16}
               value={topic}
-              onChange={(val) => setTemplateProperty(val, 'topic')}
+              onChange={setTemplateProperty}
             />
             <NekoSpacer />
             <NekoButton
@@ -448,7 +453,7 @@ const ContentGenerator = () => {
             name="mode"
             value={mode}
             disabled={isBusy}
-            onChange={(val) => setTemplateProperty(val, 'mode')}
+            onChange={setTemplateProperty}
           >
             <NekoLink
               title={i18n.CONTENT_GENERATOR.SINGLE_GENERATE}
@@ -489,14 +494,14 @@ const ContentGenerator = () => {
                 name="topics"
                 rows={10}
                 value={topics}
-                onChange={(val) => setTemplateProperty(val, 'topics')}
+                onChange={setTemplateProperty}
               />
               <NekoCheckbox
                 name="topicsAreTitles"
                 label={i18n.CONTENT_GENERATOR.USE_TOPICS_AS_TITLES}
                 value="1"
                 checked={topicsAreTitles}
-                onChange={(val) => setTemplateProperty(val, 'topicsAreTitles')}
+                onChange={setTemplateProperty}
               />
               <h3>{i18n.CONTENT_GENERATOR.GENERATED_POSTS}</h3>
               {!createdPosts.length && <i>{i18n.CONTENT_GENERATOR.NOTHING_YET}</i>}
@@ -535,7 +540,7 @@ const ContentGenerator = () => {
                 name="title"
                 disabled={isBusy}
                 value={title}
-                onChange={(val) => setTemplateProperty(val, 'title')}
+                onChange={setTemplateProperty}
               />
               {titleMessage && (
                 <div className="information">{i18n.CONTENT_GENERATOR.ADVICE}: {titleMessage}</div>
@@ -559,9 +564,9 @@ const ContentGenerator = () => {
                             style={{ marginRight: 10 }}
                             value={sectionsCount}
                             description=""
-                            onChange={(val) => setTemplateProperty(val, 'sectionsCount')}
+                            onChange={setTemplateProperty}
                           >
-                            {[2, 3, 4, 6, 8, 10, 12].map(num => (
+                            {[2, 3, 4, 5, 6, 8, 10, 12].map(num => (
                               <NekoOption
                                 key={num}
                                 value={num}
@@ -592,7 +597,7 @@ const ContentGenerator = () => {
                         rows={4}
                         value={sections}
                         description={i18n.CONTENT_GENERATOR.SECTIONS_HELP}
-                        onChange={(val) => setTemplateProperty(val, 'sections')}
+                        onChange={setTemplateProperty}
                       />
                     </>
                   )}
@@ -616,7 +621,7 @@ const ContentGenerator = () => {
                         style={{ marginRight: 10 }}
                         value={paragraphsCount}
                         description=""
-                        onChange={(val) => setTemplateProperty(val, 'paragraphsCount')}
+                        onChange={setTemplateProperty}
                       >
                         {[1, 2, 3, 4, 6, 8, 10].map(num => (
                           <NekoOption key={num} value={num} label={num} />
@@ -642,7 +647,7 @@ const ContentGenerator = () => {
                 rows={12}
                 value={content}
                 description={i18n.CONTENT_GENERATOR.CONTENT_HELP}
-                onChange={(val) => setContent(val)}
+                onChange={setContent}
               />
 
               <NekoSpacer />
@@ -663,7 +668,7 @@ const ContentGenerator = () => {
               <NekoTextArea
                 disabled={isBusy}
                 value={excerpt}
-                onBlur={(val) => setExcerpt(val)}
+                onBlur={setExcerpt}
                 rows={3}
               />
 
@@ -673,7 +678,7 @@ const ContentGenerator = () => {
                 scrolldown={true}
                 disabled={isBusy}
                 name="postType"
-                onChange={(val) => setPostType(val)}
+                onChange={setPostType}
                 value={postType}
               >
                 {postTypes?.map(pt => (
@@ -722,7 +727,7 @@ const ContentGenerator = () => {
                   disabled={isBusy}
                   value={writingStyle}
                   description=""
-                  onChange={(val) => setTemplateProperty(val, 'writingStyle')}
+                  onChange={setTemplateProperty}
                 >
                   {WritingStyles.map((style) => (
                     <NekoOption key={style.value} value={style.value} label={style.label} />
@@ -740,7 +745,7 @@ const ContentGenerator = () => {
                   disabled={isBusy}
                   value={writingTone}
                   description=""
-                  onChange={(val) => setTemplateProperty(val, 'writingTone')}
+                  onChange={setTemplateProperty}
                 >
                   {WritingTones.map((tone) => (
                     <NekoOption key={tone.value} value={tone.value} label={tone.label} />
@@ -766,7 +771,7 @@ const ContentGenerator = () => {
                   scrolldown={true}
                   disabled={isBusy}
                   name="postType"
-                  onChange={(val) => setPostType(val)}
+                  onChange={setPostType}
                   value={postType}
                 >
                   {postTypes?.map(pt => (
@@ -793,24 +798,26 @@ const ContentGenerator = () => {
                   scrolldown
                   name="envId"
                   value={envId ?? ""}
-                  onChange={(val) => setTemplateProperty(val, 'envId')}
+                  onChange={setTemplateProperty}
                 >
                   {aiEnvironments.map(x => (
                     <NekoOption key={x.id} value={x.id} label={x.name} />
                   ))}
-                  <NekoOption value="" label="None" />
+                  <NekoOption value="" label="Default" />
                 </NekoSelect>
 
                 <label>{i18n.COMMON.MODEL}:</label>
                 <NekoSelect
                   name="model"
-                  value={model}
+                  value={model || ""}
                   description={i18n.CONTENT_GENERATOR.MODEL_HELP}
                   scrolldown={true}
-                  onChange={(val) => setTemplateProperty(val, 'model')}
+                  disabled={!envId}
+                  onChange={setTemplateProperty}
                 >
+                  <NekoOption value="" label="Default" />
                   {completionModels.map(x => (
-                    <NekoOption key={x.model} value={x.model} label={x.name} />
+                    <NekoOption key={x} value={x.model} label={x.name} />
                   ))}
                 </NekoSelect>
 
@@ -819,8 +826,8 @@ const ContentGenerator = () => {
                   name="temperature"
                   value={temperature}
                   type="number"
-                  onChange={(val) => setTemplateProperty(val, 'temperature')}
-                  onBlur={(val) => setTemplateProperty(val, 'temperature')}
+                  onChange={setTemplateProperty}
+                  onBlur={setTemplateProperty}
                   description={i18n.HELP.TEMPERATURE}
                 />
 
@@ -829,7 +836,7 @@ const ContentGenerator = () => {
                   label={i18n.CONTENT_GENERATOR.USE_MAX_TOKENS}
                   value="1"
                   checked={useMaxTokens}
-                  onChange={(val) => setTemplateProperty(val, 'useMaxTokens')}
+                  onChange={setTemplateProperty}
                 />
 
                 <label>{i18n.COMMON.MAX_TOKENS}:</label>
@@ -837,8 +844,8 @@ const ContentGenerator = () => {
                   name="maxTokens"
                   value={maxTokens ?? ""}
                   type="number"
-                  onChange={(val) => setTemplateProperty(val, 'maxTokens')}
-                  onBlur={(val) => setTemplateProperty(val, 'maxTokens')}
+                  onChange={setTemplateProperty}
+                  onBlur={setTemplateProperty}
                   description={i18n.HELP.MAX_TOKENS}
                   disabled={!useMaxTokens}
                 />
@@ -864,34 +871,34 @@ const ContentGenerator = () => {
 
                 <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_TITLE)}</label>
                 <NekoTextArea
-                  disabled={isBusy}
+                  disabled={isBusy || template?.id === 'default'}
                   name="titlePromptFormat"
                   value={titlePromptFormat}
-                  onChange={(val) => setTemplateProperty(val, 'titlePromptFormat')}
+                  onChange={setTemplateProperty}
                 />
 
                 <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_SECTIONS)}</label>
                 <NekoTextArea
-                  disabled={isBusy}
+                  disabled={isBusy || template?.id === 'default'}
                   name="sectionsPromptFormat"
                   value={sectionsPromptFormat}
-                  onChange={(val) => setTemplateProperty(val, 'sectionsPromptFormat')}
+                  onChange={setTemplateProperty}
                 />
 
                 <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_CONTENT)}</label>
                 <NekoTextArea
-                  disabled={isBusy}
+                  disabled={isBusy || template?.id === 'default'}
                   name="contentPromptFormat"
                   value={contentPromptFormat}
-                  onChange={(val) => setTemplateProperty(val, 'contentPromptFormat')}
+                  onChange={setTemplateProperty}
                 />
 
                 <label>{toHTML(i18n.CONTENT_GENERATOR.PROMPT_EXCERPT)}</label>
                 <NekoTextArea
-                  disabled={isBusy}
+                  disabled={isBusy || template?.id === 'default'}
                   name="excerptPromptFormat"
                   value={excerptPromptFormat}
-                  onChange={(val) => setTemplateProperty(val, 'excerptPromptFormat')}
+                  onChange={setTemplateProperty}
                 />
               </>
             )}

@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 const { useState, useMemo, useEffect } = wp.element;
 import { restUrl, restNonce } from '@app/settings';
@@ -51,6 +51,7 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
     setBusy(true);
     setResults(null);
     setMultiResults(null);
+
     const methods = ['wordpress', 'keywords', 'embeddings'];
     const searchResults = {};
 
@@ -69,7 +70,6 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
             nonce: restNonce,
             json: payload
           });
-
           searchResults[searchMethod] = res;
         } catch (error) {
           console.error(`${searchMethod} search error:`, error);
@@ -79,7 +79,6 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
           };
         }
       }
-
       setMultiResults(searchResults);
     } finally {
       setBusy(false);
@@ -100,16 +99,17 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
   const resultsColumns = useMemo(() => {
     const cols = [
       { accessor: 'title', title: 'Title', width: '200px' },
-      { accessor: 'excerpt', title: 'Excerpt' }
+      { accessor: 'excerpt', title: 'Excerpt', width: '100%' }
     ];
 
     if (results?.method === 'embeddings') {
+      cols[1].width = '100%'; 
       cols.push({ accessor: 'score', title: 'Score', width: '80px' });
     } else if (results?.method === 'keywords') {
+      cols[1].width = '50%'; 
       cols.push({ accessor: 'score', title: 'Score', width: '80px' });
-      cols.push({ accessor: 'foundWith', title: 'Found with', width: '150px' });
+      cols.push({ accessor: 'foundWith', title: 'Found with', width: '50%' });
     }
-
     return cols;
   }, [results?.method]);
 
@@ -149,7 +149,6 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
               </div>
             </>
           )}
-
           {results.debug.searches && (
             <details style={{ marginTop: 5 }}>
               <summary>View search attempts</summary>
@@ -162,7 +161,6 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
               </div>
             </details>
           )}
-
           {results.debug.total_searches && (
             <div style={{ marginTop: 5, color: '#666' }}>
               {results.results.length >= 3
@@ -190,22 +188,22 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
   const getColumnsForMethod = (methodName) => {
     const cols = [
       { accessor: 'title', title: 'Title', width: '200px' },
-      { accessor: 'excerpt', title: 'Excerpt' }
+      { accessor: 'excerpt', title: 'Excerpt', width: '100%' }
     ];
 
     if (methodName === 'embeddings') {
+      cols[1].width = '100%'; 
       cols.push({ accessor: 'score', title: 'Score', width: '80px' });
     } else if (methodName === 'keywords') {
+      cols[1].width = '50%'; 
       cols.push({ accessor: 'score', title: 'Score', width: '80px' });
-      cols.push({ accessor: 'foundWith', title: 'Found with', width: '150px' });
+      cols.push({ accessor: 'foundWith', title: 'Found with', width: '50%' });
     }
-
     return cols;
   };
 
   const getDebugInfoForMethod = (methodResults, methodName) => {
     if (!methodResults?.debug) return null;
-
     if (methodName === 'embeddings') {
       return (
         <div style={{ marginTop: 10, padding: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 4, fontSize: 12 }}>
@@ -239,7 +237,6 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
               </div>
             </>
           )}
-
           {methodResults.debug.searches && (
             <details style={{ marginTop: 5 }}>
               <summary>View search attempts</summary>
@@ -252,7 +249,6 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
               </div>
             </details>
           )}
-
           {methodResults.debug.total_searches && (
             <div style={{ marginTop: 5 }}>
               {methodResults.results.length >= 3
@@ -374,14 +370,10 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
             {Object.entries(multiResults).map(([methodName, methodResults]) => {
               const formattedResults = formatResultsForMethod(methodResults, methodName);
               const columns = getColumnsForMethod(methodName);
-              const debugInfo = getDebugInfoForMethod(methodResults, methodName);
+              const debugInfoMethod = getDebugInfoForMethod(methodResults, methodName);
 
-              const methodLabel =
-                methodName === 'wordpress'
-                  ? 'WordPress'
-                  : methodName === 'keywords'
-                  ? 'AI Keywords'
-                  : 'Embeddings';
+              const methodLabel = methodName === 'wordpress' ? 'WordPress' :
+                methodName === 'keywords' ? 'AI Keywords' : 'Embeddings';
 
               return (
                 <NekoTab key={methodName} title={methodLabel} inversed>
@@ -413,12 +405,12 @@ const Search = ({ options, updateOption, busy: settingsBusy }) => {
                         </div>
                       )}
 
-                      {debugInfo && (
+                      {debugInfoMethod && (
                         <>
                           <NekoSpacer />
                           <div>
                             <strong>Search Debugging:</strong>
-                            {debugInfo}
+                            {debugInfoMethod}
                           </div>
                         </>
                       )}

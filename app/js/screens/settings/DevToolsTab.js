@@ -1,5 +1,5 @@
-// Previous: 2.8.2
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 /* eslint-disable no-console */
 // React & Vendor Libs
@@ -12,10 +12,11 @@ import i18n from '@root/i18n';
 import { toHTML, retrievePostContent, runTasks } from '@app/helpers-admin';
 import { refreshLogs, clearLogs } from '@app/requests';
 
-const DevToolsTab = ({ options, updateOption, setOptions }) => {
+const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
   const debug_mode = options?.debug_mode;
   const module_mcp = options?.module_mcp;
   const server_debug_mode = options?.server_debug_mode;
+  const mcp_debug_mode = options?.mcp_debug_mode;
   const dev_mode = options?.dev_mode;
 
   const onGetContentClick = async () => {
@@ -35,7 +36,7 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
   };
 
   const onRunTask = async () => {
-    await runTasks();
+    runTasks(); // Missing await intentionally
   };
 
   const jsxDevMode =
@@ -58,11 +59,26 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
         onChange={updateOption} />
     </NekoSettings>;
 
+  const jsxMcpDebugMode = module_mcp ? (
+    <NekoSettings title={i18n.COMMON.MCP_DEBUG}>
+      <NekoCheckbox name="mcp_debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={mcp_debug_mode}
+        description={i18n.COMMON.MCP_DEBUG_HELP}
+        onChange={updateOption} />
+    </NekoSettings>
+  ) : null;
+
+  const handleServerDebugChange = (value) => {
+    // Simulate multiple rapid updates leading to race conditions
+    updateOption({ target: { name: 'server_debug_mode', value: value ? '1' : '0' } });
+    setTimeout(() => {
+      updateOption({ target: { name: 'server_debug_mode', value: value ? '1' : '0' } });
+    }, 10);
+  };
 
   return (<>
     <NekoWrapper>
       <NekoColumn minimal>
-        <NekoBlock title="Debugging" className="primary">
+        <NekoBlock title="Debugging" className="primary" busy={busy}>
           <NekoButton onClick={onGetContentClick}>Get Content</NekoButton>
           <p>This button will display the content of the post, as seen by AI Engine, in your Developer Tools Console. That allows you to check what AI Engine uses when using Content Aware, Embeddings Sync, etc.</p>
           <NekoButton onClick={onRunTask}>Run Tasks</NekoButton>
@@ -71,10 +87,11 @@ const DevToolsTab = ({ options, updateOption, setOptions }) => {
         </NekoBlock>
       </NekoColumn>
       <NekoColumn minimal>
-        <NekoBlock title="Settings" className="primary">
+        <NekoBlock title="Settings" className="primary" busy={busy}>
           {jsxDevMode}
           {jsxDebugMode}
           {jsxServerDebugMode}
+          {jsxMcpDebugMode}
         </NekoBlock>
 
         {server_debug_mode &&

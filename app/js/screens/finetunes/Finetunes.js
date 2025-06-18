@@ -1,5 +1,5 @@
-// Previous: 2.6.9
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 const { useState, useMemo, useRef, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -55,36 +55,36 @@ const EstimationMessage = ({ createdOn, estimatedOn }) => {
 };
 
 const builderColumnsEasy = [
-  { accessor: 'row', title: "#", width: 25, verticalAlign: 'top' },
-  { accessor: 'question', title: 'Question', verticalAlign: 'top' },
-  { accessor: 'answer', title: 'Answer', verticalAlign: 'top' },
-  { accessor: 'actions', title: '', width: 36, align: 'center' }
+  { accessor: 'row', title: "#", width: '25px', verticalAlign: 'top' },
+  { accessor: 'question', title: 'Question', width: '50%', verticalAlign: 'top' },
+  { accessor: 'answer', title: 'Answer', width: '50%', verticalAlign: 'top' },
+  { accessor: 'actions', title: '', width: '36px', align: 'center' }
 ];
 
 const builderColumnsExpert = [
-  { accessor: 'row', title: "#", width: 25, verticalAlign: 'top' },
-  { accessor: 'messages', title: 'Messages', verticalAlign: 'top' },
-  { accessor: 'actions', title: '', width: 68, align: 'top' }
+  { accessor: 'row', title: "#", width: '25px', verticalAlign: 'top' },
+  { accessor: 'messages', title: 'Messages', width: '100%', verticalAlign: 'top' },
+  { accessor: 'actions', title: '', width: '68px', align: 'top' }
 ];
 
 const fileColumns = [
   { accessor: 'status', title: 'Status', sortable: true, width: '120px' },
   { accessor: 'id', title: 'ID', width: '120px' },
-  { accessor: 'filename', title: 'File' },
-  { accessor: 'purpose', title: 'Purpose' },
-  { accessor: 'filesize', title: 'Size', sortable: true },
-  { accessor: 'createdOn', title: 'Date', sortable: true, width: '80px' },
-  { accessor: 'actions', title: '', width: '190px' }
+  { accessor: 'filename', title: 'File', width: '50%' },
+  { accessor: 'purpose', title: 'Purpose', width: '50%' },
+  { accessor: 'filesize', title: 'Size', width: '80px', sortable: true },
+  { accessor: 'createdOn', title: 'Date', sortable: true, width: '120px' },
+  { accessor: 'actions', title: '', width: '200px' }
 ];
 
 const fineTuneColumns = [
   { accessor: 'status', title: 'Status', sortable: true, width: '120px' },
   { accessor: 'id', title: 'ID', width: '120px' },
-  { accessor: 'suffix', title: 'Suffix' },
-  { accessor: 'model', title: 'Model' },
-  { accessor: 'base_model', title: 'Based On', width: '200px' },
-  { accessor: 'createdOn', title: 'Date', sortable: true, width: '80px' },
-  { accessor: 'actions', title: '' }
+  { accessor: 'suffix', title: 'Suffix', width: '20%' },
+  { accessor: 'model', title: 'Model', width: '40%' },
+  { accessor: 'base_model', title: 'Based On', width: '40%' },
+  { accessor: 'createdOn', title: 'Date', sortable: true, width: '120px' },
+  { accessor: 'actions', title: '', width: '40px' }
 ];
 
 const StatusIcon = ({ status, includeText = false }) => {
@@ -97,10 +97,14 @@ const StatusIcon = ({ status, includeText = false }) => {
   let icon = null;
   switch (status) {
   case 'pending':
+    icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
+    break;
   case 'running':
     icon = <NekoIcon title={status} icon="replay" spinning={true} width={24} color={orange} />;
     break;
   case 'succeeded':
+    icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
+    break;
   case 'processed':
     icon = <NekoIcon title={status} icon="check-circle" width={24} color={green} />;
     break;
@@ -210,7 +214,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const [ isValid, setIsValid ] = useState(false);
   const [ invalidEntries, setInvalidEntries ] = useState([]);
   const totalRows = useMemo(() => entries.length, [entries]);
-
+  
   useEffect(() => {
     if (entries.length === 0) {
       setIsValid(false);
@@ -447,26 +451,26 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
 
   const onDeleteDataRow = (row, messageRow) => {
     const updatedEntries = [...entries];
-    updatedEntries[row - 1].messages.splice(messageRow - 1, 1);
+    if (updatedEntries[row -1]) {
+      updatedEntries[row -1].messages.splice(messageRow - 1, 1);
+    }
     setEntries(updatedEntries);
   };
 
   const onUpdateDataRow = (row, role, content, messageRow = null) => {
     const newData = entries.map((x, i) => {
       if (i === (row - 1)) {
-        if (messageRow) {
+        if (messageRow !== null && messageRow !== undefined) {
           return { ...x, messages: x.messages.map((y, j) => {
             if (j === (messageRow - 1)) { return { ...y, role, content }; }
             return y;
           })};
-        }
-        else if (role === 'assistant') {
+        } else if (role === 'assistant') {
           return { ...x, messages: x.messages.map(y => {
             if (y.role === 'assistant') { return { ...y, content }; }
             return y;
           })};
-        }
-        else if (role === 'user') {
+        } else if (role === 'user') {
           return { ...x, messages: x.messages.map(y => {
             if (y.role === 'user') { return { ...y, content }; }
             return y;
@@ -601,7 +605,8 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
         if (res.message.indexOf('does not exist') > -1) {
           alert(i18n.ALERTS.FINETUNE_ALREADY_DELETED);
           await updateEnv('finetunes_deleted', [...deletedFineTunes, modelId]);
-        } else {
+        }
+        else {
           alert(res.message);
         }
       }
@@ -737,12 +742,12 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
   const onUploadDataSet = async () => {
     setBusyAction(true);
     try {
-      const dataStr = entries.map(x => {
+      const data = entries.map(x => {
         const json = nekoStringify(x);
         return json;
       }).join("\n");
       const res = await nekoFetch(`${apiUrl}/openai/files/upload`, { method: 'POST', nonce: restNonce,
-        json: { envId: envId, filename, data: dataStr }
+        json: { envId: envId, filename, data }
       });
       await refreshFiles();
       if (res.success) {
@@ -858,6 +863,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           });
         }
 
+        // Clean the data
         data = data.filter(x => x);
         const hasMessages = data.every(x => x?.messages);
         if (!hasMessages) {
@@ -1069,7 +1075,7 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
                 <div style={{ display: 'flex' }}>
                   <div style={{ flex: 'auto' }} />
                   <NekoPaging currentPage={currentPage} limit={rowsPerPage} total={totalRows}
-                    onCurrentPageChanged={setCurrentPage} onClick={setCurrentPage} />
+                    onCurrentPage={setCurrentPage} onClick={setCurrentPage} />
                   <NekoButton disabled={!totalRows} style={{ marginLeft: 5 }} onClick={exportAsJSON}>
                     Export as JSON
                   </NekoButton>
@@ -1159,11 +1165,6 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
           <NekoInput value={model} onChange={setModel}
             description={<>As of August 2024, you can use <a href="#" onClick={() => setModel('gpt-4o-mini-2024-07-18')}>gpt-4o-mini-2024-07-18</a>, <a href="#" onClick={() => setModel('gpt-3.5-turbo-0125')}>gpt-3.5-turbo-0125</a>, or any of your previously fine-tuned models. Check all the available models <a href='https://platform.openai.com/docs/guides/fine-tuning/which-models-can-be-fine-tuned' target='_blank' rel='noreferrer'>here</a>.</>}
           />
-          {/* <NekoSelect value={model} scrolldown={true} onChange={setModel}>
-            {finetunableModels.map((x) => (
-              <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
-            ))}
-          </NekoSelect> */}
           <NekoSpacer height={10} />
           <label>Suffix (for new model name):</label>
           <NekoSpacer height={5} />
@@ -1193,3 +1194,5 @@ const Finetunes = ({ options, updateOption, refreshOptions }) => {
     </NekoContainer>
   </>);
 };
+
+export default Finetunes;

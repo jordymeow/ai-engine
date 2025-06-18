@@ -94,11 +94,12 @@ const activeDomain = () => readJSON(CLAUDE_CFG)?.mcpServers?.['AI Engine']?.args
 const [ , , cmd = 'help', ...args] = process.argv;
 
 const HELP = `
-add    <site-url> [token]      Register / update site (and set Claude target)
+add    <site-url> <token>     Register / update site (and set Claude target)
 remove <domain|url>           Unregister site
 list                          Show sites
 claude [domain|url]           Show / change Claude target
 select                        Interactively select a site for Claude
+reset                         Remove all registered sites and reset configuration
 start  [domain|url] [--raw]   Verbose relay (add --raw for JSON responses)
 relay  <domain|url>           Silent relay (for Claude Desktop)
 post   <domain> <json> <sid>  Fire raw JSON-RPC (debug)
@@ -111,6 +112,7 @@ switch (cmd) {
   case 'list':   listSites();           break;
   case 'claude': claudeCmd(args[0]);    break;
   case 'select': selectSite();          break;
+  case 'reset':  resetAll();            break;
   case 'start':
   case 'relay':  launchRelay(cmd, args[0]); break;
   case 'post':   firePost(args);        break;
@@ -118,14 +120,30 @@ switch (cmd) {
 }
 
 /* ---------- CLI actions ---------- */
-function addSite(url, token = '') {
-  if (!url) die('add <site-url> [token]');
+function addSite(url, token) {
+  if (!url || !token) die('add <site-url> <token> (token is required)');
+  
+  // Check if URL contains /sse or other API paths
+  if (url.includes('/wp-json/') || url.includes('/sse')) {
+    console.log('⚠️  Please use the base URL of your website, not the API endpoint.');
+    console.log('   Example: https://example.com instead of https://example.com/wp-json/mcp/v1/sse');
+    return;
+  }
+  
   const norm = url.replace(/\/+$/, '');
   const dom  = toDomain(norm);
   const existed = !!sites[dom];
   sites[dom] = { url: norm, token };
   saveSites(); setClaudeTarget(dom);
   console.log(`✓ ${existed ? 'updated' : 'added'} ${norm}`);
+  
+  // Provide guidance about HTTPS vs HTTP
+  if (norm.startsWith('https://')) {
+    console.log('\n📌 Using HTTPS - make sure your SSL certificate is valid.');
+    console.log('   If you encounter connection issues, try using http:// instead.');
+  } else if (norm.startsWith('http://')) {
+    console.log('\n📌 Using HTTP (unencrypted). Consider using https:// if available.');
+  }
 }
 function removeSite(ref) {
   if (!ref) die('remove <domain|url>');
@@ -153,8 +171,10 @@ function claudeCmd(ref) {
     ? `Claude: ${sites[activeDomain()].url}` : '(no site)');
   const full = /^https?:/.test(ref) ? ref : `https://${ref}`;
   const dom  = toDomain(full);
-  sites[dom] = sites[dom] || { url: full, token: '' };
-  saveSites(); setClaudeTarget(dom);
+  if (!sites[dom]) {
+    die('Site not registered. Use "add <site-url> <token>" first.');
+  }
+  setClaudeTarget(dom);
   console.log('✓ Claude →', sites[dom].url);
 }
 function selectSite() {
@@ -185,6 +205,32 @@ function selectSite() {
     }
     rl.close();
   });
+}
+function resetAll() {
+  // Clear all sites
+  sites = {};
+  saveSites();
+  
+  // Remove AI Engine from Claude config
+  const cfg = readJSON(CLAUDE_CFG);
+  if (cfg.mcpServers && cfg.mcpServers['AI Engine']) {
+    delete cfg.mcpServers['AI Engine'];
+    writeJSON(CLAUDE_CFG, cfg);
+  }
+  
+  // Clear log files
+  try {
+    if (fs.existsSync(LOG_HDR)) fs.unlinkSync(LOG_HDR);
+    if (fs.existsSync(LOG_BODY)) fs.unlinkSync(LOG_BODY);
+    if (fs.existsSync(ERR_LOG)) fs.unlinkSync(ERR_LOG);
+  } catch (e) {
+    // Ignore errors when deleting log files
+  }
+  
+  console.log('✓ All sites removed');
+  console.log('✓ Claude configuration cleared');
+  console.log('✓ Log files deleted');
+  console.log('\nMCP configuration has been reset.');
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -231,6 +277,9 @@ function pickSite(ref) {
 // relay core
 ////////////////////////////////////////////////////////////////////////////////
 async function runRelay(site, verbose, showRaw = false) {
+  if (!site.token) {
+    die('No token configured for this site. Use "add <site-url> <token>" to update.');
+  }
   const fetchFn = global.fetch || (await import('node-fetch')).default;
 
   /* ---- tiny disk logs ---- */

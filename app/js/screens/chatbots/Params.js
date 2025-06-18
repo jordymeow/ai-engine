@@ -1,5 +1,5 @@
-// Previous: 2.8.2
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 // React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
@@ -91,36 +91,33 @@ const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot, blockMode,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
   const { completionModels, imageModels, realtimeModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = shortcodeParams.mode === 'chat' ?? 'chat';
-  const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
-  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
-  const isRealtime = shortcodeParams.mode === 'realtime' ?? false;
+  const isChat = (shortcodeParams.mode === 'chat') ?? 'chat';
+  const isAssistant = (shortcodeParams.mode === 'assistant') ?? false;
+  const isImagesChat = (shortcodeParams.mode === 'images') ?? false;
+  const isRealtime = (shortcodeParams.mode === 'realtime') ?? false;
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
+  const module_orchestration = options?.module_orchestration;
   const availableFunctions = options?.functions || [];
   const functions = shortcodeParams.functions || [];
   const [ busyUpdatingFunctions, setBusyUpdatingFunctions ] = useState(false);
   const availableMCPServers = options?.mcp_envs || [];
   const mcpServers = shortcodeParams.mcpServers || [];
-
   const instructionsHasContent = useMemo(() => {
     return shortcodeParams.instructions && shortcodeParams.instructions.includes('{CONTENT}');
   }, [shortcodeParams.instructions]);
-
   const aiEnvironment = useMemo(() => {
     const env = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
     return env;
   }, [aiEnvironments, shortcodeParams.envId]);
-
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
-    return assist;
+    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
+    return aid;
   }, [allAssistants, shortcodeParams.assistantId]);
 
   const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
-
   const environments = options.embeddings_envs || [];
 
   const modelSupportsFunctions = useMemo(() => {
@@ -145,6 +142,14 @@ const ChatbotParams = (props) => {
       console.log('Current model:', currentModel.model, 'Tags:', currentModel.tags, 'Has MCP:', hasMCP);
     }
     return hasMCP;
+  }, [currentModel]);
+
+  const modelSupportsTools = useMemo(() => {
+    return currentModel?.tools?.length > 0;
+  }, [currentModel]);
+
+  const modelSupportsResponses = useMemo(() => {
+    return currentModel?.tags?.includes('responses');
   }, [currentModel]);
 
   useEffect(() => {
@@ -183,7 +188,7 @@ const ChatbotParams = (props) => {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
     }
-    else if (shortcodeParams.imageUpload && !modelSupportsVision) {
+    else if (shortcodeParams.imageUpload && !modelSupportsVision && !isImagesChat) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
     }
@@ -231,6 +236,7 @@ const ChatbotParams = (props) => {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
+
   }, [shortcodeParams, mcpServers, availableMCPServers, currentModel]);
 
   const updateFunctionsInAssistant = async () => {
@@ -356,18 +362,32 @@ const ChatbotParams = (props) => {
     );
   }, [mcpServers, availableMCPServers]);
 
+  const titleToolsCategory = useMemo(() => {
+    const tools = shortcodeParams.tools || [];
+    const availableTools = currentModel?.tools || [];
+
+    if (!tools.length) {
+      return i18n.COMMON.TOOLS || 'Tools';
+    }
+
+    const info = `${tools.length} enabled`;
+    return (
+      <div>
+        {i18n.COMMON.TOOLS || 'Tools'}
+        <small style={{ opacity: 0.5 }}> {info}</small>
+      </div>
+    );
+  }, [shortcodeParams.tools, currentModel]);
+
   const titleThresholdsCategory = useMemo(() => {
-    const contextMaxLength =
-    shortcodeParams.contextMaxLength || options?.context_max_length;
+    const contextMaxLength = shortcodeParams.contextMaxLength || options?.context_max_length;
 
     const info = [
       shortcodeParams.maxMessages
         ? `Messages: ${shortcodeParams.maxMessages}`
         : null,
       contextMaxLength ? `Context: ${contextMaxLength}` : null
-    ]
-      .filter(Boolean)
-      .join(', ');
+    ].filter(Boolean).join(', ');
 
     return (
       <div>
@@ -520,8 +540,8 @@ const ChatbotParams = (props) => {
                   </NekoSelect>
                 </div>}
 
-                {modelSupportsVision && <div className="mwai-builder-col" style={{ flex: 1 }}>
-                  <label>{i18n.COMMON.VISION}:</label>
+                {(modelSupportsVision || isImagesChat) && <div className="mwai-builder-col" style={{ flex: 1 }}>
+                  <label>{isImagesChat ? i18n.COMMON.IMAGE_UPLOAD || 'Image Upload' : i18n.COMMON.VISION}:</label>
                   <NekoCheckbox name="imageUpload" label={i18n.COMMON.ENABLE}
                     checked={shortcodeParams.imageUpload} value="1" onChange={updateShortcodeParams} />
                 </div>}
@@ -570,6 +590,19 @@ const ChatbotParams = (props) => {
                   />
                 </div>
 
+              </div>}
+
+              {modelSupportsResponses && !isAssistant && !isImagesChat && <div className="mwai-builder-row">
+                <div className="mwai-builder-col" style={{ flex: 1 }}>
+                  <label>{i18n.COMMON.HISTORY_STRATEGY}:</label>
+                  <NekoSelect scrolldown name="historyStrategy"
+                    description={i18n.HELP.HISTORY_STRATEGY}
+                    value={shortcodeParams.historyStrategy || ""} onChange={updateShortcodeParams}>
+                    <NekoOption value={""} label={i18n.COMMON.AUTOMATIC || "Automatic"}></NekoOption>
+                    <NekoOption value={"internal"} label={i18n.COMMON.FULL_HISTORY || "Full History"}></NekoOption>
+                    <NekoOption value={"response_id"} label={i18n.COMMON.INCREMENTAL || "Incremental"}></NekoOption>
+                  </NekoSelect>
+                </div>
               </div>}
 
             </NekoAccordion>
@@ -671,7 +704,7 @@ const ChatbotParams = (props) => {
 
             </NekoAccordion>}
 
-            {modelSupportsMCP && !blockMode && <NekoAccordion title={titleMCPServersCategory}>
+            {modelSupportsMCP && module_orchestration && !blockMode && <NekoAccordion title={titleMCPServersCategory}>
 
               <p>
                 <AnthropicIcon style={{ marginRight: 5 }} />
@@ -701,6 +734,50 @@ const ChatbotParams = (props) => {
                   />
                 ))}
               </div>}
+
+            </NekoAccordion>}
+
+            {modelSupportsTools && !blockMode && <NekoAccordion title={titleToolsCategory}>
+
+              <p>
+                <OpenAiIcon style={{ marginRight: 5 }} />
+                {toHTML(i18n.HELP.TOOLS || 'Enable AI tools like web search and image generation to enhance your chatbot capabilities.')}
+              </p>
+
+              <div style={{ marginTop: 10 }}>
+                {currentModel?.tools?.includes('web_search') && (
+                  <NekoCheckbox 
+                    name="tools_web_search"
+                    label={i18n.COMMON.WEB_SEARCH || 'Web Search'}
+                    description={i18n.HELP.WEB_SEARCH || 'Allow the AI to search the web for current information'}
+                    checked={shortcodeParams.tools?.includes('web_search')} 
+                    value="web_search"
+                    onChange={value => {
+                      const tools = shortcodeParams.tools || [];
+                      const newTools = value 
+                        ? [...tools.filter(t => t !== 'web_search'), 'web_search']
+                        : tools.filter(t => t !== 'web_search');
+                      updateShortcodeParams(newTools, 'tools');
+                    }}
+                  />
+                )}
+                {currentModel?.tools?.includes('image_generation') && (
+                  <NekoCheckbox 
+                    name="tools_image_generation"
+                    label={i18n.COMMON.IMAGE_GENERATION || 'Image Generation'}
+                    description={i18n.HELP.IMAGE_GENERATION || 'Allow the AI to generate images based on text descriptions'}
+                    checked={shortcodeParams.tools?.includes('image_generation')} 
+                    value="image_generation"
+                    onChange={value => {
+                      const tools = shortcodeParams.tools || [];
+                      const newTools = value 
+                        ? [...tools.filter(t => t !== 'image_generation'), 'image_generation']
+                        : tools.filter(t => t !== 'image_generation');
+                      updateShortcodeParams(newTools, 'tools');
+                    }}
+                  />
+                )}
+              </div>
 
             </NekoAccordion>}
 
@@ -747,7 +824,8 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
                   <label>{i18n.COMMON.THEME}:</label>
                   <NekoSelect scrolldown name="themeId"
-                    value={shortcodeParams.themeId} description="" onChange={updateShortcodeParams}>
+                    value={shortcodeParams.themeId}
+                    onChange={updateShortcodeParams}>
                     <NekoOption value='none' label="None" />
                     <NekoOption value='chatgpt' label="ChatGPT" />
                     <NekoOption value='timeless' label="Timeless" />
@@ -793,7 +871,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="aiAvatar" label="Yes"
-                    checked={shortcodeParams.aiAvatar} val="1" onChange={updateShortcodeParams}
+                    checked={shortcodeParams.aiAvatar} value="1" onChange={updateShortcodeParams}
                     disabled={!shortcodeParams.aiName} />
                 </div>
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
@@ -825,7 +903,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="userAvatar" label="Yes"
-                    checked={shortcodeParams.userAvatar} val="1" onChange={updateShortcodeParams}
+                    checked={shortcodeParams.userAvatar} value="1" onChange={updateShortcodeParams}
                     disabled={!shortcodeParams.userName} />
                 </div>
 
@@ -870,7 +948,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.AVATAR}:</label>
                   <NekoCheckbox name="guestAvatar" label="Yes"
-                    checked={shortcodeParams.guestAvatar} val="1" onChange={updateShortcodeParams}
+                    checked={shortcodeParams.guestAvatar} value="1" onChange={updateShortcodeParams}
                     disabled={!shortcodeParams.guestName} />
                 </div>
 
@@ -919,7 +997,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.BUBBLE}:</label>
                   <NekoCheckbox name="iconBubble" label="Yes"
-                    checked={shortcodeParams.iconBubble} val="1"
+                    checked={shortcodeParams.iconBubble} value="1"
                     onChange={updateShortcodeParams}
                   />
                 </div>

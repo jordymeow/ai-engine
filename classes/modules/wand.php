@@ -98,7 +98,29 @@ class Meow_MWAI_Modules_Wand
   private function processTextAction( $arguments, $messagePrefix )
   {
     $postId = $arguments['postId'];
-    $text = $arguments['text'];
+    $isJson = isset( $arguments['json'] ) && !empty( $arguments['json'] );
+    $blockType = isset( $arguments['blockType'] ) ? $arguments['blockType'] : null;
+    
+    if ( $isJson ) {
+      // Handle structured JSON data for complex blocks
+      $jsonData = $arguments['json'];
+      $text = json_encode( $jsonData, JSON_PRETTY_PRINT );
+      
+      // Add specific instructions for JSON handling
+      $jsonInstructions = "\n\nIMPORTANT: The input is JSON data. You must return ONLY valid JSON (no markdown, no code blocks, no explanations). Return the EXACT SAME JSON structure, only modifying the text content within it.";
+      
+      if ( $blockType === 'core/list' ) {
+        $jsonInstructions .= " This is a list with 'type' and 'items' fields. Return: {\"type\": \"list\", \"items\": [...modified items...]}";
+      } elseif ( $blockType === 'core/table' ) {
+        $jsonInstructions .= " This is a table with 'type' and 'rows' fields. Each row has a 'cells' array. Return: {\"type\": \"table\", \"rows\": [{\"cells\": [...modified cells...]}, ...]}";
+      }
+      
+      $messagePrefix .= $jsonInstructions;
+    } else {
+      // Handle regular text
+      $text = $arguments['text'];
+    }
+    
     $query = new Meow_MWAI_Query_Text( "", 1024 );
     $query->set_scope( 'admin-tools' );
     $language = $keepLanguage = "";
@@ -108,11 +130,45 @@ class Meow_MWAI_Modules_Wand
     }
     $query->set_message( $messagePrefix . $keepLanguage . "\n\n" . $text );
     $reply = $this->core->run_query( $query );
+    
+    $result = $reply->result;
+    $responseType = 'text';
+    
+    // If we sent JSON, we must get JSON back
+    if ( $isJson ) {
+      // First, try to extract JSON from markdown code blocks if present
+      $jsonPattern = '/```(?:json)?\s*\n?(.+?)\n?```/s';
+      if ( preg_match( $jsonPattern, $result, $matches ) ) {
+        $result = trim( $matches[1] );
+      }
+      
+      // Now parse the JSON
+      $parsedJson = json_decode( $result, true );
+      if ( json_last_error() === JSON_ERROR_NONE ) {
+        // Validate that the JSON has the expected structure
+        if ( $blockType === 'core/list' && isset( $parsedJson['type'] ) && $parsedJson['type'] === 'list' && isset( $parsedJson['items'] ) ) {
+          $result = $parsedJson;
+          $responseType = 'json';
+        } elseif ( $blockType === 'core/table' && isset( $parsedJson['type'] ) && $parsedJson['type'] === 'table' && isset( $parsedJson['rows'] ) ) {
+          $result = $parsedJson;
+          $responseType = 'json';
+        } else {
+          // JSON is valid but doesn't match expected structure
+          error_log( 'AI Engine: JSON response does not match expected structure for block type: ' . $blockType );
+          throw new Exception( 'Invalid JSON structure returned by AI' );
+        }
+      } else {
+        // JSON parsing failed
+        error_log( 'AI Engine: Failed to parse AI response as JSON. Error: ' . json_last_error_msg() );
+        error_log( 'AI Engine: Raw response: ' . $result );
+        throw new Exception( 'AI did not return valid JSON' );
+      }
+    }
 
     return [
       'mode' => 'replace',
-      'type' => $reply->type,
-      'result' => $reply->result,
+      'type' => $responseType,
+      'result' => $result,
       'results' => $reply->results
     ];
   }

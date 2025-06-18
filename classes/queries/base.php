@@ -27,6 +27,13 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   
   // MCP Servers
   public array $mcpServers = [];
+  
+  // Tools (for Responses API)
+  public array $tools = [];
+  
+  // History strategy for Responses API
+  public ?string $historyStrategy = null;
+  public ?string $previousResponseId = null;
 
   // Overrides for env
   public array $envSettings = [];
@@ -96,6 +103,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function set_functions( array $functions ): void {
     $this->functions = $functions;
     $this->functionCall = "auto";
+  }
+  
+  public function set_tools( array $tools ): void {
+    $this->tools = $tools;
   }
 
   public function set_mcp_servers( array $mcpServers ): void {
@@ -254,6 +265,22 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   }
 
   /**
+   * Set the history strategy for Responses API.
+   * @param string $historyStrategy The history strategy ('internal', 'response_id', or null).
+   */
+  public function set_history_strategy( ?string $historyStrategy ) {
+    $this->historyStrategy = $historyStrategy;
+  }
+
+  /**
+   * Set the previous response ID for Responses API.
+   * @param string $previousResponseId The previous response ID.
+   */
+  public function set_previous_response_id( ?string $previousResponseId ) {
+    $this->previousResponseId = $previousResponseId;
+  }
+
+  /**
    * This is run at the end of the process, to do some final checks.
    */
   public function final_checks() {
@@ -358,5 +385,14 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['chatId'] ) ) {
       $this->set_chat_id( $params['chatId'] );
 		}
+    if ( !empty( $params['tools'] ) && is_array( $params['tools'] ) ) {
+      $this->set_tools( $params['tools'] );
+    }
+    if ( isset( $params['historyStrategy'] ) ) {
+      $this->set_history_strategy( $params['historyStrategy'] );
+    }
+    if ( !empty( $params['previousResponseId'] ) ) {
+      $this->set_previous_response_id( $params['previousResponseId'] );
+    }
   }
 }

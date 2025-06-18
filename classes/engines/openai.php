@@ -53,6 +53,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
     $this->mcpServerCount = 0;
     $this->mcpTotalToolCount = 0;
     $this->emittedFunctionResults = [];
+    $this->streamImages = [];
   }
 
   /**
@@ -111,29 +112,79 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         $body['instructions'] = $query->instructions;
       }
       
-      // Build input - can be string or array of messages
-      if ( !empty( $query->messages ) || $query->attachedFile || $query instanceof Meow_MWAI_Query_Feedback ) {
-        $body['input'] = $this->build_responses_input_array( $query );
-      } else {
-        $body['input'] = $query->get_message();
+      // Determine history strategy
+      $historyStrategy = $query->historyStrategy;
+      
+      // Treat empty string as null for automatic mode
+      if ( empty( $historyStrategy ) ) {
+        $historyStrategy = null;
       }
-
-      // Add context if present
-      if ( !empty( $query->context ) ) {
-        if ( isset( $body['input'] ) && is_string( $body['input'] ) ) {
-          $body['input'] = $query->context . "\n\n" . $body['input'];
-        } else {
-          // Add context as system message if using message array
-          array_unshift( $body['input'], [
-            'role' => 'system',
-            'content' => $query->context
+      
+      // If historyStrategy is null (automatic), use response_id when previousResponseId is available
+      if ( $historyStrategy === null && !empty( $query->previousResponseId ) ) {
+        $historyStrategy = 'response_id';
+      }
+      
+      
+      // Handle based on history strategy
+      if ( $historyStrategy === 'response_id' && !empty( $query->previousResponseId ) ) {
+        // Use incremental mode with previous_response_id
+        $body['previous_response_id'] = $query->previousResponseId;
+        
+        // Responses API expects message format even with previous_response_id
+        $body['input'] = [
+          [
+            'role' => 'user',
+            'content' => [
+              [
+                'type' => 'input_text',
+                'text' => $query->get_message()
+              ]
+            ]
+          ]
+        ];
+        
+        // Add context if present
+        if ( !empty( $query->context ) ) {
+          // Prepend context as a separate input_text in the same message
+          array_unshift( $body['input'][0]['content'], [
+            'type' => 'input_text',
+            'text' => $query->context . "\n\n"
           ]);
         }
-      }
+      } else {
+        // Use full history mode (internal) or when no previous_response_id
+        
+        // Build input - always use array format for Responses API
+        if ( !empty( $query->messages ) || $query->attachedFile || $query instanceof Meow_MWAI_Query_Feedback ) {
+          $body['input'] = $this->build_responses_input_array( $query );
+        } else {
+          // Even for simple text, Responses API expects message format
+          $body['input'] = [
+            [
+              'role' => 'user',
+              'content' => [
+                [
+                  'type' => 'input_text',
+                  'text' => $query->get_message()
+                ]
+              ]
+            ]
+          ];
+        }
 
-      // Add previous response ID for stateful conversations
-      if ( !empty( $this->previousResponseId ) ) {
-        $body['previous_response_id'] = $this->previousResponseId;
+        // Add context if present
+        if ( !empty( $query->context ) ) {
+          if ( isset( $body['input'] ) && is_string( $body['input'] ) ) {
+            $body['input'] = $query->context . "\n\n" . $body['input'];
+          } else {
+            // Add context as system message
+            array_unshift( $body['input'], [
+              'role' => 'system',
+              'content' => $query->context
+            ]);
+          }
+        }
       }
 
       // Parameters
@@ -218,6 +269,29 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         // Default to 'auto' to let the model choose
         $body['tool_choice'] = 'auto';
       }
+      
+      // Add tools (web_search, image_generation) if specified
+      if ( !empty( $query->tools ) && is_array( $query->tools ) ) {
+        // Ensure tools array exists
+        if ( !isset( $body['tools'] ) ) {
+          $body['tools'] = [];
+        }
+        
+        // Add each enabled tool
+        foreach ( $query->tools as $tool ) {
+          if ( in_array( $tool, ['web_search', 'image_generation'] ) ) {
+            $toolConfig = [ 'type' => $tool ];
+            
+            // Image generation requires partial_images when streaming
+            if ( $tool === 'image_generation' && !empty( $streamCallback ) ) {
+              $toolConfig['partial_images'] = 1;
+            }
+            
+            $body['tools'][] = $toolConfig;
+            Meow_MWAI_Logging::log( 'Responses API: Added tool ' . $tool . ' to request' );
+          }
+        }
+      }
 
       // Note: Responses API doesn't support stream_options parameter
       // Usage tracking is handled differently in the streaming response
@@ -239,6 +313,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
     if ( $query instanceof Meow_MWAI_Query_Feedback ) {
       Meow_MWAI_Logging::log( 'Responses API: Feedback query body: ' . json_encode($body) );
     }
+    
+    // Debug logging for tools
+    if ( !empty( $body['tools'] ) ) {
+      Meow_MWAI_Logging::log( 'Responses API: Full request body with tools: ' . json_encode($body) );
+    }
+    
 
     return $body;
   }
@@ -249,7 +329,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
   protected function build_responses_input_array( $query ) {
     $messages = [];
 
-    // Add existing messages
+    // Add existing messages (they already have the correct format)
     foreach ( $query->messages as $message ) {
       $messages[] = $message;
     }
@@ -349,9 +429,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         $finalUrl = $query->attachedFile->get_inline_base64_url();
       }
       
-      // Debug log the URL
-      Meow_MWAI_Logging::log( 'Responses API: Image URL type: ' . gettype($finalUrl) . ', value: ' . print_r($finalUrl, true) );
       
+      // Use Responses API format with input_text and input_image types
       $messages[] = [
         'role' => 'user',
         'content' => [
@@ -361,14 +440,20 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
           ],
           [
             'type' => 'input_image',
-            'image_url' => $finalUrl
+            'image_url' => $finalUrl  // Direct property, not nested
           ]
         ]
       ];
     } else {
+      // For text-only, use input_text type
       $messages[] = [
         'role' => 'user',
-        'content' => $query->get_message()
+        'content' => [
+          [
+            'type' => 'input_text',
+            'text' => $query->get_message()
+          ]
+        ]
       ];
     }
 
@@ -454,6 +539,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
     // Get response metadata
     if ( isset( $json['id'] ) ) {
       $this->inId = $json['id'];
+      Meow_MWAI_Logging::log( 'Responses API Streaming: Found response ID in stream: ' . $this->inId );
     }
     if ( isset( $json['model'] ) ) {
       $this->inModel = $json['model'];
@@ -475,6 +561,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         $response = $json['response'] ?? [];
         $this->inId = $response['id'] ?? null;
         $this->inModel = $response['model'] ?? null;
+        if ( $this->inId ) {
+        }
         break;
         
       case 'response.queued':
@@ -529,6 +617,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
           $itemType = $item['type'];
           $currentItemType = $itemType;
           Meow_MWAI_Logging::log( 'Responses API: Output item added with type: ' . $itemType );
+          
+          // Don't emit events here for web search or image generation - wait for more specific events
+          // This prevents duplicate events
           
           // If it's an MCP call, store the tool name
           if ( $itemType === 'mcp_call' && isset( $item['id'] ) && isset( $item['name'] ) ) {
@@ -610,6 +701,30 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
               
               // Don't return content since we've already sent events
               $content = null;
+            }
+          }
+          elseif ( $itemType === 'web_search_call' ) {
+            // Web search completed - don't emit event here
+            // The event will be emitted by the response.web_search_call.completed handler
+            // This prevents duplicate events
+            Meow_MWAI_Logging::log( 'Responses API: Web search output item completed (event handled by specific handler)' );
+          }
+          elseif ( $itemType === 'image_generation_call' ) {
+            // Image generation completed
+            Meow_MWAI_Logging::log( 'Responses API: Image generation output item completed' );
+            
+            // Extract the base64 image from the result
+            if ( isset( $item['result'] ) ) {
+              $base64Image = $item['result'];
+              
+              // Store the image for later processing
+              if ( !isset( $this->streamImages ) ) {
+                $this->streamImages = [];
+              }
+              
+              $this->streamImages[] = $base64Image;
+              
+              Meow_MWAI_Logging::log( 'Responses API: Stored generated image (base64 length: ' . strlen($base64Image) . ')' );
             }
           }
           elseif ( $item['type'] === 'mcp_list_tools' ) {
@@ -722,16 +837,32 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         break;
         
       case 'response.web_search_call.in_progress':
-        // Web search started
+        // Web search started - only emit one event at the start
         Meow_MWAI_Logging::log( 'Responses API: Web search in progress' );
+        if ( $this->currentDebugMode && $this->streamCallback ) {
+          $event = Meow_MWAI_Event::status( 'Searching the web...' );
+          call_user_func( $this->streamCallback, $event );
+        }
         break;
         
       case 'response.web_search_call.searching':
-        // Actively searching the web
+        // Actively searching - don't emit duplicate events
+        if ( isset( $json['query'] ) ) {
+          Meow_MWAI_Logging::log( 'Responses API: Searching for: ' . $json['query'] );
+        }
         break;
         
       case 'response.web_search_call.completed':
         // Web search finished
+        Meow_MWAI_Logging::log( 'Responses API: Web search completed' );
+        
+        // The completed event doesn't contain results, just metadata
+        // Results are likely embedded in the model's response text
+        if ( $this->currentDebugMode && $this->streamCallback ) {
+          $message = 'Web search completed';
+          $event = Meow_MWAI_Event::status( $message );
+          call_user_func( $this->streamCallback, $event );
+        }
         break;
         
       // ===== IMAGE GENERATION EVENTS =====
@@ -739,6 +870,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
       case 'response.image_generation_call.in_progress':
         // Image generation started
         Meow_MWAI_Logging::log( 'Responses API: Image generation in progress' );
+        if ( $this->currentDebugMode && $this->streamCallback ) {
+          $event = Meow_MWAI_Event::status( 'Generating image...' );
+          call_user_func( $this->streamCallback, $event );
+        }
         break;
         
       case 'response.image_generation_call.generating':
@@ -748,10 +883,23 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
       case 'response.image_generation_call.partial_image':
         // Partial image data (base64)
         // Could be used for progressive image display
+        if ( isset( $json['partial_image_b64'] ) ) {
+          Meow_MWAI_Logging::log( 'Responses API: Received partial image index ' . ($json['partial_image_index'] ?? 'unknown') );
+          // For now, we don't display partial images, but we could in the future
+        }
         break;
         
       case 'response.image_generation_call.completed':
         // Image generation finished
+        Meow_MWAI_Logging::log( 'Responses API: Image generation completed' );
+        
+        // Note: The actual image data comes in response.output_item.done event
+        // This event just signals completion
+        
+        if ( $this->currentDebugMode && $this->streamCallback ) {
+          $event = Meow_MWAI_Event::status( 'Image generated.' );
+          call_user_func( $this->streamCallback, $event );
+        }
         break;
         
       // ===== MCP (Model Context Protocol) EVENTS =====
@@ -831,6 +979,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
       // ===== ANNOTATION EVENTS =====
       
       case 'response.output_text_annotation.added':
+      case 'response.output_text.annotation.added':
         // Text annotation added (e.g., citations, references)
         // Can be used to add metadata to generated text
         break;
@@ -966,6 +1115,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         }
         
         $returned_choices = [ [ 'message' => $message ] ];
+        
+        // Add generated images to the content if any
+        if ( !empty( $this->streamImages ) ) {
+          // Add images as additional choices with b64_json format
+          foreach ( $this->streamImages as $base64Image ) {
+            $returned_choices[] = [ 'b64_json' => $base64Image ];
+          }
+          Meow_MWAI_Logging::log( 'Responses API: Added ' . count($this->streamImages) . ' images to choices (streaming)' );
+        }
       }
       // Standard Mode
       else {
@@ -981,6 +1139,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         // Extract content from Responses API format
         $content = '';
         $tool_calls = [];
+        $images = [];
         
         // Debug: Log that we're using Responses API parsing
         Meow_MWAI_Logging::log( 'Responses API: Starting to parse response data' );
@@ -1015,6 +1174,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
                   'arguments' => $output_item['arguments'] ?? '{}'
                 ]
               ];
+            }
+            elseif ( isset( $output_item['type'] ) && $output_item['type'] === 'image_generation_call' && isset( $output_item['result'] ) ) {
+              // Handle image generation results
+              $base64Image = $output_item['result'];
+              $images[] = $base64Image;
+              
+              Meow_MWAI_Logging::log( 'Responses API: Found generated image in non-streaming mode' );
             }
             elseif ( isset( $output_item['type'] ) && $output_item['type'] === 'mcp_approval_request' ) {
               // IMPORTANT: MCP approval requests are already handled via streaming events
@@ -1067,6 +1233,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
         
         $returned_choices = [[ 'message' => $message ]];
         
+        // Add images as additional choices
+        if ( !empty( $images ) ) {
+          foreach ( $images as $base64Image ) {
+            $returned_choices[] = [ 'b64_json' => $base64Image ];
+          }
+          Meow_MWAI_Logging::log( 'Responses API: Added ' . count($images) . ' images to choices' );
+        }
+        
         // Debug: Log what we're about to set as choices
         Meow_MWAI_Logging::log( 'Responses API: Setting choices with content: "' . $content . '"' );
         Meow_MWAI_Logging::log( 'Responses API: Choice structure: ' . json_encode( $returned_choices ) );
@@ -1111,80 +1285,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML
    * Override image query handling for gpt-image-1 model
    */
   public function run_image_query( $query ) {
-    // For gpt-image-1, use Responses API
-    if ( $query->model === 'gpt-image-1' ) {
-      return $this->run_responses_image_query( $query );
-    }
+    // IMPORTANT: We use the standard Images API for gpt-image-1 (not Responses API)
+    // Even though Responses API supports image_generation tool, it would let the
+    // orchestrator model choose which image model to use. By using the Images API
+    // directly, we ensure gpt-image-1 is actually used as requested by the user.
     
-    // Fallback to standard DALL-E implementation
+    // Use standard implementation for all image models including gpt-image-1
     return parent::run_image_query( $query );
   }
 
-  /**
-   * Run image generation using Responses API
-   */
-  protected function run_responses_image_query( $query ) {
-    $body = [
-      'model' => $query->model,
-      'input' => $query->get_message(),
-      'tools' => [[
-        'type' => 'image_generation'
-      ]]
-    ];
-
-    $url = $this->build_responses_url();
-    $headers = $this->build_headers( $query );
-    $options = $this->build_options( $headers, $body );
-
-    try {
-      $res = $this->run_query( $url, $options );
-      $data = $res['data'];
-      
-      if ( empty( $data ) ) {
-        throw new Exception( 'No content received for image generation.' );
-      }
-
-      // Extract image URLs from Responses API output
-      $choices = [];
-      if ( isset( $data['output'] ) ) {
-        foreach ( $data['output'] as $event ) {
-          if ( $event['type'] === 'tool_result' && 
-               $event['tool']['type'] === 'image_generation' ) {
-            $choices[] = [
-              'url' => $event['tool']['result']['url'] ?? null
-            ];
-          }
-        }
-      }
-
-      $reply = new Meow_MWAI_Reply( $query );
-      $model = $query->model;
-      $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
-      $usage = $this->core->record_images_usage( $model, $resolution, $query->maxResults );
-      $reply->set_usage( $usage );
-      $reply->set_choices( $choices );
-      $reply->set_type( 'images' );
-
-      if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
-        foreach ( $reply->results as &$result ) {
-          $fileId = $this->core->files->upload_file( $result, null, 'generated', [
-            'query_envId' => $query->envId,
-            'query_session' => $query->session,
-            'query_model' => $query->model,
-          ], $query->envId, $query->localDownload, $query->localDownloadExpiry );
-          $fileUrl = $this->core->files->get_url( $fileId );
-          $result = $fileUrl;
-        }
-      }
-      $reply->result = $reply->results[0];
-      return $reply;
-    }
-    catch ( Exception $e ) {
-      $service = $this->get_service_name();
-      Meow_MWAI_Logging::error( "$service (Responses API Image): " . $e->getMessage() );
-      throw new Exception( "$service (Responses API Image): " . $e->getMessage() );
-    }
-  }
 
   /**
    * Override transcription to support new models

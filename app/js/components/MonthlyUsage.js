@@ -1,5 +1,5 @@
-// Previous: 2.6.9
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 const { useState, useMemo } = wp.element;
 
@@ -15,6 +15,7 @@ import {
   NekoAccordions,
   NekoAccordion,
 } from '@neko-ui';
+import i18n from "@root/i18n";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -29,6 +30,14 @@ const UsageDetails = ({ month, usageData }) => {
 
   return (
     <table style={{ width: 'calc(100% - 36px)', margin: '5px 18px 0px 18px', borderCollapse: 'collapse' }}>
+      {/* <thead>
+        <tr>
+          <th style={{ textAlign: 'left', paddingRight: 10 }}>Model</th>
+          <th style={{ textAlign: 'left', paddingRight: 10 }}>Unit</th>
+          <th style={{ textAlign: 'right', paddingRight: 10 }}>Value</th>
+          <th style={{ textAlign: 'right' }}>Price</th>
+        </tr>
+      </thead> */}
       <tbody>
         {usageData[month].map((data, index) => {
           const dataType = data.isImage ? 'images' : data.isAudio ? 'seconds' : 'tokens';
@@ -142,6 +151,7 @@ const MonthlyUsage = ({ options }) => {
         }
       });
 
+      // Include "Unknown Model" in the chart data
       const unknownModels = labels.map((month) => {
         const monthData = usageData[month]?.filter((data) => data.name === 'Unknown Model');
         return monthData.reduce((acc, curr) => acc + (metric === 'tokens' ? Math.max(curr.units, 1) : Math.max(curr.price, 0.01)), 0);
@@ -161,7 +171,7 @@ const MonthlyUsage = ({ options }) => {
         const monthData = usageData[month];
         monthData.forEach((data) => {
           const familyName = data.family;
-          if (familyName) {
+          if (familyName) { // Only group by family if the family is defined
             if (!familyData[familyName]) {
               familyData[familyName] = Array(labels.length).fill(0);
             }
@@ -260,6 +270,12 @@ const MonthlyUsage = ({ options }) => {
               </NekoAccordion>
             ))}
           </NekoAccordions>
+
+          <NekoSpacer size="medium" />
+
+          <div style={{ fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)' }}>
+            {i18n.COMMON.USAGE_ESTIMATES_NOTE}
+          </div>
         </>
       )}
     </>

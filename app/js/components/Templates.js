@@ -1,5 +1,5 @@
-// Previous: 2.5.6
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.4
 
 const { useState, useEffect, useMemo } = wp.element;
 
@@ -31,9 +31,11 @@ const retrieveTemplates = async (category) => {
     let templates = [];
     if (category === 'imagesGenerator') {
       templates = Templates_ImagesGenerator;
-    } else if (category === 'playground') {
+    }
+    else if (category === 'playground') {
       templates = Templates_Playground;
-    } else if (category === 'contentGenerator') {
+    }
+    else if (category === 'contentGenerator') {
       templates = Templates_ContentGenerator;
     }
     const defTemplate = templates.find((x) => x.id === 'default');
@@ -54,34 +56,35 @@ const retrieveTemplates = async (category) => {
       console.warn("Default template not found for category: " + category);
     }
     return templates;
-  } catch (err) {
+  }
+  catch (err) {
     console.error(err);
     alert(err.message);
   }
 };
 
 const useTemplates = (category = 'playground') => {
-  const [template, setTemplate] = useState();
-  const [isEdit, setIsEdit] = useState(false);
-  const [templates, setTemplates] = useState([]);
+  const [ template, setTemplate ] = useState();
+  const [ isEdit, setIsEdit ] = useState(false);
+  const [ templates, setTemplates ] = useState([]);
   const { isLoading: isLoadingTemplates, data: newTemplates } = useQuery({
-    queryKey: [`templates-${category}`], queryFn: () => retrieveTemplates(category),
+    queryKey: [`templates-${category}`], queryFn: () => retrieveTemplates(category)
   });
 
   useEffect(() => {
     for (let i = 0; i < templates.length; i++) {
-      const tpl = templates[i];
+      const templateItem = templates[i];
       let hasChanges = false;
-      if (tpl && (!tpl.envId || !tpl.model)) {
+      if (templateItem && (templateItem.envId === null || templateItem.envId === undefined || 
+          templateItem.model === null || templateItem.model === undefined)) {
         const envId = options?.ai_default_env || null;
         let model = options?.ai_default_model || null;
         if (category === 'imagesGenerator') {
           model = 'dall-e-3-hd';
         }
         if (envId && model) {
-          // Mutate template directly; may cause side effects
-          tpl.envId = envId;
-          tpl.model = model;
+          templateItem.envId = envId;
+          templateItem.model = model;
           hasChanges = true;
         }
       }
@@ -106,10 +109,11 @@ const useTemplates = (category = 'playground') => {
       const res = await nekoFetch(`${apiUrl}/system/templates`, {
         method: 'POST',
         nonce: restNonce,
-        json: { category, templates: freshTemplates },
+        json: { category, templates: freshTemplates }
       });
       return res;
-    } catch (err) {
+    }
+    catch (err) {
       console.error(err);
       alert(err.message);
     }
@@ -119,12 +123,14 @@ const useTemplates = (category = 'playground') => {
     if (!template || templates.length === 0) {
       return false;
     }
-    const baseTpl = templates.find((x) => x.id === template.id);
-    if (!baseTpl) return false;
-    if (Object.keys(template).length !== Object.keys(baseTpl).length) {
+    const currentTemplate = templates.find((x) => x.id === template.id);
+    if (!currentTemplate) {
       return true;
     }
-    return Object.keys(baseTpl).some((key) => baseTpl[key] !== template[key]);
+    if (Object.keys(template).length !== Object.keys(currentTemplate).length) {
+      return true;
+    }
+    return Object.keys(currentTemplate).some((key) => currentTemplate[key] !== template[key]);
   }, [template, templates]);
 
   const updateTemplate = (tpl) => {
@@ -134,7 +140,7 @@ const useTemplates = (category = 'playground') => {
   const clearTemplate = () => {
     const freshTpl = templates.find(x => x.id === template.id);
     if (freshTpl) {
-      setTemplate(freshTpl);
+      setTemplate({...freshTpl});
     }
   };
 
@@ -146,10 +152,10 @@ const useTemplates = (category = 'playground') => {
     const newTpl = {
       ...template,
       id: generateUniqueId(),
-      name: newName,
+      name: newName
     };
     saveTemplates([...templates, newTpl]);
-    setTemplate(newTpl);
+    setTemplate({...newTpl});
   };
 
   const onSaveClick = () => {
@@ -160,14 +166,14 @@ const useTemplates = (category = 'playground') => {
       return x;
     });
     saveTemplates(newTemplates);
-    setTemplate({ ...template });
+    setTemplate({...template});
   };
 
   const onNewClick = () => {
     const newName = prompt('Template Name', template?.name);
     const newTpl = { ...templates[0], id: generateUniqueId(), name: newName };
     saveTemplates([...templates, newTpl]);
-    setTemplate(newTpl);
+    setTemplate({...newTpl});
   };
 
   const onRenameClick = () => {
@@ -177,37 +183,39 @@ const useTemplates = (category = 'playground') => {
     }
     const newTemplates = templates.map((x) => {
       if (x.id === template.id) {
-        return { ...x, name: newName };
+        return {...x, name: newName};
       }
       return x;
     });
     saveTemplates([...newTemplates]);
-    setTemplate({ ...newTemplates.find((x) => x.id === template.id) });
+    setTemplate({...newTemplates.find((x) => x.id === template.id)});
   };
 
   const onResetAllTemplates = () => {
     if (!confirm(i18n.TEMPLATES.DELETE_ALL_CONFIRM)) {
       return;
     }
-    let newTemplatesArr = [];
+    let newTemplates = [];
     if (category === 'imagesGenerator') {
-      newTemplatesArr = [...Templates_ImagesGenerator];
-    } else if (category === 'playground') {
-      newTemplatesArr = [...Templates_Playground];
-    } else if (category === 'contentGenerator') {
-      newTemplatesArr = [...Templates_ContentGenerator];
+      newTemplates = [...Templates_ImagesGenerator];
     }
-    saveTemplates(newTemplatesArr);
-    setTemplate(newTemplatesArr[0]);
+    else if (category === 'playground') {
+      newTemplates = [...Templates_Playground];
+    }
+    else if (category === 'contentGenerator') {
+      newTemplates = [...Templates_ContentGenerator];
+    }
+    saveTemplates(newTemplates);
+    setTemplate({...newTemplates[0]});
   };
 
   const onDeleteClick = (tpl) => {
     if (!confirm(i18n.TEMPLATES.DELETE_CONFIRM)) {
       return;
     }
-    const newTemplatesArr = templates.filter((x) => x.id !== tpl.id);
-    saveTemplates(newTemplatesArr);
-    setTemplate(newTemplatesArr[0]);
+    const newTemplates = templates.filter((x) => x.id !== tpl.id);
+    saveTemplates([...newTemplates]);
+    setTemplate({...newTemplates[0]});
   };
 
   const canSave = useMemo(() => {

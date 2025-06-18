@@ -22,7 +22,8 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 32768,
     "maxContextualTokens" => 1047576,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
+    "tools" => ['web_search', 'image_generation']
   ],
   /*
     GPT-4.1 mini
@@ -43,7 +44,8 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 32768,
     "maxContextualTokens" => 1047576,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
+    "tools" => ['web_search', 'image_generation']
   ],
   /*
     GPT-4.1 nano
@@ -64,7 +66,8 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 32768,
     "maxContextualTokens" => 1047576,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
+    "tools" => ['image_generation']
   ],
   /*
     GPT-4o
@@ -85,7 +88,8 @@ define( 'MWAI_OPENAI_MODELS', [
     "maxCompletionTokens" => 16384,
     "maxContextualTokens" => 128000,
     "finetune" => false,
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses'],
+    "tools" => ['web_search', 'image_generation']
   ],
   /*
     GPT-4o mini
@@ -110,7 +114,8 @@ define( 'MWAI_OPENAI_MODELS', [
       "out" => 0.60,
       "train" => 3.00
     ],
-    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp']
+    "tags" => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses'],
+    "tools" => ['web_search', 'image_generation']
   ],
   /* 
     o1
@@ -165,7 +170,8 @@ define( 'MWAI_OPENAI_MODELS', [
     "unit" => 1 / 1000000,
     "maxCompletionTokens" => 100000,
     "maxContextualTokens" => 200000,
-    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp']
+    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp'],
+    "tools" => ['web_search', 'image_generation']
   ],
   /* 
     o3-mini
@@ -185,7 +191,8 @@ define( 'MWAI_OPENAI_MODELS', [
     "unit" => 1 / 1000000,
     "maxCompletionTokens" => 100000,
     "maxContextualTokens" => 200000,
-    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp']
+    "tags" => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp'],
+    "tools" => ['web_search', 'image_generation']
   ],
   /* 
     GPT-4o Realtime

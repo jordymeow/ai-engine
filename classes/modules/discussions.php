@@ -489,17 +489,29 @@ class Meow_MWAI_Modules_Discussions {
       $chatExtra['threadId'] = $query->threadId;
       $chatExtra['storeId'] = $query->storeId;
     }
+    
+    // Store response ID and date for Responses API
+    if ( !empty( $extra['responseId'] ) ) {
+      $chatExtra['previousResponseId'] = $extra['responseId'];
+      $chatExtra['previousResponseDate'] = $now;
+    }
 
     if ( $chat ) {
       $chat->messages = json_decode( $chat->messages );
       $chat->messages[] = [ 'role' => 'user', 'content' => $newMessage ];
       $chat->messages[] = [ 'role' => 'assistant', 'content' => $rawText, 'extra' => $messageExtra ];
       $chat->messages = json_encode( $chat->messages );
+      
+      // Update or merge extra data
+      $existingExtra = json_decode( $chat->extra, true ) ?: [];
+      $mergedExtra = array_merge( $existingExtra, $chatExtra );
+      
       $this->wpdb->update(
         $this->table_chats,
         [
           'userId' => $userId,
           'messages' => $chat->messages,
+          'extra' => json_encode( $mergedExtra ),
           'updated' => $now
         ],
         [ 'id' => $chat->id ]

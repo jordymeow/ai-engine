@@ -1,5 +1,5 @@
-// Previous: 2.7.6
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.4
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -35,7 +35,38 @@ const WritingTones = [
   { value: 'journalistic', label: 'Journalistic' },
 ];
 
-const defaultModel = 'gpt-4.1-nano';
+const defaultModel = "";
+
+// Shared prompt formats for Content Generator
+const defaultTitlePrompt = `Write a title for an article in {LANGUAGE}. Must be between 40 and 60 characters. Write naturally as a human would. Output only the title, no formatting, no Markdown, no special characters.
+
+Based on this topic:
+
+{TOPIC}`;
+
+const defaultSectionsPrompt = `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Each heading is between 40 and 60 characters. Format each heading with Markdown (## ). Write naturally as a human would. Output only the headings, nothing else.
+
+Base your headings on this topic:
+
+{TOPIC}`;
+
+const defaultContentPrompt = `Write an article about "{TITLE}" in {LANGUAGE}. Write {PARAGRAPHS_PER_SECTION} paragraphs per heading. Use Markdown for formatting. Add an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ". Write naturally as a human would.
+
+The article is organized by the following headings:
+
+{SECTIONS}
+
+Based on this topic:
+
+{TOPIC}`;
+
+const defaultExcerptPrompt = `Write an excerpt for an article in {LANGUAGE}. Must be between 40 and 60 characters. Write naturally as a human would. Output only the excerpt, no formatting.
+
+For an article titled: "{TITLE}"
+
+Based on this topic:
+
+{TOPIC}`;
 
 const Templates_Playground = [
   {
@@ -43,6 +74,7 @@ const Templates_Playground = [
     name: 'Default Template',
     mode: 'query',
     model: defaultModel,
+    envId: "",
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
@@ -52,6 +84,7 @@ const Templates_Playground = [
     name: 'Text Translator',
     mode: 'query',
     model: defaultModel,
+    envId: "",
     temperature: 0.3,
     stopSequence: '',
     maxTokens: 2048,
@@ -61,6 +94,7 @@ const Templates_Playground = [
     name: 'Restaurant Review Writer',
     mode: 'query',
     model: defaultModel,
+    envId: "",
     temperature: 0.8,
     stopSequence: '',
     maxTokens: 2048,
@@ -70,6 +104,7 @@ const Templates_Playground = [
     name: 'Text Corrector',
     mode: 'query',
     model: defaultModel,
+    envId: "",
     temperature: 0.2,
     stopSequence: '',
     maxTokens: 2048,
@@ -79,6 +114,7 @@ const Templates_Playground = [
     name: 'SEO Optimizer',
     mode: 'query',
     model: defaultModel,
+    envId: "",
     temperature: 0.6,
     stopSequence: '',
     maxTokens: 1024,
@@ -90,28 +126,36 @@ const Templates_ImagesGenerator = [
   {
     id: 'default',
     name: 'Default Template',
-    model: 'gpt-image-1',
+    model: '',
+    envId: '',
+    resolution: '',
     maxResults: 1,
     prompt: '',
   },
   {
     id: 'japan',
     name: 'Ghibli Scene',
-    model: 'gpt-image-1',
+    model: '',
+    envId: '',
+    resolution: '',
     maxResults: 1,
     prompt: 'Create an image in the style of a Ghibli-inspired anime oil painting, depicting a quaint, old house in the Japanese countryside. This house, reminiscent of a traditional izakaya, is surrounded by lush trees and overlooks vibrant rice fields. The scene is bathed in the warm, soft glow of a setting sun, casting gentle shadows and creating a tranquil, nostalgic atmosphere. The composition should be rich in texture, capturing the serene beauty of rural Japan in a whimsical, Ghibli-like manner.',
   },
   {
     id: 'steampunk',
     name: 'Steampunk Architecture',
-    model: 'gpt-image-1',
+    model: '',
+    envId: '',
+    resolution: '',
     maxResults: 1,
     prompt: 'Create an image showcasing steampunk architecture, focusing on the exterior view of a grand theater. The style should reflect award-winning architectural photography from a science fiction magazine. The theater, a masterpiece of steampunk design, combines Victorian influences with futuristic, mechanical elements. Its intricate facade features exposed gears, brass pipes, and steam vents, all integrated into the ornate, classical structure. The building should be set against a dramatic sky, highlighting its unique features and the interplay of light and shadow, capturing the essence of a high-quality, professional architectural photograph.',
   },
   {
     id: 'nyao-illustration',
     name: 'Nyao Illustration',
-    model: 'gpt-image-1',
+    model: '',
+    envId: '',
+    resolution: '',
     maxResults: 1,
     prompt: 'The character is an anthropomorphic cat with a whimsical and endearing design, featuring a blend of white and blue fur. The right side of the cat\'s face has a patch of blue fur that also covers the outer part of the ear, while the left side remains predominantly white, except that the eye is surrounded by a green patch of fur. The tail mirrors this pattern with white fur leading to a blue tip. The character\'s facial expression is joyous, with a wide, open-mouthed smile showcasing a single front tooth and a small, black nose.  The cat\'s paws are also white, with defined fingers that suggest human-like dexterity. An orange collar encircles the neck, contrasting with the green and blue tones of the body. This collar is adorned with a blue and white emblem in the center, reminiscent of the WordPress logo. The drawing style of this image can be defined as a digital illustration with a cartoonish and whimsical aesthetic. It features bold outlines, flat colors, and simplified shapes which are typical of contemporary character design aimed at a broad, family-friendly audience. The style is reminiscent of modern vector art, which is often used for web graphics, animation, and media aimed at engaging a casual viewer with its clear, approachable, and vibrant visuals.',
   },
@@ -128,6 +172,7 @@ const Templates_ContentGenerator = [
     title: "",
     sections: "",
     model: defaultModel,
+    envId: "",
     temperature: 0.8,
     maxTokens: 2048,
     sectionsCount: 2,
@@ -136,33 +181,34 @@ const Templates_ContentGenerator = [
     customLanguage: '',
     writingStyle: 'creative',
     writingTone: 'cheerful',
-    titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters. Only the title, no formatting, no Markdown, no special characters.`,
-    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Each heading is between 40 and 60 characters. Use Markdown for the headings (## ).`,
-    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following headings:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per heading. Use Markdown for formatting. Add an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ". Style: {WRITING_STYLE}. Tone: {WRITING_TONE}.`,
-    excerptPromptFormat: `Write an excerpt for an article about "{TITLE}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
+    titlePromptFormat: defaultTitlePrompt,
+    sectionsPromptFormat: defaultSectionsPrompt,
+    contentPromptFormat: defaultContentPrompt,
+    excerptPromptFormat: defaultExcerptPrompt,
   },
   {
-    id: '',
-    name: 'Explore Japan',
+    id: 'explore_tokyo_offbeat',
+    name: 'Explore Tokyo Offbeat',
     mode: 'single',
-    topic: "Tokyo, its main areas and attractions, one day tour for a first-time visitor. Simple vocabulary, short paragraphs.",
+    topic: "5 hidden Tokyo neighborhoods only locals know: retro Showa-era streets, authentic Edo atmosphere, family-run restaurant alleys, old shopping arcades, quiet residential gems. Write in first person as a Tokyo local sharing secret spots.",
     topics: "",
     topicsAreTitles: false,
     title: "",
     sections: "",
     model: defaultModel,
+    envId: "",
     temperature: 0.8,
     maxTokens: 2048,
-    sectionsCount: 3,
+    sectionsCount: 5,
     paragraphsCount: 2,
     language: 'en',
     customLanguage: '' ,
     writingStyle: 'informative',
     writingTone: ' informal',
-    titlePromptFormat: `Write a title for an article about "{TOPIC}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
-    sectionsPromptFormat: `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Each heading is between 40 and 60 characters. Use Markdown for the headings (## ).`,
-    contentPromptFormat: `Write an article about "{TITLE}" in {LANGUAGE}. The article is organized by the following headings:\n\n{SECTIONS}\n\nWrite {PARAGRAPHS_PER_SECTION} paragraphs per heading. Use Markdown for formatting. Add an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ". Style: {WRITING_STYLE}. Tone: {WRITING_TONE}.`,
-    excerptPromptFormat: `Write an excerpt for an article about "{TITLE}" in {LANGUAGE}. Style: {WRITING_STYLE}. Tone: {WRITING_TONE}. Must be between 40 and 60 characters.`,
+    titlePromptFormat: defaultTitlePrompt,
+    sectionsPromptFormat: defaultSectionsPrompt,
+    contentPromptFormat: defaultContentPrompt,
+    excerptPromptFormat: defaultExcerptPrompt,
   }
 ];
 

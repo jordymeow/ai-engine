@@ -1,5 +1,5 @@
-// Previous: 2.5.0
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.4
 
 const { render } = wp.element;
 import ChatbotSystem from '@app/chatbot/ChatbotSystem';
@@ -15,9 +15,28 @@ function decodeHtmlEntities(encodedStr) {
 function initializeMwai() {
   function processContainers(containers, component) {
     containers.forEach((container) => {
-      const params = JSON.parse(decodeHtmlEntities(container.getAttribute('data-params')));
-      const system = JSON.parse(decodeHtmlEntities(container.getAttribute('data-system')));
-      const theme = JSON.parse(decodeHtmlEntities(container.getAttribute('data-theme')));
+      // Skip if already initialized
+      if (container.hasAttribute('data-mwai-initialized')) {
+        return;
+      }
+      
+      const paramsAttr = container.getAttribute('data-params');
+      const systemAttr = container.getAttribute('data-system');
+      const themeAttr = container.getAttribute('data-theme');
+      
+      // Check if attributes exist before parsing
+      if (!paramsAttr || !systemAttr || !themeAttr) {
+        console.warn('MWAI: Missing required attributes for initialization', container);
+        return;
+      }
+      
+      const params = JSON.parse(decodeHtmlEntities(paramsAttr));
+      const system = JSON.parse(decodeHtmlEntities(systemAttr));
+      const theme = JSON.parse(decodeHtmlEntities(themeAttr));
+      
+      // Mark as initialized before removing attributes
+      container.setAttribute('data-mwai-initialized', 'true');
+      
       container.removeAttribute('data-params');
       container.removeAttribute('data-system');
       container.removeAttribute('data-theme');

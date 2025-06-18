@@ -42,7 +42,9 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
 	'apiKey' => null,
 	// Orchestration
 	'functions' => [],
-	'mcpServers' => []
+	'mcpServers' => [],
+	// Advanced
+	'historyStrategy' => null
 ] );
 
 define( 'MWAI_LANGUAGES', [
@@ -177,6 +179,7 @@ define( 'MWAI_OPTIONS', [
         'dev_mode' => false,
 	'debug_mode' => true,
 	'server_debug_mode' => true,
+	'mcp_debug_mode' => false,
 	'logs_path' => null,
 	'resolve_shortcodes' => false,
 	'context_max_length' => 4096,

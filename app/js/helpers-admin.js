@@ -1,5 +1,5 @@
-// Previous: 2.7.3
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.4
 
 const { useMemo, useState, useEffect, useRef } = wp.element;
 import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
@@ -29,6 +29,7 @@ const DEFAULT_VECTOR = {
 const OptionsCheck = ({ options }) => {
   const { ai_envs } = options;
 
+  // We need at least one environment with a valid key (apikey)
   const isAISetup = ai_envs.find(x => x.apikey && x.apikey.length > 0);
   const pineconeIsOK = !options?.module_embeddings || (options?.embeddings_envs && options?.embeddings_envs.length > 0);
 
@@ -91,11 +92,14 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
   }, [startLanguage]);
 
   useEffect(() => {
+    // Use the language stored in the local storage if it exists
     const preferredLanguage = localStorage.getItem('mwai_preferred_language');
     if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
       setCurrentLanguage(preferredLanguage);
       return;
     }
+
+    // Otherwise, try to detect the language from the browser
     const detectedLanguage = (document.querySelector('html').lang || navigator.language
       || navigator.userLanguage).substr(0, 2);
     if (languages.find(l => l.value === detectedLanguage)) {
@@ -120,7 +124,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setIsCustom(true);
       return;
     }
-    setCurrentLanguage(value);
+    setCurrentLanguage(value, field);
     localStorage.setItem('mwai_preferred_language', value);
   };
 
@@ -147,6 +151,9 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     currentHumanLanguage, isCustom };
 };
 
+// This hook allows to retrieve the models and their info based on the environment.
+// If no environment is given, the default OpenAI models are returned.
+// If allEnvs is true, all the models are returned, from every environment.
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
   const warnedModelsRef = useRef(new Set());
@@ -279,7 +286,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 
     if (fineTunes.length) {
       models = [ ...models, ...fineTunes.map(x => {
-
         const features = ['completion'];
         const splitted = x.model.split(':');
         const family = splitted[0];
@@ -540,14 +546,14 @@ function tableUserIPFormatter(userId, ip) {
     }
     return substr;
   })() : '';
-  return <>
+  return <div>
     {!userId && <>{i18n.COMMON.GUEST}</>}
     {userId && <><a target="_blank" href={`/wp-admin/user-edit.php?user_id=${userId}`} rel="noreferrer">
       {i18n.COMMON.USER} #{userId}
     </a></>}
     <br />
     <small>{formattedIP}</small>
-  </>;
+  </div>;
 }
 
 const randomHash = (length = 6) => {

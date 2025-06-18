@@ -3,7 +3,7 @@
 // Params for the chatbot (front and server)
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle' ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'parentBotId' ] );
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId' ] );
 
 // Params for the discussions (front and server)
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
@@ -92,7 +92,7 @@ class Meow_MWAI_Modules_Chatbot {
 		return true;
 	}
 
-	public function build_final_res( $botId, $newMessage, $newFileId, $params, $reply, $images, $actions, $usage ) {
+	public function build_final_res( $botId, $newMessage, $newFileId, $params, $reply, $images, $actions, $usage, $responseId = null ) {
 		$filterParams = [
 			'step' => 'reply',
 			'botId' => $botId,
@@ -102,6 +102,8 @@ class Meow_MWAI_Modules_Chatbot {
 			'newFileId' => $newFileId,
 			'params' => $params,
 			'usage' => $usage,
+			'messages' => $params['messages'] ?? [],
+			'isNewConversation' => empty( $params['messages'] ) || count( $params['messages'] ) <= 1,
 		];
 		$actions = apply_filters( 'mwai_chatbot_actions', $actions, $filterParams );
 		$blocks = apply_filters( 'mwai_chatbot_blocks', [], $filterParams );
@@ -109,7 +111,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$actions = $this->sanitize_actions( $actions );
 		$blocks = $this->sanitize_blocks( $blocks );
 		$shortcuts = $this->sanitize_shortcuts( $shortcuts );
-		return [
+		$result = [
 			'success' => true,
 			'reply' => $reply,
 			'images' => $images,
@@ -118,6 +120,13 @@ class Meow_MWAI_Modules_Chatbot {
 			'blocks' => $blocks,
 			'usage' => $usage
 		];
+		
+		// Add response ID if available
+		if ( !empty( $responseId ) ) {
+			$result['responseId'] = $responseId;
+		}
+		
+		return $result;
 	}
 
 	public function rest_chat( $request ) {
@@ -127,6 +136,7 @@ class Meow_MWAI_Modules_Chatbot {
 		$stream = $params['stream'] ?? false;
 		$newMessage = trim( $params['newMessage'] ?? '' );
 		$newFileId = $params['newFileId'] ?? null;
+		
 
 		if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId )) {
 			return new WP_REST_Response( [ 
@@ -138,7 +148,8 @@ class Meow_MWAI_Modules_Chatbot {
 		try {
 			$data = $this->chat_submit( $botId, $newMessage, $newFileId, $params, $stream );
 			$final_res = $this->build_final_res( $botId, $newMessage, $newFileId, $params,
-				$data['reply'], $data['images'], $data['actions'], $data['usage'] );
+				$data['reply'], $data['images'], $data['actions'], $data['usage'], 
+				$data['responseId'] ?? null );
 			return new WP_REST_Response( $final_res, 200 );
 		}
 		catch ( Exception $e ) {
@@ -327,6 +338,20 @@ class Meow_MWAI_Modules_Chatbot {
 					if ( count( $diffs ) > 0 ) {
 						Meow_MWAI_Logging::warn( "Integrity Check: It seems the messages in the discussion #{$discussion['id']} do not match the ones sent by the client." );
 					}
+					
+					// Load previousResponseId from discussion extra data if not provided by client
+					if ( empty( $params['previousResponseId'] ) && !empty( $discussion['extra'] ) ) {
+						$extra = json_decode( $discussion['extra'], true );
+						if ( !empty( $extra['previousResponseId'] ) ) {
+							// Check if response is not older than 30 days
+							$responseDate = !empty( $extra['previousResponseDate'] ) ? strtotime( $extra['previousResponseDate'] ) : 0;
+							$thirtyDaysAgo = time() - (30 * 24 * 60 * 60);
+							
+							if ( $responseDate > $thirtyDaysAgo ) {
+								$params['previousResponseId'] = $extra['previousResponseId'];
+							}
+						}
+					}
 				}
 				else {
 					// No discussion yet? We still need to check the startSentence.
@@ -344,10 +369,28 @@ class Meow_MWAI_Modules_Chatbot {
 
 			// Create QueryText
 			$context = null;
+			$streamCallback = null;
 			$mode = $chatbot['mode'] ?? 'chat';
 
 			if ( $mode === 'images' ) {
-				$query = new Meow_MWAI_Query_Image( $newMessage );
+				// If there's an uploaded file, use EditImage query instead
+				if ( !empty( $newFileId ) ) {
+					$query = new Meow_MWAI_Query_EditImage( $newMessage );
+					
+					// Handle the uploaded image
+					$url = $this->core->files->get_url( $newFileId );
+					$mimeType = $this->core->files->get_mime_type( $newFileId );
+					$isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
+					
+					if ( $isIMG ) {
+						$query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
+						$fileId = $this->core->files->get_id_from_refId( $newFileId );
+						$this->core->files->update_purpose( $fileId, 'vision' );
+					}
+				}
+				else {
+					$query = new Meow_MWAI_Query_Image( $newMessage );
+				}
 
 				// Handle Params
 				$newParams = [];
@@ -359,12 +402,13 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
 				$params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
+				
+				
 				$query->inject_params( $params );
 			}
 			else {
 				$query = $mode === 'assistant' ? new Meow_MWAI_Query_Assistant( $newMessage ) : 
 					new Meow_MWAI_Query_Text( $newMessage, 1024 );
-				$streamCallback = null;
 
 				// Handle Params
 				$newParams = [];
@@ -376,6 +420,8 @@ class Meow_MWAI_Modules_Chatbot {
 				}
 				$params = apply_filters( 'mwai_chatbot_params', $newParams );
 				$params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
+				
+				
 				$query->inject_params( $params );
 
 				$storeId = null;
@@ -516,6 +562,10 @@ class Meow_MWAI_Modules_Chatbot {
 			if ( $context ) {
 				$extra = [ 'embeddings' => isset( $context['embeddings'] ) ? $context['embeddings'] : null ];
 			}
+			// Add response ID to extra for discussion storage
+			if ( !empty( $reply->id ) ) {
+				$extra['responseId'] = $reply->id;
+			}
 			$rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
 
 			// Integrity Check: We need to store the checksum of the messages sent by the client.
@@ -547,10 +597,16 @@ class Meow_MWAI_Modules_Chatbot {
 				'usage' => $reply->usage
 			];
 
+			// Add response ID if available (for Responses API)
+			if ( !empty( $reply->id ) ) {
+				$restRes['responseId'] = $reply->id;
+			}
+
 			// Process Reply
 			if ( $stream ) {
 				$final_res = $this->build_final_res( $botId, $newMessage, $newFileId, $params,
-					$restRes['reply'], $restRes['images'], $restRes['actions'], $restRes['usage'] );
+					$restRes['reply'], $restRes['images'], $restRes['actions'], $restRes['usage'],
+					$restRes['responseId'] ?? null );
 				$this->core->stream_push( [ 'type' => 'end', 'data' => json_encode( $final_res ) ], $query );
 				die();
 			}

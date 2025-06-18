@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.3
+Stable tag: 2.8.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,18 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.8.4 (2025/06/18) =
+* Add: History Strategy for Responses API chatbots. This allows chatbots to maintain a history of interactions, including images being modified or generated.
+* Add: AI Want support for more blocks, like tables, lists, headers, etc.
+* Add: Tools support (web_search, image_generation) with the Responses API.
+* Add: Edit Mode for Images, with mask support.
+* Update: Streamlined MCP logging, improved documentation.
+* Fix: Duplicate Media Library entries.
+* Fix: PDF worker URL (sorry about that, guys).
+* Fix: Vision support for Responses API.
+* Fix: Hotfix for security issues related to MCP.
+* Info: More fixes and improvements which are too numerous to list here. We will have another round of improvements coming within 3-4 days. Don't hesitate to leave a review and mention something you would like to see improved or fixed.
 
 = 2.8.3 (2025/06/07) =
 * Add: Support for the new OpenAI Responses API (function calling, vision, feedback, MCP) – enable it in Settings when you’re ready.

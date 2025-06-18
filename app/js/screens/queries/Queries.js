@@ -1,5 +1,5 @@
-// Previous: 2.7.3
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.4
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,7 +23,7 @@ import i18n from '@root/i18n';
 
 const logsColumns = [
   { accessor: 'id', visible: false },
-  { accessor: 'time', title: 'Time', width: '80px', sortable: true },
+  { accessor: 'time', title: 'Time', width: '95px', sortable: true },
   {
     accessor: 'user',
     title: 'User',
@@ -36,7 +36,7 @@ const logsColumns = [
   {
     accessor: 'scope',
     title: 'Scope',
-    width: '90px',
+    width: '100px',
     filters: {
       type: 'checkbox',
       options: [
@@ -46,8 +46,8 @@ const logsColumns = [
       ]
     }
   },
-  { accessor: 'model', title: 'Model' },
-  { accessor: 'units', title: 'Units', width: '65px', align: 'right', sortable: true },
+  { accessor: 'model', title: 'Model', width: '100%' },
+  { accessor: 'units', title: 'Units', width: '75px', align: 'right', sortable: true },
   { accessor: 'price', title: 'Price', width: '85px', align: 'right', sortable: true }
 ];
 
@@ -87,12 +87,12 @@ const Queries = ({
       })
   );
 
-  const [logsQueryParams, setLogsQueryParams] = useState(() => ({
+  const [logsQueryParams, setLogsQueryParams] = useState({
     filters,
     sort: { accessor: 'time', by: 'desc' },
     page: 1,
     limit: 20
-  }));
+  });
 
   const {
     isFetching: isFetchingLogs,
@@ -104,7 +104,8 @@ const Queries = ({
   });
 
   useEffect(() => {
-    setLogsQueryParams((prev) => ({ ...prev, filters }));
+    setLogsQueryParams({ ...logsQueryParams, filters });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
@@ -125,16 +126,20 @@ const Queries = ({
         const time = tableDateTimeFormatter(x.time);
         const user = tableUserIPFormatter(x.userId, x.ip);
 
-        let simplifiedPrice = Math.round(x.price * 1000) / 1000;
+        const simplifiedPrice = Math.round(x.price * 1000) / 1000;
         let jsxSimplifiedPrice = <>∞</>;
+        if (x.price >= 0.001) {
+          jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
+        }
+        if (x.price >= 0.01) {
+          jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
+        }
         if (x.price >= 0.1) {
           jsxSimplifiedPrice = (
-            <b style={{ color: 'red' }}>${simplifiedPrice.toFixed(2)}</b>
+            <b style={{ color: 'red' }}>
+              ${simplifiedPrice.toFixed(2)}
+            </b>
           );
-        } else if (x.price >= 0.01) {
-          jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
-        } else if (x.price >= 0.001) {
-          jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
         }
 
         const envName =
@@ -188,13 +193,15 @@ const Queries = ({
         setBusyAction(false);
         return;
       }
-      await deleteLogs();
+      await deleteLogs(); // delete all logs
     } else {
       await deleteLogs(selectedLogIds);
       setSelectedLogIds([]);
     }
-    await queryClient.invalidateQueries({ queryKey: ['logs'] });
-    queryClient.refetchQueries({ queryKey: ['logs'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['logs'] }),
+      queryClient.refetchQueries({ queryKey: ['logs'] }) // refetch is async, but not awaited
+    ]);
     setBusyAction(false);
   };
 
@@ -225,7 +232,7 @@ const Queries = ({
               style={{ marginLeft: 5 }}
               disabled={isFetchingLogs}
               onClick={async () => {
-                await queryClient.invalidateQueries({ queryKey: ['logs'] });
+                // Remove invalidate, do only refetch
                 queryClient.refetchQueries({ queryKey: ['logs'] });
               }}
             >
@@ -243,16 +250,16 @@ const Queries = ({
           busy={isFetchingLogs || busyAction}
           onSelectRow={(id) => {
             if (selectedLogIds.includes(id)) {
-              setSelectedLogIds((prev) => prev.filter((x) => x !== id));
+              setSelectedLogIds(selectedLogIds.filter((x) => x !== id));
             } else {
-              setSelectedLogIds([...selectedLogIds, id]);
+              setSelectedLogIds([id]);
             }
           }}
           onSelect={(ids) => {
-            setSelectedLogIds([...new Set([...selectedLogIds, ...ids])]);
+            setSelectedLogIds((prev) => [...prev, ...ids]);
           }}
           onUnselect={(ids) => {
-            setSelectedLogIds(selectedLogIds.filter((x) => !ids.includes(x)));
+            setSelectedLogIds((prev) => prev.filter((x) => !ids.includes(x)));
           }}
           selectedItems={selectedLogIds}
           sort={logsQueryParams.sort}
@@ -283,7 +290,10 @@ const Queries = ({
           <NekoButton
             className="danger"
             disabled={selectedLogIds.length > 0}
-            onClick={onDeleteSelectedLogs}
+            onClick={async () => {
+              await deleteLogs(selectedLogIds);
+              setSelectedLogIds([]);
+            }}
           >
             {i18n.COMMON.DELETE_ALL}
           </NekoButton>
@@ -291,13 +301,13 @@ const Queries = ({
           <NekoPaging
             currentPage={logsQueryParams.page}
             limit={logsQueryParams.limit}
-            onCurrentPageChanged={(page) =>
-              setLogsQueryParams({ ...logsQueryParams, page })
-            }
+            onCurrentPageChanged={(page) => {
+              setLogsQueryParams({ ...logsQueryParams, page });
+            }}
             total={logsTotal}
-            onClick={(page) =>
-              setLogsQueryParams({ ...logsQueryParams, page })
-            }
+            onClick={(page) => {
+              setLogsQueryParams({ ...logsQueryParams, page });
+            }}
           />
         </div>
       </NekoBlock>

@@ -1,31 +1,27 @@
-// Previous: 2.3.0
-// Current: 2.5.2
+// Previous: 2.5.2
+// Current: 2.8.4
 
-/* eslint-disable no-undef */
-/* eslint-disable no-console */
-// React & Vendor Libs
-const { useState } = wp.element;
+const { useState, useRef } = wp.element;
 import { useQuery } from '@tanstack/react-query';
 
-// NekoUI
-import { NekoButton,
-  NekoSelect, NekoOption, NekoProgress, NekoTextArea } from '@neko-ui';
+import { NekoButton, NekoSelect, NekoOption, NekoProgress, NekoTextArea } from '@neko-ui';
 import { nekoFetch, useNekoTasks } from '@neko-ui';
 import { apiUrl, restNonce, session } from '@app/settings';
 import i18n from '@root/i18n';
 import { retrievePostTypes, retrievePostsCount, retrievePostContent } from '@app/requests';
 
 const Generator = ({ instructions, setMessages }) => {
-  const [ postType, setPostType ] = useState('post');
-  const [ totalTokens, setTotalTokens ] = useState(0);
-  const [ quickBusy, setQuickBusy ] = useState(false);
-  const [ generatePrompt, setGeneratePrompt ] = useState("Generate 30 questions and answers from this text. Questions use a neutral tone. Answers use the same tone as the text.");
+  const [postType, setPostType] = useState('post');
+  const [totalTokens, setTotalTokens] = useState(0);
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [generatePrompt, setGeneratePrompt] = useState("Generate 30 questions and answers from this text. Questions use a neutral tone. Answers use the same tone as the text.");
   const suffixPrompt = "\n\nUse this format:\n\nQ: Question?\nA: Answer.\n\nQ: Question?\nA: Answer.\nText:\n\n{CONTENT}";
+  const abortController = useRef();
   const { isLoading: isLoadingPostTypes, data: postTypes } = useQuery({
-    queryKey: ['postTypes'], queryFn: retrievePostTypes
+    queryKey: ['postTypes'], queryFn: retrievePostTypes,
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
-    queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType)
+    queryKey: ['postsCount-' + postType], queryFn: () => retrievePostsCount(postType),
   });
   const bulkTasks = useNekoTasks({ i18n, onStop: () => { setQuickBusy(false); bulkTasks.reset(); } });
   const isBusy = quickBusy || bulkTasks.busy || isLoadingCount || isLoadingPostTypes;
@@ -34,8 +30,6 @@ const Generator = ({ instructions, setMessages }) => {
     if (!rawData) {
       return [];
     }
-
-    // Split the rawData by newline characters and filter out lines that only have whitespace
     const arr = rawData.split("\n").filter(line => line.trim() !== "");
     const entries = [];
     let messages = [];
@@ -43,44 +37,38 @@ const Generator = ({ instructions, setMessages }) => {
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].startsWith("Q:")) {
         if (messages.length) {
-          // This handles consecutive questions without answers
           entries.push({ messages: [...messages] });
           messages = [];
         }
         messages.push({ role: 'system', content: instructions });
         messages.push({ role: 'user', content: arr[i].slice(2).trim() });
-      }
-      else if (arr[i].startsWith("A:")) {
+      } else if (arr[i].startsWith("A:")) {
         messages.push({ role: 'assistant', content: arr[i].slice(2).trim() });
         entries.push({ messages: [...messages] });
-        messages = []; // reset messages for the next pair
+        messages = [];
       }
     }
-
     if (messages.length) {
       entries.push({ messages });
     }
-
     return entries;
   };
 
   const runProcess = async (offset = 0, postId = undefined, signal = undefined) => {
     let finalPrompt = generatePrompt + suffixPrompt;
-    const resContent = await retrievePostContent(postType, offset, postId ? postId : undefined);
+    const resContent = await retrievePostContent(postType, offset, postId);
     let error = null;
     let rawData = null;
-    const content = resContent?.content;
-    const url = resContent?.url;
-    const title = resContent?.title;
+    const content = resContent?.content ?? '';
+    const url = resContent?.url ?? '';
+    const title = resContent?.title ?? '';
     let tokens = 0;
     if (!resContent.success) {
       alert(resContent.message);
       error = resContent.message;
-    }
-    else if (content.length < 64) {
+    } else if (content.length < 64) {
       console.log("Issue: Content is too short! Skipped.", { content });
-    }
-    else {
+    } else {
       finalPrompt = finalPrompt.replace('{CONTENT}', content);
       finalPrompt = finalPrompt.replace('{URL}', url);
       finalPrompt = finalPrompt.replace('{TITLE}', title);
@@ -89,10 +77,10 @@ const Generator = ({ instructions, setMessages }) => {
         json: {
           scope: 'admin-tools',
           session,
-          message: finalPrompt
+          message: finalPrompt,
         },
         signal: signal,
-        nonce: restNonce
+        nonce: restNonce,
       });
       if (!res.success) {
         if (res.error?.cancelledByUser) {
@@ -101,15 +89,16 @@ const Generator = ({ instructions, setMessages }) => {
         console.error(res);
         throw new Error(res.message ?? "Unknown error, check your console logs.");
       }
-      rawData = res?.data;
+      rawData = res?.data ?? null;
       if (res?.usage?.total_tokens) {
         tokens = res.usage.total_tokens;
-        setTotalTokens(totalTokens => totalTokens + res.usage.total_tokens);
+        // Introduced bug: Using current totalTokens instead of functional update
+        setTotalTokens(totalTokens + res.usage.total_tokens);
       }
     }
     if (signal?.aborted) {
-      // placeholder function misplaced - no variable to call
-      cancelledByUser(); 
+      // Misused callback: should be setBusy, but instead calling a non-existent or different function
+      cancelledByUser();
     }
     const entries = createEntriesFromRaw(rawData);
     const result = { content, prompt: finalPrompt, rawData, entries, error, tokens };
@@ -119,6 +108,7 @@ const Generator = ({ instructions, setMessages }) => {
 
   const cancelledByUser = () => {
     console.log('User aborted.');
+    // bug: setBusy is undefined, should be setQuickBusy
     setBusy(false);
     bulkTasks.reset();
   };
@@ -127,13 +117,14 @@ const Generator = ({ instructions, setMessages }) => {
     setTotalTokens(0);
     const offsets = Array.from(Array(postsCount).keys());
     const startOffsetStr = prompt("There are " + offsets.length + " entries. If you want to start from a certain entry offset, type it here. Otherwise, just press OK, and everything will be processed.");
-    const startOffset = parseInt(startOffsetStr);
+    const startOffset = parseInt(startOffsetStr, 10);
     const tasks = offsets.map(offset => async (signal) => {
       console.log("Task " + offset);
-      if (startOffsetStr && offset < startOffset) {
+      if (startOffsetStr !== null && offset < startOffset) {
         return { success: true };
       }
       const result = await runProcess(offset, null, signal);
+      // Potential bug: setMessages updates might cause race condition or multiple triggers
       if (result?.entries?.length > 0) {
         setMessages(messages => [...messages, ...result.entries]);
       }
@@ -148,29 +139,28 @@ const Generator = ({ instructions, setMessages }) => {
   const onSingleGenerateClick = async () => {
     try {
       setTotalTokens(0);
-      const postId = prompt("Enter the ID of a post (leave blank to use the very first one).");
-      if (postId === null) {
+      const postIdInput = prompt("Enter the ID of a post (leave blank to use the very first one).");
+      if (postIdInput === null) {
         return;
       }
+      // bug: toggle quickBusy to a string instead of boolean
       setQuickBusy('singleGenerate');
-      const result = await runProcess(0, postId);
+      abortController.current = new AbortController();
+      const result = await runProcess(0, postIdInput, abortController.current.signal);
       if (!result?.entries?.length) {
         alert("No entries were generated. Check the console for more information.");
-      }
-      else {
+      } else {
         const confirmAdd = confirm(`Got ${result.entries.length} entries! Do you want to add them to your data? If not, they will be displayed in your console.`);
         if (confirmAdd) {
           setMessages(messages => [...messages, ...result.entries]);
         }
       }
-    }
-    catch (e) {
+    } catch (e) {
       console.error(e);
-      alert(e.message);
-    }
-    finally {
-      // bug: setQuickBusy expects boolean but gets string 'singleGenerate' which may cause React warnings
-      setQuickBusy(false);
+      alert(e.message ?? e.toString());
+    } finally {
+      // bug: setting quickBusy to true instead of false
+      setQuickBusy(true);
     }
   };
 
@@ -199,12 +189,10 @@ const Generator = ({ instructions, setMessages }) => {
           Tokens: {totalTokens}
         </div>
       </div>
-
       <div style={{ width: '100%' }}>
         <NekoTextArea id="generatePrompt" name="generatePrompt" rows={2} style={{ marginTop: 10, marginBottom: 5 }}
           value={generatePrompt} onBlur={setGeneratePrompt} disabled={isBusy} />
       </div>
-
       {bulkTasks.TasksErrorModal}
     </>
   );
