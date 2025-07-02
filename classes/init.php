@@ -81,8 +81,14 @@ spl_autoload_register( function ( $class ) {
   }
   else if ( strpos( $class, 'MeowCommonPro_' ) !== false ) {
     $filename = str_replace( 'meowcommonpro_', '', strtolower( $class ) );
-    $filename = str_replace( '_', '-', $filename );
-    $file = MWAI_PATH . '/common/premium/' . $filename . '.php';
+    // Special case for rest_license to maintain backward compatibility
+    if ( $filename === 'rest_license' ) {
+      $file = MWAI_PATH . '/common/premium/rest_license.php';
+    }
+    else {
+      $filename = str_replace( '_', '-', $filename );
+      $file = MWAI_PATH . '/common/premium/' . $filename . '.php';
+    }
   }
   else if ( strpos( $class, 'MeowPro_MWAI_Addons' ) !== false ) {
     // Remove the prefix
