@@ -31,7 +31,7 @@ module.exports = function (env, options) {
     patterns: [
       { 
         from: path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
-        to: path.resolve(__dirname, 'app/vendor/pdf.worker.min.js')
+        to: path.resolve(__dirname, 'app/pdf.worker.min.js')
       }
     ]
   }));
@@ -44,7 +44,7 @@ module.exports = function (env, options) {
           path.join(__dirname, 'app', 'index.js.LICENSE.txt'),
           path.join(__dirname, 'app', 'chatbot.js.LICENSE.txt'),
           path.join(__dirname, 'app', 'pdfjs.js.LICENSE.txt'),
-          path.join(__dirname, 'app', 'vendor', 'pdf.worker.min.js.LICENSE.txt'),
+          path.join(__dirname, 'app', 'pdf.worker.min.js.LICENSE.txt'),
           path.join(__dirname, 'premium', 'forms.js.LICENSE.txt')
         ];
         

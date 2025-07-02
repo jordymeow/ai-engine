@@ -1,7 +1,6 @@
 <?php
 
-class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
-{
+class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
   // Base (Replicate)
   protected $apiKey = null;
   protected $organizationId = null;
@@ -18,8 +17,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
 
-  public function __construct( $core, $env )
-  {
+  public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
     $this->set_environment();
   }
@@ -68,17 +66,17 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
       else {
         $finalUrl = $query->attachedFile->get_inline_base64_url();
       }
-      $messages[] = [ 
+      $messages[] = [
         'role' => 'user',
         'content' => [
           [
-            "type" => "text",
-            "text" => $query->get_message()
+            'type' => 'text',
+            'text' => $query->get_message()
           ],
           [
-            "type" => "image_url",
-            "image_url" => [ 
-              "url" => $finalUrl
+            'type' => 'image_url',
+            'image_url' => [
+              'url' => $finalUrl
             ]
           ]
         ]
@@ -93,10 +91,10 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
     if ( $query instanceof Meow_MWAI_Query_Text ) {
-      $body = array(
-        "model" => $query->model,
-        "stream" => !is_null( $streamCallback ),
-      );
+      $body = [
+        'model' => $query->model,
+        'stream' => !is_null( $streamCallback ),
+      ];
 
       if ( !empty( $query->maxTokens ) ) {
         $body['max_tokens'] = $query->maxTokens;
@@ -109,17 +107,16 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
       if ( !empty( $query->maxResults ) ) {
         $body['n'] = $query->maxResults;
       }
-  
+
       if ( !empty( $query->stop ) ) {
         $body['stop'] = $query->stop;
       }
-  
+
       if ( !empty( $query->responseFormat ) ) {
         if ( $query->responseFormat === 'json' ) {
           $body['response_format'] = [ 'type' => 'json_object' ];
         }
       }
-
 
       // Usage Data (only for Replicate)
       // https://cookbook.openai.com/examples/how_to_stream_completions#4-how-to-get-token-usage-data-for-streamed-chat-completion-response
@@ -128,7 +125,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
           'include_usage' => true,
         ];
       }
-  
+
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
@@ -161,7 +158,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
             foreach ( $feedback_block['feedbacks'] as $feedback ) {
               $body['messages'][] = [
                 'tool_call_id' => $feedback['request']['toolId'],
-                "role" => "tool",
+                'role' => 'tool',
                 'name' => $feedback['request']['name'],
                 'content' => $feedback['reply']['value']
               ];
@@ -174,19 +171,19 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      $body = array( 
+      $body = [
         'prompt' => $query->message,
         'model' => $query->model,
         'response_format' => 'text',
         'file' => basename( $query->url ),
         'data' => $extra
-      );
+      ];
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Embed ) {
-      $body = array( 'input' => $query->message, 'model' => $query->model );
+      $body = [ 'input' => $query->message, 'model' => $query->model ];
       if ( $this->envType === 'azure' ) {
-        $body = array( "input" => $query->message );
+        $body = [ 'input' => $query->message ];
       }
       // Dimensions are only supported by v3 models
       if ( !empty( $query->dimensions ) && strpos( $query->model, 'ada-002' ) === false ) {
@@ -197,7 +194,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
       $model = $query->model;
       $modelInfo = $this->retrieve_model_info( $model );
-      $body = array( "input" => [] );
+      $body = [ 'input' => [] ];
 
       if ( isset( $modelInfo['version'] ) ) {
         $body['version'] = $modelInfo['version'];
@@ -248,7 +245,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
   }
 
   protected function build_url( $query, $endpoint = null ) {
-    $url = "";
+    $url = '';
     $env = $this->env;
     // This endpoint is basically Replicate or Azure, but in the case this class
     // is overriden, we can pass the endpoint directly (for OpenRouter or HuggingFace, for example).
@@ -283,15 +280,15 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     if ( empty( $this->apiKey ) ) {
       throw new Exception( 'No API Key provided. Please visit the Settings.' );
     }
-    $headers = array(
+    $headers = [
       'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
-    );
+    ];
     if ( $this->organizationId ) {
       $headers['Replicate-Organization'] = $this->organizationId;
     }
     if ( $this->envType === 'azure' ) {
-      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $this->apiKey );
+      $headers = [ 'Content-Type' => 'application/json', 'api-key' => $this->apiKey ];
     }
     return $headers;
   }
@@ -299,20 +296,20 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
   protected function build_options( $headers, $json = null, $forms = null, $method = 'POST' ) {
     $body = null;
     if ( !empty( $forms ) ) {
-      $boundary = wp_generate_password ( 24, false );
+      $boundary = wp_generate_password( 24, false );
       $headers['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
       $body = $this->build_form_body( $forms, $boundary );
     }
     else if ( !empty( $json ) ) {
       $body = json_encode( $json );
     }
-    $options = array(
+    $options = [
       'headers' => $headers,
       'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
       'sslverify' => false
-    );
+    ];
     return $options;
   }
 
@@ -344,7 +341,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
       }
 
       if ( $isStream ) {
-        return [ 'stream' => true ]; 
+        return [ 'stream' => true ];
       }
 
       $response = wp_remote_retrieve_body( $res );
@@ -382,7 +379,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     return null;
   }
 
-  public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
+  public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
     $isStreaming = !is_null( $streamCallback );
 
     if ( $isStreaming ) {
@@ -399,7 +396,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     try {
       $res = $this->run_query( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
-      
+
       $returned_id = null;
       $returned_model = $this->inModel;
       $returned_in_tokens = null;
@@ -446,14 +443,14 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         $returned_id = $data['id'];
         $returned_model = $data['model'];
         $returned_in_tokens = isset( $data['usage']['prompt_tokens'] ) ?
-          $data['usage']['prompt_tokens'] : null;
+              $data['usage']['prompt_tokens'] : null;
         $returned_out_tokens = isset( $data['usage']['completion_tokens'] ) ?
-          $data['usage']['completion_tokens'] : null;
+              $data['usage']['completion_tokens'] : null;
         $returned_price = isset( $data['usage']['total_cost'] ) ?
-          $data['usage']['total_cost'] : null;
+              $data['usage']['total_cost'] : null;
         $returned_choices = $data['choices'];
       }
-      
+
       // Set the results.
       $reply->set_choices( $returned_choices );
       if ( !empty( $returned_id ) ) {
@@ -467,7 +464,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     }
     catch ( Exception $e ) {
       Meow_MWAI_Logging::error( 'Replicate: ' . $e->getMessage() );
-      $message = "From Replicate: " . $e->getMessage();
+      $message = 'From Replicate: ' . $e->getMessage();
       throw new Exception( $message );
     }
     finally {
@@ -491,7 +488,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         if ( isset( $data['title'] ) && isset( $data['detail'] ) ) {
           throw new Exception( $data['title'] . ': ' . $data['detail'] );
         }
-        throw new Exception( 'The image generation failed.' );  
+        throw new Exception( 'The image generation failed.' );
       }
       $getUrl = $data['urls']['get'];
       $status = $data['status'];
@@ -542,7 +539,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
 
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
-      
+
       if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
         foreach ( $reply->results as &$result ) {
           $fileId = $this->core->files->upload_file( $result, null, 'generated', [
@@ -559,12 +556,12 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     }
     catch ( Exception $e ) {
       Meow_MWAI_Logging::error( 'Replicate: ' . $e->getMessage() );
-      throw new Exception( "From Replicate: " . $e->getMessage() );
+      throw new Exception( 'From Replicate: ' . $e->getMessage() );
     }
   }
 
   /*
-    This is the rest of the Replicate API support, not related to the models directly.
+  This is the rest of the Replicate API support, not related to the models directly.
   */
 
   // Check if there are errors in the response from Replicate, and throw an exception if so.
@@ -573,19 +570,18 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
       $message = $data['error'];
       throw new Exception( $message );
     }
-  }  
+  }
 
   /**
-    * Build the body of a form request.
-    * If the field name is 'file', then the field value is the filename of the file to upload.
-    * The file contents are taken from the 'data' field.
-    *  
-    * @param array $fields
-    * @param string $boundary
-    * @return string
-   */
-  public function build_form_body( $fields, $boundary )
-  {
+  * Build the body of a form request.
+  * If the field name is 'file', then the field value is the filename of the file to upload.
+  * The file contents are taken from the 'data' field.
+  *
+  * @param array $fields
+  * @param string $boundary
+  * @return string
+  */
+  public function build_form_body( $fields, $boundary ) {
     $body = '';
     foreach ( $fields as $name => $value ) {
       if ( $name == 'data' ) {
@@ -607,19 +603,27 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
   }
 
   /**
-    * Run a request to the Replicate API.
-    * Fore more information about the $formFields, refer to the build_form_body method.
-    *
-    * @param string $method POST, PUT, GET, DELETE...
-    * @param string $url The API endpoint
-    * @param array $query The query parameters (json)
-    * @param array $formFields The form fields (multipart/form-data)
-    * @param bool $json Whether to return the response as json or not
-    * @return array
-   */
-  public function execute( $method, $url, $query = null, $formFields = null,
-    $json = true, $extraHeaders = null, $streamCallback = null, $overrideUrl = false ) {
-    $headers = "Content-Type: application/json\r\n" . "Authorization: Bearer " . $this->apiKey . "\r\n";
+  * Run a request to the Replicate API.
+  * Fore more information about the $formFields, refer to the build_form_body method.
+  *
+  * @param string $method POST, PUT, GET, DELETE...
+  * @param string $url The API endpoint
+  * @param array $query The query parameters (json)
+  * @param array $formFields The form fields (multipart/form-data)
+  * @param bool $json Whether to return the response as json or not
+  * @return array
+  */
+  public function execute(
+    $method,
+    $url,
+    $query = null,
+    $formFields = null,
+    $json = true,
+    $extraHeaders = null,
+    $streamCallback = null,
+    $overrideUrl = false
+  ) {
+    $headers = "Content-Type: application/json\r\n" . 'Authorization: Bearer ' . $this->apiKey . "\r\n";
     $body = $query ? json_encode( $query ) : null;
     if ( !empty( $formFields ) ) {
       $boundary = wp_generate_password( 24, false );
@@ -652,11 +656,11 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
 
     $url = $overrideUrl ? $url : ( 'https://api.replicate.com/v1' . $url );
     $options = [
-      "headers" => $headers,
-      "method" => $method,
-      "timeout" => MWAI_TIMEOUT,
-      "body" => $body,
-      "sslverify" => false
+      'headers' => $headers,
+      'method' => $method,
+      'timeout' => MWAI_TIMEOUT,
+      'body' => $body,
+      'sslverify' => false
     ];
 
     try {
@@ -697,29 +701,28 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     return $this->core->get_engine_models( 'replicate' );
   }
 
-  public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply )
-  {
+  public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
     return null;
   }
 
-  function generate_resolutions( $widths, $heights ) {
+  public function generate_resolutions( $widths, $heights ) {
     $resolutions = [];
     $acceptable_ratios = [
       '1:1' => [ 'name' => 'Square', 'ratio' => 1 ],
-      '16:9' => [ 'name' => 'Widescreen', 'ratio' => 16/9 ],
-      '2:3' => [ 'name' => 'Portrait', 'ratio' => 2/3 ],
-      '3:2' => [ 'name' => 'Landscape', 'ratio' => 3/2 ],
-      '4:5' => [ 'name' => 'Portrait', 'ratio' => 4/5 ],
-      '5:4' => [ 'name' => 'Landscape', 'ratio' => 5/4 ],
-      '9:16' => [ 'name' => 'Story', 'ratio' => 9/16 ]
+      '16:9' => [ 'name' => 'Widescreen', 'ratio' => 16 / 9 ],
+      '2:3' => [ 'name' => 'Portrait', 'ratio' => 2 / 3 ],
+      '3:2' => [ 'name' => 'Landscape', 'ratio' => 3 / 2 ],
+      '4:5' => [ 'name' => 'Portrait', 'ratio' => 4 / 5 ],
+      '5:4' => [ 'name' => 'Landscape', 'ratio' => 5 / 4 ],
+      '9:16' => [ 'name' => 'Story', 'ratio' => 9 / 16 ]
     ];
-  
+
     foreach ( $widths as $width ) {
       foreach ( $heights as $height ) {
         if ( $height <= 1024 && $width <= 1536 && $height >= 64 && $width >= 64 ) {
           $ratio = $width / $height;
           $ratio_name = null;
-  
+
           foreach ( $acceptable_ratios as $key => $ratio_info ) {
             if ( abs( $ratio - $ratio_info['ratio'] ) < 0.01 ) {
               $ratio_name = $key;
@@ -727,7 +730,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
               break;
             }
           }
-  
+
           if ( $ratio_name ) {
             $label = "{$ratio_label} ({$ratio_name}): {$width}x{$height}";
             $resolutions[] = [
@@ -738,14 +741,14 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         }
       }
     }
-  
+
     // Sort resolutions by total pixel count
-    usort( $resolutions, function( $a, $b ) {
+    usort( $resolutions, function ( $a, $b ) {
       $aPixels = explode( 'x', $a['name'] );
       $bPixels = explode( 'x', $b['name'] );
       return ( $aPixels[0] * $aPixels[1] ) - ( $bPixels[0] * $bPixels[1] );
     } );
-  
+
     return $resolutions;
   }
 
@@ -760,7 +763,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
     $models = $this->_process_raw_models( $rawModels );
     return $models;
   }
-  
+
   public function retrieve_all_models() {
     $allowed_owners = [ 'black-forest-labs', 'stability-ai' ];
     $rawModels = $this->_retrieve_models( null, $allowed_owners );
@@ -781,7 +784,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
           if ( !is_array( $response ) || empty( $response['models'] ) ) {
             break;
           }
-          $filtered_results = array_filter( $response['models'], function( $model ) use ( $allowed_owners ) {
+          $filtered_results = array_filter( $response['models'], function ( $model ) use ( $allowed_owners ) {
             $isAllowedOwner = isset( $model['owner'] ) && in_array( $model['owner'], $allowed_owners );
             $isPublic = isset( $model['visibility'] ) && $model['visibility'] === 'public';
             return $isAllowedOwner && $isPublic;
@@ -806,7 +809,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         if ( !is_array( $response ) || empty( $response['results'] ) ) {
           break;
         }
-        $filtered_results = array_filter( $response['results'], function( $model ) use ( $allowed_owners ) {
+        $filtered_results = array_filter( $response['results'], function ( $model ) use ( $allowed_owners ) {
           $isAllowedOwner = isset( $model['owner'] ) && in_array( $model['owner'], $allowed_owners );
           $isPublic = isset( $model['visibility'] ) && $model['visibility'] === 'public';
           return $isAllowedOwner && $isPublic;
@@ -826,7 +829,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
 
   // Private method to process raw models
   private function _process_raw_models( $rawModels ) {
-    $models = array();
+    $models = [];
     foreach ( $rawModels as $rawModel ) {
       $name = trim( $rawModel['name'] );
       $family = trim( $rawModel['owner'] );
@@ -860,7 +863,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         $resolutions = $this->generate_resolutions( $widths, $heights );
       }
 
-      $models[] = array(
+      $models[] = [
         'model' => $model,
         'name' => $name,
         'family' => $family,
@@ -873,7 +876,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core
         'maxCompletionTokens' => null,
         'maxContextualTokens' => null,
         'tags' => $tags
-      );
+      ];
     }
     return $models;
   }

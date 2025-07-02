@@ -49,6 +49,13 @@
 }
 .mwai-chunks .mwai-chunks-header .mwai-chunks-title {
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mwai-chunks .mwai-chunks-header .mwai-chunks-status {
+  margin-left: 4px;
+  font-weight: 500;
 }
 .mwai-chunks .mwai-chunks-header .mwai-chunks-toggle {
   background: none;
@@ -723,10 +730,10 @@
 .mwai-timeless-theme .mwai-trigger .mwai-icon-text-container .mwai-icon-text-close {
   color: var(--mwai-iconTextColor);
   background: var(--mwai-iconTextBackgroundColor);
-  padding: 5px;
-  width: 30px;
-  height: 20px;
-  border-radius: 100%;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: none;
   justify-content: center;
   align-items: center;
@@ -1234,7 +1241,11 @@
 }
 .mwai-timeless-theme.mwai-discussions .mwai-discussion .mwai-discussion-title {
   flex: 1;
-  padding: 5px;
+  padding: 5px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mwai-fontSize);
 }
 .mwai-timeless-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions {
   position: absolute;

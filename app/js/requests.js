@@ -1,15 +1,42 @@
-// Previous: 2.3.5
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
-// NekoUI
 import { nekoFetch } from '@neko-ui';
-import { apiUrl, restUrl, restNonce } from '@app/settings';
+import { apiUrl, restUrl, getRestNonce, updateRestNonce } from '@app/settings';
 
+const mwaiNekoFetch = async (url, options = {}) => {
+  const currentNonce = getRestNonce();
+  const updatedOptions = { ...options, nonce: currentNonce };
 
-//#region Posts
+  try {
+    const response = await nekoFetch(url, updatedOptions);
+
+    if (response && response.new_token) {
+      if (response.token_expires_at) {
+        const expiresAt = new Date(response.token_expires_at * 1000);
+        console.log(`[MWAI] 🔐 New token received - expires at ${expiresAt.toLocaleTimeString()} (in ${response.token_expires_in}s)`);
+      } else {
+        console.log('[MWAI] 🔐 New token received');
+      }
+      updateRestNonce(response.new_token);
+    }
+
+    return response;
+  } catch (error) {
+    if (error.message && error.message.includes('nonce')) {
+      console.log('[MWAI] Nonce error detected, attempting to refresh...');
+      const refreshResponse = await nekoFetch(`${apiUrl}/start_session`, { method: 'POST' });
+      if (refreshResponse && refreshResponse.restNonce) {
+        updateRestNonce(refreshResponse.restNonce);
+        return await nekoFetch(url, { ...options, nonce: refreshResponse.restNonce });
+      }
+    }
+    throw error;
+  }
+};
 
 const retrievePostTypes = async () => {
-  const res = await nekoFetch(`${apiUrl}/helpers/post_types`, { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/helpers/post_types`);
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -17,22 +44,17 @@ const retrievePostTypes = async () => {
 };
 
 const retrievePostsCount = async (postType) => {
-  const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`, { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`);
   return res?.count ? parseInt(res?.count) : null;
 };
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
-  const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&offset=${offset}&postId=${postId}`, 
-    { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&offset=${offset}&postId=${postId}`);
   return res;
 };
 
-//#endregion
-
-//#region Files
-
 const deleteFiles = async (files) => {
-  const res = await nekoFetch(`${restUrl}/mwai-ui/v1/files/delete`, { nonce: restNonce, method: 'POST', json: { files } });
+  const res = await mwaiNekoFetch(`${restUrl}/mwai-ui/v1/files/delete`, { method: 'POST', json: { files } });
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -44,7 +66,7 @@ const retrieveFilesFromOpenAI = async (envId = null, purpose = null) => {
   if (purpose) {
     url += `&purpose=${purpose}`;
   }
-  const res = await nekoFetch(url, { nonce: restNonce });
+  const res = await mwaiNekoFetch(url);
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -52,29 +74,25 @@ const retrieveFilesFromOpenAI = async (envId = null, purpose = null) => {
 };
 
 const retrieveFiles = async ({ userId = null, purpose = null, metadata = null, envId = null, limit = 10, page = 0 }) => {
-  const res = await nekoFetch(`${restUrl}/mwai-ui/v1/files/list`, { nonce: restNonce, method: 'POST',
+  const res = await mwaiNekoFetch(`${restUrl}/mwai-ui/v1/files/list`, { method: 'POST',
     json: { userId, purpose, metadata, envId, limit, page }
   });
   if (!res.success) {
     throw new Error(res.message);
   }
   return res?.data;
-}
+};
 
 const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
-  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list_deleted?envId=${envId}&legacy=${legacy}`, { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/openai/finetunes/list_deleted?envId=${envId}&legacy=${legacy}`);
   if (!res.success) {
     throw new Error(res.message);
   }
   return res?.finetunes;
 };
 
-//#endregion
-
-//#region Themes
-
 const retrieveThemes = async () => {
-  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'GET', nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/themes`, { method: 'GET' });
   return res?.themes;
 };
 
@@ -89,20 +107,16 @@ const updateThemes = async (themes) => {
       }
       themeId = themeId + '-' + j;
     }
-    themeIds.push(themeId);
     themes[i].themeId = themeId;
+    themeIds.push(themeId);
   }
 
-  const res = await nekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', nonce: restNonce, json: { themes } });
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', json: { themes } });
   return res?.themes;
 };
 
-//#endregion
-
-//#region Chatbots
-
 const retrieveModels = async () => {
-  const res = await nekoFetch(`${apiUrl}/openai/models`, { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/openai/models`);
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -110,7 +124,7 @@ const retrieveModels = async () => {
 };
 
 const retrieveFineTunes = async (envId = null, legacy = false) => {
-  const res = await nekoFetch(`${apiUrl}/openai/finetunes/list?envId=${envId}&legacy=${legacy}`, { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/openai/finetunes/list?envId=${envId}&legacy=${legacy}`);
   if (!res.success) {
     throw new Error(res.message);
   }
@@ -118,7 +132,7 @@ const retrieveFineTunes = async (envId = null, legacy = false) => {
 };
 
 const retrieveChatbots = async () => {
-  const res = await nekoFetch(`${apiUrl}/settings/chatbots`, { method: 'GET', nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'GET' });
   if (!res.success) {
     throw new Error(res?.message);
   }
@@ -126,7 +140,7 @@ const retrieveChatbots = async () => {
 };
 
 const updateChatbots = async (chatbots) => {
-  const res = await nekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', nonce: restNonce, json: { chatbots } });
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', json: { chatbots } });
   if (!res.success) {
     throw new Error(res?.message);
   }
@@ -134,29 +148,26 @@ const updateChatbots = async (chatbots) => {
 };
 
 const retrieveAssistants = async (envId) => {
-  const res = await nekoFetch(`${apiUrl}/openai/assistants/list?envId=${envId}`, { nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/openai/assistants/list?envId=${envId}`);
   if (!res.success) {
     throw new Error(res.message);
   }
   return res?.assistants;
-}
+};
 
 const setAssistantFunctions = async (envId, assistantId, functions) => {
-  const res = await nekoFetch(`${apiUrl}/openai/assistants/set_functions`, { method: 'POST', nonce: restNonce,
+  const res = await mwaiNekoFetch(`${apiUrl}/openai/assistants/set_functions`, { 
+    method: 'POST',
     json: { envId, assistantId, functions }
   });
   if (!res.success) {
     throw new Error(res.message);
   }
   return res;
-}
-
-//#endregion
-
-//#region Options
+};
 
 const retrieveOptions = async () => {
-  const res = await nekoFetch(`${apiUrl}/settings/options`, { method: 'GET', nonce: restNonce });
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/options`, { method: 'GET' });
   return res?.options;
 };
 
@@ -165,34 +176,41 @@ const retrieveEmbeddingsEnvironments = async () => {
   return options?.embeddings_envs || [];
 };
 
-//#endregion
-
-//#region Logs
-
 const refreshLogs = async () => {
   try {
-    const res = await nekoFetch(`${apiUrl}/get_logs`, { nonce: restNonce, method: 'GET' });
+    const res = await mwaiNekoFetch(`${apiUrl}/get_logs`, { method: 'GET' });
     return res.data;
-  }
-  catch (err) {
+  } catch (err) {
     throw new Error(err.message);
   }
 };
 
 const clearLogs = async () => {
   try {
-    await nekoFetch(`${apiUrl}/clear_logs`, { nonce: restNonce });
-  }
-  catch (err) {
+    await mwaiNekoFetch(`${apiUrl}/clear_logs`);
+  } catch (err) {
     throw new Error(err.message);
   }
 };
 
-//#endregion
-
-export { retrievePostTypes, retrievePostsCount, retrievePostContent,
-  retrieveFilesFromOpenAI, retrieveFiles, deleteFiles, setAssistantFunctions,
-  retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
-  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes,
-  refreshLogs, clearLogs, retrieveEmbeddingsEnvironments
+export {
+  retrievePostTypes,
+  retrievePostsCount,
+  retrievePostContent,
+  retrieveFilesFromOpenAI,
+  retrieveFiles,
+  deleteFiles,
+  setAssistantFunctions,
+  retrieveDeletedFineTunes,
+  retrieveFineTunes,
+  retrieveModels,
+  retrieveAssistants,
+  retrieveOptions,
+  retrieveChatbots,
+  retrieveThemes,
+  updateChatbots,
+  updateThemes,
+  refreshLogs,
+  clearLogs,
+  retrieveEmbeddingsEnvironments
 };

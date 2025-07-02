@@ -1,17 +1,17 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 import { STREAM_TYPES } from '../constants/streamTypes';
 
 class RealtimeEventEmitter {
-  constructor(onEvent, debugMode = false) {
+  constructor(onEvent, eventLogsEnabled = false) {
     this.onEvent = onEvent;
-    this.debugMode = debugMode;
+    this.eventLogsEnabled = eventLogsEnabled;
     this.sessionStartTime = null;
   }
 
   emit(subtype, data, metadata = {}) {
-    if (!this.debugMode || !this.onEvent) return;
+    if (!this.eventLogsEnabled || !this.onEvent) return;
 
     const event = {
       type: 'event',

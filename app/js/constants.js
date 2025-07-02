@@ -1,5 +1,5 @@
-// Previous: 2.8.2
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const WritingStyles = [
   { value: 'informative', label: 'Informative' },
@@ -40,33 +40,49 @@ const defaultModel = "";
 // Shared prompt formats for Content Generator
 const defaultTitlePrompt = `Write a title for an article in {LANGUAGE}. Must be between 40 and 60 characters. Write naturally as a human would. Output only the title, no formatting, no Markdown, no special characters.
 
-Based on this topic:
+### TOPIC:
+{TOPIC}
 
-{TOPIC}`;
+### CONTEXT:
+{CONTEXT}
+
+Generate a title based on the topic above, taking into account the provided context.`;
 
 const defaultSectionsPrompt = `Write {SECTIONS_COUNT} consecutive headings for an article about "{TITLE}", in {LANGUAGE}. Each heading is between 40 and 60 characters. Format each heading with Markdown (## ). Write naturally as a human would. Output only the headings, nothing else.
 
-Base your headings on this topic:
+### TOPIC:
+{TOPIC}
 
-{TOPIC}`;
+### CONTEXT:
+{CONTEXT}
+
+Create headings that align with both the topic and context provided above.`;
 
 const defaultContentPrompt = `Write an article about "{TITLE}" in {LANGUAGE}. Write {PARAGRAPHS_PER_SECTION} paragraphs per heading. Use Markdown for formatting. Add an introduction prefixed by "===INTRO: ", and a conclusion prefixed by "===OUTRO: ". Write naturally as a human would.
 
-The article is organized by the following headings:
-
+### ARTICLE STRUCTURE:
 {SECTIONS}
 
-Based on this topic:
+### TOPIC DETAILS:
+{TOPIC}
 
-{TOPIC}`;
+### WRITING CONTEXT:
+{CONTEXT}
+
+Write the article following the structure above, incorporating the topic details while adhering to the context guidelines.`;
 
 const defaultExcerptPrompt = `Write an excerpt for an article in {LANGUAGE}. Must be between 40 and 60 characters. Write naturally as a human would. Output only the excerpt, no formatting.
 
-For an article titled: "{TITLE}"
+### ARTICLE TITLE:
+"{TITLE}"
 
-Based on this topic:
+### TOPIC:
+{TOPIC}
 
-{TOPIC}`;
+### CONTEXT:
+{CONTEXT}
+
+Create a compelling excerpt that captures the essence of the article while considering the context.`;
 
 const Templates_Playground = [
   {
@@ -168,6 +184,7 @@ const Templates_ContentGenerator = [
     mode: 'single',
     topic: "",
     topics: "",
+    context: "",
     topicsAreTitles: false,
     title: "",
     sections: "",
@@ -192,6 +209,7 @@ const Templates_ContentGenerator = [
     mode: 'single',
     topic: "5 hidden Tokyo neighborhoods only locals know: retro Showa-era streets, authentic Edo atmosphere, family-run restaurant alleys, old shopping arcades, quiet residential gems. Write in first person as a Tokyo local sharing secret spots.",
     topics: "",
+    context: "",
     topicsAreTitles: false,
     title: "",
     sections: "",
@@ -204,7 +222,39 @@ const Templates_ContentGenerator = [
     language: 'en',
     customLanguage: '' ,
     writingStyle: 'informative',
-    writingTone: ' informal',
+    writingTone: 'informal',
+    titlePromptFormat: defaultTitlePrompt,
+    sectionsPromptFormat: defaultSectionsPrompt,
+    contentPromptFormat: defaultContentPrompt,
+    excerptPromptFormat: defaultExcerptPrompt,
+  },
+  {
+    id: 'cat_blog_bulk',
+    name: 'Cat Blog Bulk Generator',
+    mode: 'bulk',
+    topic: "",
+    topics: `Why Cats Make Perfect Companions
+Understanding Cat Body Language
+The Science Behind Purring
+Indoor vs Outdoor Cats Debate
+Best Cat Breeds for Families
+Cat Nutrition Guide
+Training Your Cat: Tips and Tricks
+Common Cat Health Issues`,
+    context: "Context: This is for a cat enthusiast blog targeting pet owners and cat lovers. The tone should be friendly, informative, and occasionally playful. Include practical tips, scientific facts, and real-world advice. Each article should be engaging and helpful for cat parents at all experience levels.",
+    topicsAreTitles: false,
+    title: "",
+    sections: "",
+    model: defaultModel,
+    envId: "",
+    temperature: 0.7,
+    maxTokens: 2048,
+    sectionsCount: 4,
+    paragraphsCount: 3,
+    language: 'en',
+    customLanguage: '',
+    writingStyle: 'informative',
+    writingTone: 'cheerful',
     titlePromptFormat: defaultTitlePrompt,
     sectionsPromptFormat: defaultSectionsPrompt,
     contentPromptFormat: defaultContentPrompt,

@@ -1,31 +1,31 @@
 <?php
 
 class Meow_MWAI_Modules_Files {
-	private $core = null;
+  private $core = null;
   private $wpdb = null;
-	private $namespace = 'mwai-ui/v1';
+  private $namespace = 'mwai-ui/v1';
   private $db_check = false;
   private $table_files = null;
   private $table_filemeta = null;
 
   public function __construct( $core ) {
-		global $wpdb;
-		$this->core = $core;
+    global $wpdb;
+    $this->core = $core;
     $this->wpdb = $wpdb;
     $this->table_files = $this->wpdb->prefix . 'mwai_files';
     $this->table_filemeta = $this->wpdb->prefix . 'mwai_filemeta';
-		add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
+    add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
     if ( !wp_next_scheduled( 'mwai_files_cleanup' ) ) {
       wp_schedule_event( time(), 'hourly', 'mwai_files_cleanup' );
     }
     add_action( 'mwai_files_cleanup', [ $this, 'cleanup_expired_files' ] );
-	}
+  }
 
   public function cleanup_expired_files() {
     $current_time = current_time( 'mysql' );
     $expired_files = [];
     if ( $this->check_db() ) {
-      $expired_files = $this->wpdb->get_results( 
+      $expired_files = $this->wpdb->get_results(
         "SELECT * FROM $this->table_files WHERE expires IS NOT NULL AND expires < '{$current_time}'"
       );
     }
@@ -56,11 +56,13 @@ class Meow_MWAI_Modules_Files {
     foreach ( $fileRefs as $refId ) {
       $file = null;
       if ( $this->check_db() ) {
-        $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
-          FROM $this->table_files
-          WHERE refId = %s", $refId
+        $file = $this->wpdb->get_row( $this->wpdb->prepare(
+          "SELECT *
+                                                    FROM $this->table_files
+                                                    WHERE refId = %s",
+          $refId
         ) );
-      } 
+      }
       if ( $file ) {
         $this->wpdb->delete( $this->table_files, [ 'refId' => $refId ] );
         $this->wpdb->delete( $this->table_filemeta, [ 'file_id' => $file->id ] );
@@ -82,9 +84,11 @@ class Meow_MWAI_Modules_Files {
   public function get_path( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
-      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
-        FROM $this->table_files
-        WHERE refId = %s", $refId
+      $file = $this->wpdb->get_row( $this->wpdb->prepare(
+        "SELECT *
+                                                                FROM $this->table_files
+                                                                WHERE refId = %s",
+        $refId
       ) );
     }
     if ( $file ) {
@@ -140,9 +144,11 @@ class Meow_MWAI_Modules_Files {
   public function get_info( $refId ) {
     $info = null;
     if ( $this->check_db() ) {
-      $info = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
-        FROM $this->table_files
-        WHERE refId = %s", $refId
+      $info = $this->wpdb->get_row( $this->wpdb->prepare(
+        "SELECT *
+                                                                                          FROM $this->table_files
+                                                                                          WHERE refId = %s",
+        $refId
       ), ARRAY_A );
     }
     if ( !$info ) {
@@ -165,9 +171,11 @@ class Meow_MWAI_Modules_Files {
   public function get_url( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
-      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
-        FROM $this->table_files
-        WHERE refId = %s", $refId
+      $file = $this->wpdb->get_row( $this->wpdb->prepare(
+        "SELECT *
+                                                                                                      FROM $this->table_files
+                                                                                                      WHERE refId = %s",
+        $refId
       ) );
     }
     if ( $file ) {
@@ -185,20 +193,24 @@ class Meow_MWAI_Modules_Files {
   }
 
   /**
-   * Handle a base-64 PNG returned by gpt-image-1: save as a temp file,
-   * register it in the Files DB, and give back a public URL.
-   *
-   * @param string $b64_json  Raw base-64 image payload from OpenAI.
-   * @param string $purpose   Optional purpose flag. Default 'generated'.
-   * @param int    $ttl       Time-to-live in seconds. Default 1 hour.
-   * @param string $target    Target location: 'uploads' or 'library'. Default 'uploads'.
-   * @param array  $metadata  Additional metadata to store with the file.
-   *
-   * @return string|WP_Error Public URL or WP_Error on failure.
-   */
-  public function save_temp_image_from_b64( string $b64_json,
-  string $purpose = 'generated', int $ttl = HOUR_IN_SECONDS, string $target = 'uploads', array $metadata = [] )
-  {
+  * Handle a base-64 PNG returned by gpt-image-1: save as a temp file,
+  * register it in the Files DB, and give back a public URL.
+  *
+  * @param string $b64_json  Raw base-64 image payload from OpenAI.
+  * @param string $purpose   Optional purpose flag. Default 'generated'.
+  * @param int    $ttl       Time-to-live in seconds. Default 1 hour.
+  * @param string $target    Target location: 'uploads' or 'library'. Default 'uploads'.
+  * @param array  $metadata  Additional metadata to store with the file.
+  *
+  * @return string|WP_Error Public URL or WP_Error on failure.
+  */
+  public function save_temp_image_from_b64(
+    string $b64_json,
+    string $purpose = 'generated',
+    int $ttl = HOUR_IN_SECONDS,
+    string $target = 'uploads',
+    array $metadata = []
+  ) {
     // 1) Decode → binary.
     $binary = base64_decode( $b64_json );
     if ( !$binary ) {
@@ -214,7 +226,7 @@ class Meow_MWAI_Modules_Files {
     try {
       // Extract envId from metadata if available
       $envId = isset( $metadata['query_envId'] ) ? $metadata['query_envId'] : null;
-      
+
       $refId = $this->upload_file(
         $tmp_path,        // path on disk
         $filename,        // desired filename
@@ -229,7 +241,7 @@ class Meow_MWAI_Modules_Files {
       if ( $target === 'library' && file_exists( $tmp_path ) ) {
         @unlink( $tmp_path );
       }
-      
+
       // 5) Turn refId → URL.
       return $this->get_url( $refId );
     }
@@ -245,25 +257,24 @@ class Meow_MWAI_Modules_Files {
   #region REST endpoints
 
   public function rest_api_init() {
-		register_rest_route( $this->namespace, '/files/upload', array(
-			'methods' => 'POST',
-			'callback' => array( $this, 'rest_upload' ),
-			'permission_callback' => array( $this->core, 'check_rest_nonce' )
-		) );
-    register_rest_route( $this->namespace, '/files/list', array(
-			'methods' => 'POST',
-			'callback' => array( $this, 'rest_list' ),
-			'permission_callback' => array( $this->core, 'check_rest_nonce' )
-		) );
-    register_rest_route( $this->namespace, '/files/delete', array(
-			'methods' => 'POST',
-			'callback' => array( $this, 'rest_delete' ),
-			'permission_callback' => array( $this->core, 'check_rest_nonce' )
-		) );
-	}
+    register_rest_route( $this->namespace, '/files/upload', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_upload' ],
+      'permission_callback' => [ $this->core, 'check_rest_nonce' ]
+    ] );
+    register_rest_route( $this->namespace, '/files/list', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_list' ],
+      'permission_callback' => [ $this->core, 'check_rest_nonce' ]
+    ] );
+    register_rest_route( $this->namespace, '/files/delete', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_delete' ],
+      'permission_callback' => [ $this->core, 'check_rest_nonce' ]
+    ] );
+  }
 
-
-  /* 
+  /*
   * Record a new file in the Files database.
   * This doesn't handle the upload or anything.
   */
@@ -306,18 +317,27 @@ class Meow_MWAI_Modules_Files {
   // Generate a refId from a URL or random, and make sure it's unique
   public function generate_refId( $attempts = 0 ) {
     $refId = md5( date( 'Y-m-d H:i:s' ) . '-' . $attempts );
-    $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
-        FROM $this->table_files
-        WHERE refId = %s", $refId
-      ) );
+    $file = $this->wpdb->get_row( $this->wpdb->prepare(
+      "SELECT *
+                                                                                                                                                                                                                                              FROM $this->table_files
+                                                                                                                                                                                                                                              WHERE refId = %s",
+      $refId
+    ) );
     if ( $file ) {
       return $this->generate_refId( $attempts + 1 );
     }
     return $refId;
   }
 
-  public function upload_file( $path, $filename = null, $purpose = null,
-    $metadata = null, $envId = null, $target = null, $expiry = null ) {
+  public function upload_file(
+    $path,
+    $filename = null,
+    $purpose = null,
+    $metadata = null,
+    $envId = null,
+    $target = null,
+    $expiry = null
+  ) {
     require_once( ABSPATH . 'wp-admin/includes/image.php' );
     require_once( ABSPATH . 'wp-admin/includes/file.php' );
     require_once( ABSPATH . 'wp-admin/includes/media.php' );
@@ -348,7 +368,7 @@ class Meow_MWAI_Modules_Files {
         throw new Exception( 'Could not move the file.' );
       }
       $url = wp_upload_dir()['url'] . '/' . $unique_filename;
-      
+
       $now = date( 'Y-m-d H:i:s' );
       $fileId = $this->commit_file( [
         'refId' => $refId,
@@ -367,38 +387,37 @@ class Meow_MWAI_Modules_Files {
           $this->add_metadata( $fileId, $metaKey, $metaValue );
         }
       }
-      
+
     }
     else if ( $target === 'library' ) {
-      
+
       if ( filter_var( $path, FILTER_VALIDATE_URL ) ) {
         $tmp = download_url( $path );
         if ( is_wp_error( $tmp ) ) {
-            throw new Exception( $tmp->get_error_message() );
+          throw new Exception( $tmp->get_error_message() );
         }
         $file_array = [ 'name' => $unique_filename, 'tmp_name' => $tmp ];
       }
       else {
         $file_array = [ 'name' => $unique_filename, 'tmp_name' => $path ];
       }
-      
-      
+
       $id = media_handle_sideload( $file_array, 0 );
       if ( is_wp_error( $id ) ) {
         throw new Exception( $id->get_error_message() );
       }
-      
+
       $url = wp_get_attachment_url( $id );
       update_post_meta( $id, '_mwai_file_id', $refId );
       update_post_meta( $id, '_mwai_file_expires', $expires );
-      
+
       // Store additional metadata
       if ( $metadata && is_array( $metadata ) ) {
         foreach ( $metadata as $metaKey => $metaValue ) {
           update_post_meta( $id, '_mwai_' . $metaKey, $metaValue );
         }
       }
-      
+
       // Store purpose and envId as post meta
       if ( $purpose ) {
         update_post_meta( $id, '_mwai_purpose', $purpose );
@@ -419,7 +438,7 @@ class Meow_MWAI_Modules_Files {
     ];
     $res = $this->wpdb->insert( $this->table_filemeta, $data );
     if ( $res === false ) {
-      Meow_MWAI_Logging::warn( "Error while writing files metadata (" . $this->wpdb->last_error . ")" );
+      Meow_MWAI_Logging::warn( 'Error while writing files metadata (' . $this->wpdb->last_error . ')' );
       return false;
     }
     return $this->wpdb->insert_id;
@@ -469,19 +488,24 @@ class Meow_MWAI_Modules_Files {
     return $files;
   }
 
-  public function list( $userId = null, $purpose = null, $metadata = [],
-    $envId = null, $limit = 10, $offset = 0 )
-  {
+  public function list(
+    $userId = null,
+    $purpose = null,
+    $metadata = [],
+    $envId = null,
+    $limit = 10,
+    $offset = 0
+  ) {
     list( $countSql, $countParams ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, false );
     $total = $this->wpdb->get_var( $this->wpdb->prepare( $countSql, $countParams ) );
 
     list( $fileSql, $fileParams ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, true );
     if ( $limit ) {
-      $fileSql .= " LIMIT %d";
+      $fileSql .= ' LIMIT %d';
       $fileParams[] = $limit;
     }
     if ( $offset ) {
-      $fileSql .= " OFFSET %d";
+      $fileSql .= ' OFFSET %d';
       $fileParams[] = $offset;
     }
     $files = $this->wpdb->get_results( $this->wpdb->prepare( $fileSql, $fileParams ), ARRAY_A );
@@ -504,37 +528,37 @@ class Meow_MWAI_Modules_Files {
       }
     }
     if ( $userId ) {
-      $sql .= " AND userId = %d";
+      $sql .= ' AND userId = %d';
       $params[] = $userId;
     }
     if ( $purpose ) {
       if ( is_array( $purpose ) ) {
-        $sql .= " AND (";
+        $sql .= ' AND (';
         foreach ( $purpose as $p ) {
-          $sql .= " purpose = %s OR";
+          $sql .= ' purpose = %s OR';
           $params[] = $p;
         }
         $sql = rtrim( $sql, 'OR' );
-        $sql .= ")";
+        $sql .= ')';
       }
       else {
-        $sql .= " AND purpose = %s";
+        $sql .= ' AND purpose = %s';
         $params[] = $purpose;
       }
     }
     if ( $metadata ) {
       foreach ( $metadata as $metaKey => $metaValue ) {
         $sql .= " AND EXISTS ( SELECT * FROM $this->table_filemeta
-          WHERE file_id = $this->table_files.id AND meta_key = %s AND meta_value = %s )";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        WHERE file_id = $this->table_files.id AND meta_key = %s AND meta_value = %s )";
         $params[] = $metaKey;
         $params[] = $metaValue;
       }
     }
     if ( $envId ) {
-      $sql .= " AND envId = %s";
+      $sql .= ' AND envId = %s';
       $params[] = $envId;
     }
-    $sql .= " ORDER BY updated DESC";
+    $sql .= ' ORDER BY updated DESC';
     return [ $sql, $params ];
   }
 
@@ -591,9 +615,11 @@ class Meow_MWAI_Modules_Files {
   public function get_id_from_refId( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
-      $file = $this->wpdb->get_row( $this->wpdb->prepare( "SELECT *
-        FROM $this->table_files
-        WHERE refId = %s", $refId
+      $file = $this->wpdb->get_row( $this->wpdb->prepare(
+        "SELECT *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  FROM $this->table_files
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  WHERE refId = %s",
+        $refId
       ) );
     }
     if ( $file ) {
@@ -617,7 +643,7 @@ class Meow_MWAI_Modules_Files {
     $purpose = empty( $params['purpose'] ) ? null : $params['purpose'];
     $metadata = empty( $params['metadata'] ) ? null : json_decode( $params['metadata'], true );
     $limit = empty( $params['limit'] ) ? 10 : intval( $params['limit'] );
-    $offset = empty( $params['page'] ) ? 0 : ( intval( $params['page'] ) - 1) * $limit;
+    $offset = empty( $params['page'] ) ? 0 : ( intval( $params['page'] ) - 1 ) * $limit;
     $files = $this->list( $userId, $purpose, $metadata, $envId, $limit, $offset );
     return new WP_REST_Response( [ 'success' => true, 'data' => $files ], 200 );
   }
@@ -633,11 +659,11 @@ class Meow_MWAI_Modules_Files {
     $query = "SELECT refId, path FROM $this->table_files WHERE id IN (";
     $params = [];
     foreach ( $fileIds as $fileId ) {
-      $query .= "%s,";
+      $query .= '%s,';
       $params[] = $fileId;
     }
     $query = rtrim( $query, ',' );
-    $query .= ")";
+    $query .= ')';
     $files = $this->wpdb->get_results( $this->wpdb->prepare( $query, $params ), ARRAY_A );
     $refIds = apply_filters( 'mwai_files_delete', array_column( $files, 'refId' ) );
     foreach ( $files as $file ) {
@@ -683,54 +709,54 @@ class Meow_MWAI_Modules_Files {
 
   #region Database functions
 
-  function create_db() {
+  public function create_db() {
     $charset_collate = $this->wpdb->get_charset_collate();
     $sql = "CREATE TABLE $this->table_files (
-      id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-      refId VARCHAR(64) NOT NULL,
-      envId VARCHAR(128) NULL,
-      userId BIGINT(20) UNSIGNED NULL,
-      type VARCHAR(32) NULL,
-      status VARCHAR(32) NULL,
-      purpose VARCHAR(32) NULL,
-      created DATETIME NOT NULL,
-      updated DATETIME NOT NULL,
-      expires DATETIME NULL,
-      path TEXT NULL,
-      url TEXT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY unique_file_id (refId)
-    ) $charset_collate;";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                refId VARCHAR(64) NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  envId VARCHAR(128) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    userId BIGINT(20) UNSIGNED NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      type VARCHAR(32) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        status VARCHAR(32) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          purpose VARCHAR(32) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            created DATETIME NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            updated DATETIME NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            expires DATETIME NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            path TEXT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            url TEXT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            PRIMARY KEY (id),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              UNIQUE KEY unique_file_id (refId)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ) $charset_collate;";
 
     $sqlFileMeta = "CREATE TABLE $this->table_filemeta (
-      meta_id BIGINT(20) NOT NULL AUTO_INCREMENT,
-      file_id BIGINT(20) NOT NULL,
-      meta_key varchar(255) NULL,
-      meta_value longtext NULL,
-      PRIMARY KEY  (meta_id)
-    ) $charset_collate;";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              meta_id BIGINT(20) NOT NULL AUTO_INCREMENT,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                file_id BIGINT(20) NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  meta_key varchar(255) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    meta_value longtext NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    PRIMARY KEY  (meta_id)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ) $charset_collate;";
 
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
     dbDelta( $sql );
     dbDelta( $sqlFileMeta );
   }
-  
-  function check_db() {
+
+  public function check_db() {
     if ( $this->db_check ) {
       return true;
     }
 
     // Check if table_files exists
-    $sql = $this->wpdb->prepare( "SHOW TABLES LIKE %s", $this->table_files );
-    $table_files_exists = strtolower( $this->wpdb->get_var( $sql )) === strtolower( $this->table_files );
+    $sql = $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table_files );
+    $table_files_exists = strtolower( $this->wpdb->get_var( $sql ) ) === strtolower( $this->table_files );
 
     // Check if table_filemeta exists
-    $sqlMeta = $this->wpdb->prepare( "SHOW TABLES LIKE %s", $this->table_filemeta );
-    $table_filemeta_exists = strtolower( $this->wpdb->get_var( $sqlMeta )) === strtolower( $this->table_filemeta );
+    $sqlMeta = $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table_filemeta );
+    $table_filemeta_exists = strtolower( $this->wpdb->get_var( $sqlMeta ) ) === strtolower( $this->table_filemeta );
 
     // If either table does not exist, create them
     if ( !$table_files_exists || !$table_filemeta_exists ) {
-        $this->create_db();
+      $this->create_db();
     }
 
     // Update db_check for both tables

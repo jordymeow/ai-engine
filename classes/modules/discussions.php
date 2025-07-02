@@ -19,7 +19,7 @@ class Meow_MWAI_Modules_Discussions {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 
-      if ( ! wp_next_scheduled( 'mwai_discussions' ) ) {
+      if ( !wp_next_scheduled( 'mwai_discussions' ) ) {
         wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
       }
       add_action( 'mwai_discussions', [ $this, 'cron_discussions' ] );
@@ -57,11 +57,11 @@ class Meow_MWAI_Modules_Discussions {
     ] );
   }
 
-  function can_delete_discussion( $request ) {
+  public function can_delete_discussion( $request ) {
     $params = $request->get_json_params();
     $chatIds = isset( $params['chatIds'] ) ? $params['chatIds'] : null;
     $userId = get_current_user_id();
-    if ( ! $userId ) {
+    if ( !$userId ) {
       return false;
     }
     foreach ( $chatIds as $chatId ) {
@@ -71,7 +71,7 @@ class Meow_MWAI_Modules_Discussions {
           $chatId
         )
       );
-      if ( ! $chat || (int) $chat->userId !== (int) $userId ) {
+      if ( !$chat || (int) $chat->userId !== (int) $userId ) {
         return false;
       }
     }
@@ -79,15 +79,62 @@ class Meow_MWAI_Modules_Discussions {
   }
 
   /**
-   * Generate or update the title for a specific discussion
-   * by calling the AI (if it meets the requirements).
-   *
-   * @param stdClass $discussion A row from the DB (object form).
-   * @return void
+   * Helper method to create REST responses with automatic token refresh
+   * 
+   * @param array $data The response data
+   * @param int $status HTTP status code
+   * @return WP_REST_Response
    */
+  protected function create_rest_response( $data, $status = 200 ) {
+    // Always check if we need to provide a new nonce
+    $current_nonce = $this->core->get_nonce( true );
+    $request_nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? $_SERVER['HTTP_X_WP_NONCE'] : null;
+    
+    // Check if nonce is approaching expiration (WordPress nonces last 12-24 hours)
+    // We'll refresh if the nonce is older than 10 hours to be safe
+    $should_refresh = false;
+    
+    if ( $request_nonce ) {
+      // Try to determine the age of the nonce
+      // WordPress uses a tick system where each tick is 12 hours
+      // If we're in the second half of the nonce's life, refresh it
+      $time = time();
+      $nonce_tick = wp_nonce_tick();
+      
+      // Verify if the nonce is still valid but getting old
+      $verify = wp_verify_nonce( $request_nonce, 'wp_rest' );
+      if ( $verify === 2 ) {
+        // Nonce is valid but was generated 12-24 hours ago
+        $should_refresh = true;
+        if ( $this->core->get_option( 'debug_mode' ) ) {
+          error_log( '[MWAI] Token refresh: Nonce is 12-24 hours old, providing fresh token' );
+        }
+      }
+    }
+    
+    // If the nonce has changed or should be refreshed, include the new one
+    if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
+      $data['new_token'] = $current_nonce;
+      
+      // Log if debug mode is enabled
+      if ( $this->core->get_option( 'debug_mode' ) ) {
+        error_log( '[MWAI] Token refresh: Sending new token in response' );
+      }
+    }
+    
+    return new WP_REST_Response( $data, $status );
+  }
+
+  /**
+  * Generate or update the title for a specific discussion
+  * by calling the AI (if it meets the requirements).
+  *
+  * @param stdClass $discussion A row from the DB (object form).
+  * @return void
+  */
   private function generate_title_for_discussion( $discussion ) {
     // Check if there's already a title
-    if ( ! empty( $discussion->title ) ) {
+    if ( !empty( $discussion->title ) ) {
       return; // Nothing to do if title is already set.
     }
 
@@ -99,7 +146,7 @@ class Meow_MWAI_Modules_Discussions {
 
     // We expect JSON in the messages
     $messages = json_decode( $discussion->messages, true );
-    if ( ! is_array( $messages ) ) {
+    if ( !is_array( $messages ) ) {
       return;
     }
 
@@ -120,7 +167,7 @@ class Meow_MWAI_Modules_Discussions {
       }
     }
 
-    if ( ! ( $has_user_message && $has_assistant_message ) ) {
+    if ( !( $has_user_message && $has_assistant_message ) ) {
       return; // If doesn't have both, skip
     }
 
@@ -147,7 +194,7 @@ class Meow_MWAI_Modules_Discussions {
 
     // Clean up the answer
     $title = trim( $answer );
-    $title = rtrim( $title, ".!?:;,—–-–" ); // Remove trailing punctuation
+    $title = rtrim( $title, '.!?:;,—–-–' ); // Remove trailing punctuation
     $title = substr( $title, 0, 64 ); // Ensure less than 64 characters
     if ( empty( $title ) ) {
       $title = 'Untitled';
@@ -164,10 +211,9 @@ class Meow_MWAI_Modules_Discussions {
     }
   }
 
-
   /**
-   * Admin route for listing discussions. No forced logic here.
-   */
+  * Admin route for listing discussions. No forced logic here.
+  */
   public function rest_discussions_list( $request ) {
     try {
       $params = $request->get_json_params();
@@ -179,10 +225,10 @@ class Meow_MWAI_Modules_Discussions {
       // Retrieve the chats
       $chats = $this->chats_query( [], $offset, $limit, $filters, $sort );
 
-      return new WP_REST_Response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
+      return $this->create_rest_response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
     }
-    catch( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
 
@@ -193,12 +239,12 @@ class Meow_MWAI_Modules_Discussions {
       $title = isset( $params['title'] ) ? sanitize_text_field( $params['title'] ) : null;
 
       if ( is_null( $chatId ) || is_null( $title ) ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'chatId and title are required.' ], 400 );
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'chatId and title are required.' ], 400 );
       }
 
       $userId = get_current_user_id();
-      if ( ! $userId ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
+      if ( !$userId ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
       }
 
       // Update the discussion title for the current user
@@ -208,13 +254,13 @@ class Meow_MWAI_Modules_Discussions {
         [ 'chatId' => $chatId, 'userId' => $userId ]
       );
       if ( $updated === false ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'Failed to update the discussion.' ], 500 );
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Failed to update the discussion.' ], 500 );
       }
 
-      return new WP_REST_Response( [ 'success' => true ], 200 );
+      return $this->create_rest_response( [ 'success' => true ], 200 );
     }
-    catch( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
 
@@ -222,7 +268,7 @@ class Meow_MWAI_Modules_Discussions {
     $this->check_db();
 
     // NEW CHECK: Only run if auto-titling is enabled
-    if ( ! $this->core->get_option( 'chatbot_discussions_titling' ) ) {
+    if ( !$this->core->get_option( 'chatbot_discussions_titling' ) ) {
       return;
     }
     // END NEW CHECK
@@ -232,9 +278,9 @@ class Meow_MWAI_Modules_Discussions {
 
     // Get 5 latest discussions, not older than 10 days, which have no 'title' yet
     $query = $this->wpdb->prepare(
-      "SELECT * FROM {$this->table_chats} 
-       WHERE title IS NULL AND updated >= %s 
-       ORDER BY updated DESC LIMIT 5",
+      "SELECT * FROM {$this->table_chats}
+                                                                                                                                                                                  WHERE title IS NULL AND updated >= %s
+                                                                                                                                                                                  ORDER BY updated DESC LIMIT 5",
       $ten_days_ago
     );
     $discussions = $this->wpdb->get_results( $query );
@@ -248,10 +294,10 @@ class Meow_MWAI_Modules_Discussions {
   }
 
   /**
-   * UI route for listing discussions.
-   * Here we add the "forced cron" logic for up to 5 discussions,
-   * but only if auto-titling is enabled.
-   */
+  * UI route for listing discussions.
+  * Here we add the "forced cron" logic for up to 5 discussions,
+  * but only if auto-titling is enabled.
+  */
   public function rest_discussions_ui_list( $request ) {
     try {
       $params = $request->get_json_params();
@@ -260,23 +306,24 @@ class Meow_MWAI_Modules_Discussions {
       $paging_option = $this->core->get_option( 'chatbot_discussions_paging' );
       if ( $paging_option === 'None' ) {
         $default_limit = 999; // Show all discussions
-      } else {
+      }
+      else {
         $default_limit = is_numeric( $paging_option ) ? intval( $paging_option ) : 10; // Fallback to 10
       }
       $limit = isset( $params['limit'] ) ? $params['limit'] : $default_limit;
       $botId = isset( $params['botId'] ) ? $params['botId'] : null;
       $customId = isset( $params['customId'] ) ? $params['customId'] : null;
 
-      if ( ! is_null( $customId ) ) {
+      if ( !is_null( $customId ) ) {
         $botId = $customId;
       }
       if ( is_null( $botId ) ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'Bot ID is required.' ], 200 );
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Bot ID is required.' ], 200 );
       }
 
       $userId = get_current_user_id();
-      if ( ! $userId ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'You need to be connected.' ], 200 );
+      if ( !$userId ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'You need to be connected.' ], 200 );
       }
 
       $filters = [
@@ -306,12 +353,10 @@ class Meow_MWAI_Modules_Discussions {
       }
       // END NEW CHECK
 
-
-
-      return new WP_REST_Response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
+      return $this->create_rest_response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
     }
-    catch( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
 
@@ -327,10 +372,10 @@ class Meow_MWAI_Modules_Discussions {
           $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId ] );
         }
       }
-      return new WP_REST_Response( [ 'success' => true ], 200 );
+      return $this->create_rest_response( [ 'success' => true ], 200 );
     }
-    catch( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
 
@@ -339,28 +384,28 @@ class Meow_MWAI_Modules_Discussions {
       $params = $request->get_json_params();
       $chatIds = isset( $params['chatIds'] ) ? $params['chatIds'] : null;
 
-      if ( ! is_array( $chatIds ) || empty( $chatIds ) ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'chatIds is required.' ], 400 );
+      if ( !is_array( $chatIds ) || empty( $chatIds ) ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'chatIds is required.' ], 400 );
       }
 
       $userId = get_current_user_id();
-      if ( ! $userId ) {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
+      if ( !$userId ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
       }
 
       foreach ( $chatIds as $chatId ) {
         $this->wpdb->delete( $this->table_chats, [ 'chatId' => $chatId, 'userId' => $userId ] );
       }
 
-      return new WP_REST_Response( [ 'success' => true ], 200 );
+      return $this->create_rest_response( [ 'success' => true ], 200 );
     }
-    catch( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
 
   // Get latest discussion for the given parameter
-  function get_discussion( $botId, $chatId ) {
+  public function get_discussion( $botId, $chatId ) {
     $this->check_db();
     $chat = $this->wpdb->get_row(
       $this->wpdb->prepare(
@@ -377,11 +422,11 @@ class Meow_MWAI_Modules_Discussions {
     return null;
   }
 
-  function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
+  public function chats_query( $chats = [], $offset = 0, $limit = null, $filters = null, $sort = null ) {
     $this->check_db();
-    $offset = ! empty( $offset ) ? intval( $offset ) : 0;
-    $limit = ! empty( $limit ) ? intval( $limit ) : 5;
-    $filters = ! empty( $filters ) ? $filters : [];
+    $offset = !empty( $offset ) ? intval( $offset ) : 0;
+    $limit = !empty( $limit ) ? intval( $limit ) : 5;
+    $filters = !empty( $filters ) ? $filters : [];
     $this->core->sanitize_sort( $sort, 'updated', 'DESC' );
 
     $where_clauses = [];
@@ -414,13 +459,13 @@ class Meow_MWAI_Modules_Discussions {
             $where_clauses[] = 'messages LIKE %s';
             $where_values[] = $like;
             break;
-          // Add other cases as needed
+            // Add other cases as needed
         }
       }
     }
 
     $where_sql = '';
-    if ( ! empty( $where_clauses ) ) {
+    if ( !empty( $where_clauses ) ) {
       $where_sql = 'WHERE ' . implode( ' AND ', $where_clauses );
     }
     $order_by = 'ORDER BY ' . esc_sql( $sort['accessor'] ) . ' ' . esc_sql( $sort['by'] );
@@ -451,7 +496,7 @@ class Meow_MWAI_Modules_Discussions {
     $storeId = $query instanceof Meow_MWAI_Query_Assistant ? $query->storeId : null;
     $now = date( 'Y-m-d H:i:s' );
 
-    if ( ! empty( $customId ) ) {
+    if ( !empty( $customId ) ) {
       $botId = $customId;
     }
     $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->get_message();
@@ -475,13 +520,13 @@ class Meow_MWAI_Modules_Discussions {
       'session' => $query->session,
       'model' => $query->model,
     ];
-    if ( ! empty( $query->temperature ) ) {
+    if ( !empty( $query->temperature ) ) {
       $chatExtra['temperature'] = $query->temperature;
     }
-    if ( ! empty( $query->context ) ) {
+    if ( !empty( $query->context ) ) {
       $chatExtra['context'] = $query->context;
     }
-    if ( ! empty( $params['parentBotId'] ) ) {
+    if ( !empty( $params['parentBotId'] ) ) {
       $chatExtra['parentBotId'] = $params['parentBotId'];
     }
     if ( $query instanceof Meow_MWAI_Query_Assistant ) {
@@ -489,7 +534,7 @@ class Meow_MWAI_Modules_Discussions {
       $chatExtra['threadId'] = $query->threadId;
       $chatExtra['storeId'] = $query->storeId;
     }
-    
+
     // Store response ID and date for Responses API
     if ( !empty( $extra['responseId'] ) ) {
       $chatExtra['previousResponseId'] = $extra['responseId'];
@@ -501,11 +546,11 @@ class Meow_MWAI_Modules_Discussions {
       $chat->messages[] = [ 'role' => 'user', 'content' => $newMessage ];
       $chat->messages[] = [ 'role' => 'assistant', 'content' => $rawText, 'extra' => $messageExtra ];
       $chat->messages = json_encode( $chat->messages );
-      
+
       // Update or merge extra data
       $existingExtra = json_decode( $chat->extra, true ) ?: [];
       $mergedExtra = array_merge( $existingExtra, $chatExtra );
-      
+
       $this->wpdb->update(
         $this->table_chats,
         [
@@ -520,7 +565,7 @@ class Meow_MWAI_Modules_Discussions {
     else {
       $startSentence = isset( $params['startSentence'] ) ? $params['startSentence'] : null;
       $messages = [];
-      if ( ! empty( $startSentence ) ) {
+      if ( !empty( $startSentence ) ) {
         $messages[] = [ 'role' => 'assistant', 'content' => $startSentence ];
       }
       $messages[] = [ 'role' => 'user', 'content' => $newMessage ];
@@ -542,7 +587,7 @@ class Meow_MWAI_Modules_Discussions {
     return $rawText;
   }
 
-  function format_messages( $json, $format = 'html' ) {
+  public function format_messages( $json, $format = 'html' ) {
     $html = '';
     if ( $format === 'html' ) {
       try {
@@ -555,7 +600,7 @@ class Meow_MWAI_Modules_Discussions {
           $html .= '<p><strong>' . htmlspecialchars( $role ) . ':</strong> ' . htmlspecialchars( $message['content'] ) . '</p>';
         }
       }
-      catch( Exception $e ) {
+      catch ( Exception $e ) {
         error_log( $e->getMessage() );
         return 'Error while formatting the message';
       }
@@ -565,14 +610,14 @@ class Meow_MWAI_Modules_Discussions {
   }
 
   /**
-   * Commits a discussion into the database (create or update if the same chatId is found).
-   * 
-   * @param Meow_MWAI_Discussion $discussionObject
-   * @return bool True if success, false if error
-   */
+  * Commits a discussion into the database (create or update if the same chatId is found).
+  *
+  * @param Meow_MWAI_Discussion $discussionObject
+  * @return bool True if success, false if error
+  */
   public function commit_discussion( Meow_MWAI_Discussion $discussionObject ): bool {
     $this->check_db();
-  
+
     // 1. Check if a discussion with the same chatId already exists
     $chat = $this->wpdb->get_row(
       $this->wpdb->prepare(
@@ -581,7 +626,7 @@ class Meow_MWAI_Modules_Discussions {
       ),
       ARRAY_A
     );
-  
+
     // 2. Prepare data for DB
     $userIp = $this->core->get_ip_address();
     $userId = $this->core->get_user_id();
@@ -592,11 +637,11 @@ class Meow_MWAI_Modules_Discussions {
       'ip' => $userIp,
       'botId' => $discussionObject->botId,
       'chatId' => $discussionObject->chatId,
-      'messages'=> !empty( $discussionObject->messages ) ? wp_json_encode( $discussionObject->messages ) : '[]',
+      'messages' => !empty( $discussionObject->messages ) ? wp_json_encode( $discussionObject->messages ) : '[]',
       'extra' => !empty( $discussionObject->extra ) ? wp_json_encode( $discussionObject->extra ) : '{}',
       'updated' => $now,
     ];
-  
+
     // 3. Update if found, otherwise insert a new row
     if ( $chat ) {
       $updateRes = $this->wpdb->update(
@@ -618,23 +663,23 @@ class Meow_MWAI_Modules_Discussions {
         return false;
       }
     }
-  
+
     return true;
   }
 
-  function check_db() {
+  public function check_db() {
     if ( $this->db_check ) {
       return true;
     }
-    $this->db_check = ! (
+    $this->db_check = !(
       strtolower( $this->wpdb->get_var( "SHOW TABLES LIKE '$this->table_chats'" ) )
-      != strtolower( $this->table_chats )
+          != strtolower( $this->table_chats )
     );
-    if ( ! $this->db_check ) {
+    if ( !$this->db_check ) {
       $this->create_db();
-      $this->db_check = ! (
+      $this->db_check = !(
         strtolower( $this->wpdb->get_var( "SHOW TABLES LIKE '$this->table_chats'" ) )
-        != strtolower( $this->table_chats )
+            != strtolower( $this->table_chats )
       );
     }
 
@@ -648,24 +693,24 @@ class Meow_MWAI_Modules_Discussions {
     return $this->db_check;
   }
 
-  function create_db() {
+  public function create_db() {
     $charset_collate = $this->wpdb->get_charset_collate();
     $sqlLogs = "CREATE TABLE $this->table_chats (
-      id BIGINT(20) NOT NULL AUTO_INCREMENT,
-      userId BIGINT(20) NULL,
-      ip VARCHAR(64) NULL,
-      title VARCHAR(64) NULL,
-      messages TEXT NOT NULL NULL,
-      extra LONGTEXT NOT NULL NULL,
-      botId VARCHAR(64) NULL,
-      chatId VARCHAR(64) NOT NULL,
-      threadId VARCHAR(64) NULL,
-      storeId VARCHAR(64) NULL,
-      created DATETIME NOT NULL,
-      updated DATETIME NOT NULL,
-      PRIMARY KEY  (id),
-      INDEX chatId (chatId)
-    ) $charset_collate;";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              id BIGINT(20) NOT NULL AUTO_INCREMENT,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                userId BIGINT(20) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ip VARCHAR(64) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    title VARCHAR(64) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      messages TEXT NOT NULL NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      extra LONGTEXT NOT NULL NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      botId VARCHAR(64) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        chatId VARCHAR(64) NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          threadId VARCHAR(64) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            storeId VARCHAR(64) NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              created DATETIME NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              updated DATETIME NOT NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              PRIMARY KEY  (id),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                INDEX chatId (chatId)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ) $charset_collate;";
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
     dbDelta( $sqlLogs );
   }

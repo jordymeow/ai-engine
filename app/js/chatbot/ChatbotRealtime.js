@@ -1,5 +1,5 @@
-// Previous: 2.7.7
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 const { useState, useRef, useCallback, useMemo, useEffect } = wp.element;
 
@@ -96,8 +96,9 @@ function formatName(template, guestName, userData) {
 const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
   const { state, actions } = useChatbotContext();
   const { busy, locked, open, popup, system } = state;
-  const { onStartRealtimeSession, onRealtimeFunctionCallback, onCommitStats, onCommitDiscussions } = actions;
+  const { onStartRealtimeSession, onRealtimeFunctionCallback, onCommitStats, onCommitDiscussions, setError } = actions;
   const debugMode = system?.debugMode || false;
+  const eventLogs = system?.eventLogs || false;
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -116,7 +117,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
 
   const [messages, setMessages] = useState([]);
   const processedItemIdsRef = useRef(new Set());
-
+  
   const handleStreamEvent = useCallback((content, eventData) => {
     if (eventData && eventData.subtype && onStreamEvent) {
       onStreamEvent({
@@ -126,15 +127,16 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
       });
     }
   }, [onStreamEvent]);
-
+  
   const eventEmitterRef = useRef(null);
   useEffect(() => {
-    eventEmitterRef.current = new RealtimeEventEmitter(handleStreamEvent, debugMode);
-  }, [handleStreamEvent, debugMode]);
+    eventEmitterRef.current = new RealtimeEventEmitter(handleStreamEvent, eventLogs);
+  }, [handleStreamEvent, eventLogs]);
 
   const pcRef = useRef(null);
   const dataChannelRef = useRef(null);
   const localStreamRef = useRef(null);
+  const stopRealtimeConnectionRef = useRef(null);
 
   const [showOptions, setShowOptions] = useState(true);
   const [showUsers, setShowUsers] = useState(true);
@@ -151,7 +153,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
   useEffect(() => {
     if (!open && isSessionActive && popup) stopRealtimeConnection();
   }, [open, popup, isSessionActive]);
-
+  
   useEffect(() => {
     if (onMessagesUpdate) {
       onMessagesUpdate(messages);
@@ -159,8 +161,20 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
   }, [messages, onMessagesUpdate]);
 
   const commitStatsToServer = useCallback(async (usageStats) => {
-    await onCommitStats(usageStats);
-  }, [onCommitStats]);
+    const result = await onCommitStats(usageStats);
+    if (result.overLimit) {
+      if (eventLogs && eventEmitterRef.current) {
+        eventEmitterRef.current.emit(STREAM_TYPES.ERROR, result.limitMessage || 'Usage limit exceeded', {
+          visibility: 'visible',
+          error: true
+        });
+      }
+      console.warn('Usage limit exceeded, stopping realtime connection:', result.limitMessage);
+      if (stopRealtimeConnectionRef.current) {
+        stopRealtimeConnectionRef.current();
+      }
+    }
+  }, [onCommitStats, eventLogs]);
 
   const enableAudioTranscription = useCallback(() => {
     if (!dataChannelRef.current || dataChannelRef.current.readyState !== 'open') {
@@ -196,7 +210,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
       }
       const functionOutput = result.data;
       
-      if (debugMode && eventEmitterRef.current) {
+      if (eventLogs && eventEmitterRef.current) {
         const resultPreview = typeof functionOutput === 'string' 
           ? functionOutput 
           : JSON.stringify(functionOutput);
@@ -235,12 +249,12 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
     } catch (err) {
       console.error('Error in handleFunctionCall.', err);
     }
-  }, [onRealtimeFunctionCallback, debugMode]);
+  }, [onRealtimeFunctionCallback, eventLogs]);
 
   const startRealtimeConnection = useCallback(async (clientSecret, model) => {
     setIsConnecting(true);
     
-    if (debugMode && eventEmitterRef.current) {
+    if (eventLogs && eventEmitterRef.current) {
       eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Starting realtime session...', {
         visibility: 'visible'
       });
@@ -251,11 +265,24 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
 
     let ms;
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not available. Please ensure you are using HTTPS and a modern browser.');
+      }
+      
       ms = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = ms;
       ms.getTracks().forEach(track => pc.addTrack(track, ms));
     } catch (err) {
       console.error('Error accessing microphone.', err);
+      
+      if (eventLogs && eventEmitterRef.current) {
+        eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Failed to access microphone: ' + err.message, {
+          visibility: 'visible',
+          error: true
+        });
+      }
+      
+      setError('Failed to access microphone. Please ensure microphone permissions are granted and try again.');
       setIsConnecting(false);
       return;
     }
@@ -272,7 +299,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
     dataChannel.addEventListener('open', () => {
       debugLog(DEBUG_LEVELS.low, 'Data channel open.');
       
-      if (debugMode && eventEmitterRef.current) {
+      if (eventLogs && eventEmitterRef.current) {
         eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Realtime session connected', {
           visibility: 'visible'
         });
@@ -299,7 +326,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
         if (isMajor) console.log('Key event from Realtime API.', msg);
       }
 
-      if (debugMode && msg.type && eventEmitterRef.current) {
+      if (eventLogs && msg.type && eventEmitterRef.current) {
         let eventMessage = '';
         let eventSubtype = STREAM_TYPES.STATUS;
         let shouldEmit = false;
@@ -337,6 +364,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
             shouldEmit = true;
             break;
           case 'response.done':
+            // intentional fallthrough, no emit
             break;
         }
         
@@ -438,10 +466,10 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
     setIsSessionActive(true);
     setIsPaused(false);
     setWhoIsSpeaking('user');
-  }, [enableAudioTranscription, handleFunctionCall, commitStatsToServer]);
+  }, [enableAudioTranscription, handleFunctionCall, commitStatsToServer, setError]);
 
   const stopRealtimeConnection = useCallback(() => {
-    if (debugMode && eventEmitterRef.current) {
+    if (eventLogs && eventEmitterRef.current) {
       eventEmitterRef.current.emit(STREAM_TYPES.STATUS, 'Ending realtime session...', {
         visibility: 'visible'
       });
@@ -460,9 +488,9 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
       setIsSessionActive(false);
       setIsPaused(false);
       setWhoIsSpeaking(null);
-      
+
       onCommitDiscussions(messages);
-      
+
       setMessages([]);
       setStatistics({
         text_input_tokens: 0,
@@ -472,13 +500,16 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
         text_cached_tokens: 0,
         audio_cached_tokens: 0,
       });
-      
       debugLog(DEBUG_LEVELS.low, 'Stopped Realtime connection.');
     }
     catch (err) {
       console.error('Error stopping connection.', err);
     }
   }, [messages, statistics, onCommitDiscussions]);
+
+  useEffect(() => {
+    stopRealtimeConnectionRef.current = stopRealtimeConnection;
+  }, [stopRealtimeConnection]);
 
   const togglePause = useCallback(() => {
     if (!localStreamRef.current) return;
@@ -503,18 +534,22 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
       if (!data?.success) {
         console.error('Could not start realtime session.', data);
         setIsConnecting(false);
+        const errorMessage = data?.message || 'Could not start realtime session.';
+        setError(errorMessage);
         return;
       }
-      // BUG: intentional - missing assignment to functionCallbacksRef.current
-      // functionCallbacksRef.current = data.function_callbacks || [];
-      // BUG: The above line is omitted intentionally to cause mismatch
+      // introduce delay here (simulate race condition)
+      await new Promise(res => setTimeout(res, 100));
+      functionCallbacksRef.current = data.function_callbacks || [];
       setSessionId(data.session_id);
       await startRealtimeConnection(data.client_secret, data.model);
     } catch (err) {
       console.error('Error in handlePlay.', err);
       setIsConnecting(false);
+      const errorMessage = err.message || 'An error occurred while starting the realtime session.';
+      setError(errorMessage);
     }
-  }, [onStartRealtimeSession, startRealtimeConnection]);
+  }, [onStartRealtimeSession, startRealtimeConnection, setError]);
 
   const handleStop = useCallback(() => stopRealtimeConnection(), [stopRealtimeConnection]);
 

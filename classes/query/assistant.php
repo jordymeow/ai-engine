@@ -1,7 +1,6 @@
 <?php
 
 class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSerializable {
-  
   // Core Content
   public ?Meow_MWAI_Query_DroppedFile $attachedFile = null;
 
@@ -11,12 +10,12 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   public ?string $assistantId = null;
   public ?string $threadId = null;
   public ?string $storeId = null; // Vector Store ID (https://platform.openai.com/docs/api-reference/vector-stores)
-  
+
   #region Constructors, Serialization
 
   public function __construct( ?string $message = '' ) {
     parent::__construct( $message );
-    $this->feature = "assistant"; 
+    $this->feature = 'assistant';
   }
 
   #[\ReturnTypeWillChange]
@@ -94,8 +93,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   #region Inject Params
 
   // Based on the params of the query, update the attributes
-  public function inject_params( array $params ): void
-  {
+  public function inject_params( array $params ): void {
     parent::inject_params( $params );
 
     // Those are for the keys passed directly by the shortcode.

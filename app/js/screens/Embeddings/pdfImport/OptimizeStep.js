@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 const { useState, useMemo } = wp.element;
 
@@ -14,6 +14,8 @@ import { apiUrl, restNonce } from '@app/settings';
 const OptimizeStep = ({
   editableChunks,
   setEditableChunks,
+  chunks,
+  setChunks,
   chunkingDensity,
   setChunkingDensity,
   pdfData,
@@ -23,6 +25,7 @@ const OptimizeStep = ({
 }) => {
   const { colors } = useNekoColors();
   const [viewMode, setViewMode] = useState('compact');
+  const [chunkingType, setChunkingType] = useState('tokens');
 
   const enabledCount = useMemo(() => editableChunks.filter(c => c.enabled).length, [editableChunks]);
 
@@ -41,11 +44,18 @@ const OptimizeStep = ({
   const handleDensityChange = async (newDensity) => {
     setChunkingDensity(newDensity);
     if (pdfData) {
-      await regenerateChunks(newDensity);
+      await regenerateChunks(newDensity, chunkingType);
     }
   };
 
-  const regenerateChunks = async (density) => {
+  const handleChunkingTypeChange = async (newType) => {
+    setChunkingType(newType);
+    if (pdfData) {
+      await regenerateChunks(chunkingDensity, newType);
+    }
+  };
+
+  const regenerateChunks = async (density, type = 'tokens') => {
     setBusy(true);
     setError(null);
 
@@ -57,11 +67,14 @@ const OptimizeStep = ({
           text: pdfData.fullText,
           pageTexts: pdfData.pageTexts,
           density,
-          fileName: pdfData.fileName
+          fileName: pdfData.fileName,
+          chunkingType: type,
+          detectedHeadings: type === 'chapters' ? pdfData.detectedHeadings : []
         }
       });
 
       if (response.chunks) {
+        setChunks(response.chunks);
         setEditableChunks(response.chunks.map((chunk, idx) => ({
           ...chunk,
           id: `chunk_${idx}`,
@@ -159,8 +172,7 @@ const OptimizeStep = ({
             if (result && result.title) {
               const idx = updated.findIndex(c => c.id === result.chunkId);
               if (idx >= 0) {
-                // bug: accidentally overwriting other properties or using outdated reference
-                updated[idx] = { ...updated[idx], title: result.title, lastUpdated: Date.now() };
+                updated[idx].title = result.title;
               }
             }
           });
@@ -199,8 +211,29 @@ const OptimizeStep = ({
 
       <NekoColumn minimal style={{ flex: 1, marginLeft: 10, backgroundColor: 'var(--neko-main-color)' }}>
 
-        <DensityControl density={chunkingDensity} onDensityChange={handleDensityChange} busy={busy} />
-        <NekoSpacer tiny />
+        {(!pdfData?.detectedHeadings?.length || chunkingType === 'tokens') && (
+          <>
+            <DensityControl density={chunkingDensity} onDensityChange={handleDensityChange} busy={busy} />
+            <NekoSpacer tiny />
+          </>
+        )}
+
+        {pdfData?.detectedHeadings?.length > 0 && (
+          <>
+            <NekoBlock className="primary" title="Chunking Type">
+              <NekoSelect
+                value={chunkingType}
+                onChange={handleChunkingTypeChange}
+                disabled={busy}
+                style={{ width: '100%' }}
+              >
+                <NekoOption value="tokens" label="By Tokens - Split based on token count" />
+                <NekoOption value="chapters" label={`By Chapters - Use ${pdfData.detectedHeadings.length} detected chapters`} />
+              </NekoSelect>
+            </NekoBlock>
+            <NekoSpacer tiny />
+          </>
+        )}
 
         <NekoBlock className="primary" title="AI Title Generation">
           <NekoButton
@@ -208,7 +241,8 @@ const OptimizeStep = ({
             className="secondary"
             onClick={generateAllTitles}
             disabled={enabledCount === 0}
-            isBusy={busy}>
+            isBusy={busy}
+            style={{ height: 50, fontSize: 16 }}>
             <AiIcon icon="wand" style={{ marginRight: 8, width: 16, height: 16 }} />
             Auto-Generate All Titles
           </NekoButton>

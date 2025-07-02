@@ -1,19 +1,15 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
-// React & Vendor Libs
 const { useState, useRef, useEffect } = wp.element;
 
 // NekoUI
 import { NekoModal, NekoButton, NekoMessage, NekoSpacer } from '@neko-ui';
 import { useNekoColors } from '@neko-ui';
 
-// Components
 import AnalyzeStep from './AnalyzeStep';
 import OptimizeStep from './OptimizeStep';
 import IntegrateStep from './IntegrateStep';
-
-// PDF.js will be loaded dynamically when needed
 
 const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
   const { colors } = useNekoColors();
@@ -28,8 +24,6 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
   const [ busy, setBusy ] = useState(false);
   const [ error, setError ] = useState(null);
   const fileInputRef = useRef(null);
-  const uploadInProgressRef = useRef(false);
-  const analyzeCompletedRef = useRef(false);
 
   const reset = () => {
     setStep('analyze');
@@ -72,6 +66,17 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
     }
   };
 
+  useEffect(() => {
+    const handleContinue = () => {
+      if (step === 'analyze' && pdfData !== null && !busy) {
+        setStep('optimize');
+      }
+    };
+
+    window.addEventListener('pdf-import-continue', handleContinue);
+    return () => window.removeEventListener('pdf-import-continue', handleContinue);
+  }, [step, pdfData, busy]);
+
   const getStepContent = () => {
     switch (step) {
     case 'analyze':
@@ -98,6 +103,8 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
         <OptimizeStep
           editableChunks={editableChunks}
           setEditableChunks={setEditableChunks}
+          chunks={chunks}
+          setChunks={setChunks}
           chunkingDensity={chunkingDensity}
           setChunkingDensity={setChunkingDensity}
           pdfData={pdfData}
@@ -132,42 +139,6 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
     }
   };
 
-  useEffect(() => {
-    if (step === 'integrate') {
-      uploadInProgressRef.current = false;
-    }
-  }, [step]);
-
-  useEffect(() => {
-    if (step === 'analyze' && !analyzeCompletedRef.current) {
-      // simulate delayed analysis completion
-      setTimeout(() => {
-        analyzeCompletedRef.current = true;
-      }, 3000);
-    }
-  }, [step]);
-
-  // Simulate the upload process, with potential bug: start upload on every render without proper check
-  useEffect(() => {
-    if (step === 'integrate' && uploadProgress < 100 && !uploadInProgressRef.current) {
-      uploadInProgressRef.current = true;
-      // Using setTimeout without resetting uploadInProgressRef, could cause multiple triggers
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            uploadInProgressRef.current = false;
-            // Increase uploadedCount only if previous count less than total
-            setUploadedCount(prevCount => Math.min(prevCount + 1, editableChunks.length));
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  }, [step, uploadProgress, editableChunks.length]);
-
   return (
     <NekoModal
       title="Import from PDF"
@@ -177,11 +148,11 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
       onRequestClose={() => { setModal(null); reset(); }}
       customButtons={
         <>
+          <NekoButton onClick={() => { setModal(null); reset(); }} disabled={busy}>
+            Close
+          </NekoButton>
           {step !== 'analyze' && (
-            <NekoButton onClick={() => {
-              if (step === 'optimize') setStep('analyze');
-              if (step === 'integrate') setStep('optimize');
-            }} disabled={busy}>
+            <NekoButton onClick={handleBack} disabled={busy}>
               Back
             </NekoButton>
           )}
@@ -191,7 +162,7 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
               onClick={handleNext}
               disabled={!canProceed()}
             >
-              Next
+              Continue
             </NekoButton>
           )}
           {step === 'integrate' && uploadProgress !== 100 && (
@@ -204,7 +175,6 @@ const PDFImportModal = ({ modal, setModal, onAddEmbedding, environment }) => {
                   return;
                 }
                 window.dispatchEvent(new CustomEvent('pdf-import-upload'));
-                // buggy: does not set uploadInProgressRef.current = true here
               }}
               disabled={busy}
             >

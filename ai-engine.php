@@ -1,9 +1,10 @@
 <?php
+
 /*
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
-Version: 2.8.4
+Version: 2.8.5
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -11,7 +12,7 @@ License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-define( 'MWAI_VERSION', '2.8.4' );
+define( 'MWAI_VERSION', '2.8.5' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -52,5 +53,3 @@ add_filter( 'mwai_ai_exception', function ( $exception ) {
   }
   return $exception;
 } );
-
-?>

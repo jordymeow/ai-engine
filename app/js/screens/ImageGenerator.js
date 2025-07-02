@@ -1,5 +1,5 @@
-// Previous: 2.8.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useState, useEffect, useMemo, useRef } = wp.element;
 import Styled from "styled-components";
@@ -7,7 +7,7 @@ import Styled from "styled-components";
 import { nekoFetch } from '@neko-ui';
 import { NekoPage, NekoSelect, NekoOption, NekoModal, NekoButton, NekoCheckbox, NekoSpacer,
   NekoProgress, NekoTextArea, NekoWrapper, NekoColumn,
-  NekoInput, NekoQuickLinks, NekoLink, NekoContainer, NekoTypo } from '@neko-ui';
+  NekoInput, NekoQuickLinks, NekoLink, NekoContainer, NekoTypo, NekoIcon } from '@neko-ui';
 import { apiUrl, restNonce, session, options, restUrl } from '@app/settings';
 import { toHTML, useModels, OptionsCheck } from '@app/helpers-admin';
 import { AiNekoHeader, StyledGallery,
@@ -91,7 +91,6 @@ const ImageGenerator = () => {
   const currentModel = getModel(template?.model);
   const [ taskQueue, setTaskQueue ] = useState([]);
 
-  // Results
   const [ urls, setUrls ] = useState([]);
   const [ selectedUrl, setSelectedUrl ] = useState();
   const [ title, setTitle] = useState('');
@@ -103,15 +102,16 @@ const ImageGenerator = () => {
   const [ maskMode, setMaskMode ] = useState(false);
   const [ maskData, setMaskData ] = useState(null);
   const [ brushSize, setBrushSize ] = useState(30);
+  const [ showModelParams, setShowModelParams ] = useState(true);
+  const [ showSettings, setShowSettings ] = useState(true);
   const [ cursorPosition, setCursorPosition ] = useState({ x: 0, y: 0, visible: false });
   const canvasRef = useRef();
   const imageRef = useRef();
   const strokeLayerRef = useRef();
-  const strokesRef = useRef([]); // Store all completed strokes
+  const strokesRef = useRef([]);
   const prompt = template?.prompt;
   
-  // Brush settings
-  const BRUSH_HARDNESS = 0.5; // 0 = soft, 1 = hard
+  const BRUSH_HARDNESS = 0.5;
   const MIN_BRUSH_SIZE = 5;
   const MAX_BRUSH_SIZE = 200;
   const BRUSH_SIZE_STEP = 5;
@@ -174,25 +174,29 @@ const ImageGenerator = () => {
       const img = imageRef.current;
       const canvas = canvasRef.current;
       
-      img.onload = () => {
+      const loadImage = () => {
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         if (!strokeLayerRef.current) {
           strokeLayerRef.current = document.createElement('canvas');
         }
         strokeLayerRef.current.width = canvas.width;
         strokeLayerRef.current.height = canvas.height;
       };
+      
+      img.onload = loadImage;
+      
+      // Trigger reload
+      if (img.complete) {
+        loadImage();
+      }
     }
   }, [editImageUrl]);
 
   useEffect(() => {
     if (!maskMode) return;
-    
     const handleKeyDown = (e) => {
       if (e.key === '[') {
         e.preventDefault();
@@ -202,7 +206,6 @@ const ImageGenerator = () => {
         setBrushSize(size => Math.min(MAX_BRUSH_SIZE, size + BRUSH_SIZE_STEP));
       }
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [maskMode]);
@@ -213,47 +216,46 @@ const ImageGenerator = () => {
     maskCanvas.width = canvas.width;
     maskCanvas.height = canvas.height;
     const maskCtx = maskCanvas.getContext('2d');
-    
     maskCtx.fillStyle = 'black';
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-    
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const maskImageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
-    
+
     for (let i = 0; i < imageData.data.length; i += 4) {
       const r = imageData.data[i];
       const a = imageData.data[i + 3];
       
       if (r > 200 && a > 100) {
-        maskImageData.data[i] = 0;     // R
-        maskImageData.data[i + 1] = 0; // G
-        maskImageData.data[i + 2] = 0; // B
-        maskImageData.data[i + 3] = 0; // A
+        maskImageData.data[i] = 0;
+        maskImageData.data[i + 1] = 0;
+        maskImageData.data[i + 2] = 0;
+        maskImageData.data[i + 3] = 0;
       }
     }
-    
     maskCtx.putImageData(maskImageData, 0, 0);
     maskCanvas.toBlob(callback, 'image/png');
   };
 
   const brushCanvasRef = useRef();
-  
+
   useEffect(() => {
     if (editImageUrl && imageRef.current && brushCanvasRef.current) {
       const img = imageRef.current;
       const canvas = brushCanvasRef.current;
-      
-      img.onload = () => {
+      const loadBrushCanvas = () => {
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
       };
+      img.onload = loadBrushCanvas;
+      if (img.complete) {
+        loadBrushCanvas();
+      }
     }
   }, [editImageUrl]);
 
   const drawGradientBrush = (ctx, x, y, size, hardness) => {
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, size / 2);
-    
     if (hardness >= 1) {
       gradient.addColorStop(0, 'rgba(255, 0, 0, 1)');
       gradient.addColorStop(1, 'rgba(255, 0, 0, 1)');
@@ -263,7 +265,6 @@ const ImageGenerator = () => {
       gradient.addColorStop(innerStop, 'rgba(255, 0, 0, 1)');
       gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
     }
-    
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(x, y, size / 2, 0, Math.PI * 2);
@@ -275,65 +276,52 @@ const ImageGenerator = () => {
     brushCanvas.width = size;
     brushCanvas.height = size;
     const brushCtx = brushCanvas.getContext('2d');
-    
-    const gradient = brushCtx.createRadialGradient(
-      size / 2, size / 2, 0,
-      size / 2, size / 2, size / 2
-    );
-    
+    const gradient = brushCtx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
     if (hardness >= 1) {
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(1, 'rgba(255,255,255,1)');
     } else {
       const innerStop = hardness * 0.5;
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-      gradient.addColorStop(innerStop, 'rgba(255, 255, 255, 1)');
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(innerStop, 'rgba(255,255,255,1)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
     }
-    
     brushCtx.fillStyle = gradient;
     brushCtx.fillRect(0, 0, size, size);
-    
     return brushCanvas;
   };
 
   const handleCanvasMouseDown = (e) => {
     if (!maskMode) return;
-    
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
-    
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
     const scaledBrushSize = brushSize * scaleX;
     const brushRadius = scaledBrushSize / 2;
-    
     let isDrawing = true;
     let currentX = (e.clientX - rect.left) * scaleX;
     let currentY = (e.clientY - rect.top) * scaleY;
-    
+
     const OPACITY_INCREMENT = 0.05;
     const MAX_OPACITY = 1.0;
     const INITIAL_OPACITY = 0.5;
-    const FRAME_RATE = 60;
-    
+
     let animationId = null;
-    
+
     const applyBrush = (opacity) => {
       ctx.save();
       ctx.globalAlpha = opacity;
       drawGradientBrush(ctx, currentX, currentY, scaledBrushSize, BRUSH_HARDNESS);
       ctx.restore();
     };
-    
+
     let currentOpacity = INITIAL_OPACITY;
     let isFirstPaint = true;
-    
+
     const paintLoop = () => {
       if (!isDrawing) return;
-      
       if (isFirstPaint) {
         applyBrush(INITIAL_OPACITY);
         isFirstPaint = false;
@@ -341,59 +329,46 @@ const ImageGenerator = () => {
         currentOpacity = Math.min(currentOpacity + OPACITY_INCREMENT, MAX_OPACITY);
         applyBrush(OPACITY_INCREMENT);
       }
-      
       animationId = requestAnimationFrame(paintLoop);
     };
-    
+
     paintLoop();
-    
+
     const handleMouseMove = (e) => {
       if (!isDrawing) return;
-      
       const newX = (e.clientX - rect.left) * scaleX;
       const newY = (e.clientY - rect.top) * scaleY;
-      
       const dx = newX - currentX;
       const dy = newY - currentY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      
       if (distance > 1) {
         const steps = Math.ceil(distance / 2);
-        
         for (let i = 1; i <= steps; i++) {
           const t = i / steps;
           const x = currentX + dx * t;
           const y = currentY + dy * t;
-          
           ctx.save();
           ctx.globalAlpha = INITIAL_OPACITY * 0.3;
           drawGradientBrush(ctx, x, y, scaledBrushSize, BRUSH_HARDNESS);
           ctx.restore();
         }
-        
         currentX = newX;
         currentY = newY;
-        
         currentOpacity = INITIAL_OPACITY;
         isFirstPaint = true;
       }
     };
-    
+
     const handleMouseUp = () => {
       isDrawing = false;
-      
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-      }
-      
+      if (animationId) cancelAnimationFrame(animationId);
       createMaskBlob((blob) => {
         setMaskData(blob);
       });
-      
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-    
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
@@ -403,7 +378,6 @@ const ImageGenerator = () => {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
       setMaskData(null);
       setMaskMode(false);
     } else {
@@ -444,7 +418,7 @@ const ImageGenerator = () => {
 
     try {
       const endpoint = mode === 'edit' ? 'image_edit' : 'images';
-      
+
       const requestData = {
         env: 'admin-tools',
         envId: currentTask.envId,
@@ -456,8 +430,9 @@ const ImageGenerator = () => {
         message: currentTask.prompt,
         maxResults: 1,
         mediaId: editId,
+        local_download: null,
       };
-      
+
       console.log('Image Edit Request:', {
         mode,
         endpoint,
@@ -465,7 +440,7 @@ const ImageGenerator = () => {
         editId,
         requestData
       });
-      
+
       let res;
       if (mode === 'edit' && maskData) {
         const formData = new FormData();
@@ -475,11 +450,12 @@ const ImageGenerator = () => {
           }
         });
         formData.append('mask', maskData, 'mask.png');
+
         console.log('FormData contents:');
         for (let [key, value] of formData.entries()) {
           console.log(key, value);
         }
-        // <-- bug: using fetch directly instead of nekoFetch
+
         res = await fetch(`${apiUrl}/ai/${endpoint}`, {
           method: 'POST',
           headers: {
@@ -684,8 +660,8 @@ const ImageGenerator = () => {
               </div>
               {maskMode && (
                 <div style={{ 
-                  fontSize: 12, 
-                  color: '#666', 
+                  fontSize: 11, 
+                  opacity: 0.6, 
                   marginBottom: 10,
                   textAlign: 'center'
                 }}>
@@ -730,11 +706,13 @@ const ImageGenerator = () => {
             </>}
           </StyledSidebar>
 
-          <StyledSidebar style={{ marginTop: 20 }}>
+          <NekoSpacer />
+          
+          <StyledSidebar>
             <NekoButton fullWidth disabled={!prompt}
               onClick={addToQueue} onStopClick={onStop}
               isBusy={busy}
-              style={{ height: 50, fontSize: 14, flex: 4 }}>
+              style={{ height: 50, fontSize: 16, flex: 4 }}>
               {i18n.COMMON.GENERATE}
             </NekoButton>
           </StyledSidebar>
@@ -742,6 +720,7 @@ const ImageGenerator = () => {
         </NekoColumn>
 
         <NekoColumn style={{ flex: 2 }}>
+
           <NekoQuickLinks value={mode} onChange={(value) => {
             if (value === 'generate') {
               location.href = 'edit.php?page=mwai_images_generator';
@@ -871,8 +850,17 @@ const ImageGenerator = () => {
 
         <NekoColumn style={{ flex: 1 }}>
           <StyledSidebar style={{ marginBottom: 25 }}>
-            <h3 style={{ marginTop: 0 }}>{i18n.COMMON.MODEL_PARAMS}</h3>
-            <label>{i18n.COMMON.ENVIRONMENT}:</label>
+            <StyledTitleWithButton onClick={() => setShowModelParams(!showModelParams)} style={{ cursor: 'pointer' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 0 }}>{i18n.COMMON.MODEL}</h2>
+              <NekoIcon 
+                icon={showModelParams ? "chevron-up" : "chevron-down"}
+                height="20"
+                style={{ opacity: 0.7 }}
+              />
+            </StyledTitleWithButton>
+            {showModelParams && <>
+              <NekoSpacer tiny />
+              <label>{i18n.COMMON.ENVIRONMENT}:</label>
             <NekoSelect scrolldown name="envId"
               value={template?.envId ?? ""} onChange={setTemplateProperty}>
               {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
@@ -884,7 +872,7 @@ const ImageGenerator = () => {
               value={template?.model || ""} 
               disabled={!template?.envId}
               onChange={setTemplateProperty}>
-              <NekoOption value="" label="Default" />
+              <NekoOption value="" label={template?.envId ? "None" : "Default"} />
               {imageModels.map((x) => (
                 <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
               ))}
@@ -902,35 +890,43 @@ const ImageGenerator = () => {
                 </NekoSelect>
               </>
             )}
-            {template?.resolution === 'custom' && (
-              <>
-                <label>Custom Resolution:</label>
-                <NekoInput name="customResolution" value={template?.customResolution}
-                  onChange={(value) => setTemplateProperty(value, 'customResolution')} />
-              </>
-            )}
-            {currentModel?.model?.startsWith('dall-e-3') && (
-              <>
-                <label>{i18n.COMMON.STYLE}:</label>
-                <NekoSelect scrolldown name="style" value={currentStyle} onChange={setTemplateProperty}>
-                  <NekoOption key={'none'} value={null} label={'None'}></NekoOption>
-                  <NekoOption key={'natural'} value={'natural'} label={'Natural'}></NekoOption>
-                  <NekoOption key={'vivid'} value={'vivid'} label={'Vivid'}></NekoOption>
-                </NekoSelect>
-              </>
-            )}
+            {template?.resolution === 'custom' && <>
+              <label>Custom Resolution:</label>
+              <NekoInput name="customResolution" value={template?.customResolution}
+                onChange={(value) => setTemplateProperty(value, 'customResolution')} />
+            </>}
+            {currentModel?.model?.startsWith('dall-e-3') && <>
+              <label>{i18n.COMMON.STYLE}:</label>
+              <NekoSelect scrolldown name="style" value={currentStyle} onChange={setTemplateProperty}>
+                <NekoOption key={'none'} value={null} label={'None'}></NekoOption>
+                <NekoOption key={'natural'} value={'natural'} label={'Natural'}></NekoOption>
+                <NekoOption key={'vivid'} value={'vivid'} label={'Vivid'}></NekoOption>
+              </NekoSelect>
+            </>}
+            </>}
           </StyledSidebar>
 
           <StyledSidebar style={{ marginBottom: 25 }}>
-            <h2 style={{ marginTop: 0 }}>{i18n.COMMON.SETTINGS}</h2>
-            <NekoCheckbox id="continuous_mode " label="Continuous" value="1" checked={continuousMode}
-              description="New images will be added to the already generated images."
-              onChange={(value) => setContinuousMode(value)} />
+            <StyledTitleWithButton onClick={() => setShowSettings(!showSettings)} style={{ cursor: 'pointer' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 0 }}>{i18n.COMMON.SETTINGS}</h2>
+              <NekoIcon 
+                icon={showSettings ? "chevron-up" : "chevron-down"}
+                height="20"
+                style={{ opacity: 0.7 }}
+              />
+            </StyledTitleWithButton>
+            {showSettings && <>
+              <NekoSpacer tiny />
+              <NekoCheckbox id="continuous_mode "label="Continuous" value="1" checked={continuousMode}
+              description={<span style={{ fontSize: 11, opacity: 0.6 }}>New images will be added to the already generated images.</span>}
+              onChange={setContinuousMode} />
+            </>}
           </StyledSidebar>
         </NekoColumn>
 
       </NekoWrapper>
-      <NekoModal isOpen={!!error}
+
+      <NekoModal isOpen={error}
         onRequestClose={() => { setError(); }}
         okButton={{
           onClick: () => { setError(); },
@@ -949,6 +945,7 @@ const ImageGenerator = () => {
       />
 
     </NekoPage>
+
   );
 };
 

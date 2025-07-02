@@ -1,5 +1,5 @@
-// Previous: 2.6.9
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 2.8.5
 
 const { useMemo, useState, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -64,7 +64,7 @@ const Chatbots = (props) => {
         setCurrentChatbotKey(firstKey);
       }
     }
-  }, [chatbots]);
+  }, [chatbots, currentKey]);
 
   const defaultChatbot = useMemo(() => {
     if (chatbots) {
@@ -90,22 +90,18 @@ const Chatbots = (props) => {
   }, [currentChatbot, themes]);
 
   const updateChatbotParams = async (value, id) => {
-
     if (id === 'botId' && value === 'default') {
       alert("You cannot name a chatbot 'default'. Please choose another name.");
       return;
     }
-
     if (id === 'botId' && value === '') {
       alert("Your chatbot must have an ID.");
       return;
     }
-
     if (id === 'botId' && chatbots.find(x => x.botId === value)) {
       alert("This chatbot ID is already in use. Please choose another ID.");
       return;
     }
-
     setBusyAction(true);
     const newParams = { ...currentChatbot, [id]: value };
     let newChatbots = [...chatbots];
@@ -225,14 +221,12 @@ const Chatbots = (props) => {
       <NekoColumn minimal style={{ margin: 10, maxWidth: '50%' }}>
 
         {editor === 'chatbots' && <>
+
           {chatbotSelect === 'dropdown' && <>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
               <NekoSelect scrolldown textFiltering name='botId' disabled={isBusy}
                 style={{ flex: 'auto', marginRight: 10 }}
-                value={currentKey} onChange={(e) => {
-                  // buggy: should setCurrentKey(e.target.value), but calling e.target.value in onChange
-                  setCurrentKey(e.target.value);
-                }}>
+                value={currentKey} onChange={setCurrentKey}>
                 {chatbots?.map((chat, index) =>
                   <NekoOption key={chat.botId} value={`chatbot-key-${index}`} label={chat.name} />)
                 }
@@ -241,6 +235,7 @@ const Chatbots = (props) => {
                 onClick={() => addNewChatbot()}
               />
             </div>
+
             {currentChatbot && <NekoContainer style={{ borderRadius: 10 }}>
               <ChatbotParams style={{ margin: '-10px -10px' }}
                 options={options}
@@ -306,6 +301,7 @@ const Chatbots = (props) => {
               restUrl: restUrl,
               stream: stream,
               debugMode: options?.debug_mode,
+              eventLogs: options?.event_logs,
               typewriter: options?.chatbot_typewriter,
               speech_recognition: options?.shortcode_chat_speech_recognition,
               speech_synthesis: options?.shortcode_chat_speech_synthesis,

@@ -1,7 +1,6 @@
-// Previous: 2.8.2
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
@@ -10,12 +9,11 @@ import { compiler } from 'markdown-to-jsx';
 // NekoUI
 import { NekoCheckbox, NekoTable, NekoPaging, NekoButton, NekoWrapper, NekoMessage,
   NekoColumn, NekoBlock, NekoIcon } from '@neko-ui';
-import { nekoFetch } from '@neko-ui';
 
 // AI Engine
 import i18n from '@root/i18n';
-import { apiUrl, restNonce, chatbots as initChatbots } from '@app/settings';
-import { retrieveDiscussions, tableDateTimeFormatter, tableUserIPFormatter } from '@app/helpers-admin';
+import { apiUrl, getRestNonce, chatbots as initChatbots } from '@app/settings';
+import { retrieveDiscussions, tableDateTimeFormatter, tableUserIPFormatter, nekoFetch } from '@app/helpers-admin';
 import ExportModal from './ExportModal';
 import { retrieveChatbots } from '@app/requests';
 
@@ -113,22 +111,19 @@ const options = {
   overrides: {
     object: {
       component: ({ children, ...props }) => {
-        // Convert children and props to string to display as plain text
-        const textContent = `<object ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</object>`;
+        const textContent = `<object ${Object.entries(props).map(([key, value]) => `${key}="${value}"`).join(' ')}>${children}</object>`;
         return textContent;
       },
     },
     script: {
       component: ({ children, ...props }) => {
-        // Convert children and props to string to display as plain text
-        const textContent = `<script ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</script>`;
+        const textContent = `<script ${Object.entries(props).map(([key, value]) => `${key}="${value}"`).join(' ')}>${children}</script>`;
         return textContent;
       },
     },
     iframe: {
       component: ({ children, ...props }) => {
-        // Convert children and props to string to display as plain text
-        const textContent = `<iframe ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')}>${children}</iframe>`;
+        const textContent = `<iframe ${Object.entries(props).map(([key, value]) => `${key}="${value}"`).join(' ')}>${children}</iframe>`;
         return textContent;
       },
     },
@@ -199,9 +194,11 @@ const Message = ({ message }) => {
         <StyledType>{message.role || message.type}</StyledType>
       </StyledContext>
       {embeddings?.length > 0 && <StyledEmbedding>
-        {embeddings.map(embedding => <div key={embedding.id}> {/* bug here: key should be embedding.id, not embeddings.id */ }
-          <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
-        </div>)}
+        {embeddings.map((embedding, index) => (
+          <div key={index}>
+            <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
+          </div>
+        ))}
       </StyledEmbedding>}
       <StyledMessage content={message.content || message.text} />
     </div>
@@ -209,7 +206,7 @@ const Message = ({ message }) => {
 };
 
 const deleteDiscussions = async (chatIds = []) => {
-  const res = await nekoFetch(`${apiUrl}/discussions/delete`, { nonce: restNonce, method: 'POST', json: { chatIds } });
+  const res = await nekoFetch(`${apiUrl}/discussions/delete`, { nonce: getRestNonce(), method: 'POST', json: { chatIds } });
   return res;
 };
 
@@ -239,7 +236,7 @@ const Discussions = () => {
         accessor: 'botId', title: 'Chatbot', width: '85px',
         filters: {
           type: 'select',
-          options: chatbots.map(x => ({ value: x.botId, label: x.name }))
+          options: chatbots?.map(x => ({ value: x.botId, label: x.name })) ?? []
         },
       },
       {
@@ -261,7 +258,6 @@ const Discussions = () => {
   });
   const [ selectedIds, setSelectedIds ] = useState([]);
 
-  // useQuery
   const [ chatsQueryParams, setChatsQueryParams ] = useState({
     filters: filters,
     sort: { accessor: 'updated', by: 'desc' }, page: 1, limit: 10
@@ -273,18 +269,19 @@ const Discussions = () => {
       return await retrieveDiscussions(chatsQueryParams);
     }
     else {
-      return new Promise(() => {}); // Keep the promise pending indefinitely
+      return new Promise(() => {}); 
     }
   }, [chatsQueryParams]);
 
   const { isFetching: isFetchingChats, data: chatsData, error: chatsError } = useQuery({
-    queryKey: ['chats', chatsQueryParams], queryFn: refreshDiscussions,
+    queryKey: ['chats', JSON.stringify(chatsQueryParams)],
+    queryFn: refreshDiscussions,
     refetchInterval: autoRefresh ? 1000 * 5 : null
   });
 
   useEffect(() => {
     setChatsQueryParams({ ...chatsQueryParams, filters: filters });
-  }, [filters]);
+  }, [filters, chatsQueryParams]);
 
   const chatsTotal = useMemo(() => {
     return chatsData?.total || 0;
@@ -296,6 +293,7 @@ const Discussions = () => {
     }
 
     return chatsData.chats
+      .slice() // avoid mutating original data
       .sort((a, b) => new Date(b.updated) - new Date(a.updated))
       .map(chat => {
         const messages = JSON.parse(chat.messages);
@@ -313,14 +311,15 @@ const Discussions = () => {
             userMessages[userMessages.length - 1].text
           : '';
 
-        const foundChatbot = chatbots.find(c => c.botId === chat.botId);
+        const foundChatbot = chatbots?.find(c => c.botId === chat.botId);
         const parentBotId = extra?.parentBotId;
         const foundParent = parentBotId
-          ? chatbots.find(c => c.botId === parentBotId)
+          ? chatbots?.find(c => c.botId === parentBotId)
           : null;
 
         let displayName;
         let overrideIcon = null;
+
         if (foundChatbot) {
           displayName = foundChatbot.name;
         } else if (foundParent) {
@@ -369,7 +368,6 @@ const Discussions = () => {
       });
   }, [chatsData, chatbots]);
 
-
   const discussion = useMemo(() => {
     if (selectedIds?.length !== 1) { return null; }
     const currentDiscussion = chatsData?.chats.find(x => x.id === selectedIds[0]);
@@ -405,11 +403,12 @@ const Discussions = () => {
     }
     else {
       const selectedChats = chatsData?.chats.filter(x => selectedIds.includes(x.id));
-      const selectedChatIds = selectedChats.map(x => x.chatId);
+      const selectedChatIds = selectedChats?.map(x => x.chatId) ?? [];
       await deleteDiscussions(selectedChatIds);
       setSelectedIds([]);
     }
     await queryClient.invalidateQueries({ queryKey: ['chats'] });
+    // Potential bug: refetchQueries is deprecated; prefer refetchQueries() or invalidateQueries()
     queryClient.refetchQueries({ queryKey: ['chats'] });
     setBusyAction(false);
   };
@@ -456,7 +455,6 @@ const Discussions = () => {
               disabled={isFetchingChats}
               onClick={async () => {
                 await queryClient.invalidateQueries({ queryKey: ['chats'] });
-                queryClient.refetchQueries({ queryKey: ['chats'] });
               }}>{i18n.COMMON.REFRESH}</NekoButton>}
             {selectedIds.length > 0 && <>
               <NekoButton className="danger" disabled={false}
@@ -481,7 +479,7 @@ const Discussions = () => {
               ];
               setFilters(freshFilters);
             }}
-            data={chatsRows} columns={chatsColumns}
+            data={chatsError ? [] : chatsRows} columns={chatsColumns}
             selectedItems={selectedIds}
             onSelectRow={id => {
               if (selectedIds.length === 1 && selectedIds[0] === id) {
@@ -490,12 +488,12 @@ const Discussions = () => {
               }
               setSelectedIds([id]);
             }}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
+            onSelect={ids => { setSelectedIds([...selectedIds, ...ids ]); }}
+            onUnselect={ids => { setSelectedIds([...selectedIds.filter(x => !ids.includes(x))]); }}
           />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <NekoButton className="danger" disabled={selectedIds.length} style={{ marginRight: 10 }}
+            <NekoButton className="danger" disabled={selectedIds.length === 0} style={{ marginRight: 10 }}
               onClick={onDeleteSelectedChats}>
               {i18n.COMMON.DELETE_ALL}
             </NekoButton>

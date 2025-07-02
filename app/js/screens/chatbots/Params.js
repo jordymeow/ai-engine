@@ -1,10 +1,8 @@
-// Previous: 2.8.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
-// React & Vendor Libs
 const { useMemo, useState, useEffect } = wp.element;
 
-// NekoUI
 import {
   NekoInput, NekoSelect, NekoOption, NekoCheckbox, NekoWrapper, NekoMessage,
   NekoColumn, NekoTextArea, NekoButton, NekoAccordion, NekoAccordions
@@ -14,7 +12,7 @@ import { isRegistered } from '@app/settings';
 
 import i18n from '@root/i18n';
 import { pluginUrl } from "@app/settings";
-import { AnthropicIcon, JsIcon, OpenAiIcon, PhpIcon, toHTML, useModels } from '@app/helpers-admin';
+import { AnthropicIcon, GoogleIcon, JsIcon, OpenAiIcon, PhpIcon, toHTML, useModels } from '@app/helpers-admin';
 import { StyledBuilderForm } from "@app/styles/StyledSidebar";
 import TokensInfo from '@app/components/TokensInfo';
 import Shortcode from './Shortcode';
@@ -22,14 +20,14 @@ import { setAssistantFunctions } from '@app/requests';
 import { isEmoji } from '@app/helpers';
 
 const shadowFilter = 'drop-shadow(0 0 5px rgba(0,0,0,0.1))';
-const voices = [ 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse' ];
+const voices = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
 
 const chatIcons = ['chat-openai.svg', 'chat-robot-1.svg', 'chat-robot-2.svg',
   'chat-nyao-1.svg', 'chat-nyao-2.svg', 'chat-nyao-3.svg',
-  'chat-color-blue.svg','chat-color-green.svg', 'chat-color-red.svg',
+  'chat-color-blue.svg', 'chat-color-green.svg', 'chat-color-red.svg',
   'chat-traditional-1.svg', 'chat-traditional-2.svg', 'avatar-user.svg',
   'avatar-woman-blond.svg', 'avatar-woman-indian.svg', 'avatar-woman-asian.svg', 'avatar-woman-doctor.svg',
-  'avatar-man-blond.svg', 'avatar-man-black.svg', 'avatar-man-sunglasses.svg', 'avatar-man-pirate.svg' ];
+  'avatar-man-blond.svg', 'avatar-man-black.svg', 'avatar-man-sunglasses.svg', 'avatar-man-pirate.svg'];
 
 const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => {
   const chatIcon = icon ? icon : 'chat-color-green.svg';
@@ -41,8 +39,10 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
     <div className="mwai-builder-row">
       <label>{label}:</label>
     </div>
-    <div style={{ marginTop: 0, border: '1.5px solid #d2e4f3', borderRadius: 5,
-      padding: '10px 10px 10px 10px', background: '#f5fcff' }}>
+    <div style={{
+      marginTop: 0, border: '1.5px solid #d2e4f3', borderRadius: 5,
+      padding: '10px 10px 10px 10px', background: '#f5fcff'
+    }}>
       <div className="mwai-builder-row" style={{ marginTop: 0 }}>
         <div className="mwai-builder-col" style={{ flex: 2 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -58,8 +58,10 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
                 />
               </div>
             )}
-            <div style={{ width: 24, height: 24, border: '1px solid #d2e4f3', background: '#f5fcff',
-              borderRadius: 5, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            <div style={{
+              width: 24, height: 24, border: '1px solid #d2e4f3', background: '#f5fcff',
+              borderRadius: 5, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center'
+            }}
             onMouseDown={(ev) => ev.stopPropagation()}
             onClick={(ev) => { ev.stopPropagation(); updateShortcodeParams(`${pluginUrl}/images/chat-traditional-1.svg`, valueName); }}
             >...</div>
@@ -91,33 +93,40 @@ const ChatbotParams = (props) => {
   const { themes, shortcodeParams, updateShortcodeParams, defaultChatbot, blockMode,
     deleteCurrentChatbot, resetCurrentChatbot, duplicateCurrentChatbot, options, ...rest } = props;
   const { completionModels, imageModels, realtimeModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = (shortcodeParams.mode === 'chat') ?? 'chat';
-  const isAssistant = (shortcodeParams.mode === 'assistant') ?? false;
-  const isImagesChat = (shortcodeParams.mode === 'images') ?? false;
-  const isRealtime = (shortcodeParams.mode === 'realtime') ?? false;
+  const isChat = (shortcodeParams.mode === 'chat') ?? false;
+  const isAssistant = shortcodeParams.mode === 'assistant' ?? false;
+  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
+  const isRealtime = shortcodeParams.mode === 'realtime' ?? false;
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
   const module_embeddings = options?.module_embeddings;
   const module_orchestration = options?.module_orchestration;
   const availableFunctions = options?.functions || [];
   const functions = shortcodeParams.functions || [];
-  const [ busyUpdatingFunctions, setBusyUpdatingFunctions ] = useState(false);
+  const [busyUpdatingFunctions, setBusyUpdatingFunctions] = useState(false);
   const availableMCPServers = options?.mcp_envs || [];
   const mcpServers = shortcodeParams.mcpServers || [];
+
   const instructionsHasContent = useMemo(() => {
     return shortcodeParams.instructions && shortcodeParams.instructions.includes('{CONTENT}');
   }, [shortcodeParams.instructions]);
+
   const aiEnvironment = useMemo(() => {
-    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
-    return env;
+    const env = aiEnvironments.find(e => e.id === shortcodeParams.envId);
+    return env || null;
   }, [aiEnvironments, shortcodeParams.envId]);
+
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const aid = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
-    return aid;
+    const assist = allAssistants.find(e => e.id === shortcodeParams.assistantId);
+    return assist || null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
-  const currentModel = getModel(assistant ? assistant.model : shortcodeParams.model);
+  const actualModelId = assistant 
+    ? assistant.model 
+    : (shortcodeParams.model || (!shortcodeParams.envId ? options?.ai_default_model : undefined));
+  const currentModel = getModel(actualModelId);
+
   const environments = options.embeddings_envs || [];
 
   const modelSupportsFunctions = useMemo(() => {
@@ -138,9 +147,6 @@ const ChatbotParams = (props) => {
 
   const modelSupportsMCP = useMemo(() => {
     const hasMCP = currentModel?.tags?.includes('mcp') || false;
-    if (currentModel) {
-      console.log('Current model:', currentModel.model, 'Tags:', currentModel.tags, 'Has MCP:', hasMCP);
-    }
     return hasMCP;
   }, [currentModel]);
 
@@ -152,6 +158,10 @@ const ChatbotParams = (props) => {
     return currentModel?.tags?.includes('responses');
   }, [currentModel]);
 
+  const modelsForDropdown = useMemo(() => {
+    return isImagesChat ? imageModels : (isRealtime ? realtimeModels : completionModels) ?? [];
+  }, [isImagesChat, isRealtime, completionModels, imageModels, realtimeModels]);
+
   useEffect(() => {
     const newFunctions = functions.filter(x => availableFunctions.some(y => y.id === x.id));
     const newMCPServers = mcpServers.filter(x => availableMCPServers.some(y => y.id === x.id));
@@ -159,85 +169,63 @@ const ChatbotParams = (props) => {
     if (newFunctions.length !== functions.length) {
       console.warn("Update Params: Functions has been updated.");
       updateShortcodeParams(newFunctions, 'functions');
-    }
-    else if (newMCPServers.length !== mcpServers.length) {
+    } else if (newMCPServers.length !== mcpServers.length) {
       console.warn("Update Params: MCP Servers has been updated.");
       updateShortcodeParams(newMCPServers, 'mcpServers');
-    }
-    else if (modelSupportImage && !shortcodeParams.resolution) {
+    } else if (modelSupportImage && !shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
         const resolutions = currentModel.resolutions.map(x => x.name);
         const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
         updateShortcodeParams(bestResolution, 'resolution');
       }
-    }
-    else if (!modelSupportImage && shortcodeParams.resolution) {
+    } else if (!modelSupportImage && shortcodeParams.resolution) {
       console.warn("Update Params: Resolution has been removed.");
       updateShortcodeParams(null, 'resolution');
-    }
-    else if (modelSupportImage && isChat) {
+    } else if (modelSupportImage && isChat) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (isAssistant && shortcodeParams.model) {
+    } else if (isAssistant && shortcodeParams.model) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams(null, 'model');
-    }
-    else if (!isAssistant && shortcodeParams.assistantId) {
+    } else if (!isAssistant && shortcodeParams.assistantId) {
       console.warn("Update Params: Assistant has been removed.");
       updateShortcodeParams(null, 'assistantId');
-    }
-    else if (shortcodeParams.imageUpload && !modelSupportsVision && !isImagesChat) {
+    } else if (shortcodeParams.imageUpload && !modelSupportsVision && !isImagesChat) {
       console.warn("Update Params: Vision has been removed.");
       updateShortcodeParams(null, 'imageUpload');
-    }
-    else if (shortcodeParams.fileSearch && !isAssistant) {
+    } else if (shortcodeParams.fileSearch && !isAssistant) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    }
-    else if (shortcodeParams.model && !shortcodeParams.envId) {
+    } else if (shortcodeParams.model && !shortcodeParams.envId) {
       console.warn("Update Params: Model has been removed.");
       updateShortcodeParams("", 'model');
-    }
-    else if (shortcodeParams.envId && !aiEnvironment) {
+    } else if (shortcodeParams.envId && !aiEnvironment) {
       console.warn("Update Params: Environment has been removed.");
       updateShortcodeParams(null, 'envId');
-    }
-    else if (shortcodeParams.model && shortcodeParams.envId && !currentModel) {
+    } else if (shortcodeParams.model && shortcodeParams.envId && !currentModel) {
       console.warn("Update Params: Model has been removed because it doesn't exist in the current environment.");
       updateShortcodeParams("", 'model');
-    }
-    else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
+    } else if (!shortcodeParams.model && shortcodeParams.envId && modelsForDropdown.length > 0) {
+      console.log("Update Params: Auto-selecting first available model for the environment.");
+      updateShortcodeParams(modelsForDropdown[0].model, 'model');
+    } else if (!module_embeddings && shortcodeParams.embeddingsEnvId) {
       console.warn("Update Params: Embeddings environment has been removed.");
       updateShortcodeParams(null, 'embeddingsEnvId');
-    }
-    else if (!modelSupportsFunctions && functions.length) {
-      console.warn("Update Params: Functions have been removed.");
-      updateShortcodeParams([], 'functions');
-    }
-    else if (!modelSupportsMCP && mcpServers.length) {
-      console.warn("Update Params: MCP Servers have been removed.");
-      updateShortcodeParams([], 'mcpServers');
-    }
-    else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
+    } else if (isAssistant && !!shortcodeParams.fileSearch && !assistant?.has_file_search) {
       console.warn("Update Params: File search has been removed.");
       updateShortcodeParams(null, 'fileSearch');
-    }
-    else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
+    } else if (!shortcodeParams.aiAvatar && !shortcodeParams.aiName) {
       console.warn("Update Params: AI avatar has been set to true.");
       updateShortcodeParams(true, 'aiAvatar');
-    }
-    else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
+    } else if (!shortcodeParams.userAvatar && !shortcodeParams.userName) {
       console.warn("Update Params: User avatar has been set to true.");
       updateShortcodeParams(true, 'userAvatar');
-    }
-    else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
+    } else if (!shortcodeParams.guestAvatar && !shortcodeParams.guestName) {
       console.warn("Update Params: Guest avatar has been set to true.");
       updateShortcodeParams(true, 'guestAvatar');
     }
-
-  }, [shortcodeParams, mcpServers, availableMCPServers, currentModel]);
+  }, [shortcodeParams, mcpServers, availableMCPServers, currentModel, modelsForDropdown, assistant, modelSupportsVision, modelSupportImage, isAssistant, isImagesChat, isChat]);
 
   const updateFunctionsInAssistant = async () => {
     setBusyUpdatingFunctions(true);
@@ -258,11 +246,11 @@ const ChatbotParams = (props) => {
       console.error("This image model does not have resolutions.", currentModel);
       return [];
     }
-    return currentModel?.resolutions;
+    return currentModel?.resolutions || [];
   }, [currentModel, modelSupportImage]);
 
   const titleChatbotCategory = useMemo(() => {
-    const type = isChat ? 'Chat' : isAssistant ? 'Assistant' : isImagesChat ? 'Images' : isRealtime ? 'Realtime' : null;
+    const type = (isChat ? 'Chat' : isAssistant ? 'Assistant' : isImagesChat ? 'Images' : isRealtime ? 'Realtime' : null);
     const id = shortcodeParams?.botId || defaultChatbot?.id || 'default';
 
     const info = [type, id].filter(Boolean).join(', ');
@@ -335,59 +323,77 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.embeddingsEnvId, environments, isContentAware]);
 
   const titleFunctionsCategory = useMemo(() => {
-    if (!functions.length) {
-      return i18n.COMMON.FUNCTIONS;
-    }
+    const baseTitle = i18n.COMMON.FUNCTIONS;
+    const hasEnabledFunctions = functions.length > 0;
+    const countString = hasEnabledFunctions ? `Enabled: ${functions.length}, Total: ${availableFunctions.length}` : '';
 
-    const countString = `Enabled: ${functions.length}, Total: ${availableFunctions.length}`;
     return (
-      <div>
-        {i18n.COMMON.FUNCTIONS}
-        <small style={{ opacity: 0.5 }}> {countString}</small>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{baseTitle}</span>
+        {countString && <small style={{ opacity: 0.5 }}>{countString}</small>}
+        {!modelSupportsFunctions && hasEnabledFunctions && (
+          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+            (Not Supported)
+          </small>
+        )}
       </div>
     );
-  }, [functions, availableFunctions]);
+  }, [functions, availableFunctions, modelSupportsFunctions]);
 
   const titleMCPServersCategory = useMemo(() => {
-    if (!mcpServers.length) {
-      return i18n.COMMON.MCP_SERVERS;
-    }
+    const baseTitle = i18n.COMMON.MCP_SERVERS;
+    const hasEnabledServers = mcpServers.length > 0;
+    const countString = hasEnabledServers ? `Enabled: ${mcpServers.length}, Total: ${availableMCPServers.length}` : '';
 
-    const countString = `Enabled: ${mcpServers.length}, Total: ${availableMCPServers.length}`;
     return (
-      <div>
-        {i18n.COMMON.MCP_SERVERS}
-        <small style={{ opacity: 0.5 }}> {countString}</small>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{baseTitle}</span>
+        {countString && <small style={{ opacity: 0.5 }}>{countString}</small>}
+        {!modelSupportsMCP && hasEnabledServers && (
+          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+            (Not Supported)
+          </small>
+        )}
       </div>
     );
-  }, [mcpServers, availableMCPServers]);
+  }, [mcpServers, availableMCPServers, modelSupportsMCP]);
 
   const titleToolsCategory = useMemo(() => {
     const tools = shortcodeParams.tools || [];
     const availableTools = currentModel?.tools || [];
+    const baseTitle = i18n.COMMON.TOOLS || 'Tools';
+    const hasEnabledTools = tools.length > 0;
 
-    if (!tools.length) {
-      return i18n.COMMON.TOOLS || 'Tools';
-    }
+    const supportedCount = tools.filter(tool => availableTools.includes(tool)).length;
+    const unsupportedCount = tools.length - supportedCount;
 
-    const info = `${tools.length} enabled`;
+    const countString = hasEnabledTools ? `Enabled: ${tools.length}` : '';
+
     return (
-      <div>
-        {i18n.COMMON.TOOLS || 'Tools'}
-        <small style={{ opacity: 0.5 }}> {info}</small>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{baseTitle}</span>
+        {countString && <small style={{ opacity: 0.5 }}>{countString}</small>}
+        {unsupportedCount > 0 && (
+          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+            (Not Supported: {unsupportedCount})
+          </small>
+        )}
       </div>
     );
   }, [shortcodeParams.tools, currentModel]);
 
   const titleThresholdsCategory = useMemo(() => {
-    const contextMaxLength = shortcodeParams.contextMaxLength || options?.context_max_length;
+    const contextMaxLength =
+      shortcodeParams.contextMaxLength || options?.context_max_length;
 
     const info = [
       shortcodeParams.maxMessages
         ? `Messages: ${shortcodeParams.maxMessages}`
         : null,
       contextMaxLength ? `Context: ${contextMaxLength}` : null
-    ].filter(Boolean).join(', ');
+    ]
+      .filter(Boolean)
+      .join(', ');
 
     return (
       <div>
@@ -417,10 +423,6 @@ const ChatbotParams = (props) => {
       </div>
     );
   }, [shortcodeParams.themeId, shortcodeParams.window, themes]);
-
-  const modelsForDropdown = useMemo(() => {
-    return isImagesChat ? imageModels : (isRealtime ? realtimeModels : completionModels) ?? [];
-  }, [isImagesChat, isRealtime, completionModels, imageModels, realtimeModels]);
 
   return (<>
     <NekoWrapper>
@@ -504,7 +506,14 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.ENVIRONMENT}:</label>
                   <NekoSelect scrolldown name="envId"
-                    value={shortcodeParams.envId ?? ""} onChange={updateShortcodeParams}>
+                    value={shortcodeParams.envId ?? ""} onChange={updateShortcodeParams}
+                    description={(!shortcodeParams.envId || shortcodeParams.envId === "") ? 
+                      (() => {
+                        const defaultEnv = aiEnvironments.find(env => env.id === options?.ai_default_env);
+                        return defaultEnv ? `→ ${defaultEnv.name}` : null;
+                      })()
+                      : null
+                    }>
                     {aiEnvironments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
                     <NekoOption value={""} label={"Default"}></NekoOption>
                   </NekoSelect>
@@ -513,8 +522,12 @@ const ChatbotParams = (props) => {
                 {(isChat || isImagesChat || isRealtime) && <div className="mwai-builder-col" style={{ flex: 2 }}>
                   <label>{i18n.COMMON.MODEL}:</label>
                   <NekoSelect scrolldown textFiltering={modelsForDropdown.length > 16} name="model" disabled={!shortcodeParams.envId}
-                    value={shortcodeParams.model || ""} onChange={updateShortcodeParams}>
-                    <NekoOption value={""} label={"Default"}></NekoOption>
+                    value={shortcodeParams.model || ""} onChange={updateShortcodeParams}
+                    description={(!shortcodeParams.model || shortcodeParams.model === "") ? 
+                      (!shortcodeParams.envId ? `→ ${options?.ai_default_model}` : null)
+                      : null
+                    }>
+                    <NekoOption value={""} label={shortcodeParams.envId ? "None" : "Default"}></NekoOption>
                     {modelsForDropdown.map((x) => (
                       <NekoOption key={x.model} value={x.model} label={x.name}></NekoOption>
                     ))}
@@ -592,19 +605,6 @@ const ChatbotParams = (props) => {
 
               </div>}
 
-              {modelSupportsResponses && !isAssistant && !isImagesChat && <div className="mwai-builder-row">
-                <div className="mwai-builder-col" style={{ flex: 1 }}>
-                  <label>{i18n.COMMON.HISTORY_STRATEGY}:</label>
-                  <NekoSelect scrolldown name="historyStrategy"
-                    description={i18n.HELP.HISTORY_STRATEGY}
-                    value={shortcodeParams.historyStrategy || ""} onChange={updateShortcodeParams}>
-                    <NekoOption value={""} label={i18n.COMMON.AUTOMATIC || "Automatic"}></NekoOption>
-                    <NekoOption value={"internal"} label={i18n.COMMON.FULL_HISTORY || "Full History"}></NekoOption>
-                    <NekoOption value={"response_id"} label={i18n.COMMON.INCREMENTAL || "Incremental"}></NekoOption>
-                  </NekoSelect>
-                </div>
-              </div>}
-
             </NekoAccordion>
 
             {isAssistant && <NekoAccordion title={i18n.COMMON.ASSISTANT}>
@@ -659,11 +659,12 @@ const ChatbotParams = (props) => {
 
             </NekoAccordion>}
 
-            {modelSupportsFunctions && !blockMode && <NekoAccordion title={titleFunctionsCategory}>
+            {(modelSupportsFunctions || functions.length > 0) && <NekoAccordion title={titleFunctionsCategory}>
 
               <p>
                 <OpenAiIcon style={{ marginRight: 3 }} />
-                <AnthropicIcon style={{ marginRight: 5 }} />
+                <AnthropicIcon style={{ marginRight: 3 }} />
+                <GoogleIcon style={{ marginRight: 5 }} />
                 {toHTML(i18n.HELP.FUNCTIONS)}
               </p>
 
@@ -671,8 +672,10 @@ const ChatbotParams = (props) => {
                 {toHTML(i18n.HELP.FUNCTIONS_UNAVAILABLE)}
               </NekoMessage>}
 
-              {!!availableFunctions?.length && <div style={{ maxHeight: 200, overflowY: 'auto',
-                border: '1px solid #d1e3f2', marginTop: 10, padding: '5px 6px', borderRadius: 5 }}>
+              {!!availableFunctions?.length && <div style={{
+                maxHeight: 200, overflowY: 'auto',
+                border: '1px solid #d1e3f2', marginTop: 10, padding: '5px 6px', borderRadius: 5
+              }}>
                 {availableFunctions?.map((func) => (
                   <NekoCheckbox key={func.id} name="functions"
                     label={<>
@@ -686,8 +689,7 @@ const ChatbotParams = (props) => {
                       const newFunctions = functions.filter(x => x.id !== func.id);
                       if (value) newFunctions.push({ type: func.type, id: func.id });
                       updateShortcodeParams(newFunctions, 'functions');
-                    }
-                    }
+                    }}
                   />
                 ))}
               </div>}
@@ -704,7 +706,7 @@ const ChatbotParams = (props) => {
 
             </NekoAccordion>}
 
-            {modelSupportsMCP && module_orchestration && !blockMode && <NekoAccordion title={titleMCPServersCategory}>
+            {(modelSupportsMCP || mcpServers.length > 0) && module_orchestration && <NekoAccordion title={titleMCPServersCategory}>
 
               <p>
                 <AnthropicIcon style={{ marginRight: 5 }} />
@@ -715,8 +717,10 @@ const ChatbotParams = (props) => {
                 {toHTML(i18n.HELP.MCP_SERVERS_UNAVAILABLE || 'No MCP servers are available. Configure them in the MCP Servers section under Orchestration.')}
               </NekoMessage>}
 
-              {!!availableMCPServers?.length && <div style={{ maxHeight: 200, overflowY: 'auto',
-                border: '1px solid #d1e3f2', marginTop: 10, padding: '5px 6px', borderRadius: 5 }}>
+              {!!availableMCPServers?.length && <div style={{
+                maxHeight: 200, overflowY: 'auto',
+                border: '1px solid #d1e3f2', marginTop: 10, padding: '5px 6px', borderRadius: 5
+              }}>
                 {availableMCPServers?.map((server) => (
                   <NekoCheckbox key={server.id} name="mcpServers"
                     label={<>
@@ -729,50 +733,70 @@ const ChatbotParams = (props) => {
                       const newMCPServers = mcpServers.filter(x => x.id !== server.id);
                       if (value) newMCPServers.push({ id: server.id });
                       updateShortcodeParams(newMCPServers, 'mcpServers');
-                    }
-                    }
+                    }}
                   />
                 ))}
               </div>}
 
             </NekoAccordion>}
 
-            {modelSupportsTools && !blockMode && <NekoAccordion title={titleToolsCategory}>
+            {(modelSupportsTools || (shortcodeParams.tools?.length > 0)) && <NekoAccordion title={titleToolsCategory}>
 
               <p>
-                <OpenAiIcon style={{ marginRight: 5 }} />
+                <OpenAiIcon style={{ marginRight: 3 }} />
+                <GoogleIcon style={{ marginRight: 5 }} />
                 {toHTML(i18n.HELP.TOOLS || 'Enable AI tools like web search and image generation to enhance your chatbot capabilities.')}
               </p>
 
+
               <div style={{ marginTop: 10 }}>
-                {currentModel?.tools?.includes('web_search') && (
-                  <NekoCheckbox 
+                {(currentModel?.tools?.includes('web_search') || shortcodeParams.tools?.includes('web_search')) && (
+                  <NekoCheckbox
                     name="tools_web_search"
                     label={i18n.COMMON.WEB_SEARCH || 'Web Search'}
                     description={i18n.HELP.WEB_SEARCH || 'Allow the AI to search the web for current information'}
-                    checked={shortcodeParams.tools?.includes('web_search')} 
+                    checked={shortcodeParams.tools?.includes('web_search')}
                     value="web_search"
+                    variant={!currentModel?.tools?.includes('web_search') && shortcodeParams.tools?.includes('web_search') ? 'danger' : undefined}
                     onChange={value => {
                       const tools = shortcodeParams.tools || [];
-                      const newTools = value 
+                      const newTools = value
                         ? [...tools.filter(t => t !== 'web_search'), 'web_search']
                         : tools.filter(t => t !== 'web_search');
                       updateShortcodeParams(newTools, 'tools');
                     }}
                   />
                 )}
-                {currentModel?.tools?.includes('image_generation') && (
-                  <NekoCheckbox 
+                {(currentModel?.tools?.includes('image_generation') || shortcodeParams.tools?.includes('image_generation')) && (
+                  <NekoCheckbox
                     name="tools_image_generation"
                     label={i18n.COMMON.IMAGE_GENERATION || 'Image Generation'}
                     description={i18n.HELP.IMAGE_GENERATION || 'Allow the AI to generate images based on text descriptions'}
-                    checked={shortcodeParams.tools?.includes('image_generation')} 
+                    checked={shortcodeParams.tools?.includes('image_generation')}
                     value="image_generation"
+                    variant={!currentModel?.tools?.includes('image_generation') && shortcodeParams.tools?.includes('image_generation') ? 'danger' : undefined}
                     onChange={value => {
                       const tools = shortcodeParams.tools || [];
-                      const newTools = value 
+                      const newTools = value
                         ? [...tools.filter(t => t !== 'image_generation'), 'image_generation']
                         : tools.filter(t => t !== 'image_generation');
+                      updateShortcodeParams(newTools, 'tools');
+                    }}
+                  />
+                )}
+                {(currentModel?.tools?.includes('thinking') || shortcodeParams.tools?.includes('thinking')) && (
+                  <NekoCheckbox
+                    name="tools_thinking"
+                    label={i18n.COMMON.THINKING || 'Thinking'}
+                    description={i18n.HELP.THINKING || 'Enable enhanced reasoning mode for complex tasks requiring step-by-step analysis and planning'}
+                    checked={shortcodeParams.tools?.includes('thinking')}
+                    value="thinking"
+                    variant={!currentModel?.tools?.includes('thinking') && shortcodeParams.tools?.includes('thinking') ? 'danger' : undefined}
+                    onChange={value => {
+                      const tools = shortcodeParams.tools || [];
+                      const newTools = value
+                        ? [...tools.filter(t => t !== 'thinking'), 'thinking']
+                        : tools.filter(t => t !== 'thinking');
                       updateShortcodeParams(newTools, 'tools');
                     }}
                   />
@@ -824,8 +848,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 3 }}>
                   <label>{i18n.COMMON.THEME}:</label>
                   <NekoSelect scrolldown name="themeId"
-                    value={shortcodeParams.themeId}
-                    onChange={updateShortcodeParams}>
+                    value={shortcodeParams.themeId} description="" onChange={updateShortcodeParams}>
                     <NekoOption value='none' label="None" />
                     <NekoOption value='chatgpt' label="ChatGPT" />
                     <NekoOption value='timeless' label="Timeless" />
@@ -845,7 +868,8 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <label>{i18n.COMMON.FULL_SCREEN}:</label>
                   <NekoCheckbox name="fullscreen" label="Yes"
-                    checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams} />
+                    checked={shortcodeParams.fullscreen} value="1" onChange={updateShortcodeParams}
+                    disabled={shortcodeParams.window} />
                 </div>
 
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
@@ -1033,6 +1057,21 @@ const ChatbotParams = (props) => {
               </div>
 
             </NekoAccordion>
+
+            {(modelSupportsResponses && !isAssistant && !isImagesChat) && <NekoAccordion title={i18n.COMMON.ADVANCED || "Advanced"}>
+              <div className="mwai-builder-row">
+                <div className="mwai-builder-col" style={{ flex: 1 }}>
+                  <label>{i18n.COMMON.HISTORY_STRATEGY}:</label>
+                  <NekoSelect scrolldown name="historyStrategy"
+                    description={i18n.HELP.HISTORY_STRATEGY}
+                    value={shortcodeParams.historyStrategy || ""} onChange={updateShortcodeParams}>
+                    <NekoOption value={""} label={i18n.COMMON.AUTOMATIC || "Automatic"}></NekoOption>
+                    <NekoOption value={"internal"} label={i18n.COMMON.FULL_HISTORY || "Full History"}></NekoOption>
+                    <NekoOption value={"response_id"} label={i18n.COMMON.INCREMENTAL || "Incremental"}></NekoOption>
+                  </NekoSelect>
+                </div>
+              </div>
+            </NekoAccordion>}
 
             {!blockMode && <NekoAccordion title={i18n.COMMON.SHORTCODES}>
               <Shortcode currentChatbot={shortcodeParams} style={{ marginTop: 10 }} />

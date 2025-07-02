@@ -1,13 +1,12 @@
 <?php
 
-class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML
-{
+class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML {
   // Streaming
-  protected $streamInTokens  = null;
+  protected $streamInTokens = null;
   protected $streamOutTokens = null;
-  protected $streamContent   = null;
-  protected $streamBuffer    = null;
-  protected $inCitations    = null;
+  protected $streamContent = null;
+  protected $streamBuffer = null;
+  protected $inCitations = null;
 
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
@@ -19,14 +18,14 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML
   }
 
   protected function get_service_name() {
-    return "Perplexity";
+    return 'Perplexity';
   }
 
   public function get_models() {
     return apply_filters( 'mwai_perplexity_models', MWAI_PERPLEXITY_MODELS );
   }
 
-  static public function get_models_static() {
+  public static function get_models_static() {
     return MWAI_PERPLEXITY_MODELS;
   }
 
@@ -53,21 +52,21 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML
         $filtered[] = $message;
       }
     }
-  
+
     return $filtered;
-  }  
+  }
 
   protected function build_headers( $query ) {
     if ( $query->apiKey ) {
       $this->apiKey = $query->apiKey;
     }
-    if ( empty($this->apiKey) ) {
+    if ( empty( $this->apiKey ) ) {
       throw new Exception( 'No Perplexity API Key provided. Check your settings.' );
     }
     return [
-      'Content-Type'  => 'application/json',
+      'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
-      'User-Agent'    => 'AI Engine',
+      'User-Agent' => 'AI Engine',
     ];
   }
 
@@ -90,10 +89,10 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML
   }
 
   /**
-   * In Perplexity, we intercept the final choices and insert citations
-   * as ([domain1](https://...), [domain2](https://...)) 
-   * based on [1][2][3] references in the text.
-   */
+  * In Perplexity, we intercept the final choices and insert citations
+  * as ([domain1](https://...), [domain2](https://...))
+  * based on [1][2][3] references in the text.
+  */
   protected function finalize_choices( $choices, $responseData, $query ) {
     $citations = isset( $responseData['citations'] ) ? $responseData['citations'] : null;
     if ( empty( $citations ) && !empty( $this->inCitations ) ) {
@@ -106,11 +105,11 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML
     foreach ( $choices as &$choice ) {
       if ( isset( $choice['message']['content'] ) && is_string( $choice['message']['content'] ) ) {
         $content = $choice['message']['content'];
-        $content = preg_replace_callback( '/\[(\d+)\](?:\s*\[(\d+)\])*/', function( $matches ) use ( $citations ) {
+        $content = preg_replace_callback( '/\[(\d+)\](?:\s*\[(\d+)\])*/', function ( $matches ) use ( $citations ) {
           preg_match_all( '/\[(\d+)\]/', $matches[0], $refs );
-          $links = array();
+          $links = [];
           foreach ( $refs[1] as $refNumber ) {
-            $index = (int)$refNumber - 1;
+            $index = (int) $refNumber - 1;
             if ( isset( $citations[$index] ) ) {
               $url = $citations[$index];
               $domain = parse_url( $url, PHP_URL_HOST );
@@ -132,5 +131,4 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML
     return $choices;
   }
 
-  
 }

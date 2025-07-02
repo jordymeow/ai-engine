@@ -1,5 +1,5 @@
-// Previous: 1.9.97
-// Current: 2.1.0
+// Previous: 2.1.0
+// Current: 2.8.5
 
 const { useMemo } = wp.element;
 
@@ -37,10 +37,16 @@ const TokensInfo = ({ model, maxTokens, onRecommendedClick, ...rest }) => {
 
   return (
     <span {...rest}>
-      {!!model?.maxContextualTokens && <>Contextual: {model?.maxContextualTokens}<br /></>}
-      {!!model?.maxCompletionTokens && <>Completion: {model?.maxCompletionTokens}<br /></>}
+      {(!!model?.maxContextualTokens || !!model?.maxCompletionTokens) && (
+        <>
+          {!!model?.maxContextualTokens && <>Contextual: {model?.maxContextualTokens}</>}
+          {!!model?.maxContextualTokens && !!model?.maxCompletionTokens && <> - </>}
+          {!!model?.maxCompletionTokens && <>Completion: {model?.maxCompletionTokens}</>}
+          <br />
+        </>
+      )}
       {!model?.maxCompletionTokens && !!model?.maxTokens && <>Total Max Tokens: {model?.maxTokens}<br /></>}
-      {!!recommendedMaxTokens && <>Recommended: <b onClick={isClickEnabled ? () => onRecommendedClick(recommendedMaxTokens) : null}
+      {!!recommendedMaxTokens && recommendedMaxTokens !== maxTokens && <>Recommended: <b onClick={isClickEnabled ? () => onRecommendedClick(recommendedMaxTokens) : null}
         style={{ 
           color: color,
           cursor: isClickEnabled ? 'pointer' : 'inherit',

@@ -8,18 +8,18 @@ class Meow_MWAI_Query_DroppedFile {
   private $mimeType; // 'image/jpeg' or any other mime type
   private $fileId; // The ID of the file in the database
 
-  static function from_url( $url, $purpose, $mimeType = null, $fileId = null ) {
+  public static function from_url( $url, $purpose, $mimeType = null, $fileId = null ) {
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $url );
     }
     return new Meow_MWAI_Query_DroppedFile( $url, 'url', $purpose, $mimeType, $fileId );
   }
 
-  static function from_data( $data, $purpose, $mimeType = null ) {
+  public static function from_data( $data, $purpose, $mimeType = null ) {
     return new Meow_MWAI_Query_DroppedFile( $data, 'data', $purpose, $mimeType );
   }
 
-  static function from_path( $path, $purpose, $mimeType = null ) {
+  public static function from_path( $path, $purpose, $mimeType = null ) {
     $data = file_get_contents( $path );
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $path );
@@ -29,10 +29,10 @@ class Meow_MWAI_Query_DroppedFile {
 
   public function __construct( $data, $type, $purpose, $mimeType = null, $fileId = null ) {
     if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' ) {
-      throw new Exception( "AI Engine: The file type can only be refId, url or data." );
+      throw new Exception( 'AI Engine: The file type can only be refId, url or data.' );
     }
     if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' && $purpose !== 'files' ) {
-      throw new Exception( "AI Engine: The file purpose can only be assistant, vision or files." );
+      throw new Exception( 'AI Engine: The file purpose can only be assistant, vision or files.' );
     }
     $this->data = $data;
     $this->type = $type;
@@ -45,7 +45,7 @@ class Meow_MWAI_Query_DroppedFile {
     if ( $this->type === 'url' ) {
       return $this->data;
     }
-    throw new Exception( "AI Engine: The file is not an URL." );
+    throw new Exception( 'AI Engine: The file is not an URL.' );
   }
 
   private function get_raw_data() {
@@ -59,7 +59,7 @@ class Meow_MWAI_Query_DroppedFile {
     else if ( $this->type === 'data' ) {
       return $this->data;
     }
-    throw new Exception( "AI Engine: The file is not data or an URL." );
+    throw new Exception( 'AI Engine: The file is not data or an URL.' );
   }
 
   public function get_data() {
@@ -69,7 +69,7 @@ class Meow_MWAI_Query_DroppedFile {
     else if ( $this->type === 'data' ) {
       return $this->data;
     }
-    throw new Exception( "AI Engine: The file is not data or an URL." );
+    throw new Exception( 'AI Engine: The file is not data or an URL.' );
   }
 
   public function get_base64() {

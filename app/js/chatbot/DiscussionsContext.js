@@ -1,10 +1,10 @@
-// Previous: 2.8.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
-// React & Vendor Libs
-const { useContext, createContext, useState, useMemo, useEffect, useCallback } = wp.element;
+const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 
-import { randomStr, nekoStringify } from '@app/helpers';
+import { randomStr, nekoStringify, mwaiFetch, mwaiHandleRes } from '@app/helpers';
+import tokenManager from '@app/helpers/tokenManager';
 
 const DiscussionsContext = createContext();
 
@@ -25,11 +25,21 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [paginationBusy, setPaginationBusy] = useState(false);
+  const isRefreshing = useRef(false);
   const shortcodeStyles = useMemo(() => theme?.settings || {}, [theme]);
 
   const botId = system.botId;
   const customId = system.customId;
-  const restNonce = system.restNonce;
+  const [restNonce, setRestNonce] = useState(system.restNonce || tokenManager.getToken());
+  const restNonceRef = useRef(system.restNonce || tokenManager.getToken());
+
+  useEffect(() => {
+    const unsubscribe = tokenManager.subscribe((newToken) => {
+      setRestNonce(newToken);
+      restNonceRef.current = newToken;
+    });
+    return unsubscribe;
+  }, []);
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
   const debugMode = system.debugMode;
@@ -47,19 +57,14 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   }, [discussions]);
 
   const getStoredChatId = useCallback(() => {
-    console.log('[DISCUSSIONS] getStoredChatId called for botId:', botId);
     const chatbot = MwaiAPI.getChatbot(botId);
-    console.log('[DISCUSSIONS] Found chatbot:', !!chatbot, 'localStorageKey:', chatbot?.localStorageKey);
     const localStorageKey = chatbot?.localStorageKey;
     if (localStorageKey) {
       try {
         const storedData = localStorage.getItem(localStorageKey);
         if (storedData) {
           const parsedData = JSON.parse(storedData);
-          console.log('[DISCUSSIONS] Found stored chatId:', parsedData.chatId);
           return parsedData.chatId;
-        } else {
-          console.log('[DISCUSSIONS] No data in localStorage for key:', localStorageKey);
         }
       } catch (e) {
         console.error('[DISCUSSIONS] Error reading chatbot storage:', e);
@@ -68,7 +73,13 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     return null;
   }, [botId]);
 
+
   const refresh = useCallback(async (silentRefresh = false, page = currentPage, isPagination = false) => {
+    if (isRefreshing.current) {
+      return;
+    }
+    isRefreshing.current = true;
+    
     let startTime;
     try {
       if (!silentRefresh) {
@@ -87,22 +98,26 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         ...(limit && { limit, offset })
       };
       if (debugMode) {
-        console.log('[DISCUSSIONS] OUT: ', body);
       }
-      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/list`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': restNonce,
-        },
-        body: nekoStringify(body),
-      });
-      const data = await response.json();
+      const handleTokenUpdate = (newToken) => {
+        setRestNonce(newToken);
+        restNonceRef.current = newToken;
+        tokenManager.setToken(newToken);
+      };
+      
+      const response = await mwaiFetch(
+        `${restUrl}/mwai-ui/v1/discussions/list`,
+        body,
+        restNonceRef.current,
+        false,
+        undefined,
+        handleTokenUpdate
+      );
+      const data = await mwaiHandleRes(response, null, debugMode ? "DISCUSSIONS" : null, handleTokenUpdate, debugMode);
       if (!data.success) {
         throw new Error(`Could not retrieve the discussions: ${data.message}`);
       }
       if (debugMode) {
-        console.log('[DISCUSSIONS] IN: ', data);
       }
       const conversations = data.chats.map((conversation) => {
         const messages = JSON.parse(conversation.messages);
@@ -145,6 +160,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     } catch (err) {
       console.error(err);
     } finally {
+      isRefreshing.current = false;
       if (!silentRefresh && startTime) {
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 200 - elapsedTime);
@@ -157,7 +173,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         }, remainingTime);
       }
     }
-  }, [discussion, currentPage, system?.paging, discussion]); // Added discussion as dependency to cause some re-renders
+  }, [discussion, currentPage, system?.paging]);
 
   const refreshInterval = system?.refreshInterval || 5000;
 
@@ -166,9 +182,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     if (storedChatId && !currentChatId) {
       setCurrentChatId(storedChatId);
     }
-    
     refresh();
-
     if (refreshInterval > 0) {
       const interval = setInterval(() => {
         refresh(true);
@@ -200,7 +214,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         setDiscussion(updatedDiscussion);
       }
     }
-  }, [discussions, currentChatId, botId, discussion]);
+  }, [discussions, currentChatId, botId]);
 
   const getChatbot = (botId) => {
     const chatbot = MwaiAPI.getChatbot(botId);
@@ -218,10 +232,8 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     }
 
     const chatbot = getChatbot(botId);
-    
     const previousResponseId = selectedDiscussion.extra?.previousResponseId || null;
-    
-    chatbot.setContext({ 
+    chatbot.setConversation({ 
       chatId, 
       messages: selectedDiscussion.messages,
       previousResponseId 
@@ -248,16 +260,21 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         title: trimmedTitle,
       };
 
-      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/edit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': restNonce,
-        },
-        body: nekoStringify(body),
-      });
-
-      const data = await response.json();
+      const handleTokenUpdate = (newToken) => {
+        setRestNonce(newToken);
+        restNonceRef.current = newToken;
+        tokenManager.setToken(newToken);
+      };
+      
+      const response = await mwaiFetch(
+        `${restUrl}/mwai-ui/v1/discussions/edit`,
+        body,
+        restNonceRef.current,
+        false,
+        undefined,
+        handleTokenUpdate
+      );
+      const data = await mwaiHandleRes(response, null, debugMode ? "DISCUSSIONS" : null, handleTokenUpdate, debugMode);
       if (!data.success) {
         throw new Error(`Could not update the discussion: ${data.message}`);
       }
@@ -287,16 +304,21 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         chatIds: [discussionToDelete.chatId],
       };
 
-      const response = await fetch(`${restUrl}/mwai-ui/v1/discussions/delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': restNonce,
-        },
-        body: nekoStringify(body),
-      });
-
-      const data = await response.json();
+      const handleTokenUpdate = (newToken) => {
+        setRestNonce(newToken);
+        restNonceRef.current = newToken;
+        tokenManager.setToken(newToken);
+      };
+      
+      const response = await mwaiFetch(
+        `${restUrl}/mwai-ui/v1/discussions/delete`,
+        body,
+        restNonceRef.current,
+        false,
+        undefined,
+        handleTokenUpdate
+      );
+      const data = await mwaiHandleRes(response, null, debugMode ? "DISCUSSIONS" : null, handleTokenUpdate, debugMode);
       if (!data.success) {
         throw new Error(`Could not delete the discussion: ${data.message}`);
       }
@@ -329,7 +351,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     const chatbot = getChatbot(botId);
     const newChatId = randomStr();
     chatbot.clear({ chatId: newChatId });
-    
     setDiscussion(null);
     setCurrentChatId(newChatId);
   };

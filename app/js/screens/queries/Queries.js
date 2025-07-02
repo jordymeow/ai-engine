@@ -1,8 +1,8 @@
-// Previous: 2.8.2
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useMemo, useState, useEffect } = wp.element;
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
 import { nekoFetch } from '@neko-ui';
 import {
@@ -48,16 +48,22 @@ const logsColumns = [
   },
   { accessor: 'model', title: 'Model', width: '100%' },
   { accessor: 'units', title: 'Units', width: '75px', align: 'right', sortable: true },
-  { accessor: 'price', title: 'Price', width: '85px', align: 'right', sortable: true }
+  { accessor: 'price', title: 'Price', width: '95px', align: 'right', sortable: true }
 ];
 
 const retrieveLogs = async (logsQueryParams) => {
-  logsQueryParams.offset = (logsQueryParams.page - 1) * logsQueryParams.limit;
+  const params = {
+    ...logsQueryParams,
+    offset: (logsQueryParams.page - 1) * logsQueryParams.limit
+  };
   const res = await nekoFetch(`${apiUrl}/system/logs/list`, {
     nonce: restNonce,
     method: 'POST',
-    json: logsQueryParams
+    json: params
   });
+  if (res && res.success === false) {
+    throw new Error(res.message || 'Failed to retrieve logs');
+  }
   return res ? { total: res.total, logs: res.logs } : { total: 0, logs: [] };
 };
 
@@ -88,7 +94,7 @@ const Queries = ({
   );
 
   const [logsQueryParams, setLogsQueryParams] = useState({
-    filters,
+    filters: filters,
     sort: { accessor: 'time', by: 'desc' },
     page: 1,
     limit: 20
@@ -99,13 +105,12 @@ const Queries = ({
     data: logsData,
     error: logsError
   } = useQuery({
-    queryKey: ['logs', logsQueryParams],
+    queryKey: ['logs', JSON.stringify(logsQueryParams)],
     queryFn: () => retrieveLogs(logsQueryParams)
   });
 
   useEffect(() => {
     setLogsQueryParams({ ...logsQueryParams, filters });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
@@ -127,20 +132,23 @@ const Queries = ({
         const user = tableUserIPFormatter(x.userId, x.ip);
 
         const simplifiedPrice = Math.round(x.price * 1000) / 1000;
-        let jsxSimplifiedPrice = <>∞</>;
+        let jsxSimplifiedPrice = <span>${simplifiedPrice.toFixed(4)}</span>;
         if (x.price >= 0.001) {
-          jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(3)}</b>;
+          jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(4)}</b>;
         }
         if (x.price >= 0.01) {
           jsxSimplifiedPrice = <b>${simplifiedPrice.toFixed(2)}</b>;
         }
         if (x.price >= 0.1) {
           jsxSimplifiedPrice = (
-            <b style={{ color: 'red' }}>
+            <b style={{ fontWeight: 'bold' }}>
               ${simplifiedPrice.toFixed(2)}
             </b>
           );
         }
+
+        const roundedPrice = Math.round(x.price * 1000000) / 1000000;
+        const jsxRoundedPrice = <small style={{ color: 'var(--neko-gray)' }}>${roundedPrice.toFixed(6)}</small>;
 
         const envName =
           options?.ai_envs?.find((v) => v.id === x.envId)?.name || x.envId;
@@ -162,7 +170,7 @@ const Queries = ({
             <div>
               {x.scope}
               <br />
-              <small>{x.session}</small>
+              <small style={{ color: 'var(--neko-gray)' }}>{x.session}</small>
             </div>
           ),
           user,
@@ -177,14 +185,13 @@ const Queries = ({
           price: (
             <>
               {jsxSimplifiedPrice}
-              <br />
-              <small>${x.price}</small>
+              {jsxRoundedPrice}
             </>
           ),
           time: <div style={{ textAlign: 'right' }}>{time}</div>
         };
       });
-  }, [logsData]);
+  }, [logsData, getModelName]);
 
   const onDeleteSelectedLogs = async () => {
     setBusyAction(true);
@@ -193,15 +200,12 @@ const Queries = ({
         setBusyAction(false);
         return;
       }
-      await deleteLogs(); // delete all logs
+      await deleteLogs(); // delete all
     } else {
       await deleteLogs(selectedLogIds);
       setSelectedLogIds([]);
     }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['logs'] }),
-      queryClient.refetchQueries({ queryKey: ['logs'] }) // refetch is async, but not awaited
-    ]);
+    await queryClient.invalidateQueries({ queryKey: ['logs'] });
     setBusyAction(false);
   };
 
@@ -232,8 +236,11 @@ const Queries = ({
               style={{ marginLeft: 5 }}
               disabled={isFetchingLogs}
               onClick={async () => {
-                // Remove invalidate, do only refetch
-                queryClient.refetchQueries({ queryKey: ['logs'] });
+                try {
+                  await queryClient.invalidateQueries({ queryKey: ['logs'] });
+                } catch (error) {
+                  // Error is handled by React Query
+                }
               }}
             >
               {i18n.COMMON.REFRESH}
@@ -256,10 +263,10 @@ const Queries = ({
             }
           }}
           onSelect={(ids) => {
-            setSelectedLogIds((prev) => [...prev, ...ids]);
+            setSelectedLogIds([...selectedLogIds, ...ids]);
           }}
           onUnselect={(ids) => {
-            setSelectedLogIds((prev) => prev.filter((x) => !ids.includes(x)));
+            setSelectedLogIds(selectedLogIds.filter((x) => !ids.includes(x)));
           }}
           selectedItems={selectedLogIds}
           sort={logsQueryParams.sort}
@@ -275,7 +282,7 @@ const Queries = ({
             ];
             setFilters(freshFilters);
           }}
-          data={logsRows}
+          data={logsError ? [] : logsRows}
           columns={logsColumns}
         />
 
@@ -290,10 +297,7 @@ const Queries = ({
           <NekoButton
             className="danger"
             disabled={selectedLogIds.length > 0}
-            onClick={async () => {
-              await deleteLogs(selectedLogIds);
-              setSelectedLogIds([]);
-            }}
+            onClick={onDeleteSelectedLogs}
           >
             {i18n.COMMON.DELETE_ALL}
           </NekoButton>
@@ -301,13 +305,13 @@ const Queries = ({
           <NekoPaging
             currentPage={logsQueryParams.page}
             limit={logsQueryParams.limit}
-            onCurrentPageChanged={(page) => {
-              setLogsQueryParams({ ...logsQueryParams, page });
-            }}
+            onCurrentPageChanged={(page) =>
+              setLogsQueryParams({ ...logsQueryParams, page })
+            }
             total={logsTotal}
-            onClick={(page) => {
-              setLogsQueryParams({ ...logsQueryParams, page });
-            }}
+            onClick={(page) =>
+              setLogsQueryParams({ ...logsQueryParams, page })
+            }
           />
         </div>
       </NekoBlock>

@@ -1,16 +1,20 @@
-// Previous: 2.8.2
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
-const { useMemo } = wp.element;
+// React & Vendor Libs
+const { useMemo, useState } = wp.element;
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput,
   NekoAccordions, NekoAccordion, NekoCheckbox,
-  NekoSelect, NekoOption } from '@neko-ui';
+  NekoSelect, NekoOption, NekoModal, NekoMessage, nekoFetch } from '@neko-ui';
 import i18n from '@root/i18n';
 import { useModels, toHTML } from '@app/helpers-admin';
+import { apiUrl, restNonce } from '@app/settings';
 
 const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs, options }) => {
   const { embeddingsModels } = useModels(options, env?.ai_embeddings_env);
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResults, setTestResults] = useState(null);
 
   const currentEmbeddingsModel = useMemo(() => {
     return embeddingsModels.find(x => x.model === env.ai_embeddings_model);
@@ -22,6 +26,27 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
     }
     return currentEmbeddingsModel?.dimensions || [];
   }, [currentEmbeddingsModel]);
+
+  const handleQuickTest = async () => {
+    setTestBusy(true);
+    try {
+      const response = await nekoFetch(`${apiUrl}/embeddings/test_pinecone`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: {
+          env_id: env.id
+        }
+      });
+      setTestResults(response);
+    } catch (error) {
+      setTestResults({
+        success: false,
+        error: error.message || 'Failed to test Pinecone connection'
+      });
+    } finally {
+      setTestBusy(false);
+    }
+  };
 
   return (
     <>
@@ -73,21 +98,25 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
         </NekoSettings>
       </>}
 
-      <NekoSettings title={i18n.COMMON.MIN_SCORE}>
-        <NekoInput name="min_score" value={env.min_score || 35} type="number" min="0" max="100" step="1"
-          description={toHTML(i18n.HELP.MIN_SCORE)}
-          onFinalChange={value => updateEnvironment(env.id, { min_score: value })}
-        />
-      </NekoSettings>
-
-      <NekoSettings title={i18n.COMMON.MAX_SELECT}>
-        <NekoInput name="max_select" value={env.max_select || 10} type="number" min="1" max="100" step="1"
-          description={toHTML(i18n.HELP.MAX_SELECT)}
-          onFinalChange={value => updateEnvironment(env.id, { max_select: value })}
-        />
-      </NekoSettings>
-
       <NekoAccordions keepState="embeddingsEnvs">
+
+        <NekoAccordion title="Score">
+          <div style={{ marginTop: 10 }}>
+            <NekoSettings title={i18n.COMMON.MIN_SCORE}>
+              <NekoInput name="min_score" value={env.min_score || 35} type="number" min="0" max="100" step="1"
+                description={toHTML(i18n.HELP.MIN_SCORE)}
+                onFinalChange={value => updateEnvironment(env.id, { min_score: value })}
+              />
+            </NekoSettings>
+
+            <NekoSettings title={i18n.COMMON.MAX_SELECT}>
+              <NekoInput name="max_select" value={env.max_select || 10} type="number" min="1" max="100" step="1"
+                description={toHTML(i18n.HELP.MAX_SELECT)}
+                onFinalChange={value => updateEnvironment(env.id, { max_select: value })}
+              />
+            </NekoSettings>
+          </div>
+        </NekoAccordion>
 
         <NekoAccordion title={i18n.COMMON.AI_ENVIRONMENT}>
           <div style={{ marginTop: 10 }}>
@@ -136,8 +165,16 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
         </NekoAccordion>
 
         <NekoAccordion title={i18n.COMMON.ACTIONS}>
-          <div style={{ display: 'flex', marginTop: 10 }}>
-            <div style={{ flex: 'auto' }} />
+          <div style={{ display: 'flex', marginTop: 10, justifyContent: 'flex-end' }}>
+            {env.type === 'pinecone' && (
+              <NekoButton 
+                className="primary" 
+                onClick={handleQuickTest}
+                isBusy={testBusy}
+              >
+                Quick Test
+              </NekoButton>
+            )}
             <NekoButton className="danger" onClick={() => deleteEnvironment(env.id)}>
               {i18n.COMMON.DELETE}
             </NekoButton>
@@ -145,6 +182,68 @@ const EnvironmentDetails = ({ env, updateEnvironment, deleteEnvironment, ai_envs
         </NekoAccordion>
 
       </NekoAccordions>
+
+      {testResults && (
+        <NekoModal 
+          title="Pinecone Connection Test"
+          isOpen={!!testResults}
+          onRequestClose={() => setTestResults(null)}
+          okButton={{
+            label: 'Close',
+            onClick: () => setTestResults(null)
+          }}
+          content={
+            <div>
+              {testResults.success ? (
+                <>
+                  <NekoMessage variant="success" style={{ marginBottom: 15 }}>
+                    Connection successful!
+                  </NekoMessage>
+                  <div style={{ marginBottom: 10 }}>
+                    <strong>Status:</strong> {testResults.ready ? 
+                      <span style={{ color: 'green' }}>Ready</span> : 
+                      <span style={{ color: 'orange' }}>Not Ready</span>
+                    }
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <strong>Name:</strong> {testResults.index_name}
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <strong>Metric:</strong> {testResults.metric}
+                    {testResults.metric === 'cosine' ? (
+                      <span style={{ color: 'green' }}> ✓</span>
+                    ) : (
+                      <span style={{ color: 'orange' }}> (expected: cosine)</span>
+                    )}
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <strong>Dimensions:</strong> {testResults.dimension}
+                    {testResults.dimension_match ? (
+                      <span style={{ color: 'green' }}> ✓ (matches configuration)</span>
+                    ) : (
+                      <span style={{ color: 'red' }}> ✗ (expected: {testResults.expected_dimension})</span>
+                    )}
+                  </div>
+                  {testResults.host && (
+                    <div style={{ marginBottom: 10 }}>
+                      <strong>Host:</strong> {testResults.host}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <NekoMessage variant="danger" style={{ marginBottom: 15 }}>
+                    Connection failed
+                  </NekoMessage>
+                  <div>
+                    <strong>Error:</strong> {testResults.error}
+                  </div>
+                </>
+              )}
+            </div>
+          }
+        />
+      )}
     </>
   );
 };
@@ -156,6 +255,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
     //alert("Coming soon! Please give us a bit of time to beta test this.");
     //return;
     const newEnv = {
+      id: Math.random().toString(36).substr(2, 9),
       name: 'New Environment',
       type: 'pinecone',
       apikey: '',
@@ -179,7 +279,7 @@ function EmbeddingsEnvironmentsSettings({ environments, updateEnvironment, updat
   return (
     <div style={{ padding: '0px 10px 20px 10px', marginTop: 13 }}>
       <NekoTypo h2 style={{ color: 'white' }}>Environments for Embeddings</NekoTypo>
-      <NekoTabs inversed keepTabOnReload={true} style={{ marginTop: -5 }} action={
+      <NekoTabs inversed style={{ marginTop: -5 }} action={
         <NekoButton rounded className="secondary" icon='plus' onClick={addNewEnvironment} />}>
         {environments.map((env) => (
           <NekoTab key={env.id} title={env.name} busy={busy}>

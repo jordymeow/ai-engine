@@ -749,7 +749,7 @@ MwaiAPI.getChatbot().setBlocks([
                     const satisfaction = document.getElementById('satisfaction').value;
                     
                     // Send the response as a message
-                    chatbot.sendMessage('My satisfaction level is: ' + satisfaction);
+                    chatbot.ask('My satisfaction level is: ' + satisfaction, true);
                     
                     // Remove the block and unlock
                     chatbot.setBlocks([]);
@@ -810,7 +810,7 @@ add_filter( 'mwai_chatbot_blocks', function ( $blocks, $args ) {
                         const name = document.getElementById("apptName").value;
                         
                         // Send appointment details
-                        chatbot.sendMessage(`Book appointment for ${name} on ${date} at ${time}`);
+                        chatbot.ask(`Book appointment for ${name} on ${date} at ${time}`, true);
                         
                         // Show confirmation
                         chatbot.setBlocks([{
@@ -852,7 +852,7 @@ add_filter( 'mwai_chatbot_blocks', function ( $blocks, $args ) {
                     <img src="%s" style="width: 100%%; height: 100px; object-fit: cover;">
                     <h5>%s</h5>
                     <p>%s</p>
-                    <button onclick="MwaiAPI.getChatbot(\'%s\').sendMessage(\'Tell me more about %s\')">Learn More</button>
+                    <button onclick="MwaiAPI.getChatbot(\'%s\').ask(\'Tell me more about %s\', true)">Learn More</button>
                 </div>',
                 wp_get_attachment_url($product->get_image_id()),
                 esc_html($product->get_name()),
@@ -948,7 +948,7 @@ add_filter( 'mwai_chatbot_blocks', function ( $blocks, $args ) {
                         const name = document.getElementById("userName").value;
                         const interest = document.getElementById("interest").value;
                         
-                        chatbot.sendMessage(`Wizard completed. Name: ${name}, Interest: ${interest}`);
+                        chatbot.ask(`Wizard completed. Name: ${name}, Interest: ${interest}`, true);
                         chatbot.setBlocks([]);
                         chatbot.unlock();
                     };
@@ -1209,8 +1209,8 @@ AI Engine includes 40+ built-in tools. Key categories:
 - **AI Features**: vision (image analysis), imagine (image generation)
 
 See implementation examples in:
-- `labs/mcp_core.php` - Core WordPress tools
-- `labs/mcp_rest.php` - REST API integration
+- `labs/mcp-core.php` - Core WordPress tools
+- `labs/mcp-rest.php` - REST API integration
 - `premium/mcp_plugin.php` - Plugin management
 - `premium/mcp_theme.php` - Theme management
 

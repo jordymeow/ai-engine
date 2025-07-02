@@ -1,5 +1,5 @@
-// Previous: 2.5.7
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useState, useEffect, Fragment } = wp.element;
 const { __ } = wp.i18n;
@@ -10,13 +10,16 @@ const { PluginDocumentSettingPanel } = wp.editor;
 const { addFilter } = wp.hooks;
 const { createHigherOrderComponent } = wp.compose;
 
+//const { PluginBlockSettingsMenuItem } = wp.editPost;
 const { registerFormatType } = wp.richText;
 const { useSelect } = wp.data;
 import { options } from '@app/settings';
 
+// NekoUI
 import { nekoFetch } from '@neko-ui';
 import { NekoWrapper, NekoUI } from '@neko-ui';
 
+// UI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import GenerateTitlesModal from "./modals/GenerateTitles";
 import GenerateExcerptsModal from './modals/GenerateExcerpts';
@@ -24,9 +27,16 @@ import AiIcon from '../styles/AiIcon';
 import MagicWandModal from './modals/MagicWandModal';
 import { getPostContent } from '@app/helpers-admin';
 
+// SlotFills Reference
+// https://developer.wordpress.org/block-editor/reference-guides/slotfills/
+
+// Plugin Block Settings Menu Item Reference
+// https://developer.wordpress.org/block-editor/reference-guides/slotfills/plugin-block-settings-menu-item/
+
 function BlockAIWand() {
   const [ busy, setBusy ] = useState(false);
   const [ results, setResults ] = useState([]);
+  const [ storedSelectedText, setStoredSelectedText ] = useState('');
   const selectedBlock = useSelect((select) => select('core/block-editor').getSelectedBlock(), []);
 
   if (!selectedBlock) { return null; }
@@ -60,7 +70,8 @@ function BlockAIWand() {
     }
     if (busy) {
       applyFadeOutStyle(blockElement);
-    } else {
+    }
+    else {
       applyNormalStyle(blockElement);
     }
   }, [busy, selectedBlock]);
@@ -101,16 +112,16 @@ function BlockAIWand() {
         if (block.innerBlocks && block.innerBlocks.length > 0) {
           if (returnStructured) {
             const items = block.innerBlocks
-              .filter(innerBlock => innerBlock.name === 'core/list-item')
-              .map(innerBlock => {
-                if (innerBlock.attributes.content) {
-                  return innerBlock.attributes.content;
+              .filter(inner => inner.name === 'core/list-item')
+              .map(inner => {
+                if (inner.attributes.content) {
+                  return inner.attributes.content;
                 }
-                if (innerBlock.originalContent) {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = innerBlock.originalContent;
-                  const liElement = tempDiv.querySelector('li');
-                  return liElement ? (liElement.textContent || liElement.innerText || '') : '';
+                if (inner.originalContent) {
+                  const div = document.createElement('div');
+                  div.innerHTML = inner.originalContent;
+                  const li = div.querySelector('li');
+                  return li ? (li.textContent || li.innerText || '') : '';
                 }
                 return '';
               });
@@ -120,16 +131,16 @@ function BlockAIWand() {
             };
           }
           return block.innerBlocks
-            .filter(innerBlock => innerBlock.name === 'core/list-item')
-            .map(innerBlock => {
-              if (innerBlock.attributes.content) {
-                return innerBlock.attributes.content;
+            .filter(inner => inner.name === 'core/list-item')
+            .map(inner => {
+              if (inner.attributes.content) {
+                return inner.attributes.content;
               }
-              if (innerBlock.originalContent) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = innerBlock.originalContent;
-                const liElement = tempDiv.querySelector('li');
-                return liElement ? (liElement.textContent || liElement.innerText || '') : '';
+              if (inner.originalContent) {
+                const div = document.createElement('div');
+                div.innerHTML = inner.originalContent;
+                const li = div.querySelector('li');
+                return li ? (li.textContent || li.innerText || '') : '';
               }
               return '';
             })
@@ -137,18 +148,18 @@ function BlockAIWand() {
         }
         if (returnStructured) {
           const listHtml = block.attributes.values || '';
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = listHtml;
-          const items = Array.from(tempDiv.querySelectorAll('li')).map(li => li.textContent || li.innerText || '');
+          const div = document.createElement('div');
+          div.innerHTML = listHtml;
+          const items = Array.from(div.querySelectorAll('li')).map(li => li.textContent || li.innerText || '');
           return {
             type: 'list',
             items: items
           };
         }
         const listHtml = block.attributes.values || '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = listHtml;
-        return tempDiv.textContent || tempDiv.innerText || '';
+        const div2 = document.createElement('div');
+        div2.innerHTML = listHtml;
+        return div2.textContent || div2.innerText || '';
       case 'core/list-item':
         return block.attributes.content || '';
       case 'core/quote':
@@ -157,9 +168,9 @@ function BlockAIWand() {
         const tableData = block.attributes.body || [];
         const getCellText = (cellContent) => {
           if (cellContent && typeof cellContent === 'object' && cellContent.originalHTML) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = cellContent.originalHTML;
-            return tempDiv.textContent || tempDiv.innerText || '';
+            const div = document.createElement('div');
+            div.innerHTML = cellContent.originalHTML;
+            return div.textContent || div.innerText || '';
           }
           if (typeof cellContent === 'string') {
             return cellContent;
@@ -178,9 +189,9 @@ function BlockAIWand() {
         tableData.forEach(row => {
           if (row && row.cells) {
             row.cells.forEach(cell => {
-              const text = getCellText(cell.content);
-              if (text) {
-                tableText += text + ' ';
+              const txt = getCellText(cell.content);
+              if (txt) {
+                tableText += txt + ' ';
               }
             });
             tableText += '\n';
@@ -190,7 +201,13 @@ function BlockAIWand() {
       case 'core/paragraph':
       case 'core/heading':
       default:
-        return block.attributes.content || '';
+        const content = block.attributes.content;
+        if (content && typeof content === 'object' && content.originalHTML) {
+          const div = document.createElement('div');
+          div.innerHTML = content.originalHTML;
+          return div.textContent || div.innerText || '';
+        }
+        return content || '';
     }
   };
 
@@ -202,14 +219,14 @@ function BlockAIWand() {
           const listHtml = newContent.items.map(item => `<li>${item}</li>`).join('');
           updateAttrs = { values: listHtml };
         } else {
-          const listItems = newContent.split('\n').filter(item => item.trim());
-          const listHtml = listItems.map(item => `<li>${item.trim()}</li>`).join('');
+          const listItems = newContent.split('\n').filter(i => i.trim());
+          const listHtml = listItems.map(i => `<li>${i.trim()}</li>`).join('');
           updateAttrs = { values: listHtml };
         }
         break;
       case 'core/list-item':
-        const originalContent = block.attributes.content;
-        if (originalContent && typeof originalContent === 'object' && originalContent.originalHTML !== undefined) {
+        const origContent = block.attributes.content;
+        if (origContent && typeof origContent === 'object' && origContent.originalHTML !== undefined) {
           updateAttrs = { 
             content: {
               originalHTML: newContent,
@@ -225,13 +242,13 @@ function BlockAIWand() {
       case 'core/table':
         if (isStructured && typeof newContent === 'object' && newContent.rows) {
           const originalBody = block.attributes.body || [];
-          const body = newContent.rows.map((row, rowIndex) => {
-            const originalRow = originalBody[rowIndex] || { cells: [] };
+          const body = newContent.rows.map((row, rowIdx) => {
+            const origRow = originalBody[rowIdx] || { cells: [] };
             return {
-              cells: row.cells.map((cellText, cellIndex) => {
-                const originalCell = originalRow.cells?.[cellIndex];
+              cells: row.cells.map((cellText, cellIdx) => {
+                const origCell = origRow.cells?.[cellIdx];
                 return {
-                  ...originalCell,
+                  ...origCell,
                   content: cellText
                 };
               })
@@ -252,13 +269,17 @@ function BlockAIWand() {
   };
 
   const replaceText = (newText) => {
-    const { getSelectionStart, getSelectionEnd } = wp.data.select('core/block-editor');
     const selectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
     const blockContent = getBlockContent(selectedBlock);
-    const startOffset = getSelectionStart().offset;
-    const endOffset = getSelectionEnd().offset;
-    const updatedContent = blockContent.substring(0, startOffset) + newText + blockContent.substring(endOffset);
-    updateBlockContent(selectedBlock, updatedContent);
+    const textToReplace = storedSelectedText || window.getSelection().toString();
+    if (textToReplace && blockContent.includes(textToReplace)) {
+      const updatedContent = blockContent.replace(textToReplace, newText);
+      updateBlockContent(selectedBlock, updatedContent);
+      setStoredSelectedText('');
+    } else {
+      console.warn('AI Wand: Could not find selection, replacing entire block content');
+      updateBlockContent(selectedBlock, newText);
+    }
   };
 
   const updateText = (text) => {
@@ -267,14 +288,12 @@ function BlockAIWand() {
 
   const onClick = (text) => {
     setResults([]);
-    if (!text) { return; }
-    replaceText(text);
+    if (!text) {
+      setStoredSelectedText('');
+      return;
+    }
+    replaceText(text.trim());
   };
-
-  const isComplexBlock = selectedBlock ? ['core/list', 'core/table'].includes(selectedBlock.name) : false;
-  const blockContent = selectedBlock ? getBlockContent(selectedBlock, isComplexBlock) : '';
-  const text = typeof blockContent === 'object' ? '' : blockContent;
-  const selectedText = window.getSelection().toString();
 
   const doAction = async (action) => {
     const { getSelectedBlockClientId, getBlockIndex, getCurrentPost } = wp.data.select("core/editor");
@@ -284,7 +303,13 @@ function BlockAIWand() {
     setBusy(true);
     setBlockStyle();
     document.activeElement.blur();
-    
+    const isComplexBlock = selectedBlock ? ['core/list', 'core/table'].includes(selectedBlock.name) : false;
+    const blockContent = selectedBlock ? getBlockContent(selectedBlock, isComplexBlock) : '';
+    const text = isComplexBlock && typeof blockContent === 'object' ? '' : blockContent;
+    const selectedText = window.getSelection().toString();
+    if (action === 'suggestSynonyms' && selectedText) {
+      setStoredSelectedText(selectedText);
+    }
     const dataPayload = { postId };
     if (isComplexBlock) {
       dataPayload.json = blockContent;
@@ -293,7 +318,6 @@ function BlockAIWand() {
       dataPayload.text = text;
       dataPayload.selectedText = selectedText;
     }
-    
     try {
       const res = await nekoFetch(`${apiUrl}/ai/magic_wand`, {
         method: 'POST',
@@ -303,8 +327,6 @@ function BlockAIWand() {
       resetBlockStyle();
       setBusy(false);
       const { mode, result, results, type } = res.data;
-      
-      
       if (mode === 'replace') {
         if (type === 'json' && isComplexBlock) {
           if (typeof result === 'object' && result !== null) {
@@ -339,14 +361,12 @@ function BlockAIWand() {
     catch (err) {
       resetBlockStyle();
       setBusy(false);
-      
       let errorMessage = 'An error occurred';
       if (err.response && err.response.data && err.response.data.message) {
         errorMessage = err.response.data.message;
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
       alert("AI Wand Error: " + errorMessage);
       console.error("AI Wand Error:", err);
     }
@@ -381,7 +401,6 @@ function BlockAIWand() {
                   <small>Readibility & Quality</small>
                 </div>
               </MenuItem>
-
               <MenuItem onClick={() => doAction('longerText')}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <b>Longer Text</b>
@@ -394,7 +413,6 @@ function BlockAIWand() {
                   <small>Readibility</small>
                 </div>
               </MenuItem>
-
               <MenuItem onClick={() => doAction('translateText')}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <b>Translate Text</b>
@@ -403,7 +421,7 @@ function BlockAIWand() {
               </MenuItem>
             </MenuGroup>
             <MenuGroup>
-              <MenuItem disabled={!selectedText} onClick={() => doAction('suggestSynonyms')}>
+              <MenuItem disabled={!window.getSelection().toString()} onClick={() => doAction('suggestSynonyms')}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <b>Suggest Synonyms</b>
                   <small>For Selected Words</small>
@@ -444,6 +462,7 @@ const translateText = async (text, context) => {
   });
   const translation = res.data.result;
   return translation;
+  //return text.split(' ').map(word => word.split('').reverse().join('')).join(' ');
 };
 
 const translatePost = async () => {
@@ -540,9 +559,9 @@ const translatePost = async () => {
           applyNormalStyle(blockElement);
         }
         wp.data.dispatch('core/block-editor').selectBlock(block.clientId);
-        translatedItems++;
-        await updateProgressNotice(Math.round((translatedItems / totalItems) * 100));
       }
+      translatedItems++;
+      await updateProgressNotice(Math.round((translatedItems / totalItems) * 100));
     }
     const excerpt = getEditedPostAttribute('excerpt');
     if (excerpt) {
@@ -558,445 +577,3 @@ const translatePost = async () => {
     removeNotice(noticeId);
   }
 };
-
-const MWAI_DocumentSettings = () => {
-  const suggestionsEnabled = options?.module_suggestions;
-  const [postForTitle, setPostForTitle] = useState();
-  const [postForExcerpt, setPostForExcerpt] = useState();
-
-  const onTranslatePost = async () => {
-    await translatePost();
-  };
-
-  const onTitlesModalOpen = () => {
-    const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title } = getCurrentPost();
-    setPostForTitle({ postId: id, postTitle: title });
-  };
-
-  const onExcerptsModalOpen = () => {
-    const { getCurrentPost } = wp.data.select("core/editor");
-    const { id, title } = getCurrentPost();
-    setPostForExcerpt({ postId: id, postTitle: title });
-  };
-
-  const onTitleClick = async (title) => {
-    wp.data.dispatch('core/editor').editPost({ title });
-  };
-
-  const onExcerptClick = async (excerpt) => {
-    wp.data.dispatch('core/editor').editPost({ excerpt });
-  };
-
-  if (!suggestionsEnabled) {
-    return null;
-  }
-
-  return (
-    <NekoUI>
-      <PluginDocumentSettingPanel name="mwai-document-settings" title={<><AiIcon /> AI Engine</>} className="mwai-document-settings">
-        <p>Suggest:</p>
-        <div style={{ display: 'flex' }}>
-          <Button variant='primary' onClick={onTitlesModalOpen} style={{ flex: 1, marginRight: 10, textAlign: 'center' }}>
-            <AiIcon icon="wand" style={{ marginRight: 8 }} /> Titles
-          </Button>
-          <Button variant='primary' onClick={onExcerptsModalOpen} style={{ flex: 1, textAlign: 'center' }}>
-            <AiIcon icon="wand" style={{ marginRight: 8 }} /> Excerpts
-          </Button>
-        </div>
-        <div style={{ display: 'flex' }}>
-          <Button variant='primary' onClick={onTranslatePost} style={{ flex: 1, marginTop: 10, textAlign: 'center' }}>
-            <AiIcon icon="wand" style={{ marginRight: 8 }} /> Translate Post
-          </Button>
-        </div>
-
-        <NekoUI>
-          <NekoWrapper>
-            <GenerateTitlesModal post={postForTitle} onTitleClick={onTitleClick} onClose={setPostForTitle} />
-            <GenerateExcerptsModal post={postForExcerpt} onExcerptClick={onExcerptClick} onClose={setPostForExcerpt} />
-          </NekoWrapper>
-        </NekoUI>
-      </PluginDocumentSettingPanel>
-    </NekoUI>
-  );
-};
-
-const BlockFeatures = () => {
-  registerPlugin('ai-engine-document-settings', {
-    render: MWAI_DocumentSettings
-  });
-  const AIWandWrapper = ({ selectedBlock }) => {
-    if (!selectedBlock) return null;
-    return <BlockAIWand />;
-  };
-  const withAIWand = createHigherOrderComponent((BlockEdit) => {
-    return (props) => {
-      const supportedBlocks = ['core/paragraph', 'core/heading', 'core/list', 'core/list-item', 'core/quote', 'core/table'];
-      if (!supportedBlocks.includes(props.name)) {
-        return <BlockEdit {...props} />;
-      }
-      const SelectedBlockAIWand = () => {
-        const selectedBlock = useSelect((select) => select('core/block-editor').getSelectedBlock(), []);
-        if (!selectedBlock || selectedBlock.clientId !== props.clientId) {
-          return null;
-        }
-        return <BlockAIWand />;
-      };
-      return (
-        <Fragment>
-          <BlockEdit {...props} />
-          <SelectedBlockAIWand />
-        </Fragment>
-      );
-    };
-  }, 'withAIWand');
-
-  addFilter(
-    'editor.BlockEdit',
-    'ai-engine/ai-wand',
-    withAIWand
-  );
-};
-
-if (typeof window !== 'undefined') {
-  window.mwaiWand = {
-    getAllBlocks: () => {
-      const blocks = wp.data.select('core/block-editor').getBlocks();
-      const supportedBlocks = ['core/paragraph', 'core/heading', 'core/list', 'core/list-item', 'core/quote', 'core/table'];
-
-      const processBlock = (block, depth = 0) => {
-        const indent = '  '.repeat(depth);
-        const isSupported = supportedBlocks.includes(block.name);
-        const isComplex = ['core/list', 'core/table'].includes(block.name);
-
-        const getContent = (block, returnStructured = false) => {
-          switch (block.name) {
-            case 'core/list':
-              if (block.innerBlocks && block.innerBlocks.length > 0) {
-                if (returnStructured) {
-                  const items = block.innerBlocks
-                    .filter(innerBlock => innerBlock.name === 'core/list-item')
-                    .map(innerBlock => {
-                      const content = innerBlock.attributes.content;
-                      if (content && typeof content === 'object' && content.originalHTML) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = content.originalHTML;
-                        return tempDiv.textContent || tempDiv.innerText || '';
-                      }
-                      if (typeof content === 'string') {
-                        return content;
-                      }
-                      if (innerBlock.originalContent) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = innerBlock.originalContent;
-                        const liElement = tempDiv.querySelector('li');
-                        return liElement ? (liElement.textContent || liElement.innerText || '') : '';
-                      }
-                      return '';
-                    });
-                  return {
-                    type: 'list',
-                    items: items
-                  };
-                }
-                return block.innerBlocks
-                  .filter(innerBlock => innerBlock.name === 'core/list-item')
-                  .map(innerBlock => {
-                    const content = innerBlock.attributes.content;
-                    if (content && typeof content === 'object' && content.originalHTML) {
-                      const tempDiv = document.createElement('div');
-                      tempDiv.innerHTML = content.originalHTML;
-                      return tempDiv.textContent || tempDiv.innerText || '';
-                    }
-                    if (typeof content === 'string') {
-                      return content;
-                    }
-                    if (innerBlock.originalContent) {
-                      const tempDiv = document.createElement('div');
-                      tempDiv.innerHTML = innerBlock.originalContent;
-                      const liElement = tempDiv.querySelector('li');
-                      return liElement ? (liElement.textContent || liElement.innerText || '') : '';
-                    }
-                    return '';
-                  })
-                  .join('\n');
-              }
-              if (returnStructured) {
-                const listHtml = block.attributes.values || '';
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = listHtml;
-                const items = Array.from(tempDiv.querySelectorAll('li')).map(li => li.textContent || li.innerText || '');
-                return {
-                  type: 'list',
-                  items: items
-                };
-              }
-              const listHtml = block.attributes.values || '';
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = listHtml;
-              return tempDiv.textContent || tempDiv.innerText || '';
-            case 'core/list-item':
-              return block.attributes.content || '';
-            case 'core/quote':
-              return block.attributes.value || '';
-            case 'core/table':
-              if (returnStructured) {
-                const tableData = block.attributes.body || [];
-                return {
-                  type: 'table',
-                  rows: tableData.map(row => ({
-                    cells: row.cells ? row.cells.map(cell => cell.content || '') : []
-                  }))
-                };
-              }
-              const tableData = block.attributes.body || [];
-              let tableText = '';
-              tableData.forEach(row => {
-                if (row && row.cells) {
-                  row.cells.forEach(cell => {
-                    if (cell && cell.content) {
-                      tableText += cell.content + ' ';
-                    }
-                  });
-                  tableText += '\n';
-                }
-              });
-              return tableText.trim();
-            case 'core/paragraph':
-            case 'core/heading':
-            default:
-              return block.attributes.content || '';
-          }
-        };
-
-        console.log(`${indent}Block: ${block.name} (ID: ${block.clientId})`);
-        console.log(`${indent}  Supported: ${isSupported}`);
-        console.log(`${indent}  Attributes:`, block.attributes);
-
-        if (isSupported) {
-          const content = getContent(block, isComplex);
-          console.log(`${indent}  Content (${isComplex ? 'JSON' : 'text'}):`, content);
-          console.log(`${indent}  Payload to API:`, isComplex ? { json: content, blockType: block.name } : { text: content });
-        }
-        if (block.innerBlocks && block.innerBlocks.length > 0) {
-          console.log(`${indent}  Inner blocks:`);
-          block.innerBlocks.forEach(innerBlock => processBlock(innerBlock, depth + 1));
-        }
-      };
-
-      console.log('=== AI Wand Block Analysis ===');
-      console.log('Supported block types:', supportedBlocks);
-      console.log('\nAll blocks in editor:');
-      blocks.forEach(block => processBlock(block));
-      console.log('\n=== End of Analysis ===');
-
-      return blocks;
-    },
-
-    getSelectedBlock: () => {
-      const block = wp.data.select('core/block-editor').getSelectedBlock();
-      if (!block) {
-        console.log('No block selected');
-        return null;
-      }
-      console.log('Selected block:', block.name);
-      console.log('Block ID:', block.clientId);
-      console.log('Attributes:', block.attributes);
-      console.log('Inner blocks:', block.innerBlocks);
-      console.log('Original content:', block.originalContent);
-      const isComplexBlock = ['core/list', 'core/table'].includes(block.name);
-      const blockContent = window.mwaiWand.getBlockContent(block, isComplexBlock);
-      const text = typeof blockContent === 'object' ? '' : blockContent;
-      console.log('Content extracted:', blockContent);
-      console.log('Text for API:', text);
-      console.log('Is complex block:', isComplexBlock);
-      if (isComplexBlock) {
-        console.log('Payload to API:', { json: blockContent, blockType: block.name });
-      } else {
-        console.log('Payload to API:', { text: text });
-      }
-      return block;
-    },
-
-    getBlockContent: (block, returnStructured = false) => {
-      switch (block.name) {
-        case 'core/list':
-          if (block.innerBlocks && block.innerBlocks.length > 0) {
-            if (returnStructured) {
-              const items = block.innerBlocks
-                .filter(innerBlock => innerBlock.name === 'core/list-item')
-                .map(innerBlock => {
-                  const content = innerBlock.attributes.content;
-                  if (content && typeof content === 'object' && content.originalHTML) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = content.originalHTML;
-                    return tempDiv.textContent || tempDiv.innerText || '';
-                  }
-                  if (typeof content === 'string') {
-                    return content;
-                  }
-                  if (innerBlock.originalContent) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = innerBlock.originalContent;
-                    const liElement = tempDiv.querySelector('li');
-                    return liElement ? (liElement.textContent || liElement.innerText || '') : '';
-                  }
-                  return '';
-                });
-              return {
-                type: 'list',
-                items: items
-              };
-            }
-            return block.innerBlocks
-              .filter(innerBlock => innerBlock.name === 'core/list-item')
-              .map(innerBlock => {
-                const content = innerBlock.attributes.content;
-                if (content && typeof content === 'object' && content.originalHTML) {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = content.originalHTML;
-                  return tempDiv.textContent || tempDiv.innerText || '';
-                }
-                if (typeof content === 'string') {
-                  return content;
-                }
-                if (innerBlock.originalContent) {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = innerBlock.originalContent;
-                  const liElement = tempDiv.querySelector('li');
-                  return liElement ? (liElement.textContent || liElement.innerText || '') : '';
-                }
-                return '';
-              })
-              .join('\n');
-          }
-          if (returnStructured) {
-            const listHtml = block.attributes.values || '';
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = listHtml;
-            const items = Array.from(tempDiv.querySelectorAll('li')).map(li => li.textContent || li.innerText || '');
-            return {
-              type: 'list',
-              items: items
-            };
-          }
-          const listHtml = block.attributes.values || '';
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = listHtml;
-          return tempDiv.textContent || tempDiv.innerText || '';
-        case 'core/list-item':
-          return block.attributes.content || '';
-        case 'core/quote':
-          return block.attributes.value || '';
-        case 'core/table':
-          const tableData = block.attributes.body || [];
-          const getCellText = (cellContent) => {
-            if (cellContent && typeof cellContent === 'object' && cellContent.originalHTML) {
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = cellContent.originalHTML;
-              return tempDiv.textContent || tempDiv.innerText || '';
-            }
-            if (typeof cellContent === 'string') {
-              return cellContent;
-            }
-            return '';
-          };
-          if (returnStructured) {
-            return {
-              type: 'table',
-              rows: tableData.map(row => ({
-                cells: row.cells ? row.cells.map(cell => getCellText(cell.content)) : []
-              }))
-            };
-          }
-          let tableText = '';
-          tableData.forEach(row => {
-            if (row && row.cells) {
-              row.cells.forEach(cell => {
-                const text = getCellText(cell.content);
-                if (text) {
-                  tableText += text + ' ';
-                }
-              });
-              tableText += '\n';
-            }
-          });
-          return tableText.trim();
-        case 'core/paragraph':
-        case 'core/heading':
-        default:
-          return block.attributes.content || '';
-      }
-    },
-    testAction: async (action = 'correctText') => {
-      const block = wp.data.select('core/block-editor').getSelectedBlock();
-      if (!block) {
-        console.error('No block selected');
-        return;
-      }
-      console.log('Testing action:', action, 'on block:', block.name);
-      const isComplexBlock = ['core/list', 'core/table'].includes(block.name);
-      const blockContent = window.mwaiWand.getBlockContent(block, isComplexBlock);
-      const text = typeof blockContent === 'object' ? '' : blockContent;
-      const dataPayload = { postId: wp.data.select('core/editor').getCurrentPost().id };
-      if (isComplexBlock) {
-        dataPayload.json = blockContent;
-        dataPayload.blockType = block.name;
-      } else {
-        dataPayload.text = text;
-        dataPayload.selectedText = window.getSelection().toString();
-      }
-      console.log('Payload:', { action, data: dataPayload });
-      try {
-        const response = await fetch(`${apiUrl}/ai/magic_wand`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-WP-Nonce': restNonce
-          },
-          body: JSON.stringify({ action, data: dataPayload })
-        });
-        const result = await response.json();
-        console.log('Response:', result);
-        return result;
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    },
-    debugListItems: () => {
-      const block = wp.data.select('core/block-editor').getSelectedBlock();
-      if (!block || block.name !== 'core/list') {
-        console.log('Please select a list block');
-        return;
-      }
-      console.log('=== List Block Debug ===');
-      console.log('List block attributes:', block.attributes);
-      console.log('Number of inner blocks:', block.innerBlocks.length);
-      block.innerBlocks.forEach((item, index) => {
-        console.log(`\nList item ${index + 1}:`);
-        console.log('  Name:', item.name);
-        console.log('  Attributes:', item.attributes);
-        console.log('  Original content:', item.originalContent);
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = item.originalContent;
-        const liElement = tempDiv.querySelector('li');
-        const extractedText = liElement ? (liElement.textContent || liElement.innerText || '') : '';
-        console.log('  Extracted text:', extractedText);
-      });
-    },
-    help: () => {
-      console.log('=== AI Wand Debug Utility ===');
-      console.log('Available commands:');
-      console.log('  mwaiWand.getAllBlocks() - Show all blocks and their content');
-      console.log('  mwaiWand.getSelectedBlock() - Show currently selected block info');
-      console.log('  mwaiWand.debugListItems() - Debug list items in selected list');
-      console.log('  mwaiWand.getBlockContent(block, structured) - Get content from a block');
-      console.log('  mwaiWand.testAction(action) - Test an AI Wand action on selected block');
-      console.log('\nAvailable actions: correctText, enhanceText, longerText, shorterText, translateText, suggestSynonyms');
-      console.log('\nExample: mwaiWand.testAction("correctText")');
-    }
-  };
-  console.log('AI Wand Debug Utility loaded. Type mwaiWand.help() for usage.');
-}
-
-export default BlockFeatures;

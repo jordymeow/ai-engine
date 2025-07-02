@@ -1,16 +1,15 @@
 <?php
 
 class Meow_MWAI_Engines_Factory {
-
-  private static function get_default_env_id( $core ) : ?string {
+  private static function get_default_env_id( $core ): ?string {
     return $core->get_option( 'ai_default_env' );
   }
 
-  private static function get_default_model( $core ) : ?string {
+  private static function get_default_model( $core ): ?string {
     return $core->get_option( 'ai_default_model' );
   }
 
-  private static function get_env_from_id( $core, $envId ) : ?array {
+  private static function get_env_from_id( $core, $envId ): ?array {
     $envs = $core->get_option( 'ai_envs' );
     foreach ( $envs as $env ) {
       if ( $env['id'] === $envId ) {
@@ -20,7 +19,7 @@ class Meow_MWAI_Engines_Factory {
     throw new Exception( "AI Engine: No environment found for ID ($envId)." );
   }
 
-  private static function get_env_from_type( $core, $type, $envId ) : ?array {
+  private static function get_env_from_type( $core, $type, $envId ): ?array {
     $types = is_array( $type ) ? $type : [ $type ];
 
     // Try first to find the env with the ID provided.
@@ -51,7 +50,7 @@ class Meow_MWAI_Engines_Factory {
     throw new Exception( "AI Engine: No environment found for type ($type)." );
   }
 
-  public static function get( $core, $envId = null ) : ?Meow_MWAI_Engines_Core {
+  public static function get( $core, $envId = null ): ?Meow_MWAI_Engines_Core {
     // If no envId is provided, we will use the default one as well as the default model.
     $model = null;
     if ( empty( $envId ) ) {
@@ -86,7 +85,7 @@ class Meow_MWAI_Engines_Factory {
     else if ( $env['type'] === 'perplexity' ) {
       $engine = new Meow_MWAI_Engines_Perplexity( $core, $env );
       return $engine;
-    } 
+    }
 
     // Last chance via a filter.
     $engine = apply_filters( 'mwai_init_engine', null, $core, $env );
@@ -97,7 +96,7 @@ class Meow_MWAI_Engines_Factory {
     throw new Exception( "AI Engine: Unknown engine type ({$env['type']})." );
   }
 
-  public static function get_openai( $core, $envId = null ) : Meow_MWAI_Engines_OpenAI {
+  public static function get_openai( $core, $envId = null ): Meow_MWAI_Engines_OpenAI {
     $env = self::get_env_from_type( $core, [ 'openai', 'azure' ], $envId );
     $engine = Meow_MWAI_Engines_OpenAI::create( $core, $env );
     return $engine;

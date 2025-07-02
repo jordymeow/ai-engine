@@ -1,4 +1,8 @@
 <?php
+// NOTE: This OAuth implementation is currently disabled in MCP due to
+// security issues (unvalidated redirect URIs). The class remains for
+// reference but is not loaded anywhere. Do not rely on this code until
+// proper client registration and redirect URI validation is implemented.
 
 class Meow_MWAI_Labs_OAuth {
   private $core = null;
@@ -12,9 +16,16 @@ class Meow_MWAI_Labs_OAuth {
   public function __construct( $core, $logging = false ) {
     $this->core = $core;
     $this->logging = $logging;
-    
+
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
     add_action( 'init', [ $this, 'handle_well_known' ] );
+
+    // Cleanup expired authorization codes and access tokens on a schedule.
+    // When OAuth is enabled, this ensures tokens don't accumulate forever.
+    add_action( 'mwai_cleanup_oauth', [ $this, 'cleanup_expired' ] );
+    if ( !wp_next_scheduled( 'mwai_cleanup_oauth' ) ) {
+      wp_schedule_event( time(), 'hourly', 'mwai_cleanup_oauth' );
+    }
   }
 
   public function rest_api_init() {
@@ -61,7 +72,7 @@ class Meow_MWAI_Labs_OAuth {
     if ( $this->logging ) {
       error_log( '[OAuth] 🔐 Authorize: ' . $request->get_param( 'client_id' ) );
     }
-    
+
     $response_type = $request->get_param( 'response_type' );
     $client_id = $request->get_param( 'client_id' );
     $redirect_uri = $request->get_param( 'redirect_uri' );
@@ -84,7 +95,7 @@ class Meow_MWAI_Labs_OAuth {
     }
 
     // Check if user is logged in
-    if ( ! is_user_logged_in() ) {
+    if ( !is_user_logged_in() ) {
       // Store OAuth params in session/transient
       $session_key = 'oauth_' . wp_generate_password( 16, false );
       set_transient( $session_key, [
@@ -101,7 +112,7 @@ class Meow_MWAI_Labs_OAuth {
     }
 
     // User is logged in, generate authorization code
-    $code = $this->generate_authorization_code( 
+    $code = $this->generate_authorization_code(
       get_current_user_id(),
       $client_id,
       $redirect_uri,
@@ -114,7 +125,7 @@ class Meow_MWAI_Labs_OAuth {
       'code' => $code,
       'state' => $state
     ];
-    
+
     $redirect_url = add_query_arg( $redirect_params, $redirect_uri );
     wp_redirect( $redirect_url );
     exit;
@@ -131,7 +142,7 @@ class Meow_MWAI_Labs_OAuth {
       }
       error_log( '[OAuth] 🎫 Token exchange for client: ' . $request->get_param( 'client_id' ) );
     }
-    
+
     $grant_type = $request->get_param( 'grant_type' );
     $code = $request->get_param( 'code' );
     $client_id = $request->get_param( 'client_id' );
@@ -150,7 +161,7 @@ class Meow_MWAI_Labs_OAuth {
 
     // Validate authorization code
     $codes = get_option( $this->codes_option, [] );
-    if ( ! isset( $codes[ $code ] ) ) {
+    if ( !isset( $codes[ $code ] ) ) {
       return new WP_Error( 'invalid_grant', 'Invalid authorization code', [ 'status' => 400 ] );
     }
 
@@ -197,9 +208,9 @@ class Meow_MWAI_Labs_OAuth {
     if ( $this->logging ) {
       error_log( '[OAuth] ✅ Auth code generated for user ' . $user_id . '.' );
     }
-    
+
     $code = wp_generate_password( 32, false );
-    
+
     $codes = get_option( $this->codes_option, [] );
     $codes[ $code ] = [
       'user_id' => $user_id,
@@ -209,9 +220,9 @@ class Meow_MWAI_Labs_OAuth {
       'scope' => $scope,
       'expires' => time() + $this->code_lifetime
     ];
-    
+
     update_option( $this->codes_option, $codes );
-    
+
     return $code;
   }
 
@@ -220,31 +231,31 @@ class Meow_MWAI_Labs_OAuth {
     if ( $this->logging ) {
       error_log( '[OAuth] ✅ Access token generated for user ' . $user_id . '.' );
     }
-    
+
     $token = wp_generate_password( 40, false );
-    
+
     $tokens = get_option( $this->tokens_option, [] );
     $tokens[ $token ] = [
       'user_id' => $user_id,
       'scope' => $scope,
       'expires' => time() + $this->token_lifetime
     ];
-    
+
     update_option( $this->tokens_option, $tokens );
-    
+
     return $token;
   }
 
   // Validate access token
   public function validate_token( $token ) {
     $tokens = get_option( $this->tokens_option, [] );
-    
-    if ( ! isset( $tokens[ $token ] ) ) {
+
+    if ( !isset( $tokens[ $token ] ) ) {
       return false;
     }
-    
+
     $token_data = $tokens[ $token ];
-    
+
     // Check if expired
     if ( time() > $token_data['expires'] ) {
       if ( $this->logging ) {
@@ -254,11 +265,11 @@ class Meow_MWAI_Labs_OAuth {
       update_option( $this->tokens_option, $tokens );
       return false;
     }
-    
+
     if ( $this->logging ) {
       error_log( '[OAuth] ✅ Token valid for user ' . $token_data['user_id'] . '.' );
     }
-    
+
     return $token_data;
   }
 
@@ -266,59 +277,59 @@ class Meow_MWAI_Labs_OAuth {
   private function show_login_form( $session_key ) {
     $login_url = wp_login_url( add_query_arg( 'oauth_session', $session_key, $_SERVER['REQUEST_URI'] ) );
     ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Login Required</title>
-      <style>
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          margin: 0;
-          background: #f5f5f5;
-        }
-        .login-container {
-          background: white;
-          padding: 40px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          text-align: center;
-          max-width: 400px;
-        }
-        h2 {
-          margin-top: 0;
-          color: #333;
-        }
-        p {
-          color: #666;
-          margin-bottom: 30px;
-        }
-        .login-button {
-          display: inline-block;
-          background: #0073aa;
-          color: white;
-          padding: 12px 24px;
-          text-decoration: none;
-          border-radius: 4px;
-          font-weight: 500;
-        }
-        .login-button:hover {
-          background: #005a87;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="login-container">
-        <h2>Authorization Required</h2>
-        <p>Please log in to authorize access to your MCP connector.</p>
-        <a href="<?php echo esc_url( $login_url ); ?>" class="login-button">Log In</a>
-      </div>
-    </body>
-    </html>
-    <?php
+                                                                                                                                                                                                                                <!DOCTYPE html>
+                                                                                                                                                                                                                                <html>
+                                                                                                                                                                                                                                <head>
+                                                                                                                                                                                                                                <title>Login Required</title>
+                                                                                                                                                                                                                                <style>
+                                                                                                                                                                                                                                body {
+                                                                                                                                                                                                                                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                                                                                                                                                                                                                                  display: flex;
+                                                                                                                                                                                                                                  justify-content: center;
+                                                                                                                                                                                                                                  align-items: center;
+                                                                                                                                                                                                                                  height: 100vh;
+                                                                                                                                                                                                                                  margin: 0;
+                                                                                                                                                                                                                                  background: #f5f5f5;
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                              .login-container {
+                                                                                                                                                                                                                                background: white;
+                                                                                                                                                                                                                                padding: 40px;
+                                                                                                                                                                                                                                border-radius: 8px;
+                                                                                                                                                                                                                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                                                                                                                                                                                                                  text-align: center;
+                                                                                                                                                                                                                                  max-width: 400px;
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                              h2 {
+                                                                                                                                                                                                                                margin-top: 0;
+                                                                                                                                                                                                                                color: #333;
+                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                            p {
+                                                                                                                                                                                                                              color: #666;
+                                                                                                                                                                                                                              margin-bottom: 30px;
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                          .login-button {
+                                                                                                                                                                                                                            display: inline-block;
+                                                                                                                                                                                                                            background: #0073aa;
+                                                                                                                                                                                                                            color: white;
+                                                                                                                                                                                                                            padding: 12px 24px;
+                                                                                                                                                                                                                            text-decoration: none;
+                                                                                                                                                                                                                            border-radius: 4px;
+                                                                                                                                                                                                                            font-weight: 500;
+                                                                                                                                                                                                                          }
+                                                                                                                                                                                                                        .login-button:hover {
+                                                                                                                                                                                                                          background: #005a87;
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                      </style>
+                                                                                                                                                                                                                      </head>
+                                                                                                                                                                                                                      <body>
+                                                                                                                                                                                                                      <div class="login-container">
+                                                                                                                                                                                                                      <h2>Authorization Required</h2>
+                                                                                                                                                                                                                      <p>Please log in to authorize access to your MCP connector.</p>
+                                                                                                                                                                                                                      <a href="<?php echo esc_url( $login_url ); ?>" class="login-button">Log In</a>
+                                                                                                                                                                                                                      </div>
+                                                                                                                                                                                                                      </body>
+                                                                                                                                                                                                                      </html>
+                                                                                                                                                                                                                      <?php
   }
 
   // Handle OAuth callback after login
@@ -329,10 +340,10 @@ class Meow_MWAI_Labs_OAuth {
       }
       $session_key = sanitize_text_field( $_GET['oauth_session'] );
       $oauth_params = get_transient( $session_key );
-      
+
       if ( $oauth_params ) {
         delete_transient( $session_key );
-        
+
         // Generate authorization code
         $code = $this->generate_authorization_code(
           get_current_user_id(),
@@ -341,13 +352,13 @@ class Meow_MWAI_Labs_OAuth {
           $oauth_params['code_challenge'],
           $oauth_params['scope']
         );
-        
+
         // Redirect back with code
         $redirect_params = [
           'code' => $code,
           'state' => $oauth_params['state']
         ];
-        
+
         $redirect_url = add_query_arg( $redirect_params, $oauth_params['redirect_uri'] );
         wp_redirect( $redirect_url );
         exit;
@@ -360,9 +371,9 @@ class Meow_MWAI_Labs_OAuth {
     if ( $this->logging ) {
       error_log( '[OAuth] 🧹 Cleaning expired tokens.' );
     }
-    
+
     $now = time();
-    
+
     // Clean codes
     $codes = get_option( $this->codes_option, [] );
     foreach ( $codes as $code => $data ) {
@@ -371,7 +382,7 @@ class Meow_MWAI_Labs_OAuth {
       }
     }
     update_option( $this->codes_option, $codes );
-    
+
     // Clean tokens
     $tokens = get_option( $this->tokens_option, [] );
     foreach ( $tokens as $token => $data ) {

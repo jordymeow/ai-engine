@@ -4,19 +4,18 @@
 // it in your theme's functions.php or your main wp-config.php. If set to true,
 // additional time will be spent fetching exact pricing info from OpenRouter
 // after each query, resulting in more accurate but potentially slower responses.
-if ( ! defined( 'MWAI_OPENROUTER_ACCURATE_PRICING' ) ) {
+if ( !defined( 'MWAI_OPENROUTER_ACCURATE_PRICING' ) ) {
   define( 'MWAI_OPENROUTER_ACCURATE_PRICING', false );
 }
 
-class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
-{
+class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
   /**
-   * Keep a static dictionary (query -> price) so that if we see the same query
-   * again in another instance, we can immediately return the stored price
-   * instead of recomputing.
-   * @var array
-   */
-  private static $accuratePrices = array();
+  * Keep a static dictionary (query -> price) so that if we see the same query
+  * again in another instance, we can immediately return the stored price
+  * instead of recomputing.
+  * @var array
+  */
+  private static $accuratePrices = [];
 
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
@@ -33,7 +32,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
   }
 
   protected function build_headers( $query ) {
-    $site_url  = apply_filters( 'mwai_openrouter_site_url', get_site_url(), $query );
+    $site_url = apply_filters( 'mwai_openrouter_site_url', get_site_url(), $query );
     $site_name = apply_filters( 'mwai_openrouter_site_name', get_bloginfo( 'name' ), $query );
     if ( $query->apiKey ) {
       $this->apiKey = $query->apiKey;
@@ -41,13 +40,13 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
     if ( empty( $this->apiKey ) ) {
       throw new Exception( 'No API Key provided. Please visit the Settings.' );
     }
-    return array(
-      'Content-Type'  => 'application/json',
+    return [
+      'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
-      'HTTP-Referer'  => $site_url,
-      'X-Title'       => $site_name,
-      'User-Agent'    => 'AI Engine',
-    );
+      'HTTP-Referer' => $site_url,
+      'X-Title' => $site_name,
+      'User-Agent' => 'AI Engine',
+    ];
   }
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
@@ -59,7 +58,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
   }
 
   protected function get_service_name() {
-    return "OpenRouter";
+    return 'OpenRouter';
   }
 
   public function get_models() {
@@ -67,8 +66,8 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
   }
 
   /**
-   * Requests usage data if streaming was used and the usage is incomplete.
-   */
+  * Requests usage data if streaming was used and the usage is incomplete.
+  */
   public function handle_tokens_usage(
     $reply,
     $query,
@@ -80,7 +79,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
     // If streaming is not enabled, we might already have all usage data
     $everything_is_set = !is_null( $returned_model )
       && !is_null( $returned_in_tokens )
-      && !is_null( $returned_out_tokens );
+        && !is_null( $returned_out_tokens );
 
     // Clean up the data
     $returned_in_tokens = $returned_in_tokens ?? $reply->get_in_tokens( $query );
@@ -105,8 +104,8 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
   }
 
   /**
-   * Retrieve the models from OpenRouter, adding tags/features accordingly.
-   */
+  * Retrieve the models from OpenRouter, adding tags/features accordingly.
+  */
   public function retrieve_models() {
 
     // 1. Get the list of models supporting "tools"
@@ -123,19 +122,19 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
       throw new Exception( 'AI Engine: Invalid response for the list of models.' );
     }
 
-    $models = array();
+    $models = [];
     foreach ( $body['data'] as $model ) {
 
       // Basic defaults
-      $family              = 'n/a';
+      $family = 'n/a';
       $maxCompletionTokens = 4096;
       $maxContextualTokens = 8096;
-      $priceIn             = 0;
-      $priceOut            = 0;
+      $priceIn = 0;
+      $priceOut = 0;
 
       // Family from model ID (e.g. "openai/gpt-4/32k" -> "openai")
       if ( isset( $model['id'] ) ) {
-        $parts  = explode( '/', $model['id'] );
+        $parts = explode( '/', $model['id'] );
         $family = $parts[0] ?? 'n/a';
       }
 
@@ -159,17 +158,17 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
 
       // Basic features and tags
       $features = [ 'completion' ];
-      $tags     = [ 'core', 'chat' ];
+      $tags = [ 'core', 'chat' ];
 
       // If the name contains (beta), (alpha) or (preview), add 'preview' tag and remove from name
       if ( preg_match( '/\((beta|alpha|preview)\)/i', $model['name'] ) ) {
-        $tags[]       = 'preview';
+        $tags[] = 'preview';
         $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
       }
 
       // If model supports tools
       if ( in_array( $model['id'], $toolsModels, true ) ) {
-        $tags[]     = 'functions';
+        $tags[] = 'functions';
         $features[] = 'functions';
       }
 
@@ -179,51 +178,51 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
       $modality_lc = strtolower( $modality );
       if (
         strpos( $modality_lc, 'image->' ) !== false ||
-        strpos( $modality_lc, 'image+' ) !== false ||
-        strpos( $modality_lc, '+image->' ) !== false
+          strpos( $modality_lc, 'image+' ) !== false ||
+            strpos( $modality_lc, '+image->' ) !== false
       ) {
         // Means it can handle images as input, so we consider that "vision"
         $tags[] = 'vision';
       }
 
-      $models[] = array(
-        'model'               => $model['id'] ?? '',
-        'name'                => trim( $model['name'] ?? '' ),
-        'family'              => $family,
-        'features'            => $features,
-        'price'               => array(
-          'in'  => $priceIn,
+      $models[] = [
+        'model' => $model['id'] ?? '',
+        'name' => trim( $model['name'] ?? '' ),
+        'family' => $family,
+        'features' => $features,
+        'price' => [
+          'in' => $priceIn,
           'out' => $priceOut,
-        ),
-        'type'                => 'token',
-        'unit'                => 1 / 1000,
+        ],
+        'type' => 'token',
+        'unit' => 1 / 1000,
         'maxCompletionTokens' => $maxCompletionTokens,
         'maxContextualTokens' => $maxContextualTokens,
-        'tags'                => $tags,
-      );
+        'tags' => $tags,
+      ];
     }
 
     return $models;
   }
 
   /**
-   * Return an array of model IDs that support a certain feature (e.g. "tools").
-   */
+  * Return an array of model IDs that support a certain feature (e.g. "tools").
+  */
   private function get_supported_models( $feature ) {
     // Make a request to get models supporting that feature
     $url = 'https://openrouter.ai/api/v1/models?supported_parameters=' . urlencode( $feature );
     $response = wp_remote_get( $url );
     if ( is_wp_error( $response ) ) {
       Meow_MWAI_Logging::error( "OpenRouter: Failed to retrieve models for '$feature': " . $response->get_error_message() );
-      return array();
+      return [];
     }
     $body = json_decode( $response['body'], true );
     if ( !isset( $body['data'] ) || !is_array( $body['data'] ) ) {
       Meow_MWAI_Logging::error( "OpenRouter: Invalid response for '$feature' models." );
-      return array();
+      return [];
     }
 
-    $modelIDs = array();
+    $modelIDs = [];
     foreach ( $body['data'] as $m ) {
       if ( isset( $m['id'] ) ) {
         $modelIDs[] = $m['id'];
@@ -234,10 +233,57 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML
   }
 
   /**
-   * Utility function to truncate a float to a specific precision.
-   */
+  * Utility function to truncate a float to a specific precision.
+  */
   private function truncate_float( $number, $precision = 4 ) {
     $factor = pow( 10, $precision );
     return floor( $number * $factor ) / $factor;
+  }
+
+  /**
+   * Check the connection to OpenRouter by listing models.
+   * Uses the existing retrieve_models method for consistency.
+   */
+  public function connection_check() {
+    try {
+      // Use the existing retrieve_models method
+      $models = $this->retrieve_models();
+      
+      if ( !is_array( $models ) ) {
+        throw new Exception( 'Invalid response format from OpenRouter' );
+      }
+
+      $modelCount = count( $models );
+      $availableModels = [];
+      
+      // Get first 5 models for display
+      $displayModels = array_slice( $models, 0, 5 );
+      foreach ( $displayModels as $model ) {
+        if ( isset( $model['model'] ) ) {
+          $availableModels[] = $model['model'];
+        }
+      }
+
+      return [
+        'success' => true,
+        'service' => 'OpenRouter',
+        'message' => "Connection successful. Found {$modelCount} models.",
+        'details' => [
+          'endpoint' => 'https://openrouter.ai/api/v1/models',
+          'model_count' => $modelCount,
+          'sample_models' => $availableModels
+        ]
+      ];
+    }
+    catch ( Exception $e ) {
+      return [
+        'success' => false,
+        'service' => 'OpenRouter',
+        'error' => $e->getMessage(),
+        'details' => [
+          'endpoint' => 'https://openrouter.ai/api/v1/models'
+        ]
+      ];
+    }
   }
 }

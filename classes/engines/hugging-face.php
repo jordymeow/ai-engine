@@ -1,10 +1,7 @@
 <?php
 
-class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
-{
-
-  public function __construct( $core, $env )
-  {
+class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML {
+  public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
   }
 
@@ -21,7 +18,7 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
 
     // If the role is not either "user" or "assistant", we need to set it to "assistant".
     foreach ( $messages as &$message ) {
-      if ( !in_array( $message['role'], array( 'user', 'assistant' ) ) ) {
+      if ( !in_array( $message['role'], [ 'user', 'assistant' ] ) ) {
         $message['role'] = 'assistant';
       }
     }
@@ -35,7 +32,7 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
     // To use "Text Generation Inference" (OpenAI's API) with HuggingFace, we need to specify TGI as the model.
     $body['model'] = 'tgi';
     // Certain OpenAI features, like function calling, are not compatible with TGI. Currently, the Messages API supports the following chat completion parameters: stream, max_tokens, frequency_penalty, logprobs, seed, temperature, and top_p. Let's remove everything else.
-    $body = array_intersect_key( $body, array_flip( array( 'model', 'stream', 'max_tokens', 'frequency_penalty', 'logprobs', 'seed', 'temperature', 'top_p', 'messages' ) ) );
+    $body = array_intersect_key( $body, array_flip( [ 'model', 'stream', 'max_tokens', 'frequency_penalty', 'logprobs', 'seed', 'temperature', 'top_p', 'messages' ] ) );
     return $body;
   }
 
@@ -44,7 +41,7 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
     if ( isset( $this->env['customModels'] ) ) {
       foreach ( $this->env['customModels'] as $customModel ) {
         if ( $customModel['name'] === $model ) {
-          $endpoint = $customModel['apiUrl']  . '/v1/';
+          $endpoint = $customModel['apiUrl'] . '/v1/';
           break;
         }
       }
@@ -58,16 +55,16 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
 
   protected function build_headers( $query ) {
     parent::build_headers( $query );
-    $headers = array(
+    $headers = [
       'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
       'User-Agent' => 'AI Engine',
-    );
+    ];
     return $headers;
   }
 
   protected function get_service_name() {
-    return "HuggingFace";
+    return 'HuggingFace';
   }
 
   public function get_models() {
@@ -82,12 +79,12 @@ class Meow_MWAI_Engines_HuggingFace extends Meow_MWAI_Engines_ChatML
           $tags[] = 'chat';
         }
         $features = in_array( 'image', $tags ) ? ['text-to-image'] : ['completion'];
-        $models[] = array(
+        $models[] = [
           'model' => $model['name'],
           'name' => $model['name'],
           'features' => $features,
           'tags' => $tags,
-        );
+        ];
       }
     }
     return $models;

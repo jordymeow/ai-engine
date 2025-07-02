@@ -1,12 +1,12 @@
-// Previous: 2.8.2
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 const { useCallback, useMemo, useState } = wp.element;
 import { nekoStringify } from '@neko-ui';
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput, NekoCheckbox,
   NekoAccordions, NekoAccordion, NekoMessage, NekoSpacer,
-  NekoSelect, NekoOption, nekoFetch } from '@neko-ui';
+  NekoSelect, NekoOption, nekoFetch, NekoModal } from '@neko-ui';
 import { apiUrl, restNonce } from '@app/settings';
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers-admin';
@@ -86,7 +86,7 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels,  }) => {
     <NekoSettings title={i18n.COMMON.HUGGINGFACE_MODELS} style={{ marginTop: 10 }}>
       {customModels.map((customModel, index) => (
         <div key={index} style={{ display: 'flex', flexDirection: 'column', marginBottom: 10 }}>
-          <div style={{ display: 'flex', marginBottom: 2 }}>
+          <div key={index} style={{ display: 'flex', marginBottom: 2 }}>
             <NekoInput style={{ flex: 1 }}
               value={customModel['name']}
               placeholder={i18n.COMMON.HUGGINGFACE_MODEL_NAME}
@@ -150,10 +150,13 @@ const CustomModels = ({ updateEnvironment, environmentId, customModels,  }) => {
 
 function AIEnvironmentsSettings({ options, environments, updateEnvironment, updateOption, busy }) {
   const [loading, setLoading] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResults, setTestResults] = useState(null);
   const aiEngines = options?.ai_engines ?? [];
 
   const addNewEnvironment = () => {
     const newEnv = {
+      //id: Date.now(), // Assuming id is a timestamp for uniqueness
       name: 'New Environment',
       type: 'openai',
       apikey: ''
@@ -199,6 +202,8 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
       if (!newModels) {
         throw new Error('Could not fetch models.');
       }
+      // After fetching, we need to update the options with the new models.
+      // We need to filter out the old models and add the new ones.
       newModels = newModels.map(x => ({ ...x, envId, type: envType }));
       let freshModels = options?.ai_models ?? [];
       freshModels = freshModels.filter(x => !(x.type === envType && (!x.envId || x.envId === envId)));
@@ -207,10 +212,31 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
     }
     catch (err) {
       alert(err.message);
+      // eslint-disable-next-line no-console
       console.log(err);
       setLoading(false);
     }
   }, [updateOption]);
+
+  const handleQuickTest = useCallback(async (env) => {
+    setTestBusy(true);
+    try {
+      const response = await nekoFetch(`${apiUrl}/ai/test_connection`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: { env_id: env.id }
+      });
+      setTestResults(response);
+    } catch (error) {
+      setTestResults({
+        success: false,
+        error: error.message || 'Failed to test connection',
+        provider: env.type
+      });
+    } finally {
+      setTestBusy(false);
+    }
+  }, []);
 
   const renderFields = (env) => {
     const currentEngine = aiEngines.find(engine => engine.type === env.type) || {};
@@ -372,6 +398,11 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
               <NekoAccordion title={i18n.COMMON.ACTIONS}>
                 <div style={{ display: 'flex', marginTop: 10 }}>
                   <div style={{ flex: 'auto' }} />
+                  <NekoButton className="primary"
+                    isBusy={testBusy}
+                    onClick={() => handleQuickTest(env)}>
+                    {i18n.COMMON.QUICK_TEST || 'Quick Test'}
+                  </NekoButton>
                   <NekoButton className="danger"
                     onClick={() => deleteEnvironment(env.id)}>
                     {i18n.COMMON.DELETE}
@@ -385,6 +416,76 @@ function AIEnvironmentsSettings({ options, environments, updateEnvironment, upda
 
         })}
       </NekoTabs>
+
+      <NekoModal
+        isOpen={!!testResults}
+        onRequestClose={() => setTestResults(null)}
+        title="Connection Test Results"
+        okButton={{
+          label: 'Close',
+          onClick: () => setTestResults(null)
+        }}
+        content={
+          testResults && (
+            <div>
+              {testResults.success ? (
+                <>
+                  <NekoMessage variant="success">
+                    Connection successful!
+                  </NekoMessage>
+                  <NekoSpacer />
+                  <div>
+                    <strong>Provider:</strong> {testResults.provider}<br/>
+                    <strong>Environment:</strong> {testResults.name}<br/>
+                    {testResults.data && (
+                      <>
+                        {testResults.provider === 'openai' && testResults.data.models && (
+                          <>
+                            <strong>Available Models:</strong> {testResults.data.models.length}<br/>
+                            <strong>Sample Models:</strong> {testResults.data.models.slice(0, 3).join(', ')}
+                            {testResults.data.models.length > 3 && '...'}
+                          </>
+                        )}
+                        {testResults.provider === 'anthropic' && testResults.data.models && (
+                          <>
+                            <strong>Available Models:</strong> {testResults.data.models.length}<br/>
+                            <strong>Models:</strong> {testResults.data.models.join(', ')}
+                          </>
+                        )}
+                        {testResults.provider === 'google' && testResults.data.models && (
+                          <>
+                            <strong>Available Models:</strong> {testResults.data.models.length}<br/>
+                            <strong>Sample Models:</strong> {testResults.data.models.slice(0, 3).join(', ')}
+                            {testResults.data.models.length > 3 && '...'}
+                          </>
+                        )}
+                        {testResults.provider === 'openrouter' && testResults.data.models && (
+                          <>
+                            <strong>Available Models:</strong> {testResults.data.models.length}<br/>
+                            <strong>Sample Models:</strong> {testResults.data.models.slice(0, 3).join(', ')}
+                            {testResults.data.models.length > 3 && '...'}
+                          </>
+                        )}
+                        {testResults.provider === 'azure' && testResults.data.deployments && (
+                          <>
+                            <strong>Deployments:</strong> {testResults.data.deployments.length}<br/>
+                            <strong>Available:</strong> {testResults.data.deployments.join(', ')}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <NekoMessage variant="danger">
+                  <strong>Connection failed!</strong><br/>
+                  {testResults.error}
+                </NekoMessage>
+              )}
+            </div>
+          )
+        }
+      />
     </div>
   );
 }

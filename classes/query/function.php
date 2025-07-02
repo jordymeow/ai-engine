@@ -8,8 +8,14 @@ class Meow_MWAI_Query_Function {
   public string $target; // 'server' or 'client'
   public ?string $id;
 
-  public function __construct( string $name, string $description,
-    array $parameters = [], string $type = null, string $id = null, string $target = null ) {
+  public function __construct(
+    string $name,
+    string $description,
+    array $parameters = [],
+    string $type = null,
+    string $id = null,
+    string $target = null
+  ) {
     // $name: The name of the function to be called.
     // Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
     if ( !preg_match( '/^[a-zA-Z0-9_-]{1,64}$/', $name ) ) {
@@ -18,7 +24,7 @@ class Meow_MWAI_Query_Function {
 
     foreach ( $parameters as $parameter ) {
       if ( !( $parameter instanceof Meow_MWAI_Query_Parameter ) ) {
-        throw new InvalidArgumentException( "AI Engine: Invalid parameter for Meow_MWAI_Query_Function." );
+        throw new InvalidArgumentException( 'AI Engine: Invalid parameter for Meow_MWAI_Query_Function.' );
       }
     }
 
@@ -33,12 +39,12 @@ class Meow_MWAI_Query_Function {
   public function serializeForOpenAI() {
     // Initialize the base structure with name and description
     $json = [ 'name' => $this->name, 'description' => $this->description ];
-  
+
     // Check if parameters are set and not empty
     if ( !empty( $this->parameters ) ) {
       $properties = [];
       $required = [];
-  
+
       // Loop through each parameter to construct the properties object
       foreach ( $this->parameters as $parameter ) {
 
@@ -53,18 +59,18 @@ class Meow_MWAI_Query_Function {
             'type' => 'string', // Assuming the items are strings
           ];
         }
-  
+
         // If an enum is set for the parameter, include it
-        if ( isset($parameter->enum) ) {
+        if ( isset( $parameter->enum ) ) {
           $properties[$parameter->name]['enum'] = $parameter->enum;
         }
-  
+
         // If the parameter is required, add its name to the required array
         if ( $parameter->required ) {
           $required[] = $parameter->name;
         }
       }
-  
+
       // Assemble the parameters part of the JSON
       $json['parameters'] = [
         'type' => 'object',
@@ -72,7 +78,7 @@ class Meow_MWAI_Query_Function {
         'required' => $required,
       ];
     }
-  
+
     return $json;
   }
 
@@ -89,21 +95,20 @@ class Meow_MWAI_Query_Function {
     if ( !empty( $this->parameters ) ) {
       $properties = [];
       $required = [];
-      foreach ( $this->parameters as $parameter ) 
-      {
+      foreach ( $this->parameters as $parameter ) {
         $properties[$parameter->name] = [
           'type' => $parameter->type,
           'description' => $parameter->description,
         ];
-        if ( isset( $parameter->enum ) )  {
+        if ( isset( $parameter->enum ) ) {
           $properties[$parameter->name]['enum'] = $parameter->enum;
         }
-        if ( $parameter->required )  {
+        if ( $parameter->required ) {
           $required[] = $parameter->name;
         }
       }
       $json['input_schema']['properties'] = empty( $properties ) ? new stdClass() : $properties;
-      if ( !empty( $required ) )  {
+      if ( !empty( $required ) ) {
         $json['input_schema']['required'] = $required;
       }
     }

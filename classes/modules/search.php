@@ -10,11 +10,11 @@ class Meow_MWAI_Modules_Search {
     add_action( 'pre_get_posts', [ $this, 'pre_get_posts' ] );
     add_filter( 'the_posts', [ $this, 'filter_embeddings_search_results' ], 10, 2 );
     add_filter( 'get_search_query', [ $this, 'customize_search_display' ] );
-    
+
     // Initialize search frontend settings if they don't exist
     $this->init_frontend_settings();
   }
-  
+
   private function init_frontend_settings() {
     // Ensure frontend search settings exist with defaults
     if ( $this->core->get_option( 'search_frontend_method' ) === null ) {
@@ -44,15 +44,15 @@ class Meow_MWAI_Modules_Search {
     if ( empty( $search ) ) {
       return;
     }
-    
+
     // Get the frontend search method setting
     $frontend_method = $this->core->get_option( 'search_frontend_method', 'wordpress' );
-    
+
     // If WordPress method is selected, do nothing (use default WordPress search)
     if ( $frontend_method === 'wordpress' ) {
       return;
     }
-    
+
     // For Keywords method, use the full progressive search like admin
     if ( $frontend_method === 'keywords' ) {
       // Store the original search for later use
@@ -61,7 +61,7 @@ class Meow_MWAI_Modules_Search {
       $query->set( 's', 'MWAI_KEYWORDS_SEARCH_' . md5( $search ) );
       return;
     }
-    
+
     // For Embeddings method, we need to handle this differently
     // Since we can't easily replace WordPress search with embeddings in pre_get_posts,
     // we'll modify the query to return no results and handle embeddings in template_redirect
@@ -78,56 +78,56 @@ class Meow_MWAI_Modules_Search {
     if ( !$query->is_main_query() || !$query->is_search() || is_admin() ) {
       return $posts;
     }
-    
+
     $search_term = $query->get( 's' );
     $original_search = $query->get( 'mwai_original_search' );
-    
+
     // Check if this is our embeddings or keywords search
-    if ( empty( $original_search ) || 
-         ( strpos( $search_term, 'MWAI_EMBEDDINGS_SEARCH_' ) !== 0 && 
-           strpos( $search_term, 'MWAI_KEYWORDS_SEARCH_' ) !== 0 ) ) {
+    if ( empty( $original_search ) ||
+        ( strpos( $search_term, 'MWAI_EMBEDDINGS_SEARCH_' ) !== 0 &&
+            strpos( $search_term, 'MWAI_KEYWORDS_SEARCH_' ) !== 0 ) ) {
       return $posts;
     }
-    
+
     // Handle Keywords search
     if ( strpos( $search_term, 'MWAI_KEYWORDS_SEARCH_' ) === 0 ) {
       return $this->handle_frontend_keywords_search( $original_search, $query );
     }
-    
+
     // Handle Embeddings search (existing logic below)
     if ( strpos( $search_term, 'MWAI_EMBEDDINGS_SEARCH_' ) !== 0 ) {
       return $posts;
     }
-    
+
     // Get the frontend search method to double-check
     $frontend_method = $this->core->get_option( 'search_frontend_method', 'wordpress' );
     if ( $frontend_method !== 'embeddings' ) {
       return $posts;
     }
-    
+
     // Get the embeddings environment ID
     $env_id = $this->core->get_option( 'search_frontend_env_id', null );
     if ( empty( $env_id ) ) {
       return $posts; // No environment selected, return empty
     }
-    
+
     try {
       // Perform embeddings search
       $embedding_result = $this->search_with_embeddings( $original_search, $env_id );
-      
+
       if ( isset( $embedding_result['error'] ) || empty( $embedding_result['post_ids'] ) ) {
         return []; // Return empty array if search failed or no results
       }
-      
+
       // Get the post IDs from embeddings results
-      $post_ids = array_map( function( $result ) {
+      $post_ids = array_map( function ( $result ) {
         return $result['id'];
       }, $embedding_result['post_ids'] );
-      
+
       if ( empty( $post_ids ) ) {
         return [];
       }
-      
+
       // Get the actual post objects
       $embeddings_posts = get_posts( [
         'post__in' => $post_ids,
@@ -136,14 +136,15 @@ class Meow_MWAI_Modules_Search {
         'post_type' => 'post',
         'post_status' => 'publish'
       ] );
-      
+
       // Update the query's found_posts count
       $query->found_posts = count( $embeddings_posts );
       $query->max_num_pages = 1;
-      
+
       return $embeddings_posts;
-      
-    } catch ( Exception $e ) {
+
+    }
+    catch ( Exception $e ) {
       error_log( 'AI Engine Search: Frontend embeddings search failed - ' . $e->getMessage() );
       return [];
     }
@@ -152,18 +153,18 @@ class Meow_MWAI_Modules_Search {
   private function handle_frontend_keywords_search( $original_search, $query ) {
     // Get website context for keywords search
     $website_context = $this->core->get_option( 'search_website_context', '' );
-    
+
     try {
       // Use the same search logic as the admin REST API
       $search_queries = $this->generate_keyword_tiers( $original_search, $website_context );
       $keyword_result = $this->search_with_keywords( $search_queries );
-      
+
       if ( !empty( $keyword_result['results'] ) ) {
         // Extract post IDs from results
-        $post_ids = array_map( function( $result ) {
+        $post_ids = array_map( function ( $result ) {
           return $result['id'];
         }, $keyword_result['results'] );
-        
+
         // Get the actual post objects
         $posts = get_posts( [
           'post__in' => $post_ids,
@@ -172,14 +173,14 @@ class Meow_MWAI_Modules_Search {
           'post_type' => 'post',
           'post_status' => 'publish'
         ] );
-        
+
         // Update the query's found_posts count
         $query->found_posts = count( $posts );
         $query->max_num_pages = 1;
-        
+
         return $posts;
       }
-      
+
       // If no results with keywords, fallback to original search
       $fallback_posts = get_posts( [
         's' => $original_search,
@@ -187,15 +188,16 @@ class Meow_MWAI_Modules_Search {
         'post_type' => 'post',
         'post_status' => 'publish'
       ] );
-      
+
       $query->found_posts = count( $fallback_posts );
       $query->max_num_pages = 1;
-      
+
       return $fallback_posts;
-      
-    } catch ( Exception $e ) {
+
+    }
+    catch ( Exception $e ) {
       error_log( 'AI Engine Search: Frontend keywords search failed - ' . $e->getMessage() );
-      
+
       // Fallback to original search
       $fallback_posts = get_posts( [
         's' => $original_search,
@@ -203,7 +205,7 @@ class Meow_MWAI_Modules_Search {
         'post_type' => 'post',
         'post_status' => 'publish'
       ] );
-      
+
       return $fallback_posts;
     }
   }
@@ -211,16 +213,16 @@ class Meow_MWAI_Modules_Search {
   private function get_site_context() {
     // Get all categories
     $categories = get_categories( [ 'hide_empty' => false ] );
-    $category_names = array_map( function( $cat ) {
+    $category_names = array_map( function ( $cat ) {
       return $cat->name;
     }, $categories );
-    
+
     // Get all tags
     $tags = get_tags( [ 'hide_empty' => false ] );
-    $tag_names = array_map( function( $tag ) {
+    $tag_names = array_map( function ( $tag ) {
       return $tag->name;
     }, $tags );
-    
+
     return [
       'categories' => $category_names,
       'tags' => $tag_names
@@ -229,20 +231,20 @@ class Meow_MWAI_Modules_Search {
 
   private function generate_keyword_tiers( $text, $website_context = '' ) {
     $context = $this->get_site_context();
-    
+
     $message = "Generate 40 progressive search queries for: \"$text\"\n\n";
-    
+
     if ( !empty( $website_context ) ) {
-      $message .= "Website Context: " . $website_context . "\n\n";
+      $message .= 'Website Context: ' . $website_context . "\n\n";
     }
-    
+
     if ( !empty( $context['categories'] ) ) {
-      $message .= "Site Categories: " . implode( ', ', array_slice( $context['categories'], 0, 20 ) ) . "\n";
+      $message .= 'Site Categories: ' . implode( ', ', array_slice( $context['categories'], 0, 20 ) ) . "\n";
     }
     if ( !empty( $context['tags'] ) ) {
-      $message .= "Site Tags: " . implode( ', ', array_slice( $context['tags'], 0, 20 ) ) . "\n";
+      $message .= 'Site Tags: ' . implode( ', ', array_slice( $context['tags'], 0, 20 ) ) . "\n";
     }
-    
+
     $message .= "\nCreate 40 search queries optimized for WordPress search:\n";
     $message .= "- WordPress searches for EXACT WORDS in post content, not concepts\n";
     $message .= "- Use SIMPLE, COMMON words that authors actually write in posts\n";
@@ -255,7 +257,7 @@ class Meow_MWAI_Modules_Search {
     $message .= "- Each line must be unique\n";
     $message .= "- Format exactly as: SCORE: keyword1 keyword2 keyword3\n";
     $message .= "- Do NOT add any other text, bullets, or formatting\n\n";
-    
+
     $message .= "Example for 'funny adventure game' on a gaming website:\n";
     $message .= "100: funny adventure game\n";
     $message .= "97: adventure game comedy\n";
@@ -297,13 +299,13 @@ class Meow_MWAI_Modules_Search {
     $message .= "17: island\n";
     $message .= "16: pirate\n";
     $message .= "15: monkey\n\n";
-    
+
     $message .= "IMPORTANT: Generate EXACTLY 40 queries following this format. Start at 100 and decrease by 2-3 points each time.\n";
     $message .= "Now generate 40 queries for \"$text\":\n";
-    
+
     $query = new Meow_MWAI_Query_Text( $message );
     $query->set_max_tokens( 2000 );  // Use max_tokens instead of max_results
-    
+
     try {
       $reply = $this->core->run_query( $query );
       if ( !empty( $reply->result ) ) {
@@ -316,28 +318,29 @@ class Meow_MWAI_Modules_Search {
     catch ( Exception $e ) {
       error_log( 'AI Engine Search: Failed to generate search queries - ' . $e->getMessage() );
     }
-    
+
     // Fallback
     return $this->fallback_keyword_tiers( $text );
   }
 
   private function parse_search_queries( $ai_response ) {
     $searches = [];
-    
-    
+
     $lines = explode( "\n", $ai_response );
     foreach ( $lines as $line ) {
       $line = trim( $line );
-      if ( empty( $line ) ) continue;
-      
+      if ( empty( $line ) ) {
+        continue;
+      }
+
       // Parse lines like "100: keyword1 keyword2 keyword3"
       // Also handle lines that might start with a dash or bullet
       $line = preg_replace( '/^[-•*]\s*/', '', $line );
-      
+
       if ( preg_match( '/^(\d+)\s*:\s*(.+)$/', $line, $matches ) ) {
         $score = intval( $matches[1] );
         $keywords = trim( $matches[2] );
-        
+
         if ( $score >= 0 && $score <= 100 && !empty( $keywords ) ) {
           $searches[] = [
             'score' => $score,
@@ -346,16 +349,16 @@ class Meow_MWAI_Modules_Search {
         }
       }
     }
-    
+
     // If we got good results, return them
     if ( count( $searches ) >= 5 ) {
       // Sort by score descending
-      usort( $searches, function( $a, $b ) {
+      usort( $searches, function ( $a, $b ) {
         return $b['score'] <=> $a['score'];
       } );
       return $searches;
     }
-    
+
     // Otherwise use fallback
     return null;
   }
@@ -363,15 +366,15 @@ class Meow_MWAI_Modules_Search {
   private function fallback_keyword_tiers( $text ) {
     // Extract meaningful words
     $words = str_word_count( strtolower( $text ), 1 );
-    
+
     // Remove stop words
     $stop_words = [ 'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'she', 'it', 'they',
-                    'want', 'need', 'like', 'love', 'to', 'a', 'an', 'the', 'with', 'is',
-                    'for', 'of', 'and', 'or', 'but', 'in', 'on', 'at', 'which', 'that' ];
-    
+      'want', 'need', 'like', 'love', 'to', 'a', 'an', 'the', 'with', 'is',
+      'for', 'of', 'and', 'or', 'but', 'in', 'on', 'at', 'which', 'that' ];
+
     $meaningful = array_diff( $words, $stop_words );
     $meaningful = array_values( $meaningful );
-    
+
     // Synonyms for common terms - focused on actual search intent
     $synonyms = [
       'game' => ['games', 'gaming', 'play', 'gameplay'],
@@ -381,11 +384,11 @@ class Meow_MWAI_Modules_Search {
       'huge' => ['large', 'big', 'massive', 'vast'],
       'world' => ['universe', 'realm', 'map', 'environment']
     ];
-    
+
     // Create 40 search queries directly for better fallback
     $search_queries = [];
     $score = 100;
-    
+
     // If we have no meaningful words, use the original text
     if ( empty( $meaningful ) ) {
       $meaningful = $words;
@@ -394,14 +397,14 @@ class Meow_MWAI_Modules_Search {
         $meaningful = explode( ' ', $text );
       }
     }
-    
+
     // First batch: exact words from query (100-85)
     if ( count( $meaningful ) >= 1 ) {
       // 4-5 keywords
       for ( $i = 0; $i < 5 && $score >= 85; $i++ ) {
         $keywords = [];
         shuffle( $meaningful );
-        $num_keywords = min( 4 + rand(0, 1), count( $meaningful ) );
+        $num_keywords = min( 4 + rand( 0, 1 ), count( $meaningful ) );
         $keywords = array_slice( $meaningful, 0, max( 1, $num_keywords ) );
         if ( count( $keywords ) >= 1 ) {
           $search_queries[] = [
@@ -412,7 +415,7 @@ class Meow_MWAI_Modules_Search {
         }
       }
     }
-    
+
     // Second batch: mix exact with synonyms (84-60)
     $all_related = $meaningful;
     foreach ( $meaningful as $word ) {
@@ -421,7 +424,7 @@ class Meow_MWAI_Modules_Search {
       }
     }
     $all_related = array_unique( $all_related );
-    
+
     for ( $i = 0; $i < 15 && $score >= 60; $i++ ) {
       shuffle( $all_related );
       $num_keywords = 3 + rand( 0, 1 );
@@ -434,7 +437,7 @@ class Meow_MWAI_Modules_Search {
         $score -= 2;
       }
     }
-    
+
     // Third batch: fewer keywords (59-30)
     for ( $i = 0; $i < 20 && $score >= 30; $i++ ) {
       shuffle( $all_related );
@@ -447,7 +450,7 @@ class Meow_MWAI_Modules_Search {
         $score -= 2;
       }
     }
-    
+
     // If we couldn't generate any searches, create at least one with the original text
     if ( empty( $search_queries ) ) {
       $search_queries[] = [
@@ -455,7 +458,7 @@ class Meow_MWAI_Modules_Search {
         'keywords' => $text
       ];
     }
-    
+
     // Return search queries in same format as AI would generate
     return array_slice( $search_queries, 0, 40 );
   }
@@ -482,17 +485,17 @@ class Meow_MWAI_Modules_Search {
         return $combinations;
       }
     }
-    
+
     // Otherwise, this is the fallback format, generate combinations
     $tiers = $searches;
     $combinations = [];
     $exact = $tiers['exact'] ?? [];
     $contextual = $tiers['contextual'] ?? [];
     $general = $tiers['general'] ?? [];
-    
+
     // Simple fallback algorithm
     $search_count = 0;
-    
+
     // Mix of different combinations - start at 100
     $strategies = [
       [ 'exact' => 4, 'score' => 100 ],
@@ -504,26 +507,26 @@ class Meow_MWAI_Modules_Search {
       [ 'exact' => 1, 'general' => 1, 'score' => 40 ],
       [ 'general' => 2, 'score' => 35 ]
     ];
-    
+
     foreach ( $strategies as $strategy ) {
       for ( $i = 0; $i < 5 && $search_count < $max_searches; $i++ ) {
         $keywords = [];
-        
+
         if ( isset( $strategy['exact'] ) && count( $exact ) >= $strategy['exact'] ) {
           shuffle( $exact );
           $keywords = array_merge( $keywords, array_slice( $exact, 0, $strategy['exact'] ) );
         }
-        
+
         if ( isset( $strategy['contextual'] ) && count( $contextual ) >= $strategy['contextual'] ) {
           shuffle( $contextual );
           $keywords = array_merge( $keywords, array_slice( $contextual, 0, $strategy['contextual'] ) );
         }
-        
+
         if ( isset( $strategy['general'] ) && count( $general ) >= $strategy['general'] ) {
           shuffle( $general );
           $keywords = array_merge( $keywords, array_slice( $general, 0, $strategy['general'] ) );
         }
-        
+
         if ( count( $keywords ) >= 2 ) {
           $keywords_str = implode( ' ', $keywords );
           if ( !empty( trim( $keywords_str ) ) ) {
@@ -537,7 +540,7 @@ class Meow_MWAI_Modules_Search {
         }
       }
     }
-    
+
     // If we have no combinations, create at least one from whatever we have
     if ( empty( $combinations ) ) {
       // Try to create a basic search from exact keywords
@@ -557,18 +560,18 @@ class Meow_MWAI_Modules_Search {
         ];
       }
     }
-    
+
     return array_slice( $combinations, 0, $max_searches );
   }
 
   private function get_combinations( $array, $length ) {
     if ( $length == 1 ) {
-      return array_map( function( $el ) { return [ $el ]; }, $array );
+      return array_map( function ( $el ) { return [ $el ]; }, $array );
     }
-    
+
     $combinations = [];
     $array_length = count( $array );
-    
+
     for ( $i = 0; $i < $array_length - $length + 1; $i++ ) {
       $head = array_slice( $array, $i, 1 );
       $tail_combinations = $this->get_combinations( array_slice( $array, $i + 1 ), $length - 1 );
@@ -576,7 +579,7 @@ class Meow_MWAI_Modules_Search {
         $combinations[] = array_merge( $head, $tail );
       }
     }
-    
+
     return $combinations;
   }
 
@@ -585,18 +588,18 @@ class Meow_MWAI_Modules_Search {
     $searches_performed = 0;
     $max_searches = 40;
     $min_results_needed = 3;
-    
+
     // Create search combinations with scores
     $search_combinations = $this->create_search_combinations( $search_queries, $max_searches );
-    
+
     $debug_searches = [];
-    
+
     foreach ( $search_combinations as $combination ) {
       $searches_performed++;
       $keywords = $combination['keywords'];
       $score = $combination['score'];
       $strategy = $combination['strategy'];
-      
+
       // Record what we're searching
       $debug_searches[] = [
         'attempt' => $searches_performed,
@@ -605,7 +608,7 @@ class Meow_MWAI_Modules_Search {
         'strategy' => $strategy,
         'found' => 0
       ];
-      
+
       // Perform the search
       $posts = get_posts( [
         's' => $keywords,
@@ -614,11 +617,11 @@ class Meow_MWAI_Modules_Search {
         'post_status' => 'publish',
         'fields' => 'ids'
       ] );
-      
+
       if ( !empty( $posts ) ) {
         // Update found count
-        $debug_searches[count($debug_searches) - 1]['found'] = count( $posts );
-        
+        $debug_searches[count( $debug_searches ) - 1]['found'] = count( $posts );
+
         // Add to results with score
         foreach ( $posts as $post_id ) {
           if ( !isset( $all_results[$post_id] ) ) {
@@ -627,7 +630,8 @@ class Meow_MWAI_Modules_Search {
               'best_score' => $score,
               'found_with' => []
             ];
-          } else {
+          }
+          else {
             // Keep the best (highest) score
             if ( $score > $all_results[$post_id]['best_score'] ) {
               $all_results[$post_id]['best_score'] = $score;
@@ -638,28 +642,28 @@ class Meow_MWAI_Modules_Search {
             'score' => $score
           ];
         }
-        
+
         // Stop if we have enough unique results
         if ( count( $all_results ) >= $min_results_needed ) {
           break;
         }
       }
-      
+
       // Stop if we've done too many searches
       if ( $searches_performed >= $max_searches ) {
         break;
       }
     }
-    
+
     // Sort results by score (highest first)
-    uasort( $all_results, function( $a, $b ) {
+    uasort( $all_results, function ( $a, $b ) {
       return $b['best_score'] <=> $a['best_score'];
     } );
-    
+
     // Get full post data for results
     $final_results = [];
     $post_ids = array_keys( $all_results );
-    
+
     if ( !empty( $post_ids ) ) {
       // Get posts but maintain our score order
       $posts_data = [];
@@ -669,18 +673,18 @@ class Meow_MWAI_Modules_Search {
         'post_type' => 'post',
         'post_status' => 'publish'
       ] );
-      
+
       // Create a map for easy access
       foreach ( $posts as $post ) {
         $posts_data[$post->ID] = $post;
       }
-      
+
       // Build results in score order
       foreach ( $post_ids as $post_id ) {
         if ( isset( $posts_data[$post_id] ) ) {
           $post = $posts_data[$post_id];
           $result_data = $all_results[$post_id];
-          
+
           // Get the keywords that found this post with the best score
           $best_keywords = '';
           foreach ( $result_data['found_with'] as $found ) {
@@ -689,7 +693,7 @@ class Meow_MWAI_Modules_Search {
               break;
             }
           }
-          
+
           $final_results[] = [
             'id' => $post->ID,
             'title' => get_the_title( $post ),
@@ -700,7 +704,7 @@ class Meow_MWAI_Modules_Search {
         }
       }
     }
-    
+
     return [
       'results' => $final_results,
       'debug' => [
@@ -715,21 +719,21 @@ class Meow_MWAI_Modules_Search {
     if ( !class_exists( 'MeowPro_MWAI_Embeddings' ) ) {
       return [ 'error' => 'Embeddings module not available' ];
     }
-    
+
     // Validate environment exists
     if ( !$env_id ) {
       return [ 'error' => 'No embeddings environment selected' ];
     }
-    
+
     $env = $this->core->get_embeddings_env( $env_id );
     if ( !$env ) {
       return [ 'error' => 'Invalid embeddings environment selected. Please select a valid environment.' ];
     }
-    
+
     try {
       // Get the embeddings instance
       $embeddings = new MeowPro_MWAI_Embeddings( $this->core );
-      
+
       // Use the query_vectors method which handles everything internally
       // Parameters: offset, limit, filters, sort
       $filters = [
@@ -737,11 +741,11 @@ class Meow_MWAI_Modules_Search {
         'search' => $search_text
       ];
       $result = $embeddings->query_vectors( 0, 20, $filters );
-      
+
       $vectors = isset( $result['rows'] ) ? $result['rows'] : [];
-      
+
       if ( empty( $vectors ) ) {
-        return [ 
+        return [
           'post_ids' => [],
           'debug' => [
             'total_vectors' => 0,
@@ -749,11 +753,11 @@ class Meow_MWAI_Modules_Search {
           ]
         ];
       }
-      
+
       // Extract post IDs from results
       $post_ids = [];
       $debug_info = [];
-      
+
       foreach ( $vectors as $vector ) {
         $debug_info[] = [
           'refId' => $vector['refId'] ?? 'unknown',
@@ -761,22 +765,22 @@ class Meow_MWAI_Modules_Search {
           'type' => $vector['type'] ?? 'unknown',
           'title' => $vector['title'] ?? 'unknown'
         ];
-        
+
         // Check if this is a post embedding
         if ( !empty( $vector['type'] ) && $vector['type'] === 'postId' && !empty( $vector['refId'] ) ) {
-          $score = isset( $vector['score'] ) ? (float)$vector['score'] : 0;
+          $score = isset( $vector['score'] ) ? (float) $vector['score'] : 0;
           $post_ids[] = [
-            'id' => (int)$vector['refId'],
+            'id' => (int) $vector['refId'],
             'score' => $score
           ];
         }
       }
-      
+
       // Sort by score descending
-      usort( $post_ids, function( $a, $b ) {
+      usort( $post_ids, function ( $a, $b ) {
         return $b['score'] <=> $a['score'];
       } );
-      
+
       return [
         'post_ids' => $post_ids,
         'debug' => [
@@ -805,7 +809,7 @@ class Meow_MWAI_Modules_Search {
 
     $results = [];
     $debug_info = [];
-    
+
     if ( $method === 'wordpress' ) {
       // Use standard WordPress search
       $posts = get_posts( [
@@ -814,7 +818,7 @@ class Meow_MWAI_Modules_Search {
         'post_type' => 'post',
         'post_status' => 'publish'
       ] );
-      
+
       foreach ( $posts as $post ) {
         $results[] = [
           'id' => $post->ID,
@@ -822,7 +826,7 @@ class Meow_MWAI_Modules_Search {
           'excerpt' => wp_trim_words( $post->post_content, 30 )
         ];
       }
-      
+
       $debug_info = [
         'method' => 'Standard WordPress search',
         'query' => $search,
@@ -832,7 +836,7 @@ class Meow_MWAI_Modules_Search {
     elseif ( $method === 'embeddings' ) {
       // Search using embeddings
       $embedding_result = $this->search_with_embeddings( $search, $env_id );
-      
+
       if ( isset( $embedding_result['error'] ) ) {
         return new WP_REST_Response( [
           'success' => false,
@@ -840,14 +844,14 @@ class Meow_MWAI_Modules_Search {
           'debug' => $embedding_result['debug'] ?? null
         ], 200 );
       }
-      
+
       $debug_info = $embedding_result['debug'] ?? [];
-      
+
       if ( !empty( $embedding_result['post_ids'] ) ) {
-        $post_ids = array_map( function( $result ) {
+        $post_ids = array_map( function ( $result ) {
           return $result['id'];
         }, $embedding_result['post_ids'] );
-        
+
         $posts = get_posts( [
           'post__in' => $post_ids,
           'orderby' => 'post__in',
@@ -855,13 +859,13 @@ class Meow_MWAI_Modules_Search {
           'post_type' => 'post',
           'post_status' => 'publish'
         ] );
-        
+
         // Map posts with their scores
         $score_map = [];
         foreach ( $embedding_result['post_ids'] as $result ) {
           $score_map[$result['id']] = $result['score'];
         }
-        
+
         foreach ( $posts as $post ) {
           $results[] = [
             'id' => $post->ID,
@@ -871,22 +875,23 @@ class Meow_MWAI_Modules_Search {
           ];
         }
       }
-    } else {
+    }
+    else {
       // Search using AI keywords with smart algorithm
       $search_queries = $this->generate_keyword_tiers( $search, $website_context );
       $keyword_result = $this->search_with_keywords( $search_queries );
-      
+
       $results = $keyword_result['results'];
       $debug_info = $keyword_result['debug'];
     }
-    
+
     $response = [
       'success' => true,
       'results' => $results,
       'method' => $method,
       'debug' => $debug_info
     ];
-    
+
     return new WP_REST_Response( $response, 200 );
   }
 
@@ -895,29 +900,29 @@ class Meow_MWAI_Modules_Search {
     if ( is_admin() || !is_search() ) {
       return $search_query;
     }
-    
+
     // Get the frontend search method setting
     $frontend_method = $this->core->get_option( 'search_frontend_method', 'wordpress' );
-    
+
     // If using standard WordPress search, no customization needed
     if ( $frontend_method === 'wordpress' ) {
       return $search_query;
     }
-    
+
     // Check if this was an AI-powered search by looking for our special markers
     global $wp_query;
     $current_search = $wp_query->get( 's' );
     $original_search = $wp_query->get( 'mwai_original_search' );
-    
+
     // Check if current search is one of our AI search markers
     $is_keywords_search = strpos( $search_query, 'MWAI_KEYWORDS_SEARCH_' ) === 0;
     $is_embeddings_search = strpos( $search_query, 'MWAI_EMBEDDINGS_SEARCH_' ) === 0;
-    
+
     // If we have an original search stored and this is an AI search, just return the original search
     if ( !empty( $original_search ) && ( $is_keywords_search || $is_embeddings_search ) ) {
       return $original_search;
     }
-    
+
     return $search_query;
   }
 }

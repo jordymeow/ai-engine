@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 const { useState, useEffect, useRef, useMemo } = wp.element;
 import Markdown from 'markdown-to-jsx';
@@ -35,20 +35,20 @@ const ChatbotBody = ({
   uploadIconPosition
 }) => {
   const { state, actions } = useChatbotContext();
-  const { debugMode, messages, error, isRealtime, textCompliance, chatbotInputRef } = state;
+  const { debugMode, eventLogs, messages, error, isRealtime, textCompliance, chatbotInputRef, isWindow } = state;
   const { resetError } = actions;
   const [allStreamData, setAllStreamData] = useState([]);
   const [clearedMessageIds, setClearedMessageIds] = useState(new Set());
   const streamDataRef = useRef([]);
   const lastMessageCountRef = useRef(0);
   const [realtimeMessages, setRealtimeMessages] = useState([]);
-
+  
   useEffect(() => {
     if (messages.length === 0 || (messages.length === 1 && messages[0].role === 'assistant')) {
       setClearedMessageIds(new Set());
     }
   }, [messages]);
-
+  
   useEffect(() => {
     const newStreamData = [];
     const allMessages = [...messages, ...realtimeMessages];
@@ -62,15 +62,13 @@ const ChatbotBody = ({
         });
       }
     });
-
-    if (isRealtime) {
-      streamDataRef.current = [...streamDataRef.current, ...newStreamData];
-    } else {
+    
+    if (!isRealtime) {
       streamDataRef.current = newStreamData;
+      setAllStreamData(newStreamData);
     }
-    setAllStreamData(streamDataRef.current);
   }, [messages, realtimeMessages, debugMode, isRealtime, clearedMessageIds]);
-
+  
   const handleClearStreamData = () => {
     setAllStreamData([]);
     streamDataRef.current = [];
@@ -91,10 +89,6 @@ const ChatbotBody = ({
           {jsxShortcuts}
         </div>
 
-        {error && <div className="mwai-error" onClick={() => resetError()}>
-          <Markdown options={markdownOptions}>{error}</Markdown>
-        </div>}
-
         {jsxBlocks}
 
         <div className={inputClassNames}
@@ -114,6 +108,10 @@ const ChatbotBody = ({
         }} />
       </div>}
 
+      {error && <div className="mwai-error" onClick={() => resetError()}>
+        <Markdown options={markdownOptions}>{error}</Markdown>
+      </div>}
+
       {needsFooter && <div className="mwai-footer">
         {needTools && <div className="mwai-tools">
           {uploadIconPosition === 'mwai-tools' && <ChatUploadIcon />}
@@ -122,13 +120,14 @@ const ChatbotBody = ({
           dangerouslySetInnerHTML={{ __html: textCompliance }} />
         )}
       </div>}
-
-      {debugMode && (
+      
+      {eventLogs && (
         <ChatbotEvents 
           allStreamData={allStreamData} 
           debugMode={debugMode}
           onClear={handleClearStreamData}
           hasData={allStreamData.length > 0}
+          isWindow={isWindow}
         />
       )}
     </div>

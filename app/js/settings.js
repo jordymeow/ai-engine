@@ -1,5 +1,5 @@
-// Previous: 1.8.5
-// Current: 1.9.87
+// Previous: 1.9.87
+// Current: 2.8.5
 
 /* eslint-disable no-undef */
 const prefix = mwai.prefix;
@@ -10,12 +10,25 @@ const pluginUrl = mwai.plugin_url.replace(/\/+$/, "");
 const userData = mwai.user_data;
 const isPro = mwai.is_pro === '1';
 const isRegistered = isPro && mwai.is_registered === '1';
-const restNonce = mwai.rest_nonce;
+let restNonce = mwai.rest_nonce;
 const options = mwai.options;
 const session = mwai.session;
 const themes = mwai.themes;
 const stream = !!mwai.stream;
 const chatbots = mwai.chatbots;
 
+// Function to update the rest nonce globally
+const updateRestNonce = (newNonce) => {
+  restNonce = newNonce;
+  // Also update it in the global mwai object
+  if (typeof mwai !== 'undefined') {
+    mwai.rest_nonce = newNonce;
+  }
+};
+
+
+// Function to get current rest nonce
+const getRestNonce = () => restNonce;
+
 export { prefix, domain, apiUrl, restUrl, pluginUrl, userData, isPro, stream,
-  isRegistered, restNonce, session, options, themes, chatbots };
+  isRegistered, restNonce, session, options, themes, chatbots, updateRestNonce, getRestNonce };

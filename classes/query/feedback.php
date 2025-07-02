@@ -1,19 +1,26 @@
 <?php
 
 class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSerializable {
-  
   public $lastReply = null;
   public $originalQuery = null;
   public array $blocks;
 
   #region Constructors, Serialization
 
+  /**
+  * Creates a feedback query that carries function execution results back to the AI model.
+  *
+  * @param Meow_MWAI_Reply $reply The AI's response containing function call requests
+  * @param Meow_MWAI_Query_Text $query The original query that triggered the function calls
+  */
   public function __construct( Meow_MWAI_Reply $reply, Meow_MWAI_Query_Text $query ) {
     parent::__construct( $query->message );
 
+    // Store references to the reply and original query for context
     $this->lastReply = $reply;
     $this->originalQuery = $query;
 
+    // Inherit all settings from the original query to maintain consistency
     if ( !empty( $query->model ) ) {
       $this->set_model( $query->model );
     }
@@ -41,8 +48,30 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
     if ( !empty( $query->instructions ) ) {
       $this->set_instructions( $query->instructions );
     }
+
+    // Build the complete conversation history including the assistant's function call
     if ( !empty( $query->messages ) ) {
-      $this->set_messages( $query->messages );
+      $messages = $query->messages;
+
+      // Add the assistant's response with tool_calls to maintain conversation flow
+      if ( !empty( $reply->choices ) ) {
+        $assistantMessage = $reply->choices[0]['message'] ?? null;
+        if ( $assistantMessage ) {
+          $messages[] = $assistantMessage;
+        }
+      }
+
+      $this->set_messages( $messages );
+    }
+
+    // For Responses API: Use the response ID from the reply to maintain stateful conversation
+    // This is critical for the Responses API to link function results with their calls
+    if ( !empty( $reply->id ) ) {
+      $this->previousResponseId = $reply->id;
+    }
+    elseif ( !empty( $query->previousResponseId ) ) {
+      // Fallback to query's previousResponseId if reply doesn't have one
+      $this->previousResponseId = $query->previousResponseId;
     }
   }
 

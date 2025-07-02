@@ -1,11 +1,7 @@
-// Previous: 2.8.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 /* eslint-disable no-console */
-// React & Vendor Libs
-// const { useMemo, useState, useEffect } = wp.element;
-
-// NekoUI
 import { NekoButton, NekoBlock, NekoSettings, NekoInput, NekoCheckbox, NekoColumn, NekoWrapper, NekoLog } from '@neko-ui';
 
 import i18n from '@root/i18n';
@@ -17,6 +13,7 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
   const module_mcp = options?.module_mcp;
   const server_debug_mode = options?.server_debug_mode;
   const mcp_debug_mode = options?.mcp_debug_mode;
+  const queries_debug_mode = options?.queries_debug_mode;
   const dev_mode = options?.dev_mode;
 
   const onGetContentClick = async () => {
@@ -29,14 +26,14 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
     if (content?.content) {
       const cleanContent = content.content.trim().replace(/<[^>]*>?/gm, '');
       const firstWord = cleanContent.split(' ')[0];
-      const lastWord = cleanContent.split(' ').pop();
+      const lastWord = cleanContent.split(' ').slice(-1)[0];
       console.log(`Content First Word: ${firstWord}`);
       console.log(`Content Last Word: ${lastWord}`);
     }
   };
 
   const onRunTask = async () => {
-    runTasks(); // Missing await intentionally
+    runTasks();
   };
 
   const jsxDevMode =
@@ -67,13 +64,13 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
     </NekoSettings>
   ) : null;
 
-  const handleServerDebugChange = (value) => {
-    // Simulate multiple rapid updates leading to race conditions
-    updateOption({ target: { name: 'server_debug_mode', value: value ? '1' : '0' } });
-    setTimeout(() => {
-      updateOption({ target: { name: 'server_debug_mode', value: value ? '1' : '0' } });
-    }, 10);
-  };
+  const jsxQueriesDebugMode =
+    <NekoSettings title={i18n.COMMON.QUERIES_DEBUG}>
+      <NekoCheckbox name="queries_debug_mode" label={i18n.COMMON.ENABLE} value="1" checked={queries_debug_mode}
+        description={i18n.COMMON.QUERIES_DEBUG_HELP}
+        onChange={updateOption} />
+    </NekoSettings>;
+
 
   return (<>
     <NekoWrapper>
@@ -85,15 +82,18 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
           <p>This button will force the AI Engine to run the tasks. Normally, the AI Engine runs the tasks every 10 minutes. This button will force the AI Engine to run the tasks immediately.
           </p>
         </NekoBlock>
-      </NekoColumn>
-      <NekoColumn minimal>
+        
         <NekoBlock title="Settings" className="primary" busy={busy}>
           {jsxDevMode}
+          <h3 style={{ marginTop: 20, marginBottom: 10 }}>Logs Console</h3>
           {jsxDebugMode}
           {jsxServerDebugMode}
+          <h3 style={{ marginTop: 20, marginBottom: 10 }}>PHP Error Logs</h3>
           {jsxMcpDebugMode}
+          {jsxQueriesDebugMode}
         </NekoBlock>
-
+      </NekoColumn>
+      <NekoColumn minimal>
         {server_debug_mode &&
           <NekoLog
             refreshQuery={refreshLogs}

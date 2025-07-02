@@ -1,9 +1,37 @@
-// Previous: 2.8.2
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useMemo, useState, useEffect, useRef } = wp.element;
-import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch, toHTML } from '@neko-ui';
-import { pluginUrl, apiUrl, restNonce } from '@app/settings';
+import { NekoMessage, NekoSelect, NekoOption, NekoInput, nekoFetch as originalNekoFetch, toHTML } from '@neko-ui';
+import { pluginUrl, apiUrl, getRestNonce, updateRestNonce } from '@app/settings';
+
+const nekoFetch = async (url, options) => {
+  try {
+    const response = await originalNekoFetch(url, options);
+    
+    if (!response || response.error) {
+      const errorMessage = response?.message || response?.error || 'Request failed';
+      
+      if (response?.code === 'rest_cookie_invalid_nonce' || response?.code === 'rest_forbidden') {
+        throw new Error('Your session has expired. Please refresh the page to continue using AI Engine.');
+      }
+      
+      throw new Error(errorMessage);
+    }
+    
+    if (response && response.new_token) {
+      updateRestNonce(response.new_token);
+      console.log('[MWAI] Token refreshed!');
+    }
+    
+    return response;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(error.message || error.toString() || 'Unknown error occurred');
+  }
+};
 
 import i18n from '@root/i18n';
 
@@ -29,7 +57,6 @@ const DEFAULT_VECTOR = {
 const OptionsCheck = ({ options }) => {
   const { ai_envs } = options;
 
-  // We need at least one environment with a valid key (apikey)
   const isAISetup = ai_envs.find(x => x.apikey && x.apikey.length > 0);
   const pineconeIsOK = !options?.module_embeddings || (options?.embeddings_envs && options?.embeddings_envs.length > 0);
 
@@ -85,27 +112,11 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
       setCustomLanguage("");
       setCurrentLanguage(startLanguage ?? "en");
     }
-  }, [startCustom]);
+  }, [startCustom, startLanguage]);
 
   useEffect(() => {
     setCurrentLanguage(startLanguage);
   }, [startLanguage]);
-
-  useEffect(() => {
-    // Use the language stored in the local storage if it exists
-    const preferredLanguage = localStorage.getItem('mwai_preferred_language');
-    if (preferredLanguage && languages.find(l => l.value === preferredLanguage)) {
-      setCurrentLanguage(preferredLanguage);
-      return;
-    }
-
-    // Otherwise, try to detect the language from the browser
-    const detectedLanguage = (document.querySelector('html').lang || navigator.language
-      || navigator.userLanguage).substr(0, 2);
-    if (languages.find(l => l.value === detectedLanguage)) {
-      setCurrentLanguage(detectedLanguage);
-    }
-  }, []);
 
   const currentHumanLanguage = useMemo(() => {
     if (isCustom) {
@@ -117,7 +128,7 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
     }
     console.warn("A system language or a custom language should be set.");
     return "English";
-  }, [currentLanguage, customLanguage]);
+  }, [currentLanguage, customLanguage, isCustom, languages]);
 
   const onChange = (value, field) => {
     if (value === "custom") {
@@ -145,15 +156,12 @@ const useLanguages = ({ disabled, options, language: startLanguage, customLangua
         </NekoSelect>}
       </>
     );
-  }, [currentLanguage, currentHumanLanguage, languages, isCustom]);
+  }, [currentLanguage, currentHumanLanguage, languages, isCustom, disabled]);
 
   return { jsxLanguageSelector, currentLanguage: isCustom ? 'custom' : currentLanguage,
     currentHumanLanguage, isCustom };
 };
 
-// This hook allows to retrieve the models and their info based on the environment.
-// If no environment is given, the default OpenAI models are returned.
-// If allEnvs is true, all the models are returned, from every environment.
 const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
   const [model, setModel] = useState(options?.ai_default_model);
   const warnedModelsRef = useRef(new Set());
@@ -170,7 +178,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         finetunes_deleted: [],
         deployments: [],
       };
-
       aiEnvs.forEach(env => {
         if (env.finetunes) fakeEnv.finetunes.push(...env.finetunes);
         if (env.legacy_finetunes) fakeEnv.legacy_finetunes.push(...env.legacy_finetunes);
@@ -178,7 +185,6 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
         if (env.finetunes_deleted) fakeEnv.finetunes_deleted.push(...env.finetunes_deleted);
         if (env.deployments) fakeEnv.deployments.push(...env.deployments);
       });
-
       return fakeEnv;
     }
     return null;
@@ -370,6 +376,42 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
     else if (model.startsWith('o1-')) {
       model = 'o1';
     }
+    else if (model.startsWith('claude-opus-4')) {
+      model = 'claude-opus-4-20250514';
+    }
+    else if (model.startsWith('claude-sonnet-4')) {
+      model = 'claude-sonnet-4-20250514';
+    }
+    else if (model.startsWith('claude-3-7-sonnet')) {
+      model = 'claude-3-7-sonnet-latest';
+    }
+    else if (model.startsWith('claude-3-5-sonnet-2024')) {
+      if (model === 'claude-3-5-sonnet-20241022') {
+        model = 'claude-3-5-sonnet-20241022';
+      } else if (model === 'claude-3-5-sonnet-20240620') {
+        model = 'claude-3-5-sonnet-20240620';
+      } else {
+        model = 'claude-3-5-sonnet-latest';
+      }
+    }
+    else if (model.startsWith('claude-3-5-sonnet') || model.startsWith('claude-3.5-sonnet')) {
+      model = 'claude-3-5-sonnet-latest';
+    }
+    else if (model.startsWith('claude-3-opus-2024')) {
+      model = 'claude-3-opus-latest';
+    }
+    else if (model.startsWith('claude-3-opus')) {
+      model = 'claude-3-opus-latest';
+    }
+    else if (model.startsWith('claude-3-sonnet')) {
+      model = 'claude-3-sonnet-20240229';
+    }
+    else if (model.startsWith('claude-3-5-haiku')) {
+      model = 'claude-3-5-haiku-20241022';
+    }
+    else if (model.startsWith('claude-3-haiku')) {
+      model = 'claude-3-haiku-20240307';
+    }
     modelObj = allModels.find(x => x.model === model);
     if (!modelObj && !warnedModelsRef.current.has(model)) {
       console.warn(`Model ${model} not found.`, { allModels, options });
@@ -439,30 +481,38 @@ const useModels = (options, overrideDefaultEnvId, allEnvs = false) => {
 };
 
 const retrieveRemoteVectors = async (queryParams) => {
-  const res = await nekoFetch(`${apiUrl}/vectors/remote_list`, { nonce: restNonce, method: 'POST', json: queryParams });
+  const res = await nekoFetch(`${apiUrl}/vectors/remote_list`, { nonce: getRestNonce(), method: 'POST', json: queryParams });
   return res ? { total: res.total, vectors: res.vectors } : { total: 0, vectors: [] };
 };
 
 const addFromRemote = async (queryParams, signal) => {
-  const res = await nekoFetch(`${apiUrl}/vectors/add_from_remote`, { nonce: restNonce, method: 'POST',
+  const res = await nekoFetch(`${apiUrl}/vectors/add_from_remote`, { nonce: getRestNonce(), method: 'POST',
     json: queryParams, signal
   });
   return res;
 };
 
 const retrieveDiscussions = async (chatsQueryParams) => {
-  chatsQueryParams.offset = (chatsQueryParams.page - 1) * chatsQueryParams.limit;
-  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: restNonce, method: 'POST', json: chatsQueryParams });
+  const params = {
+    ...chatsQueryParams,
+    offset: (chatsQueryParams.page - 1) * chatsQueryParams.limit
+  };
+  const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: getRestNonce(), method: 'POST', json: params });
+  
+  if (res && res.success === false) {
+    throw new Error(res.message || 'Failed to retrieve discussions');
+  }
+  
   return res ? { total: res.total, chats: res.chats } : { total: 0, chats: [] };
 };
 
 const retrieveLogsActivity = async (hours = 24) => {
-  const res = await nekoFetch(`${apiUrl}/system/logs/activity`, { nonce: restNonce, method: 'POST', json: { hours } });
+  const res = await nekoFetch(`${apiUrl}/system/logs/activity`, { nonce: getRestNonce(), method: 'POST', json: { hours } });
   return res?.data ? res.data : [];
 };
 
 const retrieveLogsActivityDaily = async (days = 31) => {
-  const res = await nekoFetch(`${apiUrl}/system/logs/activity_daily`, { nonce: restNonce, method: 'POST', json: { days } });
+  const res = await nekoFetch(`${apiUrl}/system/logs/activity_daily`, { nonce: getRestNonce(), method: 'POST', json: { days } });
   return res?.data ? res.data : [];
 };
 
@@ -476,7 +526,7 @@ const retrieveVectors = async (queryParams) => {
     return { total: 0, vectors: [] };
   }
 
-  const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: restNonce, method: 'POST', json: queryParams });
+  const res = await nekoFetch(`${apiUrl}/vectors/list`, { nonce: getRestNonce(), method: 'POST', json: queryParams });
 
   if (isSearch && res?.vectors?.length) {
     const sortedVectors = res.vectors.sort((a, b) => {
@@ -492,29 +542,29 @@ const retrieveVectors = async (queryParams) => {
 };
 
 const retrievePostsCount = async (postType, postStatus = 'publish') => {
-  const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}&postStatus=${postStatus}`, { nonce: getRestNonce() });
   return res?.count ? parseInt(res?.count) : null;
 };
 
 const retrievePostsIds = async (postType, postStatus = 'publish') => {
-  const res = await nekoFetch(`${apiUrl}/helpers/posts_ids?postType=${postType}&postStatus=${postStatus}`, { nonce: restNonce });
+  const res = await nekoFetch(`${apiUrl}/helpers/posts_ids?postType=${postType}&postStatus=${postStatus}`, { nonce: getRestNonce() });
   return res?.postIds ? res.postIds : [];
 };
 
 const retrievePostContent = async (postType, offset = 0, postId = 0, postStatus = 'publish') => {
   const res = await nekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&postStatus=${postStatus}&offset=${offset}&postId=${postId}`,
-    { nonce: restNonce });
+    { nonce: getRestNonce() });
   return res;
 };
 
 const runTasks = async () => {
-  const res = await nekoFetch(`${apiUrl}/helpers/run_tasks`, { nonce: restNonce, method: 'POST' });
+  const res = await nekoFetch(`${apiUrl}/helpers/run_tasks`, { nonce: getRestNonce(), method: 'POST' });
   return res;
 };
 
 const synchronizeEmbedding = async ({ vectorId, postId, envId }, signal = null) => {
   const res = await nekoFetch(`${apiUrl}/vectors/sync`, {
-    nonce: restNonce,
+    nonce: getRestNonce(),
     method: 'POST',
     json: { vectorId, postId, envId },
     signal
@@ -552,7 +602,7 @@ function tableUserIPFormatter(userId, ip) {
       {i18n.COMMON.USER} #{userId}
     </a></>}
     <br />
-    <small>{formattedIP}</small>
+    <small style={{ color: 'var(--neko-gray)' }}>{formattedIP}</small>
   </div>;
 }
 
@@ -578,6 +628,14 @@ const AnthropicIcon = ({ size = 14, disabled = false, style, ...rest }) => {
   const finalStyle = { ...baseStyle, ...style };
   return (<img width={size} height={size} {...rest} style={finalStyle} alt="Anthropic"
     src={pluginUrl + '/images/chat-anthropic.svg'}
+  />);
+};
+
+const GoogleIcon = ({ size = 14, disabled = false, style, ...rest }) => {
+  const baseStyle = { position: 'relative', top: 2, borderRadius: 2, filter: disabled ? 'grayscale(100%)' : 'none' };
+  const finalStyle = { ...baseStyle, ...style };
+  return (<img width={size} height={size} {...rest} style={finalStyle} alt="Google"
+    src={pluginUrl + '/images/chat-google.svg'}
   />);
 };
 
@@ -618,6 +676,6 @@ const getPostContent = (currentPositionMarker = null) => {
 export { OptionsCheck, cleanSections, useModels, toHTML, useLanguages, addFromRemote,
   retrieveVectors, retrieveRemoteVectors, retrievePostsCount, retrievePostContent, runTasks,
   synchronizeEmbedding, retrievePostsIds, retrieveDiscussions, retrieveLogsActivity, retrieveLogsActivityDaily, getPostContent,
-  tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon, JsIcon, PhpIcon,
-  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR
+  tableDateTimeFormatter, tableUserIPFormatter, randomHash, OpenAiIcon, AnthropicIcon, GoogleIcon, JsIcon, PhpIcon,
+  ENTRY_TYPES, ENTRY_BEHAVIORS, DEFAULT_VECTOR, nekoFetch
 };

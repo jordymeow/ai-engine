@@ -27,7 +27,7 @@ class Meow_MWAI_Labs_MCP_Rest {
 
         if ( isset( $routes[ $base ] ) ) {
           foreach ( $routes[ $base ] as $endpoint ) {
-            if ( ! empty( $endpoint['methods']['GET'] ) ) {
+            if ( !empty( $endpoint['methods']['GET'] ) ) {
               $tools[ "list_{$resource}" ] = [
                 'name' => "list_{$resource}",
                 'description' => "List {$resource}",
@@ -42,7 +42,7 @@ class Meow_MWAI_Labs_MCP_Rest {
 
         if ( isset( $routes[ $item ] ) ) {
           foreach ( $routes[ $item ] as $endpoint ) {
-            if ( ! empty( $endpoint['methods']['GET'] ) ) {
+            if ( !empty( $endpoint['methods']['GET'] ) ) {
               $tools[ "get_{$resource}" ] = [
                 'name' => "get_{$resource}",
                 'description' => "Get single {$resource} by ID",
@@ -57,7 +57,7 @@ class Meow_MWAI_Labs_MCP_Rest {
 
         if ( isset( $routes[ $base ] ) ) {
           foreach ( $routes[ $base ] as $endpoint ) {
-            if ( ! empty( $endpoint['methods']['POST'] ) ) {
+            if ( !empty( $endpoint['methods']['POST'] ) ) {
               $tools[ "create_{$resource}" ] = [
                 'name' => "create_{$resource}",
                 'description' => "Create {$resource}",
@@ -88,7 +88,7 @@ class Meow_MWAI_Labs_MCP_Rest {
 
         if ( isset( $routes[ $item ] ) ) {
           foreach ( $routes[ $item ] as $endpoint ) {
-            if ( ! empty( $endpoint['methods']['DELETE'] ) ) {
+            if ( !empty( $endpoint['methods']['DELETE'] ) ) {
               $tools[ "delete_{$resource}" ] = [
                 'name' => "delete_{$resource}",
                 'description' => "Delete {$resource}",
@@ -122,7 +122,7 @@ class Meow_MWAI_Labs_MCP_Rest {
         'description' => $def['description'] ?? '',
       ];
 
-      if ( ! empty( $def['required'] ) ) {
+      if ( !empty( $def['required'] ) ) {
         $schema['required'][] = $name;
       }
     }
@@ -162,7 +162,7 @@ class Meow_MWAI_Labs_MCP_Rest {
     }
 
     $tools = get_transient( $this->cache_key );
-    if ( ! isset( $tools[ $tool ] ) ) {
+    if ( !isset( $tools[ $tool ] ) ) {
       return $existing;
     }
 

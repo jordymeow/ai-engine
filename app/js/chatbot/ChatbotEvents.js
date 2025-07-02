@@ -1,19 +1,19 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 const { useState, useMemo, useEffect } = wp.element;
 import { ChevronRight, ChevronDown, Activity, Wrench, Brain, Search, AlertCircle, Minimize2, Maximize2, X } from 'lucide-react';
+import { compiler } from 'markdown-to-jsx';
 
-const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
+const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData, isWindow }) => {
   const [expanded, setExpanded] = useState({});
   const [isVisible, setIsVisible] = useState(false);
-  const [showAll, setShowAll] = useState(true);
+  const [showAll, setShowAll] = useState(isWindow ? false : true);
 
   const chunks = useMemo(() => {
     if (!allStreamData || allStreamData.length === 0) {
       return [];
     }
-
     const processedData = allStreamData.map((data, index) => ({
       ...data,
       id: `${data.messageId}-${index}`,
@@ -28,13 +28,8 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
     if (!showAll) {
       return processedData.slice(0, 1);
     }
-
     return processedData.slice(0, 20);
   }, [allStreamData, showAll]);
-
-  if (!debugMode) {
-    return null;
-  }
 
   const getEventCategory = (subtype, metadata) => {
     switch (subtype) {
@@ -132,7 +127,6 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
 
     for (const chunk of chunks) {
       const category = getEventCategory(chunk.subtype, chunk.metadata);
-
       if (chunk.subtype !== 'debug' && chunk.subtype !== 'heartbeat') {
         if (chunk.data.includes('Stream completed')) {
           const completedIndex = chunks.findIndex(c => c.data.includes('Request completed'));
@@ -175,13 +169,15 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
                 <X size={12} />
               </div>
             )}
-            <div className="mwai-chunks-toggle" onClick={() => setShowAll(!showAll)}
-              title={showAll ? "Show minimal (last event only)" : "Show detailed (all events)"}>
-              {showAll ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-            </div>
+            {!isWindow && (
+              <div className="mwai-chunks-toggle" onClick={() => setShowAll(prev => !prev)}
+                title={showAll ? "Show minimal (last event only)" : "Show detailed (all events)"}>
+                {showAll ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+              </div>
+            )}
           </>
         )}
-        <div className="mwai-chunks-toggle" onClick={() => setIsVisible(!isVisible)}
+        <div className="mwai-chunks-toggle" onClick={() => setIsVisible(prev => !prev)}
           title={isVisible ? "Hide events" : "Show events"}>
           {isVisible ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         </div>
@@ -200,8 +196,8 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
         </div>
       ) : chunks.map(chunk => {
         const isExpanded = expanded[chunk.id];
-        const hasDetails = chunk.metadata && Object.keys(chunk.metadata).length > 0;
         const category = getEventCategory(chunk.subtype, chunk.metadata);
+        const hasDetails = (chunk.metadata && Object.keys(chunk.metadata).length > 0) || category === 'thinking';
 
         return (
           <div key={chunk.id} className="mwai-chunk">
@@ -218,7 +214,17 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
                 {category}
               </span>
               <span className="mwai-chunk-data">
-                {chunk.data}
+                {(() => {
+                  const dataStr = typeof chunk.data === 'string' ? chunk.data : JSON.stringify(chunk.data);
+                  if (category === 'thinking') {
+                    const headerMatch = dataStr.match(/^\*\*([^*]+)\*\*/);
+                    if (headerMatch) {
+                      return headerMatch[1];
+                    }
+                    return dataStr.substring(0, 50) + (dataStr.length > 50 ? '...' : '');
+                  }
+                  return dataStr;
+                })()}
               </span>
               {hasDetails && (
                 <ChevronRight
@@ -230,10 +236,22 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
                 />
               )}
             </div>
-
             {isExpanded && hasDetails && (
               <div className="mwai-chunk-details">
-                <pre>{JSON.stringify(chunk.metadata, null, 2)}</pre>
+                {category === 'thinking' ? (
+                  <div style={{ padding: '0px 10px', fontFamily: 'system-ui' }}>
+                    {(() => {
+                      const dataStr = typeof chunk.data === 'string' ? chunk.data : JSON.stringify(chunk.data);
+                      try {
+                        return compiler(dataStr);
+                      } catch (e) {
+                        return <pre>{dataStr}</pre>;
+                      }
+                    })()}
+                  </div>
+                ) : (
+                  <pre>{JSON.stringify(chunk.metadata, null, 2)}</pre>
+                )}
               </div>
             )}
           </div>
@@ -242,3 +260,5 @@ const ChatbotEvents = ({ allStreamData, debugMode, onClear, hasData }) => {
     </div>
   );
 };
+
+export default ChatbotEvents;

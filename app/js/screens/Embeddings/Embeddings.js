@@ -1,5 +1,5 @@
-// Previous: 2.8.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useState, useMemo, useEffect, useRef } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -88,7 +88,7 @@ const StatusIcon = ({ embedding, envName }) => {
 
 
 const setLocalSettings = ({ environmentId }) => {
-  const settings = { environmentId: environmentId || null };
+  const settings = {　environmentId: environmentId || null　};
   localStorage.setItem('mwai-admin-embeddings', nekoStringify(settings));
 };
 
@@ -115,6 +115,7 @@ const Embeddings = ({ options, updateOption }) => {
   const [ selectedIds, setSelectedIds ] = useState([]);
   const [ modal, setModal ] = useState({ type: null, data: null });
   const [ debugMode, setDebugMode ] = useState(null);
+  const [ settingsUpdating, setSettingsUpdating ] = useState(false);
 
   const embeddingsSettings = options.embeddings || {};
 
@@ -141,7 +142,7 @@ const Embeddings = ({ options, updateOption }) => {
     queryKey: ['postTypes'], queryFn: retrievePostTypes
   });
   const { isLoading: isLoadingCount, data: postsCount } = useQuery({
-    queryKey: ['postsCount-' + postType + '-' + (embeddingsSettings?.syncPostStatus ?? 'publish')],
+    queryKey: ['postsCount-' + postType + '-' + embeddingsSettings?.syncPostStatus ?? 'publish'],
     queryFn: () => retrievePostsCount(postType, embeddingsSettings?.syncPostStatus ?? 'publish'),
   });
 
@@ -152,8 +153,8 @@ const Embeddings = ({ options, updateOption }) => {
   const { isFetching: isBusyQuerying, data: vectorsData, error: vectorsError } = useQuery({
     queryKey: ['vectors', nekoStringify(queryParams)],
     queryFn: () => retrieveVectors(queryParams),
-    staleTime: 5 * 60 * 1000, // 5 min
-    gcTime: 10 * 60 * 1000, // 10 min
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const busyFetchingVectors = isBusyQuerying || busy === 'searchVectors';
@@ -164,7 +165,7 @@ const Embeddings = ({ options, updateOption }) => {
   const setEmbeddingsSettings = async (freshEmbeddingsSettings) => {
     setBusy('updateSettings');
     await updateOption({ ...freshEmbeddingsSettings }, 'embeddings');
-    setBusy(false);
+    setBusy(null);
   };
 
   const isSyncEnvDifferent = useMemo(() => {
@@ -255,9 +256,9 @@ const Embeddings = ({ options, updateOption }) => {
   };
 
   const onResetSearch = async () => {
-    setSearch('');
-    setSearchInput('');
-    setQueryParams(prev => ({ ...prev, filters: { ...prev.filters, search: '' } }));
+    setSearch("");
+    setSearchInput("");
+    setQueryParams(prev => ({ ...prev, filters: { ...prev.filters, search: "" } }));
   };
 
   const onAddEmbedding = async (inEmbedding = embeddingModal, skipBusy = false) => {
@@ -515,6 +516,7 @@ const Embeddings = ({ options, updateOption }) => {
   const updateVectorsData = (freshVector, isAdd = false) => {
     queryClient.invalidateQueries({ queryKey: ['vectors'] });
     return;
+
     const currentVectorsData = queryClient.getQueryData(['vectors', queryParams]);
     if (currentVectorsData && currentVectorsData.vectors) {
       let wasUpdated = false;
@@ -591,7 +593,6 @@ const Embeddings = ({ options, updateOption }) => {
       }
     }
     console.log("Remote vectors retrieved.", { remoteVectors });
-
     finished = false;
     params.limit = 20;
     params.page = 0;
@@ -723,7 +724,6 @@ const Embeddings = ({ options, updateOption }) => {
 
           <NekoToolbar style={{ flex: 'auto' }}>
             {mode === 'edit' && <>
-
               {selectedIds.length > 0 && <>
                 <NekoButton className="primary" disabled={isBusy} isBusy={busy === 'bulkPushAll'}
                   onClick={() => onBulkPushClick(false)}>
@@ -821,22 +821,81 @@ const Embeddings = ({ options, updateOption }) => {
 
       <NekoColumn minimal>
 
-        <NekoBlock className="primary">
-          {jsxEnvIndexNS}
-          <div style={{ display: 'flex' }}>
-            <div style={{ flex: 1, marginRight: 5 }}>
-              <label>Minimum Score:</label><br />
-              <span style={{ color: 'var(--neko-green)' }}>{minScore}%</span>
+        <div style={{ margin: 8 }}>
+          <NekoTypo h2 style={{ color: 'white', marginBottom: 10 }}>Settings</NekoTypo>
+          <NekoTabs inversed>
+            <NekoTab title="Environment">
+            <div style={{ padding: '10px 0' }}>
+              {jsxEnvIndexNS}
+              <div style={{ display: 'flex', marginTop: 10 }}>
+                <div style={{ flex: 1, marginRight: 5 }}>
+                  <label>Minimum Score:</label><br />
+                  <span style={{ color: 'var(--neko-green)' }}>{minScore}%</span>
+                </div>
+                <div style={{ flex: 1, marginLeft: 5 }}>
+                  <label>Max Embedding(s):</label><br />
+                  <span style={{ color: 'var(--neko-green)' }}>{maxSelect}</span>
+                </div>
+              </div>
+              <p>The best {maxSelect} embedding(s) with a score of {minScore} or more will provide additional context.</p>
             </div>
-            <div style={{ flex: 1, marginLeft: 5 }}>
-              <label>Max Embedding(s):</label><br />
-              <span style={{ color: 'var(--neko-green)' }}>{maxSelect}</span>
+          </NekoTab>
+          <NekoTab title="Settings">
+            <div style={{ padding: '10px 0' }}>
+              <div style={{ marginBottom: 10 }}>
+                <label>Min Score (%)</label>
+                <NekoInput
+                  type="number"
+                  value={environment?.min_score !== undefined ? environment.min_score : 35}
+                  min={0}
+                  max={100}
+                  disabled={!environment || isBusy || settingsUpdating}
+                  onFinalChange={async (value) => {
+                    if (!environment) return;
+                    setSettingsUpdating(true);
+                    try {
+                      const updatedEnvironments = environments.map(env => 
+                        env.id === environmentId 
+                          ? { ...env, min_score: parseInt(value) || 0 }
+                          : env
+                      );
+                      await updateOption(updatedEnvironments, 'embeddings_envs');
+                    } finally {
+                      setSettingsUpdating(false);
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <label>Max Results</label>
+                <NekoInput
+                  type="number"
+                  value={environment?.max_select !== undefined ? environment.max_select : 10}
+                  min={1}
+                  max={100}
+                  disabled={!environment || isBusy || settingsUpdating}
+                  onFinalChange={async (value) => {
+                    if (!environment) return;
+                    setSettingsUpdating(true);
+                    try {
+                      const updatedEnvironments = environments.map(env => 
+                        env.id === environmentId 
+                          ? { ...env, max_select: parseInt(value) || 1 }
+                          : env
+                      );
+                      await updateOption(updatedEnvironments, 'embeddings_envs');
+                    } finally {
+                      setSettingsUpdating(false);
+                    }
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          <p>The best {maxSelect} embedding(s) with a score of {minScore} or more will provide additional context.</p>
-        </NekoBlock>
+          </NekoTab>
+        </NekoTabs>
+        </div>
 
-        {mode !== 'search' && <div style={{ margin: 8 }}>
+        {mode !== 'search' && <div style={{ margin: "20px 8px 8px 8px" }}>
           <NekoTypo h2 style={{ color: 'white', marginBottom: 10 }}>{i18n.EMBEDDINGS.SYNC_POSTS}</NekoTypo>
           <NekoTabs inversed>
             <NekoTab title="Push" inversed>

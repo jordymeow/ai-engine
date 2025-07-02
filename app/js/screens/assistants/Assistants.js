@@ -1,5 +1,5 @@
-// Previous: 2.6.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,8 +9,7 @@ import { NekoTable, NekoMessage, NekoButton, NekoSelect, NekoOption, NekoWrapper
   NekoTabs, NekoTab, NekoModal, NekoSpacer, NekoBlock, NekoTypo, NekoPaging, useNekoColors } from '@neko-ui';
 import i18n from '@root/i18n';
 
-import { deleteFiles, retrieveFiles } from '@app/requests';
-import { retrieveAssistants } from '@app/requests';
+import { deleteFiles, retrieveFiles, retrieveAssistants } from '@app/requests';
 import { toHTML } from '@app/helpers-admin';
 
 const assistantColumns = [
@@ -134,7 +133,7 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [envId]);
 
   useEffect(() => {
-    setFilesQueryParams({ ...filesQueryParams, envId });
+    setFilesQueryParams(prev => ({ ...prev, envId }));
   }, [envId]);
 
   const { isFetching: isBusyFiles, data: dataFiles } = useQuery({
@@ -183,7 +182,7 @@ const Assistants = ({ options, refreshOptions }) => {
     setBusyAction(true);
     try {
       await deleteFiles(fileIds);
-      await queryClient.invalidateQueries('assistants-files');
+      await queryClient.invalidateQueries(['assistants-files']);
       setSelectedIds([]);
     }
     catch (err) {
@@ -193,20 +192,18 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const fileRows = useMemo(() => {
-    if (!dataFiles) return [];
-    return dataFiles.files.map(file => ({
+    return dataFiles?.files.map(file => ({
       ...file,
       file: renderFile(file.url, file.refId),
       purpose: renderPurpose(file.purpose),
       metadata: renderMetadata(file.metadata),
       created: new Date(file.created).toLocaleDateString(),
       actions: <>
-        <NekoButton className="danger" rounded icon="trash" disabled={busy}
-          onClick={() => onDeleteFile([file.id])}>
-        </NekoButton>
+        <NekoButton className="danger" rounded icon="trash" disabled={busyAction}
+          onClick={() => onDeleteFile([file.id])} />
       </>
     }));
-  }, [dataFiles, busy]);
+  }, [dataFiles, busyAction]);
 
   const fileTotal = useMemo(() => {
     return dataFiles?.total || 0;
@@ -225,7 +222,7 @@ const Assistants = ({ options, refreshOptions }) => {
   };
 
   const onRefreshFiles = async () => {
-    await queryClient.invalidateQueries('assistants-files');
+    await queryClient.invalidateQueries(['assistants-files']);
   };
 
   const assistantRows = useMemo(() => {
@@ -264,7 +261,7 @@ const Assistants = ({ options, refreshOptions }) => {
       </>,
       createdOn: new Date(assistant.createdOn).toLocaleDateString()
     }));
-  }, [allAssistants, colors.gray, colors.green]);
+  }, [allAssistants, colors]);
 
   const busy = busyAction;
 
@@ -278,16 +275,14 @@ const Assistants = ({ options, refreshOptions }) => {
     return (<div>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <NekoPaging currentPage={filesQueryParams.page} limit={filesQueryParams.limit}
-          total={fileTotal} onClick={page => { setFilesQueryParams({ ...filesQueryParams, page }); }}
+          total={fileTotal} onClick={page => { setFilesQueryParams(prev => ({ ...prev, page })); }}
         />
       </div>
     </div>);
   }, [ filesQueryParams, fileTotal ]);
 
   return (<NekoWrapper>
-
     <NekoColumn fullWidth minimal style={{ margin: 8 }}>
-
       <NekoTabs inversed currentTab={section}
         onChange={(_index, attributes) => { setSection(attributes.key); }}
         action={
@@ -320,8 +315,8 @@ const Assistants = ({ options, refreshOptions }) => {
           <NekoTable busy={isBusyFiles || busy}
             data={fileRows} columns={fileColumns}
             selectedItems={selectedIds}
-            onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}
-            onUnselect={ids => { setSelectedIds([ ...selectedIds.filter(x => !ids.includes(x)) ]); }}
+            onSelect={ids => { setSelectedIds(prev => [ ...prev, ...ids ]); }}
+            onUnselect={ids => { setSelectedIds(prev => [ ...prev.filter(x => !ids.includes(x)) ]); }}
             emptyMessage={i18n.NO_FILES_YET}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
@@ -330,9 +325,7 @@ const Assistants = ({ options, refreshOptions }) => {
           </div>
         </NekoTab>
       </NekoTabs>
-
     </NekoColumn>
-
     <NekoColumn fullWidth minimal>
       <NekoBlock className="primary">
         <NekoTypo p>{toHTML(i18n.HELP.ASSISTANTS_INTRO)}</NekoTypo>
@@ -340,9 +333,7 @@ const Assistants = ({ options, refreshOptions }) => {
           {toHTML(i18n.HELP.ASSISTANTS_WARNINGS)}
         </NekoMessage>
       </NekoBlock>
-
       <NekoSpacer tiny />
-
       {errorModal && (
         <NekoModal isOpen={!!errorModal}
           title="Error"
@@ -354,7 +345,6 @@ const Assistants = ({ options, refreshOptions }) => {
           content={<p>{errorModal?.message}</p>}
         />
       )}
-
     </NekoColumn>
   </NekoWrapper>);
 };

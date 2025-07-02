@@ -1,11 +1,12 @@
-// Previous: 2.8.2
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 const { useMemo, useEffect, useState } = wp.element;
 import Markdown from 'markdown-to-jsx';
 
 function nekoStringify(obj, space = null, ignoreCircular = true) {
   const cache = [];
+
   return JSON.stringify(obj, (key, value) => {
     if (typeof value === 'object' && value !== null) {
       if (cache.includes(value)) {
@@ -26,11 +27,19 @@ function nekoStringify(obj, space = null, ignoreCircular = true) {
   }, space);
 }
 
-async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
+async function mwaiHandleRes(fetchRes, onStream, debugName = null, onTokenUpdate = null, debugMode = false) {
   if (!onStream) {
     try {
       const data = await fetchRes.json();
       if (debugName) { console.log(`[${debugName}] IN: `, data); }
+      if (data.new_token) {
+        if (debugMode) {
+          console.log('[MWAI] Token refreshed!');
+        }
+        if (onTokenUpdate) {
+          onTokenUpdate(data.new_token);
+        }
+      }
       return data;
     }
     catch (err) {
@@ -56,7 +65,6 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
       try {
         data = JSON.parse(lines[i].replace('data: ', ''));
       } catch (e) {
-        console.error("Failed to parse stream line JSON.", e);
         continue;
       }
       if (data['type'] === 'live') {
@@ -85,6 +93,14 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
         try {
           const finalData = JSON.parse(data.data);
           if (debugName) { console.log(`[${debugName} STREAM] END: `, finalData); }
+          if (finalData.new_token) {
+            if (debugMode) {
+              console.log('[MWAI] Token refreshed!');
+            }
+            if (onTokenUpdate) {
+              onTokenUpdate(finalData.new_token);
+            }
+          }
           return finalData;
         }
         catch (err) {
@@ -107,14 +123,44 @@ async function mwaiHandleRes(fetchRes, onStream, debugName = null) {
   }
 }
 
-async function mwaiFetch(url, body, restNonce, isStream, signal = undefined) {
+async function mwaiFetch(url, body, restNonce, isStream, signal = undefined, onTokenUpdate = null) {
   const headers = { 'Content-Type': 'application/json' };
   if (restNonce) { headers['X-WP-Nonce'] = restNonce; }
   if (isStream) { headers['Accept'] = 'text/event-stream'; }
-  return await fetch(`${url}`, { method: 'POST', headers,
+  
+  const response = await fetch(`${url}`, { 
+    method: 'POST', 
+    headers,
     body: nekoStringify(body),
+    credentials: 'same-origin',
     signal,
   });
+
+  if (response.status === 403 || response.status === 401) {
+    try {
+      const errorData = await response.clone().json();
+      if (errorData.code === 'rest_cookie_invalid_nonce' || errorData.code === 'rest_forbidden') {
+        console.error('[MWAI] Authentication token has expired. Please refresh the page to continue.');
+        throw new Error('Your session has expired. Please refresh the page to continue using AI Engine.');
+      }
+    } catch (e) {
+      if (e.message && e.message.includes('session has expired')) {
+        throw e;
+      }
+    }
+  }
+
+  if (!isStream && response.ok) {
+    try {
+      const clonedResponse = response.clone();
+      const data = await clonedResponse.json();
+      if (data.new_token && onTokenUpdate) {
+        onTokenUpdate(data.new_token);
+      }
+    } catch (e) {
+    }
+  }
+  return response;
 }
 
 async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
@@ -124,20 +170,17 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
     for (const [key, value] of Object.entries(params)) {
       formData.append(key, value);
     }
-
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     if (restNonce) {
       xhr.setRequestHeader('X-WP-Nonce', restNonce);
     }
-
     xhr.upload.onprogress = function(event) {
       if (event.lengthComputable && onProgress) {
         const percentComplete = event.loaded / event.total * 100;
-        onProgress(percentComplete); 
+        onProgress(percentComplete);
       }
     };
-
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -169,20 +212,18 @@ async function mwaiFetchUpload(url, file, restNonce, onProgress, params = {}) {
         });
       }
     };
-
     xhr.onerror = function() {
       reject({
         status: xhr.status,
         statusText: xhr.statusText,
       });
     };
-
     xhr.send(formData);
   });
 }
 
 function randomStr() {
-  return Math.random().toString(36).substring(2);
+  return Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
 }
 
 const BlinkingCursor = () => {
@@ -195,10 +236,7 @@ const BlinkingCursor = () => {
       }, 500);
       return () => clearInterval(timer);
     }, 200);
-    return () => {
-      clearTimeout(timeout);
-      // Intentional bug: missing cleanup for interval if timeout is canceled early
-    };
+    return () => clearTimeout(timeout);
   }, []);
 
   const cursorStyle = {
@@ -231,7 +269,7 @@ const OutputHandler = (props) => {
       freshClasses.push('mwai-error');
     }
     return freshClasses;
-  }, [error]);
+  }, [error, baseClass]);
 
   const markdownOptions = useMemo(() => {
     const options = {

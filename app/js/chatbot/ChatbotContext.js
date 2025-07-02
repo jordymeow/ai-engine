@@ -1,12 +1,14 @@
-// Previous: 2.8.3
-// Current: 2.8.4
+// Previous: 2.8.4
+// Current: 2.8.5
 
 const { useContext, createContext, useState, useMemo, useEffect, useCallback, useRef } = wp.element;
 
+// AI Engine
 import { processParameters, isURL, useChrono, useSpeechRecognition, doPlaceholders} from '@app/chatbot/helpers';
 import { applyFilters } from '@app/chatbot/MwaiAPI';
 import { mwaiHandleRes, mwaiFetch, randomStr, mwaiFetchUpload, isEmoji, nekoStringify } from '@app/helpers';
 import { mwaiAPI } from '@app/chatbot/MwaiAPI';
+import tokenManager from '@app/helpers/tokenManager';
 
 const rawAiName = 'AI: ';
 const rawUserName = 'User: ';
@@ -24,7 +26,17 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const { params, system, theme, atts } = rest;
   const { timeElapsed, startChrono, stopChrono } = useChrono();
   const shortcodeStyles = useMemo(() => theme?.settings || {}, [theme]);
-  const [ restNonce, setRestNonce ] = useState(system.restNonce);
+  const [ restNonce, setRestNonce ] = useState(system.restNonce || tokenManager.getToken());
+  const restNonceRef = useRef(system.restNonce || tokenManager.getToken());
+
+  useEffect(() => {
+    const unsubscribe = tokenManager.subscribe((newToken) => {
+      setRestNonce(newToken);
+      restNonceRef.current = newToken;
+    });
+    return unsubscribe;
+  }, []);
+
   const [ messages, setMessages ] = useState([]);
   const [ shortcuts, setShortcuts ] = useState([]);
   const [ blocks, setBlocks ] = useState([]);
@@ -53,9 +65,22 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setInputText(text);
   });
 
-  const { stream = false, botId, customId, userData, sessionId, contextId, pluginUrl, restUrl, debugMode, virtualKeyboardFix, typewriter = false, speechRecognition = false, speechSynthesis = false, startSentence } = system;
-  
-  const startSentenceProcessed = doPlaceholders(params.startSentence?.trim() ?? "", userData);
+  const stream = system.stream || false;
+  const internalId = useMemo(() => randomStr(), []);
+  const botId = system.botId;
+  const customId = system.customId;
+  const userData = system.userData;
+  const [sessionId, setSessionId] = useState(system.sessionId);
+  const contextId = system.contextId;
+  const pluginUrl = system.pluginUrl;
+  const restUrl = system.restUrl;
+  const debugMode = system.debugMode;
+  const eventLogs = system.eventLogs;
+  const virtualKeyboardFix = system.virtual_keyboard_fix;
+  const typewriter = system?.typewriter ?? false;
+  const speechRecognition = system?.speech_recognition ?? false;
+  const speechSynthesis = system?.speech_synthesis ?? false;
+  const startSentence = doPlaceholders(params.startSentence?.trim() ?? "", userData);
 
   const initialActions = system.actions || [];
   const initialShortcuts = system.shortcuts || [];
@@ -116,16 +141,17 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const resetMessages = () => {
     resetUploadedFile();
     setPreviousResponseId(null);
-    if (startSentenceProcessed) {
+    if (startSentence) {
       const freshMessages = [{
         id: randomStr(),
         role: 'assistant',
-        content: startSentenceProcessed,
+        content: startSentence,
         who: rawAiName,
         timestamp: new Date().getTime(),
       }];
       setMessages(freshMessages);
-    } else {
+    }
+    else {
       setMessages([]);
     }
   };
@@ -139,6 +165,22 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       const res = await mwaiFetch(`${restUrl}/mwai/v1/start_session`);
       const data = await res.json();
       setRestNonce(data.restNonce);
+      restNonceRef.current = data.restNonce;
+      tokenManager.setToken(data.restNonce);
+      if (data.sessionId && data.sessionId !== 'N/A') {
+        setSessionId(data.sessionId);
+      }
+      if (data.new_token) {
+        if (data.token_expires_at) {
+          const expiresAt = new Date(data.token_expires_at * 1000);
+          console.log(`[MWAI] 🔐 New token received - expires at ${expiresAt.toLocaleTimeString()} (in ${data.token_expires_in}s)`);
+        }
+        setRestNonce(data.new_token);
+        restNonceRef.current = data.new_token;
+        tokenManager.setToken(data.new_token);
+        return data.new_token;
+      }
+      
       return data.restNonce;
     }
     catch (err) {
@@ -147,26 +189,31 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     finally {
       setBusyNonce(false);
     }
-  }, [restNonce, restUrl]);
+  }, [restNonce, setRestNonce, restUrl, setSessionId]);
 
   const [isResumingConversation, setIsResumingConversation] = useState(false);
   const [isConversationLoaded, setIsConversationLoaded] = useState(false);
 
   useEffect(() => {
-    console.log('[INIT] Shortcuts init effect', {
-      isConversationLoaded,
-      isResumingConversation,
-      messagesLength: messages.length,
-      initialShortcutsLength: initialShortcuts.length
-    });
+    if (debugMode) {
+      // console.log('[INIT] Shortcuts init effect', {
+      //   isConversationLoaded,
+      //   isResumingConversation,
+      //   messagesLength: messages.length,
+      //   initialShortcutsLength: initialShortcuts.length
+      // });
+    }
     if (!isConversationLoaded) {
       return;
     }
     const hasExistingConversation = isResumingConversation || 
       (messages.length > 1) || 
-      (messages.length === 1 && messages[0].content !== startSentenceProcessed);
+      (messages.length === 1 && messages[0].content !== startSentence);
+    
     if (!hasExistingConversation) {
-      console.log('[INIT] Showing initial shortcuts');
+      if (debugMode) {
+        // console.log('[INIT] Showing initial shortcuts');
+      }
       if (initialActions.length > 0) {
         handleActions(initialActions);
       }
@@ -177,9 +224,11 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         handleBlocks(initialBlocks);
       }
     } else {
-      console.log('[INIT] NOT showing initial shortcuts - existing conversation');
+      if (debugMode) {
+        // console.log('[INIT] NOT showing initial shortcuts - existing conversation');
+      }
     }
-  }, [isConversationLoaded, isResumingConversation, messages, startSentenceProcessed]);
+  }, [isConversationLoaded, isResumingConversation, messages, startSentence]);
 
   useEffect(() => {
     if (chatbotTriggered && !restNonce) {
@@ -195,7 +244,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   useEffect(() => {
     resetMessages();
-  }, [startSentenceProcessed]);
+  }, [startSentence]);
 
   useEffect(() => {
     if (customId || botId) {
@@ -246,6 +295,10 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           return blocks;
         },
         setContext: ({ chatId, messages, previousResponseId }) => {
+          console.warn('MwaiAPI: setContext is deprecated. Please use setConversation instead.');
+          setTasks((prevTasks) => [...prevTasks, { action: 'setContext', data: { chatId, messages, previousResponseId } }]);
+        },
+        setConversation: ({ chatId, messages, previousResponseId }) => {
           setTasks((prevTasks) => [...prevTasks, { action: 'setContext', data: { chatId, messages, previousResponseId } }]);
         },
       };
@@ -283,6 +336,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     setError(null);
   };
 
+  // New BotId: Initializes the chat history
   useEffect(() => {
     let chatHistory = [];
     if (localStorageKey) {
@@ -324,9 +378,12 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           if (debugMode) {
             console.log(`[CHATBOT] CALL ${name}(${finalArgs.join(', ')})`);
           }
+          
           executedActionsRef.current.add(actionKey);
+          
           eval(`${name}(${finalArgs.join(', ')})`);
           callsCount++;
+          
           setTimeout(() => {
             executedActionsRef.current.delete(actionKey);
           }, 5000);
@@ -343,8 +400,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   }, [debugMode]);
 
   const handleShortcuts = useCallback(shortcuts => {
-    console.log('[SHORTCUTS] handleShortcuts called with:', shortcuts);
-    console.trace('[SHORTCUTS] Call stack');
     setShortcuts(shortcuts || []);
   }, []);
 
@@ -406,7 +461,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       delete lastMessage.isStreaming;
       if (debugMode && lastMessage.streamEvents) {
         const now = new Date().getTime();
-        const startTime = lastMessage.streamEvents && lastMessage.streamEvents[0]?.timestamp || now;
+        const startTime = lastMessage.streamEvents[0]?.timestamp || now;
         const duration = now - startTime;
         let durationText;
         if (duration < 1000) {
@@ -428,7 +483,8 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       handleActions(serverReply?.actions, lastMessage);
       handleBlocks(serverReply?.blocks);
       handleShortcuts(serverReply?.shortcuts);
-    } else {
+    }
+    else {
       const newMessage = {
         id: randomStr(),
         role: 'assistant',
@@ -479,25 +535,27 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       contextId: contextId,
       chatId: chatId,
     };
-    const nonce = restNonce ?? await refreshRestNonce();
+    const nonce = restNonceRef.current ?? await refreshRestNonce();
     const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/openai/realtime/start`, body, nonce);
-    const data = await mwaiHandleRes(res);
+    const data = await mwaiHandleRes(res, null, null, null, debugMode);
     return data;
   }, [botId, customId, contextId, chatId, restNonce, refreshRestNonce, restUrl]);
 
   const onCommitStats = useCallback(async (stats, refId = null) => {
     try {
-      const nonce = restNonce ?? await refreshRestNonce();
+      const nonce = restNonceRef.current ?? await refreshRestNonce();
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/openai/realtime/stats`, {
         botId: botId,
         session: sessionId,
         refId: refId || chatId,
         stats: stats
       }, nonce);
-      const data = await mwaiHandleRes(res);
+      const data = await mwaiHandleRes(res, null, null, null, debugMode);
       return {
         success: data.success,
-        message: data.message
+        message: data.message,
+        overLimit: data.overLimit || false,
+        limitMessage: data.limitMessage || null
       };
     }
     catch (err) {
@@ -512,7 +570,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
   const onCommitDiscussions = useCallback(
     async (messages = []) => {
       try {
-        const nonce = restNonce ?? await refreshRestNonce();
+        const nonce = restNonceRef.current ?? await refreshRestNonce();
         const payload = {
           botId: botId,
           session: sessionId,
@@ -524,7 +582,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           payload,
           nonce
         );
-        const data = await mwaiHandleRes(res);
+        const data = await mwaiHandleRes(res, null, null, null, debugMode);
         return {
           success: data.success,
           message: data.message,
@@ -543,6 +601,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
 
   const onRealtimeFunctionCallback = useCallback(async (functionId, functionType, functionName, functionTarget, args) => {
     const body = { functionId, functionType, functionName, functionTarget, arguments: args };
+
     if (functionTarget === 'js') {
       const finalArgs = args ? Object.values(args).map((arg) => {
         return JSON.stringify(arg);
@@ -568,9 +627,9 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
     }
     else {
-      const nonce = restNonce ?? await refreshRestNonce();
+      const nonce = restNonceRef.current ?? await refreshRestNonce();
       const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/openai/realtime/call`, body, nonce);
-      const data = await mwaiHandleRes(res);
+      const data = await mwaiHandleRes(res, null, null, null, debugMode);
       return data;
     }
   }, [restNonce, refreshRestNonce, restUrl, debugMode]);
@@ -583,7 +642,6 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     if (typeof textQuery !== 'string') {
       textQuery = inputText;
     }
-
     const currentFile = uploadedFile;
     const currentImageUrl = uploadedFile?.uploadedUrl;
     const mimeType = uploadedFile?.localFile?.type;
@@ -621,6 +679,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       timestamp: null,
       isQuerying: stream ? false : true,
       isStreaming: stream ? true : false,
+      streamEvents: stream && debugMode ? [] : undefined
     }];
     setMessages(freshMessages);
     const body = {
@@ -665,7 +724,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           return freshMessages;
         });
       };
-      const nonce = restNonce ?? await refreshRestNonce();
+      const nonce = restNonceRef.current ?? await refreshRestNonce();
       if (stream && debugMode && streamCallback) {
         streamCallback('', {
           type: 'event',
@@ -674,16 +733,25 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
           timestamp: new Date().getTime()
         });
       }
-      const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, nonce, stream);
-      const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null);
+      const handleTokenUpdate = (newToken) => {
+        setRestNonce(newToken);
+        restNonceRef.current = newToken;
+        tokenManager.setToken(newToken);
+      };
+      const res = await mwaiFetch(`${restUrl}/mwai-ui/v1/chats/submit`, body, nonce, stream, undefined, handleTokenUpdate);
+      const data = await mwaiHandleRes(res, streamCallback, debugMode ? "CHATBOT" : null, handleTokenUpdate, debugMode);
+
       if (!data.success && data.message) {
         setError(data.message);
         const updatedMessages = [ ...freshMessages ];
-        updatedMessages.pop();
-        const userMessageIndex = updatedMessages.length - 1;
-        if (userMessageIndex >= 0 && updatedMessages[userMessageIndex].role === 'user') {
-          const userMessage = updatedMessages[userMessageIndex];
-          const content = userMessage.content;
+        const lastMsg = updatedMessages[updatedMessages.length -1];
+        if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content === '') {
+          updatedMessages.pop();
+        }
+        const userMsgIdx = updatedMessages.length -1;
+        if (userMsgIdx >= 0 && updatedMessages[userMsgIdx].role === 'user') {
+          const userMsg = updatedMessages[userMsgIdx];
+          const content = userMsg.content;
           const markdownMatch = content.match(/^(?:\!\[.*?\]\(.*?\)|\[.*?\]\(.*?\))\n(.*)$/s);
           const textToRestore = markdownMatch ? markdownMatch[1] : content;
           setInputText(textToRestore);
@@ -699,6 +767,14 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     catch (err) {
       console.error("An error happened in the handling of the chatbot response.", { err });
       setBusy(false);
+      setError(err.message || 'An error occurred while processing your request. Please try again.');
+      setMessages(prevMessages => {
+        const lastMessage = prevMessages[prevMessages.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === '') {
+          return prevMessages.slice(0, -1);
+        }
+        return prevMessages;
+      });
     }
   }, [busy, uploadedFile, messages, saveMessages, stream, botId, customId, sessionId, chatId, contextId, atts, inputText, debugMode, restNonce, refreshRestNonce, restUrl]);
 
@@ -722,7 +798,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       const params = { type, purpose };
       const url = `${restUrl}/mwai-ui/v1/files/upload`;
-      const nonce = restNonce ?? await refreshRestNonce();
+      const nonce = restNonceRef.current ?? await refreshRestNonce();
       const res = await mwaiFetchUpload(url, file, nonce, (progress) => {
         setUploadedFile({
           localFile: file, uploadedId: null, uploadedUrl: null, uploadProgress: progress
@@ -772,7 +848,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
     else if (iconText && iconTextDelay) {
       return runTimer();
     }
-  }, [iconText, iconTextDelay]);
+  }, [iconText]);
 
   const [ tasks, setTasks ] = useState([]);
 
@@ -810,6 +886,7 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
         setIsResumingConversation(true);
         setIsConversationLoaded(true);
         setShortcuts([]);
+        saveMessages(messages);
       }
       else if (task.action === 'setShortcuts') {
         const shortcuts = task.data;
@@ -833,83 +910,87 @@ export const ChatbotContextProvider = ({ children, ...rest }) => {
       }
       setTasks((prevTasks) => prevTasks.slice(1));
     }
-  }, [tasks, onClear, onSubmit, handleShortcuts, handleBlocks]);
+  }, [tasks, onClear, onSubmit, setChatId, setInputText, setMessages, setOpen, handleShortcuts, handleBlocks]);
 
   useEffect(() => {
     runTasks();
   }, [runTasks]);
 
+  const actions = {
+    setInputText,
+    saveMessages,
+    setMessages,
+    resetMessages,
+    setError,
+    resetError,
+    onClear,
+    onSubmit,
+    onSubmitAction,
+    onFileUpload,
+    onUploadFile,
+    setOpen,
+    setWindowed,
+    setShowIconMessage,
+    setIsListening,
+    setDraggingType,
+    setIsBlocked,
+    onStartRealtimeSession,
+    onRealtimeFunctionCallback,
+    onCommitStats,
+    onCommitDiscussions,
+  };
+
+  const state = {
+    theme,
+    botId,
+    customId,
+    userData,
+    pluginUrl,
+    inputText,
+    messages,
+    shortcuts,
+    blocks,
+    busy,
+    error,
+    setBusy,
+    typewriter,
+    speechRecognition,
+    speechSynthesis,
+    virtualKeyboardFix,
+    localMemory,
+    isRealtime,
+    imageUpload,
+    fileUpload,
+    uploadedFile,
+    fileSearch,
+    textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
+    aiName, userName, guestName,
+    aiAvatar, userAvatar, guestAvatar,
+    aiAvatarUrl, userAvatarUrl, guestAvatarUrl,
+    isWindow, copyButton, headerSubtitle, fullscreen, icon, iconText, iconAlt, iconPosition, iconBubble,
+    cssVariables, iconUrl,
+    chatbotInputRef,
+    conversationRef,
+    isMobile,
+    open,
+    locked,
+    windowed,
+    showIconMessage,
+    timeElapsed,
+    isListening,
+    speechRecognitionAvailable,
+    uploadIconPosition,
+    submitButtonConf,
+    draggingType,
+    isBlocked,
+    busyNonce,
+    debugMode,
+    eventLogs,
+    system
+  };
+
   return (
-    <ChatbotContext.Provider value={{ state: {
-      theme,
-      botId,
-      customId,
-      userData,
-      pluginUrl,
-      inputText,
-      messages,
-      shortcuts,
-      blocks,
-      busy,
-      error,
-      setBusy,
-      typewriter,
-      speechRecognition,
-      speechSynthesis,
-      virtualKeyboardFix,
-      localMemory,
-      isRealtime,
-      imageUpload,
-      fileUpload,
-      uploadedFile,
-      fileSearch,
-      textSend, textClear, textInputMaxLength, textInputPlaceholder, textCompliance,
-      aiName, userName, guestName,
-      aiAvatar, userAvatar, guestAvatar,
-      aiAvatarUrl, userAvatarUrl, guestAvatarUrl,
-      isWindow, copyButton, headerSubtitle, fullscreen, icon, iconText, iconAlt, iconPosition, iconBubble,
-      cssVariables, iconUrl,
-      chatbotInputRef,
-      conversationRef,
-      isMobile,
-      open,
-      locked,
-      windowed,
-      showIconMessage,
-      timeElapsed,
-      isListening,
-      speechRecognitionAvailable,
-      uploadIconPosition,
-      submitButtonConf,
-      draggingType,
-      isBlocked,
-      busyNonce,
-      debugMode,
-      system
-    }, actions: {
-      // Text Chatbot
-      setInputText,
-      saveMessages,
-      setMessages,
-      resetMessages,
-      resetError,
-      onClear,
-      onSubmit,
-      onSubmitAction,
-      onFileUpload,
-      onUploadFile,
-      setOpen,
-      setWindowed,
-      setShowIconMessage,
-      setIsListening,
-      setDraggingType,
-      setIsBlocked,
-      // Realtime Chatbot
-      onStartRealtimeSession,
-      onRealtimeFunctionCallback,
-      onCommitStats,
-      onCommitDiscussions,
-    } }}>
+    <ChatbotContext.Provider value={{ state, actions }}>
       {children}
     </ChatbotContext.Provider>
   );

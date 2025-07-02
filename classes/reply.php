@@ -4,7 +4,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $id = null;
   public $result = '';
   public $results = [];
-  public $usage = [ 
+  public $usage = [
     'prompt_tokens' => 0,
     'completion_tokens' => 0,
     'total_tokens' => 0,
@@ -63,11 +63,11 @@ class Meow_MWAI_Reply implements JsonSerializable {
   }
 
   public function get_total_tokens() {
-    return $this->usage['total_tokens'];
+    return isset( $this->usage['total_tokens'] ) ? $this->usage['total_tokens'] : 0;
   }
 
   public function get_in_tokens( $query = null ) {
-    $in_tokens = $this->usage['prompt_tokens'];
+    $in_tokens = isset( $this->usage['prompt_tokens'] ) ? $this->usage['prompt_tokens'] : 0;
     if ( empty( $in_tokens ) && $query ) {
       $in_tokens = $query->get_in_tokens();
     }
@@ -75,7 +75,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
   }
 
   public function get_out_tokens() {
-    $out_tokens = $this->usage['completion_tokens'];
+    $out_tokens = isset( $this->usage['completion_tokens'] ) ? $this->usage['completion_tokens'] : 0;
     if ( empty( $out_tokens ) ) {
       $out_tokens = Meow_MWAI_Core::estimate_tokens( $this->result );
     }
@@ -114,7 +114,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   public function replace( $search, $replace ) {
     $this->result = str_replace( $search, $replace, $this->result );
-    $this->results = array_map( function( $result ) use ( $search, $replace ) {
+    $this->results = array_map( function ( $result ) use ( $search, $replace ) {
       return str_replace( $search, $replace, $result );
     }, $this->results );
   }
@@ -122,7 +122,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
   private function extract_arguments( $funcArgs ) {
     $finalArgs = [];
     if ( is_string( $funcArgs ) ) {
-      $arguments = trim( str_replace( "\n", "", $funcArgs ) );
+      $arguments = trim( str_replace( "\n", '', $funcArgs ) );
       if ( substr( $arguments, 0, 1 ) == '{' ) {
         $arguments = json_decode( $arguments, true );
         $finalArgs = $arguments;
@@ -135,12 +135,19 @@ class Meow_MWAI_Reply implements JsonSerializable {
   }
 
   /**
-   * Set the choices from OpenAI as the results.
-   * The last (or only) result is set as the result.
-   * @param array $choices ID of the model to use.
-   */
-  public function set_choices( $choices, $rawMessage = null) {
+  * Set the choices from OpenAI as the results.
+  * The last (or only) result is set as the result.
+  * @param array $choices ID of the model to use.
+  */
+  public function set_choices( $choices, $rawMessage = null ) {
     $this->results = [];
+    
+    // Initialize feedback arrays at the start to accumulate across all choices
+    // This is important for engines like Google that split multiple function calls
+    // into separate choices
+    $this->needFeedbacks = [];
+    $this->needClientActions = [];
+    
     if ( is_array( $choices ) ) {
       foreach ( $choices as $choice ) {
 
@@ -160,15 +167,16 @@ class Meow_MWAI_Reply implements JsonSerializable {
             $tools = $choice['message']['tool_calls'];
             foreach ( $tools as $tool ) {
               if ( $tool['type'] === 'function' ) {
-                $toolCalls[] = [ 
-                  'toolId' => $tool['id'], 
+                $toolCall = [
+                  'toolId' => $tool['id'],
                   //'mode' => 'interactive',
                   'type' => 'tool_call',
                   'name' => trim( $tool['function']['name'] ),
                   'arguments' => $this->extract_arguments( $tool['function']['arguments'] ),
                   // Represent the original message that triggered the function call
-                  'rawMessage' => $rawMessage ? $rawMessage : $choice['message'],
+                  'rawMessage' => $rawMessage ? $rawMessage : ( isset( $choice['_rawMessage'] ) ? $choice['_rawMessage'] : $choice['message'] ),
                 ];
+                $toolCalls[] = $toolCall;
               }
             }
           }
@@ -184,8 +192,16 @@ class Meow_MWAI_Reply implements JsonSerializable {
               'type' => 'function_call',
               'name' => $name,
               'arguments' => $this->extract_arguments( $args ),
-              'rawMessage' => $rawMessage ? $rawMessage : $choice['message'],
+              'rawMessage' => $rawMessage ? $rawMessage : ( isset( $choice['_rawMessage'] ) ? $choice['_rawMessage'] : $choice['message'] ),
             ];
+          }
+
+          // Deep copy tool calls BEFORE adding function references
+          // This prevents the "Duplicate value for 'tool_call_id'" error
+          // when the same function is called multiple times
+          // Note: We need to preserve the toolId for each tool call
+          if ( !empty( $toolCalls ) ) {
+            $toolCalls = json_decode( json_encode( $toolCalls ), true );
           }
 
           // Resolve the original function from the query
@@ -201,19 +217,14 @@ class Meow_MWAI_Reply implements JsonSerializable {
                 }
               }
             }
+            // IMPORTANT: Unset the reference to avoid PHP's foreach reference bug
+            unset( $toolCall );
           }
 
-          // NOTE: Anaheim proposed that fix to avoid the error "Duplicate value for 'tool_call_id'"
-          // This happens when the same function is called twice; we need to investigate.
-          $toolCallsDeepCopy = array_map( function( $toolCall ) {
-            return is_array( $toolCall ) ? array_merge( [], $toolCall ) : $toolCall;
-          }, $toolCalls);
-          $toolCalls = $toolCallsDeepCopy;
-
-          // Let's separate the Feedbacks (PHP code) and Client Actions (JS code)
-          $this->needFeedbacks = [];
-          $this->needClientActions = [];
-          foreach ( $toolCalls as $toolCall ) {
+          // Add tool calls to existing arrays instead of resetting them
+          // This is crucial for engines like Google that create multiple choices
+          // for multiple function calls in a single response
+          foreach ( $toolCalls as $tcIdx => $toolCall ) {
             if ( $toolCall['function']->target !== 'js' ) {
               $this->needFeedbacks[] = $toolCall;
             }
@@ -247,29 +258,28 @@ class Meow_MWAI_Reply implements JsonSerializable {
           $this->results[] = $url;
           $this->result = $url;
         }
-
         else if ( isset( $choice['b64_json'] ) ) {
           // In that case we need to create a temporary file in WordPress to store the image, and return the URL for it.
           global $mwai_core;
-          
+
           // Check if the query has explicitly disabled local download
           if ( !empty( $this->query ) && $this->query instanceof Meow_MWAI_Query_Image && $this->query->localDownload === null ) {
             // Query explicitly doesn't want local download, save as temporary upload
             $localDownload = 'uploads';
             $expiry = 1 * HOUR_IN_SECONDS; // 1 hour for temporary images
-          } else {
+          }
+          else {
             // Use the user's AI-generated image settings (same as DALL-E uses)
             $localDownload = $mwai_core->get_option( 'image_local_download' );
-            $expiry = (int)$mwai_core->get_option( 'image_expires_download' );
+            $expiry = (int) $mwai_core->get_option( 'image_expires_download' );
           }
-          
+
           // The expiry is already in seconds
           $ttl = $expiry;
-          
+
           // Use 'library' or 'uploads' based on user settings
           $target = ( $localDownload === 'library' ) ? 'library' : 'uploads';
-          
-          
+
           // Prepare metadata similar to regular image queries
           $metadata = [];
           if ( !empty( $this->query ) ) {
@@ -277,13 +287,13 @@ class Meow_MWAI_Reply implements JsonSerializable {
             $metadata['query_session'] = $this->query->session ?? null;
             $metadata['query_model'] = $this->query->model ?? 'gpt-image-1';
           }
-          
+
           $url = $mwai_core->files->save_temp_image_from_b64( $choice['b64_json'], 'generated', $ttl, $target, $metadata );
           if ( is_wp_error( $url ) ) {
             return $url;
           }
           $this->results[] = $url;
-          
+
           // For chatbot display, append image markdown to the result
           if ( !empty( $this->result ) ) {
             $this->result .= "\n\n";

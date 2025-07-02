@@ -1,13 +1,13 @@
 <?php
-/**
- * Base implementation of the ChatML API.
- * This was first introduced by OpenAI and many providers keep compatibility with it.
- * Engines relying on this original API can extend this class.
- *
- */ 
 
-class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
-{
+/**
+* Base implementation of the ChatML API.
+* This was first introduced by OpenAI and many providers keep compatibility with it.
+* Engines relying on this original API can extend this class.
+*
+*/
+
+class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   // Base (OpenAI)
   protected $apiKey = null;
   protected $organizationId = null;
@@ -31,9 +31,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
   protected $streamCost = null;
+  protected $streamStartEmitted = false;
 
-  public function __construct( $core, $env )
-  {
+  public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
     $this->set_environment();
   }
@@ -49,12 +49,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     $this->inModel = null;
     $this->inId = null;
     $this->emittedFunctionResults = [];
+    $this->streamStartEmitted = false;
   }
 
   protected function set_environment() {
     $env = $this->env;
     $this->apiKey = $env['apikey'];
-    
+
     if ( isset( $env['organizationId'] ) ) {
       $this->organizationId = $env['organizationId'];
     }
@@ -95,7 +96,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     // First, we need to add the first message (the instructions).
     if ( !empty( $query->instructions ) ) {
       //if ( !$this->is_o1_model( $query->model ) ) {
-        $messages[] = [ 'role' => 'system', 'content' => $query->instructions ];
+      $messages[] = [ 'role' => 'system', 'content' => $query->instructions ];
       //}
     }
 
@@ -118,17 +119,17 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       else {
         $finalUrl = $query->attachedFile->get_inline_base64_url();
       }
-      $messages[] = [ 
+      $messages[] = [
         'role' => 'user',
         'content' => [
           [
-            "type" => "text",
-            "text" => $query->get_message()
+            'type' => 'text',
+            'text' => $query->get_message()
           ],
           [
-            "type" => "image_url",
-            "image_url" => [ 
-              "url" => $finalUrl
+            'type' => 'image_url',
+            'image_url' => [
+              'url' => $finalUrl
             ]
           ]
         ]
@@ -166,10 +167,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
     if ( $query instanceof Meow_MWAI_Query_Text ) {
-      $body = array(
-        "model" => $query->model,
-        "stream" => !is_null( $streamCallback ),
-      );
+      $body = [
+        'model' => $query->model,
+        'stream' => !is_null( $streamCallback ),
+      ];
 
       if ( !empty( $query->maxTokens ) ) {
         // max_tokens has been deprecated in favor of max_completion_tokens in 2025.
@@ -188,11 +189,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       if ( !empty( $query->maxResults ) ) {
         $body['n'] = $query->maxResults;
       }
-  
+
       if ( !empty( $query->stop ) ) {
         $body['stop'] = $query->stop;
       }
-  
+
       if ( !empty( $query->responseFormat ) ) {
         if ( $query->responseFormat === 'json' ) {
           $body['response_format'] = [ 'type' => 'json_object' ];
@@ -206,7 +207,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
           'include_usage' => true,
         ];
       }
-  
+
       if ( !empty( $query->functions ) ) {
         $model = $this->retrieve_model_info( $query->model );
         if ( !empty( $model['tags'] ) && !in_array( 'functions', $model['tags'] ) ) {
@@ -238,30 +239,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
             foreach ( $feedback_block['feedbacks'] as $feedback ) {
               $body['messages'][] = [
                 'tool_call_id' => $feedback['request']['toolId'],
-                "role" => "tool",
+                'role' => 'tool',
                 'name' => $feedback['request']['name'],
                 'content' => $feedback['reply']['value']
               ];
-              
-              // Emit function result event if streaming and debug mode are enabled
-              if ( $this->currentDebugMode && !empty( $this->streamCallback ) ) {
-                $toolId = $feedback['request']['toolId'] ?? null;
-                // Only emit if we haven't already emitted for this tool
-                if ( $toolId && !isset( $this->emittedFunctionResults[$toolId] ) ) {
-                  $this->emittedFunctionResults[$toolId] = true;
-                  
-                  $functionName = $feedback['request']['name'];
-                  $resultPreview = (string)($feedback['reply']['value'] ?? '');
-                  if ( strlen( $resultPreview ) > 100 ) {
-                    $resultPreview = substr( $resultPreview, 0, 100 ) . '...';
-                  }
-                  
-                  $event = Meow_MWAI_Event::function_result( $functionName )
-                    ->set_metadata( 'result', $resultPreview )
-                    ->set_metadata( 'tool_id', $toolId );
-                  call_user_func( $this->streamCallback, $event );
-                }
-              }
+
+              // Note: Function result events are now emitted centrally in core.php
+              // when the function is actually executed
             }
           }
         }
@@ -271,19 +255,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      $body = array( 
+      $body = [
         'prompt' => $query->message,
         'model' => $query->model,
         'response_format' => 'text',
         'file' => basename( $query->url ),
         'data' => $extra
-      );
+      ];
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Embed ) {
-      $body = array( 'input' => $query->message, 'model' => $query->model );
+      $body = [ 'input' => $query->message, 'model' => $query->model ];
       if ( $this->envType === 'azure' ) {
-        $body = array( "input" => $query->message );
+        $body = [ 'input' => $query->message ];
       }
       // Dimensions are only supported by v3 models
       if ( !empty( $query->dimensions ) && strpos( $query->model, 'ada-002' ) === false ) {
@@ -295,23 +279,23 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
       $filename = $query->attachedFile ? $query->attachedFile->get_filename() : '';
       $mimeType = $query->attachedFile ? $query->attachedFile->get_mimeType() : null;
-      $body = array(
+      $body = [
         'prompt' => $query->message,
         'n' => $query->maxResults,
         'size' => $resolution,
         'image' => $filename,
         'data' => $extra
-      );
+      ];
       if ( !empty( $mimeType ) ) {
         $body['mime'] = $mimeType;
       }
-      
+
       // Add mask if provided
       if ( !empty( $query->mask ) ) {
         $maskData = $query->mask->get_data();
         $maskFilename = 'mask.png';
         $maskMimeType = $query->mask->get_mimeType();
-        
+
         $body['mask'] = $maskFilename;
         $body['mask_data'] = $maskData;
         if ( !empty( $maskMimeType ) ) {
@@ -327,11 +311,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
       $model = $query->model;
       $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
-      $body = array(
-        "prompt" => $query->message,
-        "n" => $query->maxResults,
-        "size" => $resolution,
-      );
+      $body = [
+        'prompt' => $query->message,
+        'n' => $query->maxResults,
+        'size' => $resolution,
+      ];
 
       // TODO: Let's clean this up; with a better Query Image class.
       // https://platform.openai.com/docs/api-reference/images/create#images-create-quality
@@ -345,7 +329,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       else {
         // If it's DALL-E 3, we need to set the response format.
         $body['response_format'] = 'b64_json';
-        if ( $model === 'dall-e-3' ) { 
+        if ( $model === 'dall-e-3' ) {
           $body['model'] = 'dall-e-3';
         }
         if ( $model === 'dall-e-3-hd' ) {
@@ -361,7 +345,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   protected function build_url( $query, $endpoint = null ) {
-    $url = "";
+    $url = '';
     $env = $this->env;
     // This endpoint is basically OpenAI or Azure, but in the case this class
     // is overriden, we can pass the endpoint directly (for OpenRouter or HuggingFace, for example).
@@ -434,15 +418,15 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     if ( empty( $this->apiKey ) ) {
       throw new Exception( 'No API Key provided. Please visit the Settings.' );
     }
-    $headers = array(
+    $headers = [
       'Content-Type' => 'application/json',
       'Authorization' => 'Bearer ' . $this->apiKey,
-    );
+    ];
     if ( $this->organizationId ) {
       $headers['OpenAI-Organization'] = $this->organizationId;
     }
     if ( $this->envType === 'azure' ) {
-      $headers = array( 'Content-Type' => 'application/json', 'api-key' => $this->apiKey );
+      $headers = [ 'Content-Type' => 'application/json', 'api-key' => $this->apiKey ];
     }
     return $headers;
   }
@@ -450,51 +434,52 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   protected function build_options( $headers, $json = null, $forms = null, $method = 'POST' ) {
     $body = null;
     if ( !empty( $forms ) ) {
-      $boundary = wp_generate_password ( 24, false );
+      $boundary = wp_generate_password( 24, false );
       $headers['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
       $body = $this->build_form_body( $forms, $boundary );
     }
     else if ( !empty( $json ) ) {
       $body = json_encode( $json );
     }
-    $options = array(
+    $options = [
       'headers' => $headers,
       'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
       'sslverify' => false
-    );
+    ];
     return $options;
   }
   // object: "thread.message.delta"
   protected function stream_data_handler( $json ) {
     $content = null;
-  
+
     // Get additional data from the JSON
     if ( isset( $json['model'] ) ) {
       $this->inModel = $json['model'];
     }
     if ( isset( $json['id'] ) ) {
       $this->inId = $json['id'];
-      
-      // Send start event if debug mode is enabled
-      if ( $this->currentDebugMode && $this->streamCallback ) {
+
+      // Send start event if debug mode is enabled and not already sent
+      if ( $this->currentDebugMode && $this->streamCallback && !$this->streamStartEmitted ) {
+        $this->streamStartEmitted = true;
         $event = Meow_MWAI_Event::status( 'Starting stream...' )
           ->set_metadata( 'model', $this->inModel )
-          ->set_metadata( 'id', $this->inId );
+            ->set_metadata( 'id', $this->inId );
         call_user_func( $this->streamCallback, $event );
       }
     }
-  
+
     $object = $json['object'] ?? null;
-  
+
     if ( $object === 'thread.run' ) {
       $this->inThreadId = $json['thread_id'];
       if ( $json['status'] === 'failed' ) {
         $error = $json['last_error']['message'] ?? 'The run failed.';
         throw new Exception( $error );
       }
-    } 
+    }
     else if ( $object === 'thread.run.step.delta' ) {
       if ( $json['delta']['step_details']['type'] === 'tool_calls' ) {
         foreach ( $json['delta']['step_details']['tool_calls'] as $tool_call ) {
@@ -502,17 +487,17 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
           $currentStreamToolCall = null;
           if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
             $currentStreamToolCall = &$this->streamToolCalls[$index];
-          } 
+          }
           else {
             $this->streamToolCalls[] = [
               'id' => null,
               'type' => null,
-              'function' => [ 'name' => "", 'arguments' => "" ],
-              'code_interpreter' => [ 'input' => "", 'outputs' => [] ],
+              'function' => [ 'name' => '', 'arguments' => '' ],
+              'code_interpreter' => [ 'input' => '', 'outputs' => [] ],
             ];
             end( $this->streamToolCalls );
             $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
-            
+
             // Send tool call initiated event
             if ( $this->currentDebugMode && $this->streamCallback ) {
               $event = Meow_MWAI_Event::status( 'Initiating tool call...' );
@@ -546,7 +531,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
           $this->streamLastMessage['tool_calls'] = $this->streamToolCalls;
         }
       }
-    } 
+    }
     else if ( $object === 'thread.message.delta' ) {
       $delta = $json['delta']['content'][0] ?? null;
       if ( $delta ) {
@@ -576,12 +561,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
             break;
           case 'image_file':
             $fileId = $delta['image_file']['file_id'];
-            $content = "<!-- IMG #" . $fileId . " -->";
+            $content = '<!-- IMG #' . $fileId . ' -->';
             $this->streamImageIds[] = $fileId;
             break;
           case 'function_call':
             if ( empty( $this->streamFunctionCall ) ) {
-              $this->streamFunctionCall = [ 'name' => "", 'arguments' => [] ];
+              $this->streamFunctionCall = [ 'name' => '', 'arguments' => [] ];
             }
             $this->streamFunctionCall['name'] = $delta['function_call']['name'] ?? $this->streamFunctionCall['name'];
             if ( isset( $delta['function_call']['arguments'] ) ) {
@@ -595,12 +580,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
             $currentStreamToolCall = null;
             if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
               $currentStreamToolCall = &$this->streamToolCalls[$index];
-            } 
+            }
             else {
               $this->streamToolCalls[] = [
                 'id' => null,
                 'type' => null,
-                'function' => [ 'name' => "", 'arguments' => "" ]
+                'function' => [ 'name' => '', 'arguments' => '' ]
               ];
               end( $this->streamToolCalls );
               $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
@@ -608,7 +593,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
             break;
         }
       }
-    } 
+    }
     else if ( $object === 'thread.run.step' ) {
       //$type = $json['step'];
       // Could be tool_calls, means an OpenAI Assistant is doing something.
@@ -616,32 +601,35 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     else {
       if ( isset( $json['choices'][0]['text'] ) ) {
         $content = $json['choices'][0]['text'];
-      } 
+      }
       else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
         $content = $json['choices'][0]['delta']['content'];
-      } 
+      }
       else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
         if ( empty( $this->streamFunctionCall ) ) {
-          $this->streamFunctionCall = [ 'name' => "", 'arguments' => [] ];
+          $this->streamFunctionCall = [ 'name' => '', 'arguments' => [] ];
         }
         $this->streamFunctionCall['name'] = $json['choices'][0]['delta']['function_call']['name'] ?? $this->streamFunctionCall['name'];
         if ( isset( $json['choices'][0]['delta']['function_call']['arguments'] ) ) {
           $args = json_decode( $json['choices'][0]['delta']['function_call']['arguments'], true );
           $this->streamFunctionCall['arguments'] = $args ?? [];
         }
-      } 
+      }
       else if ( isset( $json['choices'][0]['delta']['tool_calls'] ) ) {
+        // New schema detected – drop any half-built legacy call to prevent duplicates
+        $this->streamFunctionCall = null;
+        
         foreach ( $json['choices'][0]['delta']['tool_calls'] as $tool_call ) {
           $index = $tool_call['index'] ?? null;
           $currentStreamToolCall = null;
           if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
             $currentStreamToolCall = &$this->streamToolCalls[$index];
-          } 
+          }
           else {
-            $this->streamToolCalls[] = [ 
+            $this->streamToolCalls[] = [
               'id' => null,
               'type' => null,
-              'function' => [ 'name' => "", 'arguments' => "" ]
+              'function' => [ 'name' => '', 'arguments' => '' ]
             ];
             end( $this->streamToolCalls );
             $currentStreamToolCall = &$this->streamToolCalls[ key( $this->streamToolCalls ) ];
@@ -663,7 +651,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
           }
           $this->streamLastMessage['tool_calls'] = $this->streamToolCalls;
         }
-      } 
+      }
       else if ( isset( $json['choices'][0]['delta']['role'] ) ) {
         $this->streamLastMessage = [
           'role' => $json['choices'][0]['delta']['role'],
@@ -671,14 +659,14 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
         ];
       }
     }
-  
+
     $usage = $json['usage'] ?? [];
     if ( isset( $usage['prompt_tokens'], $usage['completion_tokens'] ) ) {
-      $this->streamInTokens  = (int)$usage['prompt_tokens'];
-      $this->streamOutTokens = (int)$usage['completion_tokens'];
-      
-      if ( isset($usage['cost'] ) ) {
-        $this->streamCost = (float)$usage['cost'];
+      $this->streamInTokens = (int) $usage['prompt_tokens'];
+      $this->streamOutTokens = (int) $usage['completion_tokens'];
+
+      if ( isset( $usage['cost'] ) ) {
+        $this->streamCost = (float) $usage['cost'];
       }
     }
 
@@ -693,11 +681,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     }
 
     // Avoid some endings
-    $endings = [ "", "</s>" ];
+    $endings = [ '', '</s>' ];
     if ( in_array( $content, $endings ) ) {
       $content = null;
     }
-  
+
     return ( $content === '0' || !empty( $content ) ) ? $content : null;
   }
 
@@ -717,6 +705,29 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       if ( $isStream ) {
         $options['filename'] = tempnam( sys_get_temp_dir(), 'mwai-stream-' );
       }
+
+      // Check if queries debug is enabled
+      $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+
+      // Log the request if queries debug is enabled
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries Debug] --> Request to: ' . $url );
+
+        if ( isset( $options['body'] ) ) {
+          // This is the actual body being sent to the AI service
+          $body_log = is_string( $options['body'] ) ? $options['body'] : json_encode( $options['body'] );
+
+          // Pretty print JSON if possible
+          $decoded = json_decode( $body_log, true );
+          if ( json_last_error() === JSON_ERROR_NONE ) {
+            error_log( json_encode( $decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+          }
+          else {
+            error_log( $body_log );
+          }
+        }
+      }
+
       $res = wp_remote_get( $url, $options );
 
       if ( is_wp_error( $res ) ) {
@@ -749,7 +760,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       }
 
       if ( $isStream ) {
-        return [ 'stream' => true ]; 
+        return [ 'stream' => true ];
       }
 
       $response = wp_remote_retrieve_body( $res );
@@ -761,16 +772,42 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       $normalizedHeaders = array_change_key_case( $headers, CASE_LOWER );
       $resContentType = $normalizedHeaders['content-type'] ?? '';
       if ( strpos( $resContentType, 'multipart/form-data' ) !== false || strpos( $resContentType, 'text/plain' ) !== false ) {
+        // Log the response if queries debug is enabled
+        if ( $queries_debug && !$isStream ) {
+          error_log( '[AI Engine Queries Debug] Response Headers: ' . json_encode( $headers ) );
+          error_log( '[AI Engine Queries Debug] Response Body (raw): ' . substr( $response, 0, 1000 ) . '...' );
+        }
         return [ 'stream' => false, 'headers' => $headers, 'data' => $response ];
       }
 
       $data = json_decode( $response, true );
       $this->handle_response_errors( $data );
+
+      // Log the response if queries debug is enabled
+      if ( $queries_debug && !$isStream ) {
+        // Log the raw response as received from the AI service
+        error_log( '[AI Engine Queries Debug] <-- Response:' );
+
+        // Pretty print JSON if possible
+        if ( json_last_error() === JSON_ERROR_NONE && is_array( $data ) ) {
+          error_log( json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+        }
+        else {
+          error_log( $response );
+        }
+      }
+
       return [ 'headers' => $headers, 'data' => $data ];
     }
     catch ( Exception $e ) {
       $service = $this->get_service_name();
       Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
+
+      // Log error response if queries debug is enabled
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries Debug] Error occurred: ' . $e->getMessage() );
+      }
+
       throw $e;
     }
     finally {
@@ -814,7 +851,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     $options = $this->build_options( $headers, null, $body );
 
     // Perform the request
-    try { 
+    try {
       $res = $this->run_query( $url, $options );
       $data = $res['data'];
       if ( empty( $data ) ) {
@@ -873,17 +910,31 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   protected function finalize_choices( $choices, $responseData, $query ) {
+    // Clean up duplicate function calls: prefer tool_calls over legacy function_call
+    foreach ( $choices as &$choice ) {
+      if ( isset( $choice['message'] ) ) {
+        // If we have both tool_calls and function_call, remove function_call
+        if ( isset( $choice['message']['tool_calls'] ) && !empty( $choice['message']['tool_calls'] ) && 
+             isset( $choice['message']['function_call'] ) ) {
+          unset( $choice['message']['function_call'] );
+        }
+      }
+    }
     return $choices;
   }
 
-  public function run_completion_query( $query, $streamCallback = null ) : Meow_MWAI_Reply {
+  public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
     $isStreaming = !is_null( $streamCallback );
-    
+
     // Initialize debug mode
     $this->init_debug_mode( $query );
 
-    if ( $isStreaming ) {
+    // Store the callback for event emission (both streaming and non-streaming debug mode)
+    if ( !is_null( $streamCallback ) ) {
       $this->streamCallback = $streamCallback;
+    }
+
+    if ( $isStreaming ) {
       add_action( 'http_api_curl', [ $this, 'stream_handler' ], 10, 3 );
     }
 
@@ -893,10 +944,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     $headers = $this->build_headers( $query );
     $options = $this->build_options( $headers, $body );
 
+    // Emit "Request sent" event for feedback queries
+    if ( $this->currentDebugMode && !empty( $streamCallback ) && 
+         ( $query instanceof Meow_MWAI_Query_Feedback || $query instanceof Meow_MWAI_Query_AssistFeedback ) ) {
+      $event = Meow_MWAI_Event::request_sent()
+        ->set_metadata( 'is_feedback', true )
+        ->set_metadata( 'feedback_count', count( $query->blocks ) );
+      call_user_func( $streamCallback, $event );
+    }
+
     try {
       $res = $this->run_query( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
-      
+
       $returned_id = null;
       $returned_model = $this->inModel;
       $returned_in_tokens = null;
@@ -915,11 +975,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
         $returned_id = $this->inId;
         $returned_model = $this->inModel ? $this->inModel : $query->model;
         $message = [ 'role' => 'assistant', 'content' => $this->streamContent ];
-        if ( !empty( $this->streamFunctionCall ) ) {
-          $message['function_call'] = $this->streamFunctionCall;
-        }
+        // Prefer tool_calls; fall back to legacy only if necessary
         if ( !empty( $this->streamToolCalls ) ) {
           $message['tool_calls'] = $this->streamToolCalls;
+        } elseif ( !empty( $this->streamFunctionCall ) ) {
+          $message['function_call'] = $this->streamFunctionCall;
         }
         if ( !is_null( $this->streamInTokens ) ) {
           $returned_in_tokens = $this->streamInTokens;
@@ -932,6 +992,47 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
         }
         $returned_choices = [ [ 'message' => $message ] ];
         $returned_choices = $this->finalize_choices( $returned_choices, null, $query );
+
+        // Log streaming response data if queries debug is enabled
+        $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries Debug] Streaming Response Collected (ChatML):' );
+          $streaming_data = [
+            'id' => $returned_id,
+            'model' => $returned_model,
+            'content_length' => strlen( $this->streamContent ),
+            'content_preview' => substr( $this->streamContent, 0, 200 ) . ( strlen( $this->streamContent ) > 200 ? '...' : '' ),
+            'function_calls' => !empty( $this->streamFunctionCall ) ? '1 function call' : 'none',
+            'tool_calls' => !empty( $this->streamToolCalls ) ? count( $this->streamToolCalls ) . ' tool calls' : 'none',
+            'usage' => [
+              'input_tokens' => $returned_in_tokens,
+              'output_tokens' => $returned_out_tokens,
+              'cost' => $returned_price
+            ]
+          ];
+
+          // Log tool calls details if present
+          if ( !empty( $this->streamToolCalls ) ) {
+            $streaming_data['tool_calls_details'] = [];
+            foreach ( $this->streamToolCalls as $tool_call ) {
+              $streaming_data['tool_calls_details'][] = [
+                'id' => $tool_call['id'] ?? 'unknown',
+                'name' => $tool_call['function']['name'] ?? 'unknown',
+                'arguments' => substr( $tool_call['function']['arguments'] ?? '{}', 0, 100 ) . '...'
+              ];
+            }
+          }
+
+          // Log function call if present
+          if ( !empty( $this->streamFunctionCall ) ) {
+            $streaming_data['function_call'] = [
+              'name' => $this->streamFunctionCall['name'] ?? 'unknown',
+              'arguments' => substr( $this->streamFunctionCall['arguments'] ?? '{}', 0, 100 ) . '...'
+            ];
+          }
+
+          error_log( json_encode( $streaming_data, JSON_PRETTY_PRINT ) );
+        }
       }
       // Standard Mode
       else {
@@ -954,7 +1055,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
         $returned_choices = $data['choices'];
         $returned_choices = $this->finalize_choices( $returned_choices, $data, $query );
       }
-      
+
       // Set the results.
       $reply->set_choices( $returned_choices );
       if ( !empty( $returned_id ) ) {
@@ -965,8 +1066,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       }
 
       // Handle tokens.
-      $this->handle_tokens_usage(  $reply, $query, $returned_model,
-        $returned_in_tokens, $returned_out_tokens, $returned_price
+      $this->handle_tokens_usage(
+        $reply,
+        $query,
+        $returned_model,
+        $returned_in_tokens,
+        $returned_out_tokens,
+        $returned_price
       );
 
       return $reply;
@@ -984,8 +1090,14 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     }
   }
 
-  public function handle_tokens_usage( $reply, $query, $returned_model,
-    $returned_in_tokens, $returned_out_tokens, $returned_price = null ) {
+  public function handle_tokens_usage(
+    $reply,
+    $query,
+    $returned_model,
+    $returned_in_tokens,
+    $returned_out_tokens,
+    $returned_price = null
+  ) {
     $returned_in_tokens = !is_null( $returned_in_tokens ) ? $returned_in_tokens :
       $reply->get_in_tokens( $query );
     $returned_out_tokens = !is_null( $returned_out_tokens ) ? $returned_out_tokens :
@@ -1020,7 +1132,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       $reply->set_usage( $usage );
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
-      
+
       if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
         foreach ( $reply->results as &$result ) {
           $fileId = $this->core->files->upload_file( $result, null, 'generated', [
@@ -1068,7 +1180,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       $reply->set_usage( $usage );
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
-      
+
       if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
         foreach ( $reply->results as &$result ) {
           $fileId = $this->core->files->upload_file( $result, null, 'generated', [
@@ -1091,7 +1203,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   /*
-    This is the rest of the OpenAI API support, not related to the models directly.
+  This is the rest of the OpenAI API support, not related to the models directly.
   */
 
   // Check if there are errors in the response from OpenAI, and throw an exception if so.
@@ -1103,43 +1215,39 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       }
       throw new Exception( $message );
     }
-  }  
+  }
 
-  public function list_files( $purposeFilter = null )
-  {
+  public function list_files( $purposeFilter = null ) {
     if ( empty( $purposeFilter ) ) {
       return $this->execute( 'GET', '/files' );
     }
     return $this->execute( 'GET', '/files', [ 'purpose' => $purposeFilter ] );
   }
 
-  static function get_suffix_for_model($model)
-  {
+  public static function get_suffix_for_model( $model ) {
     // Legacy fine-tuned models
-    preg_match( "/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches);
+    preg_match( "/:([a-zA-Z0-9\-]{1,40})-([0-9]{4})-([0-9]{2})-([0-9]{2})/", $model, $matches );
     if ( count( $matches ) > 0 ) {
       return $matches[1];
     }
 
     // New fine-tuned models
-    preg_match("/:([^:]+)(?=:[^:]+$)/", $model, $matches);
-    if (count($matches) > 0) {
-       return $matches[1];
+    preg_match( '/:([^:]+)(?=:[^:]+$)/', $model, $matches );
+    if ( count( $matches ) > 0 ) {
+      return $matches[1];
     }
 
     return 'N/A';
   }
 
-  static function get_model_without_release_date( $model )
-  {
+  public static function get_model_without_release_date( $model ) {
     if ( empty( $model ) ) {
       return null;
     }
     return preg_replace( '/-\d{4}-\d{2}-\d{2}$/', '', $model );
   }
 
-  public function list_deleted_finetunes( $envId = null, $legacy = false ) 
-  {
+  public function list_deleted_finetunes( $envId = null, $legacy = false ) {
     $finetunes = $this->list_finetunes( $legacy );
     $deleted = [];
 
@@ -1166,8 +1274,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
 
   // TODO: This was used to retrieve the fine-tuned models, but not sure this is how we should
   // retrieve all the models since Summer 2023, let's see! WIP.
-  public function list_finetunes( $legacy = false )
-  {
+  public function list_finetunes( $legacy = false ) {
     if ( $legacy ) {
       $res = $this->execute( 'GET', '/fine-tunes' );
     }
@@ -1182,8 +1289,8 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
         $finetune['suffix'] = $finetune['user_provided_suffix'];
       }
       else {
-        $finetune['suffix'] = SELF::get_suffix_for_model( $finetune['fine_tuned_model'] );
-      } 
+        $finetune['suffix'] = self::get_suffix_for_model( $finetune['fine_tuned_model'] );
+      }
       $finetune['createdOn'] = date( 'Y-m-d H:i:s', $finetune['created_at'] ) . ' UTC';
       if ( isset( $finetune['estimated_finish'] ) ) {
         $finetune['estimatedOn'] = date( 'Y-m-d H:i:s', $finetune['estimated_finish'] ) . ' UTC';
@@ -1203,11 +1310,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       unset( $finetune['updated_at'] );
       unset( $finetune['fine_tuned_model'] );
       return $finetune;
-    }, $finetunes);
+    }, $finetunes );
 
     usort( $finetunes, function ( $a, $b ) {
       return strtotime( $b['createdOn'] ) - strtotime( $a['createdOn'] );
-    });
+    } );
 
     if ( $legacy ) {
       $this->core->update_ai_env( $this->envId, 'legacy_finetunes', $finetunes );
@@ -1220,15 +1327,14 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   public function moderate( $input ) {
-    $result = $this->execute('POST', '/moderations', [
+    $result = $this->execute( 'POST', '/moderations', [
       'input' => $input
-    ]);
+    ] );
     return $result;
   }
 
-  public function upload_file( $filename, $data, $purpose = 'fine-tune' )
-  {
-    $result = $this->execute('POST', '/files', null, [
+  public function upload_file( $filename, $data, $purpose = 'fine-tune' ) {
+    $result = $this->execute( 'POST', '/files', null, [
       'purpose' => $purpose,
       'data' => $data,
       'file' => $filename
@@ -1246,7 +1352,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
         error_log( 'AI Engine: Expiry is a string, setting it to 7 days.' );
         $expiry = 7;
       }
-      $expiryInDays = $expiry ? max( 1, ceil( (int)$expiry / 86400 ) ) : 7;
+      $expiryInDays = $expiry ? max( 1, ceil( (int) $expiry / 86400 ) ) : 7;
       if ( $expiry && is_numeric( $expiry ) ) {
         $body['expires_after'] = [
           'anchor' => 'last_active_at',
@@ -1270,29 +1376,25 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
 
   }
 
-  public function delete_file( $fileId )
-  {
+  public function delete_file( $fileId ) {
     return $this->execute( 'DELETE', '/files/' . $fileId );
   }
 
-  public function get_model( $modelId )
-  {
+  public function get_model( $modelId ) {
     return $this->execute( 'GET', '/models/' . $modelId );
   }
 
-  public function cancel_finetune( $fineTuneId )
-  {
+  public function cancel_finetune( $fineTuneId ) {
     return $this->execute( 'POST', '/fine-tunes/' . $fineTuneId . '/cancel' );
   }
 
-  public function delete_finetune( $modelId )
-  {
+  public function delete_finetune( $modelId ) {
     return $this->execute( 'DELETE', '/models/' . $modelId );
   }
 
   public function download_file( $fileId, $newFile = null ) {
     $fileInfo = $this->execute( 'GET', '/files/' . $fileId, null, null, false );
-    $fileInfo = json_decode( (string)$fileInfo, true );
+    $fileInfo = json_decode( (string) $fileInfo, true );
     if ( empty( $fileInfo ) ) {
       throw new Exception( 'AI Engine: File (' . ( $fileId ?? 'N/A' ) . ') not found.' );
     }
@@ -1316,14 +1418,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     return $newFile;
   }
 
-  public function run_finetune( $fileId, $model, $suffix, $hyperparams = [], $legacy = false )
-  {
-    $n_epochs = isset( $hyperparams['nEpochs'] ) ? (int)$hyperparams['nEpochs'] : null;
-    $batch_size = isset( $hyperparams['batchSize'] ) ? (int)$hyperparams['batchSize'] : null;
-    $learning_rate_multiplier = isset( $hyperparams['learningRateMultiplier'] ) ? 
-      (float)$hyperparams['learningRateMultiplier'] : null;
-    $prompt_loss_weight = isset( $hyperparams['promptLossWeight'] ) ? 
-      (float)$hyperparams['promptLossWeight'] : null;
+  public function run_finetune( $fileId, $model, $suffix, $hyperparams = [], $legacy = false ) {
+    $n_epochs = isset( $hyperparams['nEpochs'] ) ? (int) $hyperparams['nEpochs'] : null;
+    $batch_size = isset( $hyperparams['batchSize'] ) ? (int) $hyperparams['batchSize'] : null;
+    $learning_rate_multiplier = isset( $hyperparams['learningRateMultiplier'] ) ?
+        (float) $hyperparams['learningRateMultiplier'] : null;
+    $prompt_loss_weight = isset( $hyperparams['promptLossWeight'] ) ?
+        (float) $hyperparams['promptLossWeight'] : null;
     $arguments = [
       'training_file' => $fileId,
       'model' => $model,
@@ -1364,16 +1465,15 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   /**
-    * Build the body of a form request.
-    * If the field name is 'file', then the field value is the filename of the file to upload.
-    * The file contents are taken from the 'data' field.
-    *  
-    * @param array $fields
-    * @param string $boundary
-    * @return string
-   */
-  public function build_form_body( $fields, $boundary )
-  {
+  * Build the body of a form request.
+  * If the field name is 'file', then the field value is the filename of the file to upload.
+  * The file contents are taken from the 'data' field.
+  *
+  * @param array $fields
+  * @param string $boundary
+  * @return string
+  */
+  public function build_form_body( $fields, $boundary ) {
     $body = '';
     foreach ( $fields as $name => $value ) {
       if ( in_array( $name, [ 'data', 'mime', 'mask_data', 'mask_mime' ] ) ) {
@@ -1402,32 +1502,38 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   /**
-    * Run a request to the OpenAI API.
-    * Fore more information about the $formFields, refer to the build_form_body method.
-    *
-    * @param string $method POST, PUT, GET, DELETE...
-    * @param string $url The API endpoint
-    * @param array $query The query parameters (json)
-    * @param array $formFields The form fields (multipart/form-data)
-    * @param bool $json Whether to return the response as json or not
-    * @return array
-   */
-  public function execute( $method, $url, $query = null, $formFields = null,
-    $json = true, $extraHeaders = null, $streamCallback = null )
-  {
+  * Run a request to the OpenAI API.
+  * Fore more information about the $formFields, refer to the build_form_body method.
+  *
+  * @param string $method POST, PUT, GET, DELETE...
+  * @param string $url The API endpoint
+  * @param array $query The query parameters (json)
+  * @param array $formFields The form fields (multipart/form-data)
+  * @param bool $json Whether to return the response as json or not
+  * @return array
+  */
+  public function execute(
+    $method,
+    $url,
+    $query = null,
+    $formFields = null,
+    $json = true,
+    $extraHeaders = null,
+    $streamCallback = null
+  ) {
     $isAzure = $this->envType === 'azure';
     $isOpenAI = !$isAzure;
 
     // Prepare the headers
     $headers = "Content-Type: application/json\r\n";
     if ( $isOpenAI ) {
-      $headers .= "Authorization: Bearer " . $this->apiKey . "\r\n";
+      $headers .= 'Authorization: Bearer ' . $this->apiKey . "\r\n";
       if ( $this->organizationId ) {
-        $headers .= "OpenAI-Organization: " . $this->organizationId . "\r\n";
+        $headers .= 'OpenAI-Organization: ' . $this->organizationId . "\r\n";
       }
     }
     else if ( $isAzure ) {
-      $headers .= "api-key: " . $this->apiKey . "\r\n";
+      $headers .= 'api-key: ' . $this->apiKey . "\r\n";
     }
 
     // Prepare the body with json_encode, if it's not a string or null, otherwise we keep it as is.
@@ -1488,12 +1594,29 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     }
 
     $options = [
-      "headers" => $headers,
-      "method" => $method,
-      "timeout" => MWAI_TIMEOUT,
-      "body" => $body,
-      "sslverify" => false
+      'headers' => $headers,
+      'method' => $method,
+      'timeout' => MWAI_TIMEOUT,
+      'body' => $body,
+      'sslverify' => false
     ];
+
+    // Check if queries debug is enabled
+    $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+
+    // Log the request if queries debug is enabled
+    if ( $queries_debug ) {
+      error_log( '[AI Engine Queries Debug] HTTP Request to: ' . $url );
+
+      if ( !empty( $body ) ) {
+        error_log( '[AI Engine Queries Debug] Request Body:' );
+        error_log( $body );
+      }
+
+      if ( !is_null( $streamCallback ) ) {
+        error_log( '[AI Engine Queries Debug] (Streaming mode - response will be streamed)' );
+      }
+    }
 
     try {
       if ( !is_null( $streamCallback ) ) {
@@ -1512,6 +1635,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
       $res = wp_remote_retrieve_body( $res );
       $data = $json ? json_decode( $res, true ) : $res;
       $this->handle_response_errors( $data );
+
+      // Log the response if queries debug is enabled
+      if ( $queries_debug && is_null( $streamCallback ) ) {
+        error_log( '[AI Engine Queries Debug] Response Body:' );
+        error_log( $res );
+      }
       return $data;
     }
     catch ( Exception $e ) {
@@ -1530,13 +1659,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
   }
 
   public function get_models() {
-    $models =  apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
+    $models = apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
     $finetunes = !empty( $this->env['finetunes'] ) ? $this->env['finetunes'] : [];
     foreach ( $finetunes as $finetune ) {
       if ( $finetune['status'] !== 'succeeded' ) {
         continue;
       }
-      $baseModel = SELF::get_model_without_release_date( $finetune['base_model'] );
+      $baseModel = self::get_model_without_release_date( $finetune['base_model'] );
       if ( !empty( $baseModel ) ) {
         $model = null;
         foreach ( $models as $currentModel ) {
@@ -1555,19 +1684,18 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     return $models;
   }
 
-  static public function get_models_static() {
+  public static function get_models_static() {
     return MWAI_OPENAI_MODELS;
   }
 
-  private function calculate_price( $modelFamily, $inUnits, $outUnits, $resolution = null, $finetune = false )
-  {
-    $modelFamily = SELF::get_model_without_release_date( $modelFamily );
+  private function calculate_price( $modelFamily, $inUnits, $outUnits, $resolution = null, $finetune = false ) {
+    $modelFamily = self::get_model_without_release_date( $modelFamily );
     $models = $this->get_models();
     foreach ( $models as $currentModel ) {
       if ( $currentModel['model'] === $modelFamily ) {
         if ( $currentModel['type'] === 'image' ) {
           if ( !$resolution ) {
-            Meow_MWAI_Logging::warn( "(OpenAI) Image models require a resolution." );
+            Meow_MWAI_Logging::warn( '(OpenAI) Image models require a resolution.' );
             return null;
           }
           else {
@@ -1606,13 +1734,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core
     return null;
   }
 
-  public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply )
-  {
+  public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
     $model = $query->model;
     $units = 0;
     $finetune = false;
     if ( is_a( $query, 'Meow_MWAI_Query_Text' ) || is_a( $query, 'Meow_MWAI_Query_Assistant' ) ) {
-      if ( preg_match('/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
+      if ( preg_match( '/^([a-zA-Z]{0,32}):/', $model, $matches ) ) {
         $finetune = true;
       }
       $inUnits = $reply->get_in_tokens( $query );

@@ -1,12 +1,11 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.8.5
 
 // React & Vendor Libs
 const { useCallback, useState } = wp.element;
-import { nekoStringify } from '@neko-ui';
 
 import { NekoTypo, NekoTabs, NekoTab, NekoButton, NekoSettings, NekoInput,
-  NekoAccordions, NekoAccordion, NekoMessage, NekoSelect, NekoOption } from '@neko-ui';
+  NekoAccordions, NekoAccordion } from '@neko-ui';
 import i18n from '@root/i18n';
 import { toHTML } from '@app/helpers-admin';
 
@@ -18,10 +17,10 @@ function MCPServersSettings({ options, mcpServers, updateMCPServer, updateOption
   };
 
   const addNewMCPServer = () => {
-    let baseName = 'New MCP Server';
+    const baseName = 'New MCP Server';
     let counter = 1;
     let newName = baseName;
-    
+
     while (mcpServers.some(server => server.name === newName)) {
       newName = `${baseName} ${counter}`;
       counter++;

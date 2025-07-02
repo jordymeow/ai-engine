@@ -8,11 +8,11 @@ class Meow_MWAI_Engines_Core {
 
   // Streaming
   protected $streamCallback = null;
-  protected $streamTemporaryBuffer = "";
-  protected $streamBuffer = "";
+  protected $streamTemporaryBuffer = '';
+  protected $streamBuffer = '';
   protected $streamHeaders = [];
-  protected $streamContent = "";
-  
+  protected $streamContent = '';
+
   // Debug mode for stream events
   protected $currentDebugMode = false;
   protected $currentQuery = null;
@@ -25,7 +25,44 @@ class Meow_MWAI_Engines_Core {
     $this->envType = isset( $env['type'] ) ? $env['type'] : null;
   }
 
+  /**
+   * Reset all request-specific state variables.
+   * This should be called at the start of each new request to prevent
+   * state leakage between requests.
+   */
+  protected function reset_request_state() {
+    // Reset streaming state
+    $this->streamCallback = null;
+    $this->streamTemporaryBuffer = '';
+    $this->streamBuffer = '';
+    $this->streamHeaders = [];
+    $this->streamContent = '';
+    
+    // Reset debug/event state
+    $this->currentDebugMode = false;
+    $this->currentQuery = null;
+    $this->emittedFunctionResults = [];
+  }
+
   public function run( $query, $streamCallback = null, $maxDepth = 5 ) {
+
+    // Apply filter to allow overriding maxDepth (only on first call)
+    if ( !isset( $query->_maxDepthConfigured ) ) {
+      $maxDepth = apply_filters( 'mwai_function_call_max_depth', $maxDepth, $query );
+      $query->_maxDepthConfigured = $maxDepth;
+    }
+
+    // Check if queries debug is enabled
+    $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+
+    // Log query start if debug is enabled
+    if ( $queries_debug ) {
+      // We'll let the individual engines log the actual HTTP requests/responses
+      // Just log a simple start marker here
+      error_log( '[AI Engine Queries Debug] ========================================' );
+      $query_type = get_class( $query );
+      error_log( '[AI Engine Queries Debug] Starting ' . $query_type . ' to ' . ( $query->model ?? 'unknown model' ) );
+    }
 
     // Check if the query is allowed.
     $limits = $this->core->get_option( 'limits' );
@@ -68,31 +105,71 @@ class Meow_MWAI_Engines_Core {
     // Allow to modify the reply before it is sent.
     $reply = apply_filters( 'mwai_ai_reply', $reply, $query );
 
-    // Function Call
-    if ( !empty( $reply->needFeedbacks ) ) {
+    // Log query completion if debug is enabled
+    if ( $queries_debug && empty( $reply->needFeedbacks ) ) {
+      error_log( '[AI Engine Queries Debug] Query completed' );
+      error_log( '[AI Engine Queries Debug] ========================================' );
+    }
 
-      // Check if we reached the maximum depth
+    // Function Call Handling - This is where the magic happens!
+    // When the AI model requests function calls, we execute them and send results back
+    if ( !empty( $reply->needFeedbacks ) ) {
+      
+      // Debug: Log how many needFeedbacks we have
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries Debug] Core: Processing ' . count( $reply->needFeedbacks ) . ' needFeedbacks' );
+        foreach ( $reply->needFeedbacks as $idx => $feedback ) {
+          error_log( '[AI Engine Queries Debug] Core: needFeedback[' . $idx . ']: name=' . $feedback['name'] . ', toolId=' . ( $feedback['toolId'] ?? 'none' ) );
+        }
+      }
+      
+
+      // Prevent infinite loops - each function call reduces maxDepth by 1
       if ( $maxDepth <= 0 ) {
-        throw new Exception( 'AI Engine: There seems to be a loop in the function/tools calls.' );
+        // Build call stack for better debugging
+        $callStack = [];
+        foreach ( $reply->needFeedbacks as $feedback ) {
+          $callStack[] = $feedback['name'] ?? 'unknown';
+        }
+
+        throw Meow_MWAI_FunctionCallException::loop_detected(
+          $query->_maxDepthConfigured ?? 5, // Use configured max depth
+          $callStack
+        );
       }
 
-      // We should use a feedback query around the original query
-      if ( !( $query instanceof Meow_MWAI_Query_AssistFeedback) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
+      // Create a feedback query if we're not already in one
+      // This wraps the original query with function execution results
+      if ( !( $query instanceof Meow_MWAI_Query_AssistFeedback ) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
         $queryClass = $query instanceof Meow_MWAI_Query_Assistant ?
-          Meow_MWAI_Query_AssistFeedback::class : Meow_MWAI_Query_Feedback::class;
+        Meow_MWAI_Query_AssistFeedback::class : Meow_MWAI_Query_Feedback::class;
+        // Note: $reply->query contains the original query that produced this reply
         $query = new $queryClass( $reply, $reply->query );
       }
 
-      // The engine for the model will handle the feedback query nicely
-      // In the case of Anthropic, it's like a "discussion" between the user (= WordPress's AI Engine
-      // and the model (= Anthropic). The feedback is a way to communicate between the two.
+      // Validate that all function calls have proper function definitions
+      foreach ( $reply->needFeedbacks as $needFeedback ) {
+        if ( !isset( $needFeedback['function'] ) ) {
+          $functionName = $needFeedback['name'] ?? 'unknown';
+          $availableFunctions = array_map( function( $f ) { return $f->name; }, $query->functions );
+          
+          throw new Exception( sprintf(
+            "Function '%s' not found in query functions. Available functions: %s",
+            $functionName,
+            implode( ', ', $availableFunctions )
+          ) );
+        }
+      }
+
+      // Group function calls by their source message to maintain proper context
+      // This ensures related function calls are processed together
       $feedback_blocks = [];
       foreach ( $reply->needFeedbacks as $needFeedback ) {
         $rawMessageKey = md5( serialize( $needFeedback['rawMessage'] ) );
 
         // Initialize the feedback block for this rawMessage if it hasn't been initialized yet
         if ( !isset( $feedback_blocks[$rawMessageKey] ) ) {
-          $feedback_blocks[$rawMessageKey] = [ 
+          $feedback_blocks[$rawMessageKey] = [
             'rawMessage' => $needFeedback['rawMessage'],
             'feedbacks' => []
           ];
@@ -102,24 +179,49 @@ class Meow_MWAI_Engines_Core {
         $value = apply_filters( 'mwai_ai_feedback', null, $needFeedback, $reply );
 
         if ( $value === null ) {
-          Meow_MWAI_Logging::warn( "The returned value for '{$needFeedback['name']}' was null." );
-          $value = "[NO VALUE RETURNED - DO NOT SHOW THIS]";
+          // Check if the function handler exists
+          if ( !has_filter( 'mwai_ai_feedback' ) ) {
+            Meow_MWAI_Logging::error(
+              Meow_MWAI_FunctionCallException::missing_function_handler(
+                $needFeedback['name']
+              )->getMessage()
+            );
+          }
+          else {
+            Meow_MWAI_Logging::warn( "The returned value for '{$needFeedback['name']}' was null." );
+          }
+          $value = '[NO VALUE RETURNED - DO NOT SHOW THIS]';
         }
 
-        // Log function result for debugging (events are emitted by engines when building feedback messages)
+        // Emit "Got result" event and log for debugging
         if ( $this->currentDebugMode ) {
           // Format the result preview
-          $resultPreview = is_array( $value ) ? json_encode( $value ) : (string)$value;
+          $resultPreview = is_array( $value ) ? json_encode( $value ) : (string) $value;
           if ( strlen( $resultPreview ) > 100 ) {
             $resultPreview = substr( $resultPreview, 0, 100 ) . '...';
           }
-          
+
           // Log the function result for debugging
           Meow_MWAI_Logging::log( "Function '{$needFeedback['name']}' returned: " . $resultPreview );
+          
+          // Emit function result event if we have a callback
+          if ( !empty( $streamCallback ) ) {
+            // Load event helper if not already loaded
+            if ( !class_exists( 'Meow_MWAI_Event' ) ) {
+              require_once MWAI_PATH . '/classes/event.php';
+            }
+            
+            $functionName = $needFeedback['name'];
+            
+            $event = Meow_MWAI_Event::function_result( $functionName )
+              ->set_metadata( 'result', $resultPreview )
+              ->set_metadata( 'tool_id', $needFeedback['toolId'] ?? null );
+            call_user_func( $streamCallback, $event );
+          }
         }
 
         // Add the feedback information to the appropriate feedback block
-        $feedback_blocks[$rawMessageKey]['feedbacks'][] = [ 
+        $feedback_blocks[$rawMessageKey]['feedbacks'][] = [
           'request' => $needFeedback, // TODO: Meow_MWAI_Feedback_Request
           'reply' => [ 'value' => $value ] // TODO: Meow_MWAI_Feedback_Reply
         ];
@@ -130,9 +232,14 @@ class Meow_MWAI_Engines_Core {
         $query->add_feedback_block( $feedback_block );
       }
 
+      // Log feedback query if debug is enabled
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries Debug] Processing feedback query with ' . count( $feedback_blocks ) . ' feedback blocks' );
+      }
+
       // Run the feedback query
       $reply = $this->run( $query, $streamCallback, $maxDepth - 1 );
-    } 
+    }
 
     return $reply;
   }
@@ -151,7 +258,7 @@ class Meow_MWAI_Engines_Core {
     $query->final_checks();
     //$found = false;
 
-     // Check if the model is available, except if it's an assistant
+    // Check if the model is available, except if it's an assistant
     if ( !( $query instanceof Meow_MWAI_Query_Assistant ) ) {
       // TODO: Avoid checking on the finetuned models for now.
       if ( substr( $query->model, 0, 3 ) === 'ft:' ) {
@@ -171,14 +278,13 @@ class Meow_MWAI_Engines_Core {
   // - Concatenate consecutive model messages into a single message for the model role
   // - Make sure the first message is a user message
   // - Make sure the last message is a user message
-  protected function streamline_messages( $messages, $systemRole = 'assistant', $messageType = 'content' )
-  {
+  protected function streamline_messages( $messages, $systemRole = 'assistant', $messageType = 'content' ) {
     $processedMessages = [];
     $lastRole = '';
     $concatenatedText = '';
 
     // Determine the way to access message content based on messageType
-    $getContent = function( $message ) use ( $messageType ) {
+    $getContent = function ( $message ) use ( $messageType ) {
       if ( $messageType == 'parts' ) {
         return $message['parts'][0]['text'];
       }
@@ -188,7 +294,7 @@ class Meow_MWAI_Engines_Core {
     };
 
     // Set content to a message depending on the messageType
-    $setContent = function( &$message, $content ) use ( $messageType ) {
+    $setContent = function ( &$message, $content ) use ( $messageType ) {
       if ( $messageType == 'parts' ) {
         $message['parts'] = [['text' => $content]];
       }
@@ -214,10 +320,10 @@ class Meow_MWAI_Engines_Core {
       }
       else {
         if ( $lastRole == $systemRole ) {
-            $newMessage = [ 'role' => $systemRole ];
-            $setContent( $newMessage, $concatenatedText );
-            $processedMessages[] = $newMessage;
-            $concatenatedText = '';
+          $newMessage = [ 'role' => $systemRole ];
+          $setContent( $newMessage, $concatenatedText );
+          $processedMessages[] = $newMessage;
+          $concatenatedText = '';
         }
         $processedMessages[] = $message;
       }
@@ -245,13 +351,13 @@ class Meow_MWAI_Engines_Core {
   }
 
   // Check for a JSON-formatted error in the data, and throw an exception if it's the case.
-  function stream_error_check( $data ) {
+  public function stream_error_check( $data ) {
     if ( strpos( $data, 'error' ) === false ) {
       return;
     }
 
     $data = trim( $data );
-    $jsonPart  = $data;
+    $jsonPart = $data;
     if ( strpos( $jsonPart, 'data:' ) === 0 ) {
       $jsonPart = trim( substr( $jsonPart, strlen( 'data:' ) ) );
     }
@@ -284,7 +390,7 @@ class Meow_MWAI_Engines_Core {
     }
 
     $message = $error['message'] ?? ( is_string( $error ) ? $error : null );
-    $code = $error['code']    ?? null;
+    $code = $error['code'] ?? null;
     // Google uses "status" instead of "type" – accept both
     $type = $error['type'] ?? ( $error['status'] ?? null );
     if ( is_null( $message ) ) {
@@ -301,10 +407,10 @@ class Meow_MWAI_Engines_Core {
 
     throw new Exception( $errorMessage );
   }
-  
+
   protected function init_debug_mode( $query ) {
     // Check if debug mode is enabled in settings
-    $this->currentDebugMode = $this->core->get_option('module_devtools') && $this->core->get_option( 'debug_mode' );
+    $this->currentDebugMode = $this->core->get_option( 'module_devtools' ) && $this->core->get_option( 'debug_mode' );
     $this->currentQuery = $query;
   }
 
@@ -320,8 +426,16 @@ class Meow_MWAI_Engines_Core {
     //   return $length;
     // });
 
-    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) {
+    curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) use ( $url ) {
       $length = strlen( $data );
+
+      // Log streaming data if queries debug is enabled
+      $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+      static $logged_url = false;
+      if ( $queries_debug && !$logged_url ) {
+        error_log( '[AI Engine Queries Debug] Streaming from: ' . $url );
+        $logged_url = true;
+      }
 
       // Bufferize the unfinished stream (if it's the case)
       $this->streamTemporaryBuffer .= $data;
@@ -335,27 +449,60 @@ class Meow_MWAI_Engines_Core {
         $this->streamTemporaryBuffer = array_pop( $lines );
       }
       else {
-        $this->streamTemporaryBuffer = "";
+        $this->streamTemporaryBuffer = '';
       }
 
       foreach ( $lines as $line ) {
-        if ( $line === "" ) { continue; }
+        if ( $line === '' ) {
+          continue;
+        }
         if ( strpos( $line, 'data:' ) === 0 ) {
           $line = trim( substr( $line, 5 ) );
           $json = json_decode( trim( $line ), true );
 
           if ( json_last_error() === JSON_ERROR_NONE ) {
+            // Log individual streaming event if queries debug is enabled
+            static $event_count = 0;
+            if ( $queries_debug && $event_count < 10 ) {
+              // Log only the event type and key data, not the entire response
+              $event_log = [
+                'type' => $json['type'] ?? 'unknown'
+              ];
+
+              // Add specific details based on event type
+              if ( isset( $json['type'] ) ) {
+                if ( $json['type'] === 'response.output_item.added' && isset( $json['item'] ) ) {
+                  $event_log['item_type'] = $json['item']['type'] ?? 'unknown';
+                  $event_log['name'] = $json['item']['name'] ?? null;
+                  $event_log['call_id'] = $json['item']['call_id'] ?? null;
+                }
+                elseif ( strpos( $json['type'], 'response.function_call' ) === 0 ) {
+                  $event_log['call_id'] = $json['call_id'] ?? $json['item_id'] ?? null;
+                }
+                elseif ( $json['type'] === 'response.output_item.done' && isset( $json['item'] ) ) {
+                  $event_log['item_type'] = $json['item']['type'] ?? 'unknown';
+                  if ( isset( $json['item']['call_id'] ) ) {
+                    $event_log['call_id'] = $json['item']['call_id'];
+                  }
+                }
+              }
+
+              error_log( '[AI Engine Queries Debug] Event: ' . json_encode( $event_log ) );
+              $event_count++;
+            }
+
             $content = $this->stream_data_handler( $json );
             if ( !is_null( $content ) ) {
-              
+
               // Check if content is an Event object
               if ( is_object( $content ) && $content instanceof Meow_MWAI_Event ) {
                 // For Event objects, pass the object directly to callback
                 // Don't accumulate in streamContent as it's not regular text
                 call_user_func( $this->streamCallback, $content );
-              } else {
+              }
+              else {
                 // For regular string content
-                
+
                 // TO CHECK: Not sure why we need to do this to make sure there is a line return in the chatbot
                 // If we don't do this, HuggingFace streams "\n" as a token without anything else, and the
                 // chatbot doesn't display it.
@@ -374,11 +521,11 @@ class Meow_MWAI_Engines_Core {
         }
       }
       return $length;
-    });
+    } );
   }
 
   protected function stream_header_handler( $header ) {
-    
+
   }
 
   protected function stream_data_handler( $json ) {
@@ -393,11 +540,11 @@ class Meow_MWAI_Engines_Core {
     throw new Exception( 'Not implemented.' );
   }
 
-  public function run_completion_query( Meow_MWAI_Query_Base $query, $streamCallback = null ) : Meow_MWAI_Reply {
+  public function run_completion_query( Meow_MWAI_Query_Base $query, $streamCallback = null ): Meow_MWAI_Reply {
     throw new Exception( 'Not implemented.' );
   }
 
-  public function run_assistant_query( Meow_MWAI_Query_Assistant $query, $streamCallback = null ) : Meow_MWAI_Reply {
+  public function run_assistant_query( Meow_MWAI_Query_Assistant $query, $streamCallback = null ): Meow_MWAI_Reply {
     throw new Exception( 'Not implemented, or not supported in this version of AI Engine.' );
   }
 
@@ -419,5 +566,21 @@ class Meow_MWAI_Engines_Core {
 
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
     throw new Exception( 'Not implemented.' );
+  }
+
+  /**
+   * Check the connection to the AI service.
+   * This should be a minimal, cost-free API call to verify credentials and connectivity.
+   * 
+   * @return array {
+   *     @type bool   $success      Whether the connection test was successful
+   *     @type string $service      The service name (e.g., 'OpenAI', 'Anthropic')
+   *     @type string $message      A human-readable message about the test result
+   *     @type array  $details      Additional service-specific details
+   *     @type string $error        Error message if the test failed
+   * }
+   */
+  public function connection_check() {
+    throw new Exception( 'Connection check not implemented for this service.' );
   }
 }
