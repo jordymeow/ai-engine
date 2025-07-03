@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.6
+Stable tag: 2.8.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -128,7 +128,7 @@ Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.
 
 == Changelog ==
 
-= 2.8.6 (2025/07/02) =
+= 2.8.7 (2025/07/02) =
 * Add: Smarter token and nonce management for longer, more reliable sessions.
 * Fix: Hotfix resolves issues with event logs display and enables proper event logging under Streaming mode for realtime chatbots.
 * Add: Quick Test buttons for AI and embedding environments to verify API connections.

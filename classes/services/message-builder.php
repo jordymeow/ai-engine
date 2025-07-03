@@ -132,9 +132,9 @@ class Meow_MWAI_Services_MessageBuilder {
         }
 
         // Create function result object
-        $result = new Meow_MWAI_Data_FunctionResult(
-          callId: $toolId,
-          value: $feedback['reply']['value'] ?? null
+        $result = Meow_MWAI_Data_FunctionResult::success(
+          $toolId,
+          $feedback['reply']['value'] ?? null
         );
 
         $functionResults[] = $result->to_responses_api_format();
