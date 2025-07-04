@@ -168,7 +168,7 @@ i18n.COMMON = {
   QDRANT_COLLECTION_HELP: __( 'The collection keeps data apart so you can use one cluster for many websites. If there\'s no collection, Qdrant makes one with 1536 dimensions and uses cosine similarity.', 'ai-engine' ),
   COST: __( 'Cost', 'ai-engine' ),
   USAGE: __( 'Usage', 'ai-engine' ),
-  USAGE_ESTIMATES_NOTE: __( 'These are estimated costs based on current prices. For more accurate information, check the Insights tab.', 'ai-engine' ),
+  USAGE_ESTIMATES_NOTE: __( 'Costs and tokens are estimates. For accurate data and detailed analytics, visit the Insights tab.', 'ai-engine' ),
   ACTIVITY: __( 'Activity', 'ai-engine' ),
   TRANSCRIPTION: __( 'Transcription', 'ai-engine' ),
   TRANSCRIPTION_HELP: __( 'Introduces a \'Transcribe\' tab to easily transform audio/images into text and get AI answers in JSON format.', 'ai-engine' ),

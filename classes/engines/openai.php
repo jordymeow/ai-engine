@@ -1412,6 +1412,40 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   }
 
   /**
+  * Override handle_tokens_usage to set accuracy properly
+  */
+  public function handle_tokens_usage(
+    $reply,
+    $query,
+    $returned_model,
+    $returned_in_tokens,
+    $returned_out_tokens,
+    $returned_price = null
+  ) {
+    // Call parent to handle the actual usage recording
+    parent::handle_tokens_usage(
+      $reply,
+      $query,
+      $returned_model,
+      $returned_in_tokens,
+      $returned_out_tokens,
+      $returned_price
+    );
+
+    // Set accuracy based on data availability
+    if ( !is_null( $returned_price ) && !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
+      // Responses API with cost field or OpenRouter style = full accuracy
+      $reply->set_usage_accuracy( 'full' );
+    } elseif ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
+      // Tokens from API but price calculated = tokens accuracy
+      $reply->set_usage_accuracy( 'tokens' );
+    } else {
+      // Everything estimated
+      $reply->set_usage_accuracy( 'estimated' );
+    }
+  }
+
+  /**
   * Override image query handling for gpt-image-1 model
   */
   public function run_image_query( $query ) {

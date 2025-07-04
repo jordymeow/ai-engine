@@ -10,6 +10,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
     'total_tokens' => 0,
     'price' => null,
   ];
+  public $usageAccuracy = 'none'; // 'none', 'estimated', 'tokens', 'price', 'full'
   public $query = null;
   public $type = 'text';
 
@@ -54,6 +55,10 @@ class Meow_MWAI_Reply implements JsonSerializable {
     $this->usage = $usage;
   }
 
+  public function set_usage_accuracy( $accuracy ) {
+    $this->usageAccuracy = $accuracy;
+  }
+
   public function set_id( $id ) {
     $this->id = $id;
   }
@@ -88,6 +93,10 @@ class Meow_MWAI_Reply implements JsonSerializable {
       return null;
     }
     return $this->usage['price'];
+  }
+
+  public function get_usage_accuracy() {
+    return $this->usageAccuracy;
   }
 
   public function get_units() {

@@ -79,12 +79,18 @@ class Meow_MWAI_Services_UsageStats {
         'prompt_tokens' => 0,
         'completion_tokens' => 0,
         'total_tokens' => 0,
-        'returned_price' => 0
+        'returned_price' => 0,
+        'queries' => 0
       ];
+    }
+    // Ensure queries field exists for existing data
+    if ( !isset( $usage[$month][$model]['queries'] ) ) {
+      $usage[$month][$model]['queries'] = 0;
     }
     $usage[$month][$model]['prompt_tokens'] += $in_tokens;
     $usage[$month][$model]['completion_tokens'] += $out_tokens;
     $usage[$month][$model]['total_tokens'] += $in_tokens + $out_tokens;
+    $usage[$month][$model]['queries'] += 1;
     if ( !empty( $returned_price ) ) {
       $usage[$month][$model]['returned_price'] += $returned_price;
     }
@@ -104,12 +110,18 @@ class Meow_MWAI_Services_UsageStats {
         'prompt_tokens' => 0,
         'completion_tokens' => 0,
         'total_tokens' => 0,
-        'returned_price' => 0
+        'returned_price' => 0,
+        'queries' => 0
       ];
+    }
+    // Ensure queries field exists for existing data
+    if ( !isset( $daily_usage[$day][$model]['queries'] ) ) {
+      $daily_usage[$day][$model]['queries'] = 0;
     }
     $daily_usage[$day][$model]['prompt_tokens'] += $in_tokens;
     $daily_usage[$day][$model]['completion_tokens'] += $out_tokens;
     $daily_usage[$day][$model]['total_tokens'] += $in_tokens + $out_tokens;
+    $daily_usage[$day][$model]['queries'] += 1;
     if ( !empty( $returned_price ) ) {
       $daily_usage[$day][$model]['returned_price'] += $returned_price;
     }
@@ -123,7 +135,8 @@ class Meow_MWAI_Services_UsageStats {
       'prompt_tokens' => $in_tokens,
       'completion_tokens' => $out_tokens,
       'total_tokens' => $in_tokens + $out_tokens,
-      'price' => $returned_price
+      'price' => $returned_price,
+      'queries' => 1
     ];
   }
 
@@ -135,12 +148,16 @@ class Meow_MWAI_Services_UsageStats {
       $usage[$month] = [];
     }
     if ( !isset( $usage[$month][$model] ) ) {
-      $usage[$month][$model] = [ 'seconds' => 0 ];
+      $usage[$month][$model] = [ 'seconds' => 0, 'queries' => 0 ];
     }
     if ( !isset( $usage[$month][$model]['seconds'] ) ) {
       $usage[$month][$model]['seconds'] = 0;
     }
+    if ( !isset( $usage[$month][$model]['queries'] ) ) {
+      $usage[$month][$model]['queries'] = 0;
+    }
     $usage[$month][$model]['seconds'] += $seconds;
+    $usage[$month][$model]['queries'] += 1;
     $this->cleanup_old_monthly_data( $usage );
     $this->core->update_option( 'ai_usage', $usage );
     
@@ -151,18 +168,23 @@ class Meow_MWAI_Services_UsageStats {
       $daily_usage[$day] = [];
     }
     if ( !isset( $daily_usage[$day][$model] ) ) {
-      $daily_usage[$day][$model] = [ 'seconds' => 0 ];
+      $daily_usage[$day][$model] = [ 'seconds' => 0, 'queries' => 0 ];
     }
     if ( !isset( $daily_usage[$day][$model]['seconds'] ) ) {
       $daily_usage[$day][$model]['seconds'] = 0;
     }
+    if ( !isset( $daily_usage[$day][$model]['queries'] ) ) {
+      $daily_usage[$day][$model]['queries'] = 0;
+    }
     $daily_usage[$day][$model]['seconds'] += $seconds;
+    $daily_usage[$day][$model]['queries'] += 1;
     $this->cleanup_old_daily_data( $daily_usage );
     $this->core->update_option( 'ai_usage_daily', $daily_usage );
     
     // Return the usage data for this specific request
     return [
-      'seconds' => $seconds
+      'seconds' => $seconds,
+      'queries' => 1
     ];
   }
 
@@ -174,7 +196,7 @@ class Meow_MWAI_Services_UsageStats {
       $usage[$month] = [];
     }
     if ( !isset( $usage[$month][$model] ) ) {
-      $usage[$month][$model] = [ 'resolution' => [], 'images' => 0 ];
+      $usage[$month][$model] = [ 'resolution' => [], 'images' => 0, 'queries' => 0 ];
     }
     if ( !isset( $usage[$month][$model]['images'] ) ) {
       $usage[$month][$model]['images'] = 0;
@@ -185,8 +207,12 @@ class Meow_MWAI_Services_UsageStats {
     if ( !isset( $usage[$month][$model]['resolution'][$resolution] ) ) {
       $usage[$month][$model]['resolution'][$resolution] = 0;
     }
+    if ( !isset( $usage[$month][$model]['queries'] ) ) {
+      $usage[$month][$model]['queries'] = 0;
+    }
     $usage[$month][$model]['images'] += $images;
     $usage[$month][$model]['resolution'][$resolution] += $images;
+    $usage[$month][$model]['queries'] += 1;
     $this->cleanup_old_monthly_data( $usage );
     $this->core->update_option( 'ai_usage', $usage );
     
@@ -197,7 +223,7 @@ class Meow_MWAI_Services_UsageStats {
       $daily_usage[$day] = [];
     }
     if ( !isset( $daily_usage[$day][$model] ) ) {
-      $daily_usage[$day][$model] = [ 'resolution' => [], 'images' => 0 ];
+      $daily_usage[$day][$model] = [ 'resolution' => [], 'images' => 0, 'queries' => 0 ];
     }
     if ( !isset( $daily_usage[$day][$model]['images'] ) ) {
       $daily_usage[$day][$model]['images'] = 0;
@@ -208,14 +234,19 @@ class Meow_MWAI_Services_UsageStats {
     if ( !isset( $daily_usage[$day][$model]['resolution'][$resolution] ) ) {
       $daily_usage[$day][$model]['resolution'][$resolution] = 0;
     }
+    if ( !isset( $daily_usage[$day][$model]['queries'] ) ) {
+      $daily_usage[$day][$model]['queries'] = 0;
+    }
     $daily_usage[$day][$model]['images'] += $images;
     $daily_usage[$day][$model]['resolution'][$resolution] += $images;
+    $daily_usage[$day][$model]['queries'] += 1;
     $this->cleanup_old_daily_data( $daily_usage );
     $this->core->update_option( 'ai_usage_daily', $daily_usage );
     
     // Return the usage data for this specific request
     return [
-      'images' => $images
+      'images' => $images,
+      'queries' => 1
     ];
   }
 

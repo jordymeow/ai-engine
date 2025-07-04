@@ -1111,6 +1111,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $returned_price
     );
     $reply->set_usage( $usage );
+
+    // Set default accuracy to 'estimated' for engines that don't override
+    // Most engines (Google, Anthropic, etc.) estimate tokens and calculate price
+    $reply->set_usage_accuracy( 'estimated' );
   }
 
   // Request to DALL-E API
@@ -1130,6 +1134,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
       $usage = $this->core->record_images_usage( $model, $resolution, $query->maxResults );
       $reply->set_usage( $usage );
+      $reply->set_usage_accuracy( 'estimated' ); // Image generation always uses estimated pricing
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
 
@@ -1178,6 +1183,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
       $usage = $this->core->record_images_usage( $model, $resolution, $query->maxResults );
       $reply->set_usage( $usage );
+      $reply->set_usage_accuracy( 'estimated' ); // Image generation always uses estimated pricing
       $reply->set_choices( $choices );
       $reply->set_type( 'images' );
 

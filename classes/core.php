@@ -900,8 +900,35 @@ class Meow_MWAI_Core {
 
     $populating = true;
 
-    // Languages
-    $options['languages'] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
+    // Languages - use custom languages as the complete list
+    $custom_languages = isset( $options['custom_languages'] ) && !empty( $options['custom_languages'] ) 
+      ? $options['custom_languages'] 
+      : [];
+    
+    // If no custom languages defined, fall back to defaults
+    if ( empty( $custom_languages ) ) {
+      $options['languages'] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
+    } else {
+      // Process custom languages
+      $processed_languages = [];
+      foreach ( $custom_languages as $custom_lang ) {
+        // Support formats like "Russian (ru)" or just "Russian"
+        $custom_lang = trim( $custom_lang );
+        if ( !empty( $custom_lang ) ) {
+          // Check if language code is provided in parentheses
+          if ( preg_match( '/^(.+)\s*\(([a-z]{2,3})\)$/i', $custom_lang, $matches ) ) {
+            $lang_name = trim( $matches[1] );
+            $lang_code = strtolower( trim( $matches[2] ) );
+            $processed_languages[$lang_code] = $lang_name;
+          } else {
+            // No code provided, add as-is
+            $processed_languages[] = $custom_lang;
+          }
+        }
+      }
+      
+      $options['languages'] = apply_filters( 'mwai_languages', $processed_languages );
+    }
 
     // Consolidate the Engines and their Models
     // PS: We should ABSOLUTELY AVOID to use ai_models directly (except for saving)
@@ -1061,7 +1088,11 @@ class Meow_MWAI_Core {
       }
       $options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
       $options['default_limits'] = MWAI_LIMITS;
-      if ( $sanitize || $init_mode ) {
+      
+      // Force sanitization if custom_languages is not set (migration)
+      $needs_language_migration = !isset( $options['custom_languages'] ) || empty( $options['custom_languages'] );
+      
+      if ( $sanitize || $init_mode || $needs_language_migration ) {
         $options = $this->sanitize_options( $options );
       }
       $this->options = $options;
@@ -1148,6 +1179,21 @@ class Meow_MWAI_Core {
           return true;
         }
       ) );
+    }
+
+    // Migration: Populate custom_languages if empty for existing installations
+    if ( !isset( $options['custom_languages'] ) || empty( $options['custom_languages'] ) ) {
+      $options['custom_languages'] = [
+        'English (en)',
+        'German (de)', 
+        'French (fr)',
+        'Spanish (es)',
+        'Italian (it)',
+        'Chinese (zh)',
+        'Japanese (ja)',
+        'Portuguese (pt)'
+      ];
+      $needs_update = true;
     }
 
     if ( $needs_update ) {

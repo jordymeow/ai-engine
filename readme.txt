@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.7
+Stable tag: 2.8.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,13 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.8.8 (2025/07/04) =
+* Add: Customizable Languages section in Settings > Others for easier language management.  
+* Add: Query tracking in usage statistics with accuracy indicators for token counts and pricing sources.  
+* Fix: Code Engine now correctly uses function names instead of snippet names for better clarity.  
+* Fix: Resolved PHP warning when syncing vectors caused by missing ai_embeddings_dimensions key.  
+* Fix: Fixed UI errors related to embedding model selectors, including conditional display, dimension validation, and UI improvements.
 
 = 2.8.7 (2025/07/02) =
 * Add: Smarter token and nonce management for longer, more reliable sessions.

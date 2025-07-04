@@ -192,6 +192,16 @@ define( 'MWAI_OPTIONS', [
   'ignore_word_boundaries' => false,
   'banned_ips' => [],
   'languages' => MWAI_LANGUAGES,
+  'custom_languages' => [
+    'English (en)',
+    'German (de)', 
+    'French (fr)',
+    'Spanish (es)',
+    'Italian (it)',
+    'Chinese (zh)',
+    'Japanese (ja)',
+    'Portuguese (pt)'
+  ],
   'clean_uninstall' => false,
 
   // ADMIN UI

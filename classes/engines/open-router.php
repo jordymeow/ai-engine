@@ -96,6 +96,18 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
 
     // Set the usage back on the reply
     $reply->set_usage( $usage );
+
+    // Set accuracy based on data availability
+    if ( !is_null( $returned_price ) && !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
+      // OpenRouter returns price from API = full accuracy
+      $reply->set_usage_accuracy( 'full' );
+    } elseif ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
+      // Tokens from API but price calculated = tokens accuracy
+      $reply->set_usage_accuracy( 'tokens' );
+    } else {
+      // Everything estimated
+      $reply->set_usage_accuracy( 'estimated' );
+    }
   }
 
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {

@@ -1113,7 +1113,14 @@ class Meow_MWAI_Rest {
     try {
       $params = $request->get_json_params();
       $days = isset( $params['days'] ) ? intval( $params['days'] ) : 31;
-      $data = apply_filters( 'mwai_stats_logs_activity_daily', [], $days );
+      $byModel = isset( $params['byModel'] ) ? (bool) $params['byModel'] : false;
+      
+      if ( $byModel ) {
+        $data = apply_filters( 'mwai_stats_logs_activity_daily_by_model', [], $days );
+      } else {
+        $data = apply_filters( 'mwai_stats_logs_activity_daily', [], $days );
+      }
+      
       return $this->create_rest_response( [ 'success' => true, 'data' => $data ], 200 );
     }
     catch ( Exception $e ) {

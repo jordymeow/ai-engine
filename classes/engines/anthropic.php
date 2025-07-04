@@ -847,6 +847,15 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     }
     $usage = $this->core->record_tokens_usage( $returned_model, $returned_in_tokens, $returned_out_tokens );
     $reply->set_usage( $usage );
+
+    // Set accuracy based on data availability
+    if ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
+      // Anthropic provides token counts from API = tokens accuracy
+      $reply->set_usage_accuracy( 'tokens' );
+    } else {
+      // Fallback to estimated
+      $reply->set_usage_accuracy( 'estimated' );
+    }
   }
 
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {

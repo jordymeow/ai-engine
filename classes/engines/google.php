@@ -883,6 +883,13 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $maxContextualTokens = $model['inputTokenLimit'];
       $priceIn = 0;
       $priceOut = 0;
+
+      // If Model Name contains "Experimental", skip it
+      if ( strpos( $model['name'], '-exp' ) !== false ) {
+        error_log( 'Skipping experimental model: ' . $model['name'] );
+        continue;
+      }
+
       // Set tags based on model family and features
       $tags = [ 'core' ];
       $features = [ 'completion' ];
