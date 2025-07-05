@@ -76,6 +76,13 @@ class Meow_MWAI_API {
         return $this->core->can_access_public_api( 'moderationCheck', $request );
       },
     ] );
+    register_rest_route( 'mwai/v1', '/simpleTranscribeAudio', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_simpleTranscribeAudio' ],
+      'permission_callback' => function ( $request ) {
+        return $this->core->can_access_public_api( 'simpleTranscribeAudio', $request );
+      },
+    ] );
 
     if ( $this->chatbot_module ) {
       register_rest_route( 'mwai/v1', '/simpleChatbotQuery', [
@@ -540,6 +547,48 @@ class Meow_MWAI_API {
       return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
+
+  public function rest_simpleTranscribeAudio( $request ) {
+    try {
+      $params = $request->get_params();
+      $url = isset( $params['url'] ) ? $params['url'] : '';
+      $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
+      $options = isset( $params['options'] ) ? $params['options'] : [];
+      $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
+      
+      if ( !empty( $scope ) ) {
+        $options['scope'] = $scope;
+      }
+      
+      // Get file path from mediaId if provided
+      $path = null;
+      if ( $mediaId > 0 ) {
+        $path = get_attached_file( $mediaId );
+        if ( empty( $path ) ) {
+          throw new Exception( 'The media file cannot be found.' );
+        }
+      }
+      
+      if ( empty( $url ) && empty( $path ) ) {
+        throw new Exception( 'Either a URL or a mediaId is required.' );
+      }
+
+      if ( $this->debug ) {
+        $debug = sprintf( 'REST [SimpleTranscribeAudio]: url=%s, mediaId=%d, %s', 
+          $url ? 'provided' : 'none', 
+          $mediaId,
+          json_encode( $options ) 
+        );
+        Meow_MWAI_Logging::log( $debug );
+      }
+
+      $reply = $this->simpleTranscribeAudio( $url, $path, $options );
+      return new WP_REST_Response( [ 'success' => true, 'data' => $reply ], 200 );
+    }
+    catch ( Exception $e ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
   #endregion
 
   #region Simple API
@@ -728,6 +777,51 @@ class Meow_MWAI_API {
     catch ( Exception $e ) {
       throw new Exception( 'The result is not a valid JSON.' );
     }
+  }
+
+  /**
+   * Executes an audio transcription query.
+   *
+   * @param string $url The URL of the audio file to transcribe.
+   * @param string|null $path The path to the audio file. If provided, the audio data will be read from this file.
+   * @param array $params Additional parameters for the transcription query.
+   *
+   * @return string The transcribed text.
+   */
+  public function simpleTranscribeAudio( $url = null, $path = null, $params = [] ) {
+    global $mwai_core;
+    $ai_audio_default_env = $this->core->get_option( 'ai_audio_default_env' );
+    $ai_audio_default_model = $this->core->get_option( 'ai_audio_default_model' );
+    
+    if ( empty( $ai_audio_default_model ) ) {
+      $ai_audio_default_model = 'whisper-1'; // Default transcription model
+    }
+    
+    $query = new Meow_MWAI_Query_Transcribe();
+    
+    if ( !empty( $ai_audio_default_env ) ) {
+      $query->set_env_id( $ai_audio_default_env );
+    }
+    if ( !empty( $ai_audio_default_model ) ) {
+      $query->set_model( $ai_audio_default_model );
+    }
+    
+    $query->inject_params( $params );
+    
+    if ( !empty( $url ) ) {
+      // Use 'files' as the purpose for audio files
+      $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'files' ) );
+    }
+    else if ( !empty( $path ) ) {
+      // Use 'files' as the purpose for audio files
+      $query->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'files' ) );
+    }
+    else {
+      throw new Exception( 'Either a URL or a path must be provided for the audio file.' );
+    }
+    
+    $reply = $mwai_core->run_query( $query );
+    return $reply->result;
   }
   #endregion
 

@@ -1149,12 +1149,27 @@ class Meow_MWAI_Rest {
 
   public function rest_ai_transcribe_audio( $request ) {
     try {
+      global $mwai;
       $params = $request->get_json_params();
-      $query = new Meow_MWAI_Query_Transcribe();
-      $query->inject_params( $params );
-      $query->set_scope( 'admin-tools' );
-      $reply = $this->core->run_query( $query );
-      return $this->create_rest_response( [ 'success' => true, 'data' => $reply->result ], 200 );
+      $url = !empty( $params['url'] ) ? $params['url'] : null;
+      $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
+      
+      // If mediaId is provided, get the file path
+      $path = null;
+      if ( $mediaId > 0 ) {
+        $path = get_attached_file( $mediaId );
+        if ( empty( $path ) ) {
+          throw new Exception( 'The media file cannot be found.' );
+        }
+      }
+      
+      // Set the scope for admin tools
+      if ( !isset( $params['scope'] ) ) {
+        $params['scope'] = 'admin-tools';
+      }
+      
+      $result = $mwai->simpleTranscribeAudio( $url, $path, $params );
+      return $this->create_rest_response( [ 'success' => true, 'data' => $result ], 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

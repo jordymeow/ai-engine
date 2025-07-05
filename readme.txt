@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.8
+Stable tag: 2.8.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,12 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.8.9 (2025/07/05) =
+* Fix: Pinecone vector listing now correctly handles variable index dimensions by generating matching zero vectors instead of using a hardcoded size.
+* Fix: Pinecone index name extraction has been improved to accurately process hyphenated index names, and a dimension mismatch indicator has been added next to the AI Environment title in embedding settings.
+* Add: simpleTranscribeAudio method now provides a consistent API for audio transcription using the default AI audio settings.
+* Fix: functions_list now exclusively retrieves snippets of the "function" type from Code Engine to improve accuracy.
 
 = 2.8.8 (2025/07/04) =
 * Add: Customizable Languages section in Settings > Others for easier language management.  
