@@ -80,7 +80,7 @@ class Meow_MWAI_Modules_Discussions {
 
   /**
    * Helper method to create REST responses with automatic token refresh
-   * 
+   *
    * @param array $data The response data
    * @param int $status HTTP status code
    * @return WP_REST_Response
@@ -89,18 +89,18 @@ class Meow_MWAI_Modules_Discussions {
     // Always check if we need to provide a new nonce
     $current_nonce = $this->core->get_nonce( true );
     $request_nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? $_SERVER['HTTP_X_WP_NONCE'] : null;
-    
+
     // Check if nonce is approaching expiration (WordPress nonces last 12-24 hours)
     // We'll refresh if the nonce is older than 10 hours to be safe
     $should_refresh = false;
-    
+
     if ( $request_nonce ) {
       // Try to determine the age of the nonce
       // WordPress uses a tick system where each tick is 12 hours
       // If we're in the second half of the nonce's life, refresh it
       $time = time();
       $nonce_tick = wp_nonce_tick();
-      
+
       // Verify if the nonce is still valid but getting old
       $verify = wp_verify_nonce( $request_nonce, 'wp_rest' );
       if ( $verify === 2 ) {
@@ -111,17 +111,17 @@ class Meow_MWAI_Modules_Discussions {
         }
       }
     }
-    
+
     // If the nonce has changed or should be refreshed, include the new one
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $data['new_token'] = $current_nonce;
-      
+
       // Log if debug mode is enabled
       if ( $this->core->get_option( 'debug_mode' ) ) {
         error_log( '[MWAI] Token refresh: Sending new token in response' );
       }
     }
-    
+
     return new WP_REST_Response( $data, $status );
   }
 
@@ -689,6 +689,13 @@ class Meow_MWAI_Modules_Discussions {
     //   $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN title VARCHAR(64) NULL" );
     //   $this->db_check = true;
     // }
+
+    // LATER: REMOVE THIS AFTER SEPTEMBER 2025
+    // Migrate guest users from userId = 0 to userId = NULL
+    $guest_count = $this->wpdb->get_var( "SELECT COUNT(*) FROM $this->table_chats WHERE userId = 0" );
+    if ( $guest_count > 0 ) {
+      $this->wpdb->query( "UPDATE $this->table_chats SET userId = NULL WHERE userId = 0" );
+    }
 
     return $this->db_check;
   }

@@ -237,11 +237,17 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           foreach ( $query->blocks as $feedback_block ) {
             $body['messages'][] = $feedback_block['rawMessage'];
             foreach ( $feedback_block['feedbacks'] as $feedback ) {
+              // Ensure content is a string for the API
+              $content = $feedback['reply']['value'];
+              if ( !is_string( $content ) ) {
+                $content = json_encode( $content );
+              }
+
               $body['messages'][] = [
                 'tool_call_id' => $feedback['request']['toolId'],
                 'role' => 'tool',
                 'name' => $feedback['request']['name'],
-                'content' => $feedback['reply']['value']
+                'content' => $content
               ];
 
               // Note: Function result events are now emitted centrally in core.php
@@ -618,7 +624,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       else if ( isset( $json['choices'][0]['delta']['tool_calls'] ) ) {
         // New schema detected – drop any half-built legacy call to prevent duplicates
         $this->streamFunctionCall = null;
-        
+
         foreach ( $json['choices'][0]['delta']['tool_calls'] as $tool_call ) {
           $index = $tool_call['index'] ?? null;
           $currentStreamToolCall = null;
@@ -914,7 +920,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     foreach ( $choices as &$choice ) {
       if ( isset( $choice['message'] ) ) {
         // If we have both tool_calls and function_call, remove function_call
-        if ( isset( $choice['message']['tool_calls'] ) && !empty( $choice['message']['tool_calls'] ) && 
+        if ( isset( $choice['message']['tool_calls'] ) && !empty( $choice['message']['tool_calls'] ) &&
              isset( $choice['message']['function_call'] ) ) {
           unset( $choice['message']['function_call'] );
         }
@@ -945,7 +951,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     $options = $this->build_options( $headers, $body );
 
     // Emit "Request sent" event for feedback queries
-    if ( $this->currentDebugMode && !empty( $streamCallback ) && 
+    if ( $this->currentDebugMode && !empty( $streamCallback ) &&
          ( $query instanceof Meow_MWAI_Query_Feedback || $query instanceof Meow_MWAI_Query_AssistFeedback ) ) {
       $event = Meow_MWAI_Event::request_sent()
         ->set_metadata( 'is_feedback', true )
@@ -978,7 +984,8 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         // Prefer tool_calls; fall back to legacy only if necessary
         if ( !empty( $this->streamToolCalls ) ) {
           $message['tool_calls'] = $this->streamToolCalls;
-        } elseif ( !empty( $this->streamFunctionCall ) ) {
+        }
+        elseif ( !empty( $this->streamFunctionCall ) ) {
           $message['function_call'] = $this->streamFunctionCall;
         }
         if ( !is_null( $this->streamInTokens ) ) {

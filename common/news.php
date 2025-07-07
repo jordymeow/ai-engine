@@ -21,10 +21,13 @@ if ( !class_exists( 'MeowCommon_News' ) ) {
           return;
         }
 
-        if ( isset( $_SESSION['meowapps_news_displayed'] ) ) {
+        // Use transient instead of session for better compatibility
+        $user_id = get_current_user_id();
+        $transient_key = 'meowapps_news_displayed_' . $user_id;
+        if ( get_transient( $transient_key ) ) {
           return;
         }
-        $_SESSION['meowapps_news_displayed'] = true;
+        set_transient( $transient_key, true, 12 * HOUR_IN_SECONDS );
 
         // Other constraint for the news.
         $mwai_options = get_option( 'mwai_options' );

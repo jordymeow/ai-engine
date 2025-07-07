@@ -208,6 +208,11 @@ class Meow_MWAI_Core {
       $query = apply_filters( 'mwai_ai_query', $query );
     }
 
+    // Ensure the query is still valid after filtering
+    if ( !$query || !is_object( $query ) ) {
+      throw new Exception( 'Invalid query object after filtering. The mwai_ai_query filter must return a valid query object.' );
+    }
+
     // Let's check the default environment and model.
     $this->validate_env_model( $query );
 

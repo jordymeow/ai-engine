@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.8.9
+Stable tag: 2.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,14 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.0 (2025/07/07) =
+* Add: Persisted templates in Content Generator, Images Generator, and Playground.
+* Update: Improved clarity in tables and selects.
+* Fix: Limited PHP session starts to AI Engine's REST endpoints and added session status checks.
+* Fix: Improved error handling for dynamic function additions via mwai_ai_query filter and ensured proper JSON encoding for mwai_ai_feedback objects in Chat Completions API.
+* Fix: Enhanced CSV/JSON import error handling with detailed validation, specific error messages, and helpful examples in a modal dialog.
+* Fix: Corrected guest user display in Discussions and Insights tables.
 
 = 2.8.9 (2025/07/05) =
 * Fix: Pinecone vector listing now correctly handles variable index dimensions by generating matching zero vectors instead of using a hardcoded size.

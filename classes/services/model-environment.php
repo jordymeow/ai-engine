@@ -8,6 +8,10 @@ class Meow_MWAI_Services_ModelEnvironment {
   }
 
   public function validate_env_model( $query ) {
+    if ( !$query || !is_object( $query ) ) {
+      throw new Exception( 'Invalid query object provided to validate_env_model.' );
+    }
+
     // The query object uses envId, not env
     $env = $query->envId ?? $query->env ?? null;
     $model = $query->model;

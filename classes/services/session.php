@@ -9,6 +9,26 @@ class Meow_MWAI_Services_Session {
   }
 
   public function can_start_session() {
+    // Check if session already started
+    if ( session_status() !== PHP_SESSION_NONE ) {
+      return false;
+    }
+    
+    // Check if we're in a context where sessions shouldn't be started
+    if ( wp_doing_cron() || defined( 'DOING_AUTOSAVE' ) ) {
+      return false;
+    }
+    
+    // For AI Engine REST endpoints only - check if it's actually our endpoint
+    if ( $this->core->is_rest ) {
+      $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+      // Only start sessions for actual AI Engine endpoints
+      if ( !strpos( $request_uri, '/mwai/' ) && !strpos( $request_uri, 'rest_route=/mwai/' ) ) {
+        return false;
+      }
+    }
+    
+    // Allow developers to override
     return apply_filters( 'mwai_allow_session', true );
   }
 
@@ -17,7 +37,7 @@ class Meow_MWAI_Services_Session {
     // - For logged-out users (unless forced): Return null - they must use /start_session endpoint
     // - For logged-in users: Create user-specific nonce tied to their WP session
     // - With $force=true: Always create nonce (used by /start_session endpoint)
-    // 
+    //
     // This ensures logged-in users get a nonce matching their auth context on page load,
     // preventing rest_cookie_invalid_nonce errors when cookies are present.
     if ( !$force && !is_user_logged_in() ) {
@@ -48,7 +68,7 @@ class Meow_MWAI_Services_Session {
     if ( isset( $_COOKIE['mwai_session_id'] ) ) {
       return $_COOKIE['mwai_session_id'];
     }
-    
+
     // If no cookie exists and we can set one, create it now (lazy initialization)
     if ( !headers_sent() && !wp_doing_cron() ) {
       $sessionId = uniqid();
@@ -60,9 +80,9 @@ class Meow_MWAI_Services_Session {
       ] );
       return $sessionId;
     }
-    
+
     // For cron jobs or when headers are sent, return a temporary session ID
-    return wp_doing_cron() ? "wp-cron" : "N/A";
+    return wp_doing_cron() ? 'wp-cron' : 'N/A';
   }
 
   public function get_ip_address() {
@@ -88,7 +108,7 @@ class Meow_MWAI_Services_Session {
     if ( empty( $user ) || empty( $user->ID ) ) {
       return null;
     }
-    
+
     // Return both the new format (for frontend) and placeholder format (for do_placeholders)
     $userData = [
       'ID' => $user->ID,
@@ -99,13 +119,13 @@ class Meow_MWAI_Services_Session {
       // Add placeholder keys for do_placeholders function
       'FIRST_NAME' => get_user_meta( $user->ID, 'first_name', true ),
       'LAST_NAME' => get_user_meta( $user->ID, 'last_name', true ),
-      'USER_LOGIN' => isset( $user->data ) && isset( $user->data->user_login ) ? 
+      'USER_LOGIN' => isset( $user->data ) && isset( $user->data->user_login ) ?
         $user->data->user_login : null,
       'DISPLAY_NAME' => isset( $user->data ) && isset( $user->data->display_name ) ?
         $user->data->display_name : null,
       'AVATAR_URL' => get_avatar_url( $user->ID ),
     ];
-    
+
     return $userData;
   }
 
@@ -116,27 +136,8 @@ class Meow_MWAI_Services_Session {
     if ( is_user_logged_in() ) {
       $userId = get_current_user_id();
     }
-    else if ( isset( $_COOKIE['mwai_user_id'] ) ) {
-      $userId = $_COOKIE['mwai_user_id'];
-    }
-    else {
-      // Don't try to start session if we're in a cron job or headers have been sent
-      if ( $this->can_start_session() && !wp_doing_cron() && !headers_sent() ) {
-        session_start();
-        if ( !isset( $_SESSION['mwai_user_id'] ) ) {
-          $_SESSION['mwai_user_id'] = $this->generate_user_id();
-        }
-        $userId = $_SESSION['mwai_user_id'];
-        // Set cookie if possible
-        if ( !headers_sent() ) {
-          setcookie( 'mwai_user_id', $userId, time() + ( 86400 * 30 ), '/' );
-        }
-      }
-      else {
-        // For cron jobs or when headers are sent, generate a temporary user ID
-        $userId = $this->generate_user_id();
-      }
-    }
+    // For guest users, return null instead of generating a string ID
+    // This allows the database to store NULL for guests, which displays as "Guest" in the UI
     return $userId;
   }
 
@@ -156,8 +157,4 @@ class Meow_MWAI_Services_Session {
     return true;
   }
 
-  private function generate_user_id() {
-    $id = uniqid( 'mwai_', true );
-    return $id;
-  }
 }

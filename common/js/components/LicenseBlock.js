@@ -3,7 +3,7 @@
 const { useState, useEffect } = wp.element;
 
 // NekoUI
-import { NekoButton, NekoTypo, NekoBlock, NekoInput, 
+import { NekoButton, NekoTypo, NekoBlock, NekoInput,
   NekoMessage, NekoModal } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
@@ -26,7 +26,7 @@ const LicenseBlock = () => {
     }
     setBusy(true);
     try {
-      const res = await nekoFetch(`${CommonApiUrl}/get_license`, { 
+      const res = await nekoFetch(`${CommonApiUrl}/get_license`, {
         method: 'POST',
         nonce: restNonce
       });
@@ -45,7 +45,7 @@ const LicenseBlock = () => {
   const removeLicense = async () => {
     setBusy(true);
     try {
-      const res = await nekoFetch(`${CommonApiUrl}/set_license`, { 
+      const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
         method: 'POST',
         nonce: restNonce,
         json: { serialKey: null }
@@ -69,7 +69,7 @@ const LicenseBlock = () => {
       const res = await nekoFetch(`${CommonApiUrl}/set_license`, {
         method: 'POST',
         nonce: restNonce,
-        json: { 
+        json: {
           serialKey,
           override: true
         }
@@ -127,7 +127,7 @@ const LicenseBlock = () => {
     if (license && license.check_url ) {
       message = <><span>{message}</span><br /><small>To check your license status, please click <a target="_blank" href={license.check_url + '&cache=' + (Math.random() * (642000))} rel="noreferrer">here</a>.</small></>;
     }
-  } 
+  }
   if (!success) {
     if (!license) {
       message = 'Unknown error :(';
@@ -156,12 +156,12 @@ const LicenseBlock = () => {
     }
   }
 
-  const jsxNonPro = 
+  const jsxNonPro =
     <NekoBlock title="Pro Version (Not Installed)" className="primary">
       You will find more information about the Pro Version <a target='_blank' rel="noreferrer" href={`https://meowapps.com`}>here</a>. If you actually bought the Pro Version already, please remove the current plugin and download the Pro Version from your account at <a target='_blank' rel="noreferrer" href='https://meowapps.com/'>Meow Apps</a>.
     </NekoBlock>;
 
-  const jsxProVersion = 
+  const jsxProVersion =
     <NekoBlock title={`Pro Version (${licenseTextStatus})`} busy={busy} className="primary">
 
       {!isOverridenLicense && !(license && license.key === serialKey) && <>
@@ -174,17 +174,17 @@ const LicenseBlock = () => {
 
       {license && !success && <NekoMessage variant="danger">{message}</NekoMessage>}
       {(isOverridenLicense || license) && success && <NekoMessage variant="success">{message}</NekoMessage>}
-      
+
       <div style={{ marginTop: 15, display: 'flex', justifyContent: 'end' }}>
-        {license && !success && <NekoButton className="secondary" disabled={busy || !serialKey} 
+        {license && !success && <NekoButton className="secondary" disabled={busy || !serialKey}
           onClick={validateLicense}>Retry to validate
         </NekoButton>}
-        {license && license.key === serialKey && <NekoButton className="secondary" disabled={busy || !serialKey} 
+        {license && license.key === serialKey && <NekoButton className="secondary" disabled={busy || !serialKey}
           onClick={removeLicense}>Remove License
         </NekoButton>}
-        <NekoButton disabled={busy || !serialKey || (license && license.key === serialKey)} 
+        <NekoButton disabled={busy || !serialKey || (license && license.key === serialKey)}
           onClick={validateLicense}>Validate License</NekoButton>
-        {meowMode && !success && <NekoButton disabled={busy || !serialKey || (license && license.key === serialKey)} 
+        {meowMode && !success && <NekoButton disabled={busy || !serialKey || (license && license.key === serialKey)}
           onClick={forceLicense} className="danger">Force License</NekoButton>}
       </div>
 
