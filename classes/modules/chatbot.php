@@ -284,6 +284,14 @@ class Meow_MWAI_Modules_Chatbot {
   #region Messages Integrity Check
 
   public function messages_integrity_diff( $messages1, $messages2 ) {
+    // Ensure both parameters are arrays
+    if ( !is_array( $messages1 ) ) {
+      $messages1 = [];
+    }
+    if ( !is_array( $messages2 ) ) {
+      $messages2 = [];
+    }
+    
     // Collect messages with role not 'user' from messages1
     $messagesList1 = [];
     foreach ( $messages1 as $msg ) {
@@ -403,11 +411,12 @@ class Meow_MWAI_Modules_Chatbot {
       }
 
       // Messages Integrity Check with Discussions
-      if ( $this->core->get_option( 'chatbot_discussions' ) ) {
+      if ( $this->core->get_option( 'chatbot_discussions' ) && isset( $params['chatId'] ) ) {
         $discussion = $this->core->discussions->get_discussion( $botId ? $botId : $customId, $params['chatId'] );
         if ( $discussion ) {
           $messages = $discussion['messages'];
-          $diffs = $this->messages_integrity_diff( $messages, $params['messages'] );
+          $clientMessages = isset( $params['messages'] ) ? $params['messages'] : [];
+          $diffs = $this->messages_integrity_diff( $messages, $clientMessages );
           if ( count( $diffs ) > 0 ) {
             Meow_MWAI_Logging::warn( "Integrity Check: It seems the messages in the discussion #{$discussion['id']} do not match the ones sent by the client." );
           }
@@ -436,7 +445,8 @@ class Meow_MWAI_Modules_Chatbot {
           if ( !empty( $startSentence ) ) {
             $messages[] = [ 'role' => 'assistant', 'content' => $startSentence ];
           }
-          $diffs = $this->messages_integrity_diff( $messages, $params['messages'] );
+          $clientMessages = isset( $params['messages'] ) ? $params['messages'] : [];
+          $diffs = $this->messages_integrity_diff( $messages, $clientMessages );
           if ( count( $diffs ) > 0 ) {
             Meow_MWAI_Logging::warn( 'Integrity Check: It seems the messages in the discussion do not match the ones sent by the client: ' . json_encode( $diffs ) );
           }
@@ -473,8 +483,10 @@ class Meow_MWAI_Modules_Chatbot {
         foreach ( $chatbot as $key => $value ) {
           $newParams[$key] = $value;
         }
-        foreach ( $params as $key => $value ) {
-          $newParams[$key] = $value;
+        if ( is_array( $params ) ) {
+          foreach ( $params as $key => $value ) {
+            $newParams[$key] = $value;
+          }
         }
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
@@ -490,8 +502,10 @@ class Meow_MWAI_Modules_Chatbot {
         foreach ( $chatbot as $key => $value ) {
           $newParams[$key] = $value;
         }
-        foreach ( $params as $key => $value ) {
-          $newParams[$key] = $value;
+        if ( is_array( $params ) ) {
+          foreach ( $params as $key => $value ) {
+            $newParams[$key] = $value;
+          }
         }
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
@@ -892,7 +906,13 @@ class Meow_MWAI_Modules_Chatbot {
           $serverParams[$param] = $atts[$param];
         }
         else {
-          $serverParams[$param] = $chatbot[$param] ?? null;
+          // For custom chatbots, don't inherit embeddingsEnvId from the default chatbot
+          if ( $param === 'embeddingsEnvId' && !empty( $customId ) ) {
+            $serverParams[$param] = '';
+          }
+          else {
+            $serverParams[$param] = $chatbot[$param] ?? null;
+          }
         }
       }
     }
@@ -1010,6 +1030,14 @@ class Meow_MWAI_Modules_Chatbot {
     else {
       $frontSystem['paging'] = is_numeric( $paging_option ) ? intval( $paging_option ) : 10; // Default to 10
     }
+
+    // Get metadata settings
+    $frontSystem['metadata'] = [
+      'enabled' => $this->core->get_option( 'chatbot_discussions_metadata_enabled' ),
+      'startDate' => $this->core->get_option( 'chatbot_discussions_metadata_start_date' ),
+      'lastUpdate' => $this->core->get_option( 'chatbot_discussions_metadata_last_update' ),
+      'messageCount' => $this->core->get_option( 'chatbot_discussions_metadata_message_count' )
+    ];
 
     // Clean Params
     $frontParams = $this->clean_params( $frontParams );

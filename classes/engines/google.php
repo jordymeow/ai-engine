@@ -753,28 +753,59 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
   * @return array
   */
   private function format_model_name( $model_id ) {
-    // Special cases for specific models
+    // Special cases for specific models that need manual handling
     $special_names = [
-      'gemini-embedding-exp' => 'Gemini Embedding',
       'gemini-live-2.5-flash-preview' => 'Gemini 2.5 Flash Live',
       'gemini-2.0-flash-live-001' => 'Gemini 2.0 Flash Live',
-      'imagen-4.0-generate-preview-06-06' => 'Imagen 4',
-      'imagen-4.0-ultra-generate-preview-06-06' => 'Imagen 4 Ultra',
-      'imagen-3.0-generate-002' => 'Imagen 3',
-      'veo-2.0-generate-001' => 'Veo 2',
     ];
 
     if ( isset( $special_names[$model_id] ) ) {
       return $special_names[$model_id];
     }
 
-    // Remove common suffixes
+    // Store original for differentiating similar models
+    $original_id = $model_id;
+    
+    // Remove common suffixes but keep track if we need to differentiate
     $cleaned = $model_id;
-    $cleaned = preg_replace( '/-preview-\d{2}-\d{2}$/', '', $cleaned );
-    $cleaned = preg_replace( '/-\d{3}$/', '', $cleaned );
+    
+    // Extract date suffix if present (like -preview-03-25)
+    $date_suffix = '';
+    if ( preg_match( '/-preview-(\d{2}-\d{2})(?:-thinking)?$/', $cleaned, $matches ) ) {
+      $date_suffix = $matches[1];
+      $cleaned = preg_replace( '/-preview-\d{2}-\d{2}(?:-thinking)?$/', '', $cleaned );
+    }
+    
+    // Check if it's a thinking model
+    $is_thinking = strpos( $original_id, '-thinking' ) !== false;
+    if ( $is_thinking ) {
+      $cleaned = str_replace( '-thinking', '', $cleaned );
+    }
+    
+    // Check if it's a TTS preview model
+    $is_preview_tts = strpos( $original_id, 'preview-tts' ) !== false;
+    
+    // Keep version suffixes (like -001, -002) if they help distinguish models
+    $has_version_suffix = preg_match( '/-\d{3}$/', $cleaned );
+    $version_suffix = '';
+    if ( $has_version_suffix ) {
+      preg_match( '/(-\d{3})$/', $cleaned, $matches );
+      $version_suffix = $matches[1];
+      $cleaned = preg_replace( '/-\d{3}$/', '', $cleaned );
+    }
+    
+    // Track if it's a preview model
+    $is_preview = strpos( $cleaned, '-preview' ) !== false || !empty( $date_suffix );
     $cleaned = preg_replace( '/-preview$/', '', $cleaned );
+    
+    // Track if it's experimental
+    $is_experimental = strpos( $original_id, '-exp' ) !== false;
     $cleaned = preg_replace( '/-exp$/', '', $cleaned );
     $cleaned = preg_replace( '/-generate$/', '', $cleaned );
+    
+    // Don't remove -latest suffix here, we'll handle it separately
+    $has_latest = strpos( $cleaned, '-latest' ) !== false;
+    $cleaned = preg_replace( '/-latest$/', '', $cleaned );
 
     // Handle specific feature names
     if ( strpos( $cleaned, 'preview-native-audio-dialog' ) !== false ) {
@@ -787,7 +818,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $cleaned = str_replace( 'preview-image-generation', 'Preview Image Generation', $cleaned );
     }
     else if ( strpos( $cleaned, 'preview-tts' ) !== false ) {
-      $cleaned = str_replace( 'preview-tts', 'Preview TTS', $cleaned );
+      $cleaned = str_replace( 'preview-tts', '', $cleaned );
+      // We'll add (Preview TTS) as a suffix later
     }
 
     // Parse components
@@ -830,9 +862,13 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         // Version numbers
         $formatted_parts[] = $part;
       }
-      else if ( preg_match( '/^\d+B$/', $part ) ) {
-        // Model sizes like 8B
-        $formatted_parts[] = '-' . $part;
+      else if ( preg_match( '/^(\d+)B$/i', $part, $matches ) ) {
+        // Model sizes like 8B - be consistent with capitalization
+        $formatted_parts[] = '-' . $matches[1] . 'B';
+      }
+      else if ( $part === 'latest' ) {
+        // Don't include 'latest' here as it's handled separately
+        continue;
       }
       else if ( !in_array( $part, ['generate', 'preview', 'exp'] ) ) {
         // Keep other parts unless they're common suffixes
@@ -853,6 +889,80 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     }
     else if ( strpos( $name, 'Veo 2.0' ) === 0 ) {
       $name = str_replace( 'Veo 2.0', 'Veo 2', $name );
+    }
+    
+    // Check for date pattern "xx xx" where x are numbers (like "03 07")
+    $date_from_name = '';
+    if ( preg_match( '/\s(\d{2})\s(\d{2})$/', $name, $matches ) ) {
+      $date_from_name = $matches[1] . '/' . $matches[2];
+      // Remove the date pattern from the name (we'll add it as a suffix later)
+      $name = preg_replace( '/\s\d{2}\s\d{2}$/', '', $name );
+    }
+    
+    // Add suffixes to distinguish similar models
+    $suffixes = [];
+    
+    // Add date from name if found (like "03 07")
+    if ( !empty( $date_from_name ) ) {
+      $suffixes[] = $date_from_name;
+    }
+    // Add date suffix for preview models with dates
+    else if ( !empty( $date_suffix ) ) {
+      // Convert date format from MM-DD to a more readable format
+      $parts = explode( '-', $date_suffix );
+      if ( count( $parts ) == 2 ) {
+        $month = intval( $parts[0] );
+        $day = intval( $parts[1] );
+        $months = [ '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+        $suffixes[] = $months[$month] . ' ' . $day;
+      }
+    }
+    // Otherwise, add preview suffix if it's a preview model
+    else if ( $is_preview && strpos( $name, 'Preview' ) === false && strpos( $name, 'preview' ) === false ) {
+      $suffixes[] = 'Preview';
+    }
+    
+    // Add version suffix for numbered models (like -001, -002)
+    // Special handling: if base model exists (without -001), then -001 should be marked
+    if ( !empty( $version_suffix ) ) {
+      // Extract just the number without the dash
+      $version_num = str_replace( '-', '', $version_suffix );
+      $version_int = intval( $version_num );
+      
+      // Always add version suffix for -001 if it's not the only version
+      // This helps distinguish when both base and -001 exist
+      if ( $version_int === 1 ) {
+        // Check if this looks like a model that might have a base version
+        // (e.g., gemini-2.0-flash vs gemini-2.0-flash-001)
+        if ( strpos( $original_id, 'flash-8b-001' ) !== false ||
+             strpos( $original_id, 'flash-001' ) !== false ||
+             strpos( $original_id, 'flash-lite-001' ) !== false ) {
+          $suffixes[] = 'v1';
+        }
+      } else {
+        // For -002 and higher, always add version
+        $suffixes[] = 'v' . ltrim( $version_num, '0' );
+      }
+    }
+    
+    // Handle "latest" suffix
+    if ( $has_latest && strpos( $name, 'Latest' ) === false ) {
+      $suffixes[] = 'Latest';
+    }
+    
+    // Handle thinking models
+    if ( $is_thinking && strpos( $name, 'Thinking' ) === false ) {
+      $suffixes[] = 'Thinking';
+    }
+    
+    // Handle TTS preview models
+    if ( $is_preview_tts ) {
+      $suffixes[] = 'Preview TTS';
+    }
+    
+    // Append all suffixes with parentheses
+    if ( !empty( $suffixes ) ) {
+      $name .= ' (' . implode( ', ', $suffixes ) . ')';
     }
 
     return trim( $name );
@@ -884,8 +994,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $priceIn = 0;
       $priceOut = 0;
 
-      // If Model Name contains "Experimental", skip it
-      if ( strpos( $model['name'], '-exp' ) !== false ) {
+      // If Model Name contains "Experimental", skip it (except for embedding models)
+      if ( strpos( $model['name'], '-exp' ) !== false && strpos( $model['name'], 'embedding' ) === false ) {
         error_log( 'Skipping experimental model: ' . $model['name'] );
         continue;
       }
@@ -926,7 +1036,13 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         }
         if ( preg_match( '/embedding/i', $model['name'] ) ) {
           $tags[] = 'embedding';
+          $tags[] = 'matryoshka'; // Gemini embeddings support matryoshka (dimension truncation)
           $features = [ 'embedding' ];
+          
+          // Check if it's an experimental embedding model
+          if ( strpos( $model['name'], '-exp' ) !== false ) {
+            $tags[] = 'experimental';
+          }
         }
       }
       $model_id = preg_replace( '/^models\//', '', $model['name'] );
@@ -953,11 +1069,121 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         'tags' => $tags,
         'tools' => $tools
       ];
+      
+      // Add dimensions for embedding models
+      if ( in_array( 'embedding', $tags ) ) {
+        // Gemini embedding models have 3072 dimensions
+        $model['dimensions'] = [ 3072 ];
+      }
       if ( $priceIn > 0 && $priceOut > 0 ) {
         $model['price'] = [ 'in' => $priceIn, 'out' => $priceOut ];
       }
       $models[] = $model;
     }
+    
+    // Sort models to put most recent versions first
+    usort( $models, function( $a, $b ) {
+      // First, sort by family (gemini, imagen, veo)
+      $family_order = [ 'gemini' => 1, 'imagen' => 2, 'veo' => 3 ];
+      $family_a = $family_order[$a['family']] ?? 999;
+      $family_b = $family_order[$b['family']] ?? 999;
+      
+      if ( $family_a !== $family_b ) {
+        return $family_a - $family_b;
+      }
+      
+      // Within the same family, extract version numbers and sort descending
+      $model_a = $a['model'];
+      $model_b = $b['model'];
+      
+      // Extract version numbers (e.g., 2.5, 2.0, 1.5, 1.0)
+      preg_match( '/(\d+\.\d+)/', $model_a, $matches_a );
+      preg_match( '/(\d+\.\d+)/', $model_b, $matches_b );
+      
+      $version_a = isset( $matches_a[1] ) ? floatval( $matches_a[1] ) : 0;
+      $version_b = isset( $matches_b[1] ) ? floatval( $matches_b[1] ) : 0;
+      
+      // Sort by version descending (newer first)
+      if ( $version_a !== $version_b ) {
+        return $version_b <=> $version_a;
+      }
+      
+      // For same version, sort by model variant
+      // Priority: pro > flash > flash-8b > flash-lite
+      $variant_order = [
+        'pro' => 1,
+        'flash' => 2,
+        'flash-8b' => 3,
+        'flash-lite' => 4,
+      ];
+      
+      // Determine variant
+      $variant_a = 'other';
+      $variant_b = 'other';
+      
+      if ( strpos( $model_a, 'pro' ) !== false ) $variant_a = 'pro';
+      elseif ( strpos( $model_a, 'flash-lite' ) !== false ) $variant_a = 'flash-lite';
+      elseif ( strpos( $model_a, 'flash-8b' ) !== false ) $variant_a = 'flash-8b';
+      elseif ( strpos( $model_a, 'flash' ) !== false ) $variant_a = 'flash';
+      
+      if ( strpos( $model_b, 'pro' ) !== false ) $variant_b = 'pro';
+      elseif ( strpos( $model_b, 'flash-lite' ) !== false ) $variant_b = 'flash-lite';
+      elseif ( strpos( $model_b, 'flash-8b' ) !== false ) $variant_b = 'flash-8b';
+      elseif ( strpos( $model_b, 'flash' ) !== false ) $variant_b = 'flash';
+      
+      $order_a = $variant_order[$variant_a] ?? 999;
+      $order_b = $variant_order[$variant_b] ?? 999;
+      
+      if ( $order_a !== $order_b ) {
+        return $order_a - $order_b;
+      }
+      
+      // For same variant, sort by specific suffixes
+      // Base model > latest > dated previews > numbered versions
+      $is_base_a = !preg_match( '/-(?:latest|preview|\d{3})/', $model_a );
+      $is_base_b = !preg_match( '/-(?:latest|preview|\d{3})/', $model_b );
+      
+      if ( $is_base_a && !$is_base_b ) return -1;
+      if ( !$is_base_a && $is_base_b ) return 1;
+      
+      // Latest comes after base
+      $is_latest_a = strpos( $model_a, '-latest' ) !== false;
+      $is_latest_b = strpos( $model_b, '-latest' ) !== false;
+      
+      if ( $is_latest_a && !$is_latest_b ) return -1;
+      if ( !$is_latest_a && $is_latest_b ) return 1;
+      
+      // Then preview models (sorted by date descending)
+      preg_match( '/-preview-(\d{2})-(\d{2})/', $model_a, $date_a );
+      preg_match( '/-preview-(\d{2})-(\d{2})/', $model_b, $date_b );
+      
+      if ( !empty( $date_a ) && !empty( $date_b ) ) {
+        // Compare dates (month then day)
+        $month_a = intval( $date_a[1] );
+        $month_b = intval( $date_b[1] );
+        if ( $month_a !== $month_b ) {
+          return $month_b - $month_a; // Descending
+        }
+        $day_a = intval( $date_a[2] );
+        $day_b = intval( $date_b[2] );
+        return $day_b - $day_a; // Descending
+      }
+      
+      if ( !empty( $date_a ) && empty( $date_b ) ) return -1;
+      if ( empty( $date_a ) && !empty( $date_b ) ) return 1;
+      
+      // Finally, numbered versions (descending)
+      preg_match( '/-(\d{3})$/', $model_a, $num_a );
+      preg_match( '/-(\d{3})$/', $model_b, $num_b );
+      
+      if ( !empty( $num_a ) && !empty( $num_b ) ) {
+        return intval( $num_b[1] ) - intval( $num_a[1] );
+      }
+      
+      // Fallback to string comparison
+      return strcasecmp( $model_a, $model_b );
+    });
+    
     return $models;
   }
 

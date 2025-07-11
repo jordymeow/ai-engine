@@ -89,7 +89,7 @@ class Meow_MWAI_Rest {
       // Session Endpoint
       register_rest_route( $this->namespace, '/start_session', [
         'methods' => 'POST',
-        'permission_callback' => [ $this->core, 'can_start_session' ],
+        'permission_callback' => '__return_true', // Public endpoint for guest users
         'callback' => [ $this, 'rest_start_session' ],
       ] );
 
@@ -1059,7 +1059,7 @@ class Meow_MWAI_Rest {
       $offset = $params['offset'];
       $limit = $params['limit'];
       $filters = $params['filters'];
-      $sort = $params['sort'];
+      $sort = isset( $params['sort'] ) ? $params['sort'] : null;
       $logs = apply_filters( 'mwai_stats_logs_list', [], $offset, $limit, $filters, $sort );
       return $this->create_rest_response( [ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
     }

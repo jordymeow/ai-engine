@@ -1232,13 +1232,32 @@
   opacity: 0.65;
   align-items: center;
 }
-.mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-title {
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-content {
   flex: 1;
   padding: 5px 10px;
+  overflow: hidden;
+}
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-title {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--mwai-fontSize);
+  margin-bottom: 4px;
+}
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-info {
+  display: flex;
+  gap: 12px;
+  font-size: calc(var(--mwai-fontSize) * 0.85);
+  opacity: 0.7;
+}
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-info .mwai-info-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-info .mwai-info-item svg {
+  opacity: 0.6;
 }
 .mwai-chatgpt-theme.mwai-discussions .mwai-discussion .mwai-discussion-actions {
   position: absolute;
@@ -1261,7 +1280,7 @@
 .mwai-chatgpt-theme.mwai-discussions .mwai-discussion.mwai-active {
   cursor: pointer;
 }
-.mwai-chatgpt-theme.mwai-discussions .mwai-discussion.mwai-active .mwai-discussion-title {
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion.mwai-active .mwai-discussion-content {
   background: var(--mwai-backgroundPrimaryColor);
   border-radius: var(--mwai-borderRadius);
   opacity: 1;
@@ -1269,7 +1288,7 @@
 .mwai-chatgpt-theme.mwai-discussions .mwai-discussion:hover {
   cursor: pointer;
 }
-.mwai-chatgpt-theme.mwai-discussions .mwai-discussion:hover .mwai-discussion-title {
+.mwai-chatgpt-theme.mwai-discussions .mwai-discussion:hover .mwai-discussion-content {
   background: var(--mwai-backgroundPrimaryColor);
   border-radius: var(--mwai-borderRadius);
   opacity: 1;

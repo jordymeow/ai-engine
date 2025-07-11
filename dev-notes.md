@@ -136,6 +136,92 @@ add_filter( 'mwai_chatbot_actions', function( $actions, $args ) {
 }, 10, 2 );
 ```
 
+## Discussion Filters
+
+### Discussion Metadata Display
+
+These filters allow you to customize how discussion metadata is displayed in the discussion list.
+
+```php
+// Customize the start date display
+add_filter( 'mwai_discussion_metadata_start_date', function( $formatted_date, $discussion ) {
+    // $formatted_date is already formatted (e.g., "5m ago", "Jan 20th")
+    // $discussion contains the full discussion data
+    
+    // Example: Add emoji for recent discussions
+    $created_time = strtotime( $discussion['created'] );
+    $hours_ago = ( time() - $created_time ) / 3600;
+    
+    if ( $hours_ago < 1 ) {
+        return '🔥 ' . $formatted_date;
+    } elseif ( $hours_ago < 24 ) {
+        return '✨ ' . $formatted_date;
+    }
+    
+    return $formatted_date;
+}, 10, 2 );
+
+// Customize the last update display
+add_filter( 'mwai_discussion_metadata_last_update', function( $formatted_date, $discussion ) {
+    // Example: Show activity status instead of time
+    $updated_time = strtotime( $discussion['updated'] );
+    $days_ago = ( time() - $updated_time ) / 86400;
+    
+    if ( $days_ago < 1 ) {
+        return '🟢 Active today';
+    } elseif ( $days_ago < 7 ) {
+        return '🟡 This week';
+    } else {
+        return '⚪ ' . $formatted_date;
+    }
+}, 10, 2 );
+
+// Customize the message count display
+add_filter( 'mwai_discussion_metadata_message_count', function( $count, $discussion ) {
+    // Example: Format with descriptive text
+    if ( $count == 0 ) {
+        return 'No messages';
+    } elseif ( $count == 1 ) {
+        return '1 message';
+    } elseif ( $count > 50 ) {
+        return $count . ' messages 🔥';
+    }
+    
+    return $count . ' messages';
+}, 10, 2 );
+
+// Complete example: Custom badges based on discussion data
+add_filter( 'mwai_discussion_metadata_start_date', function( $formatted_date, $discussion ) {
+    // Access discussion properties
+    $message_count = count( json_decode( $discussion['messages'], true ) );
+    $has_title = !empty( $discussion['title'] );
+    
+    // Add badges based on conditions
+    $badges = [];
+    if ( $message_count > 20 ) {
+        $badges[] = '💬';
+    }
+    if ( $has_title ) {
+        $badges[] = '📝';
+    }
+    
+    $badge_string = !empty( $badges ) ? implode( '', $badges ) . ' ' : '';
+    return $badge_string . $formatted_date;
+}, 10, 2 );
+```
+
+### Available Discussion Data
+
+The `$discussion` parameter contains:
+- `id` - Discussion ID
+- `chatId` - Unique chat identifier
+- `botId` - Associated bot ID
+- `title` - Discussion title (may be empty)
+- `created` - Creation timestamp
+- `updated` - Last update timestamp
+- `messages` - JSON string of messages (decode to access)
+- `extra` - JSON string of extra data
+
 ## Embeddings and Vector Database
 
 ```php

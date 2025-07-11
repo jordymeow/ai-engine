@@ -1,11 +1,11 @@
-// Previous: 2.8.5
-// Current: 2.8.8
+// Previous: 2.9.1
+// Current: 2.9.2
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
 import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
-  NekoQuickLinks, NekoLink, NekoColumn, NekoModal } from '@neko-ui';
+  NekoQuickLinks, NekoLink, NekoColumn, NekoModal, NekoTextArea } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { nekoStringify } from '@neko-ui';
@@ -68,7 +68,7 @@ const Settings = () => {
   });
   const [ error, setError ] = useState(null);
   const [ busyAction, setBusyAction ] = useState(false);
-
+  const [ busyEmbeddingsSearch, setBusyEmbeddingsSearch ] = useState(false);
   const module_suggestions = options?.module_suggestions;
   const module_advisor = options?.module_advisor;
   const module_forms = options?.module_forms;
@@ -86,7 +86,6 @@ const Settings = () => {
   const module_chatbots = options?.module_chatbots;
   const module_search = options?.module_search;
   const module_orchestration = options?.module_orchestration;
-
   const ai_envs = useMemo(() => options?.ai_envs ? options?.ai_envs : [], [options]);
   const mcp_envs = useMemo(() => options?.mcp_envs ? options?.mcp_envs : [], [options]);
   const ai_fast_default_env = options?.ai_fast_default_env;
@@ -97,7 +96,6 @@ const Settings = () => {
   const ai_vision_default_model = options?.ai_vision_default_model;
   const ai_embeddings_default_env = options?.ai_embeddings_default_env;
   const ai_embeddings_default_model = options?.ai_embeddings_default_model;
-
   const ai_images_default_env = options?.ai_images_default_env;
   const ai_images_default_model = options?.ai_images_default_model;
   const ai_audio_default_env = options?.ai_audio_default_env;
@@ -107,7 +105,6 @@ const Settings = () => {
   const ai_streaming = options?.ai_streaming;
   const ai_responses_api = options?.ai_responses_api;
   const privacy_first = options?.privacy_first;
-
   const embeddings_envs = options?.embeddings_envs ? options?.embeddings_envs : [];
   const embeddings_default_env = options?.embeddings_default_env;
   const syntax_highlight = options?.syntax_highlight;
@@ -140,26 +137,48 @@ const Settings = () => {
   const { imageModels } = useModels(options, options?.ai_images_default_env);
   const { embeddingsModels } = useModels(options, options?.ai_embeddings_default_env);
 
+  const ai_envs_with_embeddings = useMemo(() => {
+    if (!ai_envs || !options?.ai_engines) return [];
+    return ai_envs.filter(aiEnv => {
+      const engine = options.ai_engines.find(eng => eng.type === aiEnv.type);
+      if (!engine || !engine.models) return false;
+      const hasEmbeddingModels = engine.models.some(model => 
+        model?.tags?.includes('embedding')
+      );
+      return hasEmbeddingModels;
+    });
+  }, [ai_envs, options]);
+
   const defaultEmbeddingsModel = useMemo(() => {
     return embeddingsModels.find(x => x.model === ai_embeddings_default_model);
   }, [embeddingsModels, ai_embeddings_default_model]);
+
+  const embeddingsDimensionOptions = useMemo(() => {
+    if (!defaultEmbeddingsModel) return [];
+    const isMatryoshka = defaultEmbeddingsModel?.tags?.includes('matryoshka');
+    if (isMatryoshka && defaultEmbeddingsModel?.dimensions?.length > 0) {
+      const maxDimension = defaultEmbeddingsModel.dimensions[0];
+      const matryoshkaDimensions = [3072, 2048, 1536, 1024, 768, 512];
+      return matryoshkaDimensions.filter(dim => dim <= maxDimension);
+    }
+    return defaultEmbeddingsModel?.dimensions || [];
+  }, [defaultEmbeddingsModel]);
 
   const busy = busyAction;
 
   const updateOptions = useCallback(async (newOptions) => {
     try {
       if (nekoStringify(newOptions) !== nekoStringify(options)) {
-        return;
+        setBusyAction(true);
+        const response = await nekoFetch(`${apiUrl}/settings/update`, {
+          method: 'POST',
+          nonce: restNonce,
+          json: {
+            options: newOptions
+          }
+        });
+        setOptions(response.options);
       }
-      setBusyAction(true);
-      const response = await nekoFetch(`${apiUrl}/settings/update`, {
-        method: 'POST',
-        nonce: restNonce,
-        json: {
-          options: newOptions
-        }
-      });
-      setOptions(response.options);
     }
     catch (err) {
       console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ?
@@ -180,7 +199,6 @@ const Settings = () => {
     const performChecks = async () => {
       let updatesNeeded = false;
       const newOptions = { ...options };
-
       defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
         let exists = false;
         if (options[envKey]) {
@@ -197,7 +215,7 @@ const Settings = () => {
             }
           }
           else {
-            if (!(newOptions[envKey] === null && newOptions[modelKey] === null)) {
+            if (newOptions[envKey] !== null && newOptions[modelKey] !== null) {
               console.warn(`Updating ${envKey} and ${modelKey} to null`);
               updatesNeeded = true;
               newOptions[envKey] = null;
@@ -210,18 +228,26 @@ const Settings = () => {
           const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
           if (dimensions !== null) {
             const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
-            if (!model?.dimensions || !model.dimensions.includes(dimensions)) {
-              const newDimensions = model?.dimensions[model?.dimensions.length - 1] || null;
-              if (newDimensions !== null) {
-                newOptions.ai_embeddings_default_dimensions = newDimensions;
-                console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
-                updatesNeeded = true;
+            if (model) {
+              const isMatryoshka = model?.tags?.includes('matryoshka');
+              let validDimensions = model?.dimensions || [];
+              if (isMatryoshka && model?.dimensions?.length > 0) {
+                const maxDimension = model.dimensions[0];
+                const matryoshkaDimensions = [3072, 2048, 1536, 1024, 768, 512];
+                validDimensions = matryoshkaDimensions.filter(dim => dim <= maxDimension);
+              }
+              if (!validDimensions.includes(parseInt(dimensions))) {
+                const newDimensions = validDimensions[0] || null;
+                if (newDimensions !== null) {
+                  newOptions.ai_embeddings_default_dimensions = newDimensions;
+                  console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
+                  updatesNeeded = true;
+                }
               }
             }
           }
         }
       });
-
       if (updatesNeeded) {
         await updateOptions(newOptions);
       }
@@ -233,8 +259,8 @@ const Settings = () => {
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const optionsRes = await retrieveOptions();
-      setOptions(optionsRes);
+      const options = await retrieveOptions();
+      setOptions(options);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -253,6 +279,15 @@ const Settings = () => {
   const updateOption = async (value, id) => {
     const newOptions = { ...options, [id]: value };
     await updateOptions(newOptions);
+  };
+
+  const updateEmbeddingsSearchOption = async (value) => {
+    setBusyEmbeddingsSearch(true);
+    try {
+      await updateOption(value, 'embeddings_settings');
+    } finally {
+      setBusyEmbeddingsSearch(false);
+    }
   };
 
   const updateVectorDbEnvironment = async (id, updatedValue) => {
@@ -297,7 +332,7 @@ const Settings = () => {
     }
     catch (err) {
       alert("Error while resetting settings. Please check your console.");
-      console.error(err);
+      console.log(err);
     }
     finally {
       setBusyAction(false);
@@ -309,8 +344,8 @@ const Settings = () => {
     try {
       const chatbots = await retrieveChatbots();
       const themes = await retrieveThemes();
-      const optionsData = await retrieveOptions();
-      const data = { chatbots, themes, options: optionsData };
+      const options = await retrieveOptions();
+      const data = { chatbots, themes, options };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -322,7 +357,7 @@ const Settings = () => {
     }
     catch (err) {
       alert("Error while exporting settings. Please check your console.");
-      console.error(err);
+      console.log(err);
     }
     finally {
       setBusyAction(false);
@@ -343,10 +378,10 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options: importedOptions } = data;
+          const { chatbots, themes, options } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(importedOptions);
+          await updateOptions(options);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -356,7 +391,7 @@ const Settings = () => {
     }
     catch (err) {
       alert("Error while importing settings. Please check your console.");
-      console.error(err);
+      console.log(err);
     }
     finally {
       setBusyAction(false);
@@ -395,7 +430,8 @@ const Settings = () => {
   }, [ai_streaming, event_logs, updateOption]);
 
   const isValidSection = () => {
-    if (settingsSection === 'ai' || settingsSection === 'files' || settingsSection === 'remote' || settingsSection === 'others') {
+    if (settingsSection === 'ai' || settingsSection === 'files' || 
+        settingsSection === 'remote' || settingsSection === 'others') {
       return true;
     }
     if (settingsSection === 'chatbot' && module_chatbots) return true;
@@ -691,13 +727,13 @@ const Settings = () => {
         value={options?.chatbot_discussions_paging || 10} 
         onChange={updateOption}
         description={i18n.HELP.DISCUSSIONS_PAGING || 'Number of discussions to display per page'}>
-        <NekoOption value="None" label="None"></NekoOption>
-        <NekoOption value={5} label="5 per Page"></NekoOption>
-        <NekoOption value={10} label="10 per Page"></NekoOption>
-        <NekoOption value={15} label="15 per Page"></NekoOption>
-        <NekoOption value={20} label="20 per Page"></NekoOption>
-        <NekoOption value={30} label="30 per Page"></NekoOption>
-        <NekoOption value={50} label="50 per Page"></NekoOption>
+        <NekoOption value="None" label="None" />
+        <NekoOption value={5} label="5 per Page" />
+        <NekoOption value={10} label="10 per Page" />
+        <NekoOption value={15} label="15 per Page" />
+        <NekoOption value={20} label="20 per Page" />
+        <NekoOption value={30} label="30 per Page" />
+        <NekoOption value={50} label="50 per Page" />
       </NekoSelect>
     </NekoSettings>;
 
@@ -707,17 +743,46 @@ const Settings = () => {
         value={options?.chatbot_discussions_refresh_interval || 5} 
         onChange={updateOption}
         description={i18n.HELP.DISCUSSIONS_REFRESH_INTERVAL || 'How often to refresh the discussions list (in seconds)'}>
-        <NekoOption value={1} label="1 second"></NekoOption>
-        <NekoOption value={2} label="2 seconds"></NekoOption>
-        <NekoOption value={5} label="5 seconds"></NekoOption>
-        <NekoOption value={10} label="10 seconds"></NekoOption>
-        <NekoOption value={30} label="30 seconds"></NekoOption>
-        <NekoOption value={60} label="60 seconds"></NekoOption>
-        <NekoOption value={120} label="120 seconds"></NekoOption>
-        <NekoOption value="Manual" label="Manually"></NekoOption>
-        <NekoOption value="Never" label="Never"></NekoOption>
+        <NekoOption value={1} label="1 second" />
+        <NekoOption value={2} label="2 seconds" />
+        <NekoOption value={5} label="5 seconds" />
+        <NekoOption value={10} label="10 seconds" />
+        <NekoOption value={30} label="30 seconds" />
+        <NekoOption value={60} label="60 seconds" />
+        <NekoOption value={120} label="120 seconds" />
+        <NekoOption value="Manual" label="Manually" />
+        <NekoOption value="Never" label="Never" />
       </NekoSelect>
     </NekoSettings>;
+
+  const jsxDiscussionsMetadata =
+    <NekoSettings title="Metadata Bar">
+      <NekoCheckboxGroup max="1">
+        <NekoCheckbox name="chatbot_discussions_metadata_enabled" label={i18n.COMMON.ENABLE} value="1"
+          checked={options?.chatbot_discussions_metadata_enabled}
+          description="Display a metadata bar under discussion titles."
+          onChange={updateOption} />
+      </NekoCheckboxGroup>
+    </NekoSettings>;
+
+  const jsxDiscussionsMetadataOptions = options?.chatbot_discussions_metadata_enabled ? (
+    <NekoSettings title="Metadata Display">
+      <NekoCheckboxGroup max="3">
+        <NekoCheckbox name="chatbot_discussions_metadata_start_date" label="Start Date" value="1"
+          checked={options?.chatbot_discussions_metadata_start_date}
+          description="Show when the discussion was created."
+          onChange={updateOption} />
+        <NekoCheckbox name="chatbot_discussions_metadata_last_update" label="Last Update" value="1"
+          checked={options?.chatbot_discussions_metadata_last_update}
+          description="Show when the discussion was last modified."
+          onChange={updateOption} />
+        <NekoCheckbox name="chatbot_discussions_metadata_message_count" label="Message Count" value="1"
+          checked={options?.chatbot_discussions_metadata_message_count}
+          description="Show the number of messages in the discussion."
+          onChange={updateOption} />
+      </NekoCheckboxGroup>
+    </NekoSettings>
+  ) : null;
 
   const jsxShortcodeSyntaxHighlighting =
     <NekoSettings title={i18n.COMMON.SYNTAX_HIGHLIGHT}>
@@ -953,10 +1018,11 @@ const Settings = () => {
   const jsxAIEnvironmentDimensionsEmbeddingsDefault =
     <NekoSettings title={i18n.COMMON.DIMENSIONS}>
       <NekoSelect scrolldown name="ai_embeddings_default_dimensions"
-        value={options?.ai_embeddings_default_dimensions || null} onChange={updateOption}>
-        {defaultEmbeddingsModel?.dimensions.map((x, i) => (
+        value={options?.ai_embeddings_default_dimensions ? parseInt(options.ai_embeddings_default_dimensions) : null} 
+        onChange={updateOption}>
+        {embeddingsDimensionOptions.map((x, i) => (
           <NekoOption key={x} value={x}
-            label={i === (defaultEmbeddingsModel.dimensions.length - 1) ? `${x} (Default)` : x}
+            label={i === 0 ? `${x} (Native)` : x}
           />
         ))}
         <NekoOption key={null} value={null} label="Not Set"></NekoOption>
@@ -1090,7 +1156,7 @@ const Settings = () => {
     <NekoSpacer height={5} />
     <NekoSettings title={i18n.COMMON.ENVIRONMENT}>
       <NekoSelect scrolldown name="ai_embeddings_default_env" value={ai_embeddings_default_env} onChange={updateOption}>
-        {ai_envs.map((x) => (
+        {ai_envs_with_embeddings.map((x) => (
           <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
         ))}
       </NekoSelect>
@@ -1429,12 +1495,10 @@ const Settings = () => {
                             try {
                               await updateOption([], 'ai_usage');
                               await updateOption([], 'ai_usage_daily');
-                              
                               const response = await nekoFetch(`${apiUrl}/settings/options`, {
                                 method: 'GET',
                                 headers: { 'X-WP-Nonce': restNonce }
                               });
-                              
                               if (response.success && response.options) {
                                 updateOptions(response.options);
                                 showSnackbar('Usage data has been reset successfully.', 'success');
@@ -1502,8 +1566,84 @@ const Settings = () => {
                             If a particular embeddings environment needs different settings, use the "Override Defaults" option in the AI Environment section of each embeddings environment.
                           </p>
                         </NekoBlock>
+                        <NekoBlock className="primary" title="Embeddings Search" style={{ marginTop: 10 }} busy={busyEmbeddingsSearch}>
+                          <NekoSettings title="Method">
+                            <NekoSelect scrolldown
+                              value={options?.embeddings_settings?.search_method || 'simple'}
+                              onChange={value => updateEmbeddingsSearchOption({ ...options.embeddings_settings, search_method: value })}
+                              description="Choose how to build search queries from conversations."
+                            >
+                              <NekoOption value="simple" label="Simple" />
+                              <NekoOption value="context_aware" label="Context-Aware" />
+                              <NekoOption value="smart_search" label="Smart Search" />
+                            </NekoSelect>
+                          </NekoSettings>
+                          
+                          {(options?.embeddings_settings?.search_method === 'context_aware' || 
+                            options?.embeddings_settings?.search_method === 'smart_search' ||
+                            options?.embeddings_settings?.search_method === 'user_messages' ||
+                            options?.embeddings_settings?.search_method === 'ai_optimized') && (
+                            <NekoSettings title="Messages">
+                              <NekoInput
+                                type="number"
+                                value={options?.embeddings_settings?.context_messages || 10}
+                                min={1}
+                                max={20}
+                                onFinalChange={value => updateEmbeddingsSearchOption({ ...options.embeddings_settings, context_messages: parseInt(value) || 10 })}
+                                description="Number of recent messages to consider for context."
+                              />
+                            </NekoSettings>
+                          )}
+                          
+                          {(options?.embeddings_settings?.search_method === 'smart_search' ||
+                            options?.embeddings_settings?.search_method === 'ai_optimized') && (
+                            <NekoSettings title="Instructions">
+                              <NekoCheckbox
+                                name="include_instructions"
+                                label="Enable"
+                                value="1"
+                                checked={options?.embeddings_settings?.include_instructions || false}
+                                onChange={() => updateEmbeddingsSearchOption({ ...options.embeddings_settings, include_instructions: !(options?.embeddings_settings?.include_instructions || false) })}
+                                description="Include chatbot instructions in search queries."
+                              />
+                            </NekoSettings>
+                          )}
+                        </NekoBlock>
+                        
                         <NekoBlock className="primary" title="Information" style={{ marginTop: 10 }}>
-                          <p>{toHTML(i18n.SETTINGS.KNOWLEDGE_INFO)}</p>
+                          <div style={{ marginBottom: 20 }}>
+                            <p>
+                              Embeddings are textual data converted into vectors that enable similarity search. They allow AI to find relevant context from your knowledge base, 
+                              synchronized with vector databases like Pinecone or Qdrant for efficient storage and retrieval.
+                              When enabled in chatbots or forms, AI Engine searches your knowledge base for relevant context to enrich responses. 
+                              Both chatbots and AI Forms can use embeddings to provide more contextual answers.
+                            </p>
+                            
+                            <p style={{ marginTop: 15 }}><strong>Working with Embeddings</strong></p>
+                            <p style={{ marginTop: 5 }}>
+                              Access the <b>Knowledge</b> tab to manage your embeddings, where you can:
+                            </p>
+                            <ul style={{ marginTop: 5, marginLeft: 20 }}>
+                              <li>Create, edit, and search embeddings (<strong>EDIT</strong>).</li>
+                              <li>Query your knowledge base directly (<strong>AI SEARCH</strong>).</li>
+                              <li>Use Sync to process posts and create/update embeddings.</li>
+                            </ul>
+                            
+                            <p style={{ marginTop: 15 }}><strong>Embeddings Search</strong></p>
+                            <p style={{ marginTop: 5 }}>
+                              Configure how AI Engine searches your knowledge base when processing conversations. The search method determines what context is used to find relevant embeddings:
+                            </p>
+                            <ul style={{ marginTop: 5, marginLeft: 20 }}>
+                              <li><strong>Last Message Only:</strong> Uses only the last message for context (default, fastest).</li>
+                              <li><strong>Recent User Messages:</strong> Includes more conversation history for better context.</li>
+                              <li><strong>AI-Optimized Query:</strong> Uses AI to create smarter searches based on full context (uses Default Fast model, additional costs apply).</li>
+                            </ul>
+                            
+                            <p style={{ marginTop: 15 }}>
+                              Learn more in the <a href="https://ai.thehiddendocs.com/embeddings/" target="_blank">documentation</a> or 
+                              join the <a href="https://discord.gg/bHDGh38" target="_blank">Discord Server</a> to discuss embeddings with other users.
+                            </p>
+                          </div>
                         </NekoBlock>
                       </>)}
 
@@ -1513,6 +1653,8 @@ const Settings = () => {
                             {jsxDiscussionSummary}
                             {jsxDiscussionsPaging}
                             {jsxDiscussionsRefreshInterval}
+                            {jsxDiscussionsMetadata}
+                            {jsxDiscussionsMetadataOptions}
                           </NekoBlock>
                         }
 

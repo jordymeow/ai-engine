@@ -213,6 +213,11 @@ class Meow_MWAI_Core {
       throw new Exception( 'Invalid query object after filtering. The mwai_ai_query filter must return a valid query object.' );
     }
 
+    // Validate that embeddings queries have a non-empty message
+    if ( $query instanceof Meow_MWAI_Query_Embed && empty( $query->get_message() ) ) {
+      throw new Exception( 'Embeddings query cannot have an empty message. Please check that the conversation context is properly extracted.' );
+    }
+
     // Let's check the default environment and model.
     $this->validate_env_model( $query );
 
@@ -297,6 +302,8 @@ class Meow_MWAI_Core {
   }
 
   public function get_post_content( $postId ) {
+    // Ensure we get fresh post data by clearing cache
+    clean_post_cache( $postId );
     $post = get_post( $postId );
     if ( !$post ) {
       return false;
@@ -625,6 +632,8 @@ class Meow_MWAI_Core {
 
   public function get_post( $post ) {
     if ( is_numeric( $post ) ) {
+      // Force fresh retrieval to avoid cache issues
+      clean_post_cache( $post );
       $post = get_post( $post );
     }
     if ( is_object( $post ) ) {
@@ -639,6 +648,8 @@ class Meow_MWAI_Core {
     $excerpt = $post['post_excerpt'];
     $url = get_permalink( $post['ID'] );
     $checksum = wp_hash( $content . $title . $url );
+    
+    
     return [
       'postId' => (int) $post['ID'],
       'title' => $title,
@@ -648,6 +659,48 @@ class Meow_MWAI_Core {
       'language' => $language ?? 'english',
       'checksum' => $checksum,
     ];
+  }
+
+  /**
+   * Format a date/time string into a human-readable format
+   * @param string $date_string The date string to format
+   * @return string Formatted date (e.g., "Just now", "5m ago", "2h ago", "3d ago", "Jan 20th")
+   */
+  public function format_discussion_date( $date_string ) {
+    $date = strtotime( $date_string );
+    $now = time();
+    $diff = $now - $date;
+    
+    // Less than a minute
+    if ( $diff < 60 ) {
+      return 'Just now';
+    }
+    
+    // Less than an hour
+    if ( $diff < 3600 ) {
+      $minutes = floor( $diff / 60 );
+      return $minutes . 'm ago';
+    }
+    
+    // Less than a day
+    if ( $diff < 86400 ) {
+      $hours = floor( $diff / 3600 );
+      return $hours . 'h ago';
+    }
+    
+    // Less than a week
+    if ( $diff < 604800 ) {
+      $days = floor( $diff / 86400 );
+      return $days . 'd ago';
+    }
+    
+    // Format as date
+    $is_current_year = date( 'Y', $date ) === date( 'Y', $now );
+    if ( $is_current_year ) {
+      return date( 'M jS', $date );
+    } else {
+      return date( 'M jS, Y', $date );
+    }
   }
   #endregion
 

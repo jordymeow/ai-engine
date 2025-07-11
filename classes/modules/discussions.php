@@ -186,11 +186,19 @@ class Meow_MWAI_Modules_Discussions {
 
     // Run the AI query using the fast environment
     global $mwai;
-    $answer = $mwai->simpleTextQuery( $prompt, [
-      'scope' => 'discussions',
-      'envId' => $this->core->get_option( 'ai_fast_default_env' ),
-      'model' => $this->core->get_option( 'ai_fast_default_model' ),
-    ] );
+    $params = [ 'scope' => 'discussions' ];
+    
+    $fastEnv = $this->core->get_option( 'ai_fast_default_env' );
+    $fastModel = $this->core->get_option( 'ai_fast_default_model' );
+    
+    if ( !empty( $fastEnv ) ) {
+      $params['envId'] = $fastEnv;
+    }
+    if ( !empty( $fastModel ) ) {
+      $params['model'] = $fastModel;
+    }
+    
+    $answer = $mwai->simpleTextQuery( $prompt, $params );
 
     // Clean up the answer
     $title = trim( $answer );
@@ -352,6 +360,20 @@ class Meow_MWAI_Modules_Discussions {
         $chats = $this->chats_query( [], $offset, $limit, $filters );
       }
       // END NEW CHECK
+
+      // Apply filters to discussion metadata
+      foreach ( $chats['rows'] as &$chatRow ) {
+        // Decode messages JSON to get the count
+        $messages = json_decode( $chatRow['messages'], true );
+        $message_count = is_array( $messages ) ? count( $messages ) : 0;
+        
+        // Add formatted metadata that can be filtered
+        $chatRow['metadata_display'] = [
+          'start_date' => apply_filters( 'mwai_discussion_metadata_start_date', $this->core->format_discussion_date( $chatRow['created'] ), $chatRow ),
+          'last_update' => apply_filters( 'mwai_discussion_metadata_last_update', $this->core->format_discussion_date( $chatRow['updated'] ), $chatRow ),
+          'message_count' => apply_filters( 'mwai_discussion_metadata_message_count', $message_count, $chatRow )
+        ];
+      }
 
       return $this->create_rest_response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
     }

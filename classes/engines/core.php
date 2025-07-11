@@ -107,7 +107,13 @@ class Meow_MWAI_Engines_Core {
 
     // Log query completion if debug is enabled
     if ( $queries_debug && empty( $reply->needFeedbacks ) ) {
-      error_log( '[AI Engine Queries Debug] Query completed' );
+      // For embedding queries, just log the dimensions count
+      if ( $query instanceof Meow_MWAI_Query_Embed && !empty( $reply->result ) && is_array( $reply->result ) ) {
+        error_log( '[AI Engine Queries Debug] Embedding completed with ' . count( $reply->result ) . ' dimensions' );
+      }
+      else {
+        error_log( '[AI Engine Queries Debug] Query completed' );
+      }
       error_log( '[AI Engine Queries Debug] ========================================' );
     }
 

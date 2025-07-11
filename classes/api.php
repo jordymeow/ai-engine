@@ -41,6 +41,13 @@ class Meow_MWAI_API {
         return $this->core->can_access_public_api( 'simpleTextQuery', $request );
       },
     ] );
+    register_rest_route( 'mwai/v1', '/simpleFastTextQuery', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_simpleFastTextQuery' ],
+      'permission_callback' => function ( $request ) {
+        return $this->core->can_access_public_api( 'simpleFastTextQuery', $request );
+      },
+    ] );
     register_rest_route( 'mwai/v1', '/simpleImageQuery', [
       'methods' => 'POST',
       'callback' => [ $this, 'rest_simpleImageQuery' ],
@@ -390,6 +397,36 @@ class Meow_MWAI_API {
     }
   }
 
+  public function rest_simpleFastTextQuery( $request ) {
+    try {
+      $params = $request->get_params();
+      $message = isset( $params['message'] ) ? $params['message'] : '';
+      if ( empty( $message ) ) {
+        $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
+      }
+      $options = isset( $params['options'] ) ? $params['options'] : [];
+      $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
+      if ( !empty( $scope ) ) {
+        $options['scope'] = $scope;
+      }
+      if ( empty( $message ) ) {
+        throw new Exception( 'The message is required.' );
+      }
+
+      if ( $this->debug ) {
+        $shortMessage = Meow_MWAI_Logging::shorten( $message, 64 );
+        $debug = sprintf( 'REST [SimpleFastTextQuery]: %s, %s', $shortMessage, json_encode( $options ) );
+        Meow_MWAI_Logging::log( $debug );
+      }
+
+      $reply = $this->simpleFastTextQuery( $message, $options );
+      return new WP_REST_Response( [ 'success' => true, 'data' => $reply ], 200 );
+    }
+    catch ( Exception $e ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
   public function rest_simpleImageQuery( $request ) {
     try {
       $params = $request->get_params();
@@ -470,6 +507,15 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $url = isset( $params['url'] ) ? $params['url'] : '';
+      
+      // Check for common parameter mistakes and provide helpful guidance
+      if ( empty( $url ) && isset( $params['imageUrl'] ) ) {
+        throw new Exception( 'Parameter "url" is required. Did you mean to use "url" instead of "imageUrl"?' );
+      }
+      if ( empty( $url ) && isset( $params['image_url'] ) ) {
+        throw new Exception( 'Parameter "url" is required. Did you mean to use "url" instead of "image_url"?' );
+      }
+      
       $options = isset( $params['options'] ) ? $params['options'] : [];
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {
@@ -479,7 +525,7 @@ class Meow_MWAI_API {
         throw new Exception( 'The message is required.' );
       }
       if ( empty( $url ) ) {
-        throw new Exception( 'The url is required.' );
+        throw new Exception( 'The "url" parameter is required for image analysis.' );
       }
 
       if ( $this->debug ) {
@@ -518,7 +564,7 @@ class Meow_MWAI_API {
         Meow_MWAI_Logging::log( $debug );
       }
 
-      $reply = $this->simpleJsonQuery( $message, $options );
+      $reply = $this->simpleJsonQuery( $message, null, null, $options );
       return new WP_REST_Response( [ 'success' => true, 'data' => $reply ], 200 );
     }
     catch ( Exception $e ) {
@@ -529,9 +575,18 @@ class Meow_MWAI_API {
   public function rest_moderationCheck( $request ) {
     try {
       $params = $request->get_params();
-      $text = $params['text'];
+      $text = isset( $params['text'] ) ? $params['text'] : '';
+      
+      // Check for common parameter mistakes and provide helpful guidance
+      if ( empty( $text ) && isset( $params['message'] ) ) {
+        throw new Exception( 'Parameter "text" is required. Did you mean to use "text" instead of "message"?' );
+      }
+      if ( empty( $text ) && isset( $params['content'] ) ) {
+        throw new Exception( 'Parameter "text" is required. Did you mean to use "text" instead of "content"?' );
+      }
+      
       if ( empty( $text ) ) {
-        throw new Exception( 'The text is required.' );
+        throw new Exception( 'The "text" parameter is required for content moderation.' );
       }
 
       if ( $this->debug ) {
@@ -553,6 +608,20 @@ class Meow_MWAI_API {
       $params = $request->get_params();
       $url = isset( $params['url'] ) ? $params['url'] : '';
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
+      
+      // Check for common parameter mistakes and provide helpful guidance
+      if ( empty( $url ) && empty( $mediaId ) ) {
+        if ( isset( $params['audioUrl'] ) ) {
+          throw new Exception( 'Parameter "url" is required. Did you mean to use "url" instead of "audioUrl"?' );
+        }
+        if ( isset( $params['audio_url'] ) ) {
+          throw new Exception( 'Parameter "url" is required. Did you mean to use "url" instead of "audio_url"?' );
+        }
+        if ( isset( $params['file'] ) ) {
+          throw new Exception( 'Use "url" for remote files or "mediaId" for uploaded files. Found "file" parameter instead.' );
+        }
+      }
+      
       $options = isset( $params['options'] ) ? $params['options'] : [];
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       
@@ -570,7 +639,7 @@ class Meow_MWAI_API {
       }
       
       if ( empty( $url ) && empty( $path ) ) {
-        throw new Exception( 'Either a URL or a mediaId is required.' );
+        throw new Exception( 'Either a "url" parameter or a "mediaId" parameter is required for audio transcription.' );
       }
 
       if ( $this->debug ) {
@@ -668,6 +737,28 @@ class Meow_MWAI_API {
     global $mwai_core;
     $query = new Meow_MWAI_Query_Text( $message );
     $query->inject_params( $params );
+    $reply = $mwai_core->run_query( $query );
+    return $reply->result;
+  }
+
+  public function simpleFastTextQuery( $message, $params = [] ) {
+    global $mwai_core;
+    $query = new Meow_MWAI_Query_Text( $message );
+    
+    // Use the Default (Fast) model and environment
+    $fastDefaultModel = $mwai_core->get_option( 'ai_fast_default_model' );
+    if ( !empty( $fastDefaultModel ) ) {
+      $query->set_model( $fastDefaultModel );
+    }
+    
+    $fastDefaultEnv = $mwai_core->get_option( 'ai_fast_default_env' );
+    if ( !empty( $fastDefaultEnv ) ) {
+      $query->set_env_id( $fastDefaultEnv );
+    }
+    
+    // Inject any additional params (which may override the defaults)
+    $query->inject_params( $params );
+    
     $reply = $mwai_core->run_query( $query );
     return $reply->result;
   }

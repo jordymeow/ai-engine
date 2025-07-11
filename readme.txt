@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.0
+Stable tag: 2.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,7 +88,7 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 = Where can I find tutorials and documentation for AI Engine? =
 
-Start with the [main tutorial](https://meowapps.com/ai-engine/tutorial/) or browse the full [documentation](https://docs.meowapps.com/).
+Start with the [main tutorial](https://meowapps.com/ai-engine/tutorial/) or browse the full [documentation](https://ai.thehiddendocs.com/).
 
 = Where can I ask questions or get support? =
 
@@ -124,9 +124,29 @@ Check that your API key has permissions for image generation, and that the model
 
 = My question isn’t listed here. Where else can I find help? =
 
-Check the [docs](https://docs.meowapps.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
+Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.2 (2025/07/11) =
+* Add: Google embeddings are now live—only relevant environments show up, and we’ve built in safeguards against dimension mismatches.
+* Add: A handy metadata bar in Discussions shows start date, last update, and message count. Plus, you can tweak its look via settings or our new PHP filters.
+* Update: Embeddings sync now pops up a sleek NekoModal (goodbye alerts!), with clear stats on what’s updated, added, up-to-date, or errored—and even backend action logs.
+* Update: API error messages got friendlier and more helpful.
+* Update: Tables everywhere got a makeover—cleaner layouts, raw model names, better spacing, and clearer dimensions.
+* Fix: Cron jobs no longer crash when no default environment or model is set.
+* Fix: Chatbot module warnings when params or chatId were missing have been squashed with extra validation.
+* Fix: System-logs no longer throw “undefined ‘sort’ key” warnings.
+* Fix: Embeddings sync now clears the WP post cache so content changes are always detected, logs checksums for debugging, and adds a read-only Env ID field.
+* Fix: Model/dimension mismatches are only checked if you’ve opted in, and the active Env ID is now visible in the UI.
+* Fix: Custom chatbots keep their own embeddings environment instead of inheriting the default.
+* Fix: Google model names are deduped and cleaned up (suffixes now in parentheses), with the newest versions listed first.
+
+= 2.9.1 (2025/07/08) =
+* Fix: Corrected guest user authentication by fixing the strpos check in session validation and making the start_session endpoint publicly accessible for proper guest login support.
+* Add: Introduced options for Embeddings Search supporting multiple search methods.
+* Add: New simpleFastTextQuery API endpoint.
+* Update: Optimized vector search queries to accurately handle exclusion terms.
 
 = 2.9.0 (2025/07/07) =
 * Add: Persisted templates in Content Generator, Images Generator, and Playground.
