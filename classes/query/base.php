@@ -42,6 +42,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   // Seem to be only used by the Assistants, to get the current thread/discussion.
   // Maybe we should try to move this to the assistant class, or use it as ExtraParams.
   public ?string $botId = null;
+  
+  // Embeddings configuration
+  public ?string $embeddingsEnvId = null;
 
   // Extra Parameters (used by specific services, or for statistics, etc)
   public array $extraParams = [];
@@ -252,6 +255,14 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public function set_bot_id( string $botId ) {
     $this->botId = $botId;
   }
+  
+  /**
+  * The embeddings environment ID to use.
+  * @param string $embeddingsEnvId The embeddings environment ID.
+  */
+  public function set_embeddings_env_id( string $embeddingsEnvId ) {
+    $this->embeddingsEnvId = $embeddingsEnvId;
+  }
 
   /**
   * How many completions to generate for each prompt.
@@ -390,6 +401,9 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     }
     if ( !empty( $params['previousResponseId'] ) ) {
       $this->set_previous_response_id( $params['previousResponseId'] );
+    }
+    if ( !empty( $params['embeddingsEnvId'] ) ) {
+      $this->set_embeddings_env_id( $params['embeddingsEnvId'] );
     }
   }
 }

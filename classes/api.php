@@ -90,6 +90,13 @@ class Meow_MWAI_API {
         return $this->core->can_access_public_api( 'simpleTranscribeAudio', $request );
       },
     ] );
+    register_rest_route( 'mwai/v1', '/simpleFileUpload', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_simpleFileUpload' ],
+      'permission_callback' => function ( $request ) {
+        return $this->core->can_access_public_api( 'simpleFileUpload', $request );
+      },
+    ] );
 
     if ( $this->chatbot_module ) {
       register_rest_route( 'mwai/v1', '/simpleChatbotQuery', [
@@ -148,9 +155,13 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $chatId = isset( $params['chatId'] ) ? $params['chatId'] : null;
-      $params = null;
+      $fileId = isset( $params['fileId'] ) ? $params['fileId'] : null;
+      $queryParams = [];
       if ( !empty( $chatId ) ) {
-        $params = [ 'chatId' => $chatId ];
+        $queryParams['chatId'] = $chatId;
+      }
+      if ( !empty( $fileId ) ) {
+        $queryParams['fileId'] = $fileId;
       }
       if ( empty( $botId ) || empty( $message ) ) {
         throw new Exception( 'The botId and message are required.' );
@@ -158,11 +169,11 @@ class Meow_MWAI_API {
 
       if ( $this->debug ) {
         $shortMessage = Meow_MWAI_Logging::shorten( $message, 64 );
-        $debug = sprintf( 'REST [SimpleChatbotQuery]: %s, %s', $shortMessage, json_encode( $params ) );
+        $debug = sprintf( 'REST [SimpleChatbotQuery]: %s, %s', $shortMessage, json_encode( $queryParams ) );
         Meow_MWAI_Logging::log( $debug );
       }
 
-      $reply = $this->simpleChatbotQuery( $botId, $message, $params, false );
+      $reply = $this->simpleChatbotQuery( $botId, $message, $queryParams, false );
       return new WP_REST_Response( [
         'success' => true,
         'data' => $reply['reply'],
@@ -658,6 +669,69 @@ class Meow_MWAI_API {
       return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
     }
   }
+
+  public function rest_simpleFileUpload( $request ) {
+    try {
+      $params = $request->get_params();
+      $files = $request->get_file_params();
+      
+      // Check if file is provided
+      if ( empty( $files['file'] ) ) {
+        // Check for base64 encoded file data
+        $base64 = isset( $params['base64'] ) ? $params['base64'] : '';
+        $filename = isset( $params['filename'] ) ? $params['filename'] : '';
+        
+        if ( empty( $base64 ) ) {
+          throw new Exception( 'Either a file upload or base64 encoded data is required.' );
+        }
+        
+        // Handle base64 upload
+        $options = isset( $params['options'] ) ? $params['options'] : [];
+        $purpose = isset( $params['purpose'] ) ? $params['purpose'] : 'files';
+        $ttl = isset( $params['ttl'] ) ? intval( $params['ttl'] ) : 3600;
+        $target = isset( $params['target'] ) ? $params['target'] : null;
+        $metadata = isset( $params['metadata'] ) ? $params['metadata'] : [];
+        
+        if ( empty( $filename ) ) {
+          $filename = 'upload-' . time() . '.png'; // Default filename for base64
+        }
+        
+        // Log the request if debug is enabled
+        if ( $this->debug ) {
+          $debug = sprintf( 'REST [SimpleFileUpload]: base64 upload, filename=%s, purpose=%s', 
+            $filename, 
+            $purpose 
+          );
+          Meow_MWAI_Logging::log( $debug );
+        }
+        
+        $result = $this->simpleFileUpload( null, $base64, $filename, $purpose, $ttl, $target, $metadata );
+      }
+      else {
+        // Handle regular file upload
+        $file = $files['file'];
+        $purpose = isset( $params['purpose'] ) ? $params['purpose'] : 'files';
+        $ttl = isset( $params['ttl'] ) ? intval( $params['ttl'] ) : 3600;
+        $target = isset( $params['target'] ) ? $params['target'] : null;
+        $metadata = isset( $params['metadata'] ) ? $params['metadata'] : [];
+        
+        if ( $this->debug ) {
+          $debug = sprintf( 'REST [SimpleFileUpload]: file upload, name=%s, purpose=%s', 
+            $file['name'], 
+            $purpose 
+          );
+          Meow_MWAI_Logging::log( $debug );
+        }
+        
+        $result = $this->simpleFileUpload( $file, null, null, $purpose, $ttl, $target, $metadata );
+      }
+      
+      return new WP_REST_Response( [ 'success' => true, 'data' => $result ], 200 );
+    }
+    catch ( Exception $e ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
   #endregion
 
   #region Simple API
@@ -721,7 +795,8 @@ class Meow_MWAI_API {
         $this->core->log( 'The chatId was provided; but the discussions are not enabled.' );
       }
     }
-    $data = $this->chatbot_module->chat_submit( $botId, $message, null, $params );
+    $fileId = isset( $params['fileId'] ) ? $params['fileId'] : null;
+    $data = $this->chatbot_module->chat_submit( $botId, $message, $fileId, $params );
     return $onlyReply ? $data['reply'] : $data;
   }
 
@@ -867,6 +942,103 @@ class Meow_MWAI_API {
     }
     catch ( Exception $e ) {
       throw new Exception( 'The result is not a valid JSON.' );
+    }
+  }
+
+  /**
+   * Uploads a file to the system.
+   *
+   * @param array|null $file The file array from $_FILES.
+   * @param string|null $base64 Base64 encoded file data.
+   * @param string|null $filename The filename for base64 uploads.
+   * @param string $purpose The purpose of the file upload (e.g., 'files', 'vision', 'assistant').
+   * @param int $ttl Time to live in seconds. Default 3600 (1 hour).
+   * @param string|null $target Target location: 'uploads' or 'library'.
+   * @param array $metadata Additional metadata to store with the file.
+   *
+   * @return array Array with 'id' (refId) and 'url' of the uploaded file.
+   */
+  public function simpleFileUpload( $file = null, $base64 = null, $filename = null, $purpose = 'files', $ttl = 3600, $target = null, $metadata = [] ) {
+    global $mwai_core;
+    
+    if ( !$this->core->files ) {
+      throw new Exception( 'Files module is not available.' );
+    }
+    
+    // Determine target from settings if not provided
+    if ( empty( $target ) ) {
+      $target = $this->core->get_option( 'image_local_upload', 'uploads' );
+    }
+    
+    try {
+      if ( !empty( $base64 ) ) {
+        // Handle base64 upload
+        if ( empty( $filename ) ) {
+          $filename = 'upload-' . time() . '.dat';
+        }
+        
+        // For base64 uploads, we need to decode and create a temp file first
+        $binary = base64_decode( $base64 );
+        if ( !$binary ) {
+          throw new Exception( 'Invalid base64 data.' );
+        }
+        
+        // Create a temporary file
+        $tmp_path = wp_tempnam( 'mwai-upload' );
+        file_put_contents( $tmp_path, $binary );
+        
+        // Use the regular upload method
+        $refId = $this->core->files->upload_file(
+          $tmp_path,
+          $filename,
+          $purpose,
+          $metadata,
+          null, // envId
+          $target,
+          $ttl
+        );
+        
+        // Clean up temp file if it was uploaded to library
+        if ( $target === 'library' && file_exists( $tmp_path ) ) {
+          @unlink( $tmp_path );
+        }
+        
+        $url = $this->core->files->get_url( $refId );
+        
+        return [
+          'id' => $refId,
+          'url' => $url
+        ];
+      }
+      else if ( !empty( $file ) && is_array( $file ) ) {
+        // Handle regular file upload
+        if ( !empty( $file['error'] ) ) {
+          throw new Exception( 'File upload error: ' . $file['error'] );
+        }
+        
+        $refId = $this->core->files->upload_file(
+          $file['tmp_name'],
+          $file['name'],
+          $purpose,
+          $metadata,
+          null, // envId
+          $target,
+          $ttl
+        );
+        
+        $url = $this->core->files->get_url( $refId );
+        
+        return [
+          'id' => $refId,
+          'url' => $url
+        ];
+      }
+      else {
+        throw new Exception( 'Either a file or base64 data must be provided.' );
+      }
+    }
+    catch ( Exception $e ) {
+      throw new Exception( 'File upload failed: ' . $e->getMessage() );
     }
   }
 

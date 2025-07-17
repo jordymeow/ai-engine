@@ -157,6 +157,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
     $this->needFeedbacks = [];
     $this->needClientActions = [];
     
+    
     if ( is_array( $choices ) ) {
       foreach ( $choices as $choice ) {
 

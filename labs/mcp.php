@@ -133,7 +133,7 @@ class Meow_MWAI_Labs_MCP {
 
     // Uncomment the line below to see ALL HTTP requests in logs (useful when debugging Claude, ChatGPT, etc)
     // This shows every request made by AI services to understand their connection patterns
-    // error_log( '[MCP] ' . $_SERVER['REQUEST_METHOD'] . ' ' . $simple_path );
+    // error_log( '[AI Engine MCP] ' . $_SERVER['REQUEST_METHOD'] . ' ' . $simple_path );
   }
 
   public function is_logging_enabled() {
@@ -234,7 +234,7 @@ class Meow_MWAI_Labs_MCP {
     // If no authorization header but bearer token is configured, deny access
     if ( !$hdr && !empty( $this->bearer_token ) ) {
       if ( $this->logging ) {
-        error_log( '[MCP] ❌ No authorization header provided.' );
+        error_log( '[AI Engine MCP] ❌ No authorization header provided.' );
       }
       return false;
     }
@@ -253,7 +253,7 @@ class Meow_MWAI_Labs_MCP {
           $auth_result = 'oauth';
           // Only log auth for SSE endpoint
           if ( $this->logging && strpos( $request->get_route(), '/sse' ) !== false ) {
-            error_log( '[MCP] 🔐 OAuth OK (user: ' . $token_data['user_id'] . ')' );
+            error_log( '[AI Engine MCP] 🔐 OAuth OK (user: ' . $token_data['user_id'] . ')' );
           }
           return true;
         }
@@ -267,13 +267,13 @@ class Meow_MWAI_Labs_MCP {
         $auth_result = 'static';
         // Only log auth for SSE endpoint
         if ( $this->logging && strpos( $request->get_route(), '/sse' ) !== false ) {
-          error_log( '[MCP] 🔐 Auth OK' );
+          error_log( '[AI Engine MCP] 🔐 Auth OK' );
         }
         return true;
       }
 
       if ( $this->logging && $auth_result === 'none' ) {
-        error_log( '[MCP] ❌ Bearer token invalid.' );
+        error_log( '[AI Engine MCP] ❌ Bearer token invalid.' );
       }
       // Explicitly deny access for invalid tokens
       return false;
@@ -304,7 +304,7 @@ class Meow_MWAI_Labs_MCP {
     $route = $request->get_route();
     if ( strpos( $route, '/' . $this->bearer_token . '/' ) === false ) {
       if ( $this->logging ) {
-        error_log( '[MCP] ❌ Invalid no-auth URL access attempt.' );
+        error_log( '[AI Engine MCP] ❌ Invalid no-auth URL access attempt.' );
       }
       return false;
     }
@@ -323,7 +323,7 @@ class Meow_MWAI_Labs_MCP {
     if ( $this->logging ) {
       // Only log important messages to UI
       if ( strpos( $msg, 'queued' ) === false && strpos( $msg, 'flush' ) === false ) {
-        Meow_MWAI_Logging::log( "[MCP] {$msg}" );
+        Meow_MWAI_Logging::log( "[AI Engine MCP] {$msg}" );
       }
     }
   }
@@ -428,12 +428,12 @@ class Meow_MWAI_Labs_MCP {
           if ( $this->logging && $client_info ) {
             $client_name = $client_info['name'] ?? 'unknown';
             $client_version = $client_info['version'] ?? 'unknown';
-            error_log( "[MCP] Client: {$client_name} v{$client_version}" );
+            error_log( "[AI Engine MCP] Client: {$client_name} v{$client_version}" );
           }
 
           if ( $requested_version && $requested_version !== $this->protocol_version ) {
             if ( $this->logging ) {
-              Meow_MWAI_Logging::warn( "[MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
+              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
             }
           }
 
@@ -463,7 +463,7 @@ class Meow_MWAI_Labs_MCP {
           $is_openai = strpos( $user_agent, 'openai-mcp' ) !== false;
 
           if ( $is_openai && $this->logging ) {
-            error_log( '[MCP] 🎯 OpenAI client detected - filtering tools for deep research only.' );
+            error_log( '[AI Engine MCP] 🎯 OpenAI client detected - filtering tools for deep research only.' );
           }
 
           $tools = $this->get_tools_list();
@@ -479,7 +479,7 @@ class Meow_MWAI_Labs_MCP {
             $tools = $filtered_tools;
 
             if ( $this->logging && count( $filtered_tools ) === 0 ) {
-              error_log( '[MCP] ⚠️ Warning: No search or fetch tools found for OpenAI!' );
+              error_log( '[AI Engine MCP] ⚠️ Warning: No search or fetch tools found for OpenAI!' );
             }
           }
 
@@ -489,7 +489,7 @@ class Meow_MWAI_Labs_MCP {
             'result' => [ 'tools' => $tools ],
           ];
           if ( $this->logging ) {
-            error_log( '[MCP] 📤 Returning ' . count( $tools ) . ' tools.' );
+            error_log( '[AI Engine MCP] 📤 Returning ' . count( $tools ) . ' tools.' );
           }
           break;
 
@@ -511,7 +511,7 @@ class Meow_MWAI_Labs_MCP {
           // Check if it's a notification (no id)
           if ( $id === null && strpos( $method, 'notifications/' ) === 0 ) {
             if ( $this->logging ) {
-              error_log( '[MCP] 📨 Notification received: ' . $method );
+              error_log( '[AI Engine MCP] 📨 Notification received: ' . $method );
             }
             return new WP_REST_Response( null, 204 );
           }
@@ -628,7 +628,7 @@ class Meow_MWAI_Labs_MCP {
     );
     $this->reply( 'endpoint', $msg_uri, 'text' );
     if ( $this->logging ) {
-      error_log( '[MCP] ✅ SSE connected (' . substr( $this->session_id, 0, 8 ) . '...)' );
+      error_log( '[AI Engine MCP] ✅ SSE connected (' . substr( $this->session_id, 0, 8 ) . '...)' );
     }
 
     /* — main loop —*/
@@ -639,7 +639,7 @@ class Meow_MWAI_Labs_MCP {
       if ( connection_aborted() || $idle ) {
         $this->reply( 'bye' );
         if ( $this->logging ) {
-          error_log( '[MCP] 🔚 SSE closed (' . ( $idle ? 'idle' : 'abort' ) . ')' );
+          error_log( '[AI Engine MCP] 🔚 SSE closed (' . ( $idle ? 'idle' : 'abort' ) . ')' );
         }
         break;
       }
@@ -648,7 +648,7 @@ class Meow_MWAI_Labs_MCP {
         // Check for kill signal in the message queue
         if ( isset( $p['method'] ) && $p['method'] === 'mwai/kill' ) {
           if ( $this->logging ) {
-            error_log( '[MCP] Kill signal - terminating' );
+            error_log( '[AI Engine MCP] Kill signal - terminating' );
           }
           $this->reply( 'bye' );
           exit;
@@ -675,7 +675,7 @@ class Meow_MWAI_Labs_MCP {
       $method = $dat['method'];
       // Skip logging for repetitive/less important notifications
       if ( !in_array( $method, ['notifications/initialized', 'notifications/cancelled'] ) ) {
-        error_log( '[MCP] ↓ ' . $method );
+        error_log( '[AI Engine MCP] ↓ ' . $method );
       }
     }
 
@@ -733,12 +733,12 @@ class Meow_MWAI_Labs_MCP {
           if ( $this->logging && $client_info ) {
             $client_name = $client_info['name'] ?? 'unknown';
             $client_version = $client_info['version'] ?? 'unknown';
-            error_log( "[MCP] Client: {$client_name} v{$client_version}" );
+            error_log( "[AI Engine MCP] Client: {$client_name} v{$client_version}" );
           }
 
           if ( $requested_version && $requested_version !== $this->protocol_version ) {
             if ( $this->logging ) {
-              Meow_MWAI_Logging::warn( "[MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
+              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
             }
           }
 
@@ -768,7 +768,7 @@ class Meow_MWAI_Labs_MCP {
           $is_openai = strpos( $user_agent, 'openai-mcp' ) !== false;
 
           if ( $is_openai && $this->logging ) {
-            error_log( '[MCP] 🎯 OpenAI client detected - filtering tools for deep research only.' );
+            error_log( '[AI Engine MCP] 🎯 OpenAI client detected - filtering tools for deep research only.' );
           }
 
           $tools = $this->get_tools_list();
@@ -784,7 +784,7 @@ class Meow_MWAI_Labs_MCP {
             $tools = $filtered_tools;
 
             if ( $this->logging && count( $filtered_tools ) === 0 ) {
-              error_log( '[MCP] ⚠️ Warning: No search or fetch tools found for OpenAI!' );
+              error_log( '[AI Engine MCP] ⚠️ Warning: No search or fetch tools found for OpenAI!' );
             }
           }
 
@@ -910,7 +910,7 @@ class Meow_MWAI_Labs_MCP {
           }
         }
         // Log to both error log and UI
-        error_log( '[MCP] 🛠️ ' . $tool . $args_preview );
+        error_log( '[AI Engine MCP] 🛠️ ' . $tool . $args_preview );
         $this->log( '🛠️ Tool: ' . $tool . $args_preview );
       }
       $filtered = apply_filters( 'mwai_mcp_callback', null, $tool, $args, $id, $this );

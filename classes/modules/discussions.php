@@ -106,9 +106,7 @@ class Meow_MWAI_Modules_Discussions {
       if ( $verify === 2 ) {
         // Nonce is valid but was generated 12-24 hours ago
         $should_refresh = true;
-        if ( $this->core->get_option( 'debug_mode' ) ) {
-          error_log( '[MWAI] Token refresh: Nonce is 12-24 hours old, providing fresh token' );
-        }
+        // Log will be written when token is included in response
       }
     }
 
@@ -116,9 +114,9 @@ class Meow_MWAI_Modules_Discussions {
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $data['new_token'] = $current_nonce;
 
-      // Log if debug mode is enabled
-      if ( $this->core->get_option( 'debug_mode' ) ) {
-        error_log( '[MWAI] Token refresh: Sending new token in response' );
+      // Log if server debug mode is enabled
+      if ( $this->core->get_option( 'server_debug_mode' ) ) {
+        error_log( '[AI Engine] Token refresh: Nonce refreshed (12-24 hours old)' );
       }
     }
 

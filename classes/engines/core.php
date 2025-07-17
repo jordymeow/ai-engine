@@ -59,9 +59,9 @@ class Meow_MWAI_Engines_Core {
     if ( $queries_debug ) {
       // We'll let the individual engines log the actual HTTP requests/responses
       // Just log a simple start marker here
-      error_log( '[AI Engine Queries Debug] ========================================' );
+      error_log( '[AI Engine Queries] ========================================' );
       $query_type = get_class( $query );
-      error_log( '[AI Engine Queries Debug] Starting ' . $query_type . ' to ' . ( $query->model ?? 'unknown model' ) );
+      error_log( '[AI Engine Queries] Starting ' . $query_type . ' to ' . ( $query->model ?? 'unknown model' ) );
     }
 
     // Check if the query is allowed.
@@ -109,12 +109,12 @@ class Meow_MWAI_Engines_Core {
     if ( $queries_debug && empty( $reply->needFeedbacks ) ) {
       // For embedding queries, just log the dimensions count
       if ( $query instanceof Meow_MWAI_Query_Embed && !empty( $reply->result ) && is_array( $reply->result ) ) {
-        error_log( '[AI Engine Queries Debug] Embedding completed with ' . count( $reply->result ) . ' dimensions' );
+        error_log( '[AI Engine Queries] Embedding completed with ' . count( $reply->result ) . ' dimensions' );
       }
       else {
-        error_log( '[AI Engine Queries Debug] Query completed' );
+        error_log( '[AI Engine Queries] Query completed' );
       }
-      error_log( '[AI Engine Queries Debug] ========================================' );
+      error_log( '[AI Engine Queries] ========================================' );
     }
 
     // Function Call Handling - This is where the magic happens!
@@ -123,11 +123,12 @@ class Meow_MWAI_Engines_Core {
       
       // Debug: Log how many needFeedbacks we have
       if ( $queries_debug ) {
-        error_log( '[AI Engine Queries Debug] Core: Processing ' . count( $reply->needFeedbacks ) . ' needFeedbacks' );
+        error_log( '[AI Engine Queries] Core: Processing ' . count( $reply->needFeedbacks ) . ' needFeedbacks' );
         foreach ( $reply->needFeedbacks as $idx => $feedback ) {
-          error_log( '[AI Engine Queries Debug] Core: needFeedback[' . $idx . ']: name=' . $feedback['name'] . ', toolId=' . ( $feedback['toolId'] ?? 'none' ) );
+          error_log( '[AI Engine Queries] Core: needFeedback[' . $idx . ']: name=' . $feedback['name'] . ', toolId=' . ( $feedback['toolId'] ?? 'none' ) );
         }
       }
+      
       
 
       // Prevent infinite loops - each function call reduces maxDepth by 1
@@ -170,8 +171,62 @@ class Meow_MWAI_Engines_Core {
       // Group function calls by their source message to maintain proper context
       // This ensures related function calls are processed together
       $feedback_blocks = [];
-      foreach ( $reply->needFeedbacks as $needFeedback ) {
+      
+      // Special handling for Responses API - group all function calls together
+      // Check if we're using Responses API by looking at the query's previous response ID or reply ID
+      $isResponsesApi = false;
+      
+      // Method 1: Check if query has a previous response ID from Responses API
+      if ( !empty( $query->previousResponseId ) && $this->core->responseIdManager->is_valid_for_responses_api( $query->previousResponseId ) ) {
+        $isResponsesApi = true;
+      }
+      
+      // Method 2: Check if the reply has a Responses API response ID
+      if ( !$isResponsesApi && !empty( $reply->id ) && $this->core->responseIdManager->is_valid_for_responses_api( $reply->id ) ) {
+        $isResponsesApi = true;
+      }
+      
+      // Method 3: Check the model tags for 'responses' tag
+      if ( !$isResponsesApi && !empty( $query->model ) ) {
+        $modelInfo = $this->retrieve_model_info( $query->model );
+        if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'responses', $modelInfo['tags'] ) ) {
+          // Also check if Responses API is enabled in settings
+          $responsesApiEnabled = $this->core->get_option( 'ai_responses_api' ) ?? true;
+          if ( $responsesApiEnabled ) {
+            $isResponsesApi = true;
+          }
+        }
+      }
+      
+      // Method 4: For OpenAI engine, check if we're already using Responses API
+      // This is important for models that use Responses API but don't have the tag
+      if ( !$isResponsesApi && method_exists( $this, 'should_use_responses_api' ) ) {
+        // This is an OpenAI engine, check if it should use Responses API
+        $isResponsesApi = $this->should_use_responses_api( $query->model );
+      }
+      
+      // Debug: Log grouping information
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries] Grouping ' . count( $reply->needFeedbacks ) . ' function calls' );
+        error_log( '[AI Engine Queries] Is Responses API: ' . ( $isResponsesApi ? 'yes' : 'no' ) );
+        error_log( '[AI Engine Queries] Detection methods:' );
+        error_log( '[AI Engine Queries]   - previousResponseId: ' . ( $query->previousResponseId ?? 'null' ) );
+        error_log( '[AI Engine Queries]   - reply->id: ' . ( $reply->id ?? 'null' ) );
+        error_log( '[AI Engine Queries]   - model: ' . ( $query->model ?? 'null' ) );
+        error_log( '[AI Engine Queries]   - method_exists should_use_responses_api: ' . ( method_exists( $this, 'should_use_responses_api' ) ? 'yes' : 'no' ) );
+        error_log( '[AI Engine Queries]   - engine class: ' . get_class( $this ) );
+        if ( $isResponsesApi ) {
+          error_log( '[AI Engine Queries] All function calls will be grouped together for Responses API' );
+        }
+      }
+      
+      foreach ( $reply->needFeedbacks as $idx => $needFeedback ) {
+        // For Responses API, use a single key to group all function calls together
         $rawMessageKey = md5( serialize( $needFeedback['rawMessage'] ) );
+        
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] Function call ' . $idx . ': ' . $needFeedback['name'] . ' (key: ' . substr( $rawMessageKey, 0, 8 ) . ')' );
+        }
 
         // Initialize the feedback block for this rawMessage if it hasn't been initialized yet
         if ( !isset( $feedback_blocks[$rawMessageKey] ) ) {
@@ -240,7 +295,10 @@ class Meow_MWAI_Engines_Core {
 
       // Log feedback query if debug is enabled
       if ( $queries_debug ) {
-        error_log( '[AI Engine Queries Debug] Processing feedback query with ' . count( $feedback_blocks ) . ' feedback blocks' );
+        error_log( '[AI Engine Queries] Created ' . count( $feedback_blocks ) . ' feedback blocks from ' . count( $reply->needFeedbacks ) . ' function calls' );
+        foreach ( $feedback_blocks as $key => $block ) {
+          error_log( '[AI Engine Queries] Block ' . substr( $key, 0, 8 ) . ' has ' . count( $block['feedbacks'] ) . ' feedbacks' );
+        }
       }
 
       // Run the feedback query
@@ -415,8 +473,8 @@ class Meow_MWAI_Engines_Core {
   }
 
   protected function init_debug_mode( $query ) {
-    // Check if debug mode is enabled in settings
-    $this->currentDebugMode = $this->core->get_option( 'module_devtools' ) && $this->core->get_option( 'debug_mode' );
+    // Check if server debug mode is enabled in settings
+    $this->currentDebugMode = $this->core->get_option( 'module_devtools' ) && $this->core->get_option( 'server_debug_mode' );
     $this->currentQuery = $query;
   }
 
@@ -439,7 +497,7 @@ class Meow_MWAI_Engines_Core {
       $queries_debug = $this->core->get_option( 'queries_debug_mode' );
       static $logged_url = false;
       if ( $queries_debug && !$logged_url ) {
-        error_log( '[AI Engine Queries Debug] Streaming from: ' . $url );
+        error_log( '[AI Engine Queries] Streaming from: ' . $url );
         $logged_url = true;
       }
 
@@ -493,7 +551,7 @@ class Meow_MWAI_Engines_Core {
                 }
               }
 
-              error_log( '[AI Engine Queries Debug] Event: ' . json_encode( $event_log ) );
+              error_log( '[AI Engine Queries] Event: ' . json_encode( $event_log ) );
               $event_count++;
             }
 

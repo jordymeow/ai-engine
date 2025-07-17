@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.2
+Stable tag: 2.9.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,15 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.3 (2025/07/17) =
+- Add: New Database Optimization feature in Dev Tools to improve plugin speed by adding indexes and removing old logs and discussions.
+- Add: Better errors when encountering issues with OpenAI Responses API, Vector Store, or multiple functions.
+- Add: simpleFileUpload feature to the Simple API for easier file handling.
+- Add: OpenAI Vector Store as a new embeddings environment type for seamless integration with the file_search tool.
+- Fix: Corrected the embeddings API to ensure proper vector creation and fixed related issues.
+- Fix: Refined logging system and removed debug logs for cleaner operation.
+- Fix: Replaced hardcoded model list with dynamic API capability detection.
 
 = 2.9.2 (2025/07/11) =
 * Add: Google embeddings are now live—only relevant environments show up, and we’ve built in safeguards against dimension mismatches.

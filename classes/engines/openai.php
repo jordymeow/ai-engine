@@ -27,6 +27,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   protected $currentQuery = null;
   protected $streamImages = [];
   protected $seenCallIds = []; // Track seen call IDs to prevent duplicates
+  protected $lastRequestBody = null; // For debugging
   // IMPORTANT: OpenAI Responses API sends the same function call in both:
   // 1. response.output_item.done - when individual function call completes
   // 2. response.completed - with all function calls in the final response
@@ -134,8 +135,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       // Debug logging for feedback queries
       $queries_debug = $this->core->get_option( 'queries_debug_mode' );
       if ( $queries_debug && $query instanceof Meow_MWAI_Query_Feedback ) {
-        error_log( '[AI Engine Queries Debug] Feedback query previousResponseId: ' . ( $query->previousResponseId ?? 'null' ) );
-        error_log( '[AI Engine Queries Debug] Feedback query historyStrategy: ' . ( $historyStrategy ?? 'null' ) );
+        error_log( '[AI Engine Queries] Feedback query previousResponseId: ' . ( $query->previousResponseId ?? 'null' ) );
+        error_log( '[AI Engine Queries] Feedback query historyStrategy: ' . ( $historyStrategy ?? 'null' ) );
       }
 
       // Handle based on history strategy
@@ -149,14 +150,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           // Debug logging
           $queries_debug = $this->core->get_option( 'queries_debug_mode' );
           if ( $queries_debug ) {
-            error_log( '[AI Engine Queries Debug] Using previous_response_id: ' . $query->previousResponseId );
+            error_log( '[AI Engine Queries] Using previous_response_id: ' . $query->previousResponseId );
           }
         }
         else {
           // Log warning if queries debug is enabled
           $queries_debug = $this->core->get_option( 'queries_debug_mode' );
           if ( $queries_debug ) {
-            error_log( '[AI Engine Queries Debug] Warning: ' .
+            error_log( '[AI Engine Queries] Warning: ' .
               Meow_MWAI_FunctionCallException::invalid_response_id(
                 $query->previousResponseId,
                 'Responses API',
@@ -177,6 +178,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           // 1. The function_call from the model
           // 2. The function_call_output with the result
           $body['input'] = $this->build_feedback_input_for_responses_api( $query );
+          
+          // Debug: Log the feedback input structure
+          if ( $queries_debug ) {
+            error_log( '[AI Engine Queries] Feedback input structure: ' . json_encode( $body['input'], JSON_PRETTY_PRINT ) );
+          }
         }
         else {
           // Regular user message
@@ -275,14 +281,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       // 2. It's a feedback query (needs full context)
       if ( !empty( $query->functions ) && ( empty( $body['previous_response_id'] ) || $query instanceof Meow_MWAI_Query_Feedback ) ) {
         $body['tools'] = $this->build_responses_tools( $query->functions );
-        // Debug: Log the tools structure
-        Meow_MWAI_Logging::log( 'Responses API tools structure: ' . json_encode( $body['tools'] ) );
       }
 
-      // Debug: Log the full request body for feedback queries
-      if ( $query instanceof Meow_MWAI_Query_Feedback ) {
-        Meow_MWAI_Logging::log( 'Responses API: Full feedback request body: ' . json_encode( $body, JSON_PRETTY_PRINT ) );
-      }
 
       // Add MCP servers if available
       if ( isset( $query->mcpServers ) && is_array( $query->mcpServers ) && !empty( $query->mcpServers ) ) {
@@ -325,7 +325,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
                 }
                 $body['tools'][] = $mcp_tool;
 
-                Meow_MWAI_Logging::log( 'Responses API: Added MCP server ' . $env['name'] . ' to tools' );
                 break;
               }
             }
@@ -361,6 +360,48 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           }
         }
       }
+      
+      // Add file_search tool if OpenAI Vector Store is configured
+      if ( !empty( $query->embeddingsEnvId ) ) {
+        Meow_MWAI_Logging::log( 'Responses API: Checking embeddings environment - embeddingsEnvId: ' . $query->embeddingsEnvId );
+        
+        $embeddingsEnv = $this->core->get_embeddings_env( $query->embeddingsEnvId );
+        
+        if ( $embeddingsEnv && $embeddingsEnv['type'] === 'openai-vector-store' ) {
+          Meow_MWAI_Logging::log( 'Responses API: Found OpenAI Vector Store environment' );
+          
+          // Check if the OpenAI environment matches
+          $openai_env_id = $embeddingsEnv['openai_env_id'] ?? null;
+          
+          Meow_MWAI_Logging::log( 'Responses API: Comparing environments - embeddings OpenAI env: ' . ( $openai_env_id ?? 'null' ) . ', current env: ' . $this->envId );
+          
+          if ( $openai_env_id === $this->envId && !empty( $embeddingsEnv['store_id'] ) ) {
+            // Ensure tools array exists
+            if ( !isset( $body['tools'] ) ) {
+              $body['tools'] = [];
+            }
+            
+            // Add file_search tool with vector store ID
+            $body['tools'][] = [
+              'type' => 'file_search',
+              'vector_store_ids' => [ $embeddingsEnv['store_id'] ]
+            ];
+            
+            Meow_MWAI_Logging::log( 'Responses API: Added file_search tool with vector store: ' . $embeddingsEnv['store_id'] );
+          } else {
+            if ( $openai_env_id !== $this->envId ) {
+              Meow_MWAI_Logging::log( 'Responses API: Environment mismatch - file_search tool not added' );
+            }
+            if ( empty( $embeddingsEnv['store_id'] ) ) {
+              Meow_MWAI_Logging::log( 'Responses API: No store_id configured - file_search tool not added' );
+            }
+          }
+        } else {
+          Meow_MWAI_Logging::log( 'Responses API: Embeddings environment is not OpenAI Vector Store type (type: ' . ( $embeddingsEnv['type'] ?? 'null' ) . ')' );
+        }
+      } else {
+        Meow_MWAI_Logging::log( 'Responses API: No embeddingsEnvId in query - file_search tool not added' );
+      }
 
       // Note: Responses API doesn't support stream_options parameter
       // Usage tracking is handled differently in the streaming response
@@ -384,10 +425,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       Meow_MWAI_Logging::log( 'Responses API: Feedback query body: ' . json_encode( $body ) );
     }
 
-    // Debug logging for tools
-    if ( !empty( $body['tools'] ) ) {
-      Meow_MWAI_Logging::log( 'Responses API: Full request body with tools: ' . json_encode( $body ) );
-    }
 
     return $body;
   }
@@ -442,7 +479,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     // Debug logging
     $queries_debug = $this->core->get_option( 'queries_debug_mode' );
     if ( $queries_debug && $query instanceof Meow_MWAI_Query_Feedback ) {
-      error_log( '[AI Engine Queries Debug] Feedback query messages order:' );
+      error_log( '[AI Engine Queries] Feedback query messages order:' );
       foreach ( $messages as $idx => $msg ) {
         if ( isset( $msg['type'] ) ) {
           $log_msg = '  [' . $idx . '] ' . $msg['type'];
@@ -452,7 +489,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           elseif ( $msg['type'] === 'function_call_output' ) {
             $log_msg .= ' (call_id: ' . ( $msg['call_id'] ?? 'none' ) . ', output: ' . substr( $msg['output'] ?? '', 0, 50 ) . ')';
           }
-          error_log( '[AI Engine Queries Debug]' . $log_msg );
+          error_log( '[AI Engine Queries]' . $log_msg );
         }
         elseif ( isset( $msg['role'] ) ) {
           $content_preview = '';
@@ -467,7 +504,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
               $content_preview = ' - "' . substr( $msg['content'][0]['text'] ?? '', 0, 50 ) . '"';
             }
           }
-          error_log( '[AI Engine Queries Debug]  [' . $idx . '] ' . $msg['role'] . $content_preview );
+          error_log( '[AI Engine Queries]  [' . $idx . '] ' . $msg['role'] . $content_preview );
         }
       }
     }
@@ -538,7 +575,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   */
   protected function build_feedback_input_for_responses_api( $query ) {
     // Use the MessageBuilder service for streamlined message building
-    return $this->core->messageBuilder->build_feedback_only_messages( $query );
+    $messages = $this->core->messageBuilder->build_feedback_only_messages( $query );
+    
+    // For Responses API, the input should be wrapped in a specific structure
+    // According to OpenAI docs, function results should be sent as an array of messages
+    return $messages;
   }
 
   /**
@@ -611,24 +652,43 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
       case 'response.completed':
         // Response is fully generated - extract any function calls from completed output
+        if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+          error_log( '[AI Engine Queries] Current streamToolCalls count: ' . count( $this->streamToolCalls ) );
+        }
+        
         $response = $json['response'] ?? [];
         $outputs = $response['output'] ?? [];
 
-        foreach ( $outputs as $output ) {
-          if ( $output['type'] === 'function_call' && $output['status'] === 'completed' ) {
+        foreach ( $outputs as $idx => $output ) {
+          if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+            error_log( '[AI Engine Queries] Output ' . $idx . ' type: ' . ( $output['type'] ?? 'unknown' ) . ', status: ' . ( $output['status'] ?? 'no-status' ) );
+          }
+          
+          if ( isset( $output['type'] ) && $output['type'] === 'function_call' && 
+               isset( $output['status'] ) && $output['status'] === 'completed' ) {
             // Note: Responses API uses 'call_id' not 'id' for function calls
             $callId = $output['call_id'] ?? $output['id'] ?? null;
             $functionName = $output['name'] ?? '';
+            
+            if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+              error_log( '[AI Engine Queries] Processing function_call: ' . $functionName . ' (id: ' . $callId . ')' );
+            }
             
             // IMPORTANT: Deduplicate function calls
             // OpenAI sends the same function call in both response.output_item.done
             // and response.completed events. We track call IDs to avoid duplicates.
             if ( in_array( $callId, $this->seenCallIds, true ) ) {
               // Skip duplicate - already processed in response.output_item.done
+              if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+                error_log( '[AI Engine Queries] Skipping duplicate call ID: ' . $callId );
+              }
               continue;
             }
             
             // First time seeing this call ID - add it
+            if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+              error_log( '[AI Engine Queries] response.completed adding tool call: ' . $functionName . ' (id: ' . $callId . ')' );
+            }
             $this->seenCallIds[] = $callId;
             $this->streamToolCalls[] = [
               'id' => $callId,
@@ -663,7 +723,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           $item = $json['item'];
           $itemType = $item['type'];
           $currentItemType = $itemType;
-          Meow_MWAI_Logging::log( 'Responses API: Output item added with type: ' . $itemType );
 
           // Don't emit events here for web search or image generation - wait for more specific events
           // This prevents duplicate events
@@ -821,7 +880,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         // Check if this is MCP-related content that shouldn't be shown
         if ( isset( $json['part']['type'] ) ) {
           $partType = $json['part']['type'];
-          Meow_MWAI_Logging::log( 'Responses API: Content part added with type: ' . $partType );
 
           // Just log the part type for debugging
           // We can use this info later if needed
@@ -1121,7 +1179,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
     // Debug: Always log which API we're using
     $useResponsesApi = $this->should_use_responses_api( $query->model );
-    Meow_MWAI_Logging::log( 'OpenAI Engine: Model ' . $query->model . ' -> ' . ( $useResponsesApi ? 'Responses API' : 'ChatML API' ) );
 
     // Check if we should use Responses API
     if ( $useResponsesApi ) {
@@ -1136,6 +1193,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   * Run completion query using Responses API
   */
   protected function run_responses_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
+    // Check if we have functions that might require feedback
+    $hasFunctions = !empty( $query->functions );
+    
+    
     $isStreaming = !is_null( $streamCallback );
 
     // Initialize debug mode
@@ -1151,11 +1212,30 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     $url = $this->build_responses_url();
     $headers = $this->build_headers( $query );
     $options = $this->build_options( $headers, $body );
+    
+    // Store the request body for debugging
+    $this->lastRequestBody = $body;
 
     // Debug log for Responses API
     $queries_debug = $this->core->get_option( 'queries_debug_mode' );
     if ( $queries_debug ) {
-      error_log( '[AI Engine Queries Debug] Using Responses API' );
+      error_log( '[AI Engine Queries] Using Responses API' );
+      error_log( '[AI Engine Queries] Request URL: ' . $url );
+      error_log( '[AI Engine Queries] Request Body: ' . json_encode( $body, JSON_PRETTY_PRINT ) );
+      
+      // Log specific tool information
+      if ( isset( $body['tools'] ) && is_array( $body['tools'] ) ) {
+        error_log( '[AI Engine Queries] Tools included in request:' );
+        foreach ( $body['tools'] as $index => $tool ) {
+          $toolInfo = 'Tool ' . $index . ': type=' . ( $tool['type'] ?? 'unknown' );
+          if ( $tool['type'] === 'file_search' && isset( $tool['vector_store_ids'] ) ) {
+            $toolInfo .= ', vector_store_ids=' . json_encode( $tool['vector_store_ids'] );
+          }
+          error_log( '[AI Engine Queries]   - ' . $toolInfo );
+        }
+      } else {
+        error_log( '[AI Engine Queries] No tools included in request' );
+      }
     }
 
     // Emit "Request sent" event for feedback queries
@@ -1168,6 +1248,23 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     }
 
     try {
+      // Log the input being sent for feedback queries
+      if ( $queries_debug && $query instanceof Meow_MWAI_Query_Feedback && isset( $body['input'] ) ) {
+        error_log( '[AI Engine Queries] Sending feedback with ' . count( $body['input'] ) . ' messages to Responses API' );
+        error_log( '[AI Engine Queries] Previous Response ID: ' . ( $body['previous_response_id'] ?? 'none' ) );
+        foreach ( $body['input'] as $idx => $msg ) {
+          $msgType = is_array( $msg ) && isset( $msg['type'] ) ? $msg['type'] : 'unknown';
+          $callId = is_array( $msg ) && isset( $msg['call_id'] ) ? $msg['call_id'] : 'no-id';
+          error_log( '[AI Engine Queries]   Message ' . $idx . ': type=' . $msgType . ', call_id=' . $callId );
+          if ( $msgType === 'function_call' && isset( $msg['name'] ) ) {
+            error_log( '[AI Engine Queries]     Function name: ' . $msg['name'] );
+          }
+          if ( $msgType === 'function_call_output' && isset( $msg['output'] ) ) {
+            error_log( '[AI Engine Queries]     Output: ' . substr( $msg['output'], 0, 50 ) . '...' );
+          }
+        }
+      }
+      
       $res = $this->run_query( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
 
@@ -1192,6 +1289,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $message = [ 'role' => 'assistant', 'content' => $this->streamContent ];
 
         if ( !empty( $this->streamToolCalls ) ) {
+          error_log( '[AI Engine Queries] Responses API: Found ' . count( $this->streamToolCalls ) . ' tool calls in streaming response' );
+          foreach ( $this->streamToolCalls as $idx => $toolCall ) {
+            error_log( '[AI Engine Queries]   Tool call ' . $idx . ': ' . $toolCall['function']['name'] . ' (id: ' . $toolCall['id'] . ')' );
+          }
           $message['tool_calls'] = $this->streamToolCalls;
         }
 
@@ -1218,7 +1319,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
         // Log streaming response data if queries debug is enabled
         if ( $queries_debug ) {
-          error_log( '[AI Engine Queries Debug] Streaming Response Collected:' );
+          error_log( '[AI Engine Queries] Streaming Response Collected:' );
           $streaming_data = [
             'id' => $returned_id,
             'model' => $returned_model,
@@ -1263,11 +1364,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $tool_calls = [];
         $images = [];
 
-        // Debug: Log that we're using Responses API parsing
-        Meow_MWAI_Logging::log( 'Responses API: Starting to parse response data' );
 
         if ( isset( $data['output'] ) && is_array( $data['output'] ) ) {
-          foreach ( $data['output'] as $output_item ) {
+          
+          foreach ( $data['output'] as $idx => $output_item ) {
             if ( isset( $output_item['type'] ) && $output_item['type'] === 'message' && isset( $output_item['content'] ) ) {
               // Handle message content array - this is the actual text content
               if ( is_array( $output_item['content'] ) ) {
@@ -1288,11 +1388,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             }
             elseif ( isset( $output_item['type'] ) && $output_item['type'] === 'function_call' ) {
               // Responses API returns function_call type with call_id
+              $callId = $output_item['call_id'] ?? $output_item['id'] ?? null;
+              $functionName = $output_item['name'] ?? '';
+              error_log( '[AI Engine Queries] Found function_call: ' . $functionName . ' (call_id: ' . $callId . ')' );
+              
               $tool_calls[] = [
-                'id' => $output_item['call_id'] ?? $output_item['id'] ?? null,
+                'id' => $callId,
                 'type' => 'function',
                 'function' => [
-                  'name' => $output_item['name'] ?? '',
+                  'name' => $functionName,
                   'arguments' => $output_item['arguments'] ?? '{}'
                 ]
               ];
@@ -1350,6 +1454,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           Meow_MWAI_Logging::log( 'Responses API: Full response data: ' . json_encode( $data ) );
         }
 
+        
         $message = [ 'role' => 'assistant', 'content' => $content ];
         if ( !empty( $tool_calls ) ) {
           $message['tool_calls'] = $tool_calls;
@@ -1366,9 +1471,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           Meow_MWAI_Logging::log( 'Responses API: Added ' . count( $images ) . ' images to choices' );
         }
 
-        // Debug: Log what we're about to set as choices
-        Meow_MWAI_Logging::log( 'Responses API: Setting choices with content: "' . $content . '"' );
-        Meow_MWAI_Logging::log( 'Responses API: Choice structure: ' . json_encode( $returned_choices ) );
 
         // Extract usage information
         $usage = $data['usage'] ?? [];
@@ -1498,6 +1600,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       $message = $error['message'] ?? 'Unknown error';
       $type = $error['type'] ?? null;
       $code = $error['code'] ?? null;
+
+      // Special handling for "No tool output found" errors
+      if ( strpos( $message, 'No tool output found' ) !== false ) {
+        // Always log this error with details
+        error_log( '[AI Engine Queries] Responses API Tool Output Error:' );
+        error_log( '[AI Engine Queries] Error: ' . $message );
+        error_log( '[AI Engine Queries] This typically means the function call outputs were not properly formatted or are missing.' );
+        
+        // Log the last request body if available
+        if ( property_exists( $this, 'lastRequestBody' ) && $this->lastRequestBody ) {
+          error_log( '[AI Engine Queries] Last request body: ' . json_encode( $this->lastRequestBody, JSON_PRETTY_PRINT ) );
+        }
+      }
 
       $errorMessage = $message;
       if ( $type ) {

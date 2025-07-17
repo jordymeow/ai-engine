@@ -94,9 +94,7 @@ class Meow_MWAI_Modules_Chatbot {
       if ( $verify === 2 ) {
         // Nonce is valid but was generated 12-24 hours ago
         $should_refresh = true;
-        if ( $this->core->get_option( 'debug_mode' ) ) {
-          error_log( '[MWAI] Token refresh: Nonce is 12-24 hours old, providing fresh token' );
-        }
+        // Log will be written when token is included in response
       }
     }
     
@@ -104,9 +102,9 @@ class Meow_MWAI_Modules_Chatbot {
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $data['new_token'] = $current_nonce;
       
-      // Log if debug mode is enabled
-      if ( $this->core->get_option( 'debug_mode' ) ) {
-        error_log( '[MWAI] Token refresh: Sending new token in response' );
+      // Log if server debug mode is enabled
+      if ( $this->core->get_option( 'server_debug_mode' ) ) {
+        error_log( '[AI Engine] Token refresh: Nonce refreshed (12-24 hours old)' );
       }
     }
     
@@ -491,6 +489,15 @@ class Meow_MWAI_Modules_Chatbot {
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 
+        // Debug log for embeddings
+        if ( !empty( $params['embeddingsEnvId'] ) ) {
+          Meow_MWAI_Logging::log( 'Chatbot: Setting embeddingsEnvId on query: ' . $params['embeddingsEnvId'] );
+        } else {
+          // Log all params to debug
+          $paramKeys = array_keys( $params );
+          Meow_MWAI_Logging::log( 'Chatbot: No embeddingsEnvId found. Available params: ' . implode( ', ', $paramKeys ) );
+        }
+
         $query->inject_params( $params );
       }
       else {
@@ -509,6 +516,15 @@ class Meow_MWAI_Modules_Chatbot {
         }
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
+
+        // Debug log for embeddings
+        if ( !empty( $params['embeddingsEnvId'] ) ) {
+          Meow_MWAI_Logging::log( 'Chatbot: Setting embeddingsEnvId on query: ' . $params['embeddingsEnvId'] );
+        } else {
+          // Log all params to debug
+          $paramKeys = array_keys( $params );
+          Meow_MWAI_Logging::log( 'Chatbot: No embeddingsEnvId found. Available params: ' . implode( ', ', $paramKeys ) );
+        }
 
         $query->inject_params( $params );
 

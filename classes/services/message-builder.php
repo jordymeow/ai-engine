@@ -200,41 +200,80 @@ class Meow_MWAI_Services_MessageBuilder {
       return $messages;
     }
 
-    $processedCallIds = [];
+    // Debug: Log the blocks structure
+    $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+    if ( $queries_debug ) {
+      error_log( '[AI Engine Queries] Building feedback messages with ' . count( $query->blocks ) . ' blocks' );
+      foreach ( $query->blocks as $idx => $block ) {
+        error_log( '[AI Engine Queries] Block ' . $idx . ' has ' . count( $block['feedbacks'] ?? [] ) . ' feedbacks' );
+      }
+    }
 
+    // For Responses API, we need to process ALL tool calls from the rawMessage
+    // and ensure we return them in the same order with their outputs
     foreach ( $query->blocks as $block ) {
-      if ( !isset( $block['feedbacks'] ) ) {
+      if ( !isset( $block['feedbacks'] ) || empty( $block['feedbacks'] ) ) {
         continue;
       }
 
-      foreach ( $block['feedbacks'] as $feedback ) {
-        $toolId = $feedback['request']['toolId'] ?? null;
+      // Get the rawMessage from the first feedback (they should all have the same rawMessage)
+      $rawMessage = $block['feedbacks'][0]['request']['rawMessage'] ?? null;
+      
+      if ( !$rawMessage || !isset( $rawMessage['tool_calls'] ) ) {
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] WARNING: No tool_calls found in rawMessage' );
+        }
+        continue;
+      }
 
-        if ( !$toolId || in_array( $toolId, $processedCallIds ) ) {
-          continue;
+      // Process ALL tool calls from the rawMessage in order
+      foreach ( $rawMessage['tool_calls'] as $toolCall ) {
+        $callId = $toolCall['id'];
+        
+        // First: Add the function_call message
+        $functionCall = Meow_MWAI_Data_FunctionCall::from_tool_call( $toolCall );
+        $messages[] = [
+          'type' => 'function_call',
+          'call_id' => $functionCall->id,
+          'name' => $functionCall->name,
+          'arguments' => $functionCall->get_arguments_json()
+        ];
+
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] Added function_call for: ' . $functionCall->name . ' (call_id: ' . $callId . ')' );
         }
 
-        // First: Echo the function_call from the model
-        if ( isset( $feedback['request']['rawMessage']['tool_calls'] ) ) {
-          foreach ( $feedback['request']['rawMessage']['tool_calls'] as $toolCall ) {
-            if ( $toolCall['id'] === $toolId ) {
-              $functionCall = Meow_MWAI_Data_FunctionCall::from_tool_call( $toolCall );
-              $messages[] = [
-                'type' => 'function_call',
-                'call_id' => $functionCall->id,
-                'name' => $functionCall->name,
-                'arguments' => $functionCall->get_arguments_json()
-              ];
-              break;
+        // Second: Find and add the corresponding function result
+        $foundResult = false;
+        foreach ( $block['feedbacks'] as $feedback ) {
+          if ( ( $feedback['request']['toolId'] ?? null ) === $callId ) {
+            $result = Meow_MWAI_Data_FunctionResult::success( $callId, $feedback['reply']['value'] ?? '' );
+            $messages[] = $result->to_responses_api_format();
+            $foundResult = true;
+            
+            if ( $queries_debug ) {
+              error_log( '[AI Engine Queries] Added function_call_output for call_id: ' . $callId );
             }
+            break;
           }
         }
 
-        // Second: Add the function result
-        $result = Meow_MWAI_Data_FunctionResult::success( $toolId, $feedback['reply']['value'] ?? '' );
-        $messages[] = $result->to_responses_api_format();
+        if ( !$foundResult ) {
+          // This should not happen, but if we can't find the result, add an error result
+          if ( $queries_debug ) {
+            error_log( '[AI Engine Queries] ERROR: No result found for call_id: ' . $callId );
+          }
+          $result = Meow_MWAI_Data_FunctionResult::failure( $callId, 'Function result not found' );
+          $messages[] = $result->to_responses_api_format();
+        }
+      }
+    }
 
-        $processedCallIds[] = $toolId;
+    // Debug: Log final messages structure
+    if ( $queries_debug ) {
+      error_log( '[AI Engine Queries] Total feedback messages built: ' . count( $messages ) );
+      foreach ( $messages as $idx => $msg ) {
+        error_log( '[AI Engine Queries] Message ' . $idx . ' - type: ' . ( $msg['type'] ?? 'unknown' ) . ', call_id: ' . ( $msg['call_id'] ?? 'none' ) );
       }
     }
 

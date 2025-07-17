@@ -237,7 +237,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
     // Debug: Log message count before feedback
     if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-      error_log( '[AI Engine Queries Debug] Messages before feedback: ' . count( $messages ) );
+      error_log( '[AI Engine Queries] Messages before feedback: ' . count( $messages ) );
     }
 
     // 6. Feedback data for Meow_MWAI_Query_Feedback.
@@ -245,14 +245,14 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       foreach ( $query->blocks as $feedback_block ) {
         // Debug logging of raw message
         if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-          error_log( '[AI Engine Queries Debug] Raw message before formatting: ' . json_encode( $feedback_block['rawMessage'] ) );
+          error_log( '[AI Engine Queries] Raw message before formatting: ' . json_encode( $feedback_block['rawMessage'] ) );
         }
 
         $formattedMessage = $this->format_function_call( $feedback_block['rawMessage'] );
 
         // Debug logging of formatted message
         if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-          error_log( '[AI Engine Queries Debug] Formatted function call message: ' . json_encode( $formattedMessage ) );
+          error_log( '[AI Engine Queries] Formatted function call message: ' . json_encode( $formattedMessage ) );
         }
 
         // Check if Google returned multiple function calls but we only have one response
@@ -277,7 +277,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
           // Log the error for debugging
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-            error_log( '[AI Engine Queries Debug] ERROR: ' . $errorMsg );
+            error_log( '[AI Engine Queries] ERROR: ' . $errorMsg );
 
             // Log which functions were called vs which were responded to
             $calledFunctions = [];
@@ -290,8 +290,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
               return $fb['request']['name'] ?? 'unknown';
             }, $feedback_block['feedbacks'] );
 
-            error_log( '[AI Engine Queries Debug] Called functions: ' . implode( ', ', $calledFunctions ) );
-            error_log( '[AI Engine Queries Debug] Responded functions: ' . implode( ', ', $respondedFunctions ) );
+            error_log( '[AI Engine Queries] Called functions: ' . implode( ', ', $calledFunctions ) );
+            error_log( '[AI Engine Queries] Responded functions: ' . implode( ', ', $respondedFunctions ) );
           }
 
           throw new Exception( $errorMsg );
@@ -313,7 +313,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
           // Debug logging of function response
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-            error_log( '[AI Engine Queries Debug] Function response: ' . json_encode( $functionResponseMessage ) );
+            error_log( '[AI Engine Queries] Function response: ' . json_encode( $functionResponseMessage ) );
           }
 
           $messages[] = $functionResponseMessage;
@@ -323,7 +323,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
     // Debug logging of all messages
     if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-      error_log( '[AI Engine Queries Debug] Total messages to Google: ' . count( $messages ) );
+      error_log( '[AI Engine Queries] Total messages to Google: ' . count( $messages ) );
       foreach ( $messages as $index => $message ) {
         $role = $message['role'] ?? 'unknown';
         $preview = $role;
@@ -339,7 +339,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
             $preview .= ' (functionResponse: ' . $message['parts'][0]['functionResponse']['name'] . ')';
           }
         }
-        error_log( '[AI Engine Queries Debug] Message[' . $index . ']: ' . $preview );
+        error_log( '[AI Engine Queries] Message[' . $index . ']: ' . $preview );
       }
     }
 
@@ -610,9 +610,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           if ( !empty( $functionCalls ) ) {
             // Debug: Log when we find multiple function calls
             if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-              error_log( '[AI Engine Queries Debug] Google returned ' . count( $functionCalls ) . ' function calls in one response' );
+              error_log( '[AI Engine Queries] Google returned ' . count( $functionCalls ) . ' function calls in one response' );
               foreach ( $functionCalls as $idx => $fc ) {
-                error_log( '[AI Engine Queries Debug] Function call[' . $idx . ']: ' . $fc['name'] );
+                error_log( '[AI Engine Queries] Function call[' . $idx . ']: ' . $fc['name'] );
               }
             }
 
@@ -665,9 +665,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
       // Debug: Check how many feedbacks were created
       if ( $this->core->get_option( 'queries_debug_mode' ) && !empty( $reply->needFeedbacks ) ) {
-        error_log( '[AI Engine Queries Debug] Google reply has ' . count( $reply->needFeedbacks ) . ' needFeedbacks' );
+        error_log( '[AI Engine Queries] Google reply has ' . count( $reply->needFeedbacks ) . ' needFeedbacks' );
         foreach ( $reply->needFeedbacks as $idx => $feedback ) {
-          error_log( '[AI Engine Queries Debug] Feedback[' . $idx . ']: ' . $feedback['name'] );
+          error_log( '[AI Engine Queries] Feedback[' . $idx . ']: ' . $feedback['name'] );
         }
       }
 
@@ -681,7 +681,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           
           // Log thinking tokens in debug mode
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-            error_log( '[AI Engine Queries Debug] Thinking tokens used: ' . $usageMetadata['thoughtsTokenCount'] );
+            error_log( '[AI Engine Queries] Thinking tokens used: ' . $usageMetadata['thoughtsTokenCount'] );
           }
         }
         

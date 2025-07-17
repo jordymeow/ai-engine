@@ -1,12 +1,16 @@
-// Previous: 2.8.4
-// Current: 2.8.5
+// Previous: 2.8.5
+// Current: 2.9.3
 
 /* eslint-disable no-console */
+// React & Vendor Libs
+// const { useMemo, useState, useEffect } = wp.element;
+
+// NekoUI
 import { NekoButton, NekoBlock, NekoSettings, NekoInput, NekoCheckbox, NekoColumn, NekoWrapper, NekoLog } from '@neko-ui';
 
 import i18n from '@root/i18n';
 import { toHTML, retrievePostContent, runTasks } from '@app/helpers-admin';
-import { refreshLogs, clearLogs } from '@app/requests';
+import { refreshLogs, clearLogs, optimizeDatabase } from '@app/requests';
 
 const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
   const debug_mode = options?.debug_mode;
@@ -18,22 +22,41 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
 
   const onGetContentClick = async () => {
     const postId = prompt('Enter the Post ID you want to retrieve the content from.');
-    if (!postId) {
-      return;
+    if (postId == null || postId === '') {
+      return false;
     }
     const content = await retrievePostContent(null, null, postId);
     console.log(`Data for Post ID ${postId}`, content);
-    if (content?.content) {
+    if (content && content.content != null) {
       const cleanContent = content.content.trim().replace(/<[^>]*>?/gm, '');
       const firstWord = cleanContent.split(' ')[0];
-      const lastWord = cleanContent.split(' ').slice(-1)[0];
+      const lastWord = cleanContent.split(' ').pop();
       console.log(`Content First Word: ${firstWord}`);
       console.log(`Content Last Word: ${lastWord}`);
     }
   };
 
   const onRunTask = async () => {
-    runTasks();
+    await runTasks();
+  };
+
+  const onOptimizeDatabase = async () => {
+    const confirmMsg = 'This will:\n\n' +
+      '1. Add database indexes to optimize query performance\n' +
+      '2. Remove logs older than 3 months\n' +
+      '3. Remove chat discussions older than 3 months\n\n' +
+      'This action cannot be undone. Continue?';
+    
+    if (confirm(confirmMsg) === false) {
+      return;
+    }
+    
+    try {
+      const result = await optimizeDatabase();
+      alert(`Database optimization completed!\n\n${result.message || 'Indexes added and old data cleaned up successfully.'}`);
+    } catch (error) {
+      alert(`Optimization failed: ${error.message}`);
+    }
   };
 
   const jsxDevMode =
@@ -91,6 +114,11 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
           <h3 style={{ marginTop: 20, marginBottom: 10 }}>PHP Error Logs</h3>
           {jsxMcpDebugMode}
           {jsxQueriesDebugMode}
+        </NekoBlock>
+        
+        <NekoBlock title="Optimization" className="primary" busy={busy}>
+          <NekoButton onClick={onOptimizeDatabase}>Optimize Database</NekoButton>
+          <p>{toHTML('This will add indexes to the AI Engine database tables to improve query performance, and clean up old data (logs and discussions older than 3 months). <b>Use this if you notice the plugin becoming slower over time.</b>')}</p>
         </NekoBlock>
       </NekoColumn>
       <NekoColumn minimal>

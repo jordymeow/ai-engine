@@ -65,9 +65,7 @@ class Meow_MWAI_Rest {
       if ( $verify === 2 ) {
         // Nonce is valid but was generated 12-24 hours ago
         $should_refresh = true;
-        if ( $this->core->get_option( 'debug_mode' ) ) {
-          error_log( '[MWAI] Token refresh: Nonce is 12-24 hours old, providing fresh token' );
-        }
+        // Log will be written when token is included in response
       }
     }
     
@@ -75,9 +73,9 @@ class Meow_MWAI_Rest {
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $data['new_token'] = $current_nonce;
       
-      // Log if debug mode is enabled
-      if ( $this->core->get_option( 'debug_mode' ) ) {
-        error_log( '[MWAI] Token refresh: Sending new token in response' );
+      // Log if server debug mode is enabled
+      if ( $this->core->get_option( 'server_debug_mode' ) ) {
+        error_log( '[AI Engine] Token refresh: Nonce refreshed (12-24 hours old)' );
       }
     }
     
@@ -272,6 +270,11 @@ class Meow_MWAI_Rest {
         'methods' => 'POST',
         'permission_callback' => [ $this->core, 'can_access_features' ],
         'callback' => [ $this, 'rest_helpers_run_tasks' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/optimize_database', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_helpers_optimize_database' ],
       ] );
 
       // OpenAI Endpoints
@@ -542,33 +545,41 @@ class Meow_MWAI_Rest {
       $files = $request->get_file_params();
       $params = null;
 
-      // Log all request data
-      error_log( 'Image Edit Request - Method: ' . $request->get_method() );
-      $content_type = $request->get_content_type();
-      if ( is_array( $content_type ) ) {
-        error_log( 'Image Edit Request - Content-Type: ' . $content_type['value'] );
+      // Debug logging
+      if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+        error_log( '[AI Engine Queries] Image Edit Request - Method: ' . $request->get_method() );
+        $content_type = $request->get_content_type();
+        if ( is_array( $content_type ) ) {
+          error_log( '[AI Engine Queries] Image Edit Request - Content-Type: ' . $content_type['value'] );
+        }
+        else {
+          error_log( '[AI Engine Queries] Image Edit Request - Content-Type: ' . $content_type );
+        }
+        error_log( '[AI Engine Queries] Image Edit Request - Has files: ' . ( !empty( $files ) ? 'yes (' . count( $files ) . ')' : 'no' ) );
       }
-      else {
-        error_log( 'Image Edit Request - Content-Type: ' . $content_type );
-      }
-      error_log( 'Image Edit Request - Has files: ' . ( !empty( $files ) ? 'yes (' . count( $files ) . ')' : 'no' ) );
 
       if ( !empty( $files ) ) {
         // Handle multipart form data - get all params including POST data
         $params = $request->get_params();
-        error_log( 'Image Edit Request - Using form data params' );
+        if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+          error_log( '[AI Engine Queries] Image Edit Request - Using form data params' );
+        }
       }
       else {
         // Try to get body params first (for form data without files)
         $body_params = $request->get_body_params();
         if ( !empty( $body_params ) ) {
           $params = $body_params;
-          error_log( 'Image Edit Request - Using body params' );
+          if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+            error_log( '[AI Engine Queries] Image Edit Request - Using body params' );
+          }
         }
         else {
           // Handle JSON request
           $params = $request->get_json_params();
-          error_log( 'Image Edit Request - Using JSON params' );
+          if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+            error_log( '[AI Engine Queries] Image Edit Request - Using JSON params' );
+          }
         }
       }
 
@@ -578,8 +589,10 @@ class Meow_MWAI_Rest {
       }
 
       // Debug logging
-      error_log( 'Image Edit Request - Has files: ' . ( !empty( $files ) ? 'yes' : 'no' ) );
-      error_log( 'Image Edit Request - Params: ' . json_encode( $params ) );
+      if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+        error_log( '[AI Engine Queries] Image Edit Request - Has files: ' . ( !empty( $files ) ? 'yes' : 'no' ) );
+        error_log( '[AI Engine Queries] Image Edit Request - Params: ' . json_encode( $params ) );
+      }
 
       $message = $this->retrieve_message( $params );
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
@@ -998,6 +1011,103 @@ class Meow_MWAI_Rest {
     try {
       do_action( 'mwai_tasks_run' );
       return $this->create_rest_response( [ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  public function rest_helpers_optimize_database( $request ) {
+    try {
+      global $wpdb;
+      $results = [];
+      
+      // Add indexes to optimize query performance
+      $indexes = [
+        // mwai_logs indexes
+        [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_time', 'columns' => 'time' ],
+        [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_userId', 'columns' => 'userId' ],
+        [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_envId', 'columns' => 'envId' ],
+        [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_refId', 'columns' => 'refId' ],
+        [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_time_model', 'columns' => 'time, model' ],
+        
+        // mwai_logmeta indexes
+        [ 'table' => 'mwai_logmeta', 'name' => 'idx_mwai_logmeta_log_id', 'columns' => 'log_id' ],
+        
+        // mwai_vectors indexes
+        [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_envId_status_dbId', 'columns' => 'envId, status, dbId' ],
+        [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_refId', 'columns' => 'refId' ],
+        [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_status', 'columns' => 'status' ],
+        [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_updated', 'columns' => 'updated' ],
+        
+        // mwai_files indexes
+        [ 'table' => 'mwai_files', 'name' => 'idx_mwai_files_expires', 'columns' => 'expires' ],
+        [ 'table' => 'mwai_files', 'name' => 'idx_mwai_files_userId', 'columns' => 'userId' ],
+        [ 'table' => 'mwai_files', 'name' => 'idx_mwai_files_purpose', 'columns' => 'purpose' ],
+        
+        // mwai_filemeta indexes
+        [ 'table' => 'mwai_filemeta', 'name' => 'idx_mwai_filemeta_file_id', 'columns' => 'file_id' ],
+        
+        // mwai_chats indexes
+        [ 'table' => 'mwai_chats', 'name' => 'idx_mwai_chats_chatId_botId', 'columns' => 'chatId, botId' ],
+        [ 'table' => 'mwai_chats', 'name' => 'idx_mwai_chats_chatId_userId', 'columns' => 'chatId, userId' ],
+        [ 'table' => 'mwai_chats', 'name' => 'idx_mwai_chats_updated', 'columns' => 'updated' ],
+      ];
+      
+      // Add indexes
+      foreach ( $indexes as $index ) {
+        $table = $wpdb->prefix . $index['table'];
+        $index_name = $index['name'];
+        $columns = $index['columns'];
+        
+        // Check if index already exists
+        $existing = $wpdb->get_var( $wpdb->prepare(
+          "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+           WHERE table_schema = %s AND table_name = %s AND index_name = %s",
+          DB_NAME, $table, $index_name
+        ) );
+        
+        if ( !$existing ) {
+          $wpdb->query( "ALTER TABLE `$table` ADD INDEX `$index_name` ($columns)" );
+          $results[] = "Added index $index_name on $table";
+        }
+      }
+      
+      // Clean up old logs (older than 3 months)
+      $three_months_ago = date( 'Y-m-d H:i:s', strtotime( '-3 months' ) );
+      
+      // Delete old logs
+      $deleted_logs = $wpdb->query( $wpdb->prepare(
+        "DELETE FROM {$wpdb->prefix}mwai_logs WHERE time < %s",
+        $three_months_ago
+      ) );
+      $results[] = "Deleted $deleted_logs old log entries";
+      
+      // Delete orphaned logmeta
+      $deleted_logmeta = $wpdb->query(
+        "DELETE lm FROM {$wpdb->prefix}mwai_logmeta lm
+         LEFT JOIN {$wpdb->prefix}mwai_logs l ON lm.log_id = l.id
+         WHERE l.id IS NULL"
+      );
+      $results[] = "Deleted $deleted_logmeta orphaned logmeta entries";
+      
+      // Delete old chats (older than 3 months)
+      $deleted_chats = $wpdb->query( $wpdb->prepare(
+        "DELETE FROM {$wpdb->prefix}mwai_chats WHERE updated < %s",
+        $three_months_ago
+      ) );
+      $results[] = "Deleted $deleted_chats old chat discussions";
+      
+      // Optimize tables
+      $tables = [ 'mwai_logs', 'mwai_logmeta', 'mwai_vectors', 'mwai_files', 'mwai_filemeta', 'mwai_chats' ];
+      foreach ( $tables as $table ) {
+        $wpdb->query( "OPTIMIZE TABLE {$wpdb->prefix}$table" );
+      }
+      $results[] = "Optimized all AI Engine tables";
+      
+      $message = implode( "\n", $results );
+      return $this->create_rest_response( [ 'success' => true, 'message' => $message ], 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

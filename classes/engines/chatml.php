@@ -717,7 +717,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
       // Log the request if queries debug is enabled
       if ( $queries_debug ) {
-        error_log( '[AI Engine Queries Debug] --> Request to: ' . $url );
+        error_log( '[AI Engine Queries] --> Request to: ' . $url );
 
         if ( isset( $options['body'] ) ) {
           // This is the actual body being sent to the AI service
@@ -780,8 +780,8 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       if ( strpos( $resContentType, 'multipart/form-data' ) !== false || strpos( $resContentType, 'text/plain' ) !== false ) {
         // Log the response if queries debug is enabled
         if ( $queries_debug && !$isStream ) {
-          error_log( '[AI Engine Queries Debug] Response Headers: ' . json_encode( $headers ) );
-          error_log( '[AI Engine Queries Debug] Response Body (raw): ' . substr( $response, 0, 1000 ) . '...' );
+          error_log( '[AI Engine Queries] Response Headers: ' . json_encode( $headers ) );
+          error_log( '[AI Engine Queries] Response Body (raw): ' . substr( $response, 0, 1000 ) . '...' );
         }
         return [ 'stream' => false, 'headers' => $headers, 'data' => $response ];
       }
@@ -792,7 +792,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       // Log the response if queries debug is enabled
       if ( $queries_debug && !$isStream ) {
         // Log the raw response as received from the AI service
-        error_log( '[AI Engine Queries Debug] <-- Response:' );
+        error_log( '[AI Engine Queries] <-- Response:' );
 
         // Pretty print JSON if possible
         if ( json_last_error() === JSON_ERROR_NONE && is_array( $data ) ) {
@@ -811,7 +811,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
       // Log error response if queries debug is enabled
       if ( $queries_debug ) {
-        error_log( '[AI Engine Queries Debug] Error occurred: ' . $e->getMessage() );
+        error_log( '[AI Engine Queries] Error occurred: ' . $e->getMessage() );
       }
 
       throw $e;
@@ -1003,7 +1003,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         // Log streaming response data if queries debug is enabled
         $queries_debug = $this->core->get_option( 'queries_debug_mode' );
         if ( $queries_debug ) {
-          error_log( '[AI Engine Queries Debug] Streaming Response Collected (ChatML):' );
+          error_log( '[AI Engine Queries] Streaming Response Collected (ChatML):' );
           $streaming_data = [
             'id' => $returned_id,
             'model' => $returned_model,
@@ -1619,15 +1619,15 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
     // Log the request if queries debug is enabled
     if ( $queries_debug ) {
-      error_log( '[AI Engine Queries Debug] HTTP Request to: ' . $url );
+      error_log( '[AI Engine Queries] HTTP Request to: ' . $url );
 
       if ( !empty( $body ) ) {
-        error_log( '[AI Engine Queries Debug] Request Body:' );
+        error_log( '[AI Engine Queries] Request Body:' );
         error_log( $body );
       }
 
       if ( !is_null( $streamCallback ) ) {
-        error_log( '[AI Engine Queries Debug] (Streaming mode - response will be streamed)' );
+        error_log( '[AI Engine Queries] (Streaming mode - response will be streamed)' );
       }
     }
 
@@ -1651,7 +1651,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
       // Log the response if queries debug is enabled
       if ( $queries_debug && is_null( $streamCallback ) ) {
-        error_log( '[AI Engine Queries Debug] Response Body:' );
+        error_log( '[AI Engine Queries] Response Body:' );
         error_log( $res );
       }
       return $data;
