@@ -248,12 +248,12 @@
 .mwai-messages-theme .mwai-conversation .mwai-reply * > p:last-child {
   margin-bottom: 0;
 }
-.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai {
+.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai, .mwai-messages-theme .mwai-conversation .mwai-reply.mwai-error {
   align-self: flex-start;
   background: var(--mwai-backgroundAiColor);
   margin-left: 5px;
 }
-.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai::before, .mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai::after {
+.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai::before, .mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai::after, .mwai-messages-theme .mwai-conversation .mwai-reply.mwai-error::before, .mwai-messages-theme .mwai-conversation .mwai-reply.mwai-error::after {
   content: "";
   position: absolute;
   z-index: 1;
@@ -264,7 +264,7 @@
   background: var(--mwai-backgroundPrimaryColor);
   border-bottom-right-radius: 10px;
 }
-.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai::before {
+.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-ai::before, .mwai-messages-theme .mwai-conversation .mwai-reply.mwai-error::before {
   z-index: 0;
   left: -7px;
   height: 20px;
@@ -808,16 +808,42 @@
 .mwai-messages-theme.mwai-window.mwai-open .mwai-trigger {
   display: none;
 }
-.mwai-messages-theme .mwai-error {
+.mwai-messages-theme .mwai-body > .mwai-error {
   margin: var(--mwai-spacing);
   color: white;
   background: rgba(180, 55, 55, 0.55);
   padding: var(--mwai-spacing);
   border-radius: var(--mwai-borderRadius);
 }
-.mwai-messages-theme .mwai-error:hover {
+.mwai-messages-theme .mwai-body > .mwai-error:hover {
   cursor: pointer;
   background: rgba(180, 44, 44, 0.85);
+}
+.mwai-messages-theme .mwai-reply.mwai-error .mwai-text {
+  color: #ff5656;
+}
+.mwai-messages-theme .mwai-reply.mwai-error .mwai-text a {
+  color: #ff5656;
+  text-decoration: underline;
+}
+.mwai-messages-theme .mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button {
+  fill: var(--mwai-fontColor);
+  padding: 3px 5px;
+  width: 24px;
+  height: 24px;
+  background: var(--mwai-backgroundPrimaryColor);
+  cursor: pointer;
+  border-radius: 5px;
+}
+.mwai-messages-theme .mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button:hover {
+  filter: brightness(1.2);
+}
+.mwai-messages-theme .mwai-reply-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+.mwai-messages-theme .mwai-reply:hover .mwai-reply-actions {
+  opacity: 1 !important;
 }
 .mwai-messages-theme.mwai-bubble .mwai-icon-container {
   background: var(--mwai-bubbleColor);
@@ -1323,6 +1349,19 @@
 .mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover {
   fill: var(--mwai-backgroundPrimaryColor);
   background: var(--mwai-backgroundUserColor);
+}
+.mwai-messages-theme .mwai-reply-actions .mwai-action-button {
+  padding-top: 4px;
+}
+.mwai-messages-theme .mwai-reply-actions .mwai-action-button:hover {
+  fill: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
+  filter: none;
+}
+.mwai-messages-theme .mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button:hover {
+  fill: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
+  filter: none;
 }
 
 @media (max-width: 760px) {

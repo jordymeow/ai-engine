@@ -139,7 +139,8 @@
 				}
 			}
 
-			&.mwai-ai {
+			&.mwai-ai,
+			&.mwai-error {
 				align-self: flex-start;
 				background: var(--mwai-backgroundAiColor);
 				margin-left: 5px;
@@ -512,6 +513,25 @@
 				fill: var(--mwai-backgroundPrimaryColor);
 				background: var(--mwai-backgroundUserColor);
 			}
+		}
+		
+		.mwai-action-button {
+			padding-top: 4px;
+
+			&:hover {
+				fill: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundUserColor);
+				filter: none; // Override the brightness filter
+			}
+		}
+	}
+	
+	// Override error-specific action button styles
+	.mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button {
+		&:hover {
+			fill: var(--mwai-backgroundPrimaryColor);
+			background: var(--mwai-backgroundUserColor);
+			filter: none; // Override the brightness filter
 		}
 	}
 }

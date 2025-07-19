@@ -186,17 +186,8 @@ class Meow_MWAI_Modules_Discussions {
     global $mwai;
     $params = [ 'scope' => 'discussions' ];
     
-    $fastEnv = $this->core->get_option( 'ai_fast_default_env' );
-    $fastModel = $this->core->get_option( 'ai_fast_default_model' );
-    
-    if ( !empty( $fastEnv ) ) {
-      $params['envId'] = $fastEnv;
-    }
-    if ( !empty( $fastModel ) ) {
-      $params['model'] = $fastModel;
-    }
-    
-    $answer = $mwai->simpleTextQuery( $prompt, $params );
+    // Use simpleFastTextQuery which handles Fast Model configuration
+    $answer = $mwai->simpleFastTextQuery( $prompt, $params );
 
     // Clean up the answer
     $title = trim( $answer );

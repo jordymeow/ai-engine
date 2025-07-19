@@ -638,7 +638,8 @@
 		}
 	}
 
-	.mwai-error {
+	// Old error style - kept for backwards compatibility
+	.mwai-body > .mwai-error {
 		margin: var(--mwai-spacing);
 		color: white;
 		background: rgba(180, 55, 55, 0.55);
@@ -649,6 +650,47 @@
 			cursor: pointer;
 			background: rgba(180, 44, 44, 0.85);
 		}
+	}
+
+	// Error message specific styles
+	.mwai-reply.mwai-error {
+		.mwai-text {
+			color: #ff5656; // ChatGPT-style red for error text
+			
+			// Style links in error messages
+			a {
+				color: #ff5656;
+				text-decoration: underline;
+			}
+		}
+		
+		// Style action buttons in error messages
+		.mwai-reply-actions {
+			.mwai-action-button {
+				fill: var(--mwai-fontColor);
+				padding: 3px 5px;
+				width: 24px;
+				height: 24px;
+				background: var(--mwai-backgroundPrimaryColor);
+				cursor: pointer;
+				border-radius: 5px;
+				
+				&:hover {
+					filter: brightness(1.2);
+				}
+			}
+		}
+	}
+	
+	// Reply actions visibility
+	.mwai-reply-actions {
+		opacity: 0;
+		transition: opacity 0.2s ease-in-out;
+	}
+	
+	// Show reply actions on hover of entire reply container
+	.mwai-reply:hover .mwai-reply-actions {
+		opacity: 1 !important;
 	}
 
 	&.mwai-bubble .mwai-icon-container {

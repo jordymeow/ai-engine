@@ -792,7 +792,7 @@ class Meow_MWAI_API {
         }
       }
       else {
-        $this->core->log( 'The chatId was provided; but the discussions are not enabled.' );
+        Meow_MWAI_Logging::log( 'The chatId was provided; but the discussions are not enabled.' );
       }
     }
     $fileId = isset( $params['fileId'] ) ? $params['fileId'] : null;
@@ -834,8 +834,36 @@ class Meow_MWAI_API {
     // Inject any additional params (which may override the defaults)
     $query->inject_params( $params );
     
-    $reply = $mwai_core->run_query( $query );
-    return $reply->result;
+    try {
+      $reply = $mwai_core->run_query( $query );
+      return $reply->result;
+    }
+    catch ( Exception $e ) {
+      // If Fast Model fails, try with default model
+      Meow_MWAI_Logging::warn( "Fast Model failed: " . $e->getMessage() . " - Falling back to default model." );
+      
+      // Create a new query with default model/env
+      $fallbackQuery = new Meow_MWAI_Query_Text( $message );
+      
+      $defaultModel = $mwai_core->get_option( 'ai_default_model' );
+      if ( !empty( $defaultModel ) ) {
+        $fallbackQuery->set_model( $defaultModel );
+      }
+      
+      $defaultEnv = $mwai_core->get_option( 'ai_default_env' );
+      if ( !empty( $defaultEnv ) ) {
+        $fallbackQuery->set_env_id( $defaultEnv );
+      }
+      
+      // Inject params again (except model/env which we just set)
+      $fallbackParams = $params;
+      unset( $fallbackParams['model'] );
+      unset( $fallbackParams['envId'] );
+      $fallbackQuery->inject_params( $fallbackParams );
+      
+      $reply = $mwai_core->run_query( $fallbackQuery );
+      return $reply->result;
+    }
   }
 
   public function simpleImageQuery( $message, $params = [] ) {

@@ -489,6 +489,23 @@ class Meow_MWAI_Modules_Chatbot {
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 
+        // For assistant mode, ensure we have the correct envId
+        if ( $mode === 'assistant' && !empty( $params['assistantId'] ) && empty( $params['envId'] ) ) {
+          // Find the environment that contains this assistant
+          $envs = $this->core->get_option( 'ai_envs' );
+          foreach ( $envs as $env ) {
+            if ( isset( $env['assistants'] ) ) {
+              foreach ( $env['assistants'] as $assistant ) {
+                if ( $assistant['id'] === $params['assistantId'] ) {
+                  $params['envId'] = $env['id'];
+                  Meow_MWAI_Logging::info( "Assistant mode: Setting envId to '{$env['id']}' for assistant '{$params['assistantId']}'" );
+                  break 2;
+                }
+              }
+            }
+          }
+        }
+
         // Debug log for embeddings
         if ( !empty( $params['embeddingsEnvId'] ) ) {
           Meow_MWAI_Logging::log( 'Chatbot: Setting embeddingsEnvId on query: ' . $params['embeddingsEnvId'] );
@@ -516,6 +533,23 @@ class Meow_MWAI_Modules_Chatbot {
         }
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
+
+        // For assistant mode, ensure we have the correct envId
+        if ( $mode === 'assistant' && !empty( $params['assistantId'] ) && empty( $params['envId'] ) ) {
+          // Find the environment that contains this assistant
+          $envs = $this->core->get_option( 'ai_envs' );
+          foreach ( $envs as $env ) {
+            if ( isset( $env['assistants'] ) ) {
+              foreach ( $env['assistants'] as $assistant ) {
+                if ( $assistant['id'] === $params['assistantId'] ) {
+                  $params['envId'] = $env['id'];
+                  Meow_MWAI_Logging::info( "Assistant mode: Setting envId to '{$env['id']}' for assistant '{$params['assistantId']}'" );
+                  break 2;
+                }
+              }
+            }
+          }
+        }
 
         // Debug log for embeddings
         if ( !empty( $params['embeddingsEnvId'] ) ) {

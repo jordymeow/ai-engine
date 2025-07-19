@@ -269,9 +269,12 @@
 .mwai-timeless-theme .mwai-conversation .mwai-reply * > p:last-child {
   margin-bottom: 0;
 }
-.mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-ai {
+.mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-ai, .mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-error {
   align-self: flex-start;
   background: var(--mwai-backgroundAiColor);
+}
+.mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-error {
+  border: 1px solid #ff5656;
 }
 .mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-user {
   align-self: flex-end;
@@ -929,16 +932,42 @@
 .mwai-timeless-theme.mwai-window.mwai-open .mwai-trigger {
   display: none;
 }
-.mwai-timeless-theme .mwai-error {
+.mwai-timeless-theme .mwai-body > .mwai-error {
   margin: var(--mwai-spacing);
   color: white;
   background: rgba(180, 55, 55, 0.55);
   padding: var(--mwai-spacing);
   border-radius: var(--mwai-borderRadius);
 }
-.mwai-timeless-theme .mwai-error:hover {
+.mwai-timeless-theme .mwai-body > .mwai-error:hover {
   cursor: pointer;
   background: rgba(180, 44, 44, 0.85);
+}
+.mwai-timeless-theme .mwai-reply.mwai-error .mwai-text {
+  color: #ff5656;
+}
+.mwai-timeless-theme .mwai-reply.mwai-error .mwai-text a {
+  color: #ff5656;
+  text-decoration: underline;
+}
+.mwai-timeless-theme .mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button {
+  fill: var(--mwai-fontColor);
+  padding: 3px 5px;
+  width: 24px;
+  height: 24px;
+  background: var(--mwai-backgroundPrimaryColor);
+  cursor: pointer;
+  border-radius: 5px;
+}
+.mwai-timeless-theme .mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button:hover {
+  filter: brightness(1.2);
+}
+.mwai-timeless-theme .mwai-reply-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+.mwai-timeless-theme .mwai-reply:hover .mwai-reply-actions {
+  opacity: 1 !important;
 }
 .mwai-timeless-theme.mwai-bubble .mwai-icon-container {
   background: var(--mwai-bubbleColor);
@@ -1444,6 +1473,19 @@
 .mwai-timeless-theme .mwai-reply-actions .mwai-copy-button:hover {
   fill: var(--mwai-backgroundPrimaryColor);
   background: var(--mwai-backgroundUserColor);
+}
+.mwai-timeless-theme .mwai-reply-actions .mwai-action-button {
+  padding-top: 4px;
+}
+.mwai-timeless-theme .mwai-reply-actions .mwai-action-button:hover {
+  fill: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
+  filter: none;
+}
+.mwai-timeless-theme .mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button:hover {
+  fill: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
+  filter: none;
 }
 
 @media (max-width: 760px) {

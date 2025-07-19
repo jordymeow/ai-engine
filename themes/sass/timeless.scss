@@ -165,9 +165,15 @@
 				}
 			}
 
-			&.mwai-ai {
+			&.mwai-ai,
+			&.mwai-error {
 				align-self: flex-start;
 				background: var(--mwai-backgroundAiColor);
+			}
+			
+			// Error messages with border matching error text color
+			&.mwai-error {
+				border: 1px solid #ff5656;
 			}
 
 			&.mwai-user {
@@ -682,6 +688,25 @@
 				fill: var(--mwai-backgroundPrimaryColor);
 				background: var(--mwai-backgroundUserColor);
 			}
+		}
+		
+		.mwai-action-button {
+			padding-top: 4px;
+
+			&:hover {
+				fill: var(--mwai-backgroundPrimaryColor);
+				background: var(--mwai-backgroundUserColor);
+				filter: none; // Override the brightness filter
+			}
+		}
+	}
+	
+	// Override error-specific action button styles
+	.mwai-reply.mwai-error .mwai-reply-actions .mwai-action-button {
+		&:hover {
+			fill: var(--mwai-backgroundPrimaryColor);
+			background: var(--mwai-backgroundUserColor);
+			filter: none; // Override the brightness filter
 		}
 	}
 }

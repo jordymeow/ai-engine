@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Error in Chatbot</title>
+</head>
+<body>
+    <h1>Ways to Test Chatbot Errors</h1>
+    
+    <h2>1. Invalid Bot ID</h2>
+    <p>Use this shortcode with a non-existent bot ID:</p>
+    <pre>[mwai_chatbot id="99999"]</pre>
+    
+    <h2>2. Temporary Code Modification</h2>
+    <p>Add this line in ChatbotContext.js after line 847 to force an error:</p>
+    <pre>
+// Temporary: Force an error for testing
+if (textQuery.toLowerCase().includes('error')) {
+    throw new Error('Test error: This is a simulated error for testing the error display');
+}
+    </pre>
+    
+    <h2>3. Invalid API Key</h2>
+    <p>Go to AI Engine > Settings and temporarily change your OpenAI API key to something invalid like "sk-invalid"</p>
+    
+    <h2>4. Network Error</h2>
+    <p>Use browser DevTools:</p>
+    <ol>
+        <li>Open DevTools (F12)</li>
+        <li>Go to Network tab</li>
+        <li>Set throttling to "Offline"</li>
+        <li>Try to send a message</li>
+    </ol>
+    
+    <h2>5. Block the Request</h2>
+    <p>In DevTools Network tab:</p>
+    <ol>
+        <li>Right-click on the domain</li>
+        <li>Select "Block request domain"</li>
+        <li>Try to send a message</li>
+    </ol>
+    
+    <h2>6. Test with Special Messages</h2>
+    <p>You could modify the server-side PHP to return errors for specific messages:</p>
+    <pre>
+// In your PHP endpoint handler
+if (strpos($message, 'test error') !== false) {
+    return new WP_Error('test_error', 'This is a test error message');
+}
+    </pre>
+</body>
+</html>

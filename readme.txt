@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.3
+Stable tag: 2.9.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,14 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.4 (2025/07/19) =
+* Update: Improved information messages related to vector stores.  
+* Fix: Centralized fallback logic in simpleFastTextQuery now automatically uses the default model to prevent silent failures.  
+* Fix: Resolved fatal error when OpenAI Vector Store was set as default without a store ID. 
+* Fix: Assistant environment detection now automatically identifies the correct environment when using assistants from non-default setups.  
+* Fix: Corrected undefined method error related to logging.
+* Update: Display errors as part of the conversation with options to copy, delete, or retry.
 
 = 2.9.3 (2025/07/17) =
 - Add: New Database Optimization feature in Dev Tools to improve plugin speed by adding indexes and removing old logs and discussions.

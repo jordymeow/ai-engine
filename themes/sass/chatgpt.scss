@@ -111,7 +111,8 @@
 			background: var(--mwai-backgroundSecondaryColor);
 		}
 
-		&.mwai-ai {
+		&.mwai-ai,
+		&.mwai-error {
 			background: var(--mwai-backgroundPrimaryColor);
 		}
 
@@ -286,6 +287,12 @@
 			.mwai-name {
 				display: none;
 			}
+		}
+
+		// Error messages with dashed borders
+		&.mwai-error {
+			border-top: 1px dashed #ff5656;
+			border-bottom: 1px dashed #ff5656;
 		}
 	}
 
