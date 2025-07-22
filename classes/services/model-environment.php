@@ -15,6 +15,15 @@ class Meow_MWAI_Services_ModelEnvironment {
     // The query object uses envId, not env
     $env = $query->envId ?? $query->env ?? null;
     $model = $query->model;
+    
+    // For assistant queries with a valid envId already set, respect it
+    if ( $query instanceof Meow_MWAI_Query_Assistant && !empty( $env ) && !empty( $query->assistantId ) ) {
+      // Set model to 'n/a' for assistants since they don't need a model
+      if ( empty( $model ) ) {
+        $query->model = 'n/a';
+      }
+      return;
+    }
 
     if ( empty( $env ) && empty( $model ) ) {
       $this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );

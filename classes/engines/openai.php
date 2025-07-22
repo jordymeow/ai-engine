@@ -132,11 +132,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $historyStrategy = 'response_id';
       }
 
-      // Debug logging for feedback queries
+      // Debug logging for all queries when using Responses API
       $queries_debug = $this->core->get_option( 'queries_debug_mode' );
-      if ( $queries_debug && $query instanceof Meow_MWAI_Query_Feedback ) {
-        error_log( '[AI Engine Queries] Feedback query previousResponseId: ' . ( $query->previousResponseId ?? 'null' ) );
-        error_log( '[AI Engine Queries] Feedback query historyStrategy: ' . ( $historyStrategy ?? 'null' ) );
+      
+      if ( $queries_debug ) {
+        if ( $query instanceof Meow_MWAI_Query_Feedback ) {
+          error_log( '[AI Engine] Feedback query blocks: ' . count( $query->blocks ?? [] ) );
+        }
       }
 
       // Handle based on history strategy
@@ -186,15 +188,29 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
         else {
           // Regular user message
+          $content = [
+            [
+              'type' => 'input_text',
+              'text' => $query->get_message()
+            ]
+          ];
+
+          // Check for attached file/image
+          if ( $query->attachedFile ) {
+            $imageUrl = $query->image_remote_upload === 'url'
+              ? $query->attachedFile->get_url()
+              : $query->attachedFile->get_inline_base64_url();
+
+            $content[] = [
+              'type' => 'input_image',
+              'image_url' => $imageUrl
+            ];
+          }
+
           $body['input'] = [
             [
               'role' => 'user',
-              'content' => [
-                [
-                  'type' => 'input_text',
-                  'text' => $query->get_message()
-                ]
-              ]
+              'content' => $content
             ]
           ];
 

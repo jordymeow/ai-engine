@@ -356,6 +356,12 @@ class Meow_MWAI_Modules_Files {
     else {
       $extension = pathinfo( $filename, PATHINFO_EXTENSION );
     }
+    
+    // Validate file type using WordPress built-in function
+    $validate = wp_check_filetype( $filename );
+    if ( $validate['type'] == false ) {
+      throw new Exception( 'File type is not allowed.' );
+    }
     $newFilename = $refId . '.' . $extension;
     $unique_filename = wp_unique_filename( wp_upload_dir()['path'], $newFilename );
     $destination = wp_upload_dir()['path'] . '/' . $unique_filename;

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.4
+Stable tag: 2.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,12 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.5 (2025/07/22) =
+* Update: Changed the AI Form Container block to output HTML directly instead of nesting shortcodes. That enhances AI Forms compatibility.
+* Fix: Resolved a security issue related to SSRF by validating URL schemes in audio transcription and sanitizing REST API parameters to prevent API key misuse.  
+* Fix: Corrected a critical security vulnerability that allowed unauthorized file uploads by adding strict file type validation to prevent PHP execution.  
+* Implemented IP address hashing when Privacy First mode is active to enhance user privacy without disrupting discussions.
 
 = 2.9.4 (2025/07/19) =
 * Update: Improved information messages related to vector stores.  

@@ -486,25 +486,15 @@ class Meow_MWAI_Modules_Chatbot {
             $newParams[$key] = $value;
           }
         }
+        
+        // Map 'environment' field to 'envId' for compatibility
+        if ( isset( $newParams['environment'] ) && !isset( $newParams['envId'] ) ) {
+          $newParams['envId'] = $newParams['environment'];
+        }
+        
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 
-        // For assistant mode, ensure we have the correct envId
-        if ( $mode === 'assistant' && !empty( $params['assistantId'] ) && empty( $params['envId'] ) ) {
-          // Find the environment that contains this assistant
-          $envs = $this->core->get_option( 'ai_envs' );
-          foreach ( $envs as $env ) {
-            if ( isset( $env['assistants'] ) ) {
-              foreach ( $env['assistants'] as $assistant ) {
-                if ( $assistant['id'] === $params['assistantId'] ) {
-                  $params['envId'] = $env['id'];
-                  Meow_MWAI_Logging::info( "Assistant mode: Setting envId to '{$env['id']}' for assistant '{$params['assistantId']}'" );
-                  break 2;
-                }
-              }
-            }
-          }
-        }
 
         // Debug log for embeddings
         if ( !empty( $params['embeddingsEnvId'] ) ) {
@@ -531,25 +521,15 @@ class Meow_MWAI_Modules_Chatbot {
             $newParams[$key] = $value;
           }
         }
+        
+        // Map 'environment' field to 'envId' for compatibility
+        if ( isset( $newParams['environment'] ) && !isset( $newParams['envId'] ) ) {
+          $newParams['envId'] = $newParams['environment'];
+        }
+        
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
 
-        // For assistant mode, ensure we have the correct envId
-        if ( $mode === 'assistant' && !empty( $params['assistantId'] ) && empty( $params['envId'] ) ) {
-          // Find the environment that contains this assistant
-          $envs = $this->core->get_option( 'ai_envs' );
-          foreach ( $envs as $env ) {
-            if ( isset( $env['assistants'] ) ) {
-              foreach ( $env['assistants'] as $assistant ) {
-                if ( $assistant['id'] === $params['assistantId'] ) {
-                  $params['envId'] = $env['id'];
-                  Meow_MWAI_Logging::info( "Assistant mode: Setting envId to '{$env['id']}' for assistant '{$params['assistantId']}'" );
-                  break 2;
-                }
-              }
-            }
-          }
-        }
 
         // Debug log for embeddings
         if ( !empty( $params['embeddingsEnvId'] ) ) {

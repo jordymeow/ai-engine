@@ -53,6 +53,12 @@ class Meow_MWAI_Query_DroppedFile {
       return $this->rawData;
     }
     if ( $this->type === 'url' ) {
+      // Validate URL scheme to prevent SSRF attacks
+      $parts = wp_parse_url( $this->data );
+      if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+        throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
+      }
+      
       $this->rawData = file_get_contents( $this->data );
       return $this->rawData;
     }

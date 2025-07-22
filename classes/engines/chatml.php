@@ -825,6 +825,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
   private function get_audio( $url ) {
     require_once( ABSPATH . 'wp-admin/includes/media.php' );
+    
+    // Validate URL scheme to prevent SSRF attacks
+    $parts = wp_parse_url( $url );
+    if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+      throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
+    }
+    
     $tmpFile = tempnam( sys_get_temp_dir(), 'audio_' );
     file_put_contents( $tmpFile, file_get_contents( $url ) );
     $length = null;

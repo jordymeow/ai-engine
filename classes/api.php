@@ -17,6 +17,34 @@ class Meow_MWAI_API {
   }
 
   #region REST API
+  /**
+   * Sanitize REST API options to remove sensitive parameters
+   * that should not be controlled by untrusted users
+   */
+  private function sanitize_rest_options( $options ) {
+    if ( !is_array( $options ) ) {
+      return [];
+    }
+    
+    // List of sensitive parameters that should not be set via REST API
+    $blocked_params = [
+      'apiKey',        // Prevent API key override
+      'apikey',        // Case variations
+      'api_key',
+      'organizationId',
+      'organization_id',
+      'envId',         // Prevent environment switching
+      'env_id',
+    ];
+    
+    // Remove blocked parameters
+    foreach ( $blocked_params as $param ) {
+      unset( $options[$param] );
+    }
+    
+    return $options;
+  }
+
   public function rest_api_init() {
     $public_api = $this->core->get_option( 'public_api' );
     if ( !$public_api ) {
@@ -386,6 +414,7 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {
         $options['scope'] = $scope;
@@ -416,6 +445,7 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {
         $options['scope'] = $scope;
@@ -528,6 +558,7 @@ class Meow_MWAI_API {
       }
       
       $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {
         $options['scope'] = $scope;
@@ -561,6 +592,7 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {
         $options['scope'] = $scope;
@@ -634,6 +666,7 @@ class Meow_MWAI_API {
       }
       
       $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       
       if ( !empty( $scope ) ) {
@@ -789,6 +822,28 @@ class Meow_MWAI_API {
         $discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
         if ( !empty( $discussion ) ) {
           $params['messages'] = $discussion['messages'];
+          
+          // CRITICAL: Also pass the discussion metadata for Responses API support
+          // The chatbot module needs the previousResponseId from discussion's extra field
+          if ( !empty( $discussion['extra'] ) ) {
+            $extra = json_decode( $discussion['extra'], true );
+            
+            // Check for both possible field names
+            $responseId = $extra['previousResponseId'] ?? $extra['responseId'] ?? null;
+            $responseDate = $extra['previousResponseDate'] ?? $extra['responseDate'] ?? null;
+            
+            if ( !empty( $responseId ) ) {
+              // Check if the response ID is still valid (not older than 30 days)
+              $responseDateTimestamp = !empty( $responseDate ) ? strtotime( $responseDate ) : 0;
+              $thirtyDaysAgo = time() - ( 30 * 24 * 60 * 60 );
+              
+              if ( $responseDateTimestamp > $thirtyDaysAgo ) {
+                // Pass the previousResponseId directly in params
+                // This will be picked up by inject_params in the query
+                $params['previousResponseId'] = $responseId;
+              }
+            }
+          }
         }
       }
       else {
@@ -1003,6 +1058,12 @@ class Meow_MWAI_API {
         // Handle base64 upload
         if ( empty( $filename ) ) {
           $filename = 'upload-' . time() . '.dat';
+        }
+        
+        // Validate filename extension for base64 uploads
+        $validate = wp_check_filetype( $filename );
+        if ( $validate['type'] == false ) {
+          throw new Exception( 'File type is not allowed.' );
         }
         
         // For base64 uploads, we need to decode and create a temp file first
