@@ -1263,10 +1263,10 @@ class Meow_MWAI_Rest {
       $params = $request->get_json_params();
       $url = !empty( $params['url'] ) ? $params['url'] : null;
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
+      $path = !empty( $params['path'] ) ? $params['path'] : null;
       
       // If mediaId is provided, get the file path
-      $path = null;
-      if ( $mediaId > 0 ) {
+      if ( !$path && $mediaId > 0 ) {
         $path = get_attached_file( $mediaId );
         if ( empty( $path ) ) {
           throw new Exception( 'The media file cannot be found.' );

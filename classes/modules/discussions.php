@@ -270,6 +270,13 @@ class Meow_MWAI_Modules_Discussions {
     }
     // END NEW CHECK
 
+    // Set the current user to the first admin to avoid guest limits
+    $admin_users = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
+    if ( ! empty( $admin_users ) ) {
+      $admin_user = $admin_users[0];
+      wp_set_current_user( $admin_user->ID );
+    }
+
     $now = date( 'Y-m-d H:i:s' );
     $ten_days_ago = date( 'Y-m-d H:i:s', strtotime( '-10 days' ) );
 
@@ -513,8 +520,11 @@ class Meow_MWAI_Modules_Discussions {
     $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->get_message();
 
     // If there is a file for "Vision", add it to the message
-    if ( isset( $query->filePurpose ) && $query->filePurpose === 'vision' && isset( $query->file ) ) {
-      $newMessage = "![Uploaded Image]({$query->file})\n" . $newMessage;
+    if ( isset( $query->attachedFile ) && $query->attachedFile !== null ) {
+      $attachedFile = $query->attachedFile;
+      if ( $attachedFile->get_purpose() === 'vision' && $attachedFile->get_type() === 'url' ) {
+        $newMessage = "![Uploaded Image]({$attachedFile->get_url()})\n" . $newMessage;
+      }
     }
 
     $this->check_db();

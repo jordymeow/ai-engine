@@ -15,7 +15,8 @@ module.exports = function (env, options) {
     protectWebpackAssets: false,
     cleanOnceBeforeBuildPatterns: ["!app/"],
     cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
-      '!forms.js', '!pdfjs.js', '*.LICENSE.txt', '*.map'],
+      '!forms.js', '!pdfjs.js', '*.map'],
+    dry: false,
     dangerouslyAllowCleanPatternsOutsideProject: true
   });
 
@@ -35,30 +36,33 @@ module.exports = function (env, options) {
       }
     ]
   }));
-  plugins.push({
-    apply: (compiler) => {
-      compiler.hooks.afterEmit.tapAsync('CleanupLicenseFiles', (compilation, callback) => {
-        // Remove all LICENSE.txt files
-        const licenseFiles = [
-          path.join(__dirname, 'app', 'vendor.js.LICENSE.txt'),
-          path.join(__dirname, 'app', 'index.js.LICENSE.txt'),
-          path.join(__dirname, 'app', 'chatbot.js.LICENSE.txt'),
-          path.join(__dirname, 'app', 'pdfjs.js.LICENSE.txt'),
-          path.join(__dirname, 'app', 'pdf.worker.min.js.LICENSE.txt'),
-          path.join(__dirname, 'premium', 'forms.js.LICENSE.txt')
-        ];
-        
-        licenseFiles.forEach(filePath => {
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log('Removed LICENSE file:', filePath);
-          }
+  // Only add LICENSE cleanup in production mode
+  if (isProduction) {
+    plugins.push({
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tapAsync('CleanupLicenseFiles', (compilation, callback) => {
+          // Remove all LICENSE.txt files
+          const licenseFiles = [
+            path.join(__dirname, 'app', 'vendor.js.LICENSE.txt'),
+            path.join(__dirname, 'app', 'index.js.LICENSE.txt'),
+            path.join(__dirname, 'app', 'chatbot.js.LICENSE.txt'),
+            path.join(__dirname, 'app', 'pdfjs.js.LICENSE.txt'),
+            path.join(__dirname, 'app', 'pdf.worker.min.js.LICENSE.txt'),
+            path.join(__dirname, 'premium', 'forms.js.LICENSE.txt')
+          ];
+          
+          licenseFiles.forEach(filePath => {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log('Removed LICENSE file:', filePath);
+            }
+          });
+          
+          callback();
         });
-        
-        callback();
-      });
-    }
-  });
+      }
+    });
+  }
   // eslint-disable-next-line no-console
   console.log("Production: " + isProduction);
 

@@ -261,11 +261,20 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
+      // Determine filename
+      $filename = 'audio.mp3'; // default
+      if ( !empty( $query->url ) ) {
+        $filename = basename( $query->url );
+      }
+      else if ( $query->attachedFile && method_exists( $query->attachedFile, 'get_filename' ) ) {
+        $filename = $query->attachedFile->get_filename();
+      }
+      
       $body = [
         'prompt' => $query->message,
         'model' => $query->model,
         'response_format' => 'text',
-        'file' => basename( $query->url ),
+        'file' => $filename,
         'data' => $extra
       ];
       return $body;
@@ -845,19 +854,46 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   }
 
   public function run_transcribe_query( $query ) {
-    // TODO: This function currently only supports the URL method.
-    // But as with Vision, we should support the file upload method too.
-    $attachedFile = $query->attachedFile ?? null;
-    $audioUrl = $query->url ?? null;
-    if ( $attachedFile ) {
-      $audioUrl = $attachedFile->get_url();
-      $query->set_url( $audioUrl );
+    $audioData = null;
+    
+    // Priority 1: Direct audio data
+    if ( !empty( $query->audioData ) ) {
+      $audioData = [
+        'data' => $query->audioData,
+        'length' => strlen( $query->audioData ) / 1024 // KB
+      ];
     }
-    if ( !filter_var( $audioUrl, FILTER_VALIDATE_URL ) ) {
-      throw new Exception( 'Invalid URL for transcription.' );
+    // Priority 2: File path
+    else if ( !empty( $query->path ) ) {
+      if ( !file_exists( $query->path ) ) {
+        throw new Exception( 'Audio file not found: ' . $query->path );
+      }
+      if ( !is_readable( $query->path ) ) {
+        throw new Exception( 'Audio file is not readable: ' . $query->path );
+      }
+      $audioData = [
+        'data' => file_get_contents( $query->path ),
+        'length' => filesize( $query->path ) / 1024 // KB
+      ];
+    }
+    // Priority 3: Attached file object
+    else if ( $query->attachedFile ) {
+      $audioData = [
+        'data' => $query->attachedFile->get_data(),
+        'length' => strlen( $query->attachedFile->get_data() ) / 1024 // KB
+      ];
+    }
+    // Priority 4: URL (backward compatibility)
+    else if ( !empty( $query->url ) ) {
+      if ( !filter_var( $query->url, FILTER_VALIDATE_URL ) ) {
+        throw new Exception( 'Invalid URL for transcription.' );
+      }
+      $audioData = $this->get_audio( $query->url );
+    }
+    else {
+      throw new Exception( 'No audio source provided for transcription. Please provide either audioData, path, attachedFile, or url.' );
     }
 
-    $audioData = $this->get_audio( $audioUrl );
     $body = $this->build_body( $query, null, $audioData['data'] );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );

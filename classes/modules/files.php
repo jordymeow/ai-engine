@@ -297,7 +297,7 @@ class Meow_MWAI_Modules_Files {
     $success = $this->wpdb->insert( $this->table_files, [
       'refId' => $fileInfo['refId'],
       'envId' => empty( $fileInfo['envId'] ) ? null : $fileInfo['envId'],
-      'userId' => empty( $fileInfo['userId'] ) ? $this->core->get_user_id() : $fileInfo['userId'],
+      'userId' => empty( $fileInfo['userId'] ) ? $this->get_effective_user_id() : $fileInfo['userId'],
       'purpose' => empty( $fileInfo['purpose'] ) ? null : $fileInfo['purpose'],
       'type' => empty( $fileInfo['type'] ) ? null : $fileInfo['type'],
       'status' => empty( $fileInfo['status'] ) ? null : $fileInfo['status'],
@@ -650,6 +650,25 @@ class Meow_MWAI_Modules_Files {
     $metadata = empty( $params['metadata'] ) ? null : json_decode( $params['metadata'], true );
     $limit = empty( $params['limit'] ) ? 10 : intval( $params['limit'] );
     $offset = empty( $params['page'] ) ? 0 : ( intval( $params['page'] ) - 1 ) * $limit;
+    
+    // Security fix: For unauthenticated users or users without explicit userId,
+    // restrict to their own files based on session
+    $currentUserId = $this->core->get_user_id();
+    if ( !$currentUserId || $currentUserId === 0 ) {
+      // For unauthenticated users, get session-based user ID
+      $sessionUserId = $this->core->get_session_user_id();
+      if ( !$sessionUserId ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'Unauthorized access' ], 403 );
+      }
+      $userId = $sessionUserId;
+    } else if ( empty( $userId ) ) {
+      // For authenticated users without specified userId, use their own ID
+      $userId = $currentUserId;
+    } else if ( $userId !== $currentUserId && !$this->core->can_access_settings() ) {
+      // Non-admin users can only access their own files
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Unauthorized access to other user files' ], 403 );
+    }
+    
     $files = $this->list( $userId, $purpose, $metadata, $envId, $limit, $offset );
     return new WP_REST_Response( [ 'success' => true, 'data' => $files ], 200 );
   }
@@ -657,8 +676,28 @@ class Meow_MWAI_Modules_Files {
   public function rest_delete( $request ) {
     $params = $request->get_json_params();
     $fileIds = empty( $params['files'] ) ? [] : $params['files'];
-    $this->delete_files( $fileIds );
-    return new WP_REST_Response( [ 'success' => true ], 200 );
+    
+    // Security fix: Verify user can delete these files
+    $currentUserId = $this->core->get_user_id();
+    $sessionUserId = null;
+    
+    if ( !$currentUserId || $currentUserId === 0 ) {
+      // For unauthenticated users, get session-based user ID
+      $sessionUserId = $this->core->get_session_user_id();
+      if ( !$sessionUserId ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'Unauthorized access' ], 403 );
+      }
+    }
+    
+    // Verify ownership of files before deletion
+    $authorizedFileIds = $this->filter_authorized_files( $fileIds, $currentUserId ?: $sessionUserId );
+    
+    if ( empty( $authorizedFileIds ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'No authorized files to delete' ], 403 );
+    }
+    
+    $this->delete_files( $authorizedFileIds );
+    return new WP_REST_Response( [ 'success' => true, 'deleted' => count( $authorizedFileIds ) ], 200 );
   }
 
   public function delete_files( $fileIds ) {
@@ -680,6 +719,51 @@ class Meow_MWAI_Modules_Files {
         }
       }
     }
+  }
+
+  /**
+   * Get effective user ID for file ownership
+   * Returns actual user ID for logged-in users, or session-based ID for guests
+   * 
+   * @return int|string User ID or session-based ID
+   */
+  private function get_effective_user_id() {
+    $userId = $this->core->get_user_id();
+    if ( !$userId || $userId === 0 ) {
+      // For guest users, use session-based ID
+      return $this->core->get_session_user_id();
+    }
+    return $userId;
+  }
+
+  /**
+   * Filter file IDs to only include those the user is authorized to access
+   * 
+   * @param array $fileIds Array of file IDs to filter
+   * @param int|string $userId User ID (can be session-based string for guests)
+   * @return array Array of authorized file IDs
+   */
+  private function filter_authorized_files( $fileIds, $userId ) {
+    if ( empty( $fileIds ) || empty( $userId ) ) {
+      return [];
+    }
+    
+    // Admins can access all files
+    if ( $this->core->can_access_settings() ) {
+      return $fileIds;
+    }
+    
+    // Build query to check file ownership
+    $placeholders = array_fill( 0, count( $fileIds ), '%s' );
+    $query = $this->wpdb->prepare(
+      "SELECT id FROM $this->table_files 
+       WHERE id IN (" . implode( ',', $placeholders ) . ") 
+       AND userId = %s",
+      array_merge( $fileIds, [ $userId ] )
+    );
+    
+    $authorizedIds = $this->wpdb->get_col( $query );
+    return array_map( 'intval', $authorizedIds );
   }
 
   public function rest_upload() {
@@ -721,7 +805,7 @@ class Meow_MWAI_Modules_Files {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 refId VARCHAR(64) NOT NULL,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   envId VARCHAR(128) NULL,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    userId BIGINT(20) UNSIGNED NULL,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    userId VARCHAR(64) NULL,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       type VARCHAR(32) NULL,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         status VARCHAR(32) NULL,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           purpose VARCHAR(32) NULL,
@@ -767,6 +851,16 @@ class Meow_MWAI_Modules_Files {
 
     // Update db_check for both tables
     $this->db_check = $table_files_exists && $table_filemeta_exists;
+
+    // Check if userId column needs to be updated to VARCHAR for session support
+    // LATER: REMOVE THIS AFTER JANUARY 2026
+    if ( $this->db_check ) {
+      $column_info = $this->wpdb->get_row( "SHOW COLUMNS FROM $this->table_files WHERE Field = 'userId'" );
+      if ( $column_info && strpos( $column_info->Type, 'BIGINT' ) !== false ) {
+        // Update userId column from BIGINT to VARCHAR to support session-based IDs
+        $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN userId VARCHAR(64) NULL" );
+      }
+    }
 
     // LATER: REMOVE THIS AFTER MARCH 2024
     // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'userId'" );

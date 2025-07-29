@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.5
+Stable tag: 2.9.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,10 @@ Visit the [AI Engine Support Forum](https://wordpress.org/support/plugin/ai-engi
 
 Yes! Contributions are welcome on the [GitHub repository](https://github.com/jordymeow/ai-engine).
 
+= How can I report security bugs? =
+
+You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd)
+
 = Why am I getting “Error 429: You exceeded your current quota”? =
 
 This means your OpenAI API key has reached its limit or has no billing enabled. Check your [OpenAI billing settings](https://platform.openai.com/account/billing).
@@ -127,6 +131,18 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.6 (2025/07/29) =
+- Fix: Addressed environment validation issues in Realtime chatbot to ensure reliable operation.  
+- Fix: Solved GDPR consent issues in popup modal chatbots sharing the same botId.
+- Add: clearCookies() in MwaiAPI.
+- Update: Enhanced IP address display by truncating hashed IPs for privacy. 
+- Fix: Updated audio transcription to support local file paths and refined the test suite for better reliability.  
+- Fix: Secured file listing and deletion endpoints by adding user ownership checks and session-based tracking for guest users.  
+- Fix: Prevented cron_discussions from running as a guest and hitting usage limits.
+- Fix: Ensured image uploads are properly saved to discussions. 
+- Fix: Made Event Logs operate independently of the Client Debug.
+- Fix: Resolved query debug logs to only display when the Queries Debug setting is enabled.
 
 = 2.9.5 (2025/07/22) =
 * Update: Changed the AI Form Container block to output HTML directly instead of nesting shortcodes. That enhances AI Forms compatibility.

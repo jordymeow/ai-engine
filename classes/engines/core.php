@@ -473,8 +473,8 @@ class Meow_MWAI_Engines_Core {
   }
 
   protected function init_debug_mode( $query ) {
-    // Check if server debug mode is enabled in settings
-    $this->currentDebugMode = $this->core->get_option( 'module_devtools' ) && $this->core->get_option( 'server_debug_mode' );
+    // Check if server debug mode or event logs are enabled in settings
+    $this->currentDebugMode = ( $this->core->get_option( 'module_devtools' ) && $this->core->get_option( 'server_debug_mode' ) ) || $this->core->get_option( 'event_logs' );
     $this->currentQuery = $query;
   }
 

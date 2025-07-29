@@ -156,6 +156,22 @@ class Meow_MWAI_Services_Session {
     return $userId;
   }
 
+  /**
+   * Get session-based user ID for guest users
+   * This creates a unique identifier based on session ID for tracking guest uploads
+   * 
+   * @return string|null Session-based user ID or null if no session
+   */
+  public function get_session_user_id() {
+    $sessionId = $this->get_session_id();
+    if ( !$sessionId || $sessionId === 'N/A' ) {
+      return null;
+    }
+    // Create a consistent user ID based on session
+    // Prefix with 'session_' to distinguish from real user IDs
+    return 'session_' . $sessionId;
+  }
+
   public function get_admin_user() {
     $users = get_users( [ 'role' => 'administrator' ] );
     if ( !empty( $users ) ) {

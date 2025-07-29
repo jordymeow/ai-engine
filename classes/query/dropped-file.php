@@ -7,6 +7,7 @@ class Meow_MWAI_Query_DroppedFile {
   private $purpose; // Can be 'assistant', 'vision' or 'files' => this needs to be checked
   private $mimeType; // 'image/jpeg' or any other mime type
   private $fileId; // The ID of the file in the database
+  public $originalPath; // The original file path (for files loaded from disk)
 
   public static function from_url( $url, $purpose, $mimeType = null, $fileId = null ) {
     if ( empty( $mimeType ) ) {
@@ -24,7 +25,10 @@ class Meow_MWAI_Query_DroppedFile {
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $path );
     }
-    return new Meow_MWAI_Query_DroppedFile( $data, 'data', $purpose, $mimeType );
+    $droppedFile = new Meow_MWAI_Query_DroppedFile( $data, 'data', $purpose, $mimeType );
+    // Store the original path for filename extraction
+    $droppedFile->originalPath = $path;
+    return $droppedFile;
   }
 
   public function __construct( $data, $type, $purpose, $mimeType = null, $fileId = null ) {
@@ -112,6 +116,10 @@ class Meow_MWAI_Query_DroppedFile {
   // Return a filename for this file. If the file is an URL, use the basename of
   // its path. If the file is raw data, generate a generic name based on the mime type.
   public function get_filename() {
+    // If we have an original path (from from_path), use its basename
+    if ( !empty( $this->originalPath ) ) {
+      return basename( $this->originalPath );
+    }
     if ( $this->type === 'url' ) {
       $path = parse_url( $this->data, PHP_URL_PATH );
       return basename( $path );

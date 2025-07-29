@@ -515,6 +515,10 @@ class Meow_MWAI_Core {
     return $this->sessionService->get_user_id( $data );
   }
 
+  public function get_session_user_id() {
+    return $this->sessionService->get_session_user_id();
+  }
+
   public function get_admin_user() {
     return $this->sessionService->get_admin_user();
   }
