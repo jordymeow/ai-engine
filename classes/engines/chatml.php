@@ -90,6 +90,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     return false;
   }
 
+  private function is_realtime_model( $model ) {
+    $modelDef = $this->retrieve_model_info( $model );
+    return !empty( $modelDef['family'] ) && $modelDef['family'] === 'realtime';
+  }
+
   protected function build_messages( $query ) {
     $messages = [];
 
@@ -691,7 +696,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         $content = $content['value'];
       }
       else {
-        throw new Exception( 'AI Engine: Could not read this: ' . json_encode( $content ) );
+        throw new Exception( 'Could not read this: ' . json_encode( $content ) );
       }
     }
 
@@ -705,6 +710,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   }
 
   public function run( $query, $streamCallback = null, $maxDepth = 5 ) {
+    // Check if this is a realtime model being used with chat completions
+    if ( $this->is_realtime_model( $query->model ) ) {
+      throw new Exception( 
+        'Realtime models (like ' . $query->model . ') are designed for voice/audio interactions and cannot be used with this API.'
+      );
+    }
+    
     if ( $streamCallback ) {
       // Disable streaming only for "o1" (as December 2024, it works for preview and mini)
       if ( $query->model === 'o1' ) {
@@ -1452,7 +1464,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     $fileInfo = $this->execute( 'GET', '/files/' . $fileId, null, null, false );
     $fileInfo = json_decode( (string) $fileInfo, true );
     if ( empty( $fileInfo ) ) {
-      throw new Exception( 'AI Engine: File (' . ( $fileId ?? 'N/A' ) . ') not found.' );
+      throw new Exception( 'File (' . ( $fileId ?? 'N/A' ) . ') not found.' );
     }
     $filename = $fileInfo['filename'];
     $extension = pathinfo( $filename, PATHINFO_EXTENSION );

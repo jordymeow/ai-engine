@@ -10,7 +10,7 @@
     "build": "webpack --mode production",
     "webpack-v": "webpack --version",
     "analysis": "webpack --mode production --env analysis='true'",
-    "dzip": "zip -r ~/Desktop/ai-engine.zip . -x node_modules -x .git -x .yarn -x logs",
+    "dzip": "zip -r ~/Desktop/ai-engine.zip . -x node_modules/\\* -x .git/\\* -x .yarn/\\* -x logs/\\*",
     "zip": "../zip.sh",
     "7zip": "7z a -tzip ../zip/ai-engine-pro.zip . -x!node_modules -x!.git -x!.yarn -x!logs",
     "sass": "sass themes/sass:themes --no-source-map"

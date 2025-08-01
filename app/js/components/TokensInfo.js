@@ -1,7 +1,8 @@
-// Previous: 2.1.0
-// Current: 2.8.5
+// Previous: 2.8.5
+// Current: 2.9.7
 
 const { useMemo } = wp.element;
+import i18n from '@root/i18n';
 
 const TokensInfo = ({ model, maxTokens, onRecommendedClick, ...rest }) => {
   const maxContextualTokens = model?.maxContextualTokens;
@@ -39,14 +40,14 @@ const TokensInfo = ({ model, maxTokens, onRecommendedClick, ...rest }) => {
     <span {...rest}>
       {(!!model?.maxContextualTokens || !!model?.maxCompletionTokens) && (
         <>
-          {!!model?.maxContextualTokens && <>Contextual: {model?.maxContextualTokens}</>}
+          {!!model?.maxContextualTokens && <>{i18n.COMMON.CONTEXTUAL}: {model?.maxContextualTokens}</>}
           {!!model?.maxContextualTokens && !!model?.maxCompletionTokens && <> - </>}
-          {!!model?.maxCompletionTokens && <>Completion: {model?.maxCompletionTokens}</>}
+          {!!model?.maxCompletionTokens && <>{i18n.COMMON.COMPLETION}: {model?.maxCompletionTokens}</>}
           <br />
         </>
       )}
-      {!model?.maxCompletionTokens && !!model?.maxTokens && <>Total Max Tokens: {model?.maxTokens}<br /></>}
-      {!!recommendedMaxTokens && recommendedMaxTokens !== maxTokens && <>Recommended: <b onClick={isClickEnabled ? () => onRecommendedClick(recommendedMaxTokens) : null}
+      {!model?.maxCompletionTokens && !!model?.maxTokens && <>{i18n.COMMON.TOTAL_MAX_TOKENS}: {model?.maxTokens}<br /></>}
+      {!!recommendedMaxTokens && recommendedMaxTokens !== maxTokens && <>{i18n.COMMON.RECOMMENDED}: <b onClick={isClickEnabled ? () => onRecommendedClick(recommendedMaxTokens) : null}
         style={{ 
           color: color,
           cursor: isClickEnabled ? 'pointer' : 'inherit',

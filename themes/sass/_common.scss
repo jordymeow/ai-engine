@@ -334,7 +334,156 @@
   }
 }
 
+@mixin files-preview-styles {
+  .mwai-files {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--mwai-spacing);
+    background: var(--mwai-backgroundSecondaryColor);
+    border-top: 1px solid var(--mwai-backgroundPrimaryColor);
+    max-height: 150px;
+    overflow-y: auto;
+    
+    // Custom scrollbar for webkit browsers
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--mwai-backgroundPrimaryColor);
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--mwai-backgroundHeaderColor);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--mwai-primaryColor);
+      }
+    }
+
+    .mwai-file-preview {
+      position: relative;
+
+      .mwai-file-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .mwai-file-thumbnail {
+        width: 32px;
+        height: 32px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid var(--mwai-backgroundHeaderColor);
+        display: block;
+        flex-shrink: 0;
+      }
+
+      .mwai-file-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--mwai-backgroundSecondaryColor);
+        border-radius: 4px;
+        color: var(--mwai-fontColor);
+        opacity: 0.6;
+        flex-shrink: 0;
+        
+        svg {
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .mwai-file-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .mwai-file-name {
+        font-size: calc(var(--mwai-fontSize) * 0.85);
+        color: var(--mwai-fontColor);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
+      }
+
+      .mwai-file-size {
+        font-size: calc(var(--mwai-fontSize) * 0.7);
+        color: var(--mwai-fontColor);
+        opacity: 0.5;
+        line-height: 1;
+      }
+
+      .mwai-file-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--mwai-backgroundHeaderColor);
+        border-radius: 0 0 calc(var(--mwai-borderRadius) / 2) calc(var(--mwai-borderRadius) / 2);
+        overflow: hidden;
+
+        .mwai-file-progress-bar {
+          height: 100%;
+          background: var(--mwai-primaryColor);
+          transition: width 0.3s ease;
+        }
+      }
+
+      .mwai-file-remove {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        cursor: pointer;
+        color: var(--mwai-fontColor);
+        padding: 4px;
+        border: none;
+        line-height: 0;
+        min-width: inherit;
+        margin-left: auto;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+        
+        &:hover {
+          opacity: 1;
+        }
+        
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+    }
+    
+    // Empty state when no files
+    &:empty {
+      display: none;
+    }
+  }
+}
+
 @mixin common-styles {
+
+	// Include files preview styles
+	@include files-preview-styles;
+	
+	// File upload icon adjustment
+	.mwai-file-upload-icon {
+		margin-bottom: -3px;
+	}
 
 	// Transitions
 
@@ -690,6 +839,16 @@
 	
 	// Show reply actions on hover of entire reply container
 	.mwai-reply:hover .mwai-reply-actions {
+		opacity: 1 !important;
+	}
+	
+	// Show reply actions on hover for AI Forms output fields
+	.mwai-form-output-container:hover .mwai-reply-actions {
+		opacity: 1 !important;
+	}
+	
+	// Override mwai-hidden class on hover for forms
+	.mwai-form-output-container:hover .mwai-reply-actions.mwai-hidden {
 		opacity: 1 !important;
 	}
 

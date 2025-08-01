@@ -818,7 +818,7 @@ class Meow_MWAI_API {
   */
   public function simpleChatbotQuery( $botId, $message, $params = [], $onlyReply = true ) {
     if ( !isset( $params['messages'] ) && isset( $params['chatId'] ) ) {
-      if ( $this->core->get_option( 'chatbot_discussions' ) ) {
+      if ( $this->core->get_option( 'chatbot_discussions' ) && $this->discussions_module ) {
         $discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
         if ( !empty( $discussion ) ) {
           $params['messages'] = $discussion['messages'];

@@ -1,5 +1,5 @@
 // out:  ../timeless.css
-@import '_common.scss';
+@use 'common';
 
 // Chatbot
 .mwai-timeless-theme {
@@ -356,7 +356,7 @@
 			}
 
 			.mwai-microphone {
-				@include microphone;
+				@include common.microphone;
 			}
 		}
 
@@ -423,7 +423,7 @@
 				transform: scale($scale);
 				transform-origin: 0 0;
 
-				@include file-upload-icon-sprites;
+				@include common.file-upload-icon-sprites;
 			}
 		}
 
@@ -635,11 +635,11 @@
 
 // Common
 .mwai-timeless-theme {
-	@include common-styles;
-	@include code-light;
-	@include reply-actions;
-	@include realtime;
-	@include discussions-styles;
+	@include common.common-styles;
+	@include common.code-light;
+	@include common.reply-actions;
+	@include common.realtime;
+	@include common.discussions-styles;
 }
 
 // Common Overrides

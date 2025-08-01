@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.6
+Stable tag: 2.9.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,12 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.7 (2025/08/01) =
+* Add: Multi-Upload feature has been added to chatbots for easier file management (currently only for developers, will be released to all users soon).
+* Add: Support for Chroma (another Vector DB) has been introduced for both Cloud and self-hosted instances.  
+* Fix: Hotfix for discussion REST routes being accessible when the discussions module was disabled.
+* Fix: Various other fixes and improvements throughout AI Engine.
 
 = 2.9.6 (2025/07/29) =
 - Fix: Addressed environment validation issues in Realtime chatbot to ensure reliable operation.  

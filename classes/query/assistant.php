@@ -10,6 +10,10 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
   public ?string $assistantId = null;
   public ?string $threadId = null;
   public ?string $storeId = null; // Vector Store ID (https://platform.openai.com/docs/api-reference/vector-stores)
+  
+  // Dynamic properties that are set by services
+  public ?object $env = null;
+  public ?int $_maxDepthConfigured = null;
 
   #region Constructors, Serialization
 

@@ -187,14 +187,27 @@ class Meow_MWAI_Modules_Discussions {
     $params = [ 'scope' => 'discussions' ];
     
     // Use simpleFastTextQuery which handles Fast Model configuration
-    $answer = $mwai->simpleFastTextQuery( $prompt, $params );
-
-    // Clean up the answer
-    $title = trim( $answer );
-    $title = rtrim( $title, '.!?:;,—–-–' ); // Remove trailing punctuation
-    $title = substr( $title, 0, 64 ); // Ensure less than 64 characters
-    if ( empty( $title ) ) {
-      $title = 'Untitled';
+    try {
+      $answer = $mwai->simpleFastTextQuery( $prompt, $params );
+      
+      // Clean up the answer
+      $title = trim( $answer );
+      $title = rtrim( $title, '.!?:;,—–-–' ); // Remove trailing punctuation
+      $title = substr( $title, 0, 64 ); // Ensure less than 64 characters
+      if ( empty( $title ) ) {
+        $title = 'Untitled';
+      }
+    } catch ( Exception $e ) {
+      // Handle content filter or other API errors
+      $error_message = $e->getMessage();
+      if ( strpos( $error_message, 'content_filter' ) !== false || 
+           strpos( $error_message, 'ResponsibleAIPolicyViolation' ) !== false ) {
+        error_log( "AI Engine: Content filter blocked title generation for discussion ID {$discussion->id}. Using fallback title." );
+        $title = 'Discussion ' . date( 'Y-m-d H:i' );
+      } else {
+        error_log( "AI Engine: Failed to generate title for discussion ID {$discussion->id}: " . $error_message );
+        $title = 'Untitled';
+      }
     }
 
     // Update the discussion with the title

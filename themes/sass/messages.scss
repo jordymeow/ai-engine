@@ -1,5 +1,5 @@
 // out:  ../messages.css
-@import '_common.scss';
+@use 'common';
 
 // Chatbot
 .mwai-messages-theme {
@@ -366,7 +366,7 @@
 			}
 
 			.mwai-microphone {
-				@include microphone;
+				@include common.microphone;
 				margin-right: 5px;
 			}
 
@@ -380,7 +380,7 @@
 				margin-top: calc(var(--mwai-spacing) / 2);
 				margin-left: 5px;
 				z-index: 100;
-				@include file-upload-icon-sprites;
+				@include common.file-upload-icon-sprites;
 			}
 		}
 
@@ -460,11 +460,11 @@
 
 // Common
 .mwai-messages-theme {
-	@include common-styles;
-	@include code-light;
-	@include reply-actions;
-	@include realtime;
-	@include discussions-styles;
+	@include common.common-styles;
+	@include common.code-light;
+	@include common.reply-actions;
+	@include common.realtime;
+	@include common.discussions-styles;
 }
 
 // Common Overrides

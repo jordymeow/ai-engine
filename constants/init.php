@@ -26,6 +26,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   'copyButton' => false,
   'headerSubtitle' => 'Discuss with',
   'localMemory' => true,
+  'multiUpload' => false,
   // Chatbot System Parameters
   'botId' => null,
   'instructions' => 'Converse as if you were an AI assistant. Be friendly, creative.',

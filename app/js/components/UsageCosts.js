@@ -1,5 +1,5 @@
-// Previous: 2.3.7
-// Current: 2.8.5
+// Previous: 2.8.5
+// Current: 2.9.7
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -35,12 +35,12 @@ const UsageCosts = (calculatePrice) => {
     }
 
     return (<>
-      <div>Session: <span style={{ float: 'right' }}>${sessionCost.toFixed(4)}</span></div>
-      <div>Last Request: <span style={{ float: 'right' }}>${lastCost.toFixed(4)}</span></div>
+      <div>{i18n.COMMON.SESSION}: <span style={{ float: 'right' }}>${sessionCost.toFixed(4)}</span></div>
+      <div>{i18n.COMMON.LAST_REQUEST}: <span style={{ float: 'right' }}>${lastCost.toFixed(4)}</span></div>
       <NekoSpacer height={15} />
       <p style={{ fontSize: 11, lineHeight: 1.4, opacity: 0.6, margin: 0 }}>{sentence}</p>
       <NekoSpacer height={15} />
-      <NekoButton fullWidth onClick={onReset_usage}>Reset Usage</NekoButton>
+      <NekoButton fullWidth onClick={onReset_usage}>{i18n.COMMON.RESET_USAGE}</NekoButton>
     </>);
   }, [sessionCost, lastCost]);
 

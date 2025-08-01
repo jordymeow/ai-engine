@@ -1,11 +1,11 @@
-// Previous: 2.9.1
-// Current: 2.9.2
+// Previous: 2.9.2
+// Current: 2.9.7
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
 import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
-  NekoQuickLinks, NekoLink, NekoColumn, NekoModal, NekoTextArea } from '@neko-ui';
+  NekoQuickLinks, NekoLink, NekoColumn, NekoModal } from '@neko-ui';
 
 import { nekoFetch } from '@neko-ui';
 import { nekoStringify } from '@neko-ui';
@@ -69,6 +69,7 @@ const Settings = () => {
   const [ error, setError ] = useState(null);
   const [ busyAction, setBusyAction ] = useState(false);
   const [ busyEmbeddingsSearch, setBusyEmbeddingsSearch ] = useState(false);
+
   const module_suggestions = options?.module_suggestions;
   const module_advisor = options?.module_advisor;
   const module_forms = options?.module_forms;
@@ -81,11 +82,11 @@ const Settings = () => {
   const module_embeddings = options?.module_embeddings;
   const module_assistants = options?.module_assistants;
   const module_transcription = options?.module_transcription;
-  const module_addons = options?.module_addons;
   const module_devtools = options?.module_devtools;
   const module_chatbots = options?.module_chatbots;
   const module_search = options?.module_search;
   const module_orchestration = options?.module_orchestration;
+
   const ai_envs = useMemo(() => options?.ai_envs ? options?.ai_envs : [], [options]);
   const mcp_envs = useMemo(() => options?.mcp_envs ? options?.mcp_envs : [], [options]);
   const ai_fast_default_env = options?.ai_fast_default_env;
@@ -96,6 +97,7 @@ const Settings = () => {
   const ai_vision_default_model = options?.ai_vision_default_model;
   const ai_embeddings_default_env = options?.ai_embeddings_default_env;
   const ai_embeddings_default_model = options?.ai_embeddings_default_model;
+
   const ai_images_default_env = options?.ai_images_default_env;
   const ai_images_default_model = options?.ai_images_default_model;
   const ai_audio_default_env = options?.ai_audio_default_env;
@@ -105,6 +107,7 @@ const Settings = () => {
   const ai_streaming = options?.ai_streaming;
   const ai_responses_api = options?.ai_responses_api;
   const privacy_first = options?.privacy_first;
+
   const embeddings_envs = options?.embeddings_envs ? options?.embeddings_envs : [];
   const embeddings_default_env = options?.embeddings_default_env;
   const syntax_highlight = options?.syntax_highlight;
@@ -120,7 +123,6 @@ const Settings = () => {
   const statistics_data = options?.statistics_data;
   const statistics_forms_data = options?.statistics_forms_data;
   const intro_message = options?.intro_message;
-  const addons = options?.module_addons;
   const context_max_length = options?.context_max_length;
   const banned_ips = options?.banned_ips;
   const banned_words = options?.banned_words;
@@ -139,12 +141,15 @@ const Settings = () => {
 
   const ai_envs_with_embeddings = useMemo(() => {
     if (!ai_envs || !options?.ai_engines) return [];
+
     return ai_envs.filter(aiEnv => {
       const engine = options.ai_engines.find(eng => eng.type === aiEnv.type);
       if (!engine || !engine.models) return false;
-      const hasEmbeddingModels = engine.models.some(model => 
+
+      const hasEmbeddingModels = engine.models.some(model =>
         model?.tags?.includes('embedding')
       );
+
       return hasEmbeddingModels;
     });
   }, [ai_envs, options]);
@@ -155,12 +160,15 @@ const Settings = () => {
 
   const embeddingsDimensionOptions = useMemo(() => {
     if (!defaultEmbeddingsModel) return [];
+
     const isMatryoshka = defaultEmbeddingsModel?.tags?.includes('matryoshka');
+
     if (isMatryoshka && defaultEmbeddingsModel?.dimensions?.length > 0) {
       const maxDimension = defaultEmbeddingsModel.dimensions[0];
       const matryoshkaDimensions = [3072, 2048, 1536, 1024, 768, 512];
       return matryoshkaDimensions.filter(dim => dim <= maxDimension);
     }
+
     return defaultEmbeddingsModel?.dimensions || [];
   }, [defaultEmbeddingsModel]);
 
@@ -169,16 +177,17 @@ const Settings = () => {
   const updateOptions = useCallback(async (newOptions) => {
     try {
       if (nekoStringify(newOptions) !== nekoStringify(options)) {
-        setBusyAction(true);
-        const response = await nekoFetch(`${apiUrl}/settings/update`, {
-          method: 'POST',
-          nonce: restNonce,
-          json: {
-            options: newOptions
-          }
-        });
-        setOptions(response.options);
+        return;
       }
+      setBusyAction(true);
+      const response = await nekoFetch(`${apiUrl}/settings/update`, {
+        method: 'POST',
+        nonce: restNonce,
+        json: {
+          options: newOptions
+        }
+      });
+      setOptions(response.options);
     }
     catch (err) {
       console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ?
@@ -199,6 +208,7 @@ const Settings = () => {
     const performChecks = async () => {
       let updatesNeeded = false;
       const newOptions = { ...options };
+
       defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
         let exists = false;
         if (options[envKey]) {
@@ -231,11 +241,13 @@ const Settings = () => {
             if (model) {
               const isMatryoshka = model?.tags?.includes('matryoshka');
               let validDimensions = model?.dimensions || [];
+
               if (isMatryoshka && model?.dimensions?.length > 0) {
                 const maxDimension = model.dimensions[0];
                 const matryoshkaDimensions = [3072, 2048, 1536, 1024, 768, 512];
                 validDimensions = matryoshkaDimensions.filter(dim => dim <= maxDimension);
               }
+
               if (!validDimensions.includes(parseInt(dimensions))) {
                 const newDimensions = validDimensions[0] || null;
                 if (newDimensions !== null) {
@@ -248,6 +260,7 @@ const Settings = () => {
           }
         }
       });
+
       if (updatesNeeded) {
         await updateOptions(newOptions);
       }
@@ -344,8 +357,8 @@ const Settings = () => {
     try {
       const chatbots = await retrieveChatbots();
       const themes = await retrieveThemes();
-      const options = await retrieveOptions();
-      const data = { chatbots, themes, options };
+      const optionsData = await retrieveOptions();
+      const data = { chatbots, themes, options: optionsData };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -378,10 +391,10 @@ const Settings = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const data = JSON.parse(e.target.result);
-          const { chatbots, themes, options } = data;
+          const { chatbots, themes, options: importedOptions } = data;
           await updateChatbots(chatbots);
           await updateThemes(themes);
-          await updateOptions(options);
+          await updateOptions(importedOptions);
           alert("Settings imported. The page will now reload to reflect the changes.");
           window.location.reload();
         };
@@ -424,14 +437,19 @@ const Settings = () => {
   }, [settingsSection]);
 
   useEffect(() => {
-    if (!ai_streaming && event_logs) {
+    if (ai_streaming === false && event_logs) {
       updateOption(false, 'event_logs');
     }
   }, [ai_streaming, event_logs, updateOption]);
 
   const isValidSection = () => {
-    if (settingsSection === 'ai' || settingsSection === 'files' || 
-        settingsSection === 'remote' || settingsSection === 'others') {
+    if (
+      settingsSection === 'ai' || 
+      settingsSection === 'files' ||
+      settingsSection === 'remote' || 
+      settingsSection === 'others' || 
+      settingsSection === 'addons' 
+    ) {
       return true;
     }
     if (settingsSection === 'chatbot' && module_chatbots) return true;
@@ -497,7 +515,7 @@ const Settings = () => {
     <NekoSettings title={i18n.COMMON.SEARCH}>
       <NekoCheckbox name="module_search" label={i18n.COMMON.ENABLE} value="1"
         checked={module_search}
-        description={i18n.COMMON.SEARCH_HELP}
+        description={i18n.COMMON.SEARCH}
         onChange={updateOption} />
     </NekoSettings>;
 
@@ -603,14 +621,6 @@ const Settings = () => {
       </NekoCheckboxGroup>
     </NekoSettings>;
 
-  const jsxAddOns =
-    <NekoSettings title={i18n.COMMON.ADDONS}>
-      <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="module_addons" label={i18n.COMMON.ENABLE} value="1" checked={addons}
-          description={i18n.HELP.ADDONS}
-          onChange={updateOption} />
-      </NekoCheckboxGroup>
-    </NekoSettings>;
 
   const jsxChatbotSelection =
     <NekoSettings title={i18n.COMMON.CHATBOT_SELECT}>
@@ -724,7 +734,7 @@ const Settings = () => {
   const jsxDiscussionsPaging =
     <NekoSettings title={i18n.COMMON.PAGING || 'Paging'}>
       <NekoSelect scrolldown name="chatbot_discussions_paging"
-        value={options?.chatbot_discussions_paging || 10} 
+        value={options?.chatbot_discussions_paging || 10}
         onChange={updateOption}
         description={i18n.HELP.DISCUSSIONS_PAGING || 'Number of discussions to display per page'}>
         <NekoOption value="None" label="None" />
@@ -740,7 +750,7 @@ const Settings = () => {
   const jsxDiscussionsRefreshInterval =
     <NekoSettings title={i18n.COMMON.REFRESH_INTERVAL || 'Refresh Interval'}>
       <NekoSelect scrolldown name="chatbot_discussions_refresh_interval"
-        value={options?.chatbot_discussions_refresh_interval || 5} 
+        value={options?.chatbot_discussions_refresh_interval || 5}
         onChange={updateOption}
         description={i18n.HELP.DISCUSSIONS_REFRESH_INTERVAL || 'How often to refresh the discussions list (in seconds)'}>
         <NekoOption value={1} label="1 second" />
@@ -796,7 +806,7 @@ const Settings = () => {
   const jsxEventLogs =
     <NekoSettings title={i18n.COMMON.EVENT_LOGS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="event_logs" label={i18n.COMMON.ENABLE} value="1" 
+        <NekoCheckbox name="event_logs" label={i18n.COMMON.ENABLE} value="1"
           checked={event_logs}
           disabled={!ai_streaming}
           description={i18n.HELP.EVENT_LOGS}
@@ -846,7 +856,7 @@ const Settings = () => {
 
   const jsxMcpNoAuthUrl =
     <NekoSettings title="No-Auth URL">
-      <NekoCheckbox name="mcp_noauth_url" label={i18n.COMMON.ENABLE} value="1" 
+      <NekoCheckbox name="mcp_noauth_url" label={i18n.COMMON.ENABLE} value="1"
         checked={options?.mcp_noauth_url}
         disabled={!options?.module_mcp || !options?.mcp_bearer_token}
         description="Enable a special URL that includes authentication in the path. Only works when SSE Endpoint is enabled and Bearer Token is set."
@@ -1018,7 +1028,7 @@ const Settings = () => {
   const jsxAIEnvironmentDimensionsEmbeddingsDefault =
     <NekoSettings title={i18n.COMMON.DIMENSIONS}>
       <NekoSelect scrolldown name="ai_embeddings_default_dimensions"
-        value={options?.ai_embeddings_default_dimensions ? parseInt(options.ai_embeddings_default_dimensions) : null} 
+        value={options?.ai_embeddings_default_dimensions ? parseInt(options.ai_embeddings_default_dimensions) : null}
         onChange={updateOption}>
         {embeddingsDimensionOptions.map((x, i) => (
           <NekoOption key={x} value={x}
@@ -1321,9 +1331,6 @@ const Settings = () => {
               <Transcription options={options} updateOption={updateOption} />
             </NekoTab>}
 
-            {module_addons && <NekoTab key="addons" title={i18n.COMMON.ADDONS}>
-              <Addons addons={options?.addons} updateOption={updateOption} />
-            </NekoTab>}
 
             <NekoTab key="settings" title={i18n.COMMON.SETTINGS}>
 
@@ -1338,6 +1345,7 @@ const Settings = () => {
                     {module_orchestration && <NekoLink title="Orchestration" value="orchestration" />}
                     <NekoLink title="Files & Media" value="files" />
                     <NekoLink title={i18n.COMMON.REMOTE_ACCESS} value="remote" />
+                    <NekoLink title="Add-ons" value="addons" />
                     <NekoLink title={i18n.COMMON.OTHERS} value="others" />
                   </NekoQuickLinks>
                 </NekoColumn>
@@ -1361,37 +1369,65 @@ const Settings = () => {
                             <NekoTab key="ai" title={i18n.COMMON.DEFAULT} busy={busy}>
                               {jsxAIEnvironmentDefault}
                               {jsxAIEnvironmentModelDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                The default environment for general AI queries and content generation.
+                              </NekoTypo>
                             </NekoTab>
 
                             <NekoTab key="fast" title={i18n.COMMON.DEFAULT_FAST} busy={busy}>
                               {jsxAIEnvironmentFastDefault}
                               {jsxAIEnvironmentModelFastDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                Used for quick tasks like generating discussion titles and optimizing search queries.
+                              </NekoTypo>
                             </NekoTab>
 
                             <NekoTab key="vision" title={i18n.COMMON.VISION} busy={busy}>
                               {jsxAIEnvironmentVisionDefault}
                               {jsxAIEnvironmentModelVisionDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                For analyzing and understanding images, including image-to-text capabilities.
+                              </NekoTypo>
                             </NekoTab>
 
                             <NekoTab key="images" title={i18n.COMMON.IMAGES} busy={busy}>
                               {jsxAIEnvironmentImagesDefault}
                               {jsxAIEnvironmentModelImagesDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                For generating images using AI models like DALL-E.
+                              </NekoTypo>
                             </NekoTab>
 
                             <NekoTab key="embeddings" title={i18n.COMMON.EMBEDDINGS} busy={busy}>
                               {jsxAIEnvironmentEmbeddingsDefault}
                               {jsxAIEnvironmentModelEmbeddingsDefault}
                               {jsxAIEnvironmentDimensionsEmbeddingsDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                For creating text embeddings used in semantic search and similarity matching.
+                              </NekoTypo>
                             </NekoTab>
 
                             <NekoTab key="audio" title={i18n.COMMON.AUDIO} busy={busy}>
                               {jsxAIEnvironmentAudioDefault}
                               {jsxAIEnvironmentModelAudioDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                For audio transcription and speech-to-text processing.
+                              </NekoTypo>
                             </NekoTab>
 
                             <NekoTab key="json" title={i18n.COMMON.JSON} busy={busy}>
                               {jsxAIEnvironmentJsonDefault}
                               {jsxAIEnvironmentModelJsonDefault}
+                              <NekoSpacer height={15} />
+                              <NekoTypo p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                                For structured data generation and JSON output formatting.
+                              </NekoTypo>
                             </NekoTab>
 
                           </NekoTabs>
@@ -1443,7 +1479,6 @@ const Settings = () => {
                       {settingsSection === 'others' &&
                         <NekoBlock busy={busy} title={i18n.COMMON.USER_INTERFACE} className="primary">
                           {jsxIntroMessage}
-                          {jsxAddOns}
                         </NekoBlock>
                       }
 
@@ -1466,10 +1501,10 @@ const Settings = () => {
 
                       {settingsSection === 'others' &&
                       <NekoBlock busy={busy} title={i18n.COMMON.MAINTENANCE} className="primary">
-                        
+
                         <p style={{ marginBottom: '15px' }}>
-                          It is important to keep regular backups of your settings. Use Export Settings to save your configuration. 
-                          Import Settings allows you to restore a previous configuration. Reset Settings will restore all settings to their defaults. 
+                          It is important to keep regular backups of your settings. Use Export Settings to save your configuration.
+                          Import Settings allows you to restore a previous configuration. Reset Settings will restore all settings to their defaults.
                           Reset Usage will clear all usage statistics and start fresh.
                         </p>
 
@@ -1488,17 +1523,19 @@ const Settings = () => {
                           </NekoButton>
 
                         </div>
-                        
+
                         <NekoButton className="danger" onClick={async () => {
                           if (window.confirm(i18n.COMMON.RESET_USAGE_SURE)) {
                             setBusyAction(true);
                             try {
                               await updateOption([], 'ai_usage');
                               await updateOption([], 'ai_usage_daily');
+
                               const response = await nekoFetch(`${apiUrl}/settings/options`, {
                                 method: 'GET',
                                 headers: { 'X-WP-Nonce': restNonce }
                               });
+
                               if (response.success && response.options) {
                                 updateOptions(response.options);
                                 showSnackbar('Usage data has been reset successfully.', 'success');
@@ -1555,8 +1592,8 @@ const Settings = () => {
                         <NekoBlock className="primary" title={i18n.COMMON.DEFAULTS}>
                           <p>
                             <strong>{i18n.COMMON.AI_ENVIRONMENT}:</strong> {
-                              options?.ai_embeddings_default_env ? 
-                                options?.ai_envs?.find(env => env.id === options.ai_embeddings_default_env)?.name : 
+                              options?.ai_embeddings_default_env ?
+                                options?.ai_envs?.find(env => env.id === options.ai_embeddings_default_env)?.name :
                                 options?.ai_envs?.[0]?.name || 'OpenAI'
                             }<br/>
                             <strong>{i18n.COMMON.EMBEDDINGS_MODEL}:</strong> {options?.ai_embeddings_default_model || 'text-embedding-3-small'}<br/>
@@ -1578,8 +1615,8 @@ const Settings = () => {
                               <NekoOption value="smart_search" label="Smart Search" />
                             </NekoSelect>
                           </NekoSettings>
-                          
-                          {(options?.embeddings_settings?.search_method === 'context_aware' || 
+
+                          {(options?.embeddings_settings?.search_method === 'context_aware' ||
                             options?.embeddings_settings?.search_method === 'smart_search' ||
                             options?.embeddings_settings?.search_method === 'user_messages' ||
                             options?.embeddings_settings?.search_method === 'ai_optimized') && (
@@ -1594,7 +1631,7 @@ const Settings = () => {
                               />
                             </NekoSettings>
                           )}
-                          
+
                           {(options?.embeddings_settings?.search_method === 'smart_search' ||
                             options?.embeddings_settings?.search_method === 'ai_optimized') && (
                             <NekoSettings title="Instructions">
@@ -1609,16 +1646,16 @@ const Settings = () => {
                             </NekoSettings>
                           )}
                         </NekoBlock>
-                        
+
                         <NekoBlock className="primary" title="Information" style={{ marginTop: 10 }}>
                           <div style={{ marginBottom: 20 }}>
                             <p>
-                              Embeddings are textual data converted into vectors that enable similarity search. They allow AI to find relevant context from your knowledge base, 
+                              Embeddings are textual data converted into vectors that enable similarity search. They allow AI to find relevant context from your knowledge base,
                               synchronized with vector databases like Pinecone or Qdrant for efficient storage and retrieval.
-                              When enabled in chatbots or forms, AI Engine searches your knowledge base for relevant context to enrich responses. 
+                              When enabled in chatbots or forms, AI Engine searches your knowledge base for relevant context to enrich responses.
                               Both chatbots and AI Forms can use embeddings to provide more contextual answers.
                             </p>
-                            
+
                             <p style={{ marginTop: 15 }}><strong>Working with Embeddings</strong></p>
                             <p style={{ marginTop: 5 }}>
                               Access the <b>Knowledge</b> tab to manage your embeddings, where you can:
@@ -1628,20 +1665,20 @@ const Settings = () => {
                               <li>Query your knowledge base directly (<strong>AI SEARCH</strong>).</li>
                               <li>Use Sync to process posts and create/update embeddings.</li>
                             </ul>
-                            
+
                             <p style={{ marginTop: 15 }}><strong>Embeddings Search</strong></p>
                             <p style={{ marginTop: 5 }}>
                               Configure how AI Engine searches your knowledge base when processing conversations. The search method determines what context is used to find relevant embeddings:
                             </p>
                             <ul style={{ marginTop: 5, marginLeft: 20 }}>
-                              <li><strong>Last Message Only:</strong> Uses only the last message for context (default, fastest).</li>
-                              <li><strong>Recent User Messages:</strong> Includes more conversation history for better context.</li>
-                              <li><strong>AI-Optimized Query:</strong> Uses AI to create smarter searches based on full context (uses Default Fast model, additional costs apply).</li>
+                              <li><strong>Simple:</strong> Uses only the last message for context (default, fastest).</li>
+                              <li><strong>Context-Aware:</strong> Includes more conversation history for better context.</li>
+                              <li><strong>Smart Search:</strong> Uses AI to create smarter searches based on full context (uses Default Fast model, additional costs apply).</li>
                             </ul>
-                            
+
                             <p style={{ marginTop: 15 }}>
-                              Learn more in the <a href="https://ai.thehiddendocs.com/embeddings/" target="_blank">documentation</a> or 
-                              join the <a href="https://discord.gg/bHDGh38" target="_blank">Discord Server</a> to discuss embeddings with other users.
+                              Learn more in the <a href="https://ai.thehiddendocs.com/embeddings/" target="_blank" rel="noreferrer">documentation</a> or
+                              join the <a href="https://discord.gg/bHDGh38" target="_blank" rel="noreferrer">Discord Server</a> to discuss embeddings with other users.
                             </p>
                           </div>
                         </NekoBlock>
@@ -1679,8 +1716,44 @@ const Settings = () => {
                       }
 
                       {settingsSection === 'remote' && (
-                        <NekoBlock className="primary" title="Information">
-                          <p>{toHTML(i18n.SETTINGS.REMOTE_ACCESS_INFO)}</p>
+                        <NekoBlock className="primary" title="Information" style={{ marginTop: 10 }}>
+                          <div style={{ marginBottom: 20 }}>
+                            <p>
+                              AI Engine provides two ways to integrate with external systems: REST API and Model Context Protocol (MCP).
+                            </p>
+
+                            <p style={{ marginTop: 15 }}><strong>REST API</strong></p>
+                            <p style={{ marginTop: 5 }}>
+                              Ideal for automation platforms like Make.com, Zapier, or n8n. Use this when you want to trigger AI operations
+                              from external services or integrate AI Engine into your existing workflows.
+                            </p>
+
+                            <p style={{ marginTop: 15 }}><strong>MCP (Model Context Protocol)</strong></p>
+
+                            <p style={{ marginTop: 10, marginBottom: 5 }}><em>How to Use:</em></p>
+                            <ul style={{ marginTop: 5, marginLeft: 20 }}>
+                              <li><strong>Claude Desktop App:</strong> Use the <code>mcp.js</code> relay. Check <code>/labs/mcp.md</code> for setup instructions.</li>
+                              <li><strong>OpenAI/ChatGPT:</strong> Limited to Deep Research mode with only <code>search</code> and <code>fetch</code> tools (requires Tuned Core enabled).</li>
+                              <li><strong>Claude.ai:</strong> Currently not supported.</li>
+                            </ul>
+
+                            <p style={{ marginTop: 10, marginBottom: 5 }}><em>Available Tools:</em></p>
+                            <ul style={{ marginTop: 5, marginLeft: 20 }}>
+                              <li><strong>Full access (Claude Desktop):</strong> WordPress management, plugin/theme development, SEO Engine, Code Engine snippets</li>
+                              <li><strong>Limited access (OpenAI):</strong> Only search and fetch WordPress posts/pages</li>
+                            </ul>
+
+                            <p style={{ marginTop: 10, marginBottom: 5 }}><em>For Developers:</em></p>
+                            <p style={{ marginTop: 5 }}>
+                              Extend functionality using <code>mwai_mcp_tools</code> and <code>mwai_mcp_callback</code> filters.
+                              See <code>dev-notes.md</code> for details.
+                            </p>
+
+                            <p style={{ marginTop: 15 }}>
+                              <strong>Note:</strong> This makes WordPress an MCP server. For connecting TO external MCP servers,
+                              use the Orchestration module.
+                            </p>
+                          </div>
                         </NekoBlock>
                       )}
 
@@ -1719,6 +1792,12 @@ const Settings = () => {
 
                   </NekoWrapper>
                 </NekoColumn>
+
+                {settingsSection === 'addons' && (
+                  <NekoColumn minimal fullWidth style={{ paddingLeft: 10, paddingRight: 10, marginTop: -20 }}>
+                    <Addons addons={options?.addons} updateOption={updateOption} />
+                  </NekoColumn>
+                )}
 
               </NekoWrapper>
             </NekoTab>

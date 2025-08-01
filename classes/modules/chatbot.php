@@ -1,7 +1,7 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle' ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId' ] );
 
@@ -198,6 +198,7 @@ class Meow_MWAI_Modules_Chatbot {
     $stream = $params['stream'] ?? false;
     $newMessage = trim( $params['newMessage'] ?? '' );
     $newFileId = $params['newFileId'] ?? null;
+    $newFileIds = $params['newFileIds'] ?? [];
 
     if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId ) ) {
       return $this->create_rest_response( [
@@ -207,7 +208,7 @@ class Meow_MWAI_Modules_Chatbot {
     }
 
     try {
-      $data = $this->chat_submit( $botId, $newMessage, $newFileId, $params, $stream );
+      $data = $this->chat_submit( $botId, $newMessage, $newFileId, $params, $stream, $newFileIds );
       $final_res = $this->build_final_res(
         $botId,
         $newMessage,
@@ -370,7 +371,7 @@ class Meow_MWAI_Modules_Chatbot {
 
   #endregion
 
-  public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false ) {
+  public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false, $newFileIds = [] ) {
     try {
       $chatbot = null;
       $customId = $params['customId'] ?? null;
@@ -409,7 +410,7 @@ class Meow_MWAI_Modules_Chatbot {
       }
 
       // Messages Integrity Check with Discussions
-      if ( $this->core->get_option( 'chatbot_discussions' ) && isset( $params['chatId'] ) ) {
+      if ( $this->core->get_option( 'chatbot_discussions' ) && $this->core->discussions && isset( $params['chatId'] ) ) {
         $discussion = $this->core->discussions->get_discussion( $botId ? $botId : $customId, $params['chatId'] );
         if ( $discussion ) {
           $messages = $discussion['messages'];
@@ -457,18 +458,26 @@ class Meow_MWAI_Modules_Chatbot {
       $mode = $chatbot['mode'] ?? 'chat';
 
       if ( $mode === 'images' ) {
+        // Check for uploaded files
+        $fileForImage = null;
+        if ( !empty( $newFileIds ) && is_array( $newFileIds ) ) {
+          $fileForImage = $newFileIds[0];
+        } elseif ( !empty( $newFileId ) ) {
+          $fileForImage = $newFileId;
+        }
+        
         // If there's an uploaded file, use EditImage query instead
-        if ( !empty( $newFileId ) ) {
+        if ( !empty( $fileForImage ) ) {
           $query = new Meow_MWAI_Query_EditImage( $newMessage );
 
           // Handle the uploaded image
-          $url = $this->core->files->get_url( $newFileId );
-          $mimeType = $this->core->files->get_mime_type( $newFileId );
+          $url = $this->core->files->get_url( $fileForImage );
+          $mimeType = $this->core->files->get_mime_type( $fileForImage );
           $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
 
           if ( $isIMG ) {
             $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
-            $fileId = $this->core->files->get_id_from_refId( $newFileId );
+            $fileId = $this->core->files->get_id_from_refId( $fileForImage );
             $this->core->files->update_purpose( $fileId, 'vision' );
           }
         }
@@ -545,7 +554,7 @@ class Meow_MWAI_Modules_Chatbot {
         $storeId = null;
         if ( $mode === 'assistant' ) {
           $chatId = $params['chatId'] ?? null;
-          if ( !empty( $chatId ) ) {
+          if ( !empty( $chatId ) && $this->core->discussions ) {
             $discussion = $this->core->discussions->get_discussion( $query->botId, $chatId );
             if ( isset( $discussion['storeId'] ) ) {
               $storeId = $discussion['storeId'];
@@ -554,15 +563,26 @@ class Meow_MWAI_Modules_Chatbot {
           }
         }
 
-        // Support for Uploaded Image
-        if ( !empty( $newFileId ) ) {
+        // Support for Multiple Uploaded Files
+        $filesToProcess = [];
+        if ( !empty( $newFileIds ) && is_array( $newFileIds ) ) {
+          $filesToProcess = $newFileIds;
+        } elseif ( !empty( $newFileId ) ) {
+          $filesToProcess[] = $newFileId;
+        }
+
+        // Support for Uploaded Image/Files
+        if ( !empty( $filesToProcess ) ) {
+          // For now, we only process the first file to maintain backward compatibility
+          // TODO: In the future, we could support multiple files in the query
+          $fileToProcess = $filesToProcess[0];
 
           // Get extension and mime type
-          $isImage = $this->core->files->is_image( $newFileId );
+          $isImage = $this->core->files->is_image( $fileToProcess );
 
           if ( $mode === 'assistant' && !$isImage ) {
-            $url = $this->core->files->get_path( $newFileId );
-            $data = $this->core->files->get_data( $newFileId );
+            $url = $this->core->files->get_path( $fileToProcess );
+            $data = $this->core->files->get_data( $fileToProcess );
             $openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $query->envId );
             $filename = basename( $url );
 
@@ -592,26 +612,26 @@ class Meow_MWAI_Modules_Chatbot {
 
             // Update the local file with the OpenAI RefId, StoreId and StoreFileId
             $openAiRefId = $file['id'];
-            $internalFileId = $this->core->files->get_id_from_refId( $newFileId );
+            $internalFileId = $this->core->files->get_id_from_refId( $fileToProcess );
             $this->core->files->update_refId( $internalFileId, $openAiRefId );
             $this->core->files->update_envId( $internalFileId, $query->envId );
             $this->core->files->update_purpose( $internalFileId, 'assistant-in' );
             $this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
             $this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
-            $newFileId = $openAiRefId;
+            $fileToProcess = $openAiRefId;
             $scope = $params['fileSearch'];
             if ( $scope === 'discussion' || $scope === 'user' || $scope === 'assistant' ) {
-              $id = $this->core->files->get_id_from_refId( $newFileId );
+              $id = $this->core->files->get_id_from_refId( $fileToProcess );
               $this->core->files->add_metadata( $id, 'assistant_scope', $scope );
             }
           }
           else {
-            $url = $this->core->files->get_url( $newFileId );
-            $mimeType = $this->core->files->get_mime_type( $newFileId );
+            $url = $this->core->files->get_url( $fileToProcess );
+            $mimeType = $this->core->files->get_mime_type( $fileToProcess );
             $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
             $purposeType = $isIMG ? 'vision' : 'files';
             $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, $purposeType, $mimeType ) );
-            $fileId = $this->core->files->get_id_from_refId( $newFileId );
+            $fileId = $this->core->files->get_id_from_refId( $fileToProcess );
             $this->core->files->update_envId( $fileId, $query->envId );
             $this->core->files->update_purpose( $fileId, $purposeType );
             $this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
@@ -834,6 +854,8 @@ class Meow_MWAI_Modules_Chatbot {
       }
     }
     $chatbot = $chatbot ?: $this->core->get_chatbot( 'default' );
+    
+    
     if ( !empty( $customId ) ) {
       if ( $botId !== null ) {
         $parentBotId = $botId;
@@ -950,6 +972,10 @@ class Meow_MWAI_Modules_Chatbot {
     // Front Params
     $frontSystem = $this->build_front_params( $botId, $customId );
 
+    // Debug: Log frontParams before cleaning
+    error_log('[AI Engine Debug] frontParams before clean: ' . json_encode($frontParams));
+    error_log('[AI Engine Debug] multiUpload in frontParams: ' . ($frontParams['multiUpload'] ?? 'not set'));
+    
     // Clean Params
     $frontParams = $this->clean_params( $frontParams );
     $frontSystem = $this->clean_params( $frontSystem );
@@ -1087,10 +1113,15 @@ class Meow_MWAI_Modules_Chatbot {
       if ( $param === 'restNonce' ) {
         continue;
       }
-      if ( empty( $value ) || is_array( $value ) ) {
+      // Skip only if value is null or an array - but not if it's false or 0
+      if ( is_null( $value ) || is_array( $value ) ) {
         continue;
       }
-      $lowerCaseValue = strtolower( $value );
+      // Handle empty strings
+      if ( $value === '' ) {
+        continue;
+      }
+      $lowerCaseValue = is_string( $value ) ? strtolower( $value ) : '';
       if ( $lowerCaseValue === 'true' || $lowerCaseValue === 'false' || is_bool( $value ) ) {
         $params[$param] = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
       }

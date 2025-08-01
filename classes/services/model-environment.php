@@ -38,7 +38,7 @@ class Meow_MWAI_Services_ModelEnvironment {
         foreach ( $models as $currentModel ) {
           if ( $currentModel['model'] === $model && isset( $currentModel['envId'] ) ) {
             $query->envId = $currentModel['envId'];
-            $query->env = $currentModel['envId']; // Set both for compatibility
+            // Note: Don't set $query->env here as it expects an object, not a string
             $query->model = $currentModel['model'];
             return;
           }
@@ -51,7 +51,7 @@ class Meow_MWAI_Services_ModelEnvironment {
           foreach ( $env['models'] as $envModel ) {
             if ( $envModel['model'] === $model ) {
               $query->envId = $envId;
-              $query->env = $envId; // Set both for compatibility
+              // Note: Don't set $query->env here as it expects an object, not a string
               $query->model = $model;
               return;
             }
@@ -75,7 +75,7 @@ class Meow_MWAI_Services_ModelEnvironment {
     if ( !empty( $env ) ) {
       // Use envId property which is what the query object uses
       $query->envId = $env;
-      $query->env = $env; // Set both for compatibility
+      // Note: Don't set $query->env here as it expects an object, not a string
     }
     if ( !empty( $model ) ) {
       $query->model = $model;

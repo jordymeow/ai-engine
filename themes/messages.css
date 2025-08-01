@@ -562,6 +562,127 @@
   width: 100%;
 }
 
+.mwai-messages-theme .mwai-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--mwai-spacing);
+  background: var(--mwai-backgroundSecondaryColor);
+  border-top: 1px solid var(--mwai-backgroundPrimaryColor);
+  max-height: 150px;
+  overflow-y: auto;
+}
+.mwai-messages-theme .mwai-files::-webkit-scrollbar {
+  width: 6px;
+}
+.mwai-messages-theme .mwai-files::-webkit-scrollbar-track {
+  background: var(--mwai-backgroundPrimaryColor);
+  border-radius: 3px;
+}
+.mwai-messages-theme .mwai-files::-webkit-scrollbar-thumb {
+  background: var(--mwai-backgroundHeaderColor);
+  border-radius: 3px;
+}
+.mwai-messages-theme .mwai-files::-webkit-scrollbar-thumb:hover {
+  background: var(--mwai-primaryColor);
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview {
+  position: relative;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-thumbnail {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--mwai-backgroundHeaderColor);
+  display: block;
+  flex-shrink: 0;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mwai-backgroundSecondaryColor);
+  border-radius: 4px;
+  color: var(--mwai-fontColor);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-name {
+  font-size: calc(var(--mwai-fontSize) * 0.85);
+  color: var(--mwai-fontColor);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-size {
+  font-size: calc(var(--mwai-fontSize) * 0.7);
+  color: var(--mwai-fontColor);
+  opacity: 0.5;
+  line-height: 1;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--mwai-backgroundHeaderColor);
+  border-radius: 0 0 calc(var(--mwai-borderRadius) / 2) calc(var(--mwai-borderRadius) / 2);
+  overflow: hidden;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-progress .mwai-file-progress-bar {
+  height: 100%;
+  background: var(--mwai-primaryColor);
+  transition: width 0.3s ease;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  cursor: pointer;
+  color: var(--mwai-fontColor);
+  padding: 4px;
+  border: none;
+  line-height: 0;
+  min-width: inherit;
+  margin-left: auto;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-remove:hover {
+  opacity: 1;
+}
+.mwai-messages-theme .mwai-files .mwai-file-preview .mwai-file-remove svg {
+  width: 20px;
+  height: 20px;
+}
+.mwai-messages-theme .mwai-files:empty {
+  display: none;
+}
+.mwai-messages-theme .mwai-file-upload-icon {
+  margin-bottom: -3px;
+}
 .mwai-messages-theme.mwai-transition, .mwai-messages-theme .mwai-transition {
   opacity: 0;
   transition: opacity 350ms ease-in-out;
@@ -843,6 +964,12 @@
   transition: opacity 0.2s ease-in-out;
 }
 .mwai-messages-theme .mwai-reply:hover .mwai-reply-actions {
+  opacity: 1 !important;
+}
+.mwai-messages-theme .mwai-form-output-container:hover .mwai-reply-actions {
+  opacity: 1 !important;
+}
+.mwai-messages-theme .mwai-form-output-container:hover .mwai-reply-actions.mwai-hidden {
   opacity: 1 !important;
 }
 .mwai-messages-theme.mwai-bubble .mwai-icon-container {

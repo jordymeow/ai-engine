@@ -1,9 +1,10 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.9.7
 
 const { useMemo } = wp.element;
 import { compiler } from 'markdown-to-jsx';
 import { BlinkingCursor } from '@app/helpers';
+import i18n from '@root/i18n';
 
 // Display a clickable link with additional file information
 const LinkContainer = ({ href, children }) => {
@@ -71,7 +72,7 @@ const ChatbotContent = ({ message }) => {
       out = compiler(content, markdownOptions);
     }
     catch (e) {
-      console.error("Crash in markdown-to-jsx! Reverting to plain text.", { e, content });
+      console.error(i18n.DEBUG.CRASH_IN_MARKDOWN, { e, content });
       out = content;
     }
     return out;

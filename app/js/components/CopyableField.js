@@ -1,9 +1,10 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 2.9.7
 
 // React & Vendor Libs
 const { useState } = wp.element;
 import Styled from 'styled-components';
+import i18n from '@root/i18n';
 
 const StyledCopyableField = Styled.div`
   pre {
@@ -32,11 +33,11 @@ const CopyableField = ({ children, value, ...rest }) => {
 
   const onClick = async () => {
     if (!navigator.clipboard) {
-      alert('Clipboard is not enabled (only works with https).');
+      alert(i18n.COMMON.CLIPBOARD_ERROR);
       return;
     }
     await navigator.clipboard.writeText(value);
-    setCopyMessage('Copied!');
+    setCopyMessage(i18n.COMMON.COPIED);
     setTimeout(() => {
       setCopyMessage(null);
     }, 2000);
