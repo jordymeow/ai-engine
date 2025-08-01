@@ -1,18 +1,18 @@
 === AI Engine ===
 Contributors: TigrouMeow
-Tags: ai, chatbot, gpt, copilot, translate
+Tags: ai, chatbot, gpt, claude, openai
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.7
+Stable tag: 2.9.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
 
 == Description ==
-AI Engine seamlessly connects WordPress with the world of AI. It brings modern AI capabilities straight into your site, letting you work smarter without leaving your dashboard. From writing and translating content to generating images and managing media, everything is tightly integrated so you can stay focused on what matters.
+AI Engine seamlessly connects WordPress with the world's leading AI models. Create intelligent chatbots, generate content, build AI forms, and automate tasks—all from your WordPress dashboard.
 
 You can create a chatbot to assist your visitors, answer support questions, or guide users through your products and services. Need fresh content? AI Engine can write posts in your voice, help rewrite existing ones, or translate them naturally into other languages. It can also generate custom images for your articles, refine messy text, or just lend a hand when you’re stuck.
 
@@ -30,12 +30,16 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 * **Copilot**: Transform the WordPress editor into your personal AI assistant. Simply hit “space” or use the wand icons to get real-time suggestions, quick translations, or content rewrites.
 * **Image & Translation**: Create images from prompts, break language barriers with instant translations, and quickly refine existing text for clarity and SEO.
 * **Finetuning & Embeddings**: Fine-tune AI models to match your domain or style, and use embeddings for smarter AI interactions, content classification, or personalized recommendations.
+* **Vector Database Support**: Connect with Chroma, Qdrant, and OpenAI Vector Store for scalable AI knowledge bases and semantic search.
+* **Multi-File Upload**: Chatbots handle multiple attachments in a single message—perfect for complex support tickets or creative projects.
 * **Discussions & Memory Tracking**: Let users engage in longer or more complex conversations with the chatbot. All data can be stored, analyzed, and even exported for further insights.
 * **Function Calling**: Connect the AI models to your WordPress functions, tools, or APIs. For example, you can use the chatbot to allow your users to interact with your store, book appointments, or get real-time data.
 * **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
 - **MCP (Model Context Protocol)**: Allow powerful AI agents (like Claude) to fully control and manage your WordPress site. Automate posts, content updates, manage media, and seamlessly integrate advanced AI workflows. AI Engine can also connect to external MCP servers, expanding your AI's capabilities beyond WordPress.
-* **AI-Powered Search**: Enhance WordPress search with three intelligent methods: standard WordPress search, AI-generated progressive keyword search that creates multiple search variations with decreasing specificity, and embeddings-based semantic search for meaning-based results.
-* **PDF Import for Embeddings**: Import PDF documents with automatic chunking, title generation, and intelligent content extraction for building comprehensive knowledge bases.
+* **AI-Powered Search**: Three intelligent methods—Simple WordPress search, Context-Aware progressive keyword search, and Smart Search using semantic embeddings.
+* **PDF Import**: Build knowledge bases from PDFs with automatic chunking and intelligent content extraction.
+* **Enhanced Privacy & Security**: IP address hashing, GDPR compliance tools, secure file handling with authorization checks, and session-based tracking for guests.
+* **Long Session Support**: Handles multi-day sessions with automatic token refresh—no more authentication timeouts.
 * **Insights & Usage Control**: Track usage, monitor tokens, and manage costs with detailed analytics. Tools like role-based access, banned words, or content safety filters help you maintain a secure environment.
 * **Extensive Integration**: Seamlessly works with Media File Renamer, SEO Engine, Social Engine, Code Engine, and other WordPress plugins to power advanced AI features site-wide.
 * **Flexible Theming & Shortcodes**: Control the look and behavior of your AI integrations using pre-built themes or your own custom CSS. Place chatbots or AI-driven forms anywhere using simple shortcodes.
@@ -76,6 +80,24 @@ The developer of AI Engine and related parties are not responsible for any issue
 == Compatibility ==
 
 Please be aware that there may be conflicts with certain caching or performance plugins, such as SiteGround Optimizer and Ninja Firewall. To prevent any issues, ensure that the AI Engine is excluded from these plugins.
+
+== Security & Privacy ==
+
+AI Engine takes security seriously:
+* Secure file handling with proper authorization checks
+* IP address hashing for privacy-first analytics  
+* GDPR compliance tools and consent management
+* Session-based file tracking for guest users
+* Content moderation and safety filters
+* Role-based access control
+
+== For Developers ==
+
+* **Internal APIs**: Build AI-powered features into your plugins
+* **MCP Protocol**: Let AI agents manage your WordPress site programmatically
+* **Function Calling**: Connect AI to WordPress functions, WooCommerce, appointments, and more
+* **REST API**: Full REST support for external integrations
+* **Extensive Hooks**: Customize every aspect with WordPress filters and actions
 
 == Usage ==
 
@@ -132,10 +154,12 @@ Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpre
 
 == Changelog ==
 
-= 2.9.7 (2025/08/01) =
-* Add: Multi-Upload feature has been added to chatbots for easier file management (currently only for developers, will be released to all users soon).
+= 2.9.8 (2025/08/01) =
 * Add: Support for Chroma (another Vector DB) has been introduced for both Cloud and self-hosted instances.  
+* Add: Multi-Upload feature has been added to chatbots for easier file management (currently only for developers, will be released to all users soon).
 * Fix: Hotfix for discussion REST routes being accessible when the discussions module was disabled.
+* Fix: Prevented pdf.worker.min.js from being accidentally deleted during production builds.
+* Fix: Resolved PHP errors caused by duplicate property declarations and improved type safety for returned_price.
 * Fix: Various other fixes and improvements throughout AI Engine.
 
 = 2.9.6 (2025/07/29) =

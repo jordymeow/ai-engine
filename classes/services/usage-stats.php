@@ -92,7 +92,11 @@ class Meow_MWAI_Services_UsageStats {
     $usage[$month][$model]['total_tokens'] += $in_tokens + $out_tokens;
     $usage[$month][$model]['queries'] += 1;
     if ( !empty( $returned_price ) ) {
-      $usage[$month][$model]['returned_price'] += $returned_price;
+      // Ensure returned_price is numeric to avoid type errors
+      $price_value = is_array( $returned_price ) ? 
+        ( isset( $returned_price['price'] ) ? $returned_price['price'] : 0 ) : 
+        ( is_numeric( $returned_price ) ? $returned_price : 0 );
+      $usage[$month][$model]['returned_price'] += $price_value;
     }
     
     // Clean up old monthly data (keep only last 2 years)

@@ -971,10 +971,6 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Front Params
     $frontSystem = $this->build_front_params( $botId, $customId );
-
-    // Debug: Log frontParams before cleaning
-    error_log('[AI Engine Debug] frontParams before clean: ' . json_encode($frontParams));
-    error_log('[AI Engine Debug] multiUpload in frontParams: ' . ($frontParams['multiUpload'] ?? 'not set'));
     
     // Clean Params
     $frontParams = $this->clean_params( $frontParams );

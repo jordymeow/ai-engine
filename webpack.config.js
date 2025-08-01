@@ -15,7 +15,7 @@ module.exports = function (env, options) {
     protectWebpackAssets: false,
     cleanOnceBeforeBuildPatterns: ["!app/"],
     cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
-      '!forms.js', '!pdfjs.js', '*.map'],
+      '!forms.js', '!pdfjs.js', '!pdf.worker.min.js', '*.map'],
     dry: false,
     dangerouslyAllowCleanPatternsOutsideProject: true
   });
