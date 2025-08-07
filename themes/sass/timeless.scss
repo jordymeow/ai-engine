@@ -142,6 +142,35 @@
 		overflow: auto;
 		max-height: var(--mwai-maxHeight);
 		padding: var(--mwai-spacing);
+
+		// Custom scrollbar styling for WebKit browsers
+		&::-webkit-scrollbar {
+			width: 8px;
+			background: transparent;
+		}
+
+		&::-webkit-scrollbar-track {
+			background: rgba(0, 0, 0, 0.05);
+			border-radius: 4px;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			background: rgba(0, 0, 0, 0.15);
+			border-radius: 4px;
+			transition: background 0.2s ease;
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.25);
+			}
+
+			&:active {
+				background: rgba(0, 0, 0, 0.3);
+			}
+		}
+
+		// Firefox scrollbar styling
+		scrollbar-width: thin;
+		scrollbar-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.05);
 		
 		.mwai-reply {
 			margin-bottom: var(--mwai-spacing);

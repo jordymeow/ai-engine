@@ -1,9 +1,9 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId' ] );
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite' ] );
 
 // Params for the discussions (front and server)
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
@@ -199,6 +199,7 @@ class Meow_MWAI_Modules_Chatbot {
     $newMessage = trim( $params['newMessage'] ?? '' );
     $newFileId = $params['newFileId'] ?? null;
     $newFileIds = $params['newFileIds'] ?? [];
+    $crossSite = $params['crossSite'] ?? false;
 
     if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId ) ) {
       return $this->create_rest_response( [
@@ -274,7 +275,7 @@ class Meow_MWAI_Modules_Chatbot {
 
   public function sanitize_shortcuts( $shortcuts ) {
     $supported_shortcut_types = [
-      'message' => ['label', 'message'],
+      'action' => ['label', 'message', 'action'],
       'callback' => ['label', 'onClick'],
     ];
     return $this->sanitize_items( $shortcuts, $supported_shortcut_types, 'shortcut' );
@@ -607,8 +608,13 @@ class Meow_MWAI_Modules_Chatbot {
               $query->setStoreId( $storeId );
             }
 
-            // Add the file to the store
+            // Add the file to the store - wait a moment for store to be ready
+            sleep( 1 );
             $storeFileId = $openai->add_vector_store_file( $storeId, $file['id'] );
+            
+            if ( empty( $storeFileId ) ) {
+              throw new Exception( 'Failed to add file to vector store.' );
+            }
 
             // Update the local file with the OpenAI RefId, StoreId and StoreFileId
             $openAiRefId = $file['id'];
@@ -808,7 +814,7 @@ class Meow_MWAI_Modules_Chatbot {
     return null;
   }
 
-  public function build_front_params( $botId, $customId ) {
+  public function build_front_params( $botId, $customId, $crossSite = false ) {
     $frontSystem = [
       'botId' => $customId ? null : sanitize_text_field( $botId ),
       'customId' => sanitize_text_field( $customId ),
@@ -819,7 +825,7 @@ class Meow_MWAI_Modules_Chatbot {
       // - Logged-out users: get_nonce() returns null, they'll fetch via /start_session endpoint
       // This prevents rest_cookie_invalid_nonce errors for logged-in users by ensuring the nonce
       // matches their authentication context from the start.
-      'restNonce' => $this->core->get_nonce(),
+      'restNonce' => $crossSite ? null : $this->core->get_nonce(),
       'contextId' => get_the_ID(),
       'pluginUrl' => MWAI_URL,
       'restUrl' => untrailingslashit( get_rest_url() ),
@@ -829,7 +835,8 @@ class Meow_MWAI_Modules_Chatbot {
       'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
       'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
       'typewriter' => $this->core->get_option( 'chatbot_typewriter' ),
-      'virtual_keyboard_fix' => $this->core->get_option( 'virtual_keyboard_fix' )
+      'virtual_keyboard_fix' => $this->core->get_option( 'virtual_keyboard_fix' ),
+      'crossSite' => $crossSite
     ];
     return $frontSystem;
   }
@@ -911,6 +918,10 @@ class Meow_MWAI_Modules_Chatbot {
                    'startSentence', 'iconText', 'iconAlt', 'headerSubtitle'];
     // Parameters that support HTML content
     $htmlParams = ['textCompliance'];
+    // Boolean parameters that need special handling
+    $booleanParams = ['window', 'copyButton', 'fullscreen', 'localMemory', 'iconBubble', 'centerOpen', 
+                      'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch'];
+    
     
     foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {
       // Let's go through the overriden or custom params first (the ones passed in the shortcode)
@@ -926,13 +937,23 @@ class Meow_MWAI_Modules_Chatbot {
           // For HTML parameters, use wp_kses_post to allow safe HTML
           $frontParams[$param] = wp_kses_post( $atts[$param] );
         }
+        else if ( in_array( $param, $booleanParams ) ) {
+          // Convert to proper boolean
+          $frontParams[$param] = !empty( $atts[$param] ) && $atts[$param] !== 'false';
+        }
         else {
           $frontParams[$param] = $atts[$param];
         }
       }
       // If not, let's use the chatbot's default values
       else if ( isset( $chatbot[$param] ) ) {
-        $frontParams[$param] = $chatbot[$param];
+        if ( in_array( $param, $booleanParams ) ) {
+          // Convert to proper boolean for chatbot defaults too
+          $frontParams[$param] = !empty( $chatbot[$param] ) && $chatbot[$param] !== 'false';
+        }
+        else {
+          $frontParams[$param] = $chatbot[$param];
+        }
       }
 
       // Apply the placeholders

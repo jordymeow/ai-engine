@@ -996,7 +996,6 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
       // If Model Name contains "Experimental", skip it (except for embedding models)
       if ( strpos( $model['name'], '-exp' ) !== false && strpos( $model['name'], 'embedding' ) === false ) {
-        error_log( 'Skipping experimental model: ' . $model['name'] );
         continue;
       }
 

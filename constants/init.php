@@ -21,12 +21,21 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   'iconTextDelay' => 1,
   'iconAlt' => 'AI Engine Chatbot',
   'iconPosition' => 'bottom-right',
+  'centerOpen' => false,
+  'width' => '',
+  'openDelay' => '',
   'iconBubble' => false,
   'fullscreen' => false,
   'copyButton' => false,
   'headerSubtitle' => 'Discuss with',
   'localMemory' => true,
   'multiUpload' => false,
+  // UI Builder Parameters
+  'containerType' => 'standard',
+  'headerType' => 'standard',
+  'messagesType' => 'standard',
+  'inputType' => 'standard',
+  'footerType' => 'standard',
   // Chatbot System Parameters
   'botId' => null,
   'instructions' => 'Converse as if you were an AI assistant. Be friendly, creative.',
@@ -45,7 +54,12 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   'functions' => [],
   'mcpServers' => [],
   // Advanced
-  'historyStrategy' => null
+  'historyStrategy' => null,
+  // Cross-Site
+  'crossSite' => [
+    'enabled' => false,
+    'allowedDomains' => []
+  ]
 ] );
 
 define( 'MWAI_LANGUAGES', [

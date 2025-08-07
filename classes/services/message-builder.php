@@ -200,17 +200,11 @@ class Meow_MWAI_Services_MessageBuilder {
       return $messages;
     }
 
-    // Debug: Log the blocks structure
-    $queries_debug = $this->core->get_option( 'queries_debug_mode' );
-    if ( $queries_debug ) {
-      error_log( '[AI Engine Queries] Building feedback messages with ' . count( $query->blocks ) . ' blocks' );
-      foreach ( $query->blocks as $idx => $block ) {
-        error_log( '[AI Engine Queries] Block ' . $idx . ' has ' . count( $block['feedbacks'] ?? [] ) . ' feedbacks' );
-      }
-    }
 
-    // For Responses API, we need to process ALL tool calls from the rawMessage
-    // and ensure we return them in the same order with their outputs
+    // For Responses API with previous_response_id, we should ONLY send function_call_output messages.
+    // The API already knows about the function_call messages from the previous response.
+    // According to OpenAI documentation, we should NOT echo back the function_call messages.
+    
     foreach ( $query->blocks as $block ) {
       if ( !isset( $block['feedbacks'] ) || empty( $block['feedbacks'] ) ) {
         continue;
@@ -220,60 +214,31 @@ class Meow_MWAI_Services_MessageBuilder {
       $rawMessage = $block['feedbacks'][0]['request']['rawMessage'] ?? null;
       
       if ( !$rawMessage || !isset( $rawMessage['tool_calls'] ) ) {
-        if ( $queries_debug ) {
-          error_log( '[AI Engine Queries] WARNING: No tool_calls found in rawMessage' );
-        }
         continue;
       }
 
       // Process ALL tool calls from the rawMessage in order
+      // But ONLY add the function_call_output messages (not the function_call messages)
       foreach ( $rawMessage['tool_calls'] as $toolCall ) {
         $callId = $toolCall['id'];
         
-        // First: Add the function_call message
-        $functionCall = Meow_MWAI_Data_FunctionCall::from_tool_call( $toolCall );
-        $messages[] = [
-          'type' => 'function_call',
-          'call_id' => $functionCall->id,
-          'name' => $functionCall->name,
-          'arguments' => $functionCall->get_arguments_json()
-        ];
-
-        if ( $queries_debug ) {
-          error_log( '[AI Engine Queries] Added function_call for: ' . $functionCall->name . ' (call_id: ' . $callId . ')' );
-        }
-
-        // Second: Find and add the corresponding function result
+        // Find and add the corresponding function result
+        // We do NOT add the function_call message when using previous_response_id
         $foundResult = false;
         foreach ( $block['feedbacks'] as $feedback ) {
           if ( ( $feedback['request']['toolId'] ?? null ) === $callId ) {
             $result = Meow_MWAI_Data_FunctionResult::success( $callId, $feedback['reply']['value'] ?? '' );
             $messages[] = $result->to_responses_api_format();
             $foundResult = true;
-            
-            if ( $queries_debug ) {
-              error_log( '[AI Engine Queries] Added function_call_output for call_id: ' . $callId );
-            }
             break;
           }
         }
 
         if ( !$foundResult ) {
           // This should not happen, but if we can't find the result, add an error result
-          if ( $queries_debug ) {
-            error_log( '[AI Engine Queries] ERROR: No result found for call_id: ' . $callId );
-          }
           $result = Meow_MWAI_Data_FunctionResult::failure( $callId, 'Function result not found' );
           $messages[] = $result->to_responses_api_format();
         }
-      }
-    }
-
-    // Debug: Log final messages structure
-    if ( $queries_debug ) {
-      error_log( '[AI Engine Queries] Total feedback messages built: ' . count( $messages ) );
-      foreach ( $messages as $idx => $msg ) {
-        error_log( '[AI Engine Queries] Message ' . $idx . ' - type: ' . ( $msg['type'] ?? 'unknown' ) . ', call_id: ' . ( $msg['call_id'] ?? 'none' ) );
       }
     }
 
@@ -299,40 +264,70 @@ class Meow_MWAI_Services_MessageBuilder {
       $messages = array_merge( $messages, $query->messages );
     }
 
-    // Add current user message
+    // Handle feedback queries - add function results
+    if ( $query instanceof Meow_MWAI_Query_Feedback && !empty( $query->blocks ) ) {
+      foreach ( $query->blocks as $block ) {
+        if ( !isset( $block['feedbacks'] ) ) {
+          continue;
+        }
+
+        foreach ( $block['feedbacks'] as $feedback ) {
+          $messages[] = [
+            'role' => 'tool',
+            'tool_call_id' => $feedback['request']['toolId'],
+            'content' => json_encode( $feedback['reply']['value'] ?? '' )
+          ];
+        }
+      }
+    }
+
+    // Add user message (if not a feedback query)
     if ( !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
-      $messages[] = [
-        'role' => 'user',
-        'content' => $query->get_message()
-      ];
+      $userMessage = $this->build_user_message( $query );
+      if ( $userMessage ) {
+        $messages[] = $userMessage;
+      }
     }
 
     return $messages;
   }
 
   /**
-  * Validate message order for Responses API
+  * Build user message for Chat Completions API
   */
-  public function validate_message_order( array $messages ): bool {
-    // Responses API is flexible with message order
-    // but certain patterns should be maintained
-
-    // Check for function_call followed by function_call_output
-    for ( $i = 0; $i < count( $messages ) - 1; $i++ ) {
-      $current = $messages[$i];
-      $next = $messages[$i + 1];
-
-      // If we have a function_call, the next related message should be function_call_output
-      if ( isset( $current['type'] ) && $current['type'] === 'function_call' ) {
-        if ( isset( $next['type'] ) && $next['type'] === 'function_call_output' ) {
-          // Validate matching call_ids
-          if ( $current['call_id'] !== $next['call_id'] ) {
-            return false;
-          }
-        }
-      }
+  private function build_user_message( Meow_MWAI_Query_Base $query ): ?array {
+    $message = $query->get_message();
+    if ( empty( $message ) ) {
+      return null;
     }
 
-    return true;
+    // Handle image attachments
+    if ( $query->attachedFile && $query->attachedFile->get_type() === 'image' ) {
+      $imageUrl = $query->image_remote_upload === 'url'
+        ? $query->attachedFile->get_url()
+        : $query->attachedFile->get_inline_base64_url();
+
+      return [
+        'role' => 'user',
+        'content' => [
+          [
+            'type' => 'text',
+            'text' => $message
+          ],
+          [
+            'type' => 'image_url',
+            'image_url' => [
+              'url' => $imageUrl
+            ]
+          ]
+        ]
+      ];
+    }
+
+    // Simple text message
+    return [
+      'role' => 'user',
+      'content' => $message
+    ];
   }
 }

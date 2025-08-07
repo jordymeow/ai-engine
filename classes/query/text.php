@@ -9,6 +9,8 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
   public ?int $maxTokens = null;
   public ?string $stop = null;
   public ?string $responseFormat = null;
+  public ?string $reasoning = null;  // GPT-5 reasoning effort
+  public ?string $verbosity = null;  // GPT-5 verbosity level
 
   #region Constructors, Serialization
 
@@ -111,6 +113,30 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     $this->stop = $stop;
   }
 
+  /**
+  * Set the reasoning effort for GPT-5 models.
+  * @param string $reasoning The reasoning effort level (minimal, low, medium, high).
+  */
+  public function set_reasoning( string $reasoning ): void {
+    $valid = ['minimal', 'low', 'medium', 'high'];
+    if ( !in_array( $reasoning, $valid ) ) {
+      throw new Exception( 'AI Engine: Invalid reasoning level. Must be one of: minimal, low, medium, high.' );
+    }
+    $this->reasoning = $reasoning;
+  }
+
+  /**
+  * Set the verbosity level for GPT-5 models.
+  * @param string $verbosity The verbosity level (low, medium, high).
+  */
+  public function set_verbosity( string $verbosity ): void {
+    $valid = ['low', 'medium', 'high'];
+    if ( !in_array( $verbosity, $valid ) ) {
+      throw new Exception( 'AI Engine: Invalid verbosity level. Must be one of: low, medium, high.' );
+    }
+    $this->verbosity = $verbosity;
+  }
+
   #endregion
 
   #region Inject Params
@@ -131,6 +157,12 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     }
     if ( !empty( $params['responseFormat'] ) ) {
       $this->set_response_format( $params['responseFormat'] );
+    }
+    if ( !empty( $params['reasoning'] ) ) {
+      $this->set_reasoning( $params['reasoning'] );
+    }
+    if ( !empty( $params['verbosity'] ) ) {
+      $this->set_verbosity( $params['verbosity'] );
     }
   }
 

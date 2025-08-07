@@ -13,9 +13,9 @@ module.exports = function (env, options) {
 
   const cleanPlugin = new CleanWebpackPlugin({
     protectWebpackAssets: false,
-    cleanOnceBeforeBuildPatterns: ["!app/"],
+    cleanOnceBeforeBuildPatterns: ["!app/", "!pdf.worker.min.js"],
     cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
-      '!forms.js', '!pdfjs.js', '!pdf.worker.min.js', '*.map'],
+      '!forms.js', '!pdfjs.js', '!pdf.worker.min.js', '!pdf.worker.min.mjs', '*.map'],
     dry: false,
     dangerouslyAllowCleanPatternsOutsideProject: true
   });
@@ -27,15 +27,6 @@ module.exports = function (env, options) {
   if (isAnalysis && env && env.entry === 'chatbot') {
     plugins.push(new BundleAnalyzerPlugin());
   }
-  // Copy PDF.js worker (loaded dynamically when needed)
-  plugins.push(new CopyPlugin({
-    patterns: [
-      { 
-        from: path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
-        to: path.resolve(__dirname, 'app/pdf.worker.min.js')
-      }
-    ]
-  }));
   // Only add LICENSE cleanup in production mode
   if (isProduction) {
     plugins.push({
@@ -129,6 +120,19 @@ module.exports = function (env, options) {
       index: './app/js/index.js',
     },
     cache: { type: "filesystem" },
+    plugins: [
+      ...baseConfig.plugins,
+      // Copy PDF.js worker only once (in admin build)
+      new CopyPlugin({
+        patterns: [
+          { 
+            from: path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
+            to: path.resolve(__dirname, 'app/pdf.worker.min.js'),
+            force: true
+          }
+        ]
+      })
+    ],
     optimization: {
       minimize: isProduction ? true : false,
       minimizer: isProduction ? [

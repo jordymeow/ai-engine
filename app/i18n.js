@@ -45,6 +45,8 @@ i18n.COMMON = {
   SCOPE: __( 'Scope', 'ai-engine' ),
   POPUP: __( 'Popup', 'ai-engine' ),
   POSITION: __( 'Position', 'ai-engine' ),
+  CENTER: __( 'Center', 'ai-engine' ),
+  OPEN_DELAY: __( 'Open Delay', 'ai-engine' ),
   VOICE: __( 'Voice', 'ai-engine' ),
   ICON: __( 'Icon', 'ai-engine' ),
   ICON_TEXT: __( 'Icon Text', 'ai-engine' ),
@@ -410,7 +412,9 @@ i18n.HELP = {
   ADVISOR: __( 'In your Dashboard will be displayed daily recommendations tailored to your WordPress setup. Admins only.', 'ai-engine' ),
   BUBBLE: __( 'The popup will be displayed as a bubble.', 'ai-engine' ),
   ICON_TEXT: __( 'If set, this text will appear next to the icon/bubble.', 'ai-engine' ),
-  ICON_TEXT_DELAY: __( 'The delay before the text appears.', 'ai-engine' ),
+  ICON_TEXT_DELAY: __( 'Delay before text appears.', 'ai-engine' ),
+  WIDTH: __( 'Width of the chatbot when open.', 'ai-engine' ),
+  OPEN_DELAY: __( 'Auto-open after X seconds.', 'ai-engine' ),
   CHATBOT_SELECT: __( 'Choose how you want to select the chatbot. By default, tabs are used, but you can also use a filterable dropdown if you have many chatbots.', 'ai-engine' ),
 };
 

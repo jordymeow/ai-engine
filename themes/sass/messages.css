@@ -804,7 +804,7 @@
 .mwai-messages-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button {
   justify-content: center;
   height: 32px;
-  width: 32px;
+  width: 22px;
   cursor: pointer;
   display: flex;
   justify-content: center;
@@ -826,10 +826,9 @@
 .mwai-messages-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button {
   justify-content: center;
   height: 32px;
-  width: 32px;
+  width: 33px;
   cursor: pointer;
   border-radius: var(--mwai-borderRadius);
-  margin-left: -10px;
 }
 .mwai-messages-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before {
   transition: all 0.2s ease-out;
@@ -1060,15 +1059,6 @@
   .mwai-messages-theme.mwai-window.mwai-open .mwai-body .mwai-conversation {
     flex: auto;
     max-height: none;
-  }
-  .mwai-messages-theme.mwai-window.mwai-open.mwai-center-open {
-    top: 0 !important;
-    left: 0 !important;
-    transform: none !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
   }
   .mwai-messages-theme.mwai-window.mwai-open .mwai-input {
     flex-direction: column;
@@ -1551,3 +1541,5 @@
     margin: 15px 0 0 0;
   }
 }
+
+/*# sourceMappingURL=messages.css.map */

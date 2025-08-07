@@ -54,12 +54,19 @@ const showWelcome = () => {
 // paths & persistent state
 ////////////////////////////////////////////////////////////////////////////////
 const HOME       = os.homedir();
-const MCP_DIR    = path.join(HOME, '.mcp'); fs.mkdirSync(MCP_DIR, { recursive: true });
+const MCP_DIR    = path.join(HOME, '.mcp');
+fs.mkdirSync(MCP_DIR, { recursive: true });
+
 const SITE_CFG   = path.join(MCP_DIR, 'sites.json');
 const LOG_HDR    = path.join(MCP_DIR, 'mcp.log');
 const LOG_BODY   = path.join(MCP_DIR, 'mcp-results.log');
 const ERR_LOG    = path.join(MCP_DIR, 'error.log');
-const CLAUDE_CFG = path.join(HOME, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+
+// Cross-platform path for Claude Desktop configuration
+const CLAUDE_CFG = process.platform === 'win32'
+  ? path.join(process.env.APPDATA || '', 'Claude', 'claude_desktop_config.json')
+  : path.join(HOME, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+
 const SELF       = path.resolve(__filename);
 
 /* load sites config (upgrade legacy string → object) */

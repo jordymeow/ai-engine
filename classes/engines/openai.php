@@ -266,8 +266,28 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $body['max_output_tokens'] = $query->maxTokens;
       }
 
+      // Handle temperature parameter - GPT-5 models don't support it
       if ( !empty( $query->temperature ) && $query->temperature !== 1 ) {
-        $body['temperature'] = $query->temperature;
+        // Check if this is a GPT-5 model (gpt-5, gpt-5-mini, gpt-5-nano)
+        if ( strpos( $query->model, 'gpt-5' ) !== 0 ) {
+          $body['temperature'] = $query->temperature;
+        }
+        // For GPT-5 models, skip the temperature parameter entirely
+      }
+
+      // Handle GPT-5 specific parameters: reasoning and verbosity
+      if ( strpos( $query->model, 'gpt-5' ) === 0 ) {
+        // Add reasoning parameter if set (at root level)
+        if ( !empty( $query->reasoning ) ) {
+          $body['reasoning'] = $query->reasoning;
+        }
+        // Add verbosity parameter if set (inside text object)
+        if ( !empty( $query->verbosity ) ) {
+          if ( !isset( $body['text'] ) ) {
+            $body['text'] = [];
+          }
+          $body['text']['verbosity'] = $query->verbosity;
+        }
       }
 
       // Note: The Responses API does not support the 'n' parameter for multiple results
@@ -292,11 +312,16 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       }
 
       // Function calling - convert to tools
-      // Include tools when:
-      // 1. It's the first request (no previous_response_id)
-      // 2. It's a feedback query (needs full context)
-      if ( !empty( $query->functions ) && ( empty( $body['previous_response_id'] ) || $query instanceof Meow_MWAI_Query_Feedback ) ) {
+      // IMPORTANT: Tools must be included in ALL requests, even when using previous_response_id
+      // The API needs to know which functions are available throughout the entire conversation
+      if ( !empty( $query->functions ) ) {
         $body['tools'] = $this->build_responses_tools( $query->functions );
+        // IMPORTANT: Enable parallel tool calls to allow multiple function calls in one response
+        // TODO: OpenAI's Responses API has a bug where it only returns ONE function call even when
+        // parallel_tool_calls=true is set and multiple functions are clearly needed. This works correctly
+        // with the Chat Completions API. Monitor OpenAI's updates and test again in the future.
+        // Issue discovered: August 2025 - Only getDeskTemperature is called when both desk AND outdoor are requested.
+        $body['parallel_tool_calls'] = true;
       }
 
 
@@ -441,6 +466,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       Meow_MWAI_Logging::log( 'Responses API: Feedback query body: ' . json_encode( $body ) );
     }
 
+    // Ensure parallel_tool_calls is set when we have tools
+    if ( !empty( $body['tools'] ) && !isset( $body['parallel_tool_calls'] ) ) {
+      $body['parallel_tool_calls'] = true;
+    }
 
     return $body;
   }
@@ -1193,8 +1222,24 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     // Store current query for should_use_responses_api check
     $this->currentQuery = $query;
 
+    // Check if this is a GPT-5 model
+    $isGpt5Model = strpos( $query->model, 'gpt-5' ) === 0;
+    
     // Debug: Always log which API we're using
     $useResponsesApi = $this->should_use_responses_api( $query->model );
+    
+    // GPT-5 models MUST use Responses API
+    if ( $isGpt5Model && !$useResponsesApi ) {
+      $options = $this->core->get_all_options();
+      $responsesApiEnabled = $options['ai_responses_api'] ?? true;
+      
+      if ( !$responsesApiEnabled ) {
+        throw new Exception( 'GPT-5 models require the Responses API to be enabled. Please enable "Use Responses API" in AI Engine settings.' );
+      }
+      
+      // If Responses API is enabled but model doesn't have the tag, force it
+      return $this->run_responses_completion_query( $query, $streamCallback );
+    }
 
     // Check if we should use Responses API
     if ( $useResponsesApi ) {
@@ -1504,7 +1549,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $this->previousResponseId = $returned_id;
         $reply->set_id( $returned_id );
       }
-
       // Set the results
       $reply->set_choices( $returned_choices );
 

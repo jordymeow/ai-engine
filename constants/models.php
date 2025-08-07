@@ -4,6 +4,84 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   /*
+    GPT-5
+    Next-generation flagship model with enhanced capabilities
+    https://platform.openai.com/docs/models/gpt-5
+    */
+  [
+    'model' => 'gpt-5',
+    'name' => 'GPT-5',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.25,
+      'out' => 10.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
+    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'params' => [
+      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5 Mini
+    Efficient and cost-effective GPT-5 variant
+    https://platform.openai.com/docs/models/gpt-5-mini
+    */
+  [
+    'model' => 'gpt-5-mini',
+    'name' => 'GPT-5 Mini',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 0.25,
+      'out' => 2.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
+    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'params' => [
+      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5 Nano
+    Ultra-fast and lightweight GPT-5 model
+    https://platform.openai.com/docs/models/gpt-5-nano
+    */
+  [
+    'model' => 'gpt-5-nano',
+    'name' => 'GPT-5 Nano',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 0.05,
+      'out' => 0.40,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
+    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'params' => [
+      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
     GPT 4.1
     Flagship GPT model for complex tasks
     https://platform.openai.com/docs/models/gpt-4.1

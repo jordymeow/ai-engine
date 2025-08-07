@@ -935,6 +935,22 @@ class Meow_MWAI_Core {
           }
           $value = $tools;
         }
+        else if ( $key === 'crossSite' ) {
+          // Handle crossSite object
+          $crossSite = [
+            'enabled' => isset( $value['enabled'] ) ? (bool) $value['enabled'] : false,
+            'allowedDomains' => []
+          ];
+          if ( isset( $value['allowedDomains'] ) && is_array( $value['allowedDomains'] ) ) {
+            foreach ( $value['allowedDomains'] as $domain ) {
+              $sanitized_domain = sanitize_text_field( $domain );
+              if ( !empty( $sanitized_domain ) ) {
+                $crossSite['allowedDomains'][] = $sanitized_domain;
+              }
+            }
+          }
+          $value = $crossSite;
+        }
         else {
           if ( in_array( $key, $keepLineReturnsFields ) ) {
             $value = preg_replace( '/\r\n/', '[==LINE_RETURN==]', $value );

@@ -409,5 +409,15 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['embeddingsEnvId'] ) ) {
       $this->set_embeddings_env_id( $params['embeddingsEnvId'] );
     }
+    if ( !empty( $params['mcpServers'] ) ) {
+      // Handle both JSON string and array formats
+      $mcpServers = $params['mcpServers'];
+      if ( is_string( $mcpServers ) ) {
+        $mcpServers = json_decode( $mcpServers, true );
+      }
+      if ( is_array( $mcpServers ) ) {
+        $this->set_mcp_servers( $mcpServers );
+      }
+    }
   }
 }

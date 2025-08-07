@@ -103,7 +103,7 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
     // Let's check for resolutions.
     if ( !isset( $modelInfo['resolutions'] ) || empty( $modelInfo['resolutions'] ) ) {
-      Meow_MWAI_Logging::error( 'No resolutions defined for model: ' . $this->model, '🖼️' );
+      // Skip warning for non-image models (e.g., when using image_generation as a tool)
       return;
     }
 
@@ -112,7 +112,7 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
       $this->resolution = $modelInfo['resolutions'][0]['name'];
     }
 
-    // If we have a resolutions array ([ name, label ]), let’s ensure our current resolution (name) is supported
+    // If we have a resolutions array ([ name, label ]), let's ensure our current resolution (name) is supported
     $resolutions = $modelInfo['resolutions'];
     $found = false;
     foreach ( $resolutions as $resolution ) {

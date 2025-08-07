@@ -83,6 +83,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     return !empty( $modelDef['tags'] ) && in_array( 'o1-model', $modelDef['tags'] );
   }
 
+  private function is_gpt5_model( $model ) {
+    // Check if the model is a GPT-5 variant
+    return strpos( $model, 'gpt-5' ) === 0;
+  }
+
   private function requires_developer_roles( $model ) {
     if ( $model === 'o1' ) {
       return true;
@@ -183,12 +188,15 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
 
       if ( !empty( $query->temperature ) ) {
-        if ( !$this->is_o1_model( $query->model ) ) {
+        // GPT-5 and o1 models don't support temperature parameter
+        if ( !$this->is_o1_model( $query->model ) && !$this->is_gpt5_model( $query->model ) ) {
           $body['temperature'] = $query->temperature;
         }
-        else {
+        else if ( $this->is_o1_model( $query->model ) ) {
+          // o1 models require temperature to be 1 if specified
           $body['temperature'] = 1;
         }
+        // For GPT-5 models, we simply don't include the temperature parameter
       }
 
       if ( !empty( $query->maxResults ) ) {
@@ -985,6 +993,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   }
 
   public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
+    // Check if this is a GPT-5 model - they don't support Chat Completions API
+    if ( $this->is_gpt5_model( $query->model ) ) {
+      throw new Exception( 'GPT-5 models only support the Responses API. Please enable "Use Responses API" in AI Engine settings to use ' . $query->model . '.' );
+    }
+    
     $isStreaming = !is_null( $streamCallback );
 
     // Initialize debug mode

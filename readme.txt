@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.8
+Stable tag: 2.9.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,18 +24,19 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Features ==
 
-* **Model Management**: Effortlessly bring the latest AI models (GPT 4.1, Claude, Gemini, o3, o4, 4o, and more) to your WordPress. Quickly set your preferred models to match your specific WordPress workflows.
-* **Chatbots**: Easily create interactive chatbots. Customize themes, avatars, and conversation flows to fit your brand or use case.
-* **AI Forms**: Build AI-driven forms that handle text, images, audio, or file uploads—perfect for advanced support tickets, creative prompts, or user submissions.
-* **Copilot**: Transform the WordPress editor into your personal AI assistant. Simply hit “space” or use the wand icons to get real-time suggestions, quick translations, or content rewrites.
+* **Model Management**: Bring the latest AI models (GPT-5, GPT 4.1, Claude, Gemini, o3, o4, 4o, and more) to WordPress. Set your preferred models to match your specific workflows. GPT-5 includes advanced reasoning and verbosity controls.
+* **Chatbots**: Create interactive chatbots with customizable themes, avatars, and conversation flows. Features a modular UI Builder with containers, headers, footers, and MacOS-style components.
+* **AI Forms**: Build AI-driven forms that handle text, images, audio, or file uploads. Create custom AI-powered apps and online services with MCP server integration.
+* **Copilot**: Transform the WordPress editor into your AI assistant. Hit "space" or use the wand icons for real-time suggestions, translations, or content rewrites.
 * **Image & Translation**: Create images from prompts, break language barriers with instant translations, and quickly refine existing text for clarity and SEO.
 * **Finetuning & Embeddings**: Fine-tune AI models to match your domain or style, and use embeddings for smarter AI interactions, content classification, or personalized recommendations.
-* **Vector Database Support**: Connect with Chroma, Qdrant, and OpenAI Vector Store for scalable AI knowledge bases and semantic search.
+* **Vector Database Support**: Connect with Pinecone, Chroma, Qdrant, and OpenAI Vector Store for scalable AI knowledge bases and semantic search.
 * **Multi-File Upload**: Chatbots handle multiple attachments in a single message—perfect for complex support tickets or creative projects.
-* **Discussions & Memory Tracking**: Let users engage in longer or more complex conversations with the chatbot. All data can be stored, analyzed, and even exported for further insights.
-* **Function Calling**: Connect the AI models to your WordPress functions, tools, or APIs. For example, you can use the chatbot to allow your users to interact with your store, book appointments, or get real-time data.
+* **Discussions & Memory Tracking**: Enable longer conversations with chatbots. Store, analyze, and export all data for insights.
+* **Function Calling**: Connect AI models to WordPress functions, tools, or APIs. Let users interact with your store, book appointments, or get real-time data.
 * **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
 - **MCP (Model Context Protocol)**: Allow powerful AI agents (like Claude) to fully control and manage your WordPress site. Automate posts, content updates, manage media, and seamlessly integrate advanced AI workflows. AI Engine can also connect to external MCP servers, expanding your AI's capabilities beyond WordPress.
+* **Cross-Site Embedding**: Embed your chatbots on external websites with domain-based access control and simple JavaScript integration.
 * **AI-Powered Search**: Three intelligent methods—Simple WordPress search, Context-Aware progressive keyword search, and Smart Search using semantic embeddings.
 * **PDF Import**: Build knowledge bases from PDFs with automatic chunking and intelligent content extraction.
 * **Enhanced Privacy & Security**: IP address hashing, GDPR compliance tools, secure file handling with authorization checks, and session-based tracking for guests.
@@ -153,6 +154,17 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 2.9.9 (2025/08/07) =
+- Add: Support for GPT-5 model with reasoning and verbosity parameters.  
+- Add: Windows compatibility support for MCP script. 
+- Add: Support for MCP Servers in AI Forms.  
+- Add: Cross-Site feature enabling chatbots to be embedded on external websites. 
+- Add: Modular UI Builder with customizable containers, headers, and footers, including MacOS-style components.
+- Add: Chatbot window width controls, center positioning option, and auto-open delay for better UX.  
+- Add: Center (centerOpen) option in popup settings for centered chatbot windows.  
+- Fix: Hotfix for drag-and-drop file handling error. 
+- Fix: Resolved minor bugs and tiny enhancements.
 
 = 2.9.8 (2025/08/01) =
 * Add: Support for Chroma (another Vector DB) has been introduced for both Cloud and self-hosted instances.  
