@@ -24,10 +24,16 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   protected $mcpServerCount = 0;
   protected $mcpTotalToolCount = 0;
   protected $emittedFunctionResults = [];
+  
+  // Code interpreter content (separate from main content)
+  protected $streamContentCode = '';
+  protected $streamContainerId = null;
+  protected $streamCodeInterpreterFiles = []; // Track files created by code interpreter
   protected $currentQuery = null;
   protected $streamImages = [];
   protected $seenCallIds = []; // Track seen call IDs to prevent duplicates
   protected $lastRequestBody = null; // For debugging
+  protected $contentStarted = false; // Track if content streaming has started
   // IMPORTANT: OpenAI Responses API sends the same function call in both:
   // 1. response.output_item.done - when individual function call completes
   // 2. response.completed - with all function calls in the final response
@@ -277,13 +283,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
       // Handle GPT-5 specific parameters: reasoning and verbosity
       if ( strpos( $query->model, 'gpt-5' ) === 0 ) {
-        // Add reasoning parameter if set (at root level)
+        // Add reasoning parameter as an object (Responses API expects object)
+        // { reasoning: { effort: 'minimal|low|medium|high' } }
         if ( !empty( $query->reasoning ) ) {
-          $body['reasoning'] = $query->reasoning;
+          $body['reasoning'] = [ 'effort' => $query->reasoning ];
         }
         // Add verbosity parameter if set (inside text object)
         if ( !empty( $query->verbosity ) ) {
-          if ( !isset( $body['text'] ) ) {
+          if ( !isset( $body['text'] ) || !is_array( $body['text'] ) ) {
             $body['text'] = [];
           }
           $body['text']['verbosity'] = $query->verbosity;
@@ -304,11 +311,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
       if ( !empty( $query->responseFormat ) && $query->responseFormat === 'json' ) {
         // Responses API uses 'text.format' instead of 'response_format'
-        $body['text'] = [
-          'format' => [
-            'type' => 'json_object'
-          ]
-        ];
+        if ( !isset( $body['text'] ) || !is_array( $body['text'] ) ) {
+          $body['text'] = [];
+        }
+        $body['text']['format'] = [ 'type' => 'json_object' ];
       }
 
       // Function calling - convert to tools
@@ -379,8 +385,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $body['tool_choice'] = 'auto';
       }
 
-      // Add tools (web_search, image_generation) if specified
+      // Add tools (web_search, image_generation, code_interpreter) if specified
       if ( !empty( $query->tools ) && is_array( $query->tools ) ) {
+        
         // Ensure tools array exists
         if ( !isset( $body['tools'] ) ) {
           $body['tools'] = [];
@@ -388,12 +395,22 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
         // Add each enabled tool
         foreach ( $query->tools as $tool ) {
-          if ( in_array( $tool, ['web_search', 'image_generation'] ) ) {
+          if ( in_array( $tool, ['web_search', 'image_generation', 'code_interpreter'] ) ) {
             $toolConfig = [ 'type' => $tool ];
 
             // Image generation requires partial_images when streaming
             if ( $tool === 'image_generation' && !empty( $streamCallback ) ) {
               $toolConfig['partial_images'] = 1;
+            }
+
+            // Code interpreter requires container configuration
+            if ( $tool === 'code_interpreter' ) {
+              $toolConfig['container'] = [ 'type' => 'auto' ];
+              // Add file_ids if available in the query
+              if ( !empty( $query->fileIds ) && is_array( $query->fileIds ) ) {
+                $toolConfig['container']['file_ids'] = $query->fileIds;
+              }
+              // Code interpreter tool configured
             }
 
             $body['tools'][] = $toolConfig;
@@ -666,6 +683,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
     // Handle different event types for Responses API
     $eventType = $json['type'] ?? null;
+    
 
     // Debug streaming events
     if ( isset( $_GET['debug_mcp'] ) ) {
@@ -768,6 +786,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           $item = $json['item'];
           $itemType = $item['type'];
           $currentItemType = $itemType;
+          
+          // Code interpreter items are handled in event processing
 
           // Don't emit events here for web search or image generation - wait for more specific events
           // This prevents duplicate events
@@ -871,6 +891,41 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             // This prevents duplicate events
             Meow_MWAI_Logging::log( 'Responses API: Web search output item completed (event handled by specific handler)' );
           }
+          elseif ( $itemType === 'code_interpreter_call' ) {
+            // Code interpreter completed
+            Meow_MWAI_Logging::log( 'Responses API: Code interpreter output item completed' );
+            
+            // Store container ID if available
+            if ( isset( $item['container_id'] ) ) {
+              $this->streamContainerId = $item['container_id'];
+              Meow_MWAI_Logging::log( 'Responses API: Found container_id in streaming: ' . $this->streamContainerId );
+            }
+            
+            // Check for files in the result
+            if ( isset( $item['result'] ) ) {
+              $result = $item['result'];
+              
+              // Look for files in the result
+              if ( isset( $result['files'] ) ) {
+                // Store these files
+                if ( !isset( $this->streamCodeInterpreterFiles ) ) {
+                  $this->streamCodeInterpreterFiles = [];
+                }
+                
+                foreach ( $result['files'] as $file ) {
+                  $this->streamCodeInterpreterFiles[] = $file;
+                  Meow_MWAI_Logging::log( 'Responses API: Captured file from result: ' . ( $file['filename'] ?? $file['id'] ?? 'unknown' ) );
+                }
+              }
+              
+              // Handle standard output
+              if ( isset( $result['stdout'] ) && !empty( $result['stdout'] ) ) {
+                // Add code output to the response content
+                $content = "\n```\n" . $result['stdout'] . "\n```\n";
+                Meow_MWAI_Logging::log( 'Responses API: Code interpreter stdout: ' . substr( $result['stdout'], 0, 100 ) );
+              }
+            }
+          }
           elseif ( $itemType === 'image_generation_call' ) {
             // Image generation completed
             Meow_MWAI_Logging::log( 'Responses API: Image generation output item completed' );
@@ -942,7 +997,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         // Streaming text chunk for the current content part
         if ( isset( $json['delta'] ) ) {
           // Send a status event for the first content chunk
-          if ( $this->currentDebugMode && !isset( $this->contentStarted ) ) {
+          if ( $this->currentDebugMode && !$this->contentStarted ) {
             $this->contentStarted = true;
             $statusEvent = Meow_MWAI_Event::generating_response();
             call_user_func( $this->streamCallback, $statusEvent );
@@ -955,7 +1010,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         // Final text for the content part
         // Contains the complete accumulated text
         // Don't send response_completed here - ChatbotContext adds "Request completed"
-        unset( $this->contentStarted );
+        $this->contentStarted = false;
         break;
 
       case 'response.refusal.delta':
@@ -1063,6 +1118,126 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
         break;
 
+        // ===== CODE INTERPRETER EVENTS =====
+
+      case 'response.code_interpreter_call.in_progress':
+        // Code interpreter started
+        
+        // Check for container_id in the event
+        if ( isset( $json['container_id'] ) ) {
+          $this->streamContainerId = $json['container_id'];
+          error_log( '[AI Engine] Found container_id in code_interpreter_call.in_progress: ' . $this->streamContainerId );
+        }
+        
+        // Also check in item if present
+        if ( isset( $json['item']['container_id'] ) ) {
+          $this->streamContainerId = $json['item']['container_id'];
+          error_log( '[AI Engine] Found container_id in item: ' . $this->streamContainerId );
+        }
+        
+        // Container ID captured if available
+        break;
+
+      case 'response.code_interpreter_call.running':
+        // Code is being executed
+        // Check for container_id here too
+        if ( isset( $json['container_id'] ) ) {
+          $this->streamContainerId = $json['container_id'];
+          Meow_MWAI_Logging::log( 'Responses API: Found container_id in running event: ' . $this->streamContainerId );
+        }
+        break;
+
+      case 'response.code_interpreter_call.stdout':
+        // Standard output from code execution
+        if ( isset( $json['stdout'] ) ) {
+          Meow_MWAI_Logging::log( 'Responses API: Code output - ' . substr( $json['stdout'], 0, 100 ) );
+        }
+        break;
+
+      case 'response.code_interpreter_call.stderr':
+        // Standard error from code execution
+        if ( isset( $json['stderr'] ) ) {
+          Meow_MWAI_Logging::log( 'Responses API: Code error - ' . $json['stderr'] );
+        }
+        break;
+
+      case 'response.code_interpreter_call.completed':
+        // Code interpreter finished - files are now ready for download
+        Meow_MWAI_Logging::log( 'Responses API: Code interpreter completed' );
+        
+        // Check for container_id in completed event
+        if ( isset( $json['container_id'] ) ) {
+          $this->streamContainerId = $json['container_id'];
+          Meow_MWAI_Logging::log( 'Responses API: Container ID: ' . $this->streamContainerId );
+        }
+        
+        // Mark that code interpreter has completed
+        $this->codeInterpreterCompleted = true;
+        
+        // Send CODE event to client
+        if ( $this->currentDebugMode && $this->streamCallback ) {
+          $codeEvent = ( new Meow_MWAI_Event( 'live', MWAI_STREAM_TYPES['CODE'] ) )
+            ->set_content( 'Code execution completed.' );
+          call_user_func( $this->streamCallback, $codeEvent );
+        }
+        break;
+
+      case 'response.code_interpreter_call_code.delta':
+        // Streaming code being written/executed by the code interpreter
+        // This should NOT be added to the main content
+        if ( isset( $json['delta'] ) ) {
+          // Send CODE event only for the first code delta
+          if ( empty( $this->streamContentCode ) && $this->currentDebugMode && $this->streamCallback ) {
+            $codeEvent = ( new Meow_MWAI_Event( 'live', MWAI_STREAM_TYPES['CODE'] ) )
+              ->set_content( 'Writing code...' );
+            call_user_func( $this->streamCallback, $codeEvent );
+          }
+          
+          // Accumulate code in streamContentCode instead of content
+          $this->streamContentCode .= $json['delta'];
+          
+          Meow_MWAI_Logging::log( 'Responses API: Code interpreter code delta - ' . substr( $json['delta'], 0, 100 ) );
+        }
+        // Important: Don't return any content here so it's not added to streamContent
+        return null;
+      
+      case 'response.code_interpreter_call_code.done':
+        // Code interpreter code writing completed
+        if ( !empty( $this->streamContentCode ) && $this->currentDebugMode && $this->streamCallback ) {
+          $lines = substr_count( $this->streamContentCode, "\n" ) + 1;
+          
+          // Send the complete code as a collapsed CODE event
+          // Set summary as content (shown when collapsed) and full code as metadata (shown when expanded)
+          $codeEvent = ( new Meow_MWAI_Event( 'live', MWAI_STREAM_TYPES['CODE'] ) )
+            ->set_content( "Wrote Python code ($lines lines)" )
+            ->set_visibility( MWAI_STREAM_VISIBILITY['COLLAPSED'] )
+            ->set_metadata( 'full_code', $this->streamContentCode );
+          call_user_func( $this->streamCallback, $codeEvent );
+          
+          Meow_MWAI_Logging::log( 'Responses API: Code interpreter code completed - ' . strlen( $this->streamContentCode ) . ' bytes' );
+        }
+        break;
+        
+      case 'response.code_interpreter_file_citation':
+      case 'code_interpreter_file_citation':
+        // Code interpreter has created or cited a file
+        // This event contains the file_id for files generated during code execution
+        if ( isset( $json['file_id'] ) ) {
+          if ( !isset( $this->streamCodeInterpreterFiles ) ) {
+            $this->streamCodeInterpreterFiles = [];
+          }
+          $file_info = [
+            'file_id' => $json['file_id'],
+            'filename' => $json['filename'] ?? null,
+            'file_type' => $json['file_type'] ?? null,
+            'path' => isset( $json['path'] ) ? $json['path'] : ( isset( $json['filename'] ) ? '/mnt/data/' . $json['filename'] : null )
+          ];
+          $this->streamCodeInterpreterFiles[] = $file_info;
+          error_log( '[AI Engine] File citation captured: ' . json_encode( $file_info ) );
+          Meow_MWAI_Logging::log( 'Responses API: Code interpreter file citation - file_id: ' . $json['file_id'] );
+        }
+        break;
+
         // ===== MCP (Model Context Protocol) EVENTS =====
 
       case 'response.mcp_call.in_progress':
@@ -1143,8 +1318,37 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
       case 'response.output_text_annotation.added':
       case 'response.output_text.annotation.added':
-        // Text annotation added (e.g., citations, references)
-        // Can be used to add metadata to generated text
+        // Text annotation added - check for container file citations
+        if ( isset( $json['annotation'] ) ) {
+          $annotation = $json['annotation'];
+          
+          // Check if this is a container file citation
+          if ( isset( $annotation['type'] ) && $annotation['type'] === 'container_file_citation' ) {
+            // Initialize files array if needed
+            if ( !isset( $this->streamCodeInterpreterFiles ) ) {
+              $this->streamCodeInterpreterFiles = [];
+            }
+            
+            // Extract file information
+            $fileInfo = [
+              'file_id' => $annotation['file_id'] ?? null,
+              'filename' => $annotation['filename'] ?? null,
+              'container_id' => $annotation['container_id'] ?? null
+            ];
+            
+            // Store the file info if we have a file_id
+            if ( $fileInfo['file_id'] ) {
+              $this->streamCodeInterpreterFiles[] = $fileInfo;
+              
+              // Also store container ID if available
+              if ( $fileInfo['container_id'] && !$this->streamContainerId ) {
+                $this->streamContainerId = $fileInfo['container_id'];
+              }
+              
+              Meow_MWAI_Logging::log( 'Responses API: File citation - ' . $fileInfo['filename'] . ' (' . $fileInfo['file_id'] . ')' );
+            }
+          }
+        }
         break;
 
       case 'response.completed':
@@ -1165,7 +1369,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
       default:
         // Unknown event type - log for debugging
-        Meow_MWAI_Logging::error( 'Responses API: Unknown event type: ' . $eventType );
+        Meow_MWAI_Logging::log( 'Responses API: Unknown event type: ' . $eventType );
 
         // Check if this might be a different streaming format
         if ( isset( $json['delta'] ) && is_string( $json['delta'] ) ) {
@@ -1210,6 +1414,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     
     // Reset OpenAI-specific state
     $this->streamImages = [];
+    $this->streamContentCode = '';
+    $this->streamContainerId = null;
+    $this->streamCodeInterpreterFiles = [];
+    $this->codeInterpreterCompleted = false;
   }
 
   /**
@@ -1348,6 +1556,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $returned_id = $this->inId;
         $returned_model = $this->inModel ? $this->inModel : $query->model;
         $message = [ 'role' => 'assistant', 'content' => $this->streamContent ];
+        
+        // Store code interpreter code if any
+        if ( !empty( $this->streamContentCode ) ) {
+          $reply->contentCode = $this->streamContentCode;
+          Meow_MWAI_Logging::log( 'Responses API: Stored ' . strlen( $this->streamContentCode ) . ' bytes of code interpreter code' );
+        }
+
+        // REMOVED - We'll handle files after streaming completes, not here
 
         if ( !empty( $this->streamToolCalls ) ) {
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
@@ -1367,6 +1583,27 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
         if ( !is_null( $this->streamCost ) ) {
           $returned_price = $this->streamCost;
+        }
+        
+        // Handle code interpreter sandbox files ONLY if code interpreter has completed
+        if ( !empty( $this->streamContainerId ) && !empty( $this->streamContent ) && $this->codeInterpreterCompleted ) {
+          // Check for sandbox links before processing
+          if ( strpos( $this->streamContent, 'sandbox:' ) !== false ) {
+            // Pass file citations if available
+            $fileCitations = isset( $this->streamCodeInterpreterFiles ) ? $this->streamCodeInterpreterFiles : [];
+            
+            // Download files and replace sandbox links
+            $this->streamContent = $this->handle_code_interpreter_sandbox_files( 
+              $this->streamContent, 
+              $this->streamContainerId, 
+              $query,
+              $fileCitations,
+              true  // streaming mode
+            );
+          }
+          
+          // Update the message content with replaced links
+          $message['content'] = $this->streamContent;
         }
 
         $returned_choices = [ [ 'message' => $message ] ];
@@ -1417,6 +1654,21 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         if ( empty( $data ) ) {
           throw new Exception( 'No content received (res is null).' );
         }
+        
+        // Debug logging for non-streaming mode
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] Full response structure (non-streaming):' );
+          error_log( json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+          
+          // Look for container_id in the response
+          $this->search_for_container_id_recursive( $data, '' );
+        }
+        
+        // Ensure $data is an array
+        if ( !is_array( $data ) ) {
+          $error_message = is_string( $data ) ? $data : 'Invalid response format';
+          throw new Exception( 'Responses API error: ' . $error_message );
+        }
 
         // Handle Responses API response format
         $returned_id = $data['id'] ?? null;
@@ -1466,6 +1718,38 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
                 ]
               ];
             }
+            elseif ( isset( $output_item['type'] ) && $output_item['type'] === 'code_interpreter_call' ) {
+              // Handle code interpreter calls - both with and without results
+              
+              // Store container ID if available (this is the primary location)
+              if ( isset( $output_item['container_id'] ) ) {
+                $codeInterpreterContainerId = $output_item['container_id'];
+                Meow_MWAI_Logging::log( 'Responses API: Found container_id for code interpreter: ' . $codeInterpreterContainerId );
+              }
+              
+              // Log the entire output_item structure for debugging
+              if ( $queries_debug ) {
+                error_log( '[AI Engine Queries] Code interpreter output_item structure:' );
+                error_log( json_encode( $output_item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+              }
+              
+              // Handle results if they exist
+              if ( isset( $output_item['result'] ) ) {
+                $result = $output_item['result'];
+                
+                // Also check for container_id in the result itself (backup location)
+                if ( isset( $result['container_id'] ) && !isset( $codeInterpreterContainerId ) ) {
+                  $codeInterpreterContainerId = $result['container_id'];
+                  Meow_MWAI_Logging::log( 'Responses API: Found container_id in result: ' . $codeInterpreterContainerId );
+                }
+                
+                // Append stdout to content if available
+                if ( isset( $result['stdout'] ) && !empty( $result['stdout'] ) ) {
+                  $content .= "\n```\n" . $result['stdout'] . "\n```\n";
+                  Meow_MWAI_Logging::log( 'Responses API: Found code interpreter output in non-streaming mode' );
+                }
+              }
+            }
             elseif ( isset( $output_item['type'] ) && $output_item['type'] === 'image_generation_call' && isset( $output_item['result'] ) ) {
               // Handle image generation results
               $base64Image = $output_item['result'];
@@ -1508,17 +1792,32 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
         // If still no content found, log for debugging
         if ( empty( $content ) ) {
-          Meow_MWAI_Logging::log( 'Responses API: No content found in response. Structure: ' . json_encode( array_keys( $data ) ) );
-          if ( isset( $data['output'][0] ) ) {
-            Meow_MWAI_Logging::log( 'Responses API: First output item: ' . json_encode( $data['output'][0] ) );
-          }
-          if ( isset( $data['text'] ) ) {
-            Meow_MWAI_Logging::log( 'Responses API: Text field structure: ' . json_encode( $data['text'] ) );
+          // Check if $data is actually an array before using array_keys
+          if ( is_array( $data ) ) {
+            Meow_MWAI_Logging::log( 'Responses API: No content found in response. Structure: ' . json_encode( array_keys( $data ) ) );
+            if ( isset( $data['output'][0] ) ) {
+              Meow_MWAI_Logging::log( 'Responses API: First output item: ' . json_encode( $data['output'][0] ) );
+            }
+            if ( isset( $data['text'] ) ) {
+              Meow_MWAI_Logging::log( 'Responses API: Text field structure: ' . json_encode( $data['text'] ) );
+            }
+          } else {
+            // If $data is not an array, it might be an error string
+            Meow_MWAI_Logging::log( 'Responses API: Invalid response data type. Data: ' . ( is_string( $data ) ? $data : json_encode( $data ) ) );
           }
           // Log the entire response for debugging
           Meow_MWAI_Logging::log( 'Responses API: Full response data: ' . json_encode( $data ) );
         }
 
+        
+        // Handle code interpreter sandbox files if we have a container ID
+        if ( !empty( $codeInterpreterContainerId ) ) {
+          $content = $this->handle_code_interpreter_sandbox_files( 
+            $content, 
+            $codeInterpreterContainerId, 
+            $query 
+          );
+        }
         
         $message = [ 'role' => 'assistant', 'content' => $content ];
         if ( !empty( $tool_calls ) ) {
@@ -1710,6 +2009,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     $this->conversationState = [];
   }
 
+
   /**
    * Check the connection to OpenAI by listing models.
    * This is a free metadata call that verifies API key validity.
@@ -1757,6 +2057,326 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       ];
     }
   }
+
+
+  /**
+   * Handle code interpreter sandbox files
+   * Parses sandbox links from content, downloads files, and replaces links
+   */
+  protected function handle_code_interpreter_sandbox_files( $content, $containerId, $query, $fileCitations = [], $isStreaming = false ) {
+    if ( empty( $containerId ) || empty( $content ) ) {
+      return $content;
+    }
+    
+    // Use streamCodeInterpreterFiles if available (from annotations)
+    if ( !empty( $this->streamCodeInterpreterFiles ) ) {
+      $fileCitations = $this->streamCodeInterpreterFiles;
+    }
+    
+    // Parse sandbox links from content
+    $sandboxLinks = $this->parse_sandbox_links( $content );
+    
+    if ( empty( $sandboxLinks ) ) {
+      return $content;
+    }
+    
+    Meow_MWAI_Logging::log( 'Code Interpreter: Processing ' . count( $sandboxLinks ) . ' sandbox files' );
+    
+    $containerFiles = [];
+    
+    // If we have file citations, use them directly (skip container list API)
+    if ( !empty( $fileCitations ) ) {
+      foreach ( $fileCitations as $citation ) {
+        if ( isset( $citation['file_id'] ) ) {
+          $containerFiles[] = [
+            'id' => $citation['file_id'],
+            'path' => $citation['path'] ?? ( '/mnt/data/' . $citation['filename'] ),
+            'filename' => $citation['filename'] ?? null
+          ];
+        }
+      }
+    } else {
+      // Only try container API if we don't have file citations
+      error_log( '[AI Engine] No file citations, will try container list API' );
+      $containerFiles = $this->list_container_files( $containerId, $query );
+    }
+    
+    if ( empty( $containerFiles ) ) {
+      error_log( '[AI Engine] WARNING: No files found from citations or container API' );
+      Meow_MWAI_Logging::warn( 'No files found in container ' . $containerId );
+      return $content;
+    }
+    
+    
+    
+    // Process each sandbox link
+    $replacements = 0;
+    foreach ( $sandboxLinks as $sandboxPath ) {
+      $filename = basename( $sandboxPath );
+      
+      // Find the file in container
+      $fileId = $this->find_container_file_id( $containerFiles, $filename );
+      
+      if ( !$fileId ) {
+        error_log( '[AI Engine] ERROR: File ID not found for: ' . $filename );
+        Meow_MWAI_Logging::warn( 'Code Interpreter: File not found in container: ' . $filename );
+        continue;
+      }
+      
+      
+      // Try to download the file with retries if streaming
+      $publicUrl = null;
+      $maxRetries = $isStreaming ? 3 : 1;
+      $retryDelay = 2; // seconds
+      
+      for ( $attempt = 1; $attempt <= $maxRetries; $attempt++ ) {
+        if ( $attempt > 1 ) {
+          error_log( '[AI Engine] Retry attempt ' . $attempt . ' after ' . $retryDelay . ' seconds...' );
+          sleep( $retryDelay );
+          $retryDelay *= 2; // exponential backoff
+        }
+        
+        $publicUrl = $this->download_container_file( $containerId, $fileId, $filename, $query );
+        
+        if ( $publicUrl ) {
+          break;
+        }
+      }
+      
+      if ( $publicUrl ) {
+        // Replace sandbox link with public URL
+        $content = str_replace( $sandboxPath, $publicUrl, $content );
+        $replacements++;
+        Meow_MWAI_Logging::log( 'Replaced sandbox link: ' . $filename . ' -> ' . $publicUrl );
+      } else {
+        
+        // If download fails, create a message about it
+        $errorMessage = sprintf( 
+          '[File: %s - Download temporarily unavailable, refresh page to retry]',
+          $filename
+        );
+        $content = str_replace( $sandboxPath, $errorMessage, $content );
+        $replacements++;
+      }
+    }
+    
+    
+    return $content;
+  }
+  
+  /**
+   * Parse sandbox links from content
+   */
+  protected function parse_sandbox_links( $content ) {
+    $links = [];
+    
+    // Match various sandbox link patterns
+    $patterns = [
+      '/sandbox:\/mnt\/data\/[^)\s]+/',  // Basic pattern
+      '/\(sandbox:\/mnt\/data\/[^)]+\)/', // In parentheses
+      '/\[([^\]]*)\]\(sandbox:\/mnt\/data\/[^)]+\)/', // Markdown links
+    ];
+    
+    foreach ( $patterns as $pattern ) {
+      if ( preg_match_all( $pattern, $content, $matches ) ) {
+        foreach ( $matches[0] as $match ) {
+          // Extract just the sandbox path
+          if ( preg_match( '/sandbox:\/mnt\/data\/[^)\s\]]+/', $match, $pathMatch ) ) {
+            $links[] = $pathMatch[0];
+          }
+        }
+      }
+    }
+    
+    return array_unique( $links );
+  }
+  
+  /**
+   * List files in a container
+   */
+  protected function list_container_files( $containerId, $query ) {
+    try {
+      // Use the execute function with the path format it expects
+      $path = '/containers/' . $containerId . '/files';
+      
+      // Try to call the API (remove streaming handler for JSON requests)
+      $response = null;
+      try {
+        $response = $this->without_stream_handler( function() use ( $path ) {
+          return $this->execute( 'GET', $path, null, null, true );
+        });
+      }
+      catch ( Exception $api_exception ) {
+        // If it's a 404, the container might not exist yet or might be expired
+        if ( strpos( $api_exception->getMessage(), '404' ) !== false ) {
+          // Wait a moment and retry once
+          sleep( 2 );
+          
+          try {
+            $response = $this->without_stream_handler( function() use ( $path ) {
+              return $this->execute( 'GET', $path, null, null, true );
+            });
+          }
+          catch ( Exception $retry_exception ) {
+            throw $retry_exception;
+          }
+        } else {
+          throw $api_exception;
+        }
+      }
+      
+      // Check if response is null or empty array
+      if ( $response === null || ( is_array( $response ) && empty( $response ) ) ) {
+        // Try waiting a bit for files to be ready
+        sleep( 3 );
+        
+        // Try one more time
+        $response = $this->execute( 'GET', $path, null, null, true );
+        
+        // If still empty, wait longer and try once more
+        if ( $response === null || ( is_array( $response ) && empty( $response ) ) ) {
+          sleep( 5 );
+          $response = $this->execute( 'GET', $path, null, null, true );
+        }
+      }
+      
+      if ( isset( $response['data'] ) && is_array( $response['data'] ) ) {
+        return $response['data'];
+      } else if ( is_array( $response ) && isset( $response[0] ) ) {
+        // Maybe the response is directly an array of files
+        return $response;
+      }
+    }
+    catch ( Exception $e ) {
+      Meow_MWAI_Logging::warn( 'Failed to list container files: ' . $e->getMessage() );
+    }
+    
+    return [];
+  }
+  
+  /**
+   * Find file ID by filename in container files list
+   */
+  protected function find_container_file_id( $containerFiles, $filename ) {
+    foreach ( $containerFiles as $file ) {
+      // Check if filename matches the end of the path
+      if ( isset( $file['path'] ) ) {
+        // Handle cases where path might contain multiple filenames separated by spaces
+        $paths = preg_split( '/\s+/', $file['path'] );
+        foreach ( $paths as $path ) {
+          if ( str_ends_with( $path, $filename ) ) {
+            return $file['id'];
+          }
+        }
+      }
+      
+      // Also check direct filename match
+      if ( isset( $file['filename'] ) && $file['filename'] === $filename ) {
+        return $file['id'];
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Execute HTTP request without streaming handler interference
+   */
+  private function without_stream_handler( callable $fn ) {
+    $cb = [ $this, 'stream_handler' ];
+    $had = has_action( 'http_api_curl', $cb );
+    if ( $had ) {
+      remove_action( 'http_api_curl', $cb );
+    }
+    try {
+      return $fn();
+    } finally {
+      if ( $had ) {
+        add_action( 'http_api_curl', $cb, 10, 3 );
+      }
+    }
+  }
+
+  /**
+   * Download a file from container and store it locally
+   */
+  protected function download_container_file( $containerId, $fileId, $filename, $query ) {
+    try {
+      $fileContent = null;
+      
+      // For container files (cfile_*), we MUST use the Container API
+      if ( strpos( $fileId, 'cfile_' ) === 0 ) {
+        if ( empty( $containerId ) ) {
+          throw new Exception( 'Container ID is required for downloading container files' );
+        }
+        
+        // Use the Container API endpoint
+        $path = '/containers/' . $containerId . '/files/' . $fileId . '/content';
+        
+        try {
+          // Remove streaming handler and download binary content
+          $headers = [ 'Accept' => '*/*' ];
+          $fileContent = $this->without_stream_handler( function() use ( $path, $headers ) {
+            // false = raw binary content, not JSON
+            return $this->execute( 'GET', $path, null, $headers, false );
+          });
+          
+          if ( strlen( $fileContent ) > 0 ) {
+            Meow_MWAI_Logging::log( 'Container API: Downloaded ' . strlen( $fileContent ) . ' bytes for ' . $filename );
+          } else {
+            throw new Exception( 'Container file returned empty content' );
+          }
+        } catch ( Exception $e ) {
+          throw $e;
+        }
+      } else {
+        // Regular file_* files use the standard Files API
+        $filesPath = '/files/' . $fileId . '/content';
+        $headers = [ 'Accept' => '*/*' ];
+        $fileContent = $this->without_stream_handler( function() use ( $filesPath, $headers ) {
+          return $this->execute( 'GET', $filesPath, null, $headers, false );
+        });
+      }
+      
+      if ( empty( $fileContent ) ) {
+        error_log( '[AI Engine] ERROR: Both APIs failed to return content' );
+        throw new Exception( 'Empty file content received from both Files API and Container API' );
+      }
+      
+      // Save to temporary file
+      $tmpFile = tempnam( sys_get_temp_dir(), 'mwai_code_' );
+      file_put_contents( $tmpFile, $fileContent );
+      
+      // Upload to our file system
+      $purpose = 'assistant-out';
+      $metadata = [
+        'source' => 'code_interpreter',
+        'container_id' => $containerId,
+        'file_id' => $fileId
+      ];
+      
+      $refId = $this->core->files->upload_file( $tmpFile, $filename, $purpose, $metadata, $query->envId );
+      
+      // Update the file's refId to match the OpenAI file ID
+      $internalFileId = $this->core->files->get_id_from_refId( $refId );
+      $this->core->files->update_refId( $internalFileId, $fileId );
+      
+      // Get the public URL
+      $publicUrl = $this->core->files->get_url( $fileId );
+      
+      // Clean up temp file
+      @unlink( $tmpFile );
+      
+      return $publicUrl;
+    }
+    catch ( Exception $e ) {
+      error_log( '[AI Engine] EXCEPTION in download_container_file: ' . $e->getMessage() );
+      error_log( '[AI Engine] Stack trace: ' . $e->getTraceAsString() );
+      Meow_MWAI_Logging::warn( 'Failed to download container file ' . $filename . ': ' . $e->getMessage() );
+      return null;
+    }
+  }
+
 
   /**
    * Get the models endpoint URL

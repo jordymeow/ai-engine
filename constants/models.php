@@ -23,7 +23,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 400000,
     'finetune' => false,
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
-    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
@@ -49,7 +49,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 400000,
     'finetune' => false,
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
-    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
@@ -75,7 +75,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 400000,
     'finetune' => false,
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
-    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
@@ -101,7 +101,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 1047576,
     'finetune' => false,
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
-    'tools' => ['web_search', 'image_generation']
+    'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
       GPT-4.1 mini
@@ -123,7 +123,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 1047576,
     'finetune' => false,
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
-    'tools' => ['web_search', 'image_generation']
+    'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
         GPT-4.1 nano
@@ -167,7 +167,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 128000,
     'finetune' => false,
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses'],
-    'tools' => ['web_search', 'image_generation']
+    'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
             GPT-4o mini
@@ -193,7 +193,7 @@ define( 'MWAI_OPENAI_MODELS', [
       'train' => 3.00
     ],
     'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses'],
-    'tools' => ['web_search', 'image_generation']
+    'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
             o1
@@ -249,7 +249,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 100000,
     'maxContextualTokens' => 200000,
     'tags' => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp'],
-    'tools' => ['web_search', 'image_generation']
+    'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
               o3-mini
@@ -270,7 +270,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 100000,
     'maxContextualTokens' => 200000,
     'tags' => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp'],
-    'tools' => ['web_search', 'image_generation']
+    'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
                 GPT-4o Realtime

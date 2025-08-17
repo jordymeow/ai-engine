@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.9.9
+Stable tag: 3.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,25 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.0.1 (2025/08/17) =
+* Add: Support for Code Interpreter tool in OpenAI chatbots.
+* Update: Enhancements to the themes.
+* Fix: Fixed Magic CSS Generator.
+* Fix: Resolved missing parameter in Qdrant.
+
+= 3.0.0 (2025/08/13) =
+* Add: Brand new Terminal mode with SF Mono font, zoom animations, improved cursor behavior, fullscreen support, and more.
+* Add: Custom CSS section for all themes for easy styling tweaks.
+* Add: New clean square theme template for a fresh look.
+* Update: Enhanced Discussions module and all themes with cleaner layouts, better gradients, and new styling options (border color, font family, etc.).
+* Update: Popup chatbots now have smooth zoom animations, mobile-specific fixes, floating close button, and better trigger positioning.
+* Update: UI Builder now disables Container and Header options when Popup is not enabled.
+* Fix: Preserved HTML attributes in the "No Credits" message for proper styling.
+* Fix: Corrected shortcode ID generation by ignoring system/visual-only parameters.
+* Fix: Improved footer rendering, tools, alignment, and empty footer handling.
+* Fix: Adjusted GPT-5 model usage calculations to handle dated variations correctly, fixed reasoning payload handling, and ensured JavaScript in HTML Blocks API executes properly.
+* Fix: Fixed drag-and-drop file upload visual feedback for accepted/rejected states.
 
 = 2.9.9 (2025/08/07) =
 - Add: Support for GPT-5 model with reasoning and verbosity parameters.  

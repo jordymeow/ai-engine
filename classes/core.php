@@ -875,6 +875,64 @@ class Meow_MWAI_Core {
     $themes = $this->get_themes();
     foreach ( $themes as $theme ) {
       if ( $theme['themeId'] === $themeId ) {
+        // Append custom CSS to theme data for frontend rendering (check for non-empty trimmed string)
+        if ( isset( $theme['settings']['customCSS'] ) && trim( $theme['settings']['customCSS'] ) !== '' ) {
+          $customCSS = $theme['settings']['customCSS'];
+          
+          // Add theme class prefix to all CSS rules for proper scoping
+          $themeClass = '.mwai-' . $themeId . '-theme';
+          $lines = explode( "\n", $customCSS );
+          $processedCSS = '';
+          $inRule = false;
+          
+          foreach ( $lines as $line ) {
+            $trimmedLine = trim( $line );
+            
+            // Skip empty lines and comments
+            if ( empty( $trimmedLine ) || strpos( $trimmedLine, '/*' ) === 0 ) {
+              $processedCSS .= $line . "\n";
+              continue;
+            }
+            
+            // If line contains a selector (has { but not })
+            if ( strpos( $line, '{' ) !== false && strpos( $line, '}' ) === false ) {
+              // Extract selector and the rest
+              $parts = explode( '{', $line, 2 );
+              $selector = trim( $parts[0] );
+              
+              // Add theme class prefix if not already present
+              if ( strpos( $selector, $themeClass ) !== 0 ) {
+                // Handle multiple selectors separated by comma
+                $selectors = explode( ',', $selector );
+                $prefixedSelectors = array_map( function( $sel ) use ( $themeClass ) {
+                  $sel = trim( $sel );
+                  // Don't prefix if it's a keyframe or similar
+                  if ( strpos( $sel, '@' ) === 0 || strpos( $sel, 'from' ) === 0 || strpos( $sel, 'to' ) === 0 || preg_match( '/^\d+%/', $sel ) ) {
+                    return $sel;
+                  }
+                  return $themeClass . ' ' . $sel;
+                }, $selectors );
+                $selector = implode( ', ', $prefixedSelectors );
+              }
+              
+              $processedCSS .= $selector . ' {' . ( isset( $parts[1] ) ? $parts[1] : '' ) . "\n";
+              $inRule = true;
+            } else {
+              $processedCSS .= $line . "\n";
+            }
+          }
+          
+          $customCSS = $processedCSS;
+          
+          // For custom themes (type: 'css'), append to style property
+          if ( $theme['type'] === 'css' ) {
+            $theme['style'] = ( $theme['style'] ?? '' ) . "\n\n/* Custom CSS */\n" . $customCSS;
+          }
+          // For internal themes, add customCSS as a separate property
+          else {
+            $theme['customCSS'] = $customCSS;
+          }
+        }
         return $theme;
       }
     }
@@ -928,7 +986,7 @@ class Meow_MWAI_Core {
           if ( is_array( $value ) ) {
             foreach ( $value as $tool ) {
               $sanitized_tool = sanitize_text_field( $tool );
-              if ( in_array( $sanitized_tool, ['web_search', 'image_generation', 'thinking'] ) ) {
+              if ( in_array( $sanitized_tool, ['web_search', 'image_generation', 'thinking', 'code_interpreter'] ) ) {
                 $tools[] = $sanitized_tool;
               }
             }

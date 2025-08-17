@@ -14,7 +14,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
   // Azure
   private $azureDeployments = null;
-  private $azureApiVersion = 'api-version=2024-12-01-preview';
+  protected $azureApiVersion = 'api-version=2024-12-01-preview';
 
   // Response
   protected $inModel = null;
@@ -27,6 +27,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   protected $streamLastMessage = null;
   protected $streamAnnotations = [];
   protected $streamImageIds = [];
+  protected $streamThinking = null;  // For reasoning/thinking content
 
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
@@ -44,6 +45,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     $this->streamFunctionCall = null;
     $this->streamToolCalls = [];
     $this->streamLastMessage = null;
+    $this->streamThinking = null;
     $this->streamInTokens = null;
     $this->streamOutTokens = null;
     $this->inModel = null;
@@ -481,6 +483,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   // object: "thread.message.delta"
   protected function stream_data_handler( $json ) {
     $content = null;
+    $handledCondition = false;  // Track if we entered any condition
 
     // Get additional data from the JSON
     if ( isset( $json['model'] ) ) {
@@ -502,6 +505,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     $object = $json['object'] ?? null;
 
     if ( $object === 'thread.run' ) {
+      $handledCondition = true;
       $this->inThreadId = $json['thread_id'];
       if ( $json['status'] === 'failed' ) {
         $error = $json['last_error']['message'] ?? 'The run failed.';
@@ -509,6 +513,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
     }
     else if ( $object === 'thread.run.step.delta' ) {
+      $handledCondition = true;
       if ( $json['delta']['step_details']['type'] === 'tool_calls' ) {
         foreach ( $json['delta']['step_details']['tool_calls'] as $tool_call ) {
           $index = $tool_call['index'] ?? null;
@@ -561,6 +566,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
     }
     else if ( $object === 'thread.message.delta' ) {
+      $handledCondition = true;
       $delta = $json['delta']['content'][0] ?? null;
       if ( $delta ) {
         switch ( $delta['type'] ?? null ) {
@@ -623,17 +629,21 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
     }
     else if ( $object === 'thread.run.step' ) {
+      $handledCondition = true;
       //$type = $json['step'];
       // Could be tool_calls, means an OpenAI Assistant is doing something.
     }
     else {
       if ( isset( $json['choices'][0]['text'] ) ) {
+        $handledCondition = true;
         $content = $json['choices'][0]['text'];
       }
       else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
+        $handledCondition = true;
         $content = $json['choices'][0]['delta']['content'];
       }
       else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
+        $handledCondition = true;
         if ( empty( $this->streamFunctionCall ) ) {
           $this->streamFunctionCall = [ 'name' => '', 'arguments' => [] ];
         }
@@ -644,6 +654,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         }
       }
       else if ( isset( $json['choices'][0]['delta']['tool_calls'] ) ) {
+        $handledCondition = true;
         // New schema detected – drop any half-built legacy call to prevent duplicates
         $this->streamFunctionCall = null;
 
@@ -681,10 +692,29 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         }
       }
       else if ( isset( $json['choices'][0]['delta']['role'] ) ) {
+        $handledCondition = true;
         $this->streamLastMessage = [
           'role' => $json['choices'][0]['delta']['role'],
           'content' => null
         ];
+      }
+      
+      // Handle thinking/reasoning content (from Ollama and potentially other models)
+      // This can appear alongside or instead of regular content
+      if ( isset( $json['choices'][0]['delta']['reasoning'] ) ) {
+        $handledCondition = true;
+        $thinking = $json['choices'][0]['delta']['reasoning'];
+        if ( !empty( $thinking ) ) {
+          $this->streamThinking = ( $this->streamThinking ?? '' ) . $thinking;
+        }
+      }
+      // Also check for 'thinking' field (OpenAI's o1 models use this)
+      else if ( isset( $json['choices'][0]['delta']['thinking'] ) ) {
+        $handledCondition = true;
+        $thinking = $json['choices'][0]['delta']['thinking'];
+        if ( !empty( $thinking ) ) {
+          $this->streamThinking = ( $this->streamThinking ?? '' ) . $thinking;
+        }
       }
     }
 
@@ -706,6 +736,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       else {
         throw new Exception( 'Could not read this: ' . json_encode( $content ) );
       }
+    }
+
+    // Log unhandled JSON in dev mode
+    if ( !$handledCondition && $this->core->get_option( 'dev_mode' ) ) {
+      error_log( '[AI Engine] Unhandled streaming JSON structure: ' . json_encode( $json ) );
     }
 
     // Avoid some endings
@@ -1048,13 +1083,33 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         }
         $returned_id = $this->inId;
         $returned_model = $this->inModel ? $this->inModel : $query->model;
-        $message = [ 'role' => 'assistant', 'content' => $this->streamContent ];
+        
+        // Use regular content if available, otherwise fall back to thinking/reasoning
+        $finalContent = $this->streamContent;
+        if ( empty( $finalContent ) && !empty( $this->streamThinking ) ) {
+          // Use thinking content as fallback when there's no regular content
+          // This happens with Ollama when it returns only reasoning/thinking
+          // Wrap in asterisks to show as italics in markdown
+          $finalContent = '*' . $this->streamThinking . '*';
+          
+          // Log this for debugging
+          if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+            error_log( '[AI Engine] Using thinking/reasoning content as fallback (no regular content available)' );
+          }
+        }
+        
+        $message = [ 'role' => 'assistant', 'content' => $finalContent ];
         // Prefer tool_calls; fall back to legacy only if necessary
         if ( !empty( $this->streamToolCalls ) ) {
           $message['tool_calls'] = $this->streamToolCalls;
         }
         elseif ( !empty( $this->streamFunctionCall ) ) {
           $message['function_call'] = $this->streamFunctionCall;
+        }
+        
+        // Optionally include thinking as metadata if both content and thinking exist
+        if ( !empty( $this->streamContent ) && !empty( $this->streamThinking ) ) {
+          $message['thinking'] = $this->streamThinking;
         }
         if ( !is_null( $this->streamInTokens ) ) {
           $returned_in_tokens = $this->streamInTokens;
@@ -1115,6 +1170,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         if ( empty( $data ) ) {
           throw new Exception( 'No content received (res is null).' );
         }
+        
+        // Comprehensive logging for non-streaming mode - capture FULL response
+        $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] ========================================' );
+          error_log( '[AI Engine Queries] FULL RESPONSE STRUCTURE (Non-streaming ChatML):' );
+          error_log( json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
+          error_log( '[AI Engine Queries] ========================================' );
+          
+          // Look specifically for container_id
+          $this->search_for_container_id_recursive( $data, '' );
+        }
+        
         if ( !$data['model'] ) {
           $service = $this->get_service_name();
           Meow_MWAI_Logging::error( "$service: Invalid response (no model information)." );
@@ -1664,6 +1732,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $hasQuery = strpos( $url, '?' ) !== false;
       $url = $url . ( $hasQuery ? '&' : '?' ) . $this->azureApiVersion;
     }
+    
 
     // If it's a GET, body should be null, and we should append the query to the URL.
     if ( $method === 'GET' ) {
@@ -1713,8 +1782,37 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       if ( is_wp_error( $res ) ) {
         throw new Exception( $res->get_error_message() );
       }
+      
+      
       $res = wp_remote_retrieve_body( $res );
-      $data = $json ? json_decode( $res, true ) : $res;
+      
+      
+      // Handle empty responses for container LIST API only (not for file content downloads)
+      if ( strpos( $url, '/containers/' ) !== false && 
+           strpos( $url, '/files' ) !== false && 
+           strpos( $url, '/content' ) === false &&  // Don't apply this to content downloads
+           empty( $res ) ) {
+        // Return empty array for empty container files LIST response
+        $data = $json ? [] : '';
+        error_log( '[AI Engine] Container LIST API returned empty response, treating as empty array' );
+      } else {
+        $data = $json ? json_decode( $res, true ) : $res;
+      }
+      
+      // Debug logging for decoded data (skip for content downloads)
+      if ( strpos( $url, '/containers/' ) !== false && strpos( $url, '/files' ) !== false && strpos( $url, '/content' ) === false ) {
+        error_log( '[AI Engine] After json_decode:' );
+        error_log( '[AI Engine] - Data type: ' . gettype( $data ) );
+        error_log( '[AI Engine] - Data is null: ' . ( $data === null ? 'YES' : 'NO' ) );
+        if ( $data !== null && is_array( $data ) ) {
+          error_log( '[AI Engine] - Data keys: ' . implode( ', ', array_keys( $data ) ) );
+          error_log( '[AI Engine] - Data count: ' . count( $data ) );
+        }
+        if ( $json && $data === null && !empty( $res ) ) {
+          error_log( '[AI Engine] - JSON decode error: ' . json_last_error_msg() );
+        }
+      }
+      
       $this->handle_response_errors( $data );
 
       // Log the response if queries debug is enabled
@@ -1767,6 +1865,27 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
   public static function get_models_static() {
     return MWAI_OPENAI_MODELS;
+  }
+
+  /**
+   * Recursively search for container_id in the response data
+   */
+  protected function search_for_container_id_recursive( $data, $path = '' ) {
+    if ( is_array( $data ) || is_object( $data ) ) {
+      foreach ( $data as $key => $value ) {
+        $currentPath = $path ? $path . '.' . $key : $key;
+        
+        // Check if this key is container_id
+        if ( $key === 'container_id' ) {
+          error_log( '[AI Engine Queries] *** FOUND container_id at path: ' . $currentPath . ' = ' . $value . ' ***' );
+        }
+        
+        // Recursively search in nested structures
+        if ( is_array( $value ) || is_object( $value ) ) {
+          $this->search_for_container_id_recursive( $value, $currentPath );
+        }
+      }
+    }
   }
 
   private function calculate_price( $modelFamily, $inUnits, $outUnits, $resolution = null, $finetune = false ) {

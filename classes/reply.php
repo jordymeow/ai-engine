@@ -14,6 +14,9 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $query = null;
   public $type = 'text';
 
+  // Code interpreter code (separate from main content)
+  public $contentCode = '';
+
   // This is when models return a message that needs to be executed (functions, tools, etc)
   public $needFeedbacks = [];
   public $needClientActions = [];
@@ -47,6 +50,9 @@ class Meow_MWAI_Reply implements JsonSerializable {
     }
     if ( !empty( $this->needClientActions ) ) {
       $data['needClientActions'] = $this->needClientActions;
+    }
+    if ( !empty( $this->contentCode ) ) {
+      $data['contentCode'] = $this->contentCode;
     }
     return $data;
   }

@@ -1,12 +1,15 @@
 // out:  ../messages.css
 @use 'common';
+@use 'window-animations' as animations;
 
 // Chatbot
 .mwai-messages-theme {
+	font-family: var(--mwai-fontFamily, inherit);
 	--mwai-spacing: 10px;
 	--mwai-fontSize: 13px;
 	--mwai-lineHeight: 1.5;
 	--mwai-borderRadius: 10px;
+	--mwai-borderColor: #c5c5c5;
 	--mwai-width: 460px;
 	--mwai-maxHeight: 40vh;
 	--mwai-iconTextColor: black;
@@ -15,7 +18,7 @@
 	--mwai-backgroundPrimaryColor: #fafafa;
 	--mwai-backgroundHeaderColor: #0084ff;
 	--mwai-bubbleColor: #0084ff;
-	--mwai-headerButtonsColor: white;
+	--mwai-headerColor: white;
 	--mwai-conversationsBackgroundColor: white;
 	--mwai-backgroundUserColor: #0084ff;
 	--mwai-backgroundAiColor: #eee;
@@ -229,6 +232,12 @@
 		}
 	}
 
+	// Terminal messages mode - Messages specific overrides
+	.mwai-conversation.mwai-terminal {
+		// Use Back User Color for active typing color in terminal mode
+		--mwai-terminal-active-color: var(--mwai-backgroundUserColor);
+	}
+
 	.mwai-text {
 		flex: auto;
 
@@ -258,20 +267,34 @@
 			color: #2196f3;
 		}
 
+		h1, h2, h3, h4, h5, h6 {
+			margin: 0px;
+			line-height: 1.2;
+		}
+
 		h1 {
-			font-size: 200%;
+			font-size: 150%;
 		}
 
 		h2 {
-			font-size: 160%;
+			font-size: 130%;
 		}
 
 		h3 {
-			font-size: 140%;
+			font-size: 115%;
 		}
 
 		h4 {
-			font-size: 120%;
+			font-size: 105%;
+		}
+
+		h5 {
+			font-size: 100%;
+		}
+
+		h6 {
+			font-size: 95%;
+			font-weight: bold;
 		}
 
 		p {
@@ -351,6 +374,8 @@
 		display: flex;
 		align-items: center;
 		padding: var(--mwai-spacing);
+		position: relative; // allow in-field absolute submit
+		position: relative; // allow absolute positioning of submit inside field
 
 		.mwai-input-text {
 			flex: auto;
@@ -375,6 +400,8 @@
 				color: var(--mwai-fontColor);
 				flex: auto;
 				padding: var(--mwai-spacing);
+				// Reserve space for in-field submit button (70px) + right gap
+				padding-right: calc(70px + var(--mwai-spacing) + 6px);
 				border: none;
 				font-size: var(--mwai-fontSize);
 				resize: none;
@@ -414,7 +441,21 @@
 		}
 
 		.mwai-input-submit {
+			position: absolute;
+			right: calc(var(--mwai-spacing) + 5px);
+			top: 50%;
+			transform: translateY(-50%);
 			width: 70px;
+			height: 32px;
+			min-width: 70px;
+			min-height: 32px;
+			margin: 0;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 2;
+			transition: transform 0.15s ease-out;
+			&:hover { transform: translateY(-50%) scale(1.03); }
 		}
 	}
 
@@ -430,6 +471,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		// gap removed per request; spinner-only during busy
 
 		.mwai-timer {
 			margin-left: 5px;
@@ -449,17 +491,17 @@
 			opacity: 0.5;
 		}
 
-		&.mwai-busy span {
-			display: none;
-		}
+		&.mwai-busy span { display: none; }
+		&.mwai-busy .mwai-timer { display: none; }
 
 		&.mwai-busy:before {
 			content: '';
-			width: 18px;
-			height: 18px;
-			margin: auto;
-			border: 3px solid transparent;
-			border-top-color: var(--mwai-fontColor);
+			width: 12px;
+			height: 12px;
+			display: inline-block;
+			align-self: center;
+			border: 2px solid rgba(255, 255, 255, 0.35);
+			border-top-color: #fff; // force white like the timer
 			border-radius: 50%;
 			animation: mwai-button-spinner 1s ease infinite;
 		}
@@ -474,6 +516,8 @@
 		text-align: left;
 	}
 
+
+
 	.mwai-gallery {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
@@ -482,6 +526,28 @@
 		img {
 			width: 100%;
 		}
+	}
+
+	// Apply window animations conditionally
+	@include animations.window-animation-conditional();
+}
+
+// TEMP DEBUG OVERRIDES: force spinner visible even when not busy
+.mwai-messages-theme {
+	.mwai-input .mwai-input-submit::before {
+		content: '' !important;
+		display: inline-block !important;
+		z-index: 3;
+		animation: mwai-button-spinner 1s linear infinite !important; // ensure animation despite resets
+	}
+}
+
+// Ensure reply-actions SVGs have a visible size (avoid tiny dots)
+.mwai-messages-theme {
+	.mwai-reply-actions svg {
+		width: 16px;
+		height: 16px;
+		display: block;
 	}
 }
 
@@ -494,6 +560,258 @@
 	@include common.reply-actions;
 	@include common.realtime;
 	@include common.discussions-styles;
+	
+	// Enhanced Discussions styling for Messages theme
+	&.mwai-discussions {
+		background: var(--mwai-backgroundPrimaryColor);
+		border: 1px solid var(--mwai-backgroundAiSecondaryColor);
+		
+		// Override the common mixin's header to match chatbot footer
+		.mwai-header {
+			background: var(--mwai-backgroundAiColor);
+			color: var(--mwai-fontColor);
+			border-bottom: 1px solid var(--mwai-backgroundPrimaryColor);
+			
+			// Buttons should match chatbot submit button style
+			button {
+				background: var(--mwai-backgroundUserColor);
+				color: white;
+				padding: 8px 16px;
+				border: none;
+				border-radius: var(--mwai-borderRadius);
+				cursor: pointer;
+				transition: transform 0.15s ease-out;
+				margin-left: 0; // Remove unwanted left margin
+				
+				&:hover:not(:disabled) {
+					background: var(--mwai-backgroundUserColor); // Keep same background
+					transform: scale(1.03); // Same subtle scale as submit button
+				}
+				
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+					transform: none;
+				}
+			}
+		}
+		
+		// Header styling - same as footer background
+		.mwai-discussions-header {
+			background: var(--mwai-backgroundAiColor);
+			color: var(--mwai-fontColor);
+			padding: var(--mwai-spacing);
+			border-bottom: 1px solid var(--mwai-backgroundPrimaryColor);
+			
+			.mwai-discussions-title {
+				font-size: calc(var(--mwai-fontSize) * 1.2);
+				font-weight: 600;
+			}
+		}
+		
+		// List area
+		.mwai-discussions-list {
+			background: var(--mwai-backgroundPrimaryColor);
+			max-height: 300px;
+			overflow-y: auto;
+			
+			// Custom scrollbar to match conversation
+			&::-webkit-scrollbar {
+				width: 8px;
+				background: transparent;
+			}
+			
+			&::-webkit-scrollbar-track {
+				background: rgba(0, 0, 0, 0.05);
+				border-radius: 4px;
+			}
+			
+			&::-webkit-scrollbar-thumb {
+				background: rgba(0, 0, 0, 0.15);
+				border-radius: 4px;
+				
+				&:hover {
+					background: rgba(0, 0, 0, 0.25);
+				}
+			}
+			
+			// Firefox scrollbar
+			scrollbar-width: thin;
+			scrollbar-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.05);
+		}
+		
+		// Individual discussion items - no padding, no border
+		.mwai-discussion {
+			padding: 0;
+			color: var(--mwai-fontColor);
+			opacity: 1;
+			border-bottom: none;
+			transition: background 0.2s ease;
+			
+			.mwai-discussion-content {
+				background: transparent;
+				padding: 8px 12px;
+				margin: 4px 8px;
+				transition: all 0.2s ease;
+			}
+			
+			.mwai-discussion-title {
+				color: var(--mwai-fontColor);
+				font-weight: 500;
+			}
+			
+			.mwai-discussion-info {
+				opacity: 0.6;
+				color: var(--mwai-fontColor);
+			}
+			
+			// Hover state
+			&:hover {
+				.mwai-discussion-content {
+					background: var(--mwai-backgroundAiColor);
+					border-radius: 15px;
+				}
+			}
+			
+			// Active/selected state - make it look like a user message
+			&.mwai-active {
+				.mwai-discussion-content {
+					background: var(--mwai-backgroundUserColor);
+					color: white;
+					border-radius: 15px;
+					opacity: 1;
+					
+					.mwai-discussion-title {
+						color: white;
+					}
+					
+					.mwai-discussion-info {
+						color: white;
+						opacity: 0.8;
+					}
+				}
+			}
+			
+			// Action menu - fix positioning since we removed padding
+			.mwai-discussion-actions {
+				right: 18px; // Better positioning
+				
+				.mwai-menu-icon {
+					color: var(--mwai-fontColor);
+					background: var(--mwai-backgroundAiColor);
+					border-radius: 50%;
+					width: 24px;
+					height: 24px;
+					
+					&:hover {
+						background: var(--mwai-backgroundUserColor);
+						color: white;
+					}
+				}
+			}
+			
+			// When discussion is active/selected, don't change background on hover
+			&.mwai-active {
+				.mwai-discussion-actions {
+					.mwai-menu-icon {
+						&:hover {
+							background: var(--mwai-backgroundAiColor); // Keep same background
+							color: var(--mwai-backgroundUserColor); // Change icon color to theme accent
+						}
+					}
+				}
+			}
+		}
+		
+		// Context menu styling - same as selected discussion (blue with white text)
+		.mwai-context-menu {
+			background: var(--mwai-backgroundUserColor); // Blue background like selected discussion
+			border: 1px solid var(--mwai-backgroundUserColor);
+			border-radius: 15px; // Same as discussion-content
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+			padding: 4px;
+			
+			.mwai-menu-item {
+				padding: 8px 12px;
+				color: white; // White text like selected discussion
+				border-radius: 12px;
+				transition: all 0.2s ease;
+				
+				&:hover {
+					background: rgba(255, 255, 255, 0.2); // White overlay on hover
+					transform: translateX(2px); // Subtle slide animation
+				}
+				
+				&.mwai-danger {
+					color: #ffcdd2; // Light red for danger items on blue background
+					
+					&:hover {
+						background: rgba(255, 100, 100, 0.2);
+						color: white;
+					}
+				}
+			}
+		}
+		
+		// Override pagination from common mixin
+		.mwai-pagination {
+			background: var(--mwai-backgroundAiColor);
+			border-top: 1px solid var(--mwai-backgroundPrimaryColor);
+			
+			// Buttons should match chatbot submit button style
+			button {
+				background: var(--mwai-backgroundUserColor);
+				color: white;
+				padding: 8px 12px;
+				border: none;
+				border-radius: var(--mwai-borderRadius);
+				cursor: pointer;
+				transition: transform 0.15s ease-out;
+				margin-left: 0; // Remove unwanted left margin
+				
+				&:hover:not(:disabled) {
+					background: var(--mwai-backgroundUserColor); // Keep same background
+					transform: scale(1.03); // Same subtle scale as submit button
+				}
+				
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+					transform: none;
+				}
+			}
+		}
+		
+		// Footer/Pagination area - same as chatbot footer
+		.mwai-discussions-footer,
+		.mwai-discussions-pagination {
+			padding: var(--mwai-spacing);
+			border-top: 1px solid var(--mwai-backgroundPrimaryColor);
+			background: var(--mwai-backgroundAiColor);
+			
+			.mwai-new-chat-button {
+				width: 100%;
+				padding: 8px 16px;
+				background: var(--mwai-backgroundUserColor);
+				color: white;
+				border: none;
+				border-radius: var(--mwai-borderRadius);
+				font-size: var(--mwai-fontSize);
+				cursor: pointer;
+				transition: transform 0.15s ease-out;
+				
+				&:hover {
+					transform: scale(1.02); // Slightly less scale for full-width button
+				}
+				
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+					transform: none;
+				}
+			}
+		}
+	}
 }
 
 // Common Overrides
@@ -533,7 +851,8 @@
 	}
 
 	.mwai-reply-actions {
-		top: 5px;
+		top: -6px; // nudge up so it doesn't overlap text
+		right: -6px; // nudge right towards the bubble corner
 
 		.mwai-copy-button {
 			padding-top: 4px;
@@ -577,14 +896,57 @@
 
 		.mwai-input {
 			flex-direction: column;
+			padding: var(--mwai-spacing);
 
 			.mwai-input-text {
 				width: 100%;
+				margin-bottom: 10px;
 			}
 
-			.mwai-input-submit {
-				width: 100%;
-				margin: 15px 0 0 0;
+			.mwai-input-submit { 
+				position: relative !important; // Override absolute positioning
+				right: auto !important;
+				top: auto !important;
+				transform: none !important;
+				width: 100% !important;
+				height: 40px !important;
+				margin: 0 !important;
+			}
+		}
+	}
+}
+
+// TEMP: Ensure spinner visible even after common cleanup (override order)
+.mwai-messages-theme .mwai-input .mwai-input-submit::before {
+	content: '' !important;
+	display: inline-block !important;
+	z-index: 3;
+}
+
+// Unified footer via common mixin
+.mwai-messages-theme { @include common.footer-tools; }
+
+// Context Menu Portal Override for Messages Theme - same as unselected discussion
+.mwai-context-menu-portal.mwai-messages-theme {
+	.mwai-context-menu {
+		background: var(--mwai-backgroundPrimaryColor); // White background like discussion area
+		border: 1px solid var(--mwai-backgroundAiSecondaryColor);
+		color: var(--mwai-fontColor);
+		
+		.mwai-menu-item {
+			color: var(--mwai-fontColor); // Standard font color
+			
+			&:hover {
+				background-color: var(--mwai-backgroundAiColor); // Light gray on hover like discussions
+			}
+			
+			&.mwai-danger {
+				color: #d32f2f; // Standard red for danger items
+				
+				&:hover {
+					background-color: rgba(211, 47, 47, 0.1);
+					color: #b71c1c;
+				}
 			}
 		}
 	}

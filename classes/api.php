@@ -28,14 +28,9 @@ class Meow_MWAI_API {
     
     // List of sensitive parameters that should not be set via REST API
     $blocked_params = [
-      'apiKey',        // Prevent API key override
-      'apikey',        // Case variations
-      'api_key',
-      'organizationId',
-      'organization_id',
-      'envId',         // Prevent environment switching
-      'env_id',
+      'apiKey', 
     ];
+    $blocked_params = apply_filters( 'mwai_blocked_rest_params', $blocked_params, $options );
     
     // Remove blocked parameters
     foreach ( $blocked_params as $param ) {
