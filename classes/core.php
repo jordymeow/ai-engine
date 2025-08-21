@@ -112,6 +112,11 @@ class Meow_MWAI_Core {
       $this->search = new Meow_MWAI_Modules_Search( $this );
     }
 
+    // Forms Manager (standalone Forms UI + shortcode renderer)
+    if ( $this->get_option( 'module_forms' ) ) {
+      new Meow_MWAI_Modules_Forms_Manager( $this );
+    }
+
     // Advanced Core
     if ( class_exists( 'MeowPro_MWAI_Core' ) ) {
       new MeowPro_MWAI_Core( $this );

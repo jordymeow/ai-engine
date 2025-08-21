@@ -32,7 +32,8 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
         'class' => get_class( $this ),
         'envId' => $this->envId,
         'scope' => $this->scope,
-        'session' => $this->session
+        'session' => $this->session,
+        'customId' => $this->customId,
       ]
     ];
 

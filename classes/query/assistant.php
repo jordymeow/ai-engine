@@ -37,6 +37,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
         'envId' => $this->envId,
         'scope' => $this->scope,
         'session' => $this->session,
+        'customId' => $this->customId,
         'chatId' => $this->chatId,
       ]
     ];

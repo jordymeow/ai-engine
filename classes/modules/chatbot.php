@@ -1,7 +1,7 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'fullscreen', 'copyButton', 'headerSubtitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite' ] );
 
@@ -275,6 +275,7 @@ class Meow_MWAI_Modules_Chatbot {
 
   public function sanitize_shortcuts( $shortcuts ) {
     $supported_shortcut_types = [
+      'message' => ['label', 'message'],
       'action' => ['label', 'message', 'action'],
       'callback' => ['label', 'onClick'],
     ];
@@ -519,7 +520,7 @@ class Meow_MWAI_Modules_Chatbot {
       }
       else {
         $query = $mode === 'assistant' ? new Meow_MWAI_Query_Assistant( $newMessage ) :
-          new Meow_MWAI_Query_Text( $newMessage, 1024 );
+          new Meow_MWAI_Query_Text( $newMessage, 4096 );
 
         // Handle Params
         $newParams = [];
@@ -816,8 +817,8 @@ class Meow_MWAI_Modules_Chatbot {
 
   public function build_front_params( $botId, $customId, $crossSite = false ) {
     $frontSystem = [
-      'botId' => $customId ? null : sanitize_text_field( $botId ),
-      'customId' => sanitize_text_field( $customId ),
+      'botId' => ( $customId && $customId !== '' ) ? null : sanitize_text_field( $botId ),
+      'customId' => ( $customId && $customId !== '' ) ? sanitize_text_field( $customId ) : null,
       'userData' => $this->core->get_user_data(),
       'sessionId' => $this->core->get_session_id(),
       // IMPORTANT: REST nonce handling differs by user state:
@@ -835,7 +836,6 @@ class Meow_MWAI_Modules_Chatbot {
       'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
       'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
       'typewriter' => $this->core->get_option( 'chatbot_typewriter' ),
-      'virtual_keyboard_fix' => $this->core->get_option( 'virtual_keyboard_fix' ),
       'crossSite' => $crossSite
     ];
     return $frontSystem;
@@ -869,6 +869,7 @@ class Meow_MWAI_Modules_Chatbot {
         $botId = null;
       }
     }
+    
     unset( $atts['id'] );
     return [
       'chatbot' => $chatbot,
@@ -889,7 +890,7 @@ class Meow_MWAI_Modules_Chatbot {
     $atts = apply_filters( 'mwai_chatbot_params', $atts );
 
     // Resolve the bot info
-    $resolvedBot = $this->resolveBotInfo( $atts, 'chatbot' );
+    $resolvedBot = $this->resolveBotInfo( $atts );
     if ( isset( $resolvedBot['error'] ) ) {
       return $resolvedBot['error'];
     }
@@ -966,9 +967,38 @@ class Meow_MWAI_Modules_Chatbot {
     // NOTE: We don't need the server params for the chatbot if there are no overrides, it means
     // we are using the default or a specific chatbot.
     $isSiteWide = $this->siteWideChatId && $botId === $this->siteWideChatId;
-    $hasServerOverrides = count( array_intersect( array_keys( $atts ), MWAI_CHATBOT_SERVER_PARAMS ) ) > 0;
-    $hasFrontOverrides = count( array_intersect( array_keys( $atts ), MWAI_CHATBOT_FRONT_PARAMS ) ) > 0;
-    $hasOverrides = !$isSiteWide && ( $hasServerOverrides || $hasFrontOverrides );
+    
+    // Parameters that are purely visual/UI and shouldn't trigger custom ID
+    $visualOnlyParams = [
+      // Bot selectors
+      'id', 'custom_id',
+      // System-added params
+      'crossSite',
+      // Visual/UI parameters that don't affect AI behavior
+      'aiName', 'userName', 'guestName',  // Display names
+      'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl',  // Avatars
+      'textSend', 'textClear', 'textInputPlaceholder', 'textCompliance',  // UI text labels
+      'textInputMaxLength',  // Input constraint (visual)
+      'themeId',  // Theme selection
+      'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition',  // Window/icon settings
+      'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen',  // Window behavior
+      'copyButton', 'headerSubtitle',  // UI features
+      'containerType', 'headerType', 'messagesType', 'inputType', 'footerType'  // UI style variants
+    ];
+    
+    // Remove visual-only params from override detection
+    $attsForOverrideCheck = array_diff_key( $atts, array_flip( $visualOnlyParams ) );
+    
+    // Only these front params affect behavior and should trigger custom ID:
+    // - mode: chat vs. prompt mode
+    // - startSentence: initial AI message
+    // - localMemory: affects data persistence
+    // - imageUpload, fileUpload, multiUpload, fileSearch: affect capabilities
+    $behavioralFrontParams = ['mode', 'startSentence', 'localMemory', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch'];
+    
+    $hasServerOverrides = count( array_intersect( array_keys( $attsForOverrideCheck ), MWAI_CHATBOT_SERVER_PARAMS ) ) > 0;
+    $hasBehavioralFrontOverrides = count( array_intersect( array_keys( $attsForOverrideCheck ), $behavioralFrontParams ) ) > 0;
+    $hasOverrides = !$isSiteWide && ( $hasServerOverrides || $hasBehavioralFrontOverrides );
 
     $serverParams = [];
     if ( $hasOverrides ) {

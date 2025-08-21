@@ -59,7 +59,7 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
     try {
       $params = $request->get_json_params();
       $envId = $params['envId'];
-      $query = new Meow_MWAI_Query_Text( '', 1024 );
+      $query = new Meow_MWAI_Query_Text( '', 4096 );
       $query->env = $envId;
       $models = $this->core->get_engine_models( $query );
       return $this->create_rest_response( [ 'success' => true, 'models' => $models ], 200 );
@@ -285,7 +285,7 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       }
       $url = wp_get_attachment_url( $attachmentId );
       $query = new Meow_MWAI_Query_Text( $message );
-      $query->set_max_tokens( !empty( $params['maxTokens'] ) ? $params['maxTokens'] : 1024 );
+      $query->set_max_tokens( !empty( $params['maxTokens'] ) ? $params['maxTokens'] : 4096 );
       $query->set_env( $params['envId'] );
       $query->set_model( $params['model'] );
       $query->add_image( $url );
@@ -306,7 +306,7 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Message cannot be empty.' ], 500 );
       }
       $query = new Meow_MWAI_Query_Text( $message );
-      $query->set_max_tokens( !empty( $params['maxTokens'] ) ? $params['maxTokens'] : 1024 );
+      $query->set_max_tokens( !empty( $params['maxTokens'] ) ? $params['maxTokens'] : 4096 );
       $query->set_temperature( !empty( $params['temperature'] ) ? $params['temperature'] : 0 );
       if ( !empty( $params['stop'] ) ) {
         $query->set_stop( $params['stop'] );

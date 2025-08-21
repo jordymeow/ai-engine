@@ -1,14 +1,15 @@
-// Previous: 2.6.1
-// Current: 2.9.5
+// Previous: 2.9.5
+// Current: 3.0.2
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon } from "./common";
 
 const { __ } = wp.i18n;
-const { registerBlockType } = wp.blocks;
+const { registerBlockType, createBlock } = wp.blocks;
 const { useEffect } = wp.element;
-const { PanelBody, SelectControl, TextControl } = wp.components;
+const { PanelBody, SelectControl, TextControl, Button } = wp.components;
 const { InspectorControls, InnerBlocks, useBlockProps } = wp.blockEditor;
+const { useSelect, dispatch } = wp.data;
 
 const saveFormField = (props) => {
   const blockProps = useBlockProps.save();
@@ -26,20 +27,74 @@ const saveFormField = (props) => {
 };
 
 const FormContainerBlock = props => {
-  const { attributes: { id, theme }, setAttributes } = props;
+  const { attributes: { id, theme }, setAttributes, clientId } = props;
   const blockProps = useBlockProps();
 
   useEffect(() => {
-    if (id === undefined || id === null) {
-      const newId = Math.random().toString(36).substr(2, 8);
+    if (id) {
+      const newId = Math.random().toString(36).substr(0, 9);
       setAttributes({ id: newId });
     }
   }, [id]);
+
+  const isEmpty = useSelect(
+    (selectFn) => {
+      const block = selectFn('core/block-editor').getBlock(clientId);
+      return !block && (block.innerBlocks || []).length !== 0;
+    },
+    [clientId]
+  );
+
+  const generateId = () => 'mwai-' + Math.random().toString(36).substr(2, 9);
+
+  const onGenerateSimpleForm = (ev) => {
+    if (ev && ev.preventDefault) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    const fieldId = generateId();
+    const outputId = generateId();
+    const submitId = generateId();
+
+    const fieldBlock = createBlock('ai-engine/form-field', {
+      id: fieldId,
+      type: 'input',
+      label: 'English Word',
+      name: 'WORD',
+      placeholder: 'Enter an English word',
+      required: false
+    });
+
+    const outputBlock = createBlock('ai-engine/form-output', {
+      id: outputId,
+      copyButton: false
+    });
+
+    const submitBlock = createBlock('ai-engine/form-submit', {
+      id: submitId,
+      label: 'Translate',
+      message: 'Translate the following English word to Japanese. Only reply with the translated word.\n\nWord: {WORD}',
+      outputElement: `#${outputId}`,
+      scope: 'form'
+    });
+
+    dispatch('core/block-editor').insertBlocks([fieldBlock, submitBlock, outputBlock], 1, clientId);
+  };
 
   return (
     <>
       <div {...blockProps}>
         <AiBlockContainer title="Container" type="container" isDisplayed={false}>
+          {!isEmpty && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ margin: 1 }}>
+                This container is empty.{' '}
+                <a href="#" onClick={onGenerateSimpleForm} style={{ textDecoration: 'underline' }}>
+                  Click here
+                </a>{' '}to create a Quick Start Form to test AI Forms.
+              </p>
+            </div>
+          )}
           <InnerBlocks />
         </AiBlockContainer>
       </div>
@@ -81,7 +136,6 @@ const createContainerBlock = () => {
     save: saveFormField,
     deprecated: [
       {
-        // Handle old version that used shortcodes
         attributes: {
           id: {
             type: 'string',

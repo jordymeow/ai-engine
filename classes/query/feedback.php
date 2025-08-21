@@ -39,6 +39,9 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
     if ( !empty( $query->botId ) ) {
       $this->set_bot_id( $query->botId );
     }
+    if ( !empty( $query->customId ) ) {
+      $this->set_custom_id( $query->customId );
+    }
     if ( !empty( $query->envId ) ) {
       $this->set_env_id( $query->envId );
     }
@@ -99,6 +102,7 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
         'envId' => $this->envId,
         'scope' => $this->scope,
         'session' => $this->session,
+        'customId' => $this->customId,
       ]
     ];
 

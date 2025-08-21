@@ -119,7 +119,7 @@ class Meow_MWAI_Modules_Wand {
       $text = $arguments['text'];
     }
 
-    $query = new Meow_MWAI_Query_Text( '', 1024 );
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
     $language = $keepLanguage = '';
     if ( !empty( $postId ) ) {
@@ -212,7 +212,7 @@ class Meow_MWAI_Modules_Wand {
   public function action_suggestSynonyms( $value, $arguments ) {
     $postId = $arguments['postId'];
     $selectedText = $arguments['selectedText'];
-    $query = new Meow_MWAI_Query_Text( '', 1024 );
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
     $language = $keepLanguage = '';
     if ( !empty( $postId ) ) {
@@ -278,7 +278,7 @@ class Meow_MWAI_Modules_Wand {
 
     $context = $arguments['context'];
     $targetLanguage = $this->core->get_post_language( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 1024 );
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
     $prompt = "Translate the following section into {$targetLanguage}:\n\n" .
     "[SECTION TO TRANSLATE]\n{$text}\n[END SECTION TO TRANSLATE]\n\n" .
@@ -323,7 +323,7 @@ class Meow_MWAI_Modules_Wand {
     $postId = $arguments['postId'];
     $text = $arguments['text'];
     $language = $this->core->get_post_language( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 1024 );
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
     $prompt = apply_filters( 'mwai_prompt_translateText', "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n", $arguments );
     $query->set_message( $prompt . $text );
@@ -342,7 +342,7 @@ class Meow_MWAI_Modules_Wand {
   public function action_suggestExcerpts( $value, $arguments ) {
     $postId = $arguments['postId'];
     $text = $this->core->get_post_content( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 1024 );
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
     $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.\n\n", $arguments );
     $query->set_message( $prompt . $text );
@@ -362,7 +362,7 @@ class Meow_MWAI_Modules_Wand {
   public function action_suggestTitles( $value, $arguments ) {
     $postId = $arguments['postId'];
     $text = $this->core->get_post_content( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 1024 );
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
     $prompt = apply_filters( 'mwai_prompt_suggestTitles', "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.\n\n", $arguments );
     $query->set_message( $prompt . $text );

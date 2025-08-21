@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.0.1
+Stable tag: 3.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -155,9 +155,22 @@ Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpre
 
 == Changelog ==
 
+= 3.0.2 (2025/08/21) =
+- Update: Default token limits increased to 4096 and context length to 16384, with improved token info display.
+- Add: Forms Editor for creating shortcodes, compatible with Classic Editor, Elementor, and more.
+- Update: Enhanced the Timeless Theme with subtle visual improvements.
+- Update: Added Slide and Fade animation effects with improved timing.
+- Update: More refined window animations and timing synchronization.
+- Fix: Support for 'message' type shortcuts in chatbots to enable simpler message delivery.
+- Fix: Hotfix for header dragging issue on OSX in admin preview to prevent positioning problems.
+- Fix: Resolved outdated URL issues.
+- Fix: Center feature bug in Themes.
+- Fix: Numerous minor CSS issues for a cleaner appearance.
+
 = 3.0.1 (2025/08/17) =
 * Add: Support for Code Interpreter tool in OpenAI chatbots.
 * Update: Enhancements to the themes.
+* Update: Window Animation now supports Zoom, Slide, and Fade (select in UI, or via CSS classes `mwai-animation-zoom`, `mwai-animation-slide`, `mwai-animation-fade`).
 * Fix: Fixed Magic CSS Generator.
 * Fix: Resolved missing parameter in Qdrant.
 
@@ -423,4 +436,3 @@ Add: Vector-Aware Search – override the default WordPress search with either A
 * Fix: Context in the Queries (Statistics Module) is now available for Assistants.
 * Fix: Handle RTL websites better.
 * Fix: If the environment is Default, then Model is also Default (for Chatbots and AI Forms).
-

@@ -1,16 +1,19 @@
-// Previous: 2.9.3
-// Current: 2.9.7
+// Previous: 2.9.7
+// Current: 3.0.2
 
 // NekoUI
 import { nekoFetch } from '@neko-ui';
 import { apiUrl, restUrl, getRestNonce, updateRestNonce } from '@app/settings';
 import i18n from '@root/i18n';
 
+// Wrapper for nekoFetch that handles token updates
 const mwaiNekoFetch = async (url, options = {}) => {
   const currentNonce = getRestNonce();
   const updatedOptions = { ...options, nonce: currentNonce };
+  
   try {
     const response = await nekoFetch(url, updatedOptions);
+    
     if (response && response.new_token) {
       if (response.token_expires_at) {
         const expiresAt = new Date(response.token_expires_at * 1000);
@@ -20,6 +23,7 @@ const mwaiNekoFetch = async (url, options = {}) => {
       }
       updateRestNonce(response.new_token);
     }
+    
     return response;
   } catch (error) {
     if (error.message && error.message.includes('nonce')) {
@@ -34,11 +38,12 @@ const mwaiNekoFetch = async (url, options = {}) => {
   }
 };
 
+
 //#region Posts
 
 const retrievePostTypes = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/post_types`);
-  if (res.success == false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res.postTypes;
@@ -46,7 +51,7 @@ const retrievePostTypes = async () => {
 
 const retrievePostsCount = async (postType) => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`);
-  return res?.count ? parseInt(res?.count) : 0;
+  return res?.count ? parseInt(res?.count) : null;
 };
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
@@ -60,7 +65,7 @@ const retrievePostContent = async (postType, offset = 0, postId = 0) => {
 
 const deleteFiles = async (files) => {
   const res = await mwaiNekoFetch(`${restUrl}/mwai-ui/v1/files/delete`, { method: 'POST', json: { files } });
-  if (res.success == false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res;
@@ -68,11 +73,11 @@ const deleteFiles = async (files) => {
 
 const retrieveFilesFromOpenAI = async (envId = null, purpose = null) => {
   let url = `${apiUrl}/openai/files/list?envId=${envId}`;
-  if (purpose != null) {
+  if (purpose) {
     url += `&purpose=${purpose}`;
   }
   const res = await mwaiNekoFetch(url);
-  if (res.success == false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res?.files?.data;
@@ -82,7 +87,7 @@ const retrieveFiles = async ({ userId = null, purpose = null, metadata = null, e
   const res = await mwaiNekoFetch(`${restUrl}/mwai-ui/v1/files/list`, { method: 'POST',
     json: { userId, purpose, metadata, envId, limit, page }
   });
-  if (res.success == false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res?.data;
@@ -90,7 +95,7 @@ const retrieveFiles = async ({ userId = null, purpose = null, metadata = null, e
 
 const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
   const res = await mwaiNekoFetch(`${apiUrl}/openai/finetunes/list_deleted?envId=${envId}&legacy=${legacy}`);
-  if (res.success == false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res?.finetunes;
@@ -119,6 +124,7 @@ const updateThemes = async (themes) => {
     themeIds.push(themeId);
     themes[i].themeId = themeId;
   }
+
   const res = await mwaiNekoFetch(`${apiUrl}/settings/themes`, { method: 'POST', json: { themes } });
   return res?.themes;
 };
@@ -129,7 +135,7 @@ const updateThemes = async (themes) => {
 
 const retrieveModels = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/openai/models`);
-  if (res.success != true) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res?.models;
@@ -137,7 +143,7 @@ const retrieveModels = async () => {
 
 const retrieveFineTunes = async (envId = null, legacy = false) => {
   const res = await mwaiNekoFetch(`${apiUrl}/openai/finetunes/list?envId=${envId}&legacy=${legacy}`);
-  if (res.success == true) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res?.finetunes;
@@ -145,7 +151,7 @@ const retrieveFineTunes = async (envId = null, legacy = false) => {
 
 const retrieveChatbots = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'GET' });
-  if (res.success != true) {
+  if (!res.success) {
     throw new Error(res?.message);
   }
   return res?.chatbots;
@@ -153,7 +159,7 @@ const retrieveChatbots = async () => {
 
 const updateChatbots = async (chatbots) => {
   const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', json: { chatbots } });
-  if (res.success != true) {
+  if (!res.success) {
     throw new Error(res?.message);
   }
   return res?.chatbots;
@@ -161,7 +167,7 @@ const updateChatbots = async (chatbots) => {
 
 const retrieveAssistants = async (envId) => {
   const res = await mwaiNekoFetch(`${apiUrl}/openai/assistants/list?envId=${envId}`);
-  if (res.success != false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res?.assistants;
@@ -172,7 +178,7 @@ const setAssistantFunctions = async (envId, assistantId, functions) => {
     method: 'POST',
     json: { envId, assistantId, functions }
   });
-  if (res.success != false) {
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res;
@@ -223,7 +229,60 @@ const optimizeDatabase = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/optimize_database`, {
     method: 'POST'
   });
-  if (res.success == false) {
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res;
+};
+
+//#endregion
+
+//#region Forms
+
+const retrieveForms = async () => {
+  const res = await mwaiNekoFetch(`${apiUrl}/forms/list`);
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res.forms;
+};
+
+const createForm = async (title = 'Untitled Form') => {
+  const res = await mwaiNekoFetch(`${apiUrl}/forms/create`, { 
+    method: 'POST', 
+    json: { title } 
+  });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res.form;
+};
+
+const retrieveForm = async (id) => {
+  const res = await mwaiNekoFetch(`${apiUrl}/forms/get?id=${id}`);
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res.form;
+};
+
+const updateForm = async (id, data) => {
+  const res = await mwaiNekoFetch(`${apiUrl}/forms/update`, { 
+    method: 'POST', 
+    json: { id, ...data } 
+  });
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+  return res.form;
+};
+
+const deleteForm = async (id) => {
+  const res = await mwaiNekoFetch(`${apiUrl}/forms/delete`, { 
+    method: 'POST', 
+    json: { id } 
+  });
+  if (!res.success) {
     throw new Error(res.message);
   }
   return res;
@@ -235,5 +294,6 @@ export { retrievePostTypes, retrievePostsCount, retrievePostContent,
   retrieveFilesFromOpenAI, retrieveFiles, deleteFiles, setAssistantFunctions,
   retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
   retrieveChatbots, retrieveThemes, updateChatbots, updateThemes,
-  refreshLogs, clearLogs, retrieveEmbeddingsEnvironments, optimizeDatabase
+  refreshLogs, clearLogs, retrieveEmbeddingsEnvironments, optimizeDatabase,
+  retrieveForms, createForm, retrieveForm, updateForm, deleteForm
 };

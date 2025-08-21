@@ -342,6 +342,33 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_features' ],
         'callback' => [ $this, 'rest_clear_logs' ]
       ] );
+
+      // Forms Endpoints
+      register_rest_route( $this->namespace, '/forms/list', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_forms_list' ]
+      ] );
+      register_rest_route( $this->namespace, '/forms/get', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_forms_get' ]
+      ] );
+      register_rest_route( $this->namespace, '/forms/create', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_forms_create' ]
+      ] );
+      register_rest_route( $this->namespace, '/forms/update', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_forms_update' ]
+      ] );
+      register_rest_route( $this->namespace, '/forms/delete', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_forms_delete' ]
+      ] );
     }
     catch ( Exception $e ) {
       Meow_MWAI_Logging::error( 'REST API initialization failed: ' . $e->getMessage() );
@@ -1400,6 +1427,185 @@ class Meow_MWAI_Rest {
   public function rest_clear_logs() {
     Meow_MWAI_Logging::clear();
     return $this->create_rest_response( [ 'success' => true ], 200 );
+  }
+
+  #endregion
+
+  #region Forms
+
+  public function rest_forms_list( $request ) {
+    try {
+      $args = [
+        'post_type' => 'mwai_form',
+        'posts_per_page' => 100,
+        'post_status' => 'any',
+        'orderby' => 'date',
+        'order' => 'DESC'
+      ];
+      
+      $posts = get_posts( $args );
+      $forms = array_map( function( $post ) {
+        return [
+          'id' => $post->ID,
+          'title' => $post->post_title,
+          'status' => $post->post_status
+        ];
+      }, $posts );
+      
+      return $this->create_rest_response( [ 'success' => true, 'forms' => $forms ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_forms_get( $request ) {
+    try {
+      $id = intval( $request->get_param( 'id' ) );
+      if ( !$id ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid form ID' ], 400 );
+      }
+      
+      $post = get_post( $id );
+      if ( !$post || $post->post_type !== 'mwai_form' ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Form not found' ], 404 );
+      }
+      
+      $form = [
+        'id' => $post->ID,
+        'title' => [ 
+          'raw' => $post->post_title,
+          'rendered' => $post->post_title 
+        ],
+        'content' => [
+          'raw' => $post->post_content,
+          'rendered' => $post->post_content
+        ],
+        'status' => $post->post_status
+      ];
+      
+      return $this->create_rest_response( [ 'success' => true, 'form' => $form ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_forms_create( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $title = isset( $params['title'] ) ? $params['title'] : 'Untitled Form';
+      
+      $post_data = [
+        'post_title' => $title,
+        'post_content' => '',
+        'post_status' => 'draft',
+        'post_type' => 'mwai_form'
+      ];
+      
+      $post_id = wp_insert_post( $post_data );
+      
+      if ( is_wp_error( $post_id ) ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => $post_id->get_error_message() ], 500 );
+      }
+      
+      $post = get_post( $post_id );
+      $form = [
+        'id' => $post->ID,
+        'title' => [ 
+          'raw' => $post->post_title,
+          'rendered' => $post->post_title 
+        ],
+        'status' => $post->post_status
+      ];
+      
+      return $this->create_rest_response( [ 'success' => true, 'form' => $form ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_forms_update( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $id = isset( $params['id'] ) ? intval( $params['id'] ) : 0;
+      
+      if ( !$id ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid form ID' ], 400 );
+      }
+      
+      $post = get_post( $id );
+      if ( !$post || $post->post_type !== 'mwai_form' ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Form not found' ], 404 );
+      }
+      
+      $post_data = [ 'ID' => $id ];
+      
+      if ( isset( $params['title'] ) ) {
+        $post_data['post_title'] = $params['title'];
+      }
+      
+      if ( isset( $params['content'] ) ) {
+        $post_data['post_content'] = $params['content'];
+      }
+      
+      if ( isset( $params['status'] ) ) {
+        $post_data['post_status'] = $params['status'];
+      }
+      
+      $result = wp_update_post( $post_data );
+      
+      if ( is_wp_error( $result ) ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => $result->get_error_message() ], 500 );
+      }
+      
+      $post = get_post( $id );
+      $form = [
+        'id' => $post->ID,
+        'title' => [ 
+          'raw' => $post->post_title,
+          'rendered' => $post->post_title 
+        ],
+        'content' => [
+          'raw' => $post->post_content,
+          'rendered' => $post->post_content
+        ],
+        'status' => $post->post_status
+      ];
+      
+      return $this->create_rest_response( [ 'success' => true, 'form' => $form ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_forms_delete( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $id = isset( $params['id'] ) ? intval( $params['id'] ) : 0;
+      
+      if ( !$id ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid form ID' ], 400 );
+      }
+      
+      $post = get_post( $id );
+      if ( !$post || $post->post_type !== 'mwai_form' ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Form not found' ], 404 );
+      }
+      
+      $result = wp_delete_post( $id, true );
+      
+      if ( !$result ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Failed to delete form' ], 500 );
+      }
+      
+      return $this->create_rest_response( [ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
   }
 
   #endregion

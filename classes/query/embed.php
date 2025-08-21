@@ -13,6 +13,7 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
       $this->scope = $messageOrQuery->scope;
       $this->apiKey = $messageOrQuery->apiKey;
       $this->botId = $messageOrQuery->botId;
+      $this->customId = $messageOrQuery->customId;
       $this->envId = $messageOrQuery->envId;
     }
     else {
@@ -54,7 +55,8 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
         'class' => get_class( $this ),
         'envId' => $this->envId,
         'scope' => $this->scope,
-        'session' => $this->session
+        'session' => $this->session,
+        'customId' => $this->customId,
       ]
     ];
 

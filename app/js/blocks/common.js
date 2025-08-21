@@ -1,11 +1,26 @@
-// Previous: 2.6.1
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 3.0.2
 
 import { useClasses } from '@neko-ui';
 import styled from "styled-components";
 import AiIcon from '../styles/AiIcon';
 
 const meowIcon = <AiIcon icon="ai" style={{ width: 20, height: 20 }} />;
+
+// Badge component - WordPress doesn't have a built-in Badge, so we create our own
+export const Badge = ({ children, variant = 'default' }) => {
+  const style = {
+    display: 'inline-block',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    fontSize: '10px',
+    lineHeight: '1.4',
+    backgroundColor: variant === 'purple' ? '#9b51e0' : variant === 'red' ? '#cf2e2e' : '#0693e3',
+    color: '#fff'
+  };
+  
+  return <span style={style}>{children}</span>;
+};
 
 const BlockContainer = styled.div`
   color: black;
@@ -36,21 +51,6 @@ const BlockContainer = styled.div`
       font-weight: 400;
       text-align: right;
       flex: auto;
-
-      .mwai-pill {
-        background: var(--wp--preset--color--vivid-cyan-blue);
-        padding: 5px 10px;
-        border-radius: 8px;
-        color: white;
-      }
-
-      .mwai-pill-purple {
-        background: var(--wp--preset--color--vivid-purple);
-      }
-
-      .mwai-pill-red {
-        background: var(--wp--preset--color--vivid-red);
-      }
     }
   }
 

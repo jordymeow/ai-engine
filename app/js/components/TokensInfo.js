@@ -1,5 +1,5 @@
-// Previous: 2.8.5
-// Current: 2.9.7
+// Previous: 2.9.7
+// Current: 3.0.2
 
 const { useMemo } = wp.element;
 import i18n from '@root/i18n';
@@ -40,21 +40,39 @@ const TokensInfo = ({ model, maxTokens, onRecommendedClick, ...rest }) => {
     <span {...rest}>
       {(!!model?.maxContextualTokens || !!model?.maxCompletionTokens) && (
         <>
-          {!!model?.maxContextualTokens && <>{i18n.COMMON.CONTEXTUAL}: {model?.maxContextualTokens}</>}
-          {!!model?.maxContextualTokens && !!model?.maxCompletionTokens && <> - </>}
-          {!!model?.maxCompletionTokens && <>{i18n.COMMON.COMPLETION}: {model?.maxCompletionTokens}</>}
+          {!!model?.maxContextualTokens && (
+            <>
+              {i18n.COMMON.CONTEXTUAL}: {model.maxContextualTokens.toLocaleString()}
+              <br />
+            </>
+          )}
+          {!!model?.maxCompletionTokens && (
+            <>
+              {i18n.COMMON.COMPLETION}: {model.maxCompletionTokens.toLocaleString()}
+              <br />
+            </>
+          )}
+        </>
+      )}
+      {!model?.maxCompletionTokens && !!model?.maxTokens && (
+        <>
+          {i18n.COMMON.TOTAL_MAX_TOKENS}: {model.maxTokens.toLocaleString()}
           <br />
         </>
       )}
-      {!model?.maxCompletionTokens && !!model?.maxTokens && <>{i18n.COMMON.TOTAL_MAX_TOKENS}: {model?.maxTokens}<br /></>}
-      {!!recommendedMaxTokens && recommendedMaxTokens !== maxTokens && <>{i18n.COMMON.RECOMMENDED}: <b onClick={isClickEnabled ? () => onRecommendedClick(recommendedMaxTokens) : null}
-        style={{ 
-          color: color,
-          cursor: isClickEnabled ? 'pointer' : 'inherit',
-         }}>
-        {recommendedMaxTokens}
-        {maxTokens > maxCompletionTokens && <>❗️</>}
-      </b><br /></>}
+      {!!recommendedMaxTokens && recommendedMaxTokens !== maxTokens && (
+        <>
+          {i18n.COMMON.RECOMMENDED}: <b onClick={isClickEnabled ? () => onRecommendedClick(recommendedMaxTokens) : null}
+            style={{ 
+              color: color,
+              cursor: isClickEnabled ? 'pointer' : 'inherit',
+            }}>
+            {recommendedMaxTokens.toLocaleString()}
+            {maxTokens > maxCompletionTokens && <>❗️</>}
+          </b>
+          <br />
+        </>
+      )}
     </span>
   );
 };

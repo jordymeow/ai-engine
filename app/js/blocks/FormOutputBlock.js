@@ -1,8 +1,8 @@
-// Previous: 2.5.7
-// Current: 2.6.1
+// Previous: 2.6.1
+// Current: 3.0.2
 
 import i18n from '@root/i18n';
-import { AiBlockContainer, meowIcon } from "./common";
+import { AiBlockContainer, meowIcon, Badge } from "./common";
 
 const { __ } = wp.i18n;
 const { registerBlockType } = wp.blocks;
@@ -45,7 +45,7 @@ const FormOutputBlock = props => {
     <>
       <div {...blockProps}>
         <AiBlockContainer title="Output" type="output" isSelected={isSelected}
-          hint={<span className="mwai-pill mwai-pill-purple">#{id}</span>}>
+          hint={<Badge variant="purple">#{id}</Badge>}>
           <div></div>
           <div style={{ flex: 'auto' }}></div>
           <div>#{id}</div>

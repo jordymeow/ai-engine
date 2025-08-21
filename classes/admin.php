@@ -184,10 +184,33 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     $physical_file = MWAI_PATH . '/app/index.js';
     $cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
     wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js', null, $cache_buster );
-    wp_register_script( 'mwai', MWAI_URL . 'app/index.js', [ 'mwai-vendor',
-      'wp-element', 'wp-components', 'wp-edit-post', 'wp-plugins', 'wp-i18n'
-    ], $cache_buster );
+    // Ensure core block editor and blocks are loaded before our app so Inserter has all core blocks
+    $deps = [ 'mwai-vendor', 'wp-element', 'wp-components', 'wp-edit-post', 'wp-plugins', 'wp-i18n' ];
+    // Load block editor deps if Forms Editor is enabled, or if we are on a block editor screen (Edit Post)
+    $load_forms_editor = $this->core->get_option( 'module_forms' ) && $this->core->get_option( 'forms_editor' );
+    $on_block_editor = function_exists( 'wp_should_load_block_editor_scripts_and_styles' ) && wp_should_load_block_editor_scripts_and_styles();
+    if ( $load_forms_editor || $on_block_editor ) {
+      $deps = array_merge( $deps, [ 'wp-blocks', 'wp-block-editor', 'wp-format-library', 'wp-block-library', 'wp-editor' ] );
+    }
+    wp_register_script( 'mwai', MWAI_URL . 'app/index.js', $deps, $cache_buster );
     wp_enqueue_script( 'mwai' );
+
+    // Ensure core editor styles are available for embedded block editor UIs
+    // This helps Popovers, Inspector, and toolbars match Gutenberg styling
+    if ( function_exists( 'wp_enqueue_style' ) ) {
+      @wp_enqueue_style( 'wp-edit-post' );
+      @wp_enqueue_style( 'wp-components' );
+      @wp_enqueue_style( 'wp-block-editor' );
+      @wp_enqueue_style( 'wp-block-library' );
+    }
+    // Make sure core blocks and format tools are registered/available
+    if ( function_exists( 'wp_enqueue_script' ) ) {
+      if ( $load_forms_editor || $on_block_editor ) {
+        @wp_enqueue_script( 'wp-format-library' );
+        @wp_enqueue_script( 'wp-block-library' );
+        @wp_enqueue_script( 'wp-editor' );
+      }
+    }
 
     // The MD5 of the translation file built by WP uses app/i18n.js instead of app/index.js
     add_filter( 'load_script_translation_file', function ( $file, $handle, $domain ) {
