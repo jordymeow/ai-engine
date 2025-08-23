@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.0.2
+Stable tag: 3.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,14 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.0.3 (2025/08/23) =
+- Add: Support for Responses API with Azure OpenAI.
+- Add: Download button for generated images in chatbot.
+- Fix: Fixed Site Editor compatibility.
+- Fix: Hotfix for center positioning of popup chatbots.
+- Update: Better color picker with alpha support.
+- Update: Many subtle UI improvements.
 
 = 3.0.2 (2025/08/21) =
 - Update: Default token limits increased to 4096 and context length to 16384, with improved token info display.

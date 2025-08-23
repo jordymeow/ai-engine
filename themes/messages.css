@@ -1530,11 +1530,6 @@
   width: var(--mwai-width);
   z-index: 9999;
 }
-.mwai-messages-theme.mwai-window .mwai-backdrop {
-  display: none;
-  z-index: 0;
-  pointer-events: none;
-}
 .mwai-messages-theme.mwai-window .mwai-window-box {
   position: relative;
   z-index: 1;
@@ -1650,70 +1645,14 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  right: inherit;
-  bottom: inherit;
+  right: auto;
+  bottom: auto;
 }
 @media (max-width: 760px) {
   .mwai-messages-theme.mwai-window.mwai-center-open.mwai-open {
     width: calc(100% - 40px);
     max-width: var(--mwai-width);
   }
-}
-.mwai-messages-theme.mwai-window.mwai-center-open .mwai-trigger {
-  position: fixed !important;
-  z-index: 10000;
-}
-.mwai-messages-theme.mwai-window.mwai-center-open.mwai-bottom-right .mwai-trigger {
-  bottom: 30px !important;
-  right: 30px !important;
-  left: auto !important;
-  top: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-center-open.mwai-bottom-left .mwai-trigger {
-  bottom: 30px !important;
-  left: 30px !important;
-  right: auto !important;
-  top: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-center-open.mwai-top-right .mwai-trigger {
-  top: 30px !important;
-  right: 30px !important;
-  left: auto !important;
-  bottom: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-center-open.mwai-top-left .mwai-trigger {
-  top: 30px !important;
-  left: 30px !important;
-  right: auto !important;
-  bottom: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-window-dragging .mwai-trigger {
-  position: fixed !important;
-  z-index: 10000;
-}
-.mwai-messages-theme.mwai-window.mwai-window-dragging.mwai-bottom-right .mwai-trigger {
-  bottom: 30px !important;
-  right: 30px !important;
-  left: auto !important;
-  top: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-window-dragging.mwai-bottom-left .mwai-trigger {
-  bottom: 30px !important;
-  left: 30px !important;
-  right: auto !important;
-  top: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-window-dragging.mwai-top-right .mwai-trigger {
-  top: 30px !important;
-  right: 30px !important;
-  left: auto !important;
-  bottom: auto !important;
-}
-.mwai-messages-theme.mwai-window.mwai-window-dragging.mwai-top-left .mwai-trigger {
-  top: 30px !important;
-  left: 30px !important;
-  right: auto !important;
-  bottom: auto !important;
 }
 .mwai-messages-theme.mwai-window.mwai-top-left .mwai-trigger, .mwai-messages-theme.mwai-window.mwai-bottom-left .mwai-trigger {
   align-items: flex-start;
@@ -1869,18 +1808,6 @@
 }
 .mwai-messages-theme.mwai-window.mwai-open .mwai-header {
   display: flex;
-}
-.mwai-messages-theme.mwai-window.mwai-open .mwai-backdrop {
-  display: block;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: none;
-  z-index: 0;
-  pointer-events: none;
 }
 .mwai-messages-theme.mwai-window.mwai-open .mwai-body {
   display: flex;
@@ -2261,7 +2188,8 @@
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
   z-index: 100;
 }
-.mwai-messages-theme .mwai-reply-actions .mwai-copy-button {
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button,
+.mwai-messages-theme .mwai-reply-actions .mwai-download-button {
   fill: var(--mwai-fontColor);
   padding: 3px 5px;
   width: 24px;
@@ -2270,7 +2198,8 @@
   cursor: pointer;
   border-radius: 5px;
 }
-.mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover {
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover,
+.mwai-messages-theme .mwai-reply-actions .mwai-download-button:hover {
   filter: brightness(1.2);
 }
 .mwai-messages-theme .mwai-reply-actions.mwai-hidden {
@@ -2778,10 +2707,12 @@
   top: -6px;
   right: -6px;
 }
-.mwai-messages-theme .mwai-reply-actions .mwai-copy-button {
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button,
+.mwai-messages-theme .mwai-reply-actions .mwai-download-button {
   padding-top: 4px;
 }
-.mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover {
+.mwai-messages-theme .mwai-reply-actions .mwai-copy-button:hover,
+.mwai-messages-theme .mwai-reply-actions .mwai-download-button:hover {
   fill: var(--mwai-backgroundPrimaryColor);
   background: var(--mwai-backgroundUserColor);
 }

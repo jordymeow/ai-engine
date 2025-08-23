@@ -99,7 +99,8 @@ class Meow_MWAI_Rest_Settings extends Meow_MWAI_Rest_Base {
       $params = $request->get_json_params();
       $chatbots = $params['chatbots'];
       $this->core->update_chatbots( $chatbots );
-      return $this->create_rest_response( [ 'success' => true ], 200 );
+      $saved_chatbots = $this->core->get_chatbots();
+      return $this->create_rest_response( [ 'success' => true, 'chatbots' => $saved_chatbots ], 200 );
     }
     catch ( Exception $e ) {
       return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );

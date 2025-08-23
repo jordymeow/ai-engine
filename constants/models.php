@@ -5,7 +5,7 @@
 define( 'MWAI_OPENAI_MODELS', [
   /*
     GPT-5
-    Next-generation flagship model with enhanced capabilities
+    The best model for coding and agentic tasks across domains
     https://platform.openai.com/docs/models/gpt-5
     */
   [
@@ -22,7 +22,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['minimal', 'low', 'medium', 'high'],
@@ -48,7 +48,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['minimal', 'low', 'medium', 'high'],
@@ -74,10 +74,35 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5 Chat
+    GPT-5 model used in ChatGPT
+    https://platform.openai.com/docs/models/gpt-5
+    */
+  [
+    'model' => 'gpt-5-chat-latest',
+    'name' => 'GPT-5 Chat',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.25,
+      'out' => 10.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'responses', 'mcp'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
       'verbosity' => ['low', 'medium', 'high']
     ]
   ],

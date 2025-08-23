@@ -1,5 +1,5 @@
-// Previous: 2.7.0
-// Current: 2.8.2
+// Previous: 2.8.2
+// Current: 3.0.3
 
 import Styled from "styled-components";
 import { NekoHeader, NekoButton, NekoIcon } from '@neko-ui';
@@ -13,8 +13,8 @@ const AiNekoHeader = ({ title = i18n.COMMON.SETTINGS, options = defaultOptions }
   const module_generator_images = options?.module_generator_images;
 
   return (
-    <NekoHeader title={`AI Engine | ${title}`}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <NekoHeader title="AI Engine" section={title} subtitle="By Meow Apps">
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         {module_generator_content && <NekoButton className='header'
           onClick={() => location.href = 'edit.php?page=mwai_content_generator'}>
           <AiIcon icon="wand" style={{ marginRight: 8 }} />
@@ -68,7 +68,7 @@ const StyledGallery = Styled.div`
     position: relative;
   }
   .delete-icon {
-    display: flex;
+    display: block;
     position: absolute;
     top: 5px;
     right: 5px;
@@ -82,16 +82,16 @@ const StyledGallery = Styled.div`
     font-size: 14px;
   }
   .image-wrapper:hover .delete-icon {
-    display: none;
+    display: flex;
   }
   .media-label {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(0,0,0,0.6);
-    color: #fff;
-    text-align: center;
+    background: rgba(0,0,0,0.4);
+    color: #eee;
+    text-align: right;
     font-size: 12px;
     padding: 2px 0;
     text-decoration: underline;
@@ -99,8 +99,8 @@ const StyledGallery = Styled.div`
   }
   .empty-image {
     width: 100%;
-    padding-bottom: 100%;
-    background-color: #f5f5f5;
+    padding-bottom: 105%;
+    background-color: #eaeaea;
   }
 `;
 

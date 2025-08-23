@@ -93,39 +93,44 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
       return implode( ' ', $diff );
     }
 
-    // Originally created by matzeeable, modified by jordymeow
+    // From August 2025: The New 'is_rest' function, more reliable, much cleaner.
     public static function is_rest() {
 
-      // WP_REST_Request init.
-      $is_rest_request = defined( 'REST_REQUEST' ) && REST_REQUEST;
-      if ( $is_rest_request ) {
+      // WP 6.5+: only reliable after parse_request; otherwise skip this branch.
+      if ( function_exists( 'wp_is_serving_rest_request' ) && did_action( 'parse_request' ) && wp_is_serving_rest_request() ) {
         MeowCommon_Rest::init_once();
         return true;
       }
 
-      // Plain permalinks.
-      $prefix = rest_get_url_prefix();
-      $request_contains_rest = isset( $_GET['rest_route'] ) && strpos( trim( $_GET['rest_route'], '\\/' ), $prefix, 0 ) === 0;
-      if ( $request_contains_rest ) {
+      // Classic flag set during REST bootstrap (safe at any time).
+      if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
         MeowCommon_Rest::init_once();
         return true;
       }
 
-      // It can happen that WP_Rewrite is not yet initialized, so better to do it.
-      global $wp_rewrite;
-      if ( $wp_rewrite === null ) {
-        $wp_rewrite = new WP_Rewrite();
-      }
-      $rest_url = wp_parse_url( trailingslashit( get_rest_url() ) );
-      $current_url = wp_parse_url( add_query_arg( [] ) );
-      if ( !$rest_url || !$current_url ) {
-        return false;
+      // Plain permalinks: ?rest_route=/... (route does NOT include the prefix).
+      if ( isset( $_GET['rest_route'] ) ) {
+        MeowCommon_Rest::init_once();
+        return true;
       }
 
-      // URL Path begins with wp-json.
-      if ( !empty( $current_url['path'] ) && !empty( $rest_url['path'] ) ) {
-        $request_contains_rest = strpos( $current_url['path'], $rest_url['path'], 0 ) === 0;
-        if ( $request_contains_rest ) {
+      // Pretty permalinks: compare request PATH to the site's REST base path, without using rest_url().
+      // This works early in the bootstrap (no dependency on $wp_rewrite).
+      $req_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : null;
+      if ( $req_path ) {
+        $home_path = wp_parse_url( home_url( '/' ), PHP_URL_PATH ); // e.g. '/' or '/blog/'
+        $home_path = trailingslashit( $home_path ? $home_path : '/' );
+
+        $prefix = trim( rest_get_url_prefix(), '/' ); // e.g. 'wp-json' or custom
+
+        // /wp-json/ or /blog/wp-json/
+        $base = $home_path . trailingslashit( $prefix );
+
+        // /index.php/wp-json/ or /blog/index.php/wp-json/ (index permalinks)
+        $base_index = $home_path . 'index.php/' . trailingslashit( $prefix );
+
+        $path = trailingslashit( $req_path );
+        if ( strpos( $path, $base ) === 0 || strpos( $path, $base_index ) === 0 ) {
           MeowCommon_Rest::init_once();
           return true;
         }
@@ -133,6 +138,47 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 
       return false;
     }
+
+    // Originally created by matzeeable, modified by jordymeow
+    // public static function is_rest() {
+
+    //   // WP_REST_Request init.
+    //   $is_rest_request = defined( 'REST_REQUEST' ) && REST_REQUEST;
+    //   if ( $is_rest_request ) {
+    //     MeowCommon_Rest::init_once();
+    //     return true;
+    //   }
+
+    //   // Plain permalinks.
+    //   $prefix = rest_get_url_prefix();
+    //   $request_contains_rest = isset( $_GET['rest_route'] ) && strpos( trim( $_GET['rest_route'], '\\/' ), $prefix, 0 ) === 0;
+    //   if ( $request_contains_rest ) {
+    //     MeowCommon_Rest::init_once();
+    //     return true;
+    //   }
+
+    //   // It can happen that WP_Rewrite is not yet initialized, so better to do it.
+    //   global $wp_rewrite;
+    //   if ( $wp_rewrite === null ) {
+    //     $wp_rewrite = new WP_Rewrite();
+    //   }
+    //   $rest_url = wp_parse_url( trailingslashit( get_rest_url() ) );
+    //   $current_url = wp_parse_url( add_query_arg( [] ) );
+    //   if ( !$rest_url || !$current_url ) {
+    //     return false;
+    //   }
+
+    //   // URL Path begins with wp-json.
+    //   if ( !empty( $current_url['path'] ) && !empty( $rest_url['path'] ) ) {
+    //     $request_contains_rest = strpos( $current_url['path'], $rest_url['path'], 0 ) === 0;
+    //     if ( $request_contains_rest ) {
+    //       MeowCommon_Rest::init_once();
+    //       return true;
+    //     }
+    //   }
+
+    //   return false;
+    // }
 
     public static function test_error( $error = 'timeout', $diceSides = 1 ) {
       if ( mt_rand( 1, $diceSides ) === 1 ) {

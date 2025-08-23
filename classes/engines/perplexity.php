@@ -131,4 +131,68 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML {
     return $choices;
   }
 
+  /**
+   * Connection check for Perplexity API
+   * Tests the API key by listing async chat completions
+   */
+  public function connection_check() {
+    try {
+      // Build the URL for async completions list endpoint
+      $endpoint = apply_filters( 'mwai_perplexity_endpoint', 'https://api.perplexity.ai', $this->env );
+      $url = rtrim( $endpoint, '/' ) . '/async/chat/completions?limit=1';
+      
+      // Build headers with API key
+      if ( empty( $this->apiKey ) ) {
+        throw new Exception( 'No Perplexity API Key provided. Check your settings.' );
+      }
+      
+      $headers = [
+        'Authorization' => 'Bearer ' . $this->apiKey,
+        'User-Agent' => 'AI Engine',
+      ];
+      
+      $options = [
+        'headers' => $headers,
+        'method' => 'GET',
+        'timeout' => 10,
+        'sslverify' => false
+      ];
+      
+      // Make the request
+      $response = wp_remote_get( $url, $options );
+      
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( $response->get_error_message() );
+      }
+      
+      $body = wp_remote_retrieve_body( $response );
+      $data = json_decode( $body, true );
+      
+      // Check if response has expected structure
+      if ( !is_array( $data ) || !array_key_exists( 'requests', $data ) ) {
+        throw new Exception( 'Invalid response from Perplexity API' );
+      }
+      
+      // Get available models from our constants
+      $models = $this->get_models();
+      $modelNames = array_map( function( $model ) {
+        return $model['model'] ?? $model['name'] ?? 'unknown';
+      }, array_slice( $models, 0, 5 ) );
+      
+      return [
+        'success' => true,
+        'service' => 'Perplexity',
+        'message' => 'Connection successful',
+        'details' => [
+          'endpoint' => $endpoint,
+          'model_count' => count( $models ),
+          'sample_models' => $modelNames
+        ]
+      ];
+    }
+    catch ( Exception $e ) {
+      throw new Exception( 'Perplexity connection failed: ' . $e->getMessage() );
+    }
+  }
+
 }

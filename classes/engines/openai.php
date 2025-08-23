@@ -81,10 +81,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       return false;
     }
 
-    // Azure doesn't support Responses API yet
-    if ( $this->envType === 'azure' ) {
-      return false;
-    }
+    // Azure supports Responses API in preview
+    // Model tag check below will determine if the specific model supports it
 
     // Check if the model has the 'responses' tag
     $modelInfo = $this->retrieve_model_info( $model );
@@ -113,8 +111,22 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   * Build body for Responses API
   */
   protected function build_responses_body( $query, $streamCallback = null ) {
+    // For Azure, we need to use the deployment name as the model
+    $model = $query->model;
+    if ( $this->envType === 'azure' ) {
+      // Find the deployment name for this model
+      if ( isset( $this->env['deployments'] ) && is_array( $this->env['deployments'] ) ) {
+        foreach ( $this->env['deployments'] as $deployment ) {
+          if ( isset( $deployment['model'] ) && $deployment['model'] === $query->model && isset( $deployment['name'] ) ) {
+            $model = $deployment['name'];
+            break;
+          }
+        }
+      }
+    }
+    
     $body = [
-      'model' => $query->model,
+      'model' => $model,
       'stream' => !is_null( $streamCallback ),
     ];
 
@@ -281,15 +293,23 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         // For GPT-5 models, skip the temperature parameter entirely
       }
 
-      // Handle GPT-5 specific parameters: reasoning and verbosity
-      if ( strpos( $query->model, 'gpt-5' ) === 0 ) {
-        // Add reasoning parameter as an object (Responses API expects object)
-        // { reasoning: { effort: 'minimal|low|medium|high' } }
-        if ( !empty( $query->reasoning ) ) {
+      // Handle reasoning parameter only for models that support it
+      if ( !empty( $query->reasoning ) ) {
+        // Check if the model has the 'reasoning' tag
+        $modelInfo = $this->retrieve_model_info( $query->model );
+        if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'reasoning', $modelInfo['tags'] ) ) {
+          // Add reasoning parameter as an object (Responses API expects object)
+          // { reasoning: { effort: 'minimal|low|medium|high' } }
           $body['reasoning'] = [ 'effort' => $query->reasoning ];
         }
-        // Add verbosity parameter if set (inside text object)
-        if ( !empty( $query->verbosity ) ) {
+      }
+      
+      // Handle verbosity parameter only for models that support it
+      if ( !empty( $query->verbosity ) ) {
+        // Check if the model has the 'verbosity' tag
+        $modelInfo = $this->retrieve_model_info( $query->model );
+        if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'verbosity', $modelInfo['tags'] ) ) {
+          // Add verbosity parameter if set (inside text object)
           if ( !isset( $body['text'] ) || !is_array( $body['text'] ) ) {
             $body['text'] = [];
           }
@@ -488,6 +508,18 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       $body['parallel_tool_calls'] = true;
     }
 
+    // Azure Responses API doesn't support web_search tool yet (preview limitation)
+    if ( $this->envType === 'azure' && !empty( $body['tools'] ) ) {
+      $body['tools'] = array_values( array_filter( $body['tools'], function( $tool ) {
+        $toolType = $tool['type'] ?? null;
+        if ( $toolType === 'web_search' ) {
+          Meow_MWAI_Logging::log( 'Responses API: Removing web_search tool for Azure (not supported in preview)' );
+          return false;
+        }
+        return true;
+      } ) );
+    }
+
     return $body;
   }
 
@@ -649,9 +681,40 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   */
   protected function build_responses_url() {
     if ( $this->envType === 'azure' ) {
-      // Azure uses a different URL structure
-      $endpoint = isset( $this->env['endpoint'] ) ? $this->env['endpoint'] : null;
-      $url = trailingslashit( $endpoint ) . 'openai/responses?' . $this->azureApiVersion;
+      // Azure v1 Responses API endpoint (preview)
+      $endpoint = isset( $this->env['endpoint'] ) ? rtrim( $this->env['endpoint'], '/' ) : null;
+      
+      // Handle legacy full path endpoints for backward compatibility
+      if ( strpos( $endpoint, '/openai/responses' ) !== false || strpos( $endpoint, '/openai/v1/responses' ) !== false ) {
+        // Extract the base URL (remove the path and query params)
+        $baseUrl = str_replace( '/openai/responses', '', $endpoint );
+        $baseUrl = str_replace( '/openai/v1/responses', '', $baseUrl );
+        $baseUrl = preg_replace( '/\?.*$/', '', $baseUrl );
+        
+        // For Azure v1 Responses API, we do NOT include deployment in the URL
+        // The deployment name goes in the request body as 'model'
+        $url = $baseUrl . '/openai/v1/responses';
+        
+        // Preserve the API version if it was included
+        if ( strpos( $endpoint, 'api-version=' ) !== false ) {
+          preg_match( '/api-version=([^&]+)/', $endpoint, $matches );
+          $apiVersion = $matches[1] ?? 'preview';
+          $url .= '?api-version=' . $apiVersion;
+        } else {
+          $url .= '?api-version=preview';
+        }
+      }
+      else {
+        // Standard format: just the resource domain
+        // Ensure the endpoint has the proper protocol
+        if ( strpos( $endpoint, 'http' ) !== 0 ) {
+          $endpoint = 'https://' . $endpoint;
+        }
+        
+        // Build the v1 endpoint without deployment in path
+        // For Azure v1 Responses API, deployment goes in the body, not the URL
+        $url = rtrim( $endpoint, '/' ) . '/openai/v1/responses?api-version=preview';
+      }
     }
     else {
       $endpoint = apply_filters( 'mwai_openai_endpoint', 'https://api.openai.com/v1', $this->env );
@@ -659,6 +722,126 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     }
 
     return $url;
+  }
+
+  /**
+  * Override execute to handle Azure v1 endpoints for containers and files
+  */
+  public function execute(
+    $method,
+    $url,
+    $query = null,
+    $formFields = null,
+    $json = true,
+    $extraHeaders = null,
+    $streamCallback = null
+  ) {
+    // For Azure container/files operations, use v1 endpoint
+    if ( $this->envType === 'azure' && 
+         ( strpos( $url, '/containers/' ) !== false || strpos( $url, '/files/' ) !== false ) ) {
+      
+      // Build the Azure v1 URL
+      $endpoint = isset( $this->env['endpoint'] ) ? rtrim( $this->env['endpoint'], '/' ) : null;
+      $fullUrl = $endpoint . '/openai/v1' . $url;
+      
+      // Add API version
+      $hasQuery = strpos( $fullUrl, '?' ) !== false;
+      $fullUrl = $fullUrl . ( $hasQuery ? '&' : '?' ) . 'api-version=preview';
+      
+      // Prepare headers
+      $headers = [
+        'Content-Type' => 'application/json',
+        'api-key' => $this->apiKey
+      ];
+      
+      if ( $extraHeaders ) {
+        $headers = array_merge( $headers, $extraHeaders );
+      }
+      
+      // Prepare body
+      $body = null;
+      if ( $method !== 'GET' && !empty( $query ) ) {
+        $body = is_string( $query ) ? $query : json_encode( $query );
+      }
+      
+      $options = [
+        'headers' => $headers,
+        'method' => $method,
+        'timeout' => MWAI_TIMEOUT,
+        'body' => $body,
+        'sslverify' => false
+      ];
+      
+      // Log if debug enabled
+      $queries_debug = $this->core->get_option( 'queries_debug_mode' );
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries] Azure v1 Container/Files Request to: ' . $fullUrl );
+        if ( !empty( $body ) ) {
+          error_log( '[AI Engine Queries] Request Body: ' . $body );
+        }
+      }
+      
+      // Make the request
+      $res = wp_remote_request( $fullUrl, $options );
+      
+      if ( is_wp_error( $res ) ) {
+        throw new Exception( $res->get_error_message() );
+      }
+      
+      $res = wp_remote_retrieve_body( $res );
+      
+      // Handle response
+      if ( strpos( $url, '/content' ) !== false ) {
+        // Binary content download
+        return $res;
+      }
+      
+      // JSON response
+      $data = json_decode( $res, true );
+      
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries] Azure v1 Response: ' . $res );
+      }
+      
+      $this->handle_response_errors( $data );
+      
+      return $data;
+    }
+    
+    // For non-container operations, use parent implementation
+    return parent::execute( $method, $url, $query, $formFields, $json, $extraHeaders, $streamCallback );
+  }
+
+  /**
+  * Override build_options to add Azure-specific headers for Responses API
+  */
+  protected function build_options( $headers, $json = null, $forms = null, $method = 'POST' ) {
+    // Add Azure-specific headers if using Azure with Responses API
+    if ( $this->envType === 'azure' && !empty( $json ) ) {
+      // Check if image_generation tool is present
+      if ( isset( $json['tools'] ) && is_array( $json['tools'] ) ) {
+        foreach ( $json['tools'] as $tool ) {
+          if ( isset( $tool['type'] ) && $tool['type'] === 'image_generation' ) {
+            // For Azure, add the image generation deployment header
+            // Look for an image deployment in the Azure deployments
+            if ( isset( $this->env['deployments'] ) && is_array( $this->env['deployments'] ) ) {
+              foreach ( $this->env['deployments'] as $deployment ) {
+                // Check if this is an image model deployment (gpt-image-1)
+                if ( isset( $deployment['model'] ) && $deployment['model'] === 'gpt-image-1' && isset( $deployment['name'] ) ) {
+                  $headers['x-ms-oai-image-generation-deployment'] = $deployment['name'];
+                  Meow_MWAI_Logging::log( 'Responses API: Added Azure image generation deployment header: ' . $deployment['name'] );
+                  break;
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    
+    // Call parent's build_options
+    return parent::build_options( $headers, $json, $forms, $method );
   }
 
   /**
@@ -1455,13 +1638,34 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     }
 
     // Fallback to ChatML implementation
-    return parent::run_completion_query( $query, $streamCallback );
+    $reply = parent::run_completion_query( $query, $streamCallback );
+    
+    // Check for empty output when reasoning is enabled (GPT-5 models)
+    // This safety check is here in case GPT-5 somehow uses the regular API
+    if ( strpos( $query->model, 'gpt-5' ) === 0 && !empty( $query->reasoning ) ) {
+      if ( empty( $reply->result ) || trim( $reply->result ) === '' ) {
+        if ( empty( $reply->needFeedbacks ) && empty( $reply->needClientActions ) ) {
+          throw new Exception( 
+            'The model returned an empty response. This typically happens when reasoning consumes all available tokens. ' .
+            'Please increase the Max Tokens setting to allow space for both reasoning and the actual response. ' .
+            'Current Max Tokens: ' . ( $query->maxTokens ?? 'default' ) . '. ' .
+            'Try setting it to at least ' . ( ( $query->maxTokens ?? 4096 ) + 2000 ) . ' tokens.'
+          );
+        }
+      }
+    }
+    
+    return $reply;
   }
 
   /**
   * Run completion query using Responses API
   */
   protected function run_responses_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
+    
+    // Store current query for URL building (needed for Azure deployment name)
+    $this->currentQuery = $query;
+    
     // Check if we have functions that might require feedback
     $hasFunctions = !empty( $query->functions );
     
@@ -1850,6 +2054,23 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       }
       // Set the results
       $reply->set_choices( $returned_choices );
+
+      // Check for empty output when reasoning is enabled (GPT-5 models)
+      // This can happen when reasoning consumes all available tokens
+      if ( strpos( $query->model, 'gpt-5' ) === 0 && !empty( $query->reasoning ) ) {
+        // Check if the reply has no content
+        if ( empty( $reply->result ) || trim( $reply->result ) === '' ) {
+          // Check if we have function calls - those are valid even without text content
+          if ( empty( $reply->needFeedbacks ) && empty( $reply->needClientActions ) ) {
+            throw new Exception( 
+              'The model returned an empty response. This typically happens when reasoning consumes all available tokens. ' .
+              'Please increase the Max Tokens setting to allow space for both reasoning and the actual response. ' .
+              'Current Max Tokens: ' . ( $query->maxTokens ?? 'default' ) . '. ' .
+              'Try setting it to at least ' . ( ( $query->maxTokens ?? 4096 ) + 2000 ) . ' tokens.'
+            );
+          }
+        }
+      }
 
       // Handle tokens usage
       $this->handle_tokens_usage(
@@ -2401,10 +2622,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     $endpoint = str_replace( '/v1/responses', '', $endpoint );
     $endpoint = rtrim( $endpoint, '/' );
     
-    // For Azure, we don't need the /v1 prefix
+    // For Azure, use the v1 endpoint for consistency with Responses API
     if ( $this->envType === 'azure' ) {
-      // Use the same API version as defined in the parent class
-      return $endpoint . '/openai/models?api-version=2024-12-01-preview';
+      // Use v1 models endpoint with preview API version
+      return $endpoint . '/openai/v1/models?api-version=preview';
     }
     
     // For OpenAI, ensure we have the /v1 prefix

@@ -386,6 +386,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
       else if ( $this->envType === 'azure' ) {
         $endpoint = isset( $env['endpoint'] ) ? $env['endpoint'] : null;
+        // Ensure the endpoint has the proper protocol if it's just a domain
+        if ( $endpoint && strpos( $endpoint, 'http' ) !== 0 ) {
+          $endpoint = 'https://' . $endpoint;
+        }
       }
       else {
         if ( empty( $this->envType ) ) {

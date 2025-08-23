@@ -177,35 +177,79 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
   }
 
   public function admin_footer() {
+    // Don't add our admin footer div on the Site Editor
+    $current_screen = get_current_screen();
+    if ( $current_screen && $current_screen->base === 'site-editor' ) {
+      return;
+    }
     echo '<div id="mwai-admin-postsList"></div>';
   }
 
   public function admin_enqueue_scripts() {
+    // Don't load our scripts on the Site Editor to avoid conflicts
+    $current_screen = get_current_screen();
+    if ( $current_screen && $current_screen->base === 'site-editor' ) {
+      return;
+    }
+
     $physical_file = MWAI_PATH . '/app/index.js';
     $cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
     wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js', null, $cache_buster );
-    // Ensure core block editor and blocks are loaded before our app so Inserter has all core blocks
-    $deps = [ 'mwai-vendor', 'wp-element', 'wp-components', 'wp-edit-post', 'wp-plugins', 'wp-i18n' ];
-    // Load block editor deps if Forms Editor is enabled, or if we are on a block editor screen (Edit Post)
-    $load_forms_editor = $this->core->get_option( 'module_forms' ) && $this->core->get_option( 'forms_editor' );
+
+    // Base dependencies
+    $deps = [ 'mwai-vendor', 'wp-element', 'wp-components', 'wp-plugins', 'wp-i18n' ];
+
+    // Check if we're on AI Engine admin pages
+    // Debug: Log the current screen ID to help identify the correct page
+    if ( $current_screen && $this->core->get_option( 'server_debug_mode' ) ) {
+      error_log( '[AI Engine] Current screen ID: ' . $current_screen->id . ', Base: ' . $current_screen->base );
+    }
+
+    $is_ai_engine_page = $current_screen && (
+      strpos( $current_screen->id, 'mwai_settings' ) !== false ||
+      strpos( $current_screen->id, 'meowapps_page_mwai' ) !== false ||
+      $current_screen->id === 'meowapps_page_mwai_settings'
+    );
+
+    // Only add wp-edit-post on actual post/page editor screens, not on AI Engine admin pages
+    $is_post_editor = $current_screen && in_array( $current_screen->base, [ 'post', 'page' ] );
+    if ( $is_post_editor ) {
+      $deps[] = 'wp-edit-post';
+    }
+
+    // Load block editor deps if:
+    // 1. We're on AI Engine admin pages (Forms.js component is always imported by Settings.js) OR
+    // 2. We are on a block editor screen (Edit Post)
+    $forms_module_enabled = $this->core->get_option( 'module_forms' );
+    $load_forms_editor = $forms_module_enabled && $this->core->get_option( 'forms_editor' );
     $on_block_editor = function_exists( 'wp_should_load_block_editor_scripts_and_styles' ) && wp_should_load_block_editor_scripts_and_styles();
-    if ( $load_forms_editor || $on_block_editor ) {
+
+    // Always load block editor deps on AI Engine admin pages because Forms.js is always imported
+    if ( $is_ai_engine_page || $on_block_editor ) {
       $deps = array_merge( $deps, [ 'wp-blocks', 'wp-block-editor', 'wp-format-library', 'wp-block-library', 'wp-editor' ] );
     }
+
     wp_register_script( 'mwai', MWAI_URL . 'app/index.js', $deps, $cache_buster );
     wp_enqueue_script( 'mwai' );
 
     // Ensure core editor styles are available for embedded block editor UIs
     // This helps Popovers, Inspector, and toolbars match Gutenberg styling
     if ( function_exists( 'wp_enqueue_style' ) ) {
-      @wp_enqueue_style( 'wp-edit-post' );
+      // Only load wp-edit-post styles on actual post/page editor screens
+      if ( $is_post_editor ) {
+        @wp_enqueue_style( 'wp-edit-post' );
+      }
       @wp_enqueue_style( 'wp-components' );
-      @wp_enqueue_style( 'wp-block-editor' );
-      @wp_enqueue_style( 'wp-block-library' );
+
+      // Load block editor styles if we're on AI Engine pages or on block editor
+      if ( $is_ai_engine_page || $on_block_editor ) {
+        @wp_enqueue_style( 'wp-block-editor' );
+        @wp_enqueue_style( 'wp-block-library' );
+      }
     }
     // Make sure core blocks and format tools are registered/available
     if ( function_exists( 'wp_enqueue_script' ) ) {
-      if ( $load_forms_editor || $on_block_editor ) {
+      if ( $is_ai_engine_page || $on_block_editor ) {
         @wp_enqueue_script( 'wp-format-library' );
         @wp_enqueue_script( 'wp-block-library' );
         @wp_enqueue_script( 'wp-editor' );
@@ -227,7 +271,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     wp_enqueue_media();
 
     wp_set_script_translations( 'mwai', 'ai-engine' );
-    
+
     // Prepare localization data
     $localize_data = [
       'api_url' => get_rest_url( null, 'mwai/v1' ),
@@ -245,8 +289,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
       'themes' => $this->core->get_themes(),
       'stream' => $this->core->get_option( 'ai_streaming' ),
     ];
-    
-    
+
     wp_localize_script( 'mwai', 'mwai', $localize_data );
   }
 

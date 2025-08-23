@@ -1,7 +1,7 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite' ] );
 
@@ -37,7 +37,12 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Actual loading of the scripts
     $hasSiteWideChat = $this->siteWideChatId && $this->siteWideChatId !== 'none';
-    if ( is_admin() || $hasSiteWideChat ) {
+
+    // Don't load chatbot scripts on the Site Editor to avoid conflicts
+    $current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+    $is_site_editor = $current_screen && $current_screen->base === 'site-editor';
+
+    if ( ( is_admin() && !$is_site_editor ) || $hasSiteWideChat ) {
       $themeId = null;
       if ( $hasSiteWideChat ) {
         $bot = $this->core->get_chatbot( $this->siteWideChatId );
@@ -68,7 +73,7 @@ class Meow_MWAI_Modules_Chatbot {
 
   /**
    * Helper method to create REST responses with automatic token refresh
-   * 
+   *
    * @param array $data The response data
    * @param int $status HTTP status code
    * @return WP_REST_Response
@@ -77,18 +82,18 @@ class Meow_MWAI_Modules_Chatbot {
     // Always check if we need to provide a new nonce
     $current_nonce = $this->core->get_nonce( true );
     $request_nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? $_SERVER['HTTP_X_WP_NONCE'] : null;
-    
+
     // Check if nonce is approaching expiration (WordPress nonces last 12-24 hours)
     // We'll refresh if the nonce is older than 10 hours to be safe
     $should_refresh = false;
-    
+
     if ( $request_nonce ) {
       // Try to determine the age of the nonce
       // WordPress uses a tick system where each tick is 12 hours
       // If we're in the second half of the nonce's life, refresh it
       $time = time();
       $nonce_tick = wp_nonce_tick();
-      
+
       // Verify if the nonce is still valid but getting old
       $verify = wp_verify_nonce( $request_nonce, 'wp_rest' );
       if ( $verify === 2 ) {
@@ -97,17 +102,17 @@ class Meow_MWAI_Modules_Chatbot {
         // Log will be written when token is included in response
       }
     }
-    
+
     // If the nonce has changed or should be refreshed, include the new one
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $data['new_token'] = $current_nonce;
-      
+
       // Log if server debug mode is enabled
       if ( $this->core->get_option( 'server_debug_mode' ) ) {
         error_log( '[AI Engine] Token refresh: Nonce refreshed (12-24 hours old)' );
       }
     }
-    
+
     return new WP_REST_Response( $data, $status );
   }
 
@@ -174,7 +179,7 @@ class Meow_MWAI_Modules_Chatbot {
     // Check if token needs refresh
     $current_nonce = $this->core->get_nonce( true );
     $request_nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? $_SERVER['HTTP_X_WP_NONCE'] : null;
-    
+
     $should_refresh = false;
     if ( $request_nonce ) {
       $verify = wp_verify_nonce( $request_nonce, 'wp_rest' );
@@ -183,7 +188,7 @@ class Meow_MWAI_Modules_Chatbot {
         $should_refresh = true;
       }
     }
-    
+
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $result['new_token'] = $current_nonce;
     }
@@ -292,7 +297,7 @@ class Meow_MWAI_Modules_Chatbot {
     if ( !is_array( $messages2 ) ) {
       $messages2 = [];
     }
-    
+
     // Collect messages with role not 'user' from messages1
     $messagesList1 = [];
     foreach ( $messages1 as $msg ) {
@@ -374,6 +379,7 @@ class Meow_MWAI_Modules_Chatbot {
   #endregion
 
   public function chat_submit( $botId, $newMessage, $newFileId = null, $params = [], $stream = false, $newFileIds = [] ) {
+    $query = null; // Initialize query variable to avoid undefined variable errors
     try {
       $chatbot = null;
       $customId = $params['customId'] ?? null;
@@ -385,6 +391,10 @@ class Meow_MWAI_Modules_Chatbot {
       // Registered Chatbot
       if ( !$chatbot && $botId ) {
         $chatbot = $this->core->get_chatbot( $botId );
+      }
+      // Fall back to default chatbot if no chatbot found yet
+      if ( !$chatbot ) {
+        $chatbot = $this->core->get_chatbot( 'default' );
       }
 
       if ( !$chatbot ) {
@@ -464,10 +474,11 @@ class Meow_MWAI_Modules_Chatbot {
         $fileForImage = null;
         if ( !empty( $newFileIds ) && is_array( $newFileIds ) ) {
           $fileForImage = $newFileIds[0];
-        } elseif ( !empty( $newFileId ) ) {
+        }
+        elseif ( !empty( $newFileId ) ) {
           $fileForImage = $newFileId;
         }
-        
+
         // If there's an uploaded file, use EditImage query instead
         if ( !empty( $fileForImage ) ) {
           $query = new Meow_MWAI_Query_EditImage( $newMessage );
@@ -497,20 +508,20 @@ class Meow_MWAI_Modules_Chatbot {
             $newParams[$key] = $value;
           }
         }
-        
+
         // Map 'environment' field to 'envId' for compatibility
         if ( isset( $newParams['environment'] ) && !isset( $newParams['envId'] ) ) {
           $newParams['envId'] = $newParams['environment'];
         }
-        
+
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
-
 
         // Debug log for embeddings
         if ( !empty( $params['embeddingsEnvId'] ) ) {
           Meow_MWAI_Logging::log( 'Chatbot: Setting embeddingsEnvId on query: ' . $params['embeddingsEnvId'] );
-        } else {
+        }
+        else {
           // Log all params to debug
           $paramKeys = array_keys( $params );
           Meow_MWAI_Logging::log( 'Chatbot: No embeddingsEnvId found. Available params: ' . implode( ', ', $paramKeys ) );
@@ -532,20 +543,20 @@ class Meow_MWAI_Modules_Chatbot {
             $newParams[$key] = $value;
           }
         }
-        
+
         // Map 'environment' field to 'envId' for compatibility
         if ( isset( $newParams['environment'] ) && !isset( $newParams['envId'] ) ) {
           $newParams['envId'] = $newParams['environment'];
         }
-        
+
         $params = apply_filters( 'mwai_chatbot_params', $newParams );
         $params['scope'] = empty( $params['scope'] ) ? 'chatbot' : $params['scope'];
-
 
         // Debug log for embeddings
         if ( !empty( $params['embeddingsEnvId'] ) ) {
           Meow_MWAI_Logging::log( 'Chatbot: Setting embeddingsEnvId on query: ' . $params['embeddingsEnvId'] );
-        } else {
+        }
+        else {
           // Log all params to debug
           $paramKeys = array_keys( $params );
           Meow_MWAI_Logging::log( 'Chatbot: No embeddingsEnvId found. Available params: ' . implode( ', ', $paramKeys ) );
@@ -569,7 +580,8 @@ class Meow_MWAI_Modules_Chatbot {
         $filesToProcess = [];
         if ( !empty( $newFileIds ) && is_array( $newFileIds ) ) {
           $filesToProcess = $newFileIds;
-        } elseif ( !empty( $newFileId ) ) {
+        }
+        elseif ( !empty( $newFileId ) ) {
           $filesToProcess[] = $newFileId;
         }
 
@@ -612,7 +624,7 @@ class Meow_MWAI_Modules_Chatbot {
             // Add the file to the store - wait a moment for store to be ready
             sleep( 1 );
             $storeFileId = $openai->add_vector_store_file( $storeId, $file['id'] );
-            
+
             if ( empty( $storeFileId ) ) {
               throw new Exception( 'Failed to add file to vector store.' );
             }
@@ -673,7 +685,7 @@ class Meow_MWAI_Modules_Chatbot {
         // Setup streaming if enabled (before embeddings to capture those events)
         $streamCallback = null;
         $debugEvents = [];
-        
+
         if ( $stream ) {
           $streamCallback = function ( $reply ) use ( $query ) {
             // Support both legacy string data and new Event objects
@@ -760,7 +772,7 @@ class Meow_MWAI_Modules_Chatbot {
         'actions' => $actions,
         'usage' => $reply->usage
       ];
-      
+
       // Add debug events if collected
       if ( !empty( $debugEvents ) ) {
         $restRes['debugEvents'] = $debugEvents;
@@ -861,15 +873,14 @@ class Meow_MWAI_Modules_Chatbot {
       }
     }
     $chatbot = $chatbot ?: $this->core->get_chatbot( 'default' );
-    
-    
+
     if ( !empty( $customId ) ) {
       if ( $botId !== null ) {
         $parentBotId = $botId;
         $botId = null;
       }
     }
-    
+
     unset( $atts['id'] );
     return [
       'chatbot' => $chatbot,
@@ -915,15 +926,14 @@ class Meow_MWAI_Modules_Chatbot {
 
     $frontParams = [];
     // Define text parameters that need sanitization (excluding those that support HTML)
-    $textParams = ['aiName', 'userName', 'guestName', 'textSend', 'textClear', 'textInputPlaceholder', 
-                   'startSentence', 'iconText', 'iconAlt', 'headerSubtitle'];
+    $textParams = ['aiName', 'userName', 'guestName', 'textSend', 'textClear', 'textInputPlaceholder',
+      'startSentence', 'iconText', 'iconAlt', 'headerSubtitle', 'popupTitle'];
     // Parameters that support HTML content
     $htmlParams = ['textCompliance'];
     // Boolean parameters that need special handling
-    $booleanParams = ['window', 'copyButton', 'fullscreen', 'localMemory', 'iconBubble', 'centerOpen', 
-                      'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch'];
-    
-    
+    $booleanParams = ['window', 'copyButton', 'fullscreen', 'localMemory', 'iconBubble', 'centerOpen',
+      'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch'];
+
     foreach ( MWAI_CHATBOT_FRONT_PARAMS as $param ) {
       // Let's go through the overriden or custom params first (the ones passed in the shortcode)
       if ( isset( $atts[$param] ) ) {
@@ -940,7 +950,15 @@ class Meow_MWAI_Modules_Chatbot {
         }
         else if ( in_array( $param, $booleanParams ) ) {
           // Convert to proper boolean
-          $frontParams[$param] = !empty( $atts[$param] ) && $atts[$param] !== 'false';
+          // Handle various boolean representations from shortcode attributes
+          $value = $atts[$param];
+          if ( is_bool( $value ) ) {
+            $frontParams[$param] = $value;
+          } else if ( is_string( $value ) ) {
+            $frontParams[$param] = !empty( $value ) && $value !== 'false' && $value !== '0' && $value !== 'no';
+          } else {
+            $frontParams[$param] = !empty( $value );
+          }
         }
         else {
           $frontParams[$param] = $atts[$param];
@@ -950,7 +968,16 @@ class Meow_MWAI_Modules_Chatbot {
       else if ( isset( $chatbot[$param] ) ) {
         if ( in_array( $param, $booleanParams ) ) {
           // Convert to proper boolean for chatbot defaults too
-          $frontParams[$param] = !empty( $chatbot[$param] ) && $chatbot[$param] !== 'false';
+          // Handle various boolean representations
+          $value = $chatbot[$param];
+          
+          if ( is_bool( $value ) ) {
+            $frontParams[$param] = $value;
+          } else if ( is_string( $value ) ) {
+            $frontParams[$param] = !empty( $value ) && $value !== 'false' && $value !== '0';
+          } else {
+            $frontParams[$param] = !empty( $value );
+          }
         }
         else {
           $frontParams[$param] = $chatbot[$param];
@@ -967,7 +994,7 @@ class Meow_MWAI_Modules_Chatbot {
     // NOTE: We don't need the server params for the chatbot if there are no overrides, it means
     // we are using the default or a specific chatbot.
     $isSiteWide = $this->siteWideChatId && $botId === $this->siteWideChatId;
-    
+
     // Parameters that are purely visual/UI and shouldn't trigger custom ID
     $visualOnlyParams = [
       // Bot selectors
@@ -982,20 +1009,20 @@ class Meow_MWAI_Modules_Chatbot {
       'themeId',  // Theme selection
       'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition',  // Window/icon settings
       'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen',  // Window behavior
-      'copyButton', 'headerSubtitle',  // UI features
+      'copyButton', 'headerSubtitle', 'popupTitle',  // UI features
       'containerType', 'headerType', 'messagesType', 'inputType', 'footerType'  // UI style variants
     ];
-    
+
     // Remove visual-only params from override detection
     $attsForOverrideCheck = array_diff_key( $atts, array_flip( $visualOnlyParams ) );
-    
+
     // Only these front params affect behavior and should trigger custom ID:
     // - mode: chat vs. prompt mode
     // - startSentence: initial AI message
     // - localMemory: affects data persistence
     // - imageUpload, fileUpload, multiUpload, fileSearch: affect capabilities
     $behavioralFrontParams = ['mode', 'startSentence', 'localMemory', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch'];
-    
+
     $hasServerOverrides = count( array_intersect( array_keys( $attsForOverrideCheck ), MWAI_CHATBOT_SERVER_PARAMS ) ) > 0;
     $hasBehavioralFrontOverrides = count( array_intersect( array_keys( $attsForOverrideCheck ), $behavioralFrontParams ) ) > 0;
     $hasOverrides = !$isSiteWide && ( $hasServerOverrides || $hasBehavioralFrontOverrides );
@@ -1022,7 +1049,7 @@ class Meow_MWAI_Modules_Chatbot {
 
     // Front Params
     $frontSystem = $this->build_front_params( $botId, $customId );
-    
+
     // Clean Params
     $frontParams = $this->clean_params( $frontParams );
     $frontSystem = $this->clean_params( $frontSystem );
@@ -1088,7 +1115,7 @@ class Meow_MWAI_Modules_Chatbot {
     $frontParams = [];
     // All discussion params are text params that need sanitization
     $textParams = ['textNewChat'];
-    
+
     foreach ( MWAI_DISCUSSIONS_FRONT_PARAMS as $param ) {
       if ( isset( $atts[$param] ) ) {
         // Sanitize text parameters
