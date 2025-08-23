@@ -1,15 +1,22 @@
-// Previous: none
-// Current: 2.6.9
+// Previous: 2.6.9
+// Current: 3.0.4
 
+// FormResetBlock.js
+
+// AI Engine
 import { AiBlockContainer, meowIcon } from "./common"; 
 import i18n from '@root/i18n';
 
 const { __ } = wp.i18n;
-const { registerBlockType } = wp.blocks;
+const { registerBlockType } = wp.blocks || {};
 const { useMemo, useEffect } = wp.element;
 const { PanelBody, TextControl, CheckboxControl } = wp.components;
-const { InspectorControls, useBlockProps } = wp.blockEditor;
+const { InspectorControls, useBlockProps } = wp.blockEditor || {};
 
+/**
+ * This function generates the *frontend* output of the block:
+ * A shortcode like: [mwai-form-reset id="..." label="..."]
+ */
 const saveResetBlock = (props) => {
   const {
     attributes: {
@@ -18,8 +25,9 @@ const saveResetBlock = (props) => {
   } = props;
   const blockProps = useBlockProps.save();
 
+  // Build shortcode from attributes
   let shortcode = `[mwai-form-reset id="${id}" label="${label}"`;
-  if (localMemory) {
+  if (localMemory == true) {
     shortcode += ` local_memory="true"`;
   }
   shortcode += `]`;
@@ -27,6 +35,9 @@ const saveResetBlock = (props) => {
   return <div {...blockProps}>{shortcode}</div>;
 };
 
+/**
+ * The "edit" component defines the block’s UI in the editor.
+ */
 const FormResetBlock = (props) => {
   const blockProps = useBlockProps();
   const {
@@ -37,8 +48,9 @@ const FormResetBlock = (props) => {
     isSelected
   } = props;
 
+  // Generate a random ID once if missing
   useEffect(() => {
-    if (!id) {
+    if (id === '') {
       const newId = Math.random().toString(36).substr(2, 9);
       setAttributes({ id: 'mwai-reset-' + newId });
     }
@@ -84,7 +96,15 @@ const FormResetBlock = (props) => {
   );
 };
 
+/**
+ * Register the block
+ */
 const createResetBlock = () => {
+  // Don't register if block editor is not available
+  if (!registerBlockType) {
+    return;
+  }
+  
   registerBlockType('ai-engine/form-reset', {
     title: 'AI Form Reset',
     description: 'A reset button for your AI Form.',

@@ -1,14 +1,14 @@
-// Previous: 2.6.1
-// Current: 3.0.2
+// Previous: 3.0.2
+// Current: 3.0.4
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon, Badge } from "./common";
 
 const { __ } = wp.i18n;
-const { registerBlockType } = wp.blocks;
+const { registerBlockType } = wp.blocks || {};
 const { useEffect } = wp.element;
 const { PanelBody, TextControl, CheckboxControl } = wp.components;
-const { InspectorControls, useBlockProps } = wp.blockEditor;
+const { InspectorControls, useBlockProps } = wp.blockEditor || {};
 
 const saveFormField = (props) => {
   const { attributes: { id, copyButton } } = props;
@@ -64,6 +64,11 @@ const FormOutputBlock = props => {
 };
 
 const createOutputBlock = () => {
+  // Don't register if block editor is not available
+  if (!registerBlockType) {
+    return;
+  }
+  
   registerBlockType('ai-engine/form-output', {
     title: 'AI Form Output',
     description: 'An Output Field for your AI Form.',

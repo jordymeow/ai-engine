@@ -208,7 +208,9 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     $is_ai_engine_page = $current_screen && (
       strpos( $current_screen->id, 'mwai_settings' ) !== false ||
       strpos( $current_screen->id, 'meowapps_page_mwai' ) !== false ||
-      $current_screen->id === 'meowapps_page_mwai_settings'
+      $current_screen->id === 'meowapps_page_mwai_settings' ||
+      $current_screen->id === 'meowapps_page_mwai-ui' ||
+      strpos( $current_screen->id, 'meowapps' ) !== false && strpos( $_GET['page'] ?? '', 'mwai' ) !== false
     );
 
     // Only add wp-edit-post on actual post/page editor screens, not on AI Engine admin pages
