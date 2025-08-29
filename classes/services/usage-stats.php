@@ -2,9 +2,47 @@
 
 class Meow_MWAI_Services_UsageStats {
   private $core;
+  private $tiktoken_encoders = [];
+  private $encoder_provider = null;
 
   public function __construct( $core ) {
     $this->core = $core;
+  }
+
+  /**
+   * Get the cl100k_base tiktoken encoder
+   * Note: We always use cl100k_base regardless of model since it's the standard for all modern OpenAI models
+   * @return object|null The tiktoken encoder or null if not available
+   */
+  private function get_tiktoken_encoder() {
+    // Return cached encoder if available
+    if ( isset( $this->tiktoken_encoders['cl100k_base'] ) ) {
+      return $this->tiktoken_encoders['cl100k_base'];
+    }
+
+    try {
+      // Check if class exists
+      if ( !class_exists( 'Yethee\Tiktoken\EncoderProvider' ) ) {
+        error_log( '[AI Engine Tiktoken] EncoderProvider class not found. Check if composer autoload is working.' );
+        return null;
+      }
+
+      // Initialize encoder provider if needed
+      if ( $this->encoder_provider === null ) {
+        $this->encoder_provider = new \Yethee\Tiktoken\EncoderProvider();
+      }
+
+      // Get the cl100k_base encoder (standard for modern OpenAI models)
+      $encoder = $this->encoder_provider->get( 'cl100k_base' );
+      $this->tiktoken_encoders['cl100k_base'] = $encoder;
+      
+      // Removed success log to reduce noise
+      return $encoder;
+    }
+    catch ( \Exception $e ) {
+      error_log( '[AI Engine Tiktoken] Failed to initialize encoder: ' . $e->getMessage() );
+      return null;
+    }
   }
 
   public function estimate_tokens( ...$args ) {
@@ -42,13 +80,40 @@ class Meow_MWAI_Services_UsageStats {
       }
     }
 
-    // Many other tools (https://platform.openai.com/tokenizer) say 1 token ~= 4 chars in English.
-    // However, the tokens are usually calculated with the exact tokenizer for the model, but this is not really possible easily yet.
+    // Apply filters for customization
     $text = apply_filters( 'mwai_estimate_tokens_text', $text, $model );
     $tokens = apply_filters( 'mwai_estimate_tokens', null, $text, $model );
     if ( $tokens !== null ) {
       return $tokens;
     }
+
+    // Try to use tiktoken for accurate counting (cl100k_base encoder)
+    $encoder = $this->get_tiktoken_encoder();
+    if ( $encoder ) {
+      try {
+        $encoded = $encoder->encode( $text );
+        $token_count = count( $encoded );
+        
+        // Comparison logging removed - tiktoken is working correctly
+        
+        return $token_count;
+      }
+      catch ( Exception $e ) {
+        error_log( '[AI Engine Tiktoken] Encoding failed, falling back to estimation: ' . $e->getMessage() );
+      }
+    }
+    else {
+      error_log( '[AI Engine Tiktoken] Encoder not available, using fallback' );
+    }
+
+    // Fallback to old estimation method
+    return $this->fallback_estimate_tokens( $text );
+  }
+
+  /**
+   * Fallback token estimation method (the original implementation)
+   */
+  private function fallback_estimate_tokens( $text ) {
     $multiplier = 4;
     $hasChineseChars = preg_match( '/[\x{4e00}-\x{9fa5}]/u', $text );
     $hasJapaneseChars = preg_match( '/[\x{3040}-\x{309f}\x{30a0}-\x{30ff}]/u', $text );

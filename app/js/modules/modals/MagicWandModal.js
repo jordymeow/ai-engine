@@ -1,5 +1,5 @@
-// Previous: 1.3.93
-// Current: 1.9.91
+// Previous: 1.9.91
+// Current: 3.0.5
 
 // React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
@@ -26,7 +26,11 @@ const MagicWandModal = (props) => {
 
   const content = useMemo(() => {
     if (busy) {
-      return (<NekoSpinner type="circle" size="10%" />);
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100px' }}>
+          <NekoSpinner type="icon" size="32px" color="#2271b1" />
+        </div>
+      );
     }
     else if (error) {
       return (<>Error: {error}</>);

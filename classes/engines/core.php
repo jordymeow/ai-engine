@@ -330,7 +330,7 @@ class Meow_MWAI_Engines_Core {
       }
       $model_info = $this->retrieve_model_info( $query->model );
       if ( $model_info === false ) {
-        throw new Exception( "AI Engine: The model '{$query->model}' is not available." );
+        throw new Exception( sprintf( __( "AI Engine: The model '%s' is not available.", 'ai-engine' ), $query->model ) );
       }
       if ( isset( $model_info['mode'] ) ) {
         $query->mode = $model_info['mode'];
@@ -401,7 +401,7 @@ class Meow_MWAI_Engines_Core {
 
     // Make sure the last message is a user message, if not, throw an exception
     if ( end( $processedMessages )['role'] !== 'user' ) {
-      throw new Exception( 'The last message must be a user message.' );
+      throw new Exception( __( 'The last message must be a user message.', 'ai-engine' ) );
     }
 
     // Make sure the first message is a user message, if not, add an empty user message

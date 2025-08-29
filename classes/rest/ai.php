@@ -211,7 +211,7 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       $options = $params['options'];
       $data = null;
       if ( !$mwai->magicWand ) {
-        throw new Exception( 'Magic Wand is not enabled.' );
+        throw new Exception( __( 'Magic Wand is not enabled.', 'ai-engine' ) );
       }
       $data = $mwai->magicWand->run( $action, $message, $context, $options );
       return $this->create_rest_response( [ 'success' => true, 'data' => $data ], 200 );

@@ -549,6 +549,49 @@ i18n.FINETUNING = {
   DELETED_FINETUNE_ISSUE: __( 'For some reason, OpenAI still return the models even after you deleted them. Don\'t worry, AI Engine will do the cleanup for you! You can force the cleanup by using this button. It takes a bit of time depending on the total of models you have.', 'ai-engine' ),
 };
 
+i18n.DISCUSSIONS = {
+  NEW_CHAT: __( 'New Chat', 'ai-engine' ),
+  NO_MESSAGES_YET: __( 'No messages yet', 'ai-engine' ),
+  RENAME: __( 'Rename', 'ai-engine' ),
+  DELETE: __( 'Delete', 'ai-engine' ),
+  UNTITLED: __( 'Untitled', 'ai-engine' ),
+  TITLE_GENERATION_PROMPT: __( 'Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.', 'ai-engine' ),
+};
+
+i18n.WRITING_STYLES = {
+  INFORMATIVE: __( 'Informative', 'ai-engine' ),
+  DESCRIPTIVE: __( 'Descriptive', 'ai-engine' ),
+  CREATIVE: __( 'Creative', 'ai-engine' ),
+  NARRATIVE: __( 'Narrative', 'ai-engine' ),
+  PERSUASIVE: __( 'Persuasive', 'ai-engine' ),
+  REFLECTIVE: __( 'Reflective', 'ai-engine' ),
+  ARGUMENTATIVE: __( 'Argumentative', 'ai-engine' ),
+  ANALYTICAL: __( 'Analytical', 'ai-engine' ),
+  EVALUATIVE: __( 'Evaluative', 'ai-engine' ),
+  JOURNALISTIC: __( 'Journalistic', 'ai-engine' ),
+  TECHNICAL: __( 'Technical', 'ai-engine' ),
+};
+
+i18n.WRITING_TONES = {
+  NEUTRAL: __( 'Neutral', 'ai-engine' ),
+  FORMAL: __( 'Formal', 'ai-engine' ),
+  ASSERTIVE: __( 'Assertive', 'ai-engine' ),
+  CHEERFUL: __( 'Cheerful', 'ai-engine' ),
+  HUMOROUS: __( 'Humorous', 'ai-engine' ),
+  INFORMAL: __( 'Informal', 'ai-engine' ),
+  INSPIRATIONAL: __( 'Inspirational', 'ai-engine' ),
+  PROFESSIONAL: __( 'Professional', 'ai-engine' ),
+  CONFLUENT: __( 'Confluent', 'ai-engine' ),
+  EMOTIONAL: __( 'Emotional', 'ai-engine' ),
+  PERSUASIVE: __( 'Persuasive', 'ai-engine' ),
+  SUPPORTIVE: __( 'Supportive', 'ai-engine' ),
+  SARCASTIC: __( 'Sarcastic', 'ai-engine' ),
+  CONDESCENDING: __( 'Condescending', 'ai-engine' ),
+  SKEPTICAL: __( 'Skeptical', 'ai-engine' ),
+  NARRATIVE: __( 'Narrative', 'ai-engine' ),
+  JOURNALISTIC: __( 'Journalistic', 'ai-engine' ),
+};
+
 i18n.EMBEDDINGS = {
   EDIT: __( 'EDIT', 'ai-engine' ),
   AI_SEARCH: __( 'AI SEARCH', 'ai-engine' ),
@@ -576,6 +619,17 @@ i18n.ERROR = {
   SESSION_EXPIRED: __( 'Your session has expired. Please refresh the page to continue using AI Engine.', 'ai-engine' ),
   COULD_NOT_PARSE_ERROR_STREAM: __( 'Could not parse the \'error\' stream.', 'ai-engine' ),
   COULD_NOT_PARSE_END_STREAM: __( 'Could not parse the \'end\' stream.', 'ai-engine' ),
+  // Chatbot specific errors
+  INVALID_API_KEY: __( 'Invalid API key: Please check your OpenAI API key in settings.', 'ai-engine' ),
+  RATE_LIMIT_EXCEEDED: __( 'Rate limit exceeded: Too many requests. Please try again later.', 'ai-engine' ),
+  NETWORK_ERROR: __( 'Network error: Failed to establish connection to the AI service.', 'ai-engine' ),
+  AUTHENTICATION_FAILED: __( 'Authentication failed: Your session has expired. Please refresh the page.', 'ai-engine' ),
+  INTERNAL_SERVER_ERROR: __( 'Internal server error: An unexpected error occurred. Please try again.', 'ai-engine' ),
+  PROCESSING_ERROR: __( 'An error occurred while processing your request. Please try again.', 'ai-engine' ),
+  // Realtime errors
+  MEDIADEVICES_NOT_AVAILABLE: __( 'MediaDevices API not available. Please ensure you are using HTTPS and a modern browser.', 'ai-engine' ),
+  MICROPHONE_ACCESS_FAILED: __( 'Failed to access microphone. Please ensure microphone permissions are granted and try again.', 'ai-engine' ),
+  CONNECTION_FAILED: __( 'Failed to establish connection with OpenAI servers. Please try again.', 'ai-engine' ),
 };
 
 // Console/debug messages

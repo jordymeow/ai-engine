@@ -3,7 +3,7 @@
 // Params for the chatbot (front and server)
 define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite' ] );
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite', 'promptId', 'promptVariables', 'reasoningEffort', 'verbosity' ] );
 
 // Params for the discussions (front and server)
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
@@ -562,7 +562,59 @@ class Meow_MWAI_Modules_Chatbot {
           Meow_MWAI_Logging::log( 'Chatbot: No embeddingsEnvId found. Available params: ' . implode( ', ', $paramKeys ) );
         }
 
+        // In Prompt mode, clear out features that are not supported before injecting params
+        if ( $mode === 'prompt' ) {
+          // Clear embeddings/context settings
+          unset( $params['embeddingsEnvId'] );
+          unset( $params['embeddingsIndex'] );
+          unset( $params['embeddingsNamespace'] );
+          unset( $params['contentAware'] );
+          unset( $params['context'] );
+          
+          // Clear function calling and MCP servers
+          unset( $params['functions'] );
+          unset( $params['mcpServers'] );
+          
+          // Clear tools
+          unset( $params['tools'] );
+          
+          // Clear temperature, reasoning, verbosity as they're configured in the prompt
+          unset( $params['temperature'] );
+          unset( $params['reasoningEffort'] );
+          unset( $params['verbosity'] );
+          unset( $params['maxTokens'] );
+        }
+        
         $query->inject_params( $params );
+        
+        // Handle Prompt mode specifics
+        if ( $mode === 'prompt' && !empty( $params['promptId'] ) ) {
+          $promptData = [
+            'id' => $params['promptId']
+          ];
+          
+          // TODO: Prompt Variables support - might be added later
+          // Add prompt version if provided
+          // if ( !empty( $params['promptVersion'] ) ) {
+          //   $promptData['version'] = $params['promptVersion'];
+          // }
+          
+          // Add prompt variables if provided
+          // if ( !empty( $params['promptVariables'] ) ) {
+          //   try {
+          //     $variables = is_string( $params['promptVariables'] ) ? 
+          //       json_decode( $params['promptVariables'], true ) : 
+          //       $params['promptVariables'];
+          //     if ( $variables ) {
+          //       $promptData['variables'] = $variables;
+          //     }
+          //   } catch ( Exception $e ) {
+          //     // Invalid JSON, skip variables
+          //   }
+          // }
+          
+          $query->setExtraParam( 'prompt', $promptData );
+        }
 
         $storeId = null;
         if ( $mode === 'assistant' ) {

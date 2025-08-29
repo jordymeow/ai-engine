@@ -179,7 +179,7 @@ class Meow_MWAI_Modules_Discussions {
       }
     }
 
-    $base_prompt = "Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.\n\nConversation:\n$conversation_text\n";
+    $base_prompt = __( "Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.", 'ai-engine' ) . "\n\n" . __( 'Conversation:', 'ai-engine' ) . "\n$conversation_text\n";
     $prompt = apply_filters( 'mwai_discussions_title_prompt', $base_prompt, $conversation_text, $discussion );
 
     // Run the AI query using the fast environment
@@ -195,7 +195,7 @@ class Meow_MWAI_Modules_Discussions {
       $title = rtrim( $title, '.!?:;,—–-–' ); // Remove trailing punctuation
       $title = substr( $title, 0, 64 ); // Ensure less than 64 characters
       if ( empty( $title ) ) {
-        $title = 'Untitled';
+        $title = __( 'Untitled', 'ai-engine' );
       }
     } catch ( Exception $e ) {
       // Handle content filter or other API errors
@@ -203,10 +203,10 @@ class Meow_MWAI_Modules_Discussions {
       if ( strpos( $error_message, 'content_filter' ) !== false || 
            strpos( $error_message, 'ResponsibleAIPolicyViolation' ) !== false ) {
         error_log( "AI Engine: Content filter blocked title generation for discussion ID {$discussion->id}. Using fallback title." );
-        $title = 'Discussion ' . date( 'Y-m-d H:i' );
+        $title = __( 'Discussion', 'ai-engine' ) . ' ' . date( 'Y-m-d H:i' );
       } else {
         error_log( "AI Engine: Failed to generate title for discussion ID {$discussion->id}: " . $error_message );
-        $title = 'Untitled';
+        $title = __( 'Untitled', 'ai-engine' );
       }
     }
 

@@ -159,12 +159,17 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
   }
 
   public function post_row_actions( $actions, $post ) {
-    $actions['ai_titles'] = '<a class="mwai-link-title" href="#" data-id="' .
-      $post->ID . '" data-title="' . $post->post_title . '">
-                                                                                                                      ' . MWAI_IMG_WAND_HTML_XS . ' Title</a>';
-    $actions['ai_excerpts'] = '<a class="mwai-link-excerpt" href="#" data-id="' .
-      $post->ID . '" data-title="' . $post->post_title . '">
-                                                                                                                        ' . MWAI_IMG_WAND_HTML_XS . ' Excerpt</a>';
+    $actions['ai_magic_wand'] = '<span class="mwai-magic-wand-action" data-id="' . $post->ID . '" data-title="' . esc_attr( $post->post_title ) . '">
+      <a href="#" class="mwai-magic-wand-trigger">' . MWAI_IMG_WAND_HTML_XS . ' ' . __( 'Magic Wand', 'ai-engine' ) . '</a>
+      <div class="mwai-magic-wand-dropdown" style="display: none;">
+        <a class="mwai-link-title" href="#" data-id="' . $post->ID . '" data-title="' . esc_attr( $post->post_title ) . '">
+          <span class="dashicons dashicons-edit" style="font-size: 14px; line-height: 1.4; margin-right: 4px; pointer-events: none;"></span>' . __( 'Generate Title', 'ai-engine' ) . '
+        </a>
+        <a class="mwai-link-excerpt" href="#" data-id="' . $post->ID . '" data-title="' . esc_attr( $post->post_title ) . '">
+          <span class="dashicons dashicons-text" style="font-size: 14px; line-height: 1.4; margin-right: 4px; pointer-events: none;"></span>' . __( 'Generate Excerpt', 'ai-engine' ) . '
+        </a>
+      </div>
+    </span>';
     return $actions;
   }
 
@@ -183,6 +188,63 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
       return;
     }
     echo '<div id="mwai-admin-postsList"></div>';
+    
+    // Add CSS for Magic Wand dropdown
+    ?>
+    <style>
+      .mwai-magic-wand-action {
+        position: relative;
+        display: inline-block;
+      }
+      
+      .mwai-magic-wand-trigger {
+        text-decoration: none;
+      }
+      
+      .mwai-magic-wand-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #fff;
+        border: 1px solid #c3c4c7;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        min-width: 150px;
+        z-index: 1000;
+        margin-top: 4px;
+      }
+      
+      .mwai-magic-wand-dropdown a {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: #2271b1;
+        border-bottom: 1px solid #f0f0f1;
+        white-space: nowrap;
+      }
+      
+      .mwai-magic-wand-dropdown a .dashicons {
+        width: 16px;
+        height: 16px;
+        font-size: 14px;
+      }
+      
+      .mwai-magic-wand-dropdown a:last-child {
+        border-bottom: none;
+      }
+      
+      .mwai-magic-wand-dropdown a:hover {
+        background: #f0f6fc;
+        color: #135e96;
+      }
+      
+      /* Ensure dropdown stays visible when hovering over it */
+      .mwai-magic-wand-action:hover .mwai-magic-wand-dropdown {
+        display: block !important;
+      }
+    </style>
+    <?php
   }
 
   public function admin_enqueue_scripts() {

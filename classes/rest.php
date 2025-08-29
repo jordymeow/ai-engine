@@ -468,7 +468,7 @@ class Meow_MWAI_Rest {
       }
       
       if ( !$env ) {
-        throw new Exception( 'Environment not found.' );
+        throw new Exception( __( 'Environment not found.', 'ai-engine' ) );
       }
       
       // Get the engine and test connection
@@ -708,7 +708,7 @@ class Meow_MWAI_Rest {
       $postId = intval( $params['postId'] );
       $post = get_post( $postId );
       if ( !$post ) {
-        throw new Exception( 'There is no post with this ID.' );
+        throw new Exception( __( 'There is no post with this ID.', 'ai-engine' ) );
       }
       $post->post_title = $title;
       //$post->post_name = sanitize_title( $title );
@@ -728,7 +728,7 @@ class Meow_MWAI_Rest {
       $postId = intval( $params['postId'] );
       $post = get_post( $postId );
       if ( !$post ) {
-        throw new Exception( 'There is no post with this ID.' );
+        throw new Exception( __( 'There is no post with this ID.', 'ai-engine' ) );
       }
       $post->post_excerpt = $excerpt;
       wp_update_post( $post );
@@ -790,7 +790,7 @@ class Meow_MWAI_Rest {
       $params = $request->get_json_params();
       $url = isset( $params['url'] ) ? esc_url_raw( $params['url'] ) : null;
       if ( empty( $url ) ) {
-        throw new Exception( 'The url is required.' );
+        throw new Exception( __( 'The url is required.', 'ai-engine' ) );
       }
       $prompt = 'Describe this image and suggest a short title, description and SEO-friendly (ASCII and lowercase) filename. '
       . 'Return a JSON with the keys title, description, alt, caption, filename.';
@@ -1296,7 +1296,7 @@ class Meow_MWAI_Rest {
       if ( !$path && $mediaId > 0 ) {
         $path = get_attached_file( $mediaId );
         if ( empty( $path ) ) {
-          throw new Exception( 'The media file cannot be found.' );
+          throw new Exception( __( 'The media file cannot be found.', 'ai-engine' ) );
         }
       }
       

@@ -502,8 +502,13 @@
 .mwai-chatgpt-theme .mwai-reply .mwai-text ul, .mwai-chatgpt-theme .mwai-reply .mwai-text ol {
   padding: 0;
 }
+.mwai-chatgpt-theme .mwai-reply .mwai-text ul {
+  list-style: disc;
+  margin: 0 0 0 15px;
+}
 .mwai-chatgpt-theme .mwai-reply .mwai-text ol {
-  margin: 0 0 0 20px;
+  list-style: decimal;
+  margin: 0 0 0 15px;
 }
 .mwai-chatgpt-theme .mwai-reply .mwai-text table {
   width: 100%;

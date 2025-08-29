@@ -169,6 +169,17 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
     if ( !empty( $params['verbosity'] ) ) {
       $this->set_verbosity( $params['verbosity'] );
     }
+    // Store prompt-related params as extra params
+    if ( !empty( $params['promptId'] ) ) {
+      $this->setExtraParam( 'promptId', $params['promptId'] );
+    }
+    // TODO: Prompt Variables support - might be added later
+    // if ( !empty( $params['promptVariables'] ) ) {
+    //   $this->setExtraParam( 'promptVariables', $params['promptVariables'] );
+    // }
+    // if ( !empty( $params['promptVersion'] ) ) {
+    //   $this->setExtraParam( 'promptVersion', $params['promptVersion'] );
+    // }
   }
 
   #endregion

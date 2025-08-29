@@ -6,4 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Yethee\\Tiktoken\\' => array($vendorDir . '/yethee/tiktoken/src'),
+    'Symfony\\Contracts\\Service\\' => array($vendorDir . '/symfony/service-contracts'),
+    'Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
 );

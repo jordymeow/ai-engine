@@ -1,6 +1,7 @@
 {
   "require": {
-    "erusev/parsedown": "^1.7"
+    "erusev/parsedown": "^1.7",
+    "yethee/tiktoken": "^0.4"
   },
   "config": {
     "platform-check": false

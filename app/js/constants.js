@@ -1,38 +1,40 @@
-// Previous: 2.8.4
-// Current: 2.8.5
+// Previous: 2.8.5
+// Current: 3.0.5
+
+import i18n from '@root/i18n';
 
 const WritingStyles = [
-  { value: 'informative', label: 'Informative' },
-  { value: 'descriptive', label: 'Descriptive' },
-  { value: 'creative', label: 'Creative' },
-  { value: 'narrative', label: 'Narrative' },
-  { value: 'persuasive', label: 'Persuasive' },
-  { value: 'reflective', label: 'Reflective' },
-  { value: 'argumentative', label: 'Argumentative' },
-  { value: 'analytical', label: 'Analytical' },
-  { value: 'evaluative', label: 'Evaluative' },
-  { value: 'journalistic', label: 'Journalistic' },
-  { value: 'technical', label: 'Technical' }
+  { value: 'informative', label: i18n.WRITING_STYLES.INFORMATIVE },
+  { value: 'descriptive', label: i18n.WRITING_STYLES.DESCRIPTIVE },
+  { value: 'creative', label: i18n.WRITING_STYLES.CREATIVE },
+  { value: 'narrative', label: i18n.WRITING_STYLES.NARRATIVE },
+  { value: 'persuasive', label: i18n.WRITING_STYLES.PERSUASIVE },
+  { value: 'reflective', label: i18n.WRITING_STYLES.REFLECTIVE },
+  { value: 'argumentative', label: i18n.WRITING_STYLES.ARGUMENTATIVE },
+  { value: 'analytical', label: i18n.WRITING_STYLES.ANALYTICAL },
+  { value: 'evaluative', label: i18n.WRITING_STYLES.EVALUATIVE },
+  { value: 'journalistic', label: i18n.WRITING_STYLES.JOURNALISTIC },
+  { value: 'technical', label: i18n.WRITING_STYLES.TECHNICAL }
 ];
 
 const WritingTones = [
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'formal', label: 'Formal' },
-  { value: 'assertive', label: 'Assertive' },
-  { value: 'cheerful', label: 'Cheerful' },
-  { value: 'humorous', label: 'Humorous' },
-  { value: 'informal', label: 'Informal' },
-  { value: 'inspirational', label: 'Inspirational' },
-  { value: 'professional', label: 'Professional' },
-  { value: 'confluent', label: 'Confluent' },
-  { value: 'emotional', label: 'Emotional' },
-  { value: 'persuasive', label: 'Persuasive' },
-  { value: 'supportive', label: 'Supportive' },
-  { value: 'sarcastic', label: 'Sarcastic' },
-  { value: 'condescending', label: 'Condescending' },
-  { value: 'skeptical', label: 'Skeptical' },
-  { value: 'narrative', label: 'Narrative' },
-  { value: 'journalistic', label: 'Journalistic' },
+  { value: 'neutral', label: i18n.WRITING_TONES.NEUTRAL },
+  { value: 'formal', label: i18n.WRITING_TONES.FORMAL },
+  { value: 'assertive', label: i18n.WRITING_TONES.ASSERTIVE },
+  { value: 'cheerful', label: i18n.WRITING_TONES.CHEERFUL },
+  { value: 'humorous', label: i18n.WRITING_TONES.HUMOROUS },
+  { value: 'informal', label: i18n.WRITING_TONES.INFORMAL },
+  { value: 'inspirational', label: i18n.WRITING_TONES.INSPIRATIONAL },
+  { value: 'professional', label: i18n.WRITING_TONES.PROFESSIONAL },
+  { value: 'confluent', label: i18n.WRITING_TONES.CONFLUENT },
+  { value: 'emotional', label: i18n.WRITING_TONES.EMOTIONAL },
+  { value: 'persuasive', label: i18n.WRITING_TONES.PERSUASIVE },
+  { value: 'supportive', label: i18n.WRITING_TONES.SUPPORTIVE },
+  { value: 'sarcastic', label: i18n.WRITING_TONES.SARCASTIC },
+  { value: 'condescending', label: i18n.WRITING_TONES.CONDESCENDING },
+  { value: 'skeptical', label: i18n.WRITING_TONES.SKEPTICAL },
+  { value: 'narrative', label: i18n.WRITING_TONES.NARRATIVE },
+  { value: 'journalistic', label: i18n.WRITING_TONES.JOURNALISTIC },
 ];
 
 const defaultModel = "";

@@ -218,12 +218,12 @@ class Meow_MWAI_Core {
 
     // Ensure the query is still valid after filtering
     if ( !$query || !is_object( $query ) ) {
-      throw new Exception( 'Invalid query object after filtering. The mwai_ai_query filter must return a valid query object.' );
+      throw new Exception( __( 'Invalid query object after filtering. The mwai_ai_query filter must return a valid query object.', 'ai-engine' ) );
     }
 
     // Validate that embeddings queries have a non-empty message
     if ( $query instanceof Meow_MWAI_Query_Embed && empty( $query->get_message() ) ) {
-      throw new Exception( 'Embeddings query cannot have an empty message. Please check that the conversation context is properly extracted.' );
+      throw new Exception( __( 'Embeddings query cannot have an empty message. Please check that the conversation context is properly extracted.', 'ai-engine' ) );
     }
 
     // Let's check the default environment and model.

@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 3.0.5
 
 // React & Vendor Libs
 const { } = wp.element;
@@ -19,14 +19,14 @@ const ChunkItem = ({ chunk, viewMode, onToggle, onUpdateTitle, onGenerateTitle, 
               value={chunk.title}
               onChange={(value) => onUpdateTitle(chunk.id, value)}
               style={{ flex: 1 }}
-              disabled={!chunk.enabled}
+              disabled={!chunk.enabled || busy}
               placeholder="Enter section title..."
             />
             {chunk.enabled && (
-              <NekoButton size="small" className="secondary" onClick={() => onGenerateTitle(chunk)}
-                disabled={busy} title="Generate AI title"
-                style={{ padding: '6px 10px' }}>
-                <AiIcon icon="wand" style={{ width: 16, height: 16 }} />
+              <NekoButton size="small" className="primary" onClick={() => onGenerateTitle(chunk)}
+                disabled={busy} title="Generate AI title">
+                <AiIcon icon="wand" style={{ width: 14, height: 14, marginRight: 4 }} />
+                Generate
               </NekoButton>
             )}
           </div>

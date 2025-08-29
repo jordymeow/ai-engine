@@ -132,8 +132,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
     // Handle different query types for Responses API
     if ( $query instanceof Meow_MWAI_Query_Text || $query instanceof Meow_MWAI_Query_Feedback ) {
-      // Use simplified instructions + input format for basic queries
-      if ( !empty( $query->instructions ) ) {
+      // Check if using Prompt mode
+      $promptData = $query->getExtraParam( 'prompt' );
+      if ( !empty( $promptData ) && !empty( $promptData['id'] ) ) {
+        // Use prompt instead of instructions
+        $body['prompt'] = $promptData;
+        // Remove model since it's configured in the prompt
+        unset( $body['model'] );
+      } else if ( !empty( $query->instructions ) ) {
+        // Use simplified instructions + input format for basic queries
         $body['instructions'] = $query->instructions;
       }
 
@@ -279,22 +286,27 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
       }
 
-      // Parameters
-      if ( !empty( $query->maxTokens ) ) {
-        $body['max_output_tokens'] = $query->maxTokens;
-      }
-
-      // Handle temperature parameter - GPT-5 models don't support it
-      if ( !empty( $query->temperature ) && $query->temperature !== 1 ) {
-        // Check if this is a GPT-5 model (gpt-5, gpt-5-mini, gpt-5-nano)
-        if ( strpos( $query->model, 'gpt-5' ) !== 0 ) {
-          $body['temperature'] = $query->temperature;
+      // Parameters - skip these when using Prompt mode
+      $promptData = $query->getExtraParam( 'prompt' );
+      $isPromptMode = !empty( $promptData ) && !empty( $promptData['id'] );
+      
+      if ( !$isPromptMode ) {
+        if ( !empty( $query->maxTokens ) ) {
+          $body['max_output_tokens'] = $query->maxTokens;
         }
-        // For GPT-5 models, skip the temperature parameter entirely
+
+        // Handle temperature parameter - GPT-5 models don't support it
+        if ( !empty( $query->temperature ) && $query->temperature !== 1 ) {
+          // Check if this is a GPT-5 model (gpt-5, gpt-5-mini, gpt-5-nano)
+          if ( strpos( $query->model, 'gpt-5' ) !== 0 ) {
+            $body['temperature'] = $query->temperature;
+          }
+          // For GPT-5 models, skip the temperature parameter entirely
+        }
       }
 
       // Handle reasoning parameter only for models that support it
-      if ( !empty( $query->reasoning ) ) {
+      if ( !$isPromptMode && !empty( $query->reasoning ) ) {
         // Check if the model has the 'reasoning' tag
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'reasoning', $modelInfo['tags'] ) ) {
@@ -305,7 +317,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       }
       
       // Handle verbosity parameter only for models that support it
-      if ( !empty( $query->verbosity ) ) {
+      if ( !$isPromptMode && !empty( $query->verbosity ) ) {
         // Check if the model has the 'verbosity' tag
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'verbosity', $modelInfo['tags'] ) ) {

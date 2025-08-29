@@ -187,7 +187,7 @@ class Meow_MWAI_API {
         $queryParams['fileId'] = $fileId;
       }
       if ( empty( $botId ) || empty( $message ) ) {
-        throw new Exception( 'The botId and message are required.' );
+        throw new Exception( __( 'The botId and message are required.', 'ai-engine' ) );
       }
 
       if ( $this->debug ) {
@@ -415,7 +415,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
       if ( empty( $message ) ) {
-        throw new Exception( 'The message is required.' );
+        throw new Exception( __( 'The message is required.', 'ai-engine' ) );
       }
 
       if ( $this->debug ) {
@@ -446,7 +446,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
       if ( empty( $message ) ) {
-        throw new Exception( 'The message is required.' );
+        throw new Exception( __( 'The message is required.', 'ai-engine' ) );
       }
 
       if ( $this->debug ) {
@@ -477,7 +477,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
       if ( empty( $message ) ) {
-        throw new Exception( 'The message is required.' );
+        throw new Exception( __( 'The message is required.', 'ai-engine' ) );
       }
       if ( !empty( $resolution ) ) {
         $options['resolution'] = $resolution;
@@ -512,7 +512,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
       if ( empty( $message ) ) {
-        throw new Exception( 'The message is required.' );
+        throw new Exception( __( 'The message is required.', 'ai-engine' ) );
       }
       if ( empty( $mediaId ) ) {
         throw new Exception( 'The mediaId is required.' );
@@ -559,7 +559,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
       if ( empty( $message ) ) {
-        throw new Exception( 'The message is required.' );
+        throw new Exception( __( 'The message is required.', 'ai-engine' ) );
       }
       if ( empty( $url ) ) {
         throw new Exception( 'The "url" parameter is required for image analysis.' );
@@ -593,7 +593,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
       if ( empty( $message ) ) {
-        throw new Exception( 'The message is required.' );
+        throw new Exception( __( 'The message is required.', 'ai-engine' ) );
       }
 
       if ( $this->debug ) {

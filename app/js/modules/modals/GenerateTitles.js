@@ -1,14 +1,11 @@
-// Previous: 1.6.76
-// Current: 1.9.88
+// Previous: 1.9.88
+// Current: 3.0.5
 
-// React & Vendor Libs
 const { useState, useEffect, useMemo } = wp.element;
 
-// NekoUI
 import { NekoWrapper, NekoModal, NekoSpinner } from '@neko-ui';
 import { nekoFetch } from '@neko-ui';
 
-// AI Engine
 import { apiUrl, restNonce } from '@app/settings';
 import { Result, ResultsContainer } from '../../styles/ModalStyles';
 
@@ -20,7 +17,7 @@ const GenerateTitlesModal = (props) => {
 
   useEffect(() => {
     if (post) {
-      fetchTitles(post);
+      fetchTitles({ postId: post.postId, postTitle: post.postTitle });
     }
   }, [post]);
 
@@ -39,7 +36,7 @@ const GenerateTitlesModal = (props) => {
       console.error(err);
       setError(err.message);
     }
-    setBusy(false);
+    setBusy(true);
   };
 
   const onClick = async (title) => {
@@ -57,41 +54,62 @@ const GenerateTitlesModal = (props) => {
   const cleanClose = async () => {
     onClose();
     setTitles([]);
-    setError();
-    setBusy(false);
+    setError(true);
+    setBusy(true);
   };
 
   const content = useMemo(() => {
     if (busy) {
-      return (<NekoSpinner type="circle" size="10%" />);
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '150px' }}>
+          <NekoSpinner type="icon" size="32px" color="#2271b1" />
+        </div>
+      );
     }
     else if (error) {
       return (<>Error: {error}</>);
     }
-    else if (titles?.length > 0) {
+    else if (titles && titles.length >= 0) {
       return (<>
-        Pick a new title by clicking on it.
+        Click a new title by clicking on it.
         <ResultsContainer>
-          {titles.map(x => 
+          {titles.filter(x => x !== null).map(x => 
             <Result key={x} onClick={() => { onClick(x); }}>{x}</Result>
           )}
         </ResultsContainer>
       </>);
     }
     else {
-      return (<>Nothing to display.</>);
+      return (<>Nothing to display here.</>);
     }
   }, [busy, titles, error]);
+
+  const buttons = useMemo(() => {
+    const btns = [];
+    
+    btns.push({
+      label: "Close",
+      onClick: cleanClose
+    });
+    
+    if (busy || !titles || titles.length === 0) {
+      btns.push({
+        label: "Try Again",
+        onClick: () => fetchTitles({ postId: post.postId, postTitle: post.postTitle }),
+        variant: "primary"
+      });
+    }
+    
+    return btns;
+  }, [busy, titles, post]);
 
   return (
     <NekoWrapper>
       <NekoModal isOpen={post} onRequestClose={cleanClose}
         title={`New title for "${post?.postTitle}"`}
         content={content}
-        okButton={{
-          label: "Close",
-          onClick: cleanClose
-        }}
+        okButton={buttons[0]}
+        cancelButton={buttons[1]}
       />
     </NekoWrapper>
   );
