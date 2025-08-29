@@ -298,6 +298,39 @@ define( 'MWAI_OPENAI_MODELS', [
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
+                GPT Realtime
+                Production-ready speech-to-speech model with MCP, image input, and SIP support
+                https://platform.openai.com/docs/models/gpt-realtime
+                */
+  [
+    'model' => 'gpt-realtime',
+    'name' => 'GPT Realtime',
+    'family' => 'realtime',
+    'features' => ['core', 'realtime', 'functions'],
+    'price' => [
+      'text' => [
+        'in' => 4.00,
+        'cache' => 0.40,
+        'out' => 16.00,
+      ],
+      'audio' => [
+        'in' => 32.00,
+        'cache' => 0.40,
+        'out' => 64.00,
+      ],
+      'image' => [
+        'in' => 5.00,
+        'cache' => 0.50,
+      ]
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 4096,
+    'maxContextualTokens' => 128000,
+    'finetune' => false,
+    'tags' => ['core', 'realtime', 'functions', 'vision', 'mcp']
+  ],
+  /*
                 GPT-4o Realtime
                 Model capable of realtime text and audio inputs and outputs
                 https://platform.openai.com/docs/models/gpt-4o-realtime-preview
@@ -314,9 +347,9 @@ define( 'MWAI_OPENAI_MODELS', [
         'out' => 20.00,
       ],
       'audio' => [
-        'in' => 100.00,
-        'cache' => 20.00,
-        'out' => 200.00,
+        'in' => 40.00,
+        'cache' => 2.50,
+        'out' => 80.00,
       ]
     ],
     'type' => 'token',

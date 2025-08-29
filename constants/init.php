@@ -51,6 +51,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   'maxTokens' => 4096,
   'maxResults' => 1,
   'apiKey' => null,
+  'voice' => null,
   // Orchestration
   'functions' => [],
   'mcpServers' => [],

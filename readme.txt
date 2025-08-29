@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.0.5
+Stable tag: 3.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -155,10 +155,12 @@ Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpre
 
 == Changelog ==
 
-= 3.0.5 (2025/08/29) =
+= 3.0.6 (2025/08/29) =
+* Add: Image Upload for Realtime Chatbot.
+* Add: New 'gpt-realtime' model.
+* Add: Prompt Mode for chatbots to support OpenAI's new Prompts feature with prompt IDs.
 * Update: Redesigned the Embeddings user interface with improved mode selection, icons, and standardized buttons.
 * Update: Redesigned the Template component UI, cleaner layout, and icon-only buttons.
-* Add: Prompt Mode for chatbots to support OpenAI's new Prompts feature with prompt IDs.
 * Fix: Hotfix for orphan embeddings being created when editing from AI Search mode.
 * Fix: Missing list styles in chatbot themes.
 
