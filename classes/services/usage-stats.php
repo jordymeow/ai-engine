@@ -133,6 +133,15 @@ class Meow_MWAI_Services_UsageStats {
       $out_tokens = 0;
     }
     
+    // Normalize returned_price once at the beginning
+    if ( !empty( $returned_price ) ) {
+      $returned_price = is_array( $returned_price ) ? 
+        ( isset( $returned_price['price'] ) ? $returned_price['price'] : 0 ) : 
+        ( is_numeric( $returned_price ) ? $returned_price : 0 );
+    } else {
+      $returned_price = 0;
+    }
+    
     // Record monthly usage
     $usage = $this->core->get_option( 'ai_usage' );
     $month = date( 'Y-m' );
@@ -156,13 +165,7 @@ class Meow_MWAI_Services_UsageStats {
     $usage[$month][$model]['completion_tokens'] += $out_tokens;
     $usage[$month][$model]['total_tokens'] += $in_tokens + $out_tokens;
     $usage[$month][$model]['queries'] += 1;
-    if ( !empty( $returned_price ) ) {
-      // Ensure returned_price is numeric to avoid type errors
-      $price_value = is_array( $returned_price ) ? 
-        ( isset( $returned_price['price'] ) ? $returned_price['price'] : 0 ) : 
-        ( is_numeric( $returned_price ) ? $returned_price : 0 );
-      $usage[$month][$model]['returned_price'] += $price_value;
-    }
+    $usage[$month][$model]['returned_price'] += $returned_price;
     
     // Clean up old monthly data (keep only last 2 years)
     $this->cleanup_old_monthly_data( $usage );
@@ -191,9 +194,7 @@ class Meow_MWAI_Services_UsageStats {
     $daily_usage[$day][$model]['completion_tokens'] += $out_tokens;
     $daily_usage[$day][$model]['total_tokens'] += $in_tokens + $out_tokens;
     $daily_usage[$day][$model]['queries'] += 1;
-    if ( !empty( $returned_price ) ) {
-      $daily_usage[$day][$model]['returned_price'] += $returned_price;
-    }
+    $daily_usage[$day][$model]['returned_price'] += $returned_price;
     
     // Clean up old daily data (keep only last 30 days)
     $this->cleanup_old_daily_data( $daily_usage );

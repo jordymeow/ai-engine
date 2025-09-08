@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.0.6
+Stable tag: 3.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,7 +25,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 == Features ==
 
 * **Model Management**: Bring the latest AI models (GPT-5, GPT 4.1, Claude, Gemini, o3, o4, 4o, and more) to WordPress. Set your preferred models to match your specific workflows. GPT-5 includes advanced reasoning and verbosity controls.
-* **Chatbots**: Create interactive chatbots with customizable themes, avatars, and conversation flows. Features a modular UI Builder with containers, headers, footers, and MacOS-style components.
+* **Chatbots**: Create interactive chatbots with customizable themes, avatars, conversation flows and realtime. Features a modular UI Builder with containers, headers, footers, and MacOS-style components.
 * **AI Forms**: Build AI-driven forms that handle text, images, audio, or file uploads. Create custom AI-powered apps and online services with MCP server integration.
 * **Copilot**: Transform the WordPress editor into your AI assistant. Hit "space" or use the wand icons for real-time suggestions, translations, or content rewrites.
 * **Image & Translation**: Create images from prompts, break language barriers with instant translations, and quickly refine existing text for clarity and SEO.
@@ -154,6 +154,13 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.0.7 (2025/09/08) =
+* Fix: Resolved issues with bulk processes.
+* Update: Improved the UI of the Forms Editor.  
+* Update: Enhance many parts of the UI, UX, better explanations, and more.
+* Update: Redesigned the PDF Import feature for a more streamlined workflow.  
+* Fix: Corrected PDF import chunking.
 
 = 3.0.6 (2025/08/29) =
 * Add: Image Upload for Realtime Chatbot.

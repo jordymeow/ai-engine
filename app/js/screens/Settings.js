@@ -1,5 +1,5 @@
-// Previous: 3.0.2
-// Current: 3.0.5
+// Previous: 3.0.5
+// Current: 3.0.7
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
@@ -14,7 +14,7 @@ import { LicenseBlock } from '@common';
 import { apiUrl, prefix, domain, isRegistered, isPro, restNonce, restUrl,
   options as defaultOptions } from '@app/settings';
 import i18n from '@root/i18n';
-import { OptionsCheck, toHTML, useModels } from '@app/helpers-admin';
+import { OptionsCheck, toHTML, useModels, formatWithLink, formatWithLinks } from '@app/helpers-admin';
 import { AiNekoHeader } from '@app/styles/CommonStyles';
 import FineTunes from '@app/screens/finetunes/Finetunes';
 import Moderation from '@app/screens/misc/Moderation';
@@ -144,20 +144,24 @@ const Settings = () => {
 
   const ai_envs_with_embeddings = useMemo(() => {
     if (!ai_envs || !options?.ai_engines) return [];
+
     return ai_envs.filter(aiEnv => {
       if (aiEnv.type === 'azure') {
-        const hasDeployment = aiEnv.deployments?.some(d => 
+        const hasEmbeddingDeployment = aiEnv.deployments?.some(d => 
           d.model?.includes('embedding') || 
           d.model?.includes('ada')
         );
-        return hasDeployment;
+        return hasEmbeddingDeployment;
       }
+
       const engine = options.ai_engines.find(eng => eng.type === aiEnv.type);
       if (!engine || !engine.models) return false;
-      const hasModels = engine.models.some(model =>
+
+      const hasEmbeddingModels = engine.models.some(model =>
         model?.tags?.includes('embedding')
       );
-      return hasModels;
+
+      return hasEmbeddingModels;
     });
   }, [ai_envs, options]);
 
@@ -167,21 +171,24 @@ const Settings = () => {
 
   const embeddingsDimensionOptions = useMemo(() => {
     if (!defaultEmbeddingsModel) return [];
+
     const isMatryoshka = defaultEmbeddingsModel?.tags?.includes('matryoshka');
+
     if (isMatryoshka && defaultEmbeddingsModel?.dimensions?.length > 0) {
-      const maxDim = defaultEmbeddingsModel.dimensions[0];
-      const dims = [3072, 2048, 1536, 1024, 768, 512];
-      return dims.filter(dim => dim <= maxDim);
+      const maxDimension = defaultEmbeddingsModel.dimensions[0];
+      const matryoshkaDimensions = [3072, 2048, 1536, 1024, 768, 512];
+      return matryoshkaDimensions.filter(dim => dim <= maxDimension);
     }
+
     return defaultEmbeddingsModel?.dimensions || [];
   }, [defaultEmbeddingsModel]);
 
   const busy = busyAction;
 
   const updateOptions = useCallback(async (newOptions) => {
-    if (nekoStringify(newOptions) !== nekoStringify(options)) {
-      setBusyAction(true);
-      try {
+    try {
+      if (nekoStringify(newOptions) != nekoStringify(options)) {
+        setBusyAction(true);
         const response = await nekoFetch(`${apiUrl}/settings/update`, {
           method: 'POST',
           nonce: restNonce,
@@ -190,20 +197,22 @@ const Settings = () => {
           }
         });
         setOptions(response.options);
+      } else {
+        return;
       }
-      catch (err) {
-        console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ?
-          { message: err.message, options, newOptions } : { err, options, newOptions });
-        if (err.message) {
-          setError(<>
-            <div>{i18n.ERROR.UPDATING_OPTIONS}</div>
-            <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
-          </>);
-        }
+    }
+    catch (err) {
+      console.error(i18n.ERROR.UPDATING_OPTIONS, err?.message ?
+        { message: err.message, options, newOptions } : { err, options, newOptions });
+      if (err.message) {
+        setError(<>
+          <div>{i18n.ERROR.UPDATING_OPTIONS}</div>
+          <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
+        </>);
       }
-      finally {
-        setBusyAction(false);
-      }
+    }
+    finally {
+      setBusyAction(false);
     }
   }, [options]);
 
@@ -211,12 +220,13 @@ const Settings = () => {
     const performChecks = async () => {
       let updatesNeeded = false;
       const newOptions = { ...options };
+
       defaultEnvironmentSections.forEach(({ envKey, modelKey, defaultModel }) => {
         let exists = false;
         if (options[envKey]) {
           exists = !!ai_envs.find(x => x.id === options[envKey]);
         }
-        if (exists === false) {
+        if (!exists) {
           const foundEnv = ai_envs.find(x => x?.type === 'openai');
           if (foundEnv) {
             if (newOptions[envKey] !== foundEnv.id || newOptions[modelKey] !== defaultModel) {
@@ -235,23 +245,26 @@ const Settings = () => {
             }
           }
         }
+
         if (modelKey === 'ai_embeddings_default_model' && newOptions[modelKey]) {
           const dimensions = newOptions?.ai_embeddings_default_dimensions || null;
           if (dimensions !== null) {
             const model = embeddingsModels.find(x => x.model === newOptions[modelKey]);
             if (model) {
               const isMatryoshka = model?.tags?.includes('matryoshka');
-              let validDims = model?.dimensions || [];
+              let validDimensions = model?.dimensions || [];
+
               if (isMatryoshka && model?.dimensions?.length > 0) {
                 const maxDimension = model.dimensions[0];
-                const matryoshkaDims = [3072, 2048, 1536, 1024, 768, 512];
-                validDims = matryoshkaDims.filter(dim => dim <= maxDimension);
+                const matryoshkaDimensions = [3072, 2048, 1536, 1024, 768, 512];
+                validDimensions = matryoshkaDimensions.filter(dim => dim <= maxDimension);
               }
-              if (!validDims.includes(parseInt(dimensions))) {
-                const newDim = validDims[0] || null;
-                if (newDim !== null) {
-                  newOptions.ai_embeddings_default_dimensions = newDim;
-                  console.warn(`Updating embeddings default dimensions to ${newDim}`);
+
+              if (!validDimensions.includes(parseInt(dimensions))) {
+                const newDimensions = validDimensions[0] || null;
+                if (newDimensions !== null) {
+                  newOptions.ai_embeddings_default_dimensions = newDimensions;
+                  console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
                   updatesNeeded = true;
                 }
               }
@@ -259,10 +272,12 @@ const Settings = () => {
           }
         }
       });
+
       if (updatesNeeded) {
         await updateOptions(newOptions);
       }
     };
+
     performChecks();
   }, [ai_envs, options, updateOptions, embeddingsModels]);
 
@@ -279,8 +294,7 @@ const Settings = () => {
           <small>{toHTML(i18n.ERROR.CHECK_YOUR_CONSOLE)}</small>
         </>);
       }
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
   };
@@ -300,23 +314,23 @@ const Settings = () => {
   };
 
   const updateVectorDbEnvironment = async (id, updatedValue) => {
-    const updatedEnvs = embeddings_envs.map(env => {
+    const updatedEnvironments = embeddings_envs.map(env => {
       if (env.id === id) {
         return { ...env, ...updatedValue };
       }
       return env;
     });
-    updateOption(updatedEnvs, 'embeddings_envs');
+    updateOption(updatedEnvironments, 'embeddings_envs');
   };
 
   const updateAIEnvironment = async (id, updatedValue) => {
-    const updatedEnvs = ai_envs.map(env => {
+    const updatedEnvironments = ai_envs.map(env => {
       if (env.id === id) {
         return { ...env, ...updatedValue };
       }
       return env;
     });
-    updateOption(updatedEnvs, 'ai_envs');
+    updateOption(updatedEnvironments, 'ai_envs');
   };
 
   const updateMCPServer = async (id, updatedValue) => {
@@ -342,8 +356,7 @@ const Settings = () => {
     catch (err) {
       alert("Error while resetting settings. Please check your console.");
       console.log(err);
-    }
-    finally {
+    } finally {
       setBusyAction(false);
     }
   };
@@ -353,8 +366,8 @@ const Settings = () => {
     try {
       const chatbots = await retrieveChatbots();
       const themes = await retrieveThemes();
-      const optionsData = await retrieveOptions();
-      const data = { chatbots, themes, options: optionsData };
+      const optionsResp = await retrieveOptions();
+      const data = { chatbots, themes, options: optionsResp };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -405,6 +418,7 @@ const Settings = () => {
     if (!isRegistered) {
       const newOptions = { ...options };
       let hasChanges = false;
+
       proOptions.forEach(option => {
         if (newOptions[option]) {
           newOptions[option] = false;
@@ -412,8 +426,11 @@ const Settings = () => {
           hasChanges = true;
         }
       });
-      if (hasChanges && nekoStringify(newOptions) !== nekoStringify(options)) {
-        updateOptions(newOptions);
+
+      if (hasChanges) {
+        if (nekoStringify(newOptions) != nekoStringify(options)) {
+          updateOptions(newOptions);
+        }
       }
     }
   }, []);
@@ -429,9 +446,10 @@ const Settings = () => {
   }, [ai_streaming, event_logs, updateOption]);
 
   useEffect(() => {
-    const validateSection = () => {
+    const isValidSection = () => {
       if (settingsSection === 'ai' || settingsSection === 'files' ||
-          settingsSection === 'remote' || settingsSection === 'others') {
+          settingsSection === 'remote' || settingsSection === 'others' ||
+          settingsSection === 'addons') {
         return true;
       }
       if (settingsSection === 'chatbot' && module_chatbots) return true;
@@ -440,7 +458,8 @@ const Settings = () => {
       if (settingsSection === 'assistants' && module_assistants) return true;
       return false;
     };
-    if (!validateSection()) {
+
+    if (!isValidSection()) {
       setSettingsSection('ai');
     }
   }, [settingsSection, module_chatbots, module_embeddings, module_orchestration, module_assistants]);
@@ -728,7 +747,7 @@ const Settings = () => {
   const jsxDiscussionsPaging =
     <NekoSettings title={i18n.COMMON.PAGING || 'Paging'}>
       <NekoSelect scrolldown name="chatbot_discussions_paging"
-        value={options?.chatbot_discussions_paging ?? 10}
+        value={options?.chatbot_discussions_paging || 10}
         onChange={updateOption}
         description={i18n.HELP.DISCUSSIONS_PAGING || 'Number of discussions to display per page'}>
         <NekoOption value="None" label="None" />
@@ -744,7 +763,7 @@ const Settings = () => {
   const jsxDiscussionsRefreshInterval =
     <NekoSettings title={i18n.COMMON.REFRESH_INTERVAL || 'Refresh Interval'}>
       <NekoSelect scrolldown name="chatbot_discussions_refresh_interval"
-        value={options?.chatbot_discussions_refresh_interval ?? 5}
+        value={options?.chatbot_discussions_refresh_interval || 5}
         onChange={updateOption}
         description={i18n.HELP.DISCUSSIONS_REFRESH_INTERVAL || 'How often to refresh the discussions list (in seconds)'}>
         <NekoOption value={1} label="1 second" />
@@ -823,7 +842,11 @@ const Settings = () => {
   const jsxBearerToken =
     <NekoSettings title={i18n.COMMON.BEARER_TOKEN}>
       <NekoInput name="public_api_bearer_token" value={options?.public_api_bearer_token}
-        description={toHTML(i18n.HELP.BEARER_TOKEN)}
+        description={formatWithLink(
+          i18n.HELP.BEARER_TOKEN,
+          i18n.HELP.BEARER_TOKEN_URL,
+          i18n.HELP.BEARER_TOKEN_LINK_TEXT
+        )}
         onBlur={updateOption} />
     </NekoSettings>;
 
@@ -1239,7 +1262,12 @@ const Settings = () => {
           <OptionsCheck options={options} />
 
           {intro_message && <NekoContainer>
-            {toHTML(i18n.SETTINGS.INTRO)}
+            {formatWithLinks(i18n.SETTINGS.INTRO, [
+              { url: i18n.SETTINGS.INTRO_TUTORIAL_URL, text: i18n.SETTINGS.INTRO_TUTORIAL_TEXT },
+              { url: i18n.SETTINGS.INTRO_DOCS_URL, text: i18n.SETTINGS.INTRO_DOCS_TEXT },
+              { url: i18n.SETTINGS.INTRO_ADDONS_URL, text: i18n.SETTINGS.INTRO_ADDONS_TEXT },
+              { url: i18n.SETTINGS.INTRO_DISCLAIMER_URL, text: i18n.SETTINGS.INTRO_DISCLAIMER_TEXT }
+            ])}
           </NekoContainer>}
 
           <NekoTabs keepTabOnReload={true}>
@@ -1457,6 +1485,7 @@ const Settings = () => {
                       </>}
 
                       {settingsSection === 'assistants' && module_assistants && <>
+                        {/* Intentionally left empty; Assistants renders full-width below like Add-ons */}
                       </>}
 
                       {settingsSection === 'orchestration' && <>
@@ -1531,10 +1560,12 @@ const Settings = () => {
                             try {
                               await updateOption([], 'ai_usage');
                               await updateOption([], 'ai_usage_daily');
+
                               const response = await nekoFetch(`${apiUrl}/settings/options`, {
                                 method: 'GET',
                                 headers: { 'X-WP-Nonce': restNonce }
                               });
+
                               if (response.success && response.options) {
                                 updateOptions(response.options);
                                 showSnackbar('Usage data has been reset successfully.', 'success');
@@ -1555,7 +1586,11 @@ const Settings = () => {
 
                       {settingsSection === 'remote' && <>
                         <NekoBlock busy={busy} title="Model Context Protocol (MCP)" className="primary">
-                          <p>{toHTML(i18n.HELP.MCP_INTRO)}</p>
+                          <p>{formatWithLink(
+                            i18n.HELP.MCP_INTRO,
+                            i18n.HELP.MCP_TUTORIAL_URL,
+                            i18n.HELP.MCP_TUTORIAL_TEXT
+                          )}</p>
                           <NekoSpacer />
                           {jsxMcpModule}
                           {jsxMcpBearerToken}
@@ -1707,7 +1742,11 @@ const Settings = () => {
 
                       {settingsSection === 'remote' &&
                         <NekoBlock busy={busy} title={i18n.COMMON.REST_API} className="primary">
-                          <p>{toHTML(i18n.HELP.REST_API_INTRO)}</p>
+                          <p>{formatWithLink(
+                            i18n.HELP.REST_API_INTRO,
+                            i18n.HELP.REST_API_MAKE_URL,
+                            i18n.HELP.REST_API_MAKE_TEXT
+                          )}</p>
                           <NekoSpacer />
                           {jsxPublicAPI}
                           {jsxBearerToken}

@@ -1,5 +1,5 @@
-// Previous: 3.0.0
-// Current: 3.0.2
+// Previous: 3.0.2
+// Current: 3.0.7
 
 /**
  * OSXHeader Component
@@ -15,8 +15,8 @@ import React from 'react';
 
 const OSXHeader = ({ title, onClose, onMinimize, onMaximize, theme, showResize, children, onDragStart }) => {
   return (
-    <div className="mwai-header mwai-header-osx" onMouseDown={onDragStart} role="toolbar" aria-label="Chat header">
-      <div className="mwai-osx-bar">
+    <div className="mwai-header mwai-header-osx" role="toolbar" aria-label="Chat header">
+      <div className="mwai-osx-bar" onMouseDown={onDragStart}>
         <div className="mwai-osx-controls">
           <button
             className="mwai-osx-close"

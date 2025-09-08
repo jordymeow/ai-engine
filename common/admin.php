@@ -85,7 +85,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
           'license' =>
           $this->is_registered() ?
             ( '<span style="color: #a75bd6;">' . __( 'Pro Version', $this->domain ) . '</span>' ) :
-                ( $isIssue ? ( sprintf( '<span style="color: #ff3434;">' . __( 'License Issue', $this->domain ), $this->prefix ) . '</span>' ) : ( sprintf( '<span>' . __( '<a target="_blank" href="https://meowapps.com">Get the <u>Pro Version</u></a>', $this->domain ), $this->prefix ) . '</span>' ) ),
+                ( $isIssue ? ( sprintf( '<span style="color: #ff3434;">' . __( 'License Issue', $this->domain ), $this->prefix ) . '</span>' ) : ( '<span>' . sprintf( '<a target="_blank" href="%s">%s</a>', 'https://meowapps.com', __( 'Get the Pro Version', $this->domain ) ) . '</span>' ) ),
         ];
         $links = array_merge( $new_links, $links );
       }
@@ -208,7 +208,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
     public function admin_footer_text( $current ) {
       return sprintf(
         // translators: %1$s is the version of the interface; %2$s is a file path.
-        __( 'Thanks for using <a href="https://meowapps.com">Meow Apps</a>! This is the Meow Admin %1$s <br /><i>Loaded from %2$s </i>', $this->domain ),
+        sprintf( __( 'Thanks for using %s! This is the Meow Admin %%1$s <br /><i>Loaded from %%2$s </i>', $this->domain ), '<a href="https://meowapps.com">Meow Apps</a>' ),
         MeowCommon_Admin::$version,
         __FILE__
       );

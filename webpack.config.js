@@ -13,9 +13,9 @@ module.exports = function (env, options) {
 
   const cleanPlugin = new CleanWebpackPlugin({
     protectWebpackAssets: false,
-    cleanOnceBeforeBuildPatterns: ["!app/", "!pdf.worker.min.js"],
+    cleanOnceBeforeBuildPatterns: ["!app/", "!premium/"],
     cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
-      '!forms.js', '!pdfjs.js', '!pdf.worker.min.js', '!pdf.worker.min.mjs', '*.map'],
+      '!forms.js', '!pdfImport.js', '!pdf-import.js', '!pdfjs.js', '!pdf.worker.min.js', '*.map'],
     dry: false,
     dangerouslyAllowCleanPatternsOutsideProject: true
   });
@@ -39,7 +39,8 @@ module.exports = function (env, options) {
             path.join(__dirname, 'app', 'chatbot.js.LICENSE.txt'),
             path.join(__dirname, 'app', 'pdfjs.js.LICENSE.txt'),
             path.join(__dirname, 'app', 'pdf.worker.min.js.LICENSE.txt'),
-            path.join(__dirname, 'premium', 'forms.js.LICENSE.txt')
+            path.join(__dirname, 'premium', 'forms.js.LICENSE.txt'),
+            path.join(__dirname, 'premium', 'pdfImport.js.LICENSE.txt')
           ];
           
           licenseFiles.forEach(filePath => {
@@ -119,15 +120,20 @@ module.exports = function (env, options) {
     entry: {
       index: './app/js/index.js',
     },
+    output: {
+      filename: '[name].js',
+      chunkFilename: '[name].js',
+      path: __dirname + '/app/'
+    },
     cache: { type: "filesystem" },
     plugins: [
       ...baseConfig.plugins,
-      // Copy PDF.js worker only once (in admin build)
+      // Copy PDF.js worker to premium folder (only for pro users)
       new CopyPlugin({
         patterns: [
           { 
             from: path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
-            to: path.resolve(__dirname, 'app/pdf.worker.min.js'),
+            to: path.resolve(__dirname, 'premium/pdf.worker.min.js'),
             force: true
           }
         ]
@@ -145,7 +151,7 @@ module.exports = function (env, options) {
         cacheGroups: {
           pdfjs: {
             test: /[\\/]node_modules[\\/]pdfjs-dist[\\/]/,
-            name: 'pdfjs',
+            name: 'premium-pdfjs',
             chunks: 'async',
             priority: 20
           },
@@ -190,5 +196,8 @@ module.exports = function (env, options) {
     }
   });
 
+  // Removed pdfImportWebPack - PDF import is now lazy-loaded from admin bundle
+  // This eliminates the standalone pdfImport.js (625K) and vendors chunk (670K)
+  
   return [adminWebPack, formsWebPack, chatbotWebPack];
 };

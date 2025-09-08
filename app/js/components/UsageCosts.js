@@ -1,5 +1,5 @@
-// Previous: 2.8.5
-// Current: 2.9.7
+// Previous: 2.9.7
+// Current: 3.0.7
 
 // React & Vendor Libs
 const { useState, useMemo } = wp.element;
@@ -9,7 +9,7 @@ import { NekoButton, NekoSpacer } from '@neko-ui';
 
 import i18n from "@root/i18n";
 import { isRegistered } from '@app/settings';
-import { toHTML, useModels } from '@app/helpers-admin';
+import { toHTML, useModels, formatWithLink } from '@app/helpers-admin';
 import { StyledSidebar } from "@app/styles/StyledSidebar";
 
 const UsageCosts = (calculatePrice) => {
@@ -31,7 +31,12 @@ const UsageCosts = (calculatePrice) => {
 
     let sentence = toHTML(i18n.COMMON.USAGE_HELP);
     if (!isRegistered) {
-      sentence = <>{sentence} {toHTML(i18n.COMMON.USAGE_PRO_HELP)}</>;
+      const proHelp = formatWithLink(
+        i18n.COMMON.USAGE_PRO_HELP,
+        i18n.COMMON.USAGE_PRO_HELP_URL,
+        i18n.COMMON.USAGE_PRO_HELP_LINK_TEXT
+      );
+      sentence = <>{sentence} {proHelp}</>;
     }
 
     return (<>
