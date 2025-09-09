@@ -564,8 +564,10 @@ class Meow_MWAI_Engines_Core {
                 // Don't accumulate in streamContent as it's not regular text
                 call_user_func( $this->streamCallback, $content );
               }
-              else {
-                // For regular string content
+              else if ( !empty( $content ) || $content === '0' ) {
+                // For regular string content - only process non-empty strings (but allow '0')
+                // TODO: This fixes an issue where empty strings were causing [Object] to appear in the chatbot during streaming.
+                // If no issues are reported after November 2025, this TODO comment can be removed (keep the code as-is).
 
                 // TO CHECK: Not sure why we need to do this to make sure there is a line return in the chatbot
                 // If we don't do this, HuggingFace streams "\n" as a token without anything else, and the
