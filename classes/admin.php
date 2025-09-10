@@ -256,6 +256,12 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
     $physical_file = MWAI_PATH . '/app/index.js';
     $cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
+    
+    // Cache override: Force cache refresh when ?mwai_cache=1 is in URL
+    if ( isset( $_GET['mwai_cache'] ) ) {
+      $cache_buster = time(); // Use current timestamp for guaranteed cache bust
+    }
+    
     wp_register_script( 'mwai-vendor', MWAI_URL . 'app/vendor.js', null, $cache_buster );
 
     // Base dependencies
@@ -352,6 +358,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
       'chatbots' => $this->core->get_chatbots(),
       'themes' => $this->core->get_themes(),
       'stream' => $this->core->get_option( 'ai_streaming' ),
+      'cache_buster' => $cache_buster, // Pass cache buster for lazy-loaded chunks
     ];
 
     wp_localize_script( 'mwai', 'mwai', $localize_data );

@@ -1,59 +1,73 @@
 const path = require('path');
 const fs = require('fs');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 const regexNodeModules = /[\\/]node_modules[\\/]/;
 const regexNekoUI = /[\\/]neko-ui[\\/]/;
+
+// Simple cleaning plugin that can be configured for any directory
+class CleanBuildArtifactsPlugin {
+  constructor(options = {}) {
+    this.options = {
+      directory: options.directory || '.',
+      patterns: options.patterns || ['.map', '.LICENSE.txt'],
+      exclude: options.exclude || [],
+      specificFiles: options.specificFiles || [],
+      onlyInProduction: options.onlyInProduction !== false // default true
+    };
+  }
+
+  apply(compiler) {
+    const isProduction = compiler.options.mode === 'production';
+    
+    // Skip if production-only and not in production
+    if (this.options.onlyInProduction && !isProduction) {
+      return;
+    }
+
+    compiler.hooks.afterEmit.tapAsync('CleanBuildArtifacts', (compilation, callback) => {
+      const dir = path.join(__dirname, this.options.directory);
+      
+      // Clean files matching patterns
+      if (fs.existsSync(dir)) {
+        fs.readdirSync(dir).forEach(file => {
+          // Check if file matches any pattern
+          const shouldClean = this.options.patterns.some(pattern => file.endsWith(pattern));
+          
+          // Check if file is excluded
+          const isExcluded = this.options.exclude.some(exclude => file.startsWith(exclude));
+          
+          if (shouldClean && !isExcluded) {
+            const filePath = path.join(dir, file);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Cleaned: ${this.options.directory}/${file}`);
+            }
+          }
+        });
+        
+        // Clean specific files
+        this.options.specificFiles.forEach(file => {
+          const filePath = path.join(dir, file);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`Cleaned: ${this.options.directory}/${file}`);
+          }
+        });
+      }
+      
+      callback();
+    });
+  }
+}
 
 module.exports = function (env, options) {
 
   const isProduction = options.mode === 'production';
   const isAnalysis = env && env.analysis === 'true';
 
-  const cleanPlugin = new CleanWebpackPlugin({
-    protectWebpackAssets: false,
-    cleanOnceBeforeBuildPatterns: ["!app/", "!premium/"],
-    cleanAfterEveryBuildPatterns: ['!app', '!index.js', '!vendor.js', '!chatbot.js',
-      '!forms.js', '!pdfImport.js', '!pdf-import.js', '!pdfjs.js', '!pdf.worker.min.js', '*.map'],
-    dry: false,
-    dangerouslyAllowCleanPatternsOutsideProject: true
-  });
-
   const plugins = [];
-  if (isProduction) {
-    plugins.push(cleanPlugin);
-  }
   if (isAnalysis && env && env.entry === 'chatbot') {
     plugins.push(new BundleAnalyzerPlugin());
-  }
-  // Only add LICENSE cleanup in production mode
-  if (isProduction) {
-    plugins.push({
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tapAsync('CleanupLicenseFiles', (compilation, callback) => {
-          // Remove all LICENSE.txt files
-          const licenseFiles = [
-            path.join(__dirname, 'app', 'vendor.js.LICENSE.txt'),
-            path.join(__dirname, 'app', 'index.js.LICENSE.txt'),
-            path.join(__dirname, 'app', 'chatbot.js.LICENSE.txt'),
-            path.join(__dirname, 'app', 'pdfjs.js.LICENSE.txt'),
-            path.join(__dirname, 'app', 'pdf.worker.min.js.LICENSE.txt'),
-            path.join(__dirname, 'premium', 'forms.js.LICENSE.txt'),
-            path.join(__dirname, 'premium', 'pdfImport.js.LICENSE.txt')
-          ];
-          
-          licenseFiles.forEach(filePath => {
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-              console.log('Removed LICENSE file:', filePath);
-            }
-          });
-          
-          callback();
-        });
-      }
-    });
   }
   // eslint-disable-next-line no-console
   console.log("Production: " + isProduction);
@@ -123,21 +137,35 @@ module.exports = function (env, options) {
     output: {
       filename: '[name].js',
       chunkFilename: '[name].js',
-      path: __dirname + '/app/'
+      path: __dirname + '/app/',
+      chunkLoadingGlobal: 'wpJsonMwai'
     },
     cache: { type: "filesystem" },
     plugins: [
       ...baseConfig.plugins,
-      // Copy PDF.js worker to premium folder (only for pro users)
-      new CopyPlugin({
-        patterns: [
-          { 
-            from: path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
-            to: path.resolve(__dirname, 'premium/pdf.worker.min.js'),
-            force: true
-          }
-        ]
-      })
+      // Clean app directory build artifacts
+      new CleanBuildArtifactsPlugin({
+        directory: 'app',
+        patterns: ['.map', '.LICENSE.txt']
+      }),
+      // Custom plugin to copy PDF worker AFTER all builds complete
+      {
+        apply: (compiler) => {
+          compiler.hooks.afterEmit.tapAsync('CopyPdfWorker', (compilation, callback) => {
+            const source = path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs');
+            const dest = path.resolve(__dirname, 'premium/pdf.worker.min.js');
+            
+            fs.copyFile(source, dest, (err) => {
+              if (err) {
+                console.error('Failed to copy PDF worker:', err);
+              } else {
+                console.log('Copied PDF worker to premium/pdf.worker.min.js');
+              }
+              callback();
+            });
+          });
+        }
+      }
     ],
     optimization: {
       minimize: isProduction ? true : false,
@@ -181,7 +209,15 @@ module.exports = function (env, options) {
       filename: '[name].js',
       path: __dirname + '/app/',
       chunkLoadingGlobal: 'wpJsonMwaiChatbot'
-    }
+    },
+    plugins: [
+      ...baseConfig.plugins,
+      // Clean app directory build artifacts (for chatbot files)
+      new CleanBuildArtifactsPlugin({
+        directory: 'app',
+        patterns: ['.map', '.LICENSE.txt']
+      })
+    ]
   });
 
   const formsWebPack = Object.assign({}, baseConfig, {
@@ -193,7 +229,17 @@ module.exports = function (env, options) {
       filename: '[name].js',
       path: __dirname + '/premium/',
       chunkLoadingGlobal: 'wpJsonMwaiForms'
-    }
+    },
+    plugins: [
+      ...baseConfig.plugins,
+      // Clean premium directory build artifacts
+      new CleanBuildArtifactsPlugin({
+        directory: 'premium',
+        patterns: ['.map', '.LICENSE.txt'],
+        exclude: ['pdf.worker'],  // Never delete PDF worker files
+        specificFiles: ['pdfImport.js', 'pdfImport.js.map']  // Old files to remove
+      })
+    ]
   });
 
   // Removed pdfImportWebPack - PDF import is now lazy-loaded from admin bundle

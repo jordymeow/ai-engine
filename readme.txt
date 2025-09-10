@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.0.8
+Stable tag: 3.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -155,17 +155,19 @@ Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpre
 
 == Changelog ==
 
-= 3.0.8 (2025/09/09) =
+= 3.0.9 (2025/09/10) =
+* Update: Improved the UI of the Forms Editor.  
+* Update: Redesigned the PDF Import feature for a more streamlined workflow.  
+* Update: Enhanced Embeddings UI with sortable titles, a smarter Sync button, and title preservation.
+* Update: Enhance many parts of the UI, UX, better explanations, and more.
+* Fix: Corrected PDF import chunking.
+* Fix: Resolved PDF Import to correctly utilize custom titles.
+* Fix: Improved PDF Import process to use Admin API instead of Public API.
+* Fix: Addressed cache issues with lazy-loaded chunks by adding dynamic versioning.
 * Fix: Cross-Site feature blocking same-origin requests.  
 * Fix: Streaming issue where empty strings caused [Object] to appear.  
 * Fix: Pinecone metadata error by defaulting the 'type' field to 'manual'.
-
-= 3.0.7 (2025/09/08) =
 * Fix: Resolved issues with bulk processes.
-* Update: Improved the UI of the Forms Editor.  
-* Update: Enhance many parts of the UI, UX, better explanations, and more.
-* Update: Redesigned the PDF Import feature for a more streamlined workflow.  
-* Fix: Corrected PDF import chunking.
 
 = 3.0.6 (2025/08/29) =
 * Add: Image Upload for Realtime Chatbot.
