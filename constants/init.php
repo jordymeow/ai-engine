@@ -191,7 +191,7 @@ define( 'MWAI_OPTIONS', [
   ],
   'embeddings' => [
     'rewriteContent' => true,
-    'rewritePrompt' => "Rewrite the content concisely in {LANGUAGE}, maintaining the same style and information. The revised text should be under 800 words, with paragraphs ranging from 160-280 words each. Omit non-textual elements and avoid unnecessary repetition. Conclude with a statement directing readers to find more information at {URL}. If you cannot meet these requirements, please leave a blank response. The content is below, between '== START ==' and '== END =='.\n\n== START ==\n{CONTENT}\n== END ==\n\n",
+    'rewritePrompt' => "Start your response with the title: {TITLE}\nOn the next line, provide a brief introductory sentence that explains what the content is about.\n\nThen leave an empty line and begin the rewritten content.\n\nRewrite the content concisely in {LANGUAGE}, maintaining the same style and information. The revised text should be under 800 words, with paragraphs ranging from 160-280 words each. Omit non-textual elements and avoid unnecessary repetition. Conclude with a statement directing readers to find more information at {URL}. If you cannot meet these requirements, please leave a blank response.\n\nThe content to rewrite is below, between '== START ==' and '== END =='.\n\n== START ==\n{CONTENT}\n== END ==\n\n",
     'forceRecreate' => false,
     'syncPosts' => false,
     'syncPostsEnvId' => null,

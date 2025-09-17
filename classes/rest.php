@@ -276,6 +276,16 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_helpers_optimize_database' ],
       ] );
+      register_rest_route( $this->namespace, '/helpers/cron_events', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_cron_events' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/run_cron', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_run_cron' ],
+      ] );
 
       // OpenAI Endpoints
       register_rest_route( $this->namespace, '/openai/files/list', [
@@ -408,6 +418,172 @@ class Meow_MWAI_Rest {
       'success' => true,
       'options' => $this->core->get_all_options()
     ], 200 );
+  }
+
+  public function rest_helpers_cron_events( $request ) {
+    try {
+      // Only show AI Engine cron events (those starting with mwai_)
+      $cron_events = [];
+      $crons = _get_cron_array();
+      
+      // Get transient data for last run status (we'll store this when crons run)
+      $last_run_data = get_transient( 'mwai_cron_last_run' ) ?: [];
+      
+      // Get all scheduled events and filter for AI Engine ones
+      foreach ( $crons as $timestamp => $cron ) {
+        foreach ( $cron as $hook => $details ) {
+          // Only process AI Engine hooks (starting with mwai_)
+          if ( strpos( $hook, 'mwai_' ) !== 0 ) {
+            continue;
+          }
+          
+          $schedule_key = array_keys( $details )[0];
+          $schedule_info = $details[$schedule_key];
+          
+          // Get schedule display name
+          $schedule = $schedule_info['schedule'];
+          $schedules = wp_get_schedules();
+          $schedule_display = isset( $schedules[$schedule]['display'] ) ? 
+            $schedules[$schedule]['display'] : $schedule;
+          
+          $event_info = [
+            'hook' => $hook,
+            'name' => $this->get_cron_display_name( $hook ),
+            'description' => $this->get_cron_description( $hook ),
+            'next_run' => $timestamp,
+            'next_run_human' => '',
+            'last_run' => isset( $last_run_data[$hook]['time'] ) ? $last_run_data[$hook]['time'] : null,
+            'last_run_human' => isset( $last_run_data[$hook]['time'] ) ? 
+              human_time_diff( $last_run_data[$hook]['time'], time() ) . ' ago' : 
+              'Never',
+            'last_status' => isset( $last_run_data[$hook]['status'] ) ? $last_run_data[$hook]['status'] : 'unknown',
+            'schedule' => $schedule_display,
+            'is_running' => false,
+            'is_scheduled' => true
+          ];
+          
+          // Calculate next run time properly
+          // If we have a last run time and schedule interval, calculate the actual next run
+          if ( isset( $last_run_data[$hook]['time'] ) && isset( $schedules[$schedule]['interval'] ) ) {
+            $interval = $schedules[$schedule]['interval'];
+            $last_run = $last_run_data[$hook]['time'];
+            $expected_next_run = $last_run + $interval;
+            
+            // If the scheduled timestamp is in the past but we ran recently, 
+            // the next run should be based on the last actual run
+            if ( $timestamp < time() && 
+                 $last_run > ( time() - $interval ) ) {
+              // Cron ran recently, calculate next run from last run time
+              $event_info['next_run'] = $expected_next_run;
+              $event_info['next_run_human'] = 'In ' . human_time_diff( time(), $expected_next_run );
+            } else if ( $timestamp < time() ) {
+              // Genuinely overdue
+              $event_info['next_run_human'] = 'Overdue by ' . human_time_diff( time(), $timestamp );
+            } else {
+              // Future scheduled time
+              $event_info['next_run_human'] = 'In ' . human_time_diff( time(), $timestamp );
+            }
+          } else {
+            // No last run data, use the scheduled timestamp but be conservative about "overdue"
+            if ( $timestamp < time() ) {
+              // Only show as overdue if it's significantly past due (more than the schedule interval)
+              // to avoid false positives for crons that might be running but not tracked
+              $time_past_due = time() - $timestamp;
+              $interval = isset( $schedules[$schedule]['interval'] ) ? $schedules[$schedule]['interval'] : 3600; // Default 1 hour
+              
+              if ( $time_past_due > $interval ) {
+                $event_info['next_run_human'] = 'Overdue by ' . human_time_diff( time(), $timestamp );
+              } else {
+                $event_info['next_run_human'] = 'Due to run';
+              }
+            } else {
+              $event_info['next_run_human'] = 'In ' . human_time_diff( time(), $timestamp );
+            }
+          }
+          
+          // Check if currently running (via transient)
+          $running_transient = get_transient( 'mwai_cron_running_' . $hook );
+          if ( $running_transient ) {
+            $event_info['is_running'] = true;
+          }
+          
+          $cron_events[] = $event_info;
+        }
+      }
+      
+      return $this->create_rest_response( [ 'success' => true, 'events' => $cron_events ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  public function rest_helpers_run_cron( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $hook = isset( $params['hook'] ) ? $params['hook'] : null;
+      
+      if ( empty( $hook ) ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'No cron hook provided' ], 400 );
+      }
+      
+      // Only allow running AI Engine crons (starting with mwai_)
+      if ( strpos( $hook, 'mwai_' ) !== 0 ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid cron hook' ], 400 );
+      }
+      
+      // Check if the hook exists
+      if ( !has_action( $hook ) ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'Cron hook not found' ], 404 );
+      }
+      
+      // Run the cron action
+      do_action( $hook );
+      
+      // If this is a Tasks Runner cron, reschedule it
+      if ( $hook === 'mwai_tasks_internal_run' || $hook === 'mwai_tasks_internal_dev_run' ) {
+        wp_clear_scheduled_hook( $hook );
+        
+        if ( $hook === 'mwai_tasks_internal_run' ) {
+          wp_schedule_event( time() + 60, 'one_minute', $hook );
+        } else if ( $hook === 'mwai_tasks_internal_dev_run' ) {
+          wp_schedule_event( time() + 5, 'five_seconds', $hook );
+        }
+      }
+      
+      return $this->create_rest_response( [ 
+        'success' => true, 
+        'message' => 'Cron executed successfully',
+        'hook' => $hook
+      ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+  
+  private function get_cron_display_name( $hook ) {
+    $names = [
+      'mwai_tasks_internal_run' => 'Tasks Runner',
+      'mwai_tasks_internal_dev_run' => 'Tasks Runner (Dev)',
+      'mwai_cleanup_oauth' => 'OAuth Cleanup',
+      'mwai_files_cleanup' => 'Files Cleanup',
+      'mwai_discussions' => 'Discussions Cleanup'
+    ];
+    return isset( $names[$hook] ) ? $names[$hook] : $hook;
+  }
+  
+  private function get_cron_description( $hook ) {
+    $descriptions = [
+      'mwai_tasks_internal_run' => 'Processes background tasks and queued operations.',
+      'mwai_tasks_internal_dev_run' => 'Processes tasks in development mode (every 5 seconds).',
+      'mwai_cleanup_oauth' => 'Cleans up expired OAuth tokens and sessions.',
+      'mwai_files_cleanup' => 'Removes temporary and orphaned files.',
+      'mwai_discussions' => 'Maintains chat discussions database and removes old entries.'
+    ];
+    return isset( $descriptions[$hook] ) ? $descriptions[$hook] : '';
   }
 
   public function rest_settings_update( $request ) {

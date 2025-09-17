@@ -19,7 +19,11 @@ function mwai_remove_database() {
   $table_name2 = $wpdb->prefix . 'mwai_logmeta';
   $table_name3 = $wpdb->prefix . 'mwai_logs';
   $table_name4 = $wpdb->prefix . 'mwai_vectors';
-  $sql = "DROP TABLE IF EXISTS $table_name1, $table_name2, $table_name3, $table_name4";
+  $table_name5 = $wpdb->prefix . 'mwai_tasks';
+  $table_name6 = $wpdb->prefix . 'mwai_tasklogs';
+  $table_name7 = $wpdb->prefix . 'mwai_files';
+  $table_name8 = $wpdb->prefix . 'mwai_filemeta';
+  $sql = "DROP TABLE IF EXISTS $table_name1, $table_name2, $table_name3, $table_name4, $table_name5, $table_name6, $table_name7, $table_name8";
   $wpdb->query( $sql );
 }
 

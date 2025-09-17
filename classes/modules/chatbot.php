@@ -1,9 +1,9 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
 
-define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite', 'promptId', 'promptVariables', 'reasoningEffort', 'verbosity' ] );
+define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'talkMode', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite', 'promptId', 'promptVariables', 'reasoningEffort', 'verbosity' ] );
 
 // Params for the discussions (front and server)
 define( 'MWAI_DISCUSSIONS_FRONT_PARAMS', [ 'themeId', 'textNewChat' ] );
@@ -134,7 +134,9 @@ class Meow_MWAI_Modules_Chatbot {
       return true;
     }
 
-    $length = strlen( empty( $newMessage ) ? '' : $newMessage );
+    // Handle null or convert to string for strlen
+    $messageStr = $newMessage === null ? '' : (string)$newMessage;
+    $length = strlen( $messageStr );
     if ( $length < 1 ) {
       Meow_MWAI_Logging::warn( 'The query was rejected - message was too short.' );
       return false;
@@ -230,6 +232,26 @@ class Meow_MWAI_Modules_Chatbot {
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+
+      // If we're in streaming mode, send the error through the stream
+      if ( $stream ) {
+        // Log the error
+        error_log( '[AI Engine Chatbot Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
+
+        // Send error event through stream
+        $errorData = [
+          'type' => 'error',
+          'data' => 'Oops! Something went wrong on the server. Please try again, and if you are the site developer, check the PHP Error Logs for details.'
+        ];
+        echo 'data: ' . json_encode( $errorData ) . "\n\n";
+        if ( ob_get_level() > 0 ) {
+          ob_end_flush();
+        }
+        flush();
+        die();
+      }
+
+      // For non-streaming, return normal error response
       return $this->create_rest_response( [
         'success' => false,
         'message' => $message

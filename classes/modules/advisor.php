@@ -39,10 +39,15 @@ Instead of focusing on individual plugins, provide more general and holistic rec
   public function __construct( $core ) {
     $this->core = $core;
     add_action( 'init', [ $this, 'init' ] );
-    add_action( 'wp_dashboard_setup', [ $this, 'add_dashboard_widget' ] );
+    
+    // Only add dashboard widget if module is enabled and user has permissions
+    if ( $this->core->get_option( 'module_advisor', false ) ) {
+      add_action( 'wp_dashboard_setup', [ $this, 'add_dashboard_widget' ] );
+    }
   }
 
   public function init() {
+    // Handle manual refresh request
     if ( $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['refresh_advisor_nonce'] ) ) {
       if ( wp_verify_nonce( $_POST['refresh_advisor_nonce'], 'refresh_advisor_action' ) ) {
         $this->run_advisor();
@@ -50,11 +55,60 @@ Instead of focusing on individual plugins, provide more general and holistic rec
         exit;
       }
     }
-    else if ( $this->core->get_option( 'module_advisor', false ) ) {
-      add_action( 'mwai_tasks_run', [ $this, 'check_and_run_advisor' ] );
+    
+    // Always register the task handler (in case task exists from before)
+    add_filter( 'mwai_task_advisor_daily', [ $this, 'run_advisor_task' ], 10, 2 );
+    
+    // Only ensure the task exists if module is enabled
+    if ( $this->core->get_option( 'module_advisor', false ) ) {
+      // Ensure the advisor task exists
+      $this->ensure_advisor_task();
     }
   }
 
+  /**
+   * Ensure the advisor task exists in the Tasks system
+   */
+  private function ensure_advisor_task() {
+    if ( !$this->core->tasks ) {
+      return;
+    }
+    
+    $this->core->tasks->ensure( [
+      'name' => 'advisor_daily',
+      'description' => 'Analyze WordPress setup and provide recommendations.',
+      'category' => 'system',
+      'schedule' => '0 2 * * *', // Daily at 2 AM
+      'deletable' => 0, // System task, not deletable
+    ] );
+  }
+  
+  /**
+   * Handle advisor task execution
+   */
+  public function run_advisor_task( $result, $job ) {
+    // Check if module is enabled
+    if ( !$this->core->get_option( 'module_advisor', false ) ) {
+      return [
+        'ok' => false,
+        'message' => 'Advisor module is disabled.'
+      ];
+    }
+    
+    try {
+      $this->run_advisor();
+      return [
+        'ok' => true,
+        'message' => 'Advisor analysis completed successfully.'
+      ];
+    } catch ( Exception $e ) {
+      return [
+        'ok' => false,
+        'message' => 'Advisor analysis failed: ' . $e->getMessage()
+      ];
+    }
+  }
+  
   private function check_and_run_advisor() {
     $last_run_data = get_option( 'mwai_advisor_data', [] );
     $last_run_time = $last_run_data['date'] ?? 0;

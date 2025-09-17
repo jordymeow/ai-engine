@@ -1,16 +1,17 @@
-// Previous: 2.8.5
-// Current: 2.9.3
+// Previous: 2.9.3
+// Current: 3.1.0
 
 /* eslint-disable no-console */
 // React & Vendor Libs
 // const { useMemo, useState, useEffect } = wp.element;
 
 // NekoUI
-import { NekoButton, NekoBlock, NekoSettings, NekoInput, NekoCheckbox, NekoColumn, NekoWrapper, NekoLog } from '@neko-ui';
+import { NekoButton, NekoBlock, NekoSettings, NekoInput, NekoCheckbox, NekoColumn, NekoWrapper, NekoLog, NekoAccordion, NekoSpacer } from '@neko-ui';
 
 import i18n from '@root/i18n';
-import { toHTML, retrievePostContent, runTasks } from '@app/helpers-admin';
-import { refreshLogs, clearLogs, optimizeDatabase } from '@app/requests';
+import { toHTML, retrievePostContent } from '@app/helpers-admin';
+import { refreshLogs, clearLogs, optimizeDatabase, resetTasks } from '@app/requests';
+import TasksManager from '@app/components/TasksManager';
 
 const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
   const debug_mode = options?.debug_mode;
@@ -22,23 +23,20 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
 
   const onGetContentClick = async () => {
     const postId = prompt('Enter the Post ID you want to retrieve the content from.');
-    if (postId == null || postId === '') {
-      return false;
+    if (!postId) {
+      return;
     }
     const content = await retrievePostContent(null, null, postId);
     console.log(`Data for Post ID ${postId}`, content);
-    if (content && content.content != null) {
+    if (content && content.content) {
       const cleanContent = content.content.trim().replace(/<[^>]*>?/gm, '');
       const firstWord = cleanContent.split(' ')[0];
-      const lastWord = cleanContent.split(' ').pop();
+      const lastWord = cleanContent.split(' ').shift();
       console.log(`Content First Word: ${firstWord}`);
       console.log(`Content Last Word: ${lastWord}`);
     }
   };
 
-  const onRunTask = async () => {
-    await runTasks();
-  };
 
   const onOptimizeDatabase = async () => {
     const confirmMsg = 'This will:\n\n' +
@@ -47,7 +45,7 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
       '3. Remove chat discussions older than 3 months\n\n' +
       'This action cannot be undone. Continue?';
     
-    if (confirm(confirmMsg) === false) {
+    if (confirm(confirmMsg)) {
       return;
     }
     
@@ -56,6 +54,29 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
       alert(`Database optimization completed!\n\n${result.message || 'Indexes added and old data cleaned up successfully.'}`);
     } catch (error) {
       alert(`Optimization failed: ${error.message}`);
+    }
+  };
+
+  const onResetTasks = async () => {
+    const confirmMsg = 'This will reset the entire Tasks system:\n\n' +
+      '• Clear all tasks and task logs\n' +
+      '• Remove all cron job registrations\n' +
+      '• Clear all task-related transients\n' +
+      '• Re-create system tasks (Cleanup Discussions, Cleanup Files)\n' +
+      '• Re-initialize the Tasks Runner cron\n\n' +
+      'This action cannot be undone. Continue?';
+    
+    if (confirm(confirmMsg)) {
+      return;
+    }
+    
+    try {
+      const result = await resetTasks();
+      alert(`Tasks system reset completed!\n\n${result.message}`);
+      // Reload the page to refresh the UI
+      window.location.reload();
+    } catch (error) {
+      alert(`Reset failed: ${error.message}`);
     }
   };
 
@@ -97,31 +118,36 @@ const DevToolsTab = ({ options, updateOption, setOptions, busy }) => {
 
   return (<>
     <NekoWrapper>
-      <NekoColumn minimal>
-        <NekoBlock title="Debugging" className="primary" busy={busy}>
-          <NekoButton onClick={onGetContentClick}>Get Content</NekoButton>
-          <p>This button will display the content of the post, as seen by AI Engine, in your Developer Tools Console. That allows you to check what AI Engine uses when using Content Aware, Embeddings Sync, etc.</p>
-          <NekoButton onClick={onRunTask}>Run Tasks</NekoButton>
-          <p>This button will force the AI Engine to run the tasks. Normally, the AI Engine runs the tasks every 10 minutes. This button will force the AI Engine to run the tasks immediately.
-          </p>
-        </NekoBlock>
-        
+      <NekoColumn minimal style={{ flex: 1 }}>
         <NekoBlock title="Settings" className="primary" busy={busy}>
           {jsxDevMode}
-          <h3 style={{ marginTop: 20, marginBottom: 10 }}>Logs Console</h3>
-          {jsxDebugMode}
-          {jsxServerDebugMode}
-          <h3 style={{ marginTop: 20, marginBottom: 10 }}>PHP Error Logs</h3>
-          {jsxMcpDebugMode}
-          {jsxQueriesDebugMode}
+          
+          <NekoAccordion title="Logs Console">
+            <NekoSpacer />
+            {jsxDebugMode}
+            {jsxServerDebugMode}
+          </NekoAccordion>
+          
+          <NekoAccordion title="PHP Error Logs">
+            <NekoSpacer />
+            {jsxMcpDebugMode}
+            {jsxQueriesDebugMode}
+          </NekoAccordion>
         </NekoBlock>
         
-        <NekoBlock title="Optimization" className="primary" busy={busy}>
+        <NekoBlock title="Actions" className="primary" busy={busy}>
+          <NekoButton onClick={onGetContentClick}>Get Content</NekoButton>
+          <p>This button will display the content of the post, as seen by AI Engine, in your Developer Tools Console. That allows you to check what AI Engine uses when using Content Aware, Embeddings Sync, etc.</p>
+          
           <NekoButton onClick={onOptimizeDatabase}>Optimize Database</NekoButton>
           <p>{toHTML('This will add indexes to the AI Engine database tables to improve query performance, and clean up old data (logs and discussions older than 3 months). <b>Use this if you notice the plugin becoming slower over time.</b>')}</p>
+          
+          <NekoButton onClick={onResetTasks} className="danger">Reset Tasks</NekoButton>
+          <p>This will completely reset the Tasks system, clearing all tasks and logs, and re-creating system tasks. Useful for testing or recovering from task system issues.</p>
         </NekoBlock>
       </NekoColumn>
-      <NekoColumn minimal>
+      <NekoColumn minimal style={{ flex: 2 }}>
+        <TasksManager devMode={dev_mode} />
         {server_debug_mode &&
           <NekoLog
             refreshQuery={refreshLogs}

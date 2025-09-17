@@ -19,10 +19,15 @@ class Meow_MWAI_Modules_Discussions {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 
-      if ( !wp_next_scheduled( 'mwai_discussions' ) ) {
-        wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
-      }
-      add_action( 'mwai_discussions', [ $this, 'cron_discussions' ] );
+      // TODO: Remove after January 2026 - Legacy cron support
+      // Old cron scheduling removed - now handled by Tasks module
+      // if ( !wp_next_scheduled( 'mwai_discussions' ) ) {
+      //   wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
+      // }
+      // add_action( 'mwai_discussions', [ $this, 'cron_discussions' ] );
+      
+      // Register task handler
+      add_filter( 'mwai_task_cleanup_discussions', [ $this, 'handle_cleanup_task' ], 10, 2 );
     }
   }
 
@@ -275,13 +280,18 @@ class Meow_MWAI_Modules_Discussions {
   }
 
   public function cron_discussions() {
-    $this->check_db();
+    // Track cron execution start
+    $this->core->track_cron_start( 'mwai_discussions' );
+    
+    try {
+      $this->check_db();
 
-    // NEW CHECK: Only run if auto-titling is enabled
-    if ( !$this->core->get_option( 'chatbot_discussions_titling' ) ) {
-      return;
-    }
-    // END NEW CHECK
+      // NEW CHECK: Only run if auto-titling is enabled
+      if ( !$this->core->get_option( 'chatbot_discussions_titling' ) ) {
+        $this->core->track_cron_end( 'mwai_discussions', 'success' );
+        return;
+      }
+      // END NEW CHECK
 
     // Set the current user to the first admin to avoid guest limits
     $admin_users = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
@@ -302,11 +312,17 @@ class Meow_MWAI_Modules_Discussions {
     );
     $discussions = $this->wpdb->get_results( $query );
     if ( empty( $discussions ) ) {
+      $this->core->track_cron_end( 'mwai_discussions', 'success' );
       return;
     }
 
     foreach ( $discussions as $discussion ) {
       $this->generate_title_for_discussion( $discussion );
+    }
+    
+      $this->core->track_cron_end( 'mwai_discussions', 'success' );
+    } catch ( Exception $e ) {
+      $this->core->track_cron_end( 'mwai_discussions', 'error', $e->getMessage() );
     }
   }
 
@@ -754,5 +770,82 @@ class Meow_MWAI_Modules_Discussions {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ) $charset_collate;";
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
     dbDelta( $sqlLogs );
+  }
+
+  /**
+   * Handle cleanup task for discussions
+   */
+  public function handle_cleanup_task( $result, $job ) {
+    $start = microtime( true );
+    $retention_days = 90; // 3 months retention period
+    $cutoff = date( 'Y-m-d H:i:s', strtotime( "-{$retention_days} days" ) );
+    
+    // Check if discussions table exists
+    $table_exists = $this->wpdb->get_var( "SHOW TABLES LIKE '{$this->table_chats}'" );
+    if ( !$table_exists ) {
+      return [
+        'ok' => true,
+        'done' => true,
+        'message' => 'Discussions table does not exist yet',
+      ];
+    }
+    
+    // Get current progress
+    $deleted_total = isset( $job['meta']['deleted_total'] ) ? (int) $job['meta']['deleted_total'] : 0;
+    $last_id = isset( $job['meta']['last_id'] ) ? (int) $job['meta']['last_id'] : 0;
+    
+    // Delete in batches
+    $batch_size = 100;
+    $deleted_batch = 0;
+    
+    $old_discussions = $this->wpdb->get_results( $this->wpdb->prepare(
+      "SELECT id FROM {$this->table_chats} 
+       WHERE updated < %s AND id > %d 
+       ORDER BY id ASC 
+       LIMIT %d",
+      $cutoff, $last_id, $batch_size
+    ) );
+    
+    if ( !empty( $old_discussions ) ) {
+      $ids = wp_list_pluck( $old_discussions, 'id' );
+      $ids_string = implode( ',', array_map( 'intval', $ids ) );
+      
+      $deleted_batch = $this->wpdb->query(
+        "DELETE FROM {$this->table_chats} WHERE id IN ($ids_string)"
+      );
+      
+      $deleted_total += $deleted_batch;
+      $last_id = end( $ids );
+    }
+    
+    // Check if we have more to process or time is running out
+    $has_more = count( $old_discussions ) === $batch_size;
+    $time_elapsed = microtime( true ) - $start;
+    
+    if ( $has_more && $time_elapsed < 8 ) {
+      // Continue processing
+      return [
+        'ok' => true,
+        'done' => false,
+        'message' => sprintf( 'Deleted %d discussions (total: %d)', $deleted_batch, $deleted_total ),
+        'meta' => [
+          'deleted_total' => $deleted_total,
+          'last_id' => $last_id,
+        ],
+        'step' => $job['step'] + 1,
+        'step_name' => 'batch_' . ( $job['step'] + 1 ),
+      ];
+    }
+    
+    // Completed
+    return [
+      'ok' => true,
+      'done' => true,
+      'message' => sprintf( 'Cleanup complete. Deleted %d discussions older than %d days', $deleted_total, $retention_days ),
+      'meta' => [
+        'deleted_total' => 0,
+        'last_id' => 0,
+      ],
+    ];
   }
 }

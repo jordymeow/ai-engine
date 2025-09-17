@@ -2389,6 +2389,54 @@
 .mwai-timeless-theme .mwai-realtime .mwai-controls button.mwai-active {
   border: 2px solid var(--mwai-fontColor);
 }
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode {
+  flex-direction: column;
+  gap: 8px;
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk {
+  border-radius: calc(var(--mwai-borderRadius) * 0.8);
+  width: auto;
+  min-width: 120px;
+  padding: 12px 24px;
+  margin: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--mwai-fontColor);
+  border: 2px solid var(--mwai-backgroundPrimaryColor);
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  font-family: inherit;
+  font-size: var(--mwai-fontSize);
+  line-height: 1.2;
+  font-weight: 500;
+  height: auto;
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk:hover:not(:disabled) {
+  background: var(--mwai-backgroundPrimaryColor);
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: none;
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk.mwai-active {
+  border: 2px solid var(--mwai-fontColor);
+  background: var(--mwai-backgroundPrimaryColor);
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk svg {
+  width: 18px;
+  height: 18px;
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-talk-hint {
+  font-size: 12px;
+  color: var(--mwai-fontColor);
+  opacity: 0.6;
+  text-align: center;
+  margin: 0;
+}
 .mwai-timeless-theme .mwai-realtime .mwai-last-transcript {
   margin: var(--mwai-spacing);
   margin-top: 0;
@@ -2856,6 +2904,26 @@
   background: var(--mwai-backgroundUserColor) !important;
   opacity: 0.5;
 }
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk {
+  color: var(--mwai-backgroundPrimaryColor);
+  background: var(--mwai-backgroundUserColor);
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk:hover:not(:disabled) {
+  color: var(--mwai-backgroundPrimaryColor) !important;
+  background: var(--mwai-backgroundUserColor) !important;
+  opacity: 0.8;
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk:disabled {
+  color: var(--mwai-backgroundPrimaryColor) !important;
+  background: var(--mwai-backgroundUserColor) !important;
+  opacity: 0.5;
+}
+.mwai-timeless-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk.mwai-active {
+  color: var(--mwai-backgroundPrimaryColor) !important;
+  background: var(--mwai-backgroundUserColor) !important;
+  opacity: 0.9;
+  border: 2px solid var(--mwai-fontColor);
+}
 .mwai-timeless-theme .mwai-reply-actions {
   top: -6px;
   right: -6px;
@@ -2937,3 +3005,5 @@
   background-color: rgba(211, 47, 47, 0.08);
   color: #b71c1c;
 }
+
+/*# sourceMappingURL=timeless.css.map */

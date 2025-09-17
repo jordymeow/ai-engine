@@ -368,28 +368,40 @@ class Meow_MWAI_Labs_OAuth {
 
   // Clean up expired tokens and codes
   public function cleanup_expired() {
-    if ( $this->logging ) {
-      error_log( '[OAuth] 🧹 Cleaning expired tokens.' );
-    }
-
-    $now = time();
-
-    // Clean codes
-    $codes = get_option( $this->codes_option, [] );
-    foreach ( $codes as $code => $data ) {
-      if ( $now > $data['expires'] ) {
-        unset( $codes[ $code ] );
+    // Track that this cron started
+    $this->core->track_cron_start( 'mwai_cleanup_oauth' );
+    
+    try {
+      if ( $this->logging ) {
+        error_log( '[OAuth] 🧹 Cleaning expired tokens.' );
       }
-    }
-    update_option( $this->codes_option, $codes );
 
-    // Clean tokens
-    $tokens = get_option( $this->tokens_option, [] );
-    foreach ( $tokens as $token => $data ) {
-      if ( $now > $data['expires'] ) {
-        unset( $tokens[ $token ] );
+      $now = time();
+
+      // Clean codes
+      $codes = get_option( $this->codes_option, [] );
+      foreach ( $codes as $code => $data ) {
+        if ( $now > $data['expires'] ) {
+          unset( $codes[ $code ] );
+        }
       }
+      update_option( $this->codes_option, $codes );
+
+      // Clean tokens
+      $tokens = get_option( $this->tokens_option, [] );
+      foreach ( $tokens as $token => $data ) {
+        if ( $now > $data['expires'] ) {
+          unset( $tokens[ $token ] );
+        }
+      }
+      update_option( $this->tokens_option, $tokens );
+      
+      // Track successful completion
+      $this->core->track_cron_end( 'mwai_cleanup_oauth', 'success' );
+    } catch ( Exception $e ) {
+      // Track failure
+      $this->core->track_cron_end( 'mwai_cleanup_oauth', 'error' );
+      throw $e; // Re-throw to maintain original behavior
     }
-    update_option( $this->tokens_option, $tokens );
   }
 }

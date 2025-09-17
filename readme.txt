@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.0.9
+Stable tag: 3.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,13 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.1.0 (2025/09/17) =
+* Add: New 'Hold to Talk' mode for Realtime chatbot.  
+* Add: Tasks Manager (task scheduling, multi-step tasks, progress tracking, retry logic, etc).
+* Fix: Resolved issues with Cross-Side to support renamed plugin folders.  
+* Fix: Hotfix to ensure proper removal of all database tables during uninstall.  
+* Fix: Corrected cross-origin CORS headers not being sent for allowed domains.
 
 = 3.0.9 (2025/09/10) =
 * Update: Improved the UI of the Forms Editor.  

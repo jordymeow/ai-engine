@@ -268,11 +268,6 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     $deps = [ 'mwai-vendor', 'wp-element', 'wp-components', 'wp-plugins', 'wp-i18n' ];
 
     // Check if we're on AI Engine admin pages
-    // Debug: Log the current screen ID to help identify the correct page
-    if ( $current_screen && $this->core->get_option( 'server_debug_mode' ) ) {
-      error_log( '[AI Engine] Current screen ID: ' . $current_screen->id . ', Base: ' . $current_screen->base );
-    }
-
     $is_ai_engine_page = $current_screen && (
       strpos( $current_screen->id, 'mwai_settings' ) !== false ||
       strpos( $current_screen->id, 'meowapps_page_mwai' ) !== false ||
