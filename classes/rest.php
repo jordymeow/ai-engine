@@ -532,26 +532,23 @@ class Meow_MWAI_Rest {
       if ( strpos( $hook, 'mwai_' ) !== 0 ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid cron hook' ], 400 );
       }
-      
+
+      // Prevent running the Tasks Runner hooks directly - they should only run via cron
+      if ( $hook === 'mwai_tasks_internal_run' || $hook === 'mwai_tasks_internal_dev_run' ) {
+        return $this->create_rest_response( [
+          'success' => false,
+          'message' => 'The Tasks Runner cannot be triggered manually. It runs automatically based on its schedule.'
+        ], 403 );
+      }
+
       // Check if the hook exists
       if ( !has_action( $hook ) ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Cron hook not found' ], 404 );
       }
-      
+
       // Run the cron action
       do_action( $hook );
-      
-      // If this is a Tasks Runner cron, reschedule it
-      if ( $hook === 'mwai_tasks_internal_run' || $hook === 'mwai_tasks_internal_dev_run' ) {
-        wp_clear_scheduled_hook( $hook );
-        
-        if ( $hook === 'mwai_tasks_internal_run' ) {
-          wp_schedule_event( time() + 60, 'one_minute', $hook );
-        } else if ( $hook === 'mwai_tasks_internal_dev_run' ) {
-          wp_schedule_event( time() + 5, 'five_seconds', $hook );
-        }
-      }
-      
+
       return $this->create_rest_response( [ 
         'success' => true, 
         'message' => 'Cron executed successfully',
@@ -1212,8 +1209,36 @@ class Meow_MWAI_Rest {
 
   public function rest_helpers_run_tasks( $request ) {
     try {
-      do_action( 'mwai_tasks_run' );
-      return $this->create_rest_response( [ 'success' => true ], 200 );
+      // Prevent concurrent execution with a transient lock
+      $lock_key = 'mwai_rest_run_tasks_lock';
+      if ( get_transient( $lock_key ) ) {
+        // Log excessive calls for debugging
+        if ( $this->core->get_option( 'dev_mode' ) ) {
+          error_log( '[AI Engine] WARNING: rest_helpers_run_tasks called while already running' );
+        }
+        return $this->create_rest_response( [
+          'success' => false,
+          'message' => 'Tasks are already running. Please wait.'
+        ], 429 ); // 429 Too Many Requests
+      }
+
+      // Set lock for 30 seconds
+      set_transient( $lock_key, true, 30 );
+
+      // Log task execution start
+      if ( $this->core->get_option( 'dev_mode' ) ) {
+        error_log( '[AI Engine] rest_helpers_run_tasks triggered via REST API' );
+      }
+
+      try {
+        do_action( 'mwai_tasks_run' );
+        delete_transient( $lock_key );
+        return $this->create_rest_response( [ 'success' => true ], 200 );
+      }
+      catch ( Exception $e ) {
+        delete_transient( $lock_key );
+        throw $e;
+      }
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

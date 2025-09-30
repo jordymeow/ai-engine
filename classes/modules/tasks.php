@@ -67,7 +67,7 @@ class Meow_MWAI_Modules_Tasks {
       wp_clear_scheduled_hook( $hook );
       
       if ( $dev_mode ) {
-        wp_schedule_event( time() + 15, 'fifteen_seconds', $hook );
+        wp_schedule_event( time() + 5, 'five_seconds', $hook );
       } else {
         wp_schedule_event( time() + 60, 'one_minute', $hook );
       }
@@ -86,7 +86,7 @@ class Meow_MWAI_Modules_Tasks {
       
       // Ensure dev cron is scheduled
       if ( !wp_next_scheduled( 'mwai_tasks_internal_dev_run' ) ) {
-        wp_schedule_event( time() + 15, 'fifteen_seconds', 'mwai_tasks_internal_dev_run' );
+        wp_schedule_event( time() + 5, 'five_seconds', 'mwai_tasks_internal_dev_run' );
       }
     }
     else {
@@ -102,7 +102,6 @@ class Meow_MWAI_Modules_Tasks {
 
   public function custom_cron_schedule( $schedules ) {
     $schedules['one_minute'] = [ 'display' => __( 'Every Minute' ), 'interval' => 60 ];
-    $schedules['fifteen_seconds'] = [ 'display' => __( 'Every 15 Seconds' ), 'interval' => 15 ];
     $schedules['five_seconds'] = [ 'display' => __( 'Every 5 Seconds' ), 'interval' => 5 ];
     return $schedules;
   }
@@ -739,7 +738,7 @@ class Meow_MWAI_Modules_Tasks {
       // 1. Delete task logs older than 7 days
       $week_ago = gmdate( 'Y-m-d H:i:s', strtotime( '-7 days' ) );
       $logs_deleted = $this->wpdb->query( $this->wpdb->prepare(
-        "DELETE FROM {$this->table_tasklogs} WHERE timestamp < %s",
+        "DELETE FROM {$this->table_tasklogs} WHERE created < %s",
         $week_ago
       ) );
       $stats['logs_deleted'] = $logs_deleted ? $logs_deleted : 0;
@@ -1307,7 +1306,7 @@ class Meow_MWAI_Modules_Tasks {
     // Re-initialize the Tasks Runner cron
     $dev_mode = $this->core->get_option( 'dev_mode' );
     if ( $dev_mode ) {
-      wp_schedule_event( time() + 15, 'fifteen_seconds', 'mwai_tasks_internal_dev_run' );
+      wp_schedule_event( time() + 5, 'five_seconds', 'mwai_tasks_internal_dev_run' );
     }
     else {
       wp_schedule_event( time() + 60, 'one_minute', 'mwai_tasks_internal_run' );

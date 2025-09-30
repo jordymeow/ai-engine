@@ -1136,6 +1136,12 @@ class Meow_MWAI_Core {
           Meow_MWAI_Engines_Perplexity::get_models_static()
         );
       }
+      else if ( $engine['type'] === 'mistral' ) {
+        $engine['models'] = apply_filters(
+          'mwai_mistral_models',
+          Meow_MWAI_Engines_Mistral::get_models_static()
+        );
+      }
       else {
         $engine['models'] = [];
         foreach ( $options['ai_models'] as $model ) {

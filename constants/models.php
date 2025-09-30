@@ -912,3 +912,7 @@ define( 'MWAI_PERPLEXITY_MODELS', [
     'tags' => ['core', 'chat'],
   ],
 ] );
+
+// Mistral AI Models
+// Models are fetched dynamically from the Mistral API
+define( 'MWAI_MISTRAL_MODELS', [] );

@@ -2146,14 +2146,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   /**
   * Override image query handling for gpt-image-1 model
   */
-  public function run_image_query( $query ) {
+  public function run_image_query( $query, $streamCallback = null ) {
     // IMPORTANT: We use the standard Images API for gpt-image-1 (not Responses API)
     // Even though Responses API supports image_generation tool, it would let the
     // orchestrator model choose which image model to use. By using the Images API
     // directly, we ensure gpt-image-1 is actually used as requested by the user.
 
     // Use standard implementation for all image models including gpt-image-1
-    return parent::run_image_query( $query );
+    return parent::run_image_query( $query, $streamCallback );
   }
 
   /**

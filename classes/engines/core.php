@@ -93,7 +93,7 @@ class Meow_MWAI_Engines_Core {
       $reply = $this->run_editimage_query( $query );
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
-      $reply = $this->run_image_query( $query );
+      $reply = $this->run_image_query( $query, $streamCallback );
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
       $reply = $this->run_transcribe_query( $query );
@@ -618,7 +618,7 @@ class Meow_MWAI_Engines_Core {
     throw new Exception( 'Not implemented.' );
   }
 
-  public function run_image_query( Meow_MWAI_Query_Base $query ) {
+  public function run_image_query( Meow_MWAI_Query_Base $query, $streamCallback = null ) {
     throw new Exception( 'Not implemented.' );
   }
 

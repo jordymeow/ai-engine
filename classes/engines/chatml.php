@@ -1265,7 +1265,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   }
 
   // Request to DALL-E API
-  public function run_image_query( $query ) {
+  public function run_image_query( $query, $streamCallback = null ) {
     $body = $this->build_body( $query );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );

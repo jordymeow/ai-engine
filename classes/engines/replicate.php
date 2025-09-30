@@ -475,7 +475,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
   }
 
   // TODO: We should find a way to add text-to-image somewhere in this query
-  public function run_image_query( $query ) {
+  public function run_image_query( $query, $streamCallback = null ) {
     $body = $this->build_body( $query );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );

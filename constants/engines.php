@@ -57,4 +57,11 @@ define( 'MWAI_ENGINES', [
     'internal' => true,
     'models' => []
   ],
+  [
+    'name' => 'Mistral',
+    'type' => 'mistral',
+    'inputs' => ['apikey', 'dynamicModels'],
+    'internal' => true,
+    'models' => []
+  ],
 ] );

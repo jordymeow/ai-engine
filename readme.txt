@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,17 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.1.1 (2025/09/30) =
+- Add: Integrated Mistral AI into the plugin.  
+- Fix: Resolved an undefined array key "type" warning in Chroma.
+- Fix: Corrected a database column name error in the task cleanup query.  
+- Fix: Fixed a layout issue in the Gutenberg editor.  
+- Fix: Resolved a crash in template creation when a user cancels the name prompt.  
+- Update: Optimized task refresh logic.
+- Update: Included "reply" as an argument in mwai_ai_feedback.  
+- Update: Improved Google models retrieval logic.  
+- Update: Removed debugging logs, empty code blocks, etc.
 
 = 3.1.0 (2025/09/17) =
 * Add: New 'Hold to Talk' mode for Realtime chatbot.  
