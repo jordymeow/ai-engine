@@ -1385,28 +1385,40 @@ class Meow_MWAI_Modules_Tasks {
    * Upgrade database schema if needed
    */
   private function upgrade_db() {
+    // Add category column if it doesn't exist
+    $category_exists = $this->wpdb->get_var(
+      "SHOW COLUMNS FROM {$this->table_tasks} LIKE 'category'"
+    );
+
+    if ( !$category_exists ) {
+      $this->wpdb->query(
+        "ALTER TABLE {$this->table_tasks}
+         ADD COLUMN category VARCHAR(32) NOT NULL DEFAULT 'general' AFTER description"
+      );
+    }
+
     // Remove deprecated columns if they exist
     $columns_to_remove = ['auto_delete', 'deletable', 'is_multistep', 'last_message'];
-    
+
     foreach ( $columns_to_remove as $column ) {
-      $column_exists = $this->wpdb->get_var( 
-        "SHOW COLUMNS FROM {$this->table_tasks} LIKE '$column'" 
+      $column_exists = $this->wpdb->get_var(
+        "SHOW COLUMNS FROM {$this->table_tasks} LIKE '$column'"
       );
-      
+
       if ( $column_exists ) {
         $this->wpdb->query( "ALTER TABLE {$this->table_tasks} DROP COLUMN $column" );
       }
     }
-    
+
     // Add step_data column if it doesn't exist
-    $step_data_exists = $this->wpdb->get_var( 
-      "SHOW COLUMNS FROM {$this->table_tasks} LIKE 'step_data'" 
+    $step_data_exists = $this->wpdb->get_var(
+      "SHOW COLUMNS FROM {$this->table_tasks} LIKE 'step_data'"
     );
-    
+
     if ( !$step_data_exists ) {
-      $this->wpdb->query( 
-        "ALTER TABLE {$this->table_tasks} 
-         ADD COLUMN step_data LONGTEXT NULL AFTER step_name" 
+      $this->wpdb->query(
+        "ALTER TABLE {$this->table_tasks}
+         ADD COLUMN step_data LONGTEXT NULL AFTER step_name"
       );
     }
   }

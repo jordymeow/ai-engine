@@ -150,7 +150,10 @@ class Meow_MWAI_Services_MessageBuilder {
   * Add user message with attachments
   */
   private function add_user_message_with_attachments( array $messages, Meow_MWAI_Query_Base $query ): array {
-    if ( !$query->attachedFile ) {
+    // Get all attachments using the unified method
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+
+    if ( empty( $attachments ) ) {
       // Simple text message
       $messages[] = [
         'role' => 'user',
@@ -163,7 +166,7 @@ class Meow_MWAI_Services_MessageBuilder {
       ];
     }
     else {
-      // Message with image attachment
+      // Message with file/image attachment(s)
       $content = [
         [
           'type' => 'input_text',
@@ -171,15 +174,42 @@ class Meow_MWAI_Services_MessageBuilder {
         ]
       ];
 
-      // Add image
-      $imageUrl = $query->image_remote_upload === 'url'
-      ? $query->attachedFile->get_url()
-        : $query->attachedFile->get_inline_base64_url();
+      // Process all attachments
+      foreach ( $attachments as $file ) {
+        // Check file type to determine how to handle it
+        // Images can be loaded via URL or base64, but PDFs use OpenAI file_id references
+        $mimeType = $file->get_mimeType() ?? '';
+        $isImage = strpos( $mimeType, 'image/' ) === 0;
 
-      $content[] = [
-        'type' => 'input_image',
-        'image_url' => $imageUrl
-      ];
+        if ( $isImage ) {
+          $fileUrl = $query->image_remote_upload === 'url'
+            ? $file->get_url()
+            : $file->get_inline_base64_url();
+
+          $content[] = [
+            'type' => 'input_image',
+            'image_url' => $fileUrl
+          ];
+        }
+        else {
+          // For non-images (PDFs, documents), use file_id reference
+          $fileId = $file->get_refId();
+
+          if ( !$fileId ) {
+            // File should have been uploaded by the engine before message building
+            // If we get here, something went wrong - log and skip this file
+            error_log( '[AI Engine] MessageBuilder: File without file_id encountered (upload should happen in engine)' );
+            continue;
+          }
+
+          // File was uploaded to OpenAI, use file_id reference
+          // Responses API format: { type: 'input_file', file_id: 'file-xxx' }
+          $content[] = [
+            'type' => 'input_file',
+            'file_id' => $fileId
+          ];
+        }
+      }
 
       $messages[] = [
         'role' => 'user',
@@ -301,26 +331,38 @@ class Meow_MWAI_Services_MessageBuilder {
       return null;
     }
 
-    // Handle image attachments
-    if ( $query->attachedFile && $query->attachedFile->get_type() === 'image' ) {
-      $imageUrl = $query->image_remote_upload === 'url'
-        ? $query->attachedFile->get_url()
-        : $query->attachedFile->get_inline_base64_url();
+    // Get all attachments using the unified method
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
 
-      return [
-        'role' => 'user',
-        'content' => [
-          [
-            'type' => 'text',
-            'text' => $message
-          ],
-          [
+    // Handle image attachments (for Chat Completions API)
+    if ( !empty( $attachments ) ) {
+      $content = [
+        [
+          'type' => 'text',
+          'text' => $message
+        ]
+      ];
+
+      // Add first image attachment (Chat Completions format)
+      foreach ( $attachments as $file ) {
+        if ( $file->get_type() === 'image' ) {
+          $imageUrl = $query->image_remote_upload === 'url'
+            ? $file->get_url()
+            : $file->get_inline_base64_url();
+
+          $content[] = [
             'type' => 'image_url',
             'image_url' => [
               'url' => $imageUrl
             ]
-          ]
-        ]
+          ];
+          break; // Chat Completions typically handles one image
+        }
+      }
+
+      return [
+        'role' => 'user',
+        'content' => $content
       ];
     }
 

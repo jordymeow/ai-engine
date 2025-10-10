@@ -34,6 +34,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   protected $seenCallIds = []; // Track seen call IDs to prevent duplicates
   protected $lastRequestBody = null; // For debugging
   protected $contentStarted = false; // Track if content streaming has started
+  protected $codeInterpreterCompleted = false; // Track if code interpreter has completed
   // IMPORTANT: OpenAI Responses API sends the same function call in both:
   // 1. response.output_item.done - when individual function call completes
   // 2. response.completed - with all function calls in the final response
@@ -220,16 +221,40 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             ]
           ];
 
-          // Check for attached file/image
-          if ( $query->attachedFile ) {
-            $imageUrl = $query->image_remote_upload === 'url'
-              ? $query->attachedFile->get_url()
-              : $query->attachedFile->get_inline_base64_url();
+          // Check for attached files (unified approach)
+          $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+          foreach ( $attachments as $file ) {
+            $fileUrl = $query->image_remote_upload === 'url'
+              ? $file->get_url()
+              : $file->get_inline_base64_url();
 
-            $content[] = [
-              'type' => 'input_image',
-              'image_url' => $imageUrl
-            ];
+            // Check if it's an image or a file (PDF, etc.)
+            $mimeType = $file->get_mimeType() ?? '';
+            $isImage = strpos( $mimeType, 'image/' ) === 0;
+
+            if ( $isImage ) {
+              $content[] = [
+                'type' => 'input_image',
+                'image_url' => $fileUrl
+              ];
+            }
+            else {
+              // For non-images (PDFs, documents), use file_id approach
+              // IMPORTANT: Only use files that have been uploaded to OpenAI (provider_file_id type)
+              if ( $file->get_type() === 'provider_file_id' ) {
+                $fileId = $file->get_refId();
+                $content[] = [
+                  'type' => 'file',
+                  'file' => [
+                    'file_id' => $fileId
+                  ]
+                ];
+              }
+              else {
+                // File hasn't been uploaded to OpenAI yet - should have been done in prepare_query
+                Meow_MWAI_Logging::warn( 'Responses API: File not uploaded to OpenAI yet (type: ' . $file->get_type() . ')' );
+              }
+            }
           }
 
           $body['input'] = [
@@ -253,7 +278,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         // Use full history mode (internal) or when no previous_response_id
 
         // Build input - always use array format for Responses API
-        if ( !empty( $query->messages ) || $query->attachedFile || $query instanceof Meow_MWAI_Query_Feedback ) {
+        $hasAttachments = method_exists( $query, 'getAttachments' ) && !empty( $query->getAttachments() );
+        if ( !empty( $query->messages ) || $hasAttachments || $query instanceof Meow_MWAI_Query_Feedback ) {
           $body['input'] = $this->build_responses_input_array( $query );
         }
         else {
@@ -577,6 +603,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   */
   protected function build_responses_input_array( $query ) {
     // Use the MessageBuilder service for streamlined message building
+    // Note: Files are uploaded via prepare_query() BEFORE streaming hooks are set
     $messages = $this->core->messageBuilder->build_responses_api_messages( $query );
 
     // Note: Function result events are now emitted centrally in core.php
@@ -737,7 +764,78 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   }
 
   /**
-  * Override execute to handle Azure v1 endpoints for containers and files
+  * Get Azure endpoint with protocol
+  */
+  private function get_azure_endpoint() {
+    $endpoint = isset( $this->env['endpoint'] ) ? rtrim( $this->env['endpoint'], '/' ) : null;
+
+    if ( empty( $endpoint ) ) {
+      throw new Exception( 'Azure endpoint not configured. Please set the endpoint URL in your Azure environment settings.' );
+    }
+
+    // Ensure endpoint has protocol
+    if ( strpos( $endpoint, 'http://' ) !== 0 && strpos( $endpoint, 'https://' ) !== 0 ) {
+      $endpoint = 'https://' . $endpoint;
+    }
+
+    return $endpoint;
+  }
+
+  /**
+  * Extract Azure region from endpoint URL
+  * Azure OpenAI endpoints can be in different formats:
+  * - https://my-resource.openai.azure.com (custom subdomain - region not in URL)
+  * - https://eastus2.api.cognitive.microsoft.com (region-based)
+  *
+  * For custom subdomains, we need to use the Azure REST API to get the region,
+  * but for simplicity we'll check if a region is explicitly set in the env,
+  * otherwise default to common regions based on the resource name pattern.
+  */
+  private function get_azure_region( $endpoint ) {
+    // Check if region is explicitly set in environment
+    if ( isset( $this->env['region'] ) && !empty( $this->env['region'] ) ) {
+      return $this->env['region'];
+    }
+
+    // Try to extract from region-based endpoint format
+    if ( preg_match( '/([a-z0-9]+)\.api\.cognitive\.microsoft\.com/', $endpoint, $matches ) ) {
+      return $matches[1];
+    }
+
+    // For custom subdomain endpoints, try to infer from common patterns
+    // or default to the most common realtime regions
+    if ( preg_match( '/\.openai\.azure\.com/', $endpoint ) ) {
+      // Default to eastus2 as it's one of the primary realtime regions
+      // User can override this by setting the region in their environment
+      return 'eastus2';
+    }
+
+    // Fallback default
+    return 'eastus2';
+  }
+
+  /**
+  * Build Azure realtime sessions URL
+  */
+  private function build_azure_realtime_url( $endpoint ) {
+    // Azure uses /openai/realtimeapi/sessions (not /openai/realtime/sessions)
+    // The deployment is sent in the POST body, not in the URL
+    return $endpoint . '/openai/realtimeapi/sessions?api-version=2025-04-01-preview';
+  }
+
+  /**
+  * Build Azure v1 URL for containers/files
+  */
+  private function build_azure_v1_url( $endpoint, $url ) {
+    $fullUrl = $endpoint . '/openai/v1' . $url;
+
+    // Add API version
+    $hasQuery = strpos( $fullUrl, '?' ) !== false;
+    return $fullUrl . ( $hasQuery ? '&' : '?' ) . 'api-version=preview';
+  }
+
+  /**
+  * Override execute to handle Azure v1 endpoints for containers, files, and realtime
   */
   public function execute(
     $method,
@@ -748,17 +846,20 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     $extraHeaders = null,
     $streamCallback = null
   ) {
-    // For Azure container/files operations, use v1 endpoint
-    if ( $this->envType === 'azure' && 
-         ( strpos( $url, '/containers/' ) !== false || strpos( $url, '/files/' ) !== false ) ) {
-      
-      // Build the Azure v1 URL
-      $endpoint = isset( $this->env['endpoint'] ) ? rtrim( $this->env['endpoint'], '/' ) : null;
-      $fullUrl = $endpoint . '/openai/v1' . $url;
-      
-      // Add API version
-      $hasQuery = strpos( $fullUrl, '?' ) !== false;
-      $fullUrl = $fullUrl . ( $hasQuery ? '&' : '?' ) . 'api-version=preview';
+    // For Azure container/files/realtime operations, use v1 endpoint
+    if ( $this->envType === 'azure' &&
+         ( strpos( $url, '/containers/' ) !== false ||
+           strpos( $url, '/files/' ) !== false ||
+           strpos( $url, '/realtime/' ) !== false ) ) {
+
+      $endpoint = $this->get_azure_endpoint();
+
+      // Build the appropriate URL based on the operation type
+      if ( strpos( $url, '/realtime/sessions' ) !== false ) {
+        $fullUrl = $this->build_azure_realtime_url( $endpoint );
+      } else {
+        $fullUrl = $this->build_azure_v1_url( $endpoint, $url );
+      }
       
       // Prepare headers
       $headers = [
@@ -787,36 +888,41 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       // Log if debug enabled
       $queries_debug = $this->core->get_option( 'queries_debug_mode' );
       if ( $queries_debug ) {
-        error_log( '[AI Engine Queries] Azure v1 Container/Files Request to: ' . $fullUrl );
+        error_log( '[AI Engine Queries] Azure v1 Request to: ' . $fullUrl );
+        error_log( '[AI Engine Queries] Method: ' . $method );
+        error_log( '[AI Engine Queries] Headers: ' . json_encode( array_keys( $headers ) ) );
         if ( !empty( $body ) ) {
           error_log( '[AI Engine Queries] Request Body: ' . $body );
         }
       }
-      
+
       // Make the request
       $res = wp_remote_request( $fullUrl, $options );
-      
+
       if ( is_wp_error( $res ) ) {
         throw new Exception( $res->get_error_message() );
       }
-      
+
+      $response_code = wp_remote_retrieve_response_code( $res );
       $res = wp_remote_retrieve_body( $res );
-      
+
+      // Log response
+      if ( $queries_debug ) {
+        error_log( '[AI Engine Queries] Azure v1 Response Code: ' . $response_code );
+        error_log( '[AI Engine Queries] Azure v1 Response: ' . $res );
+      }
+
       // Handle response
       if ( strpos( $url, '/content' ) !== false ) {
         // Binary content download
         return $res;
       }
-      
+
       // JSON response
       $data = json_decode( $res, true );
-      
-      if ( $queries_debug ) {
-        error_log( '[AI Engine Queries] Azure v1 Response: ' . $res );
-      }
-      
+
       $this->handle_response_errors( $data );
-      
+
       return $data;
     }
     
@@ -913,8 +1019,29 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         if ( $this->core->get_option( 'queries_debug_mode' ) ) {
           error_log( '[AI Engine Queries] Current streamToolCalls count: ' . count( $this->streamToolCalls ) );
         }
-        
+
         $response = $json['response'] ?? [];
+
+        // Extract usage information from response.completed event
+        if ( isset( $response['usage'] ) ) {
+          $usage = $response['usage'];
+
+          // Set stream tokens from usage data
+          // Responses API uses input_tokens/output_tokens
+          $inputTokens = $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? null;
+          $outputTokens = $usage['output_tokens'] ?? $usage['completion_tokens'] ?? null;
+
+          if ( $inputTokens !== null ) {
+            $this->streamInTokens = (int) $inputTokens;
+          }
+          if ( $outputTokens !== null ) {
+            $this->streamOutTokens = (int) $outputTokens;
+          }
+          if ( isset( $usage['cost'] ) ) {
+            $this->streamCost = (float) $usage['cost'];
+          }
+        }
+
         $outputs = $response['output'] ?? [];
 
         foreach ( $outputs as $idx => $output ) {
@@ -1575,11 +1702,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
     }
 
-    // Handle usage data
+    // Handle usage data (legacy - kept for Chat Completions API compatibility)
+    // Note: Responses API sets usage in response.completed event instead
     $usage = $json['usage'] ?? [];
-    if ( isset( $usage['input_tokens'], $usage['output_tokens'] ) ) {
-      $this->streamInTokens = (int) $usage['input_tokens'];
-      $this->streamOutTokens = (int) $usage['output_tokens'];
+    $inputTokens = $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? null;
+    $outputTokens = $usage['output_tokens'] ?? $usage['completion_tokens'] ?? null;
+
+    if ( $inputTokens !== null && $outputTokens !== null ) {
+      $this->streamInTokens = (int) $inputTokens;
+      $this->streamOutTokens = (int) $outputTokens;
       if ( isset( $usage['cost'] ) ) {
         $this->streamCost = (float) $usage['cost'];
       }
@@ -1628,9 +1759,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     // Check if this is a GPT-5 model
     $isGpt5Model = strpos( $query->model, 'gpt-5' ) === 0;
     
-    // Debug: Always log which API we're using
+    // Check which API to use
     $useResponsesApi = $this->should_use_responses_api( $query->model );
-    
+
     // GPT-5 models MUST use Responses API
     if ( $isGpt5Model && !$useResponsesApi ) {
       $options = $this->core->get_all_options();
@@ -1674,18 +1805,21 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   * Run completion query using Responses API
   */
   protected function run_responses_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
-    
     // Store current query for URL building (needed for Azure deployment name)
     $this->currentQuery = $query;
-    
+
     // Check if we have functions that might require feedback
     $hasFunctions = !empty( $query->functions );
-    
-    
+
+
     $isStreaming = !is_null( $streamCallback );
 
     // Initialize debug mode
     $this->init_debug_mode( $query );
+
+    // IMPORTANT: Prepare query BEFORE setting up streaming hooks
+    // The streaming hook intercepts ALL wp_remote_* calls, so preparation must happen first
+    $this->prepare_query( $query );
 
     if ( $isStreaming ) {
       $this->streamCallback = $streamCallback;
@@ -1749,7 +1883,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           }
         }
       }
-      
+
       $res = $this->run_query( $url, $options, $streamCallback );
       $reply = new Meow_MWAI_Reply( $query );
 
@@ -2053,9 +2187,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
 
         // Extract usage information
+        // Responses API uses input_tokens/output_tokens
         $usage = $data['usage'] ?? [];
-        $returned_in_tokens = $usage['input_tokens'] ?? null;
-        $returned_out_tokens = $usage['output_tokens'] ?? null;
+        $returned_in_tokens = $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? null;
+        $returned_out_tokens = $usage['output_tokens'] ?? $usage['completion_tokens'] ?? null;
         $returned_price = $usage['cost'] ?? null;
       }
 
@@ -2644,8 +2779,75 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     if ( strpos( $endpoint, '/v1' ) === false ) {
       $endpoint .= '/v1';
     }
-    
+
     return $endpoint . '/models';
+  }
+
+  /**
+   * Prepare query by uploading files to OpenAI Files API.
+   *
+   * This method overrides the base prepare_query() to handle OpenAI-specific file uploads.
+   * Files are uploaded to OpenAI's Files API before the query is executed, ensuring they
+   * have provider_file_id references that can be used in messages.
+   *
+   * @param Meow_MWAI_Query_Text $query The query with potential file attachments
+   */
+  protected function prepare_query( $query ) {
+    // Get all attachments using the unified method
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+
+    if ( empty( $attachments ) ) {
+      return;
+    }
+
+    // Process each attachment - upload non-images to OpenAI Files API
+    foreach ( $attachments as $index => $file ) {
+      $mimeType = $file->get_mimeType() ?? '';
+      $isImage = strpos( $mimeType, 'image/' ) === 0;
+
+      // Skip images - they're sent as base64/URL, not uploaded to Files API
+      if ( $isImage ) {
+        continue;
+      }
+
+      if ( $file->get_type() !== 'provider_file_id' ) {
+        // File hasn't been uploaded to OpenAI yet - upload it now
+        try {
+          // Get data directly from file system (not via URL download)
+          $refId = $file->get_refId();
+          $data = $this->core->files->get_data( $refId );
+          $filename = $file->get_filename();
+
+          // WORKAROUND: Create a fresh engine instance for upload (matches chatbot.php approach)
+          $uploadEngine = Meow_MWAI_Engines_Factory::get_openai( $this->core, $query->envId );
+          $uploadedFile = $uploadEngine->upload_file( $filename, $data, 'user_data' );
+
+          $fileId = $uploadedFile['id'] ?? null;
+
+          if ( $fileId ) {
+            // Replace with provider_file_id reference in both arrays
+            if ( !empty( $query->attachedFiles ) && isset( $query->attachedFiles[$index] ) ) {
+              $query->attachedFiles[$index] = Meow_MWAI_Query_DroppedFile::from_provider_file_id(
+                $fileId,
+                $file->get_purpose(),
+                $file->get_mimeType()
+              );
+            }
+            // Also update legacy attachedFile if this is the first file
+            if ( $index === 0 && !empty( $query->attachedFile ) ) {
+              $query->attachedFile = Meow_MWAI_Query_DroppedFile::from_provider_file_id(
+                $fileId,
+                $file->get_purpose(),
+                $file->get_mimeType()
+              );
+            }
+          }
+        } catch ( Exception $e ) {
+          error_log( '[AI Engine] Failed to upload file to OpenAI Files API: ' . $e->getMessage() );
+          // Keep the original file - MessageBuilder will skip it
+        }
+      }
+    }
   }
 
 }

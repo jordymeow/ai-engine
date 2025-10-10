@@ -28,6 +28,27 @@ class Meow_MWAI_Query_Transcribe extends Meow_MWAI_Query_Base {
     $this->mimeType = $mimeType;
   }
 
+  /**
+   * Add a file to the attachedFile property.
+   * This maintains compatibility with the unified file upload architecture.
+   */
+  public function add_file( Meow_MWAI_Query_DroppedFile $file ): void {
+    $this->attachedFile = $file;
+  }
+
+  /**
+   * Get all attached files as a normalized array.
+   * Transcribe queries only support single file attachment.
+   *
+   * @return Meow_MWAI_Query_DroppedFile[] Array of attached files
+   */
+  public function getAttachments(): array {
+    if ( $this->attachedFile ) {
+      return [ $this->attachedFile ];
+    }
+    return [];
+  }
+
   // Based on the params of the query, update the attributes
   public function inject_params( array $params ): void {
     parent::inject_params( $params );
@@ -44,12 +65,6 @@ class Meow_MWAI_Query_Transcribe extends Meow_MWAI_Query_Base {
       $mimeType = $params['mimeType'] ?? $params['mime_type'] ?? null;
       $this->set_audio_data( $audioData, $mimeType );
     }
-  }
-
-  #region File Handling
-
-  public function set_file( Meow_MWAI_Query_DroppedFile $file ): void {
-    $this->attachedFile = $file;
   }
 
   #endregion

@@ -31,9 +31,37 @@ class Meow_MWAI_Query_DroppedFile {
     return $droppedFile;
   }
 
+  public static function from_refId( $refId, $purpose, $mimeType = null ) {
+    return new Meow_MWAI_Query_DroppedFile( $refId, 'refId', $purpose, $mimeType );
+  }
+
+  /**
+   * Create DroppedFile from provider file_id reference (OpenAI, Anthropic, etc.)
+   *
+   * For PDFs uploaded to provider Files APIs, we only store the file_id
+   * Examples: OpenAI 'file-xxx', Anthropic 'file_xxx'
+   * These are reference-only - the file data lives on the provider's servers
+   * Do NOT try to load file data from these - use get_refId() to get the file_id
+   */
+  public static function from_provider_file_id( $fileId, $purpose, $mimeType = null ) {
+    return new Meow_MWAI_Query_DroppedFile( $fileId, 'provider_file_id', $purpose, $mimeType );
+  }
+
+  /**
+   * @deprecated Use from_provider_file_id() instead
+   * Kept for backward compatibility
+   */
+  public static function from_openai_file_id( $fileId, $purpose, $mimeType = null ) {
+    return self::from_provider_file_id( $fileId, $purpose, $mimeType );
+  }
+
   public function __construct( $data, $type, $purpose, $mimeType = null, $fileId = null ) {
-    if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' ) {
-      throw new Exception( 'AI Engine: The file type can only be refId, url or data.' );
+    // Support both old 'openai_file_id' and new 'provider_file_id' for backward compatibility
+    if ( $type === 'openai_file_id' ) {
+      $type = 'provider_file_id';
+    }
+    if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' && $type !== 'provider_file_id' ) {
+      throw new Exception( 'AI Engine: The file type can only be refId, url, data, or provider_file_id.' );
     }
     if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' && $purpose !== 'files' ) {
       throw new Exception( 'AI Engine: The file purpose can only be assistant, vision or files.' );
@@ -56,13 +84,35 @@ class Meow_MWAI_Query_DroppedFile {
     if ( !empty( $this->rawData ) ) {
       return $this->rawData;
     }
-    if ( $this->type === 'url' ) {
+    if ( $this->type === 'provider_file_id' ) {
+      // Provider file IDs are reference-only (file data lives on provider's servers)
+      // Common mistake: trying to load file data for PDFs in conversation history
+      // Fix: Check file mime type before calling get_data()/get_base64()/get_inline_base64_url()
+      // For PDFs: use get_refId() to get the file_id string instead
+      throw new Exception( 'AI Engine: Cannot get raw data for provider file ID (file_id: ' . $this->data . '). Use get_refId() instead.' );
+    }
+    if ( $this->type === 'refId' ) {
+      // For refId, fetch the URL from database and load the file
+      global $mwai_core;
+      $url = $mwai_core->files->get_url( $this->data );
+      if ( empty( $url ) ) {
+        throw new Exception( 'AI Engine: Could not find file URL for refId: ' . $this->data );
+      }
+      // Validate URL scheme to prevent SSRF attacks
+      $parts = wp_parse_url( $url );
+      if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+        throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
+      }
+      $this->rawData = file_get_contents( $url );
+      return $this->rawData;
+    }
+    else if ( $this->type === 'url' ) {
       // Validate URL scheme to prevent SSRF attacks
       $parts = wp_parse_url( $this->data );
       if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
         throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
       }
-      
+
       $this->rawData = file_get_contents( $this->data );
       return $this->rawData;
     }
@@ -73,7 +123,11 @@ class Meow_MWAI_Query_DroppedFile {
   }
 
   public function get_data() {
-    if ( $this->type === 'url' ) {
+    if ( $this->type === 'provider_file_id' ) {
+      // Provider file IDs are just references, no data loading needed
+      throw new Exception( 'AI Engine: Cannot get data for provider file ID. Use get_refId() instead.' );
+    }
+    if ( $this->type === 'refId' || $this->type === 'url' ) {
       return $this->get_raw_data();
     }
     else if ( $this->type === 'data' ) {
@@ -113,12 +167,24 @@ class Meow_MWAI_Query_DroppedFile {
     return $this->fileId;
   }
 
+  public function get_refId() {
+    if ( $this->type === 'refId' || $this->type === 'provider_file_id' ) {
+      return $this->data;
+    }
+    return null;
+  }
+
   // Return a filename for this file. If the file is an URL, use the basename of
   // its path. If the file is raw data, generate a generic name based on the mime type.
   public function get_filename() {
     // If we have an original path (from from_path), use its basename
     if ( !empty( $this->originalPath ) ) {
       return basename( $this->originalPath );
+    }
+    if ( $this->type === 'refId' ) {
+      global $mwai_core;
+      $path = $mwai_core->files->get_path( $this->data );
+      return basename( $path );
     }
     if ( $this->type === 'url' ) {
       $path = parse_url( $this->data, PHP_URL_PATH );

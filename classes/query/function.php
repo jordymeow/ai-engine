@@ -40,12 +40,11 @@ class Meow_MWAI_Query_Function {
     // Initialize the base structure with name and description
     $json = [ 'name' => $this->name, 'description' => $this->description ];
 
-    // Check if parameters are set and not empty
-    if ( !empty( $this->parameters ) ) {
-      $properties = [];
-      $required = [];
+    $properties = [];
+    $required = [];
 
-      // Loop through each parameter to construct the properties object
+    // Loop through each parameter to construct the properties object
+    if ( !empty( $this->parameters ) ) {
       foreach ( $this->parameters as $parameter ) {
 
         $properties[$parameter->name] = [
@@ -70,14 +69,15 @@ class Meow_MWAI_Query_Function {
           $required[] = $parameter->name;
         }
       }
-
-      // Assemble the parameters part of the JSON
-      $json['parameters'] = [
-        'type' => 'object',
-        'properties' => $properties,
-        'required' => $required,
-      ];
     }
+
+    // Always include parameters field (required by some APIs like OVH even when empty)
+    // Properties must be an object (stdClass) when empty, not an empty array
+    $json['parameters'] = [
+      'type' => 'object',
+      'properties' => empty( $properties ) ? new stdClass() : $properties,
+      'required' => $required,
+    ];
 
     return $json;
   }
@@ -111,6 +111,48 @@ class Meow_MWAI_Query_Function {
       if ( !empty( $required ) ) {
         $json['input_schema']['required'] = $required;
       }
+    }
+
+    return $json;
+  }
+
+  public function serializeForGemini() {
+    $json = [
+      'name' => $this->name,
+      'description' => $this->description,
+      'parameters' => [
+        'type' => 'object',
+        'properties' => new stdClass(),
+        'required' => []
+      ]
+    ];
+
+    if ( !empty( $this->parameters ) ) {
+      $properties = [];
+      $required = [];
+      foreach ( $this->parameters as $parameter ) {
+        $properties[$parameter->name] = [
+          'type' => $parameter->type,
+          'description' => $parameter->description,
+        ];
+
+        // If the parameter type is "array" and has a "items" attribute, include it
+        if ( $parameter->type === 'array' ) {
+          $properties[$parameter->name]['items'] = [
+            'type' => 'string',
+          ];
+        }
+
+        if ( isset( $parameter->enum ) ) {
+          $properties[$parameter->name]['enum'] = $parameter->enum;
+        }
+        if ( $parameter->required ) {
+          $required[] = $parameter->name;
+        }
+      }
+      // Gemini requires properties to be an object (stdClass), not an array
+      $json['parameters']['properties'] = empty( $properties ) ? new stdClass() : (object) $properties;
+      $json['parameters']['required'] = $required;
     }
 
     return $json;

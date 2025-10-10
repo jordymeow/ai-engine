@@ -41,9 +41,6 @@ spl_autoload_register( function ( $class ) {
     else if ( $filename === 'OpenRouter' ) {
       $filename = 'open-router';
     }
-    else if ( $filename === 'HuggingFace' ) {
-      $filename = 'hugging-face';
-    }
     else if ( $filename === 'ChatML' ) {
       $filename = 'chatml';
     }

@@ -61,8 +61,20 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
 
   #region File Handling
 
-  public function set_file( Meow_MWAI_Query_DroppedFile $file ): void {
-    $this->attachedFile = $file;
+  /**
+   * Get all attached files as a normalized array.
+   * This method provides backward compatibility by merging both attachedFile (legacy)
+   * and attachedFiles (current) into a single array.
+   *
+   * @return Meow_MWAI_Query_DroppedFile[] Array of attached files
+   */
+  public function getAttachments(): array {
+    // Assistant queries currently only support single file (attachedFile)
+    // Return it as an array for consistency
+    if ( $this->attachedFile ) {
+      return [ $this->attachedFile ];
+    }
+    return [];
   }
 
   #endregion

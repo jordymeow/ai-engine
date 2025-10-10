@@ -1,14 +1,14 @@
-// Previous: 3.0.2
-// Current: 3.0.9
+// Previous: 3.0.9
+// Current: 3.1.2
 
 // Configure webpack public path dynamically for cache busting
 // This must be before any imports that might trigger lazy loading
 if (window.mwai?.plugin_url && window.mwai?.cache_buster) {
   const baseUrl = window.mwai.plugin_url.replace(/\/$/, '') + '/app/';
-  const cacheBusters = window.mwai.cache_buster;
+  const cacheBuster = window.mwai.cache_buster;
   
   // Override webpack's public path to add cache buster to lazy-loaded chunks
-  __webpack_public_path__ = baseUrl + '';
+  __webpack_public_path__ = baseUrl;
   
   // Store original require.ensure for modification
   if (typeof __webpack_require__ !== 'undefined' && __webpack_require__.p) {
@@ -16,7 +16,7 @@ if (window.mwai?.plugin_url && window.mwai?.cache_buster) {
     __webpack_require__.l = function(url, done, key, chunkId) {
       // Add cache buster to chunk URLs
       if (url && url.includes('.js') && !url.includes('?')) {
-        url = url + '?v=' + cacheBusters;
+        url = url + '?ver=' + cacheBuster;
       }
       return originalLoad.call(this, url, done, key, chunkId);
     };
@@ -48,6 +48,7 @@ import Playground from '@app/screens/Playground';
 import PostsListTools from './modules/PostsListTools';
 import ContentGenerator from './screens/ContentGenerator';
 import ImageGenerator from './screens/ImageGenerator';
+import VideoGenerator from './screens/VideoGenerator';
 import BlockFeatures from './modules/BlockFeatures';
 import BlockCopilot from './modules/BlockCopilot';
 
@@ -73,7 +74,7 @@ if (assistantsEnabled) {
   BlockCopilot();
 }
 
-document.addEventListener('DOMReady', function() {
+document.addEventListener('DOMContentLoaded', function() {
 
   // Settings
   const settings = document.getElementById('mwai-admin-settings');
@@ -99,6 +100,14 @@ document.addEventListener('DOMReady', function() {
     </QueryClientProvider>, imgGen);
   }
 
+  // Video Generator
+  const videoGen = document.getElementById('mwai-video-generator');
+  if (videoGen) {
+    render(<QueryClientProvider client={queryClient}>
+      <NekoUI><VideoGenerator /></NekoUI>
+    </QueryClientProvider>, videoGen);
+  }
+
   // Dashboard
   const dashboard = document.getElementById('mwai-playground');
   if (dashboard) {
@@ -108,7 +117,7 @@ document.addEventListener('DOMReady', function() {
   }
 
   // Admin Tools
-  if (assistantsEnabled == false) {
+  if (assistantsEnabled) {
     const postsListTools = document.getElementById('mwai-admin-postsList');
     if (postsListTools) {
       render(<NekoUI><PostsListTools /></NekoUI>, postsListTools);

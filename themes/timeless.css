@@ -1301,11 +1301,10 @@
 .mwai-timeless-theme .mwai-files {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   padding: var(--mwai-spacing);
   background: var(--mwai-backgroundSecondaryColor);
   border-top: 1px solid var(--mwai-backgroundPrimaryColor);
-  max-height: 150px;
-  overflow-y: auto;
 }
 .mwai-timeless-theme .mwai-files::-webkit-scrollbar {
   width: 6px;
@@ -3005,5 +3004,3 @@
   background-color: rgba(211, 47, 47, 0.08);
   color: #b71c1c;
 }
-
-/*# sourceMappingURL=timeless.css.map */

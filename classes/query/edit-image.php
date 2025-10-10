@@ -1,13 +1,8 @@
 <?php
 
 class Meow_MWAI_Query_EditImage extends Meow_MWAI_Query_Image {
-  public ?Meow_MWAI_Query_DroppedFile $attachedFile = null;
   public ?Meow_MWAI_Query_DroppedFile $mask = null;
   public ?int $mediaId = null;
-
-  public function set_file( Meow_MWAI_Query_DroppedFile $file ): void {
-    $this->attachedFile = $file;
-  }
 
   public function set_mask( Meow_MWAI_Query_DroppedFile $mask ): void {
     $this->mask = $mask;
@@ -35,7 +30,7 @@ class Meow_MWAI_Query_EditImage extends Meow_MWAI_Query_Image {
       $this->set_media_id( intval( $mediaId ) );
       $path = get_attached_file( $this->mediaId );
       if ( $path ) {
-        $this->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+        $this->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
       }
       else {
         error_log( 'EditImage: Could not find file for mediaId: ' . $this->mediaId );

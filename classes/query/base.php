@@ -17,7 +17,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public int $maxMessages = 15;
   public int $maxResults = 1;
   public ?string $model = null;
-  //public string $mode = ''; //TODO: Let's get rid of this thing from the past
   public string $feature = 'completion';
 
   // Functions
@@ -50,10 +49,14 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
 
   // Extra Parameters (used by specific services, or for statistics, etc)
   public array $extraParams = [];
-  
-  // Legacy/temporary properties to avoid PHP deprecation warnings
-  public $env = null; // Used temporarily in model-environment.php
-  public $_maxDepthConfigured = null; // Used in engines/core.php
+
+  /**
+   * Internal state tracking for function call recursion.
+   * Stores the configured max depth to prevent re-applying the filter on recursive calls.
+   * Set once by engines/core.php during the first run() call.
+   * @internal
+   */
+  public $_maxDepthConfigured = null;
 
   // Options
   // Engine will either upload or share an URL to the image, for Vision, for example.
@@ -332,6 +335,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   protected function convert_keys( $params ) {
     $newParams = [];
     foreach ( $params as $key => $value ) {
+      // Skip non-string keys (numeric indices, booleans, etc.)
+      if ( !is_string( $key ) ) {
+        continue;
+      }
       $newKey = '';
       $capitalizeNextChar = false;
       for ( $i = 0; $i < strlen( $key ); $i++ ) {

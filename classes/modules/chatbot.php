@@ -1,7 +1,7 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'maxUploads', 'fileUploads', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'talkMode', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite', 'promptId', 'promptVariables', 'reasoningEffort', 'verbosity' ] );
 
@@ -511,7 +511,7 @@ class Meow_MWAI_Modules_Chatbot {
           $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
 
           if ( $isIMG ) {
-            $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
+            $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
             $fileId = $this->core->files->get_id_from_refId( $fileForImage );
             $this->core->files->update_purpose( $fileId, 'vision' );
           }
@@ -661,74 +661,96 @@ class Meow_MWAI_Modules_Chatbot {
 
         // Support for Uploaded Image/Files
         if ( !empty( $filesToProcess ) ) {
-          // For now, we only process the first file to maintain backward compatibility
-          // TODO: In the future, we could support multiple files in the query
-          $fileToProcess = $filesToProcess[0];
+          // Process all files for multi-upload support
+          foreach ( $filesToProcess as $fileToProcess ) {
+            // Get extension and mime type
+            $isImage = $this->core->files->is_image( $fileToProcess );
 
-          // Get extension and mime type
-          $isImage = $this->core->files->is_image( $fileToProcess );
+            if ( $mode === 'assistant' && !$isImage ) {
+              // DEPRECATED: Assistants API and File Search are deprecated
+              // After August 26, 2026, this entire block should be removed
+              error_log( '[AI Engine] WARNING: Assistant File Search is deprecated and will be removed after August 26, 2026. Consider using regular chat with PDF uploads instead.' );
 
-          if ( $mode === 'assistant' && !$isImage ) {
-            $url = $this->core->files->get_path( $fileToProcess );
-            $data = $this->core->files->get_data( $fileToProcess );
-            $openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $query->envId );
-            $filename = basename( $url );
+              $url = $this->core->files->get_path( $fileToProcess );
+              $data = $this->core->files->get_data( $fileToProcess );
+              $openai = Meow_MWAI_Engines_Factory::get_openai( $this->core, $query->envId );
+              $filename = basename( $url );
 
-            // Upload the file
-            $file = $openai->upload_file( $filename, $data, 'assistants' );
+              // Upload the file
+              $file = $openai->upload_file( $filename, $data, 'assistants' );
 
-            // Create a store
-            if ( empty( $storeId ) ) {
-              $chatbotName = 'mwai_' . strtolower( !empty( $chatbot['name'] ) ? $chatbot['name'] : 'default' );
-              if ( !empty( $query->chatId ) ) {
-                $chatbotName .= '_' . $query->chatId;
+              // Create a store
+              if ( empty( $storeId ) ) {
+                $chatbotName = 'mwai_' . strtolower( !empty( $chatbot['name'] ) ? $chatbot['name'] : 'default' );
+                if ( !empty( $query->chatId ) ) {
+                  $chatbotName .= '_' . $query->chatId;
+                }
+                $metadata = [];
+                if ( !empty( $chatbot['assistantId'] ) ) {
+                  $metadata['assistantId'] = $chatbot['assistantId'];
+                }
+                if ( !empty( $query->chatId ) ) {
+                  $metadata['chatId'] = $query->chatId;
+                }
+                $expiry = $this->core->get_option( 'image_expires' );
+                $storeId = $openai->create_vector_store( $chatbotName, $expiry, $metadata );
+                $query->setStoreId( $storeId );
               }
-              $metadata = [];
-              if ( !empty( $chatbot['assistantId'] ) ) {
-                $metadata['assistantId'] = $chatbot['assistantId'];
+
+              // Add the file to the store - wait a moment for store to be ready
+              sleep( 1 );
+              $storeFileId = $openai->add_vector_store_file( $storeId, $file['id'] );
+
+              if ( empty( $storeFileId ) ) {
+                throw new Exception( 'Failed to add file to vector store.' );
               }
-              if ( !empty( $query->chatId ) ) {
-                $metadata['chatId'] = $query->chatId;
+
+              // Update the local file with the OpenAI RefId, StoreId and StoreFileId
+              $openAiRefId = $file['id'];
+              $internalFileId = $this->core->files->get_id_from_refId( $fileToProcess );
+              $this->core->files->update_refId( $internalFileId, $openAiRefId );
+              $this->core->files->update_envId( $internalFileId, $query->envId );
+              $this->core->files->update_purpose( $internalFileId, 'assistant-in' );
+              $this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
+              $this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
+              $fileToProcess = $openAiRefId;
+              $scope = $params['fileSearch'];
+              if ( $scope === 'discussion' || $scope === 'user' || $scope === 'assistant' ) {
+                $id = $this->core->files->get_id_from_refId( $fileToProcess );
+                $this->core->files->add_metadata( $id, 'assistant_scope', $scope );
               }
-              $expiry = $this->core->get_option( 'image_expires' );
-              $storeId = $openai->create_vector_store( $chatbotName, $expiry, $metadata );
-              $query->setStoreId( $storeId );
             }
+            else {
+              // Keep track of the internal file ID (before any OpenAI processing)
+              // Important: $fileToProcess is our internal database refId, not OpenAI's file_id
+              $internalRefId = $fileToProcess;
+              $url = $this->core->files->get_url( $internalRefId );
+              $mimeType = $this->core->files->get_mime_type( $internalRefId );
+              $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
+              $purposeType = $isIMG ? 'vision' : 'files';
 
-            // Add the file to the store - wait a moment for store to be ready
-            sleep( 1 );
-            $storeFileId = $openai->add_vector_store_file( $storeId, $file['id'] );
+              // Create DroppedFile object - provider-agnostic approach
+              // Images use URL (can be sent as base64 or URL in messages)
+              // PDFs use refId (engines will upload to their Files API as needed)
+              if ( $isIMG ) {
+                $droppedFile = Meow_MWAI_Query_DroppedFile::from_url( $url, $purposeType, $mimeType );
+              } else {
+                // For PDFs and documents, use refId so engines can access file data directly
+                $droppedFile = Meow_MWAI_Query_DroppedFile::from_refId( $internalRefId, $purposeType, $mimeType );
+              }
 
-            if ( empty( $storeFileId ) ) {
-              throw new Exception( 'Failed to add file to vector store.' );
+              // IMPORTANT: Always use add_file() to add to attachedFiles array
+              // This is the unified approach for both single and multi-file uploads
+              // Engines will check attachedFiles array first, then fall back to attachedFile (legacy)
+              $query->add_file( $droppedFile );
+
+              // Update metadata using the internal refId (not OpenAI file ID)
+              $fileId = $this->core->files->get_id_from_refId( $internalRefId );
+              $this->core->files->update_envId( $fileId, $query->envId );
+              $this->core->files->update_purpose( $fileId, $purposeType );
+              $this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
+              $this->core->files->add_metadata( $fileId, 'query_session', $query->session );
             }
-
-            // Update the local file with the OpenAI RefId, StoreId and StoreFileId
-            $openAiRefId = $file['id'];
-            $internalFileId = $this->core->files->get_id_from_refId( $fileToProcess );
-            $this->core->files->update_refId( $internalFileId, $openAiRefId );
-            $this->core->files->update_envId( $internalFileId, $query->envId );
-            $this->core->files->update_purpose( $internalFileId, 'assistant-in' );
-            $this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
-            $this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
-            $fileToProcess = $openAiRefId;
-            $scope = $params['fileSearch'];
-            if ( $scope === 'discussion' || $scope === 'user' || $scope === 'assistant' ) {
-              $id = $this->core->files->get_id_from_refId( $fileToProcess );
-              $this->core->files->add_metadata( $id, 'assistant_scope', $scope );
-            }
-          }
-          else {
-            $url = $this->core->files->get_url( $fileToProcess );
-            $mimeType = $this->core->files->get_mime_type( $fileToProcess );
-            $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
-            $purposeType = $isIMG ? 'vision' : 'files';
-            $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, $purposeType, $mimeType ) );
-            $fileId = $this->core->files->get_id_from_refId( $fileToProcess );
-            $this->core->files->update_envId( $fileId, $query->envId );
-            $this->core->files->update_purpose( $fileId, $purposeType );
-            $this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
-            $this->core->files->add_metadata( $fileId, 'query_session', $query->session );
           }
         }
 
@@ -1063,6 +1085,19 @@ class Meow_MWAI_Modules_Chatbot {
         $frontParams[$param] = $this->core->do_placeholders( $frontParams[$param] );
       }
     }
+
+    // Ensure upload params are synced
+    // fileUpload (checkbox) determines if uploads are enabled
+    // maxUploads (number) determines how many files can be uploaded
+    $fileUploadEnabled = !empty( $frontParams['fileUpload'] ) || !empty( $frontParams['imageUpload'] );
+    $maxFiles = isset( $frontParams['maxUploads'] ) ? max( 1, (int) $frontParams['maxUploads'] ) : 1;
+
+    // Sync all params for backward compatibility
+    $frontParams['fileUpload'] = $fileUploadEnabled;
+    $frontParams['imageUpload'] = $fileUploadEnabled;
+    $frontParams['fileUploads'] = $fileUploadEnabled ? $maxFiles : 0;
+    $frontParams['multiUpload'] = $fileUploadEnabled && $maxFiles > 1;
+    $frontParams['maxUploads'] = $maxFiles;
 
     // Server Params
     // NOTE: We don't need the server params for the chatbot if there are no overrides, it means

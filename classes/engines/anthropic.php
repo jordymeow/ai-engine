@@ -9,9 +9,82 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
   protected $mcpServerNames = [];
   protected $mcpTools = []; // Track MCP tools by ID
   protected $mcpToolCount = 0;
+  protected $textStarted = false; // Track if text streaming has started
+  protected $requestSentEmitted = false; // Track if request sent event was emitted
 
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
+  }
+
+  /**
+   * Prepare query by uploading files to Anthropic Files API.
+   *
+   * This method is called BEFORE streaming hooks are attached and BEFORE build_body().
+   * It uploads PDF files to Anthropic's Files API and converts them from 'refId' type
+   * to 'provider_file_id' type, which build_body() will then use to construct the API request.
+   *
+   * Flow:
+   * 1. prepare_query() uploads files to Anthropic Files API → gets file_id (e.g., file_abc123)
+   * 2. Replaces DroppedFile from type 'refId' to type 'provider_file_id'
+   * 3. build_body() reads provider_file_id and includes it in message content
+   *
+   * @param Meow_MWAI_Query_Base $query The query with potential file attachments
+   */
+  protected function prepare_query( $query ) {
+    // Get all attachments using the unified method
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+
+    if ( empty( $attachments ) ) {
+      return;
+    }
+
+    // Process each attachment - upload PDFs to Anthropic Files API
+    foreach ( $attachments as $index => $file ) {
+      $mimeType = $file->get_mimeType() ?? '';
+      $isPDF = strpos( $mimeType, 'application/pdf' ) === 0;
+
+      // Skip files already uploaded (type = provider_file_id)
+      if ( $file->get_type() === 'provider_file_id' ) {
+        continue;
+      }
+
+      // Only PDFs need to be uploaded to Anthropic Files API
+      // Images are handled differently (base64 in build_messages)
+      if ( $isPDF ) {
+        try {
+          // Get file data from WordPress uploads directory
+          $refId = $file->get_refId();
+          $data = $this->core->files->get_data( $refId );
+          $filename = $file->get_filename();
+
+          // Upload to Anthropic Files API
+          $uploadedFile = $this->upload_file( $filename, $data, $mimeType );
+          $fileId = $uploadedFile['id'] ?? null;
+
+          if ( $fileId ) {
+            // Replace the file object in attachedFiles array with provider_file_id type
+            if ( !empty( $query->attachedFiles ) && isset( $query->attachedFiles[$index] ) ) {
+              $query->attachedFiles[$index] = Meow_MWAI_Query_DroppedFile::from_provider_file_id(
+                $fileId,
+                $file->get_purpose(),
+                $file->get_mimeType()
+              );
+            }
+            // Also update legacy attachedFile if this is the first file
+            if ( $index === 0 && !empty( $query->attachedFile ) ) {
+              $query->attachedFile = Meow_MWAI_Query_DroppedFile::from_provider_file_id(
+                $fileId,
+                $file->get_purpose(),
+                $file->get_mimeType()
+              );
+            }
+          }
+        } catch ( Exception $e ) {
+          error_log( '[AI Engine] Failed to upload PDF to Anthropic Files API: ' . $e->getMessage() );
+          // Keep the original file - build_messages() will fall back to base64
+        }
+      }
+    }
   }
 
   protected function isMCPTool( $toolName ) {
@@ -83,7 +156,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       'Content-Type' => 'application/json',
       'x-api-key' => $this->apiKey,
       'anthropic-version' => '2023-06-01',
-      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04',
+      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04, files-api-2025-04-14',
       'User-Agent' => 'AI Engine',
     ];
     return $headers;
@@ -94,80 +167,142 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     // maxMessages is handed in build_messages().
   }
 
+  /**
+   * Build messages array for Anthropic API request.
+   *
+   * This method constructs the 'messages' array that will be sent to Anthropic's API.
+   * It processes both conversation history and file attachments.
+   *
+   * CRITICAL: This method handles BOTH single file (attachedFile) and multi-file (attachedFiles).
+   * The attachedFiles array is the PRIMARY path for multi-file uploads.
+   *
+   * @param Meow_MWAI_Query_Text $query The query to build messages from
+   * @return array Messages formatted for Anthropic API
+   */
   protected function build_messages( $query ) {
     $messages = [];
 
-    // Then, if any, we need to add the 'messages', they are already formatted.
+    // Add conversation history (previous messages)
     foreach ( $query->messages as $message ) {
       $messages[] = $message;
     }
 
-    // Handle the maxMessages
+    // Limit message history if maxMessages is set
     if ( !empty( $query->maxMessages ) ) {
       $messages = array_slice( $messages, -$query->maxMessages );
     }
 
-    // If the first message is not a 'user' role, we remove it.
+    // Anthropic requires first message to have 'user' role
     if ( !empty( $messages ) && $messages[0]['role'] !== 'user' ) {
       array_shift( $messages );
     }
 
-    if ( $query->attachedFile ) {
-      // https://docs.anthropic.com/claude/reference/messages-examples#vision
-      // Claude only supports image/jpeg, image/png, image/gif, and image/webp media types.
-      $mime = $query->attachedFile->get_mimeType();
-      // Claude only supports upload by data (base64), not by URL.
-      $data = $query->attachedFile->get_base64();
+    // =====================================================================
+    // FILE UPLOAD: Process all attachments (unified approach)
+    // =====================================================================
+    // Uses getAttachments() which returns both attachedFiles and legacy attachedFile
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+    if ( !empty( $attachments ) ) {
       $message = $query->get_message();
-      $isPDF = $mime === 'application/pdf';
-      $isIMG = !$isPDF && $query->attachedFile->is_image();
+      if ( empty( $message ) ) {
+        $message = 'I uploaded files. Do not consider this message as part of the conversation.';
+      }
 
-      if ( $isPDF ) {
-        if ( empty( $message ) ) {
-          // Claude doesn't support messages with only PDFs, so we add a text message.
-          $message = 'I uploaded a PDF. Do not consider this message as part of the conversation.';
-        }
-        $messages[] = [
-          'role' => 'user',
-          'content' => [
-            [
-              'type' => 'text',
-              'text' => $message
-            ],
-            [
-              'type' => 'document',
-              'source' => [
+      // Build content array: [text, document, document, ...] or [text, image, image, ...]
+      $content = [
+        [
+          'type' => 'text',
+          'text' => $message
+        ]
+      ];
+
+      // Process each file and add to content array
+      foreach ( $attachments as $file ) {
+        $mime = $file->get_mimeType();
+        $isPDF = $mime === 'application/pdf';
+        $isIMG = !$isPDF && $file->is_image();
+        $isProviderFile = $file->get_type() === 'provider_file_id';
+
+        // ===== PDF FILES =====
+        if ( $isPDF ) {
+          $documentSource = null;
+          if ( $isProviderFile ) {
+            // File was uploaded in prepare_query() - use file_id reference
+            // This is the EXPECTED path after prepare_query() runs
+            $fileId = $file->get_refId();
+            $documentSource = [
+              'type' => 'file',
+              'file_id' => $fileId  // e.g., file_011CTkNhtS6cU3CKcvTPCfvw
+            ];
+          } else {
+            // Fallback: File not uploaded yet (shouldn't happen if prepare_query ran)
+            // This handles edge cases where prepare_query was skipped
+            try {
+              $refId = $file->get_refId();
+              $data = $this->core->files->get_data( $refId );
+              $filename = $file->get_filename();
+              $uploadedFile = $this->upload_file( $filename, $data, $mime );
+              $fileId = $uploadedFile['id'] ?? null;
+
+              if ( $fileId ) {
+                $documentSource = [
+                  'type' => 'file',
+                  'file_id' => $fileId
+                ];
+              } else {
+                throw new Exception( 'Upload failed - no file_id returned' );
+              }
+            } catch ( Exception $e ) {
+              error_log( '[AI Engine] Failed to upload PDF to Anthropic Files API: ' . $e->getMessage() . ', falling back to base64' );
+              // Last resort: base64 encoding (less efficient)
+              $data = $file->get_base64();
+              $documentSource = [
                 'type' => 'base64',
                 'media_type' => 'application/pdf',
                 'data' => $data
-              ]
-            ]
-          ]
-        ];
-      }
-      else if ( $isIMG ) {
-        if ( empty( $message ) ) {
-          // Claude doesn't support messages with only images, so we add a text message.
-          $message = 'I uploaded an image. Do not consider this message as part of the conversation.';
+              ];
+            }
+          }
+
+          // Add document to content array
+          $content[] = [
+            'type' => 'document',
+            'source' => $documentSource
+          ];
         }
-        $messages[] = [
-          'role' => 'user',
-          'content' => [
-            [
-              'type' => 'text',
-              'text' => $message
-            ],
-            [
-              'type' => 'image',
-              'source' => [
-                'type' => 'base64',
-                'media_type' => $mime,
-                'data' => $data
-              ]
-            ]
-          ]
-        ];
+        // ===== IMAGE FILES =====
+        else if ( $isIMG ) {
+          $imageSource = null;
+          if ( $isProviderFile ) {
+            // Use file_id reference (if uploaded to Files API)
+            $fileId = $file->get_refId();
+            $imageSource = [
+              'type' => 'file',
+              'file_id' => $fileId
+            ];
+          } else {
+            // Use base64 encoding (standard for images)
+            $data = $file->get_base64();
+            $imageSource = [
+              'type' => 'base64',
+              'media_type' => $mime,
+              'data' => $data
+            ];
+          }
+
+          // Add image to content array
+          $content[] = [
+            'type' => 'image',
+            'source' => $imageSource
+          ];
+        }
       }
+
+      // Add the complete message with all files to messages array
+      $messages[] = [
+        'role' => 'user',
+        'content' => $content  // [text, document, document] or [text, image, image]
+      ];
     }
     else {
       $messages[] = [ 'role' => 'user', 'content' => $query->get_message() ];
@@ -444,7 +579,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       // Send "Generating response..." when we start a text block
       if ( $this->currentDebugMode && $this->streamCallback ) {
         $block = $json['content_block'];
-        if ( $block['type'] === 'text' && !isset( $this->textStarted ) ) {
+        if ( $block['type'] === 'text' && !$this->textStarted ) {
           $this->textStarted = true;
           $event = Meow_MWAI_Event::generating_response();
           call_user_func( $this->streamCallback, $event );
@@ -661,11 +796,15 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
   public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
     // Reset request-specific state to prevent leakage between requests
     $this->reset_request_state();
-    
+
     $isStreaming = !is_null( $streamCallback );
 
     // Initialize debug mode
     $this->init_debug_mode( $query );
+
+    // IMPORTANT: Prepare query BEFORE setting up streaming hooks
+    // The streaming hook intercepts ALL wp_remote_* calls, so preparation must happen first
+    $this->prepare_query( $query );
 
     if ( $isStreaming ) {
       $this->streamCallback = $streamCallback;
@@ -916,5 +1055,74 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       }
       throw new Exception( 'Connection failed: ' . $message );
     }
+  }
+
+  /**
+   * Upload a file to Anthropic Files API
+   *
+   * @param string $filename The name of the file
+   * @param string $data The file content (binary)
+   * @param string $purpose For Anthropic, this is the MIME type (API difference from OpenAI)
+   * @return array The response from the API containing file_id
+   * @throws Exception If upload fails
+   */
+  public function upload_file( $filename, $data, $purpose = 'application/pdf' ) {
+    global $wp_filter;
+
+    // For Anthropic, $purpose is actually the MIME type (different from OpenAI's API)
+    $mimeType = $purpose;
+
+    // Build multipart form data
+    $boundary = wp_generate_password( 24, false );
+    $body = '';
+    $body .= "--$boundary\r\n";
+    $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$filename}\"\r\n";
+    $body .= "Content-Type: " . $mimeType . "\r\n\r\n";
+    $body .= $data . "\r\n";
+    $body .= "--$boundary\r\n";
+    $body .= "Content-Disposition: form-data; name=\"mime_type\"\r\n\r\n";
+    $body .= $mimeType . "\r\n";
+    $body .= "--$boundary--\r\n";
+
+    // Temporarily remove ALL http_api_curl hooks to prevent streaming hook interference
+    // Save current hooks
+    $saved_hooks = null;
+    if ( isset( $wp_filter['http_api_curl'] ) ) {
+      $saved_hooks = $wp_filter['http_api_curl'];
+      unset( $wp_filter['http_api_curl'] );
+    }
+
+    // Upload using WordPress HTTP API
+    $endpoint = apply_filters( 'mwai_anthropic_endpoint', 'https://api.anthropic.com/v1', $this->env );
+    $url = $endpoint . '/files';
+    $response = wp_remote_post( $url, [
+      'headers' => [
+        'x-api-key' => $this->apiKey,
+        'anthropic-version' => '2023-06-01',
+        'anthropic-beta' => 'files-api-2025-04-14',
+        'Content-Type' => 'multipart/form-data; boundary=' . $boundary
+      ],
+      'body' => $body,
+      'timeout' => 60
+    ] );
+
+    // Restore hooks
+    if ( $saved_hooks !== null ) {
+      $wp_filter['http_api_curl'] = $saved_hooks;
+    }
+
+    if ( is_wp_error( $response ) ) {
+      throw new Exception( 'File upload failed: ' . $response->get_error_message() );
+    }
+
+    $response_body = wp_remote_retrieve_body( $response );
+    $result = json_decode( $response_body, true );
+
+    // Check for API errors
+    if ( isset( $result['error'] ) ) {
+      throw new Exception( 'Anthropic Files API error: ' . ( $result['error']['message'] ?? 'Unknown error' ) );
+    }
+
+    return $result;
   }
 }

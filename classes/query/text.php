@@ -3,6 +3,7 @@
 class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializable {
   // Core Content
   public ?Meow_MWAI_Query_DroppedFile $attachedFile = null;
+  public ?array $attachedFiles = null; // Multiple files support
 
   // Parameters
   public ?float $temperature = null;
@@ -58,6 +59,11 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
       }
     }
 
+    if ( !empty( $this->attachedFiles ) ) {
+      $json['context']['hasFiles'] = true;
+      $json['context']['fileCount'] = count( $this->attachedFiles );
+    }
+
     return $json;
   }
 
@@ -65,8 +71,42 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   #region File Handling
 
-  public function set_file( Meow_MWAI_Query_DroppedFile $file ): void {
-    $this->attachedFile = $file;
+  /**
+   * Get all attached files as a normalized array.
+   * This method provides backward compatibility by merging both attachedFile (legacy)
+   * and attachedFiles (current) into a single array.
+   *
+   * @return Meow_MWAI_Query_DroppedFile[] Array of attached files
+   */
+  public function getAttachments(): array {
+    $files = $this->attachedFiles ?? [];
+
+    // Backward compatibility: include legacy attachedFile if it exists and isn't already in the array
+    if ( $this->attachedFile && !in_array( $this->attachedFile, $files, true ) ) {
+      // Prepend the single file so it appears first (maintains legacy behavior)
+      array_unshift( $files, $this->attachedFile );
+    }
+
+    return $files;
+  }
+
+  /**
+   * Add a file to the attachedFiles array.
+   * This is the unified method for both single and multi-file uploads.
+   */
+  public function add_file( Meow_MWAI_Query_DroppedFile $file ): void {
+    if ( $this->attachedFiles === null ) {
+      $this->attachedFiles = [];
+    }
+    $this->attachedFiles[] = $file;
+  }
+
+  public function set_files( array $files ): void {
+    $this->attachedFiles = $files;
+  }
+
+  public function get_files(): ?array {
+    return $this->attachedFiles;
   }
 
   #endregion

@@ -548,9 +548,9 @@ class Meow_MWAI_Modules_Discussions {
     }
     $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->get_message();
 
-    // If there is a file for "Vision", add it to the message
-    if ( isset( $query->attachedFile ) && $query->attachedFile !== null ) {
-      $attachedFile = $query->attachedFile;
+    // If there are files for "Vision", add them to the message
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+    foreach ( $attachments as $attachedFile ) {
       if ( $attachedFile->get_purpose() === 'vision' && $attachedFile->get_type() === 'url' ) {
         $newMessage = "![Uploaded Image]({$attachedFile->get_url()})\n" . $newMessage;
       }

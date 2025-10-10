@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.1
+Stable tag: 3.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,6 +154,21 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.1.2 (2025/10/10) =
+* Add: Realtime Hold-to-Talk feature now includes a Replay button.
+* Add: Support for Azure OpenAI Realtime.
+* Add: Resolutions and pricing for Google models.
+* Add: GPT-5 Pro, GPT Realtime Mini, Sora 2, Gemini Images.
+* Add: Multi-file support for chatbots and forms, both on the UI-side and the models-side.
+* Update: Embeddings Sync has been migrated to the Tasks System.
+* Update: Updated Anthropic and Gemini models.
+* Fix: Image and video pricing.
+* Fix: Hotfix applied to address missing category column in tasks DB.
+* Fix: Realtime API calling now parameterless functions correctly.
+* Fix: Fixed TypeError in embeddings list.
+* Fix: Improved safety with SSRF protection for image downloads.
+* Fix: Resolved various UI/UX issues to improve user experience.
 
 = 3.1.1 (2025/09/30) =
 - Add: Integrated Mistral AI into the plugin.  

@@ -12,8 +12,8 @@ class Meow_MWAI_Services_ModelEnvironment {
       throw new Exception( 'Invalid query object provided to validate_env_model.' );
     }
 
-    // The query object uses envId, not env
-    $env = $query->envId ?? $query->env ?? null;
+    // The query object uses envId (string ID) for the environment
+    $env = $query->envId ?? null;
     $model = $query->model;
     
     // For assistant queries with a valid envId already set, respect it
@@ -26,7 +26,19 @@ class Meow_MWAI_Services_ModelEnvironment {
     }
 
     if ( empty( $env ) && empty( $model ) ) {
-      $this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
+      // Use specialized defaults based on query type
+      if ( $query instanceof Meow_MWAI_Query_Image ) {
+        $this->set_default_env_and_model( $query, 'ai_images_default_env', 'ai_images_default_model' );
+      }
+      else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
+        $this->set_default_env_and_model( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
+      }
+      else if ( $query instanceof Meow_MWAI_Query_Embed ) {
+        $this->set_default_env_and_model( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
+      }
+      else {
+        $this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
+      }
     }
     else if ( empty( $env ) && !empty( $model ) ) {
       // If the model is available in the list of models, we can use it
@@ -62,7 +74,19 @@ class Meow_MWAI_Services_ModelEnvironment {
       throw new Exception( 'The environment is required.' );
     }
     else if ( !empty( $env ) && empty( $model ) ) {
-      $this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
+      // Use specialized defaults based on query type
+      if ( $query instanceof Meow_MWAI_Query_Image ) {
+        $this->set_default_env_and_model( $query, 'ai_images_default_env', 'ai_images_default_model' );
+      }
+      else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
+        $this->set_default_env_and_model( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
+      }
+      else if ( $query instanceof Meow_MWAI_Query_Embed ) {
+        $this->set_default_env_and_model( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
+      }
+      else {
+        $this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
+      }
     }
     else {
       // We have both, let's continue
@@ -126,7 +150,7 @@ class Meow_MWAI_Services_ModelEnvironment {
   }
 
   public function get_engine_models( $query ) {
-    $envId = $query->env;
+    $envId = $query->envId;
     $env = $this->get_ai_env( $envId );
     $models = apply_filters( 'mwai_engine_models', [], $env, $query );
     return $models;

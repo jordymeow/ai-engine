@@ -309,6 +309,14 @@ class Meow_MWAI_Modules_Files {
         throw new Exception( 'File ID (or URL) is required.' );
       }
     }
+
+    // Check if file with this refId already exists
+    $existingFileId = $this->get_id_from_refId( $fileInfo['refId'] );
+    if ( $existingFileId ) {
+      // File already exists, return its ID
+      return $existingFileId;
+    }
+
     if ( empty( $fileInfo['type'] ) ) {
       $fileInfo['type'] = Meow_MWAI_Core::is_image( $fileInfo['url'] ) ? 'image' : 'file';
     }
@@ -325,8 +333,19 @@ class Meow_MWAI_Modules_Files {
       'path' => empty( $fileInfo['path'] ) ? null : $fileInfo['path'],
       'url' => empty( $fileInfo['url'] ) ? null : $fileInfo['url']
     ] );
-    // check for error
+
+    // Check for error
     if ( !$success ) {
+      // Check if it's a duplicate key error (race condition)
+      if ( strpos( $this->wpdb->last_error, 'Duplicate entry' ) !== false &&
+           strpos( $this->wpdb->last_error, 'unique_file_id' ) !== false ) {
+        // Race condition: file was inserted by another request between our check and insert
+        // Try to get the existing file ID one more time
+        $existingFileId = $this->get_id_from_refId( $fileInfo['refId'] );
+        if ( $existingFileId ) {
+          return $existingFileId;
+        }
+      }
       throw new Exception( 'Error while adding file in the DB (' . $this->wpdb->last_error . ')' );
     }
     return $this->wpdb->insert_id;
@@ -334,7 +353,8 @@ class Meow_MWAI_Modules_Files {
 
   // Generate a refId from a URL or random, and make sure it's unique
   public function generate_refId( $attempts = 0 ) {
-    $refId = md5( date( 'Y-m-d H:i:s' ) . '-' . $attempts );
+    // Use microtime for higher precision to avoid collisions when uploading multiple files simultaneously
+    $refId = md5( microtime( true ) . '-' . wp_rand() . '-' . $attempts );
     $file = $this->wpdb->get_row( $this->wpdb->prepare(
       "SELECT *
                                                                                                                                                                                                                                               FROM $this->table_files

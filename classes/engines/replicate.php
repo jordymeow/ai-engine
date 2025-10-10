@@ -58,13 +58,16 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
     }
 
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.
-    if ( $query->attachedFile ) {
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+    if ( !empty( $attachments ) ) {
+      // Get first attachment
+      $file = $attachments[0];
       $finalUrl = null;
       if ( $query->image_remote_upload ) {
-        $finalUrl = $query->attachedFile->get_url();
+        $finalUrl = $file->get_url();
       }
       else {
-        $finalUrl = $query->attachedFile->get_inline_base64_url();
+        $finalUrl = $file->get_inline_base64_url();
       }
       $messages[] = [
         'role' => 'user',

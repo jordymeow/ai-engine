@@ -74,10 +74,6 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_OpenRouter( $core, $env );
       return $engine;
     }
-    else if ( $env['type'] === 'huggingface' ) {
-      $engine = new Meow_MWAI_Engines_HuggingFace( $core, $env );
-      return $engine;
-    }
     else if ( $env['type'] === 'replicate' ) {
       $engine = new Meow_MWAI_Engines_Replicate( $core, $env );
       return $engine;

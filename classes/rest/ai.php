@@ -60,7 +60,7 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       $params = $request->get_json_params();
       $envId = $params['envId'];
       $query = new Meow_MWAI_Query_Text( '', 4096 );
-      $query->env = $envId;
+      $query->envId = $envId;
       $models = $this->core->get_engine_models( $query );
       return $this->create_rest_response( [ 'success' => true, 'models' => $models ], 200 );
     }

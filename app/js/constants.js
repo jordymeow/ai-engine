@@ -1,5 +1,5 @@
-// Previous: 2.8.5
-// Current: 3.0.5
+// Previous: 3.0.5
+// Current: 3.1.2
 
 import i18n from '@root/i18n';
 
@@ -151,31 +151,31 @@ const Templates_ImagesGenerator = [
     prompt: '',
   },
   {
-    id: 'japan',
-    name: 'Ghibli Scene',
+    id: 'cyberpunk_shibuya',
+    name: 'Cyberpunk Shibuya, 2099',
     model: '',
     envId: '',
     resolution: '',
     maxResults: 1,
-    prompt: 'Create an image in the style of a Ghibli-inspired anime oil painting, depicting a quaint, old house in the Japanese countryside. This house, reminiscent of a traditional izakaya, is surrounded by lush trees and overlooks vibrant rice fields. The scene is bathed in the warm, soft glow of a setting sun, casting gentle shadows and creating a tranquil, nostalgic atmosphere. The composition should be rich in texture, capturing the serene beauty of rural Japan in a whimsical, Ghibli-like manner.',
+    prompt: 'A rainy night in Shibuya Crossing in the year 2099, filled with glowing holographic kanji, umbrellas reflecting neon lights, and humanoid robots blending in with humans under the city glow. (Style: cinematic realism, rain-soaked atmosphere, high contrast)',
   },
   {
-    id: 'steampunk',
-    name: 'Steampunk Architecture',
+    id: 'tranquil_koi',
+    name: 'Tranquil Koi Dream',
     model: '',
     envId: '',
     resolution: '',
     maxResults: 1,
-    prompt: 'Create an image showcasing steampunk architecture, focusing on the exterior view of a grand theater. The style should reflect award-winning architectural photography from a science fiction magazine. The theater, a masterpiece of steampunk design, combines Victorian influences with futuristic, mechanical elements. Its intricate facade features exposed gears, brass pipes, and steam vents, all integrated into the ornate, classical structure. The building should be set against a dramatic sky, highlighting its unique features and the interplay of light and shadow, capturing the essence of a high-quality, professional architectural photograph.',
+    prompt: 'A surreal composition of a floating temple garden above a pond of flying koi fish, each one carrying tiny lanterns illuminating soft fog. (Style: ethereal watercolor painting, soft color palette, dreamlike)',
   },
   {
-    id: 'nyao-illustration',
-    name: 'Nyao Illustration',
+    id: 'tokyo_apartment',
+    name: 'Old Tokyo Apartment Spirit',
     model: '',
     envId: '',
     resolution: '',
     maxResults: 1,
-    prompt: 'The character is an anthropomorphic cat with a whimsical and endearing design, featuring a blend of white and blue fur. The right side of the cat\'s face has a patch of blue fur that also covers the outer part of the ear, while the left side remains predominantly white, except that the eye is surrounded by a green patch of fur. The tail mirrors this pattern with white fur leading to a blue tip. The character\'s facial expression is joyous, with a wide, open-mouthed smile showcasing a single front tooth and a small, black nose.  The cat\'s paws are also white, with defined fingers that suggest human-like dexterity. An orange collar encircles the neck, contrasting with the green and blue tones of the body. This collar is adorned with a blue and white emblem in the center, reminiscent of the WordPress logo. The drawing style of this image can be defined as a digital illustration with a cartoonish and whimsical aesthetic. It features bold outlines, flat colors, and simplified shapes which are typical of contemporary character design aimed at a broad, family-friendly audience. The style is reminiscent of modern vector art, which is often used for web graphics, animation, and media aimed at engaging a casual viewer with its clear, approachable, and vibrant visuals.',
+    prompt: 'A nostalgic 1960s Tokyo apartment room filled with plants, tatami mats, and warm afternoon light — but with subtle ghostly figures appearing through the shoji doors. (Style: realistic photo with supernatural touch, muted colors, film grain)',
   },
 ];
 
@@ -264,5 +264,44 @@ Common Cat Health Issues`,
   }
 ];
 
-export { WritingStyles, WritingTones, 
-  Templates_Playground, Templates_ImagesGenerator, Templates_ContentGenerator }
+const Templates_VideosGenerator = [
+  {
+    id: 'default',
+    name: 'Default Template',
+    model: 'sora-2',
+    envId: '',
+    resolution: '1280x720',
+    duration: 4,
+    prompt: '',
+  },
+  {
+    id: 'last_train',
+    name: 'The Last Train to Kyoto',
+    model: 'sora-2',
+    envId: '',
+    resolution: '1280x720',
+    duration: 4,
+    prompt: 'A 30-second cinematic sequence following the final train leaving Tokyo Station at night — empty city, soft piano music, lights flickering through the window, and a mysterious letter left on the seat. (Mood: melancholic, poetic, cinematic lighting)',
+  },
+  {
+    id: 'festival_foxes',
+    name: 'Festival of Foxes',
+    model: 'sora-2',
+    envId: '',
+    resolution: '1280x720',
+    duration: 4,
+    prompt: 'A short looping video of a nighttime matsuri in the mountains, where everyone wears fox masks. The camera glides through paper lanterns, taiko drums, and dancers, as the masks begin to subtly move on their own. (Mood: magical realism, glowing reds and golds, hypnotic rhythm)',
+  },
+  {
+    id: 'rising_tokyo',
+    name: 'Rising Tokyo',
+    model: 'sora-2',
+    envId: '',
+    resolution: '1280x720',
+    duration: 8,
+    prompt: 'A timelapse of Tokyo transforming from the Edo period to the futuristic skyline — wooden houses morphing into skyscrapers, rickshaws turning into maglev trains, Mt. Fuji remaining constant in the distance. (Mood: epic evolution, orchestral build-up, history blending with sci-fi)',
+  },
+];
+
+export { WritingStyles, WritingTones,
+  Templates_Playground, Templates_ImagesGenerator, Templates_ContentGenerator, Templates_VideosGenerator }

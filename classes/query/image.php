@@ -95,7 +95,18 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
     $this->maxResults = 1;
 
     global $mwai_core;
+
     $engine = Meow_MWAI_Engines_Factory::get( $mwai_core, $this->envId );
+
+    // If model is empty, use the image-specific default model (not the general default)
+    if ( empty( $this->model ) ) {
+      $this->model = $mwai_core->get_option( 'ai_images_default_model' );
+      if ( empty( $this->model ) ) {
+        // Fallback to general default if image-specific default is not set
+        $this->model = $mwai_core->get_option( 'ai_default_model' );
+      }
+    }
+
     $modelInfo = $engine->retrieve_model_info( $this->model );
     if ( empty( $modelInfo ) ) {
       Meow_MWAI_Logging::error( 'No model info found for model: ' . $this->model, '🖼️' );

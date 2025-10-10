@@ -246,6 +246,56 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_features' ],
         'callback' => [ $this, 'rest_helpers_generate_image_meta' ],
       ] );
+      register_rest_route( $this->namespace, '/helpers/update_media_metadata', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_update_media_metadata' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/create_video', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_create_video' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/video_status', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_video_status' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/download_video', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_download_video' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/delete_video', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_delete_video' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/save_video_to_library', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_save_video_to_library' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/delete_video_from_library', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_delete_video_from_library' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/list_draft_media', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_list_draft_media' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/approve_media', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_approve_media' ],
+      ] );
+      register_rest_route( $this->namespace, '/helpers/reject_media', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_reject_media' ],
+      ] );
       register_rest_route( $this->namespace, '/helpers/count_posts', [
         'methods' => 'GET',
         'permission_callback' => [ $this->core, 'can_access_features' ],
@@ -948,7 +998,40 @@ class Meow_MWAI_Rest {
       $description = sanitize_text_field( $params['description'] );
       $url = $params['url'];
       $filename = sanitize_text_field( $params['filename'] );
-      $attachmentId = $this->core->add_image_from_url( $url, $filename, $title, $description, $caption, $alt );
+
+      // Prepare AI metadata
+      $ai_metadata = [];
+      if ( !empty( $params['model'] ) ) {
+        $ai_metadata['model'] = $params['model'];
+      }
+      if ( !empty( $params['latency'] ) ) {
+        $ai_metadata['latency'] = $params['latency'];
+      }
+      if ( !empty( $params['env_id'] ) ) {
+        $ai_metadata['env_id'] = $params['env_id'];
+      }
+
+      // Debug logging
+      if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+        error_log( '[AI Engine] create_image metadata: ' . json_encode( $ai_metadata ) );
+      }
+
+      // Create as mwai_image post type (draft image)
+      $attachmentId = $this->core->add_image_from_url( $url, $filename, $title, $description, $caption, $alt, null, 'inherit', 'mwai_image', $ai_metadata );
+
+      // Add to user's draft media
+      $user_id = get_current_user_id();
+      $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
+      if ( !is_array( $draft_media ) ) {
+        $draft_media = [];
+      }
+      $draft_media[] = [
+        'attachment_id' => $attachmentId,
+        'type' => 'image',
+        'created_at' => time()
+      ];
+      update_user_meta( $user_id, 'mwai_draft_media', $draft_media );
+
       return $this->create_rest_response( [ 'success' => true, 'attachmentId' => $attachmentId ], 200 );
     }
     catch ( Exception $e ) {
@@ -961,13 +1044,24 @@ class Meow_MWAI_Rest {
     try {
       global $mwai;
       $params = $request->get_json_params();
-      $url = isset( $params['url'] ) ? esc_url_raw( $params['url'] ) : null;
-      if ( empty( $url ) ) {
-        throw new Exception( __( 'The url is required.', 'ai-engine' ) );
+      $attachment_id = isset( $params['attachmentId'] ) ? intval( $params['attachmentId'] ) : null;
+
+      if ( empty( $attachment_id ) ) {
+        throw new Exception( __( 'The attachment ID is required.', 'ai-engine' ) );
       }
-      $prompt = 'Describe this image and suggest a short title, description and SEO-friendly (ASCII and lowercase) filename. '
-      . 'Return a JSON with the keys title, description, alt, caption, filename.';
-      $result = $mwai->simpleVisionQuery( $prompt, $url, null, [ 'image_remote_upload' => 'url', 'scope' => 'admin-tools' ] );
+
+      // Get the file path from the attachment ID
+      $file_path = get_attached_file( $attachment_id );
+      if ( empty( $file_path ) || !file_exists( $file_path ) ) {
+        throw new Exception( __( 'Could not find the attachment file.', 'ai-engine' ) );
+      }
+
+      $prompt = 'Describe this image and suggest a short title and description. '
+      . 'Also suggest an SEO-friendly filename (lowercase, ASCII characters only, with hyphens instead of spaces). '
+      . 'Return a JSON with the keys: title, description, filename.';
+
+      // Use file path instead of URL to avoid network issues
+      $result = $mwai->simpleVisionQuery( $prompt, null, $file_path, [ 'scope' => 'admin-tools' ] );
       $result = preg_replace( '/^```json\s*/', '', $result );
       $result = preg_replace( '/\s*```$/', '', $result );
       if ( is_string( $result ) ) {
@@ -979,8 +1073,76 @@ class Meow_MWAI_Rest {
       if ( !is_array( $data ) ) {
         $data = [];
       }
-      $data = array_merge( [ 'title' => '', 'description' => '', 'caption' => '', 'alt' => '', 'filename' => '' ], $data );
+      $data = array_merge( [ 'title' => '', 'description' => '', 'filename' => '' ], $data );
       return $this->create_rest_response( [ 'success' => true, 'data' => $data ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  public function rest_helpers_update_media_metadata( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $attachment_id = intval( $params['attachmentId'] );
+      $title = sanitize_text_field( $params['title'] ?? '' );
+      $description = sanitize_text_field( $params['description'] ?? '' );
+      $caption = sanitize_text_field( $params['caption'] ?? '' );
+      $alt = sanitize_text_field( $params['alt'] ?? '' );
+      $filename = sanitize_file_name( $params['filename'] ?? '' );
+
+      if ( !$attachment_id ) {
+        throw new Exception( __( 'Attachment ID is required.', 'ai-engine' ) );
+      }
+
+      // Generate slug from filename (without extension)
+      $slug = '';
+      if ( !empty( $filename ) ) {
+        $slug = pathinfo( $filename, PATHINFO_FILENAME );
+      }
+
+      // Update post title, content (description), caption, and slug
+      $update_data = [
+        'ID' => $attachment_id,
+        'post_title' => $title,
+        'post_content' => $description,
+        'post_excerpt' => $caption
+      ];
+
+      if ( !empty( $slug ) ) {
+        $update_data['post_name'] = $slug;
+      }
+
+      wp_update_post( $update_data );
+
+      // Update alt text
+      if ( !empty( $alt ) ) {
+        update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt );
+      }
+
+      // Update filename if provided
+      $new_url = null;
+      if ( !empty( $filename ) ) {
+        $file_path = get_attached_file( $attachment_id );
+        if ( $file_path ) {
+          $path_parts = pathinfo( $file_path );
+          $new_file_path = $path_parts['dirname'] . '/' . $filename;
+          if ( rename( $file_path, $new_file_path ) ) {
+            update_attached_file( $attachment_id, $new_file_path );
+            // Build new URL from file path for custom post types
+            $upload_dir = wp_upload_dir();
+            $new_url = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $new_file_path );
+          }
+        }
+      }
+
+      $response = [ 'success' => true ];
+      if ( $new_url ) {
+        $response['url'] = $new_url;
+      }
+
+      return $this->create_rest_response( $response, 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
@@ -1802,6 +1964,621 @@ class Meow_MWAI_Rest {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Failed to delete form' ], 500 );
       }
       
+      return $this->create_rest_response( [ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  #endregion
+
+  #region Video Generation Helpers
+
+  public function rest_helpers_create_video( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $prompt = sanitize_text_field( $params['prompt'] );
+      $model = sanitize_text_field( $params['model'] ?? 'sora-2' );
+      $size = sanitize_text_field( $params['size'] ?? '720x1280' );
+      $seconds = absint( $params['seconds'] ?? 4 );
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      // Check if envId is provided (defaults not supported for videos yet)
+      if ( empty( $envId ) ) {
+        throw new Exception( 'Please select a specific environment and model in the Video Generator. Default environments are not yet supported for video generation.' );
+      }
+
+      // Get API key from environment
+      $env = $this->core->get_ai_env( $envId );
+      $api_key = $env['apikey'] ?? '';
+
+      if ( empty( $api_key ) ) {
+        throw new Exception( 'OpenAI API key not found.' );
+      }
+
+      // Prepare multipart boundary
+      $boundary = wp_generate_password( 24, false );
+      $body = '';
+
+      // Add model
+      $body .= "--{$boundary}\r\n";
+      $body .= "Content-Disposition: form-data; name=\"model\"\r\n\r\n";
+      $body .= "{$model}\r\n";
+
+      // Add prompt
+      $body .= "--{$boundary}\r\n";
+      $body .= "Content-Disposition: form-data; name=\"prompt\"\r\n\r\n";
+      $body .= "{$prompt}\r\n";
+
+      // Add size
+      $body .= "--{$boundary}\r\n";
+      $body .= "Content-Disposition: form-data; name=\"size\"\r\n\r\n";
+      $body .= "{$size}\r\n";
+
+      // Add seconds
+      $body .= "--{$boundary}\r\n";
+      $body .= "Content-Disposition: form-data; name=\"seconds\"\r\n\r\n";
+      $body .= "{$seconds}\r\n";
+
+      $body .= "--{$boundary}--\r\n";
+
+      // Call OpenAI API to create video
+      $response = wp_remote_post( 'https://api.openai.com/v1/videos', [
+        'headers' => [
+          'Authorization' => 'Bearer ' . $api_key,
+          'Content-Type' => 'multipart/form-data; boundary=' . $boundary
+        ],
+        'body' => $body,
+        'timeout' => 30
+      ] );
+
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( $response->get_error_message() );
+      }
+
+      $response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+      if ( isset( $response_body['error'] ) ) {
+        throw new Exception( $response_body['error']['message'] ?? 'Unknown error' );
+      }
+
+      // Record usage (price is calculated per second)
+      $usage = $this->core->record_videos_usage( $model, $size, $seconds );
+
+      // Log to Query Logs (Statistics)
+      try {
+        if ( class_exists( 'MeowPro_MWAI_Stats' ) && class_exists( 'MeowPro_MWAI_Statistics' ) ) {
+          $statsObject = new MeowPro_MWAI_Stats();
+          $statsObject->session = $params['session'] ?? null;
+          $statsObject->scope = 'admin-tools';
+          $statsObject->feature = 'video-generator';
+          $statsObject->model = $model;
+          $statsObject->envId = $envId;
+          $statsObject->units = $seconds;
+          $statsObject->type = 'seconds';
+          $statsObject->price = $usage['price'] ?? 0;
+          $statsObject->accuracy = $usage['accuracy'] ?? 'full';
+
+          $statistics = new MeowPro_MWAI_Statistics();
+          $statistics->commit_stats( $statsObject );
+        }
+      }
+      catch ( Exception $statsError ) {
+        // Log the error but don't fail the video creation
+        error_log( '[AI Engine Video] Failed to log statistics: ' . $statsError->getMessage() );
+      }
+
+      // Store metadata for later retrieval when video completes
+      if ( isset( $response_body['id'] ) ) {
+        set_transient( 'mwai_video_metadata_' . $response_body['id'], [
+          'model' => $model,
+          'env_id' => $envId,
+          'created_at' => time()
+        ], 7 * DAY_IN_SECONDS );
+      }
+
+      return $this->create_rest_response( [ 'success' => true, 'video' => $response_body, 'usage' => $usage ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_video_status( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $video_ids = $params['videoIds'] ?? [];
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      if ( empty( $video_ids ) ) {
+        return $this->create_rest_response( [ 'success' => true, 'videos' => [] ], 200 );
+      }
+
+      // Get API key from environment
+      $env = $this->core->get_ai_env( $envId );
+      $api_key = $env['apikey'] ?? '';
+
+      if ( empty( $api_key ) ) {
+        throw new Exception( 'OpenAI API key not found.' );
+      }
+
+      $videos = [];
+      foreach ( $video_ids as $video_id ) {
+        $response = wp_remote_get( 'https://api.openai.com/v1/videos/' . $video_id, [
+          'headers' => [
+            'Authorization' => 'Bearer ' . $api_key
+          ],
+          'timeout' => 15
+        ] );
+
+        if ( !is_wp_error( $response ) ) {
+          $body = json_decode( wp_remote_retrieve_body( $response ), true );
+          if ( !isset( $body['error'] ) ) {
+            // If video is completed and we haven't saved it yet, download and save to media library
+            if ( $body['status'] === 'completed' && empty( get_transient( 'mwai_video_saved_' . $video_id ) ) ) {
+              // Retrieve metadata that was stored when video was created
+              $metadata = get_transient( 'mwai_video_metadata_' . $video_id );
+              $ai_metadata = [];
+              if ( $metadata ) {
+                $ai_metadata = [
+                  'model' => $metadata['model'] ?? null,
+                  'env_id' => $metadata['env_id'] ?? null,
+                  'latency' => isset( $metadata['created_at'] ) ? ( time() - $metadata['created_at'] ) : null
+                ];
+              }
+
+              $attachment_id = $this->download_and_save_video( $video_id, $api_key, '', '', $ai_metadata );
+              if ( $attachment_id ) {
+                $body['attachment_id'] = $attachment_id;
+                // Build URL from file path for custom post types
+                $file_path = get_attached_file( $attachment_id );
+                $upload_dir = wp_upload_dir();
+                $body['url'] = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $file_path );
+                // Mark as saved so we don't download again
+                set_transient( 'mwai_video_saved_' . $video_id, $attachment_id, DAY_IN_SECONDS );
+                // Clean up metadata transient
+                delete_transient( 'mwai_video_metadata_' . $video_id );
+              }
+            }
+            // Check if we already have this video saved
+            else if ( $body['status'] === 'completed' ) {
+              $attachment_id = get_transient( 'mwai_video_saved_' . $video_id );
+              if ( $attachment_id ) {
+                $body['attachment_id'] = $attachment_id;
+                // Build URL from file path for custom post types
+                $file_path = get_attached_file( $attachment_id );
+                $upload_dir = wp_upload_dir();
+                $body['url'] = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $file_path );
+              }
+            }
+            $videos[] = $body;
+          }
+          else {
+            // Include error information in the response
+            error_log( 'AI Engine: Video generation failed for ID ' . $video_id . ': ' . json_encode( $body['error'] ) );
+            $videos[] = [
+              'id' => $video_id,
+              'status' => 'failed',
+              'error' => $body['error']
+            ];
+          }
+        }
+        else {
+          // WP HTTP error
+          error_log( 'AI Engine: Failed to check video status for ID ' . $video_id . ': ' . $response->get_error_message() );
+          $videos[] = [
+            'id' => $video_id,
+            'status' => 'failed',
+            'error' => [ 'message' => $response->get_error_message() ]
+          ];
+        }
+      }
+
+      return $this->create_rest_response( [ 'success' => true, 'videos' => $videos ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_download_video( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $video_id = sanitize_text_field( $params['videoId'] );
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      // Get API key from environment
+      $env = $this->core->get_ai_env( $envId );
+      $api_key = $env['apikey'] ?? '';
+
+      if ( empty( $api_key ) ) {
+        throw new Exception( 'OpenAI API key not found.' );
+      }
+
+      $temp_file = wp_tempnam( $video_id . '.mp4' );
+
+      $response = wp_remote_get( 'https://api.openai.com/v1/videos/' . $video_id . '/content', [
+        'headers' => [
+          'Authorization' => 'Bearer ' . $api_key
+        ],
+        'timeout' => 120,
+        'stream' => true,
+        'filename' => $temp_file
+      ] );
+
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( $response->get_error_message() );
+      }
+
+      $file_data = file_get_contents( $temp_file );
+      $base64 = base64_encode( $file_data );
+
+      unlink( $temp_file );
+
+      return $this->create_rest_response( [
+        'success' => true,
+        'data' => $base64,
+        'mimeType' => 'video/mp4'
+      ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_delete_video( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $video_id = sanitize_text_field( $params['videoId'] );
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      // Get API key from environment
+      $env = $this->core->get_ai_env( $envId );
+      $api_key = $env['apikey'] ?? '';
+
+      if ( empty( $api_key ) ) {
+        throw new Exception( 'OpenAI API key not found.' );
+      }
+
+      $response = wp_remote_request( 'https://api.openai.com/v1/videos/' . $video_id, [
+        'method' => 'DELETE',
+        'headers' => [
+          'Authorization' => 'Bearer ' . $api_key
+        ],
+        'timeout' => 15
+      ] );
+
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( $response->get_error_message() );
+      }
+
+      return $this->create_rest_response( [ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  private function download_and_save_video( $video_id, $api_key, $title = '', $description = '', $ai_metadata = [] ) {
+    try {
+      // Download video content
+      $response = wp_remote_get( 'https://api.openai.com/v1/videos/' . $video_id . '/content', [
+        'headers' => [
+          'Authorization' => 'Bearer ' . $api_key
+        ],
+        'timeout' => 120
+      ] );
+
+      if ( is_wp_error( $response ) ) {
+        error_log( 'Error downloading video: ' . $response->get_error_message() );
+        return false;
+      }
+
+      $video_data = wp_remote_retrieve_body( $response );
+      if ( empty( $video_data ) ) {
+        error_log( 'Empty video data received' );
+        return false;
+      }
+
+      // Generate filename
+      $filename = $video_id . '.mp4';
+      $upload_dir = wp_upload_dir();
+      $file_path = $upload_dir['path'] . '/' . $filename;
+
+      // Save to file
+      file_put_contents( $file_path, $video_data );
+
+      // Prepare attachment data - use mwai_video post type (draft video)
+      $attachment = [
+        'post_mime_type' => 'video/mp4',
+        'post_title' => !empty( $title ) ? $title : 'AI Generated Video',
+        'post_content' => $description,
+        'post_status' => 'inherit',
+        'post_type' => 'mwai_video'
+      ];
+
+      // Use wp_insert_post instead of wp_insert_attachment to allow custom post types
+      $attachment_id = wp_insert_post( $attachment );
+
+      // Set the attached file manually since we're not using wp_insert_attachment
+      update_attached_file( $attachment_id, $file_path );
+
+      if ( is_wp_error( $attachment_id ) ) {
+        error_log( 'Error creating attachment: ' . $attachment_id->get_error_message() );
+        return false;
+      }
+
+      // Generate attachment metadata
+      require_once ABSPATH . 'wp-admin/includes/image.php';
+      $attach_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
+      wp_update_attachment_metadata( $attachment_id, $attach_data );
+
+      // Store AI-related metadata
+      if ( !empty( $ai_metadata['model'] ) ) {
+        update_post_meta( $attachment_id, 'mwai_model', sanitize_text_field( $ai_metadata['model'] ) );
+      }
+      if ( !empty( $ai_metadata['latency'] ) ) {
+        update_post_meta( $attachment_id, 'mwai_latency', floatval( $ai_metadata['latency'] ) );
+      }
+      if ( !empty( $ai_metadata['env_id'] ) ) {
+        update_post_meta( $attachment_id, 'mwai_env_id', sanitize_text_field( $ai_metadata['env_id'] ) );
+      }
+
+      // Add to user's draft media
+      $user_id = get_current_user_id();
+      $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
+      if ( !is_array( $draft_media ) ) {
+        $draft_media = [];
+      }
+      $draft_media[] = [
+        'attachment_id' => $attachment_id,
+        'type' => 'video',
+        'openai_id' => $video_id,
+        'created_at' => time()
+      ];
+      update_user_meta( $user_id, 'mwai_draft_media', $draft_media );
+
+      return $attachment_id;
+    }
+    catch ( Exception $e ) {
+      error_log( 'Exception in download_and_save_video: ' . $e->getMessage() );
+      return false;
+    }
+  }
+
+  public function rest_helpers_save_video_to_library( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $video_id = sanitize_text_field( $params['videoId'] );
+      $title = sanitize_text_field( $params['title'] );
+      $description = sanitize_text_field( $params['description'] );
+      $filename = sanitize_file_name( $params['filename'] );
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      // Ensure filename has .mp4 extension
+      if ( !preg_match( '/\.mp4$/i', $filename ) ) {
+        $filename .= '.mp4';
+      }
+
+      // Get API key from environment
+      $env = $this->core->get_ai_env( $envId );
+      $api_key = $env['apikey'] ?? '';
+
+      if ( empty( $api_key ) ) {
+        throw new Exception( 'OpenAI API key not found.' );
+      }
+
+      // Download video content
+      $response = wp_remote_get( 'https://api.openai.com/v1/videos/' . $video_id . '/content', [
+        'headers' => [
+          'Authorization' => 'Bearer ' . $api_key
+        ],
+        'timeout' => 120
+      ] );
+
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( $response->get_error_message() );
+      }
+
+      $video_data = wp_remote_retrieve_body( $response );
+
+      // Upload to WordPress media library
+      $upload_dir = wp_upload_dir();
+      $file_path = $upload_dir['path'] . '/' . $filename;
+
+      file_put_contents( $file_path, $video_data );
+
+      $attachment = [
+        'post_mime_type' => 'video/mp4',
+        'post_title' => $title,
+        'post_content' => $description,
+        'post_status' => 'inherit'
+      ];
+
+      $attach_id = wp_insert_attachment( $attachment, $file_path );
+
+      require_once( ABSPATH . 'wp-admin/includes/image.php' );
+      $attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
+      wp_update_attachment_metadata( $attach_id, $attach_data );
+
+      return $this->create_rest_response( [
+        'success' => true,
+        'attachmentId' => $attach_id
+      ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_delete_video_from_library( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $attachment_id = absint( $params['attachmentId'] );
+
+      if ( empty( $attachment_id ) ) {
+        throw new Exception( 'Attachment ID is required.' );
+      }
+
+      $deleted = wp_delete_attachment( $attachment_id, true );
+
+      if ( !$deleted ) {
+        throw new Exception( 'Failed to delete attachment.' );
+      }
+
+      return $this->create_rest_response( [ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_list_draft_media( $request ) {
+    try {
+      $type = $request->get_param( 'type' ); // 'image', 'video', or null for all
+      $user_id = get_current_user_id();
+      $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
+
+      if ( !is_array( $draft_media ) ) {
+        return $this->create_rest_response( [ 'success' => true, 'media' => [] ], 200 );
+      }
+
+      $media_items = [];
+      foreach ( $draft_media as $item ) {
+        // Filter by type if specified
+        if ( $type && $item['type'] !== $type ) {
+          continue;
+        }
+
+        $attachment_id = $item['attachment_id'];
+        $attachment = get_post( $attachment_id );
+
+        if ( $attachment ) {
+          // For custom post types (mwai_image, mwai_video), build URL from file path
+          $file_path = get_attached_file( $attachment_id );
+          $upload_dir = wp_upload_dir();
+          $url = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $file_path );
+
+          $model = get_post_meta( $attachment_id, 'mwai_model', true );
+          $generation_time = get_post_meta( $attachment_id, 'mwai_latency', true );
+          $env_id = get_post_meta( $attachment_id, 'mwai_env_id', true );
+
+          // Debug logging
+          if ( $this->core->get_option( 'queries_debug_mode' ) ) {
+            error_log( '[AI Engine] list_draft_media - attachment_id: ' . $attachment_id . ' model: ' . var_export( $model, true ) . ' generation_time: ' . var_export( $generation_time, true ) . ' env_id: ' . var_export( $env_id, true ) );
+          }
+
+          $media_items[] = [
+            'attachment_id' => $attachment_id,
+            'type' => $item['type'],
+            'openai_id' => $item['openai_id'] ?? null,
+            'url' => $url,
+            'title' => $attachment->post_title,
+            'description' => $attachment->post_content,
+            'filename' => basename( $file_path ),
+            'created_at' => $item['created_at'],
+            'model' => $model,
+            'generation_time' => $generation_time,
+            'env_id' => $env_id
+          ];
+        }
+      }
+
+      return $this->create_rest_response( [ 'success' => true, 'media' => $media_items ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_approve_media( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $attachment_id = absint( $params['attachmentId'] );
+      $openai_id = sanitize_text_field( $params['openaiId'] ?? '' );
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      if ( empty( $attachment_id ) ) {
+        throw new Exception( 'Attachment ID is required.' );
+      }
+
+      // Convert from mwai_image/mwai_video to attachment post type
+      wp_update_post( [
+        'ID' => $attachment_id,
+        'post_type' => 'attachment',
+        'post_status' => 'inherit'
+      ] );
+
+      // Remove from draft media list
+      $user_id = get_current_user_id();
+      $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
+      if ( is_array( $draft_media ) ) {
+        $draft_media = array_filter( $draft_media, function( $item ) use ( $attachment_id ) {
+          return $item['attachment_id'] !== $attachment_id;
+        } );
+        update_user_meta( $user_id, 'mwai_draft_media', array_values( $draft_media ) );
+      }
+
+      // Delete video from OpenAI if applicable
+      if ( !empty( $openai_id ) ) {
+        $env = $this->core->get_ai_env( $envId );
+        $api_key = $env['apikey'] ?? '';
+
+        if ( !empty( $api_key ) ) {
+          wp_remote_request( 'https://api.openai.com/v1/videos/' . $openai_id, [
+            'method' => 'DELETE',
+            'headers' => [ 'Authorization' => 'Bearer ' . $api_key ],
+            'timeout' => 15
+          ] );
+        }
+      }
+
+      return $this->create_rest_response( [ 'success' => true ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  public function rest_helpers_reject_media( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $attachment_id = absint( $params['attachmentId'] );
+      $openai_id = sanitize_text_field( $params['openaiId'] ?? '' );
+      $envId = sanitize_text_field( $params['envId'] ?? '' );
+
+      if ( empty( $attachment_id ) ) {
+        throw new Exception( 'Attachment ID is required.' );
+      }
+
+      // Delete attachment from WordPress
+      wp_delete_attachment( $attachment_id, true );
+
+      // Remove from draft media list
+      $user_id = get_current_user_id();
+      $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
+      if ( is_array( $draft_media ) ) {
+        $draft_media = array_filter( $draft_media, function( $item ) use ( $attachment_id ) {
+          return $item['attachment_id'] !== $attachment_id;
+        } );
+        update_user_meta( $user_id, 'mwai_draft_media', array_values( $draft_media ) );
+      }
+
+      // Delete video from OpenAI if applicable
+      if ( !empty( $openai_id ) ) {
+        $env = $this->core->get_ai_env( $envId );
+        $api_key = $env['apikey'] ?? '';
+
+        if ( !empty( $api_key ) ) {
+          wp_remote_request( 'https://api.openai.com/v1/videos/' . $openai_id, [
+            'method' => 'DELETE',
+            'headers' => [ 'Authorization' => 'Bearer ' . $api_key ],
+            'timeout' => 15
+          ] );
+        }
+      }
+
       return $this->create_rest_response( [ 'success' => true ], 200 );
     }
     catch ( Exception $e ) {

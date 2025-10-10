@@ -69,10 +69,51 @@ class Meow_MWAI_Services_Image {
   }
 
   public function download_image( $url ) {
-    $response = wp_safe_remote_get( $url, [ 'timeout' => 60 ] );
+    // Handle data URLs (base64-encoded images from Google Gemini, etc.)
+    if ( strpos( $url, 'data:' ) === 0 ) {
+      // Extract base64 data from data URL
+      // Format: data:image/png;base64,iVBORw0KGgoAAAANS...
+      $parts = explode( ',', $url, 2 );
+      if ( count( $parts ) !== 2 ) {
+        throw new Exception( 'Invalid data URL format.' );
+      }
+
+      // Validate it's an image data URL
+      if ( stripos( $parts[0], 'image/' ) === false ) {
+        throw new Exception( 'Data URL is not an image.' );
+      }
+
+      // Decode base64 data
+      $image_data = base64_decode( $parts[1] );
+      if ( $image_data === false ) {
+        throw new Exception( 'Failed to decode base64 image data.' );
+      }
+
+      return $image_data;
+    }
+
+    // Validate URL scheme (only allow http/https)
+    $parsed_url = parse_url( $url );
+    if ( empty( $parsed_url['scheme'] ) || !in_array( $parsed_url['scheme'], [ 'http', 'https' ] ) ) {
+      throw new Exception( 'Invalid URL scheme. Only HTTP and HTTPS are allowed.' );
+    }
+
+    // Disable redirects to prevent bypass attacks
+    $response = wp_safe_remote_get( $url, [
+      'timeout' => 60,
+      'redirection' => 0  // Prevent redirect-based bypass
+    ] );
+
     if ( is_wp_error( $response ) ) {
       throw new Exception( $response->get_error_message() );
     }
+
+    // Validate response is actually an image
+    $content_type = wp_remote_retrieve_header( $response, 'content-type' );
+    if ( empty( $content_type ) || stripos( $content_type, 'image/' ) !== 0 ) {
+      throw new Exception( 'URL did not return an image. Content-Type: ' . $content_type );
+    }
+
     return wp_remote_retrieve_body( $response );
   }
 
@@ -84,19 +125,20 @@ class Meow_MWAI_Services_Image {
   * @param string $description The description of the image.
   * @param string $caption The caption of the image.
   * @param string $alt The alt text of the image.
+  * @param array $ai_metadata AI-related metadata (model, latency, env_id).
   * @return int The attachment ID of the image.
   */
-  public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null, $attachedPost = null ) {
+  public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null, $attachedPost = null, $post_status = 'inherit', $post_type = 'attachment', $ai_metadata = [] ) {
     $path_parts = pathinfo( parse_url( $url, PHP_URL_PATH ) );
     $url_filename = $path_parts['basename'];
     $file_type = wp_check_filetype( $url_filename, null );
     $allowed_types = get_allowed_mime_types();
-    if ( !$file_type || !in_array( $file_type['type'], $allowed_types ) ) {
-      throw new Exception( 'Invalid file type from URL.' );
-    }
 
-    // Initial extension from URL file name
-    $extension = $file_type['ext'];
+    // For URLs without file extensions (like Google Gemini), default to PNG
+    $extension = 'png';
+    if ( $file_type && $file_type['ext'] && in_array( $file_type['type'], $allowed_types ) ) {
+      $extension = $file_type['ext'];
+    }
 
     if ( !empty( $filename ) ) {
       $custom_file_type = wp_check_filetype( $filename, null );
@@ -153,17 +195,34 @@ class Meow_MWAI_Services_Image {
       'post_mime_type' => $wp_filetype['type'],
       'post_title' => !is_null( $title ) ? $title : preg_replace( '/\.[^.]+$/', '', basename( $file ) ),
       'post_content' => !is_null( $description ) ? $description : '',
-      'post_status' => 'inherit',
+      'post_status' => $post_status,
       'post_excerpt' => !is_null( $caption ) ? $caption : '',
+      'post_type' => $post_type,
     ];
 
-    $attach_id = wp_insert_attachment( $attachment, $file, $attachedPost );
+    // Use wp_insert_post instead of wp_insert_attachment to allow custom post types
+    $attach_id = wp_insert_post( $attachment );
+
+    // Set the attached file manually since we're not using wp_insert_attachment
+    update_attached_file( $attach_id, $file );
     require_once( ABSPATH . 'wp-admin/includes/image.php' );
     $attach_data = wp_generate_attachment_metadata( $attach_id, $file );
     wp_update_attachment_metadata( $attach_id, $attach_data );
     if ( !is_null( $alt ) ) {
       update_post_meta( $attach_id, '_wp_attachment_image_alt', $alt );
     }
+
+    // Store AI-related metadata
+    if ( !empty( $ai_metadata['model'] ) ) {
+      update_post_meta( $attach_id, 'mwai_model', sanitize_text_field( $ai_metadata['model'] ) );
+    }
+    if ( !empty( $ai_metadata['latency'] ) ) {
+      update_post_meta( $attach_id, 'mwai_latency', floatval( $ai_metadata['latency'] ) );
+    }
+    if ( !empty( $ai_metadata['env_id'] ) ) {
+      update_post_meta( $attach_id, 'mwai_env_id', sanitize_text_field( $ai_metadata['env_id'] ) );
+    }
+
     return $attach_id;
   }
 }

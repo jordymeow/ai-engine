@@ -37,11 +37,26 @@ class Meow_MWAI_Engines_Core {
     $this->streamBuffer = '';
     $this->streamHeaders = [];
     $this->streamContent = '';
-    
+
     // Reset debug/event state
     $this->currentDebugMode = false;
     $this->currentQuery = null;
     $this->emittedFunctionResults = [];
+  }
+
+  /**
+   * Prepare query before execution.
+   * This method is called BEFORE any streaming hooks are set up.
+   * Engines should override this to perform preliminary tasks like:
+   * - Uploading files to provider APIs
+   * - Preprocessing data
+   * - Validating query parameters
+   *
+   * @param Meow_MWAI_Query_Base $query The query to prepare
+   */
+  protected function prepare_query( $query ) {
+    // Base implementation does nothing
+    // Child engines can override to add provider-specific preparation
   }
 
   public function run( $query, $streamCallback = null, $maxDepth = 5 ) {

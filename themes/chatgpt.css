@@ -1372,11 +1372,10 @@
 .mwai-chatgpt-theme .mwai-files {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   padding: var(--mwai-spacing);
   background: var(--mwai-backgroundSecondaryColor);
   border-top: 1px solid var(--mwai-backgroundPrimaryColor);
-  max-height: 150px;
-  overflow-y: auto;
 }
 .mwai-chatgpt-theme .mwai-files::-webkit-scrollbar {
   width: 6px;
@@ -2500,6 +2499,13 @@
   width: 18px;
   height: 18px;
 }
+.mwai-chatgpt-theme .mwai-realtime .mwai-controls .mwai-replay.mwai-replaying {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
 .mwai-chatgpt-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-talk-hint {
   font-size: 12px;
   color: var(--mwai-fontColor);
@@ -2876,5 +2882,3 @@
 .mwai-context-menu-portal.mwai-chatgpt-theme .mwai-context-menu .mwai-menu-item.mwai-danger:hover {
   background-color: var(--mwai-errorBackgroundColor);
 }
-
-/*# sourceMappingURL=chatgpt.css.map */

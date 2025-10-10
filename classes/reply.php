@@ -9,8 +9,9 @@ class Meow_MWAI_Reply implements JsonSerializable {
     'completion_tokens' => 0,
     'total_tokens' => 0,
     'price' => null,
+    'accuracy' => 'none', // 'none', 'estimated', 'tokens', 'price', 'full'
   ];
-  public $usageAccuracy = 'none'; // 'none', 'estimated', 'tokens', 'price', 'full'
+  public $usageAccuracy = 'none'; // DEPRECATED: Use $usage['accuracy'] instead
   public $query = null;
   public $type = 'text';
 
@@ -63,6 +64,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   public function set_usage_accuracy( $accuracy ) {
     $this->usageAccuracy = $accuracy;
+    $this->usage['accuracy'] = $accuracy;
   }
 
   public function set_id( $id ) {

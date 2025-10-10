@@ -179,12 +179,16 @@ class Meow_MWAI_API {
       }
       $chatId = isset( $params['chatId'] ) ? $params['chatId'] : null;
       $fileId = isset( $params['fileId'] ) ? $params['fileId'] : null;
+      $fileIds = isset( $params['fileIds'] ) ? $params['fileIds'] : null;
       $queryParams = [];
       if ( !empty( $chatId ) ) {
         $queryParams['chatId'] = $chatId;
       }
       if ( !empty( $fileId ) ) {
         $queryParams['fileId'] = $fileId;
+      }
+      if ( !empty( $fileIds ) && is_array( $fileIds ) ) {
+        $queryParams['fileIds'] = $fileIds;
       }
       if ( empty( $botId ) || empty( $message ) ) {
         throw new Exception( __( 'The botId and message are required.', 'ai-engine' ) );
@@ -792,10 +796,10 @@ class Meow_MWAI_API {
       $query->image_remote_upload = $params['image_remote_upload'];
     }
     if ( !empty( $url ) ) {
-      $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision' ) );
     }
     else if ( !empty( $path ) ) {
-      $query->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
     }
     $reply = $mwai_core->run_query( $query );
     return $reply->result;
@@ -846,7 +850,8 @@ class Meow_MWAI_API {
       }
     }
     $fileId = isset( $params['fileId'] ) ? $params['fileId'] : null;
-    $data = $this->chatbot_module->chat_submit( $botId, $message, $fileId, $params );
+    $fileIds = isset( $params['fileIds'] ) ? $params['fileIds'] : [];
+    $data = $this->chatbot_module->chat_submit( $botId, $message, $fileId, $params, false, $fileIds );
     return $onlyReply ? $data['reply'] : $data;
   }
 
@@ -933,7 +938,7 @@ class Meow_MWAI_API {
       throw new Exception( 'The media cannot be found.' );
     }
     // TODO: Maybe 'vision' should be 'edit'.
-    $query->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+    $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
     $reply = $mwai_core->run_query( $query );
     return $reply->result;
   }
@@ -1157,11 +1162,11 @@ class Meow_MWAI_API {
     
     if ( !empty( $url ) ) {
       // Use 'files' as the purpose for audio files
-      $query->set_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'files' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'files' ) );
     }
     else if ( !empty( $path ) ) {
       // Use 'files' as the purpose for audio files
-      $query->set_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'files' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'files' ) );
     }
     else {
       throw new Exception( 'Either a URL or a path must be provided for the audio file.' );

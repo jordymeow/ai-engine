@@ -4,6 +4,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
   public $core;
   public $contentGeneratorEnabled;
   public $imagesGeneratorEnabled;
+  public $videosGeneratorEnabled;
   public $playgroundEnabled;
   public $suggestionsEnabled;
 
@@ -13,6 +14,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     if ( is_admin() ) {
       $this->contentGeneratorEnabled = $this->core->get_option( 'module_generator_content' );
       $this->imagesGeneratorEnabled = $this->core->get_option( 'module_generator_images' );
+      $this->videosGeneratorEnabled = $this->core->get_option( 'module_generator_videos' );
       $this->playgroundEnabled = $this->core->get_option( 'module_playground' );
       $can_access_settings = $this->core->can_access_settings();
       $can_access_features = $this->core->can_access_features();
@@ -87,6 +89,15 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
         [ $this, 'ai_image_generator' ]
       );
     }
+    if ( $this->videosGeneratorEnabled ) {
+      add_management_page(
+        'Generate Videos',
+        'Generate Videos',
+        'read',
+        'mwai_videos_generator',
+        [ $this, 'ai_video_generator' ]
+      );
+    }
 
     // In the Admin Bar:
     add_action( 'admin_bar_menu', [ $this, 'admin_bar_menu' ], 100 );
@@ -99,6 +110,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     $playground = isset( $admin_bar['playground'] ) && $admin_bar['playground'];
     $content_generator = isset( $admin_bar['content_generator'] ) && $admin_bar['content_generator'];
     $images_generator = isset( $admin_bar['images_generator'] ) && $admin_bar['images_generator'];
+    $videos_generator = isset( $admin_bar['videos_generator'] ) && $admin_bar['videos_generator'];
 
     if ( $settings ) {
       $wp_admin_bar->add_node( [
@@ -123,6 +135,14 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
         'title' => MWAI_IMG_WAND_HTML . __( 'Images', 'ai-engine' ),
         'href' => admin_url( 'tools.php?page=mwai_images_generator' ),
         'meta' => [ 'class' => 'mwai-images-generator' ],
+      ] );
+    }
+    if ( $videos_generator ) {
+      $wp_admin_bar->add_node( [
+        'id' => 'mwai-video-generator',
+        'title' => MWAI_IMG_WAND_HTML . __( 'Videos', 'ai-engine' ),
+        'href' => admin_url( 'tools.php?page=mwai_videos_generator' ),
+        'meta' => [ 'class' => 'mwai-videos-generator' ],
       ] );
     }
 
@@ -156,6 +176,10 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
 
   public function ai_image_generator() {
     echo '<div id="mwai-image-generator"></div>';
+  }
+
+  public function ai_video_generator() {
+    echo '<div id="mwai-video-generator"></div>';
   }
 
   public function post_row_actions( $actions, $post ) {
