@@ -34,7 +34,7 @@ class Meow_MWAI_Labs_MCP {
   private $core = null;
   private $namespace = 'mcp/v1';
   private $server_version = '0.0.1';
-  private $protocol_version = '2024-11-05';
+  private $protocol_version = '2025-06-18'; // Updated to match official MCP SDK
   private $queue_key = 'mwai_mcp_msg';
   private $session_id = null;
   private $logging = false;
@@ -60,80 +60,6 @@ class Meow_MWAI_Labs_MCP {
     // when re‑enabling it in the future.
 
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
-
-    // Log MCP-related requests when logging is enabled
-    if ( $this->logging ) {
-      add_action( 'init', [ $this, 'log_requests' ], 1 );
-    }
-  }
-
-  public function log_requests() {
-    if ( !$this->logging || empty( $_SERVER['REQUEST_METHOD'] ) || empty( $_SERVER['REQUEST_URI'] ) ) {
-      return;
-    }
-
-    $uri = $_SERVER['REQUEST_URI'];
-
-    // Only log MCP-related requests
-    if ( strpos( $uri, '/mcp/' ) === false && strpos( $uri, '/mwai/' ) === false && strpos( $uri, '/.well-known/oauth' ) === false ) {
-      return;
-    }
-
-    // Skip patterns we don't want to log
-    $skip_patterns = [
-      '/wp-admin/',
-      '/wp-cron.php',
-      '/favicon.ico',
-    ];
-
-    foreach ( $skip_patterns as $pattern ) {
-      if ( strpos( $uri, $pattern ) !== false ) {
-        return;
-      }
-    }
-
-    // Get user agent (shortened)
-    $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
-    if ( strpos( $user_agent, 'Mozilla' ) !== false ) {
-      $user_agent = 'Mozilla/5.0';
-    }
-    elseif ( strpos( $user_agent, 'python-httpx' ) !== false ) {
-      $user_agent = 'python-httpx/0.27.0';
-    }
-    elseif ( strpos( $user_agent, 'node' ) !== false ) {
-      $user_agent = 'node';
-    }
-
-    // Get IP address (considering proxies)
-    $ip = 'Unknown';
-    if ( !empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-      $ip = $_SERVER['HTTP_CLIENT_IP'];
-    }
-    elseif ( !empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-      // X-Forwarded-For can contain multiple IPs, get the first one
-      $ips = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] );
-      $ip = trim( $ips[0] );
-    }
-    elseif ( !empty( $_SERVER['REMOTE_ADDR'] ) ) {
-      $ip = $_SERVER['REMOTE_ADDR'];
-    }
-
-    // Simplify URI for readability
-    $uri_parts = parse_url( $_SERVER['REQUEST_URI'] );
-    $path = $uri_parts['path'] ?? $_SERVER['REQUEST_URI'];
-    $simple_path = str_replace( '/wp-json', '', $path );
-
-    // Only show session ID for /messages requests
-    if ( strpos( $path, '/messages' ) !== false && !empty( $uri_parts['query'] ) ) {
-      parse_str( $uri_parts['query'], $query_params );
-      if ( isset( $query_params['session_id'] ) ) {
-        $simple_path .= ' (' . substr( $query_params['session_id'], 0, 8 ) . '...)';
-      }
-    }
-
-    // Uncomment the line below to see ALL HTTP requests in logs (useful when debugging Claude, ChatGPT, etc)
-    // This shows every request made by AI services to understand their connection patterns
-    // error_log( '[AI Engine MCP] ' . $_SERVER['REQUEST_METHOD'] . ' ' . $simple_path );
   }
 
   public function is_logging_enabled() {
@@ -153,15 +79,7 @@ class Meow_MWAI_Labs_MCP {
       $filter_added = true;
     }
     register_rest_route( $this->namespace, '/sse', [
-      'methods' => 'GET',
-      'callback' => [ $this, 'handle_sse' ],
-      'permission_callback' => function ( $request ) {
-        return $this->can_access_mcp( $request );
-      },
-    ] );
-
-    register_rest_route( $this->namespace, '/sse', [
-      'methods' => 'POST',
+      'methods' => [ 'GET', 'POST', 'HEAD' ],  // Support HEAD for client endpoint checks
       'callback' => [ $this, 'handle_sse' ],
       'permission_callback' => function ( $request ) {
         return $this->can_access_mcp( $request );
@@ -400,19 +318,44 @@ class Meow_MWAI_Labs_MCP {
     $method = $data['method'] ?? null;
 
     if ( json_last_error() !== JSON_ERROR_NONE ) {
-      return new WP_REST_Response( [
+      $response = new WP_REST_Response( [
         'jsonrpc' => '2.0',
         'id' => null,
         'error' => [ 'code' => -32700, 'message' => 'Parse error: invalid JSON' ]
       ], 200 );
+      $response->set_headers( [ 'Content-Type' => 'application/json' ] );
+      $session_header = $request->get_header( 'mcp-session-id' );
+      if ( !empty( $session_header ) ) {
+        return $this->attach_session_header( $response, sanitize_text_field( $session_header ) );
+      }
+      return $response;
     }
 
     if ( !is_array( $data ) || !$method ) {
-      return new WP_REST_Response( [
+      $response = new WP_REST_Response( [
         'jsonrpc' => '2.0',
         'id' => $id,
         'error' => [ 'code' => -32600, 'message' => 'Invalid Request' ]
       ], 200 );
+      $response->set_headers( [ 'Content-Type' => 'application/json' ] );
+      $session_header = $request->get_header( 'mcp-session-id' );
+      if ( !empty( $session_header ) ) {
+        return $this->attach_session_header( $response, sanitize_text_field( $session_header ) );
+      }
+      return $response;
+    }
+
+    $session_header = $request->get_header( 'mcp-session-id' );
+    $session_id = '';
+    if ( !empty( $session_header ) ) {
+      $session_id = sanitize_text_field( $session_header );
+    }
+
+    if ( $method === 'initialize' || empty( $session_id ) ) {
+      $session_id = wp_generate_uuid4();
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] 🆔 Direct session initialized: ' . $session_id );
+      }
     }
 
     try {
@@ -446,40 +389,27 @@ class Meow_MWAI_Labs_MCP {
                 'name' => get_bloginfo( 'name' ) . ' MCP',
                 'version' => $this->server_version,
               ],
-              'capabilities' => [
-                'tools' => [ 'listChanged' => true ],
-                'prompts' => [ 'subscribe' => false, 'listChanged' => false ],
-                'resources' => [ 'subscribe' => false, 'listChanged' => false ],
+              'capabilities' => (object) [
+                'tools' => new stdClass(),  // Empty object, matching official SDK
               ],
             ],
           ];
           break;
 
         case 'tools/list':
-          // Don't log every tools/list request as it's too repetitive
-
-          // Check if this is OpenAI by checking the User-Agent
-          $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
-          $is_openai = strpos( $user_agent, 'openai-mcp' ) !== false;
-
-          if ( $is_openai && $this->logging ) {
-            error_log( '[AI Engine MCP] 🎯 OpenAI client detected - filtering tools for deep research only.' );
-          }
-
           $tools = $this->get_tools_list();
 
-          // Filter tools for OpenAI - they only support search and fetch for deep research
-          if ( $is_openai ) {
-            $filtered_tools = [];
-            foreach ( $tools as $tool ) {
-              if ( in_array( $tool['name'], ['search', 'fetch'] ) ) {
-                $filtered_tools[] = $tool;
-              }
+          // Debug logging for tools/list
+          if ( $this->logging ) {
+            $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
+            error_log( '[AI Engine MCP Direct] 📋 tools/list requested by: ' . $user_agent );
+            error_log( '[AI Engine MCP Direct] 📊 Returning ' . count( $tools ) . ' tools' );
+            if ( count( $tools ) > 0 ) {
+              $tool_names = array_column( $tools, 'name' );
+              error_log( '[AI Engine MCP Direct] 🛠️ Tool names: ' . implode( ', ', $tool_names ) );
             }
-            $tools = $filtered_tools;
-
-            if ( $this->logging && count( $filtered_tools ) === 0 ) {
-              error_log( '[AI Engine MCP] ⚠️ Warning: No search or fetch tools found for OpenAI!' );
+            else {
+              error_log( '[AI Engine MCP Direct] ⚠️ WARNING: No tools returned!' );
             }
           }
 
@@ -488,23 +418,37 @@ class Meow_MWAI_Labs_MCP {
             'id' => $id,
             'result' => [ 'tools' => $tools ],
           ];
-          if ( $this->logging ) {
-            error_log( '[AI Engine MCP] 📤 Returning ' . count( $tools ) . ' tools.' );
-          }
           break;
 
         case 'tools/call':
           $params = $data['params'] ?? [];
           $tool = $params['name'] ?? '';
           $arguments = $params['arguments'] ?? [];
-          $reply = $this->execute_tool( $tool, $arguments, $id );
+
+          if ( $this->logging ) {
+            error_log( '[AI Engine MCP Direct] 🔧 tools/call - Tool: ' . $tool );
+            error_log( '[AI Engine MCP Direct] 🔧 tools/call - Arguments: ' . wp_json_encode( $arguments ) );
+          }
+
+          try {
+            $reply = $this->execute_tool( $tool, $arguments, $id );
+            if ( $this->logging ) {
+              error_log( '[AI Engine MCP Direct] ✅ tools/call - Success for tool: ' . $tool );
+            }
+          }
+          catch ( Exception $e ) {
+            if ( $this->logging ) {
+              error_log( '[AI Engine MCP Direct] ❌ tools/call - Error: ' . $e->getMessage() );
+            }
+            throw $e;
+          }
           break;
 
         case 'notifications/initialized':
           // This is a notification from the client indicating it has initialized
           // No response needed for notifications
           // Client initialized - no need to log
-          return new WP_REST_Response( null, 204 );
+          return $this->attach_session_header( new WP_REST_Response( null, 204 ), $session_id );
           break;
 
         default:
@@ -513,7 +457,7 @@ class Meow_MWAI_Labs_MCP {
             if ( $this->logging ) {
               error_log( '[AI Engine MCP] 📨 Notification received: ' . $method );
             }
-            return new WP_REST_Response( null, 204 );
+            return $this->attach_session_header( new WP_REST_Response( null, 204 ), $session_id );
           }
 
           $reply = [
@@ -526,17 +470,21 @@ class Meow_MWAI_Labs_MCP {
       // Ensure proper JSON-RPC response
       $response = new WP_REST_Response( $reply, 200 );
       $response->set_headers( [ 'Content-Type' => 'application/json' ] );
-      return $response;
+      return $this->attach_session_header( $response, $session_id );
 
     }
     catch ( Exception $e ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] ❌ Exception in handle_direct_jsonrpc: ' . $e->getMessage() );
+      }
+
       $error_response = new WP_REST_Response( [
         'jsonrpc' => '2.0',
         'id' => $id,
         'error' => [ 'code' => -32603, 'message' => 'Internal error', 'data' => $e->getMessage() ]
       ], 200 );
       $error_response->set_headers( [ 'Content-Type' => 'application/json' ] );
-      return $error_response;
+      return $this->attach_session_header( $error_response, $session_id );
     }
   }
   #endregion
@@ -582,7 +530,28 @@ class Meow_MWAI_Labs_MCP {
     return $last ?: str_replace( '-', '', wp_generate_uuid4() );
   }
 
+  private function attach_session_header( WP_REST_Response $response, string $session_id ) {
+    if ( empty( $session_id ) ) {
+      return $response;
+    }
+
+    $response->header( 'Mcp-Session-Id', $session_id );
+
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP] 🪪 Response session header: ' . $session_id );
+    }
+
+    return $response;
+  }
+
   public function handle_sse( WP_REST_Request $request ) {
+    // Handle HEAD request - just confirm endpoint exists
+    if ( $request->get_method() === 'HEAD' ) {
+      return new WP_REST_Response( null, 200, [
+        'Content-Type' => 'text/event-stream',
+        'Cache-Control' => 'no-cache',
+      ] );
+    }
 
     $raw_body = $request->get_body();
 
@@ -751,40 +720,27 @@ class Meow_MWAI_Labs_MCP {
                 'name' => get_bloginfo( 'name' ) . ' MCP',
                 'version' => $this->server_version,
               ],
-              'capabilities' => [
-                'tools' => [ 'listChanged' => true ],
-                'prompts' => [ 'subscribe' => false, 'listChanged' => false ],
-                'resources' => [ 'subscribe' => false, 'listChanged' => false ],
+              'capabilities' => (object) [
+                'tools' => new stdClass(),  // Empty object, matching official SDK
               ],
             ],
           ];
           break;
 
         case 'tools/list':
-          // Don't log every tools/list request as it's too repetitive
-
-          // Check if this is OpenAI by checking the User-Agent
-          $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
-          $is_openai = strpos( $user_agent, 'openai-mcp' ) !== false;
-
-          if ( $is_openai && $this->logging ) {
-            error_log( '[AI Engine MCP] 🎯 OpenAI client detected - filtering tools for deep research only.' );
-          }
-
           $tools = $this->get_tools_list();
 
-          // Filter tools for OpenAI - they only support search and fetch for deep research
-          if ( $is_openai ) {
-            $filtered_tools = [];
-            foreach ( $tools as $tool ) {
-              if ( in_array( $tool['name'], ['search', 'fetch'] ) ) {
-                $filtered_tools[] = $tool;
-              }
+          // Debug logging for tools/list
+          if ( $this->logging ) {
+            $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
+            error_log( '[AI Engine MCP] 📋 tools/list requested by: ' . $user_agent );
+            error_log( '[AI Engine MCP] 📊 Returning ' . count( $tools ) . ' tools' );
+            if ( count( $tools ) > 0 ) {
+              $tool_names = array_column( $tools, 'name' );
+              error_log( '[AI Engine MCP] 🛠️ Tool names: ' . implode( ', ', $tool_names ) );
             }
-            $tools = $filtered_tools;
-
-            if ( $this->logging && count( $filtered_tools ) === 0 ) {
-              error_log( '[AI Engine MCP] ⚠️ Warning: No search or fetch tools found for OpenAI!' );
+            else {
+              error_log( '[AI Engine MCP] ⚠️ WARNING: No tools returned!' );
             }
           }
 
@@ -815,7 +771,24 @@ class Meow_MWAI_Labs_MCP {
           $params = $dat['params'] ?? [];
           $tool = $params['name'] ?? '';
           $arguments = $params['arguments'] ?? [];
-          $reply = $this->execute_tool( $tool, $arguments, $id );
+
+          if ( $this->logging ) {
+            error_log( '[AI Engine MCP SSE] 🔧 tools/call - Tool: ' . $tool );
+            error_log( '[AI Engine MCP SSE] 🔧 tools/call - Arguments: ' . wp_json_encode( $arguments ) );
+          }
+
+          try {
+            $reply = $this->execute_tool( $tool, $arguments, $id );
+            if ( $this->logging ) {
+              error_log( '[AI Engine MCP SSE] ✅ tools/call - Success for tool: ' . $tool );
+            }
+          }
+          catch ( Exception $e ) {
+            if ( $this->logging ) {
+              error_log( '[AI Engine MCP SSE] ❌ tools/call - Error: ' . $e->getMessage() );
+            }
+            throw $e;
+          }
           break;
 
         default:
@@ -848,9 +821,37 @@ class Meow_MWAI_Labs_MCP {
           'properties' => (object) [],
           'required' => []
         ],
+        'annotations' => [
+          'readOnlyHint' => true,
+          'destructiveHint' => false,
+          'openWorldHint' => false,
+        ],
       ],
     ];
-    return apply_filters( 'mwai_mcp_tools', $base_tools );
+
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP] 🔧 get_tools_list() - Starting with ' . count( $base_tools ) . ' base tools' );
+    }
+
+    $filtered_tools = apply_filters( 'mwai_mcp_tools', $base_tools );
+
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP] 🔧 get_tools_list() - After filters: ' . count( $filtered_tools ) . ' tools' );
+    }
+
+    $normalized_tools = [];
+    foreach ( $filtered_tools as $tool_index => $tool_definition ) {
+      $normalized = $this->normalize_tool_definition( $tool_definition, $tool_index );
+      if ( $normalized ) {
+        $normalized_tools[] = $normalized;
+      }
+    }
+
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP] 🔧 get_tools_list() - Normalized tools: ' . count( $normalized_tools ) );
+    }
+
+    return $normalized_tools;
   }
   #endregion
 
@@ -863,6 +864,163 @@ class Meow_MWAI_Labs_MCP {
   #region Prompts Definitions
   private function get_prompts_list() {
     return [];
+  }
+  #endregion
+
+  #region Tool Normalization Helpers
+  private function normalize_tool_definition( $tool, $index ) {
+    if ( !is_array( $tool ) ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] ⚠️ Tool definition at index ' . $index . ' skipped (expected array).' );
+      }
+      return null;
+    }
+
+    $name = isset( $tool['name'] ) ? trim( (string) $tool['name'] ) : '';
+    if ( $name === '' ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] ⚠️ Tool skipped due to missing name at index ' . $index );
+      }
+      return null;
+    }
+
+    $normalized_schema = $this->normalize_input_schema( $tool['inputSchema'] ?? null, $name );
+    if ( !$normalized_schema ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] ⚠️ Tool "' . $name . '" skipped due to invalid input schema.' );
+      }
+      return null;
+    }
+
+    $normalized = [
+      'name' => $name,
+      'inputSchema' => $normalized_schema,
+    ];
+
+    if ( isset( $tool['description'] ) && $tool['description'] !== '' ) {
+      $normalized['description'] = wp_strip_all_tags( (string) $tool['description'] );
+    }
+
+    if ( isset( $tool['annotations'] ) && is_array( $tool['annotations'] ) ) {
+      $annotations = $this->normalize_annotations( $tool['annotations'], $name );
+      if ( !empty( $annotations ) ) {
+        $normalized['annotations'] = $annotations;
+      }
+    }
+
+    if ( isset( $tool['category'] ) ) {
+      $normalized['annotations'] = $normalized['annotations'] ?? [];
+      if ( empty( $normalized['annotations']['title'] ) ) {
+        $normalized['annotations']['title'] = wp_strip_all_tags( (string) $tool['category'] );
+      }
+    }
+
+    return $normalized;
+  }
+
+  private function normalize_input_schema( $schema, string $tool_name ) {
+    if ( !is_array( $schema ) ) {
+      return null;
+    }
+
+    $type = isset( $schema['type'] ) ? (string) $schema['type'] : 'object';
+    if ( $type !== 'object' ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" has unsupported schema type: ' . $type );
+      }
+      return null;
+    }
+
+    $properties = [];
+    if ( isset( $schema['properties'] ) && ( is_array( $schema['properties'] ) || is_object( $schema['properties'] ) ) ) {
+      foreach ( (array) $schema['properties'] as $prop_name => $definition ) {
+        if ( !is_array( $definition ) ) {
+          $definition = [];
+        }
+
+        if ( isset( $definition['type'] ) ) {
+          // Validate type definition
+          if ( is_array( $definition['type'] ) ) {
+            // Array of types (union types) - validate they're compatible with MCP clients
+            $type_array = array_map( 'strval', $definition['type'] );
+
+            // Check for complex types that need additional schema details
+            $complex_types = array_intersect( $type_array, [ 'object', 'array' ] );
+            if ( !empty( $complex_types ) ) {
+              if ( $this->logging ) {
+                error_log(
+                  '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" property "' . $prop_name .
+                  '" has problematic union type with complex types: [' . implode( ', ', $type_array ) .
+                  ']. This breaks ChatGPT. Auto-fixing by removing type constraint.'
+                );
+              }
+              // Auto-fix: Remove the type constraint to accept any value
+              unset( $definition['type'] );
+              // Keep description if present, or add one
+              if ( !isset( $definition['description'] ) ) {
+                $definition['description'] = 'Value can be of any type';
+              }
+            } else {
+              $definition['type'] = $type_array;
+            }
+          } else {
+            $definition['type'] = (string) $definition['type'];
+          }
+        }
+
+        $properties[ $prop_name ] = $definition;
+      }
+    }
+
+    $required = [];
+    if ( isset( $schema['required'] ) && is_array( $schema['required'] ) ) {
+      foreach ( $schema['required'] as $field ) {
+        $field_name = trim( (string) $field );
+        if ( $field_name !== '' ) {
+          $required[] = $field_name;
+        }
+      }
+      $required = array_values( array_unique( $required ) );
+    }
+
+    $normalized = [
+      'type' => 'object',
+      'properties' => empty( $properties ) ? new stdClass() : $properties,
+    ];
+
+    if ( !empty( $required ) ) {
+      $normalized['required'] = $required;
+    }
+
+    if ( array_key_exists( 'additionalProperties', $schema ) ) {
+      $normalized['additionalProperties'] = (bool) $schema['additionalProperties'];
+    }
+
+    return $normalized;
+  }
+
+  private function normalize_annotations( array $annotations, string $tool_name ): array {
+    $allowed_keys = [ 'title', 'readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint' ];
+    $normalized = [];
+
+    foreach ( $annotations as $key => $value ) {
+      if ( !in_array( $key, $allowed_keys, true ) ) {
+        continue;
+      }
+
+      if ( in_array( $key, [ 'readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint' ], true ) ) {
+        $normalized[ $key ] = (bool) $value;
+      }
+      elseif ( $key === 'title' ) {
+        $normalized['title'] = wp_strip_all_tags( (string) $value );
+      }
+    }
+
+    if ( empty( $normalized ) && $this->logging && !empty( $annotations ) ) {
+      error_log( '[AI Engine MCP] 🔎 Tool "' . $tool_name . '" included unsupported annotation keys.' );
+    }
+
+    return $normalized;
   }
   #endregion
 

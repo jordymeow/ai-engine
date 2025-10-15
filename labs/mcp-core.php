@@ -541,33 +541,6 @@ class Meow_MWAI_Labs_MCP_Core {
         ],
       ],
 
-      /* -------- Tools -------- */
-      // Note: mcp_ping is now handled by the base MCP class
-
-      /* -------- OpenAI Deep Research Tools -------- */
-      'search' => [
-        'name' => 'search',
-        'description' => 'Searches through all published posts and pages on the "' . get_bloginfo( 'name' ) . '" WordPress website' . ( get_bloginfo( 'description' ) ? ' - ' . get_bloginfo( 'description' ) : '' ) . '. This tool performs full-text search across titles and content to find relevant articles, blog posts, and static pages. The search results include article summaries and URLs for citation purposes. Use this to find information about topics covered on this WordPress site, including blog posts, tutorials, documentation, news, and any other content published on the website.',
-        'inputSchema' => [
-          'type' => 'object',
-          'properties' => [
-            'query' => [ 'type' => 'string', 'description' => 'Search query to find relevant posts and pages. Can be keywords, phrases, or topics.' ],
-          ],
-          'required' => [ 'query' ],
-        ],
-      ],
-
-      'fetch' => [
-        'name' => 'fetch',
-        'description' => 'Retrieves the complete content of a specific post or page from the "' . get_bloginfo( 'name' ) . '" WordPress website' . ( get_bloginfo( 'description' ) ? ' - ' . get_bloginfo( 'description' ) : '' ) . ' using its ID. This returns the full article text, metadata (author, publication date, categories, tags), and URL for proper citation. Use this after searching to get the complete content of relevant articles for deep analysis and comprehensive answers. The content is essential for providing accurate, detailed responses based on the actual information published on the website.',
-        'inputSchema' => [
-          'type' => 'object',
-          'properties' => [
-            'id' => [ 'type' => 'string', 'description' => 'The WordPress post ID obtained from search results.' ],
-          ],
-          'required' => [ 'id' ],
-        ],
-      ],
     ];
   }
   #endregion
@@ -575,19 +548,44 @@ class Meow_MWAI_Labs_MCP_Core {
   #region Tool Registration
   public function register_rest_tools( array $prev ): array {
     $tools = $this->tools();
-    // Add category to each tool
+
+    // All 36 core tools enabled and tested with ChatGPT.
+    // Automatic validation in mcp.php fixes problematic type definitions.
+
+    // Add category and annotations to each tool
     foreach ( $tools as &$tool ) {
       if ( !isset( $tool['category'] ) ) {
-        // Set Core: OpenAI category for search and fetch tools
-        if ( in_array( $tool['name'], ['search', 'fetch'] ) ) {
-          $tool['category'] = 'Core: OpenAI';
-        }
-        else {
-          $tool['category'] = 'Core';
-        }
+        $tool['category'] = 'Core';
+      }
+
+      // Add MCP tool annotations based on tool name/behavior
+      if ( !isset( $tool['annotations'] ) ) {
+        $name = $tool['name'];
+
+        // Read-only tools (safe, no modifications)
+        $is_readonly = (
+          strpos( $name, 'wp_get_' ) === 0 ||
+          strpos( $name, 'wp_list_' ) === 0 ||
+          strpos( $name, 'wp_count_' ) === 0 ||
+          $name === 'mwai_vision'
+        );
+
+        // Destructive tools (can delete/destroy data)
+        $is_destructive = (
+          strpos( $name, 'wp_delete_' ) === 0 ||
+          $name === 'wp_update_user' // Can change passwords/roles
+        );
+
+        $tool['annotations'] = [
+          'readOnlyHint' => $is_readonly,
+          'destructiveHint' => !$is_readonly && $is_destructive,
+          'openWorldHint' => false, // All operate on closed WordPress system
+        ];
       }
     }
-    return array_merge( $prev, array_values( $tools ) );
+
+    $merged = array_merge( $prev, array_values( $tools ) );
+    return $merged;
   }
   #endregion
 
@@ -1325,108 +1323,6 @@ class Meow_MWAI_Labs_MCP_Core {
         ];
         $this->add_result_text( $r, wp_json_encode( $media, JSON_PRETTY_PRINT ) );
         break;
-
-        /* ===== Ping ===== */
-        // Note: mcp_ping is now handled by the base MCP class
-
-        /* ===== OpenAI Deep Research Tools ===== */
-      case 'search':
-        if ( empty( $a['query'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'query required' ];
-          break;
-        }
-
-        $query = sanitize_text_field( $a['query'] );
-
-        // Search in posts and pages
-        $args = [
-          's' => $query,
-          'post_type' => [ 'post', 'page' ],
-          'post_status' => 'publish',
-          'posts_per_page' => 20,
-          'orderby' => 'relevance',
-          'order' => 'DESC',
-        ];
-
-        $search_query = new WP_Query( $args );
-        $results = [];
-
-        if ( $search_query->have_posts() ) {
-          while ( $search_query->have_posts() ) {
-            $search_query->the_post();
-            $post = get_post();
-
-            // Create result matching OpenAI's expected format
-            $results[] = [
-              'id' => (string) $post->ID,
-              'title' => get_the_title(),
-              'text' => wp_trim_words( wp_strip_all_tags( $post->post_content ), 100 ),
-              'url' => get_permalink(),
-            ];
-          }
-          wp_reset_postdata();
-        }
-
-        // Return results in OpenAI's expected format
-        // We need to return the raw result structure for OpenAI
-        return [
-          'jsonrpc' => '2.0',
-          'id' => $id,
-          'result' => [ 'results' => $results ],
-        ];
-
-      case 'fetch':
-        if ( empty( $a['id'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'id required' ];
-          break;
-        }
-
-        $post_id = intval( $a['id'] );
-        $post = get_post( $post_id );
-
-        if ( !$post || $post->post_status !== 'publish' ) {
-          $r['error'] = [ 'code' => -32603, 'message' => 'Resource not found or not published' ];
-          break;
-        }
-
-        // Get full content with proper formatting
-        $content = apply_filters( 'the_content', $post->post_content );
-        $content = wp_strip_all_tags( $content );
-
-        // Get metadata
-        $metadata = [
-          'author' => get_the_author_meta( 'display_name', $post->post_author ),
-          'date' => get_the_date( 'Y-m-d', $post ),
-          'modified' => get_the_modified_date( 'Y-m-d', $post ),
-          'type' => $post->post_type,
-        ];
-
-        // Add categories if it's a post
-        if ( $post->post_type === 'post' ) {
-          $categories = wp_get_post_categories( $post_id, [ 'fields' => 'names' ] );
-          if ( !empty( $categories ) ) {
-            $metadata['categories'] = implode( ', ', $categories );
-          }
-
-          $tags = wp_get_post_tags( $post_id, [ 'fields' => 'names' ] );
-          if ( !empty( $tags ) ) {
-            $metadata['tags'] = implode( ', ', $tags );
-          }
-        }
-
-        // Return in OpenAI's expected format
-        // We need to return the raw result structure for OpenAI
-        return [
-          'jsonrpc' => '2.0',
-          'id' => $id,
-          'result' => [
-            'id' => (string) $post_id,
-            'title' => get_the_title( $post ),
-            'text' => $content,
-            'url' => get_permalink( $post ),
-            'metadata' => $metadata,
-          ],
-        ];
 
       default: $r['error'] = [ 'code' => -32601, 'message' => 'Unknown tool' ];
     }

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.2
+Stable tag: 3.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,7 +35,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 * **Discussions & Memory Tracking**: Enable longer conversations with chatbots. Store, analyze, and export all data for insights.
 * **Function Calling**: Connect AI models to WordPress functions, tools, or APIs. Let users interact with your store, book appointments, or get real-time data.
 * **Internal & External APIs**: Integrate AI Engine’s capabilities into other plugins or custom applications through built-in internal APIs or via REST—perfect for building advanced WordPress SaaS solutions.
-- **MCP (Model Context Protocol)**: Allow powerful AI agents (like Claude) to fully control and manage your WordPress site. Automate posts, content updates, manage media, and seamlessly integrate advanced AI workflows. AI Engine can also connect to external MCP servers, expanding your AI's capabilities beyond WordPress.
+- **MCP (Model Context Protocol)**: Let AI assistants like ChatGPT and Claude directly manage your WordPress site through natural conversation. Create posts, moderate comments, install plugins, customize themes, and more—all without touching the admin panel. [Quick setup guide](https://meowapps.com/chatgpt-wordpress-mcp/). AI Engine can also connect to external MCP servers for expanded capabilities.
 * **Cross-Site Embedding**: Embed your chatbots on external websites with domain-based access control and simple JavaScript integration.
 * **AI-Powered Search**: Three intelligent methods—Simple WordPress search, Context-Aware progressive keyword search, and Smart Search using semantic embeddings.
 * **PDF Import**: Build knowledge bases from PDFs with automatic chunking and intelligent content extraction.
@@ -154,6 +154,12 @@ Check that your API key has permissions for image generation, and that the model
 Check the [docs](https://ai.thehiddendocs.com/), [support forum](https://wordpress.org/support/plugin/ai-engine/), or join us on [Discord](https://discord.com/invite/bHDGh38).
 
 == Changelog ==
+
+= 3.1.3 (2025/10/15) =
+* Add: Support for MCP with ChatGPT: https://meowapps.com/chatgpt-wordpress-mcp/.
+* Update: Made the Public API easier to understand and to test.
+* Update: Enhanced MCP and REST API sections.
+* Update: Optimized the embeddings Push All/Sync process (much, much faster).
 
 = 3.1.2 (2025/10/10) =
 * Add: Realtime Hold-to-Talk feature now includes a Replay button.

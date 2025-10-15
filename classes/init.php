@@ -104,6 +104,8 @@ spl_autoload_register( function ( $class ) {
     else {
       // Convert camelCase to kebab-case
       $filename = strtolower( preg_replace( '/([a-z])([A-Z])/', '$1-$2', $filename ) );
+      // Convert underscores to hyphens for consistency
+      $filename = str_replace( '_', '-', $filename );
     }
     $file = MWAI_PATH . '/premium/' . $filename . '.php';
   }

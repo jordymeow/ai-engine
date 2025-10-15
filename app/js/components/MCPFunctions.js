@@ -1,19 +1,17 @@
-// Previous: none
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 3.1.3
 
 // React & Vendor Libs
 const { useState } = wp.element;
 import { useQuery } from '@tanstack/react-query';
 
-import { NekoTypo, NekoButton, NekoAccordions, 
-  NekoAccordion, NekoSpacer, NekoSpinner, NekoBlock } from '@neko-ui';
+import { NekoTypo, NekoButton, NekoSpacer, NekoBlock, NekoAccordions, NekoAccordion } from '@neko-ui';
 import i18n from '@root/i18n';
 
 function MCPFunctions({ options }) {
-  const [expandedCategories, setExpandedCategories] = useState({});
-
+  // Fetch MCP functions
   const { data: mcpFunctions, isLoading: functionsLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['mcp-functions', options?.module_mcp, options?.mcp_core, options?.mcp_plugins, options?.mcp_themes, options?.mcp_dynamic_rest],
+    queryKey: ['mcp-functions', options?.mcp_core, options?.module_mcp, options?.mcp_plugins, options?.mcp_themes, options?.mcp_dynamic_rest],
     queryFn: async () => {
       const response = await fetch(`${window.wpApiSettings.root}mwai/v1/mcp/functions`, {
         headers: {
@@ -28,23 +26,26 @@ function MCPFunctions({ options }) {
     refetchInterval: false
   });
 
-  const headerButtons = options?.module_mcp && mcpFunctions?.success && mcpFunctions.count > 0 ? (
-    <NekoButton 
-      className="secondary" 
+  // Build action button
+  const actionButton = options?.module_mcp && mcpFunctions?.success && mcpFunctions.count >= 0 ? (
+    <NekoButton
+      size="small"
+      className="secondary"
+      icon="sync"
       onClick={() => refetch()}
       disabled={isRefetching}
     >
-      {isRefetching ? 'Refreshing...' : 'Refresh'}
+      {isRefetching ? 'Refreshing...' : 'Refreh'}
     </NekoButton>
   ) : null;
 
   return (
     <>
       <NekoSpacer />
-      <NekoBlock 
+      <NekoBlock
         className="primary"
         title={i18n.COMMON.MCP_FUNCTIONS || 'MCP Functions'}
-        action={headerButtons}
+        action={actionButton}
       >
         {!options?.module_mcp ? (
           <p>Enable MCP module to see available functions.</p>
@@ -59,6 +60,7 @@ function MCPFunctions({ options }) {
             )}
 
             {mcpFunctions?.functions && (() => {
+              // Group functions by category
               const functionsByCategory = mcpFunctions.functions.reduce((acc, func) => {
                 const category = func.category || 'Others';
                 if (!acc[category]) {
@@ -68,91 +70,88 @@ function MCPFunctions({ options }) {
                 return acc;
               }, {});
 
+              // Sort categories with 'Others' at the top
               const sortedCategories = Object.keys(functionsByCategory).sort((a, b) => {
-                if (a === 'Others') return 1;
-                if (b === 'Others') return -1;
+                if (a === 'Others') return -1;
+                if (b === 'Others') return 1;
                 return a.localeCompare(b);
               });
 
               return (
-                <div style={{ marginTop: 10 }}>
-                  {sortedCategories.map(category => (
-                    <div key={category} style={{ marginBottom: 15 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'space-between',
-                        borderBottom: '1px solid #e0e0e0',
-                        paddingBottom: 5,
-                        marginBottom: 10
-                      }}>
-                        <NekoTypo h4 style={{ 
-                          margin: 0,
-                          color: '#333'
-                        }}>
-                          {category} ({functionsByCategory[category].length})
-                        </NekoTypo>
-                        <NekoButton
-                          size="small"
-                          className="secondary"
-                          onClick={() => setExpandedCategories(prev => ({
-                            ...prev,
-                            [category]: !prev[category]
-                          }))}
-                        >
-                          {expandedCategories[category] ? 'Hide Details' : 'Show Details'}
-                        </NekoButton>
-                      </div>
-                      {expandedCategories[category] && (
-                        <NekoAccordions keepState={`mcpFunctionDetails-${category}`}>
-                          {functionsByCategory[category].map((func, index) => (
-                            <NekoAccordion key={`${category}-${index}`} title={func.name}>
-                              <div style={{ padding: '10px 0', color: '#333' }}>
-                                <p style={{ marginBottom: 10, color: '#333' }}>
-                                  <strong>Description:</strong> {func.description || 'No description available'}
-                                </p>
-                                {func.inputSchema && (
-                                  <div style={{ marginBottom: 10, color: '#333' }}>
-                                    <strong>Arguments:</strong>
-                                    <pre style={{ 
-                                      backgroundColor: '#f5f5f5', 
-                                      padding: 10, 
-                                      borderRadius: 4,
-                                      fontSize: 12,
-                                      overflow: 'auto',
-                                      marginTop: 5,
-                                      color: '#333',
-                                      border: '1px solid #ddd'
-                                    }}>
-                                      {JSON.stringify(func.inputSchema, null, 2)}
-                                    </pre>
-                                  </div>
-                                )}
+                <div style={{ marginTop: 15 }}>
+                  <NekoAccordions keepState="mcpFunctions">
+                    {sortedCategories.map(category => (
+                      <NekoAccordion key={category} title={`${category} (${functionsByCategory[category].length})`}>
+                        <div style={{ display: 'flex', flexDirection: 'row', gap: 12, marginTop: 10 }}>
+                        {functionsByCategory[category].map((func, index) => {
+                          const funcId = `${category}-${index}`;
 
-                                {func.outputSchema && (
-                                  <div style={{ color: '#333' }}>
-                                    <strong>Output:</strong>
-                                    <pre style={{ 
-                                      backgroundColor: '#f5f5f5', 
-                                      padding: 10, 
-                                      borderRadius: 4,
-                                      fontSize: 12,
-                                      overflow: 'auto',
-                                      marginTop: 5,
-                                      color: '#333',
-                                      border: '1px solid #ddd'
-                                    }}>
-                                      {JSON.stringify(func.outputSchema, null, 2)}
-                                    </pre>
-                                  </div>
-                                )}
+                          return (
+                            <div
+                              key={funcId}
+                              style={{
+                                padding: 15,
+                                border: '1px solid #ddd',
+                                borderRadius: 8,
+                                background: '#fafafa'
+                              }}
+                            >
+                              <div style={{
+                                fontWeight: 600,
+                                fontSize: 14,
+                                marginBottom: 6,
+                                color: '#1976d2'
+                              }}>
+                                {func.name}
                               </div>
-                            </NekoAccordion>
-                          ))}
-                        </NekoAccordions>
-                      )}
-                    </div>
-                  ))}
+                              <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: 13 }}
+                                dangerouslySetInnerHTML={{ __html: func.description || 'No description available' }}
+                              />
+
+                              {func.inputSchema && (
+                                <div style={{ marginBottom: func.outputSchema ? 12 : 0 }}>
+                                  <div style={{ fontWeight: 600, marginBottom: 5, fontSize: 12, color: '#555' }}>Arguments:</div>
+                                  <pre style={{
+                                    backgroundColor: '#f5f5f5',
+                                    padding: 10,
+                                    borderRadius: 4,
+                                    fontSize: 11,
+                                    overflow: 'auto',
+                                    margin: 0,
+                                    color: '#333',
+                                    border: '1px solid #ddd',
+                                    maxHeight: 200
+                                  }}>
+                                    {JSON.stringify(func.inputSchema, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+
+                              {func.outputSchema && (
+                                <div>
+                                  <div style={{ fontWeight: 600, marginBottom: 5, fontSize: 12, color: '#555' }}>Output:</div>
+                                  <pre style={{
+                                    backgroundColor: '#f5f5f5',
+                                    padding: 10,
+                                    borderRadius: 4,
+                                    fontSize: 11,
+                                    overflow: 'auto',
+                                    margin: 0,
+                                    color: '#333',
+                                    border: '1px solid #ddd',
+                                    maxHeight: 200
+                                  }}>
+                                    {JSON.stringify(func.outputSchema, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        </div>
+                      </NekoAccordion>
+                    ))}
+                  </NekoAccordions>
                 </div>
               );
             })()}

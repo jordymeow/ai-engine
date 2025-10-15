@@ -316,6 +316,11 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_features' ],
         'callback' => [ $this, 'rest_helpers_post_content' ],
       ] );
+      register_rest_route( $this->namespace, '/helpers/check_posts_content', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'callback' => [ $this, 'rest_helpers_check_posts_content' ],
+      ] );
       register_rest_route( $this->namespace, '/helpers/run_tasks', [
         'methods' => 'POST',
         'permission_callback' => [ $this->core, 'can_access_features' ],
@@ -1362,6 +1367,43 @@ class Meow_MWAI_Rest {
       return $this->create_rest_response( [ 'success' => true, 'content' => $cleanPost['content'],
         'checksum' => $cleanPost['checksum'], 'language' => $cleanPost['language'], 'excerpt' => $cleanPost['excerpt'],
         'postId' => $cleanPost['postId'], 'title' => $cleanPost['title'], 'url' => $cleanPost['url'] ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  // Batch check which posts have content (for Push All optimization)
+  public function rest_helpers_check_posts_content( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $postIds = isset( $params['postIds'] ) ? $params['postIds'] : [];
+
+      if ( empty( $postIds ) || !is_array( $postIds ) ) {
+        return $this->create_rest_response( [
+          'success' => false,
+          'message' => 'postIds array is required'
+        ], 400 );
+      }
+
+      $postsWithContent = [];
+
+      // Check each post ID for content
+      foreach ( $postIds as $postId ) {
+        $postId = (int) $postId;
+        $content = $this->core->get_post_content( $postId );
+
+        // Only include posts that have content
+        if ( !empty( $content ) ) {
+          $postsWithContent[] = $postId;
+        }
+      }
+
+      return $this->create_rest_response( [
+        'success' => true,
+        'postsWithContent' => $postsWithContent
+      ], 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
