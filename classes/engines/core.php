@@ -45,6 +45,59 @@ class Meow_MWAI_Engines_Core {
   }
 
   /**
+   * Safely encode data to JSON for API requests with UTF-8 error handling.
+   *
+   * WordPress content can contain malformed UTF-8 characters from various sources:
+   * - Copy-paste from Microsoft Word or other rich text editors
+   * - Database migrations from different character sets
+   * - Old content created before proper UTF-8 handling
+   * - User input with mixed encodings
+   * - WooCommerce product descriptions with special characters
+   *
+   * Without proper handling, json_encode() silently returns FALSE when encountering
+   * invalid UTF-8, causing API requests to fail cryptically with no error message.
+   *
+   * This method:
+   * 1. Uses JSON_INVALID_UTF8_SUBSTITUTE to replace invalid UTF-8 with � (U+FFFD)
+   * 2. Detects encoding failures and logs detailed debugging information
+   * 3. Throws descriptive exceptions instead of failing silently
+   *
+   * The replacement character (�) is handled correctly by all modern AI APIs and is
+   * far better than complete request failure.
+   *
+   * @param mixed $data The data to encode (array, object, string, etc.)
+   * @param string $context Optional context for error messages (e.g., 'request body', 'query')
+   * @return string The JSON-encoded string
+   * @throws Exception If JSON encoding fails even with UTF-8 substitution
+   */
+  protected function safe_json_encode( $data, $context = 'data' ) {
+    // Use JSON_INVALID_UTF8_SUBSTITUTE to handle malformed UTF-8 gracefully
+    // This flag replaces invalid sequences with the Unicode replacement character (U+FFFD)
+    $json = json_encode( $data, JSON_INVALID_UTF8_SUBSTITUTE );
+
+    if ( $json === false ) {
+      // Encoding failed even with UTF-8 substitution - log detailed debug info
+      $error_msg = json_last_error_msg();
+      error_log( "[AI Engine] JSON encode failed for {$context}: {$error_msg}" );
+      error_log( "[AI Engine] Data type: " . gettype( $data ) );
+
+      if ( is_array( $data ) || is_object( $data ) ) {
+        // Log structure (limited to prevent massive logs)
+        $structure = print_r( $data, true );
+        $preview = substr( $structure, 0, 1000 );
+        if ( strlen( $structure ) > 1000 ) {
+          $preview .= "\n... (truncated, total length: " . strlen( $structure ) . " chars)";
+        }
+        error_log( "[AI Engine] Data structure: {$preview}" );
+      }
+
+      throw new Exception( "Failed to encode {$context} as JSON: {$error_msg}" );
+    }
+
+    return $json;
+  }
+
+  /**
    * Prepare query before execution.
    * This method is called BEFORE any streaming hooks are set up.
    * Engines should override this to perform preliminary tasks like:

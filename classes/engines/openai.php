@@ -874,7 +874,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       // Prepare body
       $body = null;
       if ( $method !== 'GET' && !empty( $query ) ) {
-        $body = is_string( $query ) ? $query : json_encode( $query );
+        if ( is_string( $query ) ) {
+          $body = $query;
+        } else {
+          $body = $this->safe_json_encode( $query, 'Azure v1 query' );
+        }
       }
       
       $options = [

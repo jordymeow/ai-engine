@@ -494,7 +494,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $body = $this->build_form_body( $forms, $boundary );
     }
     else if ( !empty( $json ) ) {
-      $body = json_encode( $json );
+      $body = $this->safe_json_encode( $json, 'request body' );
     }
     $options = [
       'headers' => $headers,
@@ -1833,7 +1833,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
     // Prepare the body with json_encode, if it's not a string or null, otherwise we keep it as is.
     if ( !empty( $query ) && !is_string( $query ) ) {
-      $body = json_encode( $query );
+      $body = $this->safe_json_encode( $query, 'query body' );
     }
     else {
       $body = $query;

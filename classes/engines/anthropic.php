@@ -932,7 +932,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       // For Anthropic, we need to ensure empty objects stay as objects, not arrays
       // JSON_FORCE_OBJECT would force everything to be an object, which we don't want
       // Instead, we've already converted empty arrays to stdClass in build_body
-      $body = json_encode( $json );
+      $body = $this->safe_json_encode( $json, 'request body' );
       
       // Debug logging to verify JSON encoding
       if ( $this->core->get_option( 'queries_debug_mode' ) ) {

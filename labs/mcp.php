@@ -7,24 +7,18 @@
 *
 * Current Implementation:
 * - Works reliably with Claude App through the mcp.js relay
+* - Works with ChatGPT and other AI assistants that support MCP
 * - The mcp.js relay handles proper disconnection, mwai/kill signals, and other AI Engine-specific features
 * - OAuth authentication flow is currently disabled due to security concerns
 *   (only static bearer tokens are supported)
-* - Works with OpenAI/ChatGPT, but OpenAI limits MCP to only 'search' and 'fetch' tools for their Deep Research feature
-*   (these tools are provided by AI Engine's Tuned Core module and search through WordPress posts/pages)
 *
 * Direct Connection Challenges:
-* The goal is to support direct connections from Claude.ai and OpenAI to this MCP server without
+* The goal is to support direct connections from Claude.ai and ChatGPT to this MCP server without
 * requiring the mcp.js relay. However, this is challenging due to:
 * - PHP's blocking nature causing threads to freeze during long-running SSE connections
 * - Difficulty in properly handling connection termination and cleanup
-* - Protocol version differences between clients (e.g., Claude.ai uses 2024-11-05)
+* - Protocol version differences between clients
 * - Multiple rapid reconnection attempts from AI services overwhelming the PHP server
-*
-* OpenAI Limitations:
-* - OpenAI's MCP implementation is limited to Deep Research functionality only
-* - Only 'search' and 'fetch' tools are supported (no other WordPress management tools)
-* - This significantly limits the MCP capabilities compared to Claude's full implementation
 *
 * The mcp.js relay remains the recommended approach for production use until these
 * direct connection issues are resolved.
@@ -103,6 +97,7 @@ class Meow_MWAI_Labs_MCP {
         'permission_callback' => function ( $request ) {
           return $this->handle_noauth_access( $request );
         },
+        'show_in_index' => false,
       ] );
 
       register_rest_route( $this->namespace, '/' . $this->bearer_token . '/sse', [
@@ -111,6 +106,7 @@ class Meow_MWAI_Labs_MCP {
         'permission_callback' => function ( $request ) {
           return $this->handle_noauth_access( $request );
         },
+        'show_in_index' => false,
       ] );
 
       register_rest_route( $this->namespace, '/' . $this->bearer_token . '/messages', [
@@ -119,6 +115,7 @@ class Meow_MWAI_Labs_MCP {
         'permission_callback' => function ( $request ) {
           return $this->handle_noauth_access( $request );
         },
+        'show_in_index' => false,
       ] );
     }
   }

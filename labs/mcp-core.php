@@ -242,10 +242,26 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_get_post' => [
         'name' => 'wp_get_post',
-        'description' => 'Get a single post by ID (all fields inc. full content).',
+        'description' => 'Get basic post data by ID (title, content, status, dates). For complete data including all meta and terms, use wp_get_post_snapshot instead.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [ 'ID' => [ 'type' => 'integer' ] ],
+          'required' => [ 'ID' ],
+        ],
+      ],
+      'wp_get_post_snapshot' => [
+        'name' => 'wp_get_post_snapshot',
+        'description' => 'Get complete post data in ONE call: all post fields, all meta, all terms/taxonomies, featured image, and author. Use this for WooCommerce products, events, or any post type where you need full context. Reduces 10-20 API calls to just 1. Returns structured JSON with post, meta, terms, thumbnail, and author keys.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'ID' => [ 'type' => 'integer', 'description' => 'Post ID' ],
+            'include' => [
+              'type' => 'array',
+              'description' => 'Optional: fields to include (default: all). Options: meta, terms, thumbnail, author',
+              'items' => [ 'type' => 'string' ],
+            ],
+          ],
           'required' => [ 'ID' ],
         ],
       ],
@@ -268,7 +284,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_update_post' => [
         'name' => 'wp_update_post',
-        'description' => 'Update a post – pass ID plus a “fields” object containing any post fields to update; meta_input adds/updates custom fields. post_category (array of term IDs) REPLACES existing categories; use wp_add_post_terms to append.',
+        'description' => 'Update post fields and/or meta in ONE call. Pass ID + "fields" object (post_title, post_content, post_status, etc.) and/or "meta_input" object for custom fields. Efficient for WooCommerce products: update title + price + stock together. Note: post_category REPLACES categories; use wp_add_post_terms to append instead.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -309,7 +325,7 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Post-meta -------- */
       'wp_get_post_meta' => [
         'name' => 'wp_get_post_meta',
-        'description' => 'Retrieve post meta. Provide "key" to fetch a single value; omit to fetch all custom fields.',
+        'description' => 'Get specific post meta field(s). Provide "key" to fetch a single value; omit to fetch all custom fields. If you need ALL meta along with post data and terms, use wp_get_post_snapshot instead for efficiency.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -321,7 +337,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_update_post_meta' => [
         'name' => 'wp_update_post_meta',
-        'description' => 'Create or update one or more custom fields for a post.',
+        'description' => 'Update post meta efficiently. Use "meta" object to update MULTIPLE fields at once (e.g., {_price: "19.99", _stock: "50", _sku: "WIDGET"}), or use "key"+"value" for a single field. Essential for WooCommerce products and custom post types.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -441,7 +457,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_add_post_terms' => [
         'name' => 'wp_add_post_terms',
-        'description' => 'Attach terms to a post.',
+        'description' => 'Attach or replace terms for a post. Set "append=true" to ADD terms to existing ones, or "append=false" (default) to REPLACE all terms. Use for categories, tags, or WooCommerce attributes (pa_color, pa_size, etc.).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -886,6 +902,97 @@ class Meow_MWAI_Labs_MCP_Core {
           'post_modified' => $p->post_modified,
         ];
         $this->add_result_text( $r, wp_json_encode( $out, JSON_PRETTY_PRINT ) );
+        break;
+
+        /* ===== Posts: snapshot ===== */
+      case 'wp_get_post_snapshot':
+        if ( empty( $a['ID'] ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
+          break;
+        }
+
+        $post_id = intval( $a['ID'] );
+        $p = get_post( $post_id );
+
+        if ( !$p ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post not found' ];
+          break;
+        }
+
+        $include = $a['include'] ?? [ 'meta', 'terms', 'thumbnail', 'author' ];
+
+        $snapshot = [
+          'post' => [
+            'ID' => $p->ID,
+            'post_title' => $p->post_title,
+            'post_type' => $p->post_type,
+            'post_status' => $p->post_status,
+            'post_content' => $this->clean_html( $p->post_content ),
+            'post_excerpt' => $this->post_excerpt( $p ),
+            'post_name' => $p->post_name,
+            'permalink' => get_permalink( $p ),
+            'post_date' => $p->post_date,
+            'post_modified' => $p->post_modified,
+          ],
+        ];
+
+        // Include all post meta
+        if ( in_array( 'meta', $include ) ) {
+          $snapshot['meta'] = [];
+          $all_meta = get_post_meta( $post_id );
+          foreach ( $all_meta as $key => $value ) {
+            if ( is_array( $value ) && count( $value ) === 1 ) {
+              $snapshot['meta'][ $key ] = maybe_unserialize( $value[0] );
+            }
+            else {
+              $snapshot['meta'][ $key ] = array_map( 'maybe_unserialize', $value );
+            }
+          }
+        }
+
+        // Include all taxonomies and their terms
+        if ( in_array( 'terms', $include ) ) {
+          $snapshot['terms'] = [];
+          $taxonomies = get_object_taxonomies( $p->post_type );
+          foreach ( $taxonomies as $taxonomy ) {
+            $terms = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'all' ] );
+            if ( !is_wp_error( $terms ) && !empty( $terms ) ) {
+              $snapshot['terms'][ $taxonomy ] = array_map( function ( $t ) {
+                return [
+                  'term_id' => $t->term_id,
+                  'name' => $t->name,
+                  'slug' => $t->slug,
+                ];
+              }, $terms );
+            }
+          }
+        }
+
+        // Include featured image
+        if ( in_array( 'thumbnail', $include ) ) {
+          $thumb_id = get_post_thumbnail_id( $post_id );
+          if ( $thumb_id ) {
+            $snapshot['thumbnail'] = [
+              'ID' => $thumb_id,
+              'url' => wp_get_attachment_url( $thumb_id ),
+              'alt' => get_post_meta( $thumb_id, '_wp_attachment_image_alt', true ),
+            ];
+          }
+        }
+
+        // Include author
+        if ( in_array( 'author', $include ) ) {
+          $author = get_userdata( $p->post_author );
+          if ( $author ) {
+            $snapshot['author'] = [
+              'ID' => $author->ID,
+              'display_name' => $author->display_name,
+              'user_login' => $author->user_login,
+            ];
+          }
+        }
+
+        $this->add_result_text( $r, wp_json_encode( $snapshot, JSON_PRETTY_PRINT ) );
         break;
 
         /* ===== Posts: create ===== */

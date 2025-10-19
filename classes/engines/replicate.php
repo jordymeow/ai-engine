@@ -304,7 +304,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
       $body = $this->build_form_body( $forms, $boundary );
     }
     else if ( !empty( $json ) ) {
-      $body = json_encode( $json );
+      $body = $this->safe_json_encode( $json, 'request body' );
     }
     $options = [
       'headers' => $headers,
@@ -627,7 +627,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
     $overrideUrl = false
   ) {
     $headers = "Content-Type: application/json\r\n" . 'Authorization: Bearer ' . $this->apiKey . "\r\n";
-    $body = $query ? json_encode( $query ) : null;
+    $body = $query ? $this->safe_json_encode( $query, 'query body' ) : null;
     if ( !empty( $formFields ) ) {
       $boundary = wp_generate_password( 24, false );
       $headers = [

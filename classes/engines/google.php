@@ -451,7 +451,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       throw new Exception( 'No support for form-data requests yet.' );
     }
     else if ( !empty( $json ) ) {
-      $body = json_encode( $json );
+      $body = $this->safe_json_encode( $json, 'request body' );
     }
     return [
       'headers' => $headers,
