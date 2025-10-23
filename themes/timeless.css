@@ -1546,7 +1546,7 @@
 .mwai-timeless-theme .mwai-text {
   overflow-wrap: anywhere;
 }
-.mwai-timeless-theme .mwai-text img {
+.mwai-timeless-theme .mwai-text img, .mwai-timeless-theme .mwai-text svg {
   max-width: 100%;
 }
 .mwai-timeless-theme .mwai-text div p:first-child {

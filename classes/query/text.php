@@ -15,7 +15,7 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   #region Constructors, Serialization
 
-  public function __construct( ?string $message = '', ?int $maxTokens = null, string $model = null ) {
+  public function __construct( ?string $message = '', ?int $maxTokens = null, ?string $model = null ) {
     parent::__construct( $message );
     if ( !empty( $model ) ) {
       $this->set_model( $model );

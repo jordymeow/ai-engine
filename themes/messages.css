@@ -1422,7 +1422,7 @@
 .mwai-messages-theme .mwai-text {
   overflow-wrap: anywhere;
 }
-.mwai-messages-theme .mwai-text img {
+.mwai-messages-theme .mwai-text img, .mwai-messages-theme .mwai-text svg {
   max-width: 100%;
 }
 .mwai-messages-theme .mwai-text div p:first-child {

@@ -632,7 +632,7 @@ class Meow_MWAI_Rest {
       'mwai_tasks_internal_run' => 'Processes background tasks and queued operations.',
       'mwai_tasks_internal_dev_run' => 'Processes tasks in development mode (every 5 seconds).',
       'mwai_cleanup_oauth' => 'Cleans up expired OAuth tokens and sessions.',
-      'mwai_files_cleanup' => 'Removes temporary and orphaned files.',
+      'mwai_files_cleanup' => 'Removes expired files based on expiration dates.',
       'mwai_discussions' => 'Maintains chat discussions database and removes old entries.'
     ];
     return isset( $descriptions[$hook] ) ? $descriptions[$hook] : '';

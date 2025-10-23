@@ -1031,7 +1031,7 @@ class Meow_MWAI_Modules_Tasks {
     $this->ensure( [
       'name' => 'cleanup_files',
       'category' => 'system',
-      'description' => 'Delete orphaned and temporary files.',
+      'description' => 'Delete expired files based on expiration dates.',
       'schedule' => '0 4 * * *', // Daily at 4 AM UTC
     ] );
     

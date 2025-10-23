@@ -973,6 +973,38 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
   ],
   [
+    'model' => 'claude-haiku-4-5-20251001',
+    'name' => 'Claude-4.5 Haiku (2025/10/01)',
+    'family' => 'claude-4',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.00,
+      'out' => 5.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 64000,
+    'maxContextualTokens' => 200000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+  ],
+  [
+    'model' => 'claude-haiku-4-5',
+    'name' => 'Claude-4.5 Haiku',
+    'family' => 'claude-4',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.00,
+      'out' => 5.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 64000,
+    'maxContextualTokens' => 200000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
+  ],
+  [
     'model' => 'claude-3-7-sonnet-latest',
     'name' => 'Claude-3.7 Sonnet',
     'family' => 'claude-3',
