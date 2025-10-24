@@ -30,18 +30,16 @@ With **AI Engine** active your WordPress site publishes **30‑plus tools** that
 - **Claude Desktop ≥ 0.9.2** 
 - **Node ≥ 20.19.0**
 
-### Setup (3 simple steps)
+### Setup (2 simple steps)
 
-1. **Set a token in WordPress**  
-   Go to **AI Engine › DevTools › MCP Settings** and set a **Bearer token**
+1. **Get your No-Auth URL from WordPress**
+   - Go to **AI Engine › DevTools › MCP Settings**
+   - Enable **No-Auth URL**
+   - Copy the full URL (e.g., `https://yoursite.com/wp-json/mcp/v1/abc123token/sse`)
 
-2. **Add your site**  
+2. **Add your site and test**
    ```bash
-   ./mcp.js add https://yoursite.com YOUR_TOKEN
-   ```
-
-3. **Test the connection**  
-   ```bash
+   ./mcp.js add https://yoursite.com/wp-json/mcp/v1/YOUR_TOKEN/sse
    ./mcp.js start
    ```
 
@@ -52,8 +50,9 @@ That's it! Claude should now show a **plug icon** and **hammer** with ≈30 tool
 ## 2 · Available Commands
 
 ```bash
-# Add a new site (automatically sets it as Claude's target)
-./mcp.js add <site-url> <token>
+# Add a new site with No-Auth URL (automatically sets it as Claude's target)
+./mcp.js add <noauth-url>
+# Example: ./mcp.js add https://example.com/wp-json/mcp/v1/abc123/sse
 
 # List all registered sites (→ shows current Claude target)
 ./mcp.js list
@@ -112,16 +111,16 @@ Just copy-paste one of the test commands to verify everything works!
 If you have multiple WordPress sites:
 
 ```bash
-# Add all your sites
-./mcp.js add https://site1.com TOKEN1
-./mcp.js add https://site2.com TOKEN2  
-./mcp.js add https://site3.com TOKEN3
+# Add all your sites (get each No-Auth URL from WordPress)
+./mcp.js add https://site1.com/wp-json/mcp/v1/token1/sse
+./mcp.js add https://site2.com/wp-json/mcp/v1/token2/sse
+./mcp.js add https://site3.com/wp-json/mcp/v1/token3/sse
 
 # See which one Claude is using
 ./mcp.js list
 # Output:
 # → https://site3.com
-# • https://site1.com  
+# • https://site1.com
 # • https://site2.com
 
 # Switch to a different site
@@ -129,9 +128,9 @@ If you have multiple WordPress sites:
 # Shows interactive menu:
 # Select a site for Claude:
 #   1. https://site1.com
-#   2. https://site2.com  
+#   2. https://site2.com
 #   3. https://site3.com (current)
-# 
+#
 # Enter selection (1-3): 1
 # ✓ Claude → https://site1.com
 ```
@@ -151,17 +150,19 @@ If you have multiple WordPress sites:
 ## 6 · Troubleshooting
 
 ### Authentication Issues
-- **Claude shows no tools**: Check your Bearer token in WordPress matches what you used with `add`
-- **401/403 errors**: Token mismatch - re-run `./mcp.js add yoursite.com CORRECT_TOKEN`
+- **Claude shows no tools**: Verify your No-Auth URL is correct
+- **401/403 errors**: Get a fresh No-Auth URL from WordPress → AI Engine → Dev Tools → MCP Settings
+- **Invalid URL format**: Make sure you copied the full URL including `/sse` at the end
 
-### Connection Issues  
-- **Can't connect**: Check if your site's `/wp-json/mcp/v1/sse` endpoint is accessible
+### Connection Issues
+- **Can't connect**: Test the No-Auth URL directly in a browser - you should see SSE connection
 - **Stalls on managed hosting**: See hosting caveats below
 
 ### Quick Reset
 ```bash
 ./mcp.js remove yoursite.com
-./mcp.js add yoursite.com YOUR_TOKEN
+# Get fresh No-Auth URL from WordPress, then:
+./mcp.js add https://yoursite.com/wp-json/mcp/v1/NEW_TOKEN/sse
 ./mcp.js start  # test again
 ```
 

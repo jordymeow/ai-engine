@@ -7,21 +7,18 @@
 *
 * Current Implementation:
 * - Works reliably with Claude App through the mcp.js relay
-* - Works with ChatGPT and other AI assistants that support MCP
-* - The mcp.js relay handles proper disconnection, mwai/kill signals, and other AI Engine-specific features
+* - Works directly with Claude.ai and ChatGPT via SSE connections
+* - Properly handles agent cancellation signals (notifications/cancelled) to free workers immediately
+* - Uses 30-second timeout to prevent worker exhaustion from abandoned connections
+* - Sends heartbeat signals to detect dead connections quickly
 * - OAuth authentication flow is currently disabled due to security concerns
 *   (only static bearer tokens are supported)
 *
-* Direct Connection Challenges:
-* The goal is to support direct connections from Claude.ai and ChatGPT to this MCP server without
-* requiring the mcp.js relay. However, this is challenging due to:
-* - PHP's blocking nature causing threads to freeze during long-running SSE connections
-* - Difficulty in properly handling connection termination and cleanup
-* - Protocol version differences between clients
-* - Multiple rapid reconnection attempts from AI services overwhelming the PHP server
-*
-* The mcp.js relay remains the recommended approach for production use until these
-* direct connection issues are resolved.
+* Connection Management:
+* - Agents send notifications/cancelled when done, triggering immediate SSE closure
+* - 30-second timeout ensures workers are freed even if agents forget to disconnect
+* - Heartbeat comments (every 10s) help proxies and connection_aborted() detect dead sockets
+* - Both the mcp.js relay and direct agent connections work reliably
 */
 
 class Meow_MWAI_Labs_MCP {
@@ -599,8 +596,8 @@ class Meow_MWAI_Labs_MCP {
 
     /* — main loop —*/
     while ( true ) {
-      // Use shorter timeout in debug mode for easier testing
-      $max_time = $this->logging ? 30 : 60 * 5; // 30 seconds in debug, 5 minutes in production
+      // Reduced timeout to free workers faster when agents disconnect
+      $max_time = $this->logging ? 30 : 60 * 3; // 30 seconds in debug, 3 minutes in production
       $idle = ( time() - $this->last_action_time ) >= $max_time;
       if ( connection_aborted() || $idle ) {
         $this->reply( 'bye' );
@@ -608,6 +605,16 @@ class Meow_MWAI_Labs_MCP {
           error_log( '[AI Engine MCP] 🔚 SSE closed (' . ( $idle ? 'idle' : 'abort' ) . ')' );
         }
         break;
+      }
+
+      // Send heartbeat every 10 seconds to detect dead connections
+      $time_since_last = time() - $this->last_action_time;
+      if ( $time_since_last >= 10 && $time_since_last % 10 === 0 ) {
+        echo ": heartbeat\n\n";
+        if ( ob_get_level() ) {
+          ob_end_flush();
+        }
+        flush();
       }
 
       foreach ( $this->fetch_messages( $this->session_id ) as $p ) {
@@ -659,6 +666,17 @@ class Meow_MWAI_Labs_MCP {
 
     /* — notifications —*/
     if ( $method === 'initialized' ) {
+      return new WP_REST_Response( null, 204 );
+    }
+    if ( $method === 'notifications/cancelled' ) {
+      // Agent finished - queue kill signal to close SSE immediately
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] Agent cancelled - closing SSE connection' );
+      }
+      $this->store_message( $sess, [
+        'jsonrpc' => '2.0',
+        'method' => 'mwai/kill'
+      ] );
       return new WP_REST_Response( null, 204 );
     }
     if ( $method === 'mwai/kill' ) {

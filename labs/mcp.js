@@ -27,7 +27,8 @@ const readJSON  = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } 
 const writeJSON = (f, o) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, JSON.stringify(o, null, 2)); };
 
 const toDomain = s => new URL(/^https?:/.test(s) ? s : `https://${s}`).hostname.toLowerCase();
-const sseURL   = u => u.replace(/\/+$/, '') + '/wp-json/mcp/v1/sse/';
+const sseURL   = (baseUrl, token) => `${baseUrl.replace(/\/+$/, '')}/wp-json/mcp/v1/${token}/sse`;
+const buildMessagesURL = (baseUrl, token, sessionId) => `${baseUrl.replace(/\/+$/, '')}/wp-json/mcp/v1/${token}/messages?session_id=${sessionId}`;
 const die      = m => { console.error(m); process.exit(1); };
 
 /* colors for terminal output */
@@ -101,16 +102,29 @@ const activeDomain = () => readJSON(CLAUDE_CFG)?.mcpServers?.['AI Engine']?.args
 const [ , , cmd = 'help', ...args] = process.argv;
 
 const HELP = `
-add    <site-url> <token>     Register / update site (and set Claude target)
-remove <domain|url>           Unregister site
-list                          Show sites
-claude [domain|url]           Show / change Claude target
-select                        Interactively select a site for Claude
-reset                         Remove all registered sites and reset configuration
-start  [domain|url] [--raw]   Verbose relay (add --raw for JSON responses)
-relay  <domain|url>           Silent relay (for Claude Desktop)
-post   <domain> <json> <sid>  Fire raw JSON-RPC (debug)
-help                          This help
+AI Engine MCP Relay - Connects Claude Desktop to WordPress
+Config: ${CLAUDE_CFG}
+
+Quick Start:
+  1. Get No-Auth URL: WordPress → AI Engine → Dev Tools → MCP Settings
+  2. ./mcp.js add https://yoursite.com/wp-json/mcp/v1/YOUR_TOKEN/sse
+  3. Restart Claude Desktop (to load new config)
+  4. ./mcp.js relay (keeps running, shows tool calls)
+  5. Use Claude - tools appear automatically!
+
+Commands:
+  add <noauth-url>     Register site (configures Claude Desktop)
+  relay                Start relay (keeps running, shows tool calls)
+  start                Test connection (verbose output)
+  list                 Show registered sites
+  select               Switch between sites
+  remove <domain>      Unregister site
+  reset                Remove all sites
+
+Troubleshooting:
+  • No tools in Claude → Restart Claude Desktop after "add"
+  • Connection issues → Run "./mcp.js start" for details
+  • Logs in ~/.mcp/
 `.trim();
 
 switch (cmd) {
@@ -127,29 +141,42 @@ switch (cmd) {
 }
 
 /* ---------- CLI actions ---------- */
-function addSite(url, token) {
-  if (!url || !token) die('add <site-url> <token> (token is required)');
-  
-  // Check if URL contains /sse or other API paths
-  if (url.includes('/wp-json/') || url.includes('/sse')) {
-    console.log('⚠️  Please use the base URL of your website, not the API endpoint.');
-    console.log('   Example: https://example.com instead of https://example.com/wp-json/mcp/v1/sse');
+function addSite(noauthUrl) {
+  if (!noauthUrl) die('add <noauth-url>\n\nExample: ./mcp.js add https://example.com/wp-json/mcp/v1/abc123/sse\n\nGet your No-Auth URL from: WordPress → AI Engine → Dev Tools → MCP Settings');
+
+  // Parse No-Auth URL to extract base URL and token
+  // Expected format: https://example.com/wp-json/mcp/v1/{token}/sse
+  const match = noauthUrl.match(/^(https?:\/\/[^\/]+)(\/wp-json\/mcp\/v1\/)([^\/]+)(\/sse\/?)?$/);
+
+  if (!match) {
+    console.log('❌ Invalid No-Auth URL format.');
+    console.log('');
+    console.log('Expected format:');
+    console.log('  https://example.com/wp-json/mcp/v1/YOUR_TOKEN/sse');
+    console.log('');
+    console.log('Get your No-Auth URL from:');
+    console.log('  WordPress → AI Engine → Dev Tools → MCP Settings → Enable No-Auth URL');
     return;
   }
-  
-  const norm = url.replace(/\/+$/, '');
-  const dom  = toDomain(norm);
+
+  const baseUrl = match[1]; // https://example.com
+  const token = match[3];   // abc123
+  const dom = toDomain(baseUrl);
   const existed = !!sites[dom];
-  sites[dom] = { url: norm, token };
-  saveSites(); setClaudeTarget(dom);
-  console.log(`✓ ${existed ? 'updated' : 'added'} ${norm}`);
-  
+
+  sites[dom] = { url: baseUrl, token };
+  saveSites();
+  setClaudeTarget(dom);
+
+  console.log(`✓ ${existed ? 'updated' : 'added'} ${baseUrl}`);
+  console.log(`  Token: ${token.substring(0, 8)}...`);
+
   // Provide guidance about HTTPS vs HTTP
-  if (norm.startsWith('https://')) {
+  if (baseUrl.startsWith('https://')) {
     console.log('\n📌 Using HTTPS - make sure your SSL certificate is valid.');
-    console.log('   If you encounter connection issues, try using http:// instead.');
-  } else if (norm.startsWith('http://')) {
-    console.log('\n📌 Using HTTP (unencrypted). Consider using https:// if available.');
+    console.log('   If you encounter connection issues, ask for the HTTP No-Auth URL.');
+  } else if (baseUrl.startsWith('http://')) {
+    console.log('\n⚠️  Using HTTP (unencrypted). Consider using HTTPS if available.');
   }
 }
 function removeSite(ref) {
@@ -249,9 +276,8 @@ async function firePost([dom, json, sid]) {
   if (!site) die('unknown site');
 
   const fetchFn = global.fetch || (await import('node-fetch')).default;
-  const url = `${site.url.replace(/\/+$/, '')}/wp-json/mcp/v1/messages?session_id=${sid}`;
+  const url = buildMessagesURL(site.url, site.token, sid);
   const headers = { 'content-type': 'application/json' };
-  if (site.token) headers.authorization = `Bearer ${site.token}`;
 
   const res = await fetchFn(url, { method: 'POST', headers, body: json });
   console.log('HTTP', res.status);
@@ -285,7 +311,7 @@ function pickSite(ref) {
 ////////////////////////////////////////////////////////////////////////////////
 async function runRelay(site, verbose, showRaw = false) {
   if (!site.token) {
-    die('No token configured for this site. Use "add <site-url> <token>" to update.');
+    die('No token configured for this site. Use "add <noauth-url>" to register.');
   }
   const fetchFn = global.fetch || (await import('node-fetch')).default;
 
@@ -331,6 +357,12 @@ async function runRelay(site, verbose, showRaw = false) {
     /* auth already failed → instant error */
     if (authFail && id !== undefined) return authError(id, authFail);
 
+    /* log tool calls in relay mode */
+    if (!verbose && method === 'tools/call' && params?.name) {
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      process.stderr.write(`[${now}] ${params.name}\n`);
+    }
+
     id2method.set(id, method);
     messagesURL ? forward(rawLine, id)     // endpoint known → send now
                 : backlog.push({ rawLine, id });
@@ -351,7 +383,6 @@ async function runRelay(site, verbose, showRaw = false) {
   /* ---- POST /messages ---- */
   async function forward(rawLine, id) {
     const headers = { 'content-type': 'application/json' };
-    if (site.token) headers.authorization = `Bearer ${site.token}`;
 
     logB('client', id, id2method.get(id), {});
     try {
@@ -369,14 +400,15 @@ async function runRelay(site, verbose, showRaw = false) {
   }
 
   /* ---- connect to SSE ---- */
-  const endpoint = sseURL(site.url);
+  const endpoint = sseURL(site.url, site.token);
   if (verbose) {
     showWelcome();
     console.error(c('white', '▶ Connecting to MCP server'));
     console.error(c('blue', endpoint));
     console.error('');
   } else {
-    process.stderr.write('AI Engine relay started\n');
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    process.stderr.write(`[${now}] Relay started → ${site.url}\n`);
   }
 
   while (!closing) {
@@ -389,7 +421,6 @@ async function runRelay(site, verbose, showRaw = false) {
         connection: 'keep-alive',
         'user-agent': 'Mozilla/5.0'
       };
-      if (site.token) headers.authorization = `Bearer ${site.token}`;
 
       const res = await fetchFn(endpoint, { headers, signal: sseAbort.signal });
 
@@ -448,31 +479,37 @@ async function runRelay(site, verbose, showRaw = false) {
     const data = frame.match(/(?:^data:|\ndata:)([\s\S]*)/m)?. [1]?.replace(/\ndata:/g, '').trim() || '';
 
     if (evt === 'endpoint') {
-      messagesURL = data;
+      // Extract session_id from the returned endpoint URL
+      const sessionMatch = data.match(/session_id=([^&]+)/);
+      if (!sessionMatch) {
+        console.error('✗ Failed to extract session_id from endpoint');
+        return;
+      }
+
+      const sessionId = sessionMatch[1];
+
+      // Build No-Auth messages URL
+      messagesURL = buildMessagesURL(site.url, site.token, sessionId);
+
       if (verbose) {
         console.error(c('white', '✓ MCP server connected'));
-        console.error(c('green', data));
+        console.error(c('green', messagesURL));
         console.error('');
-        
-        // Extract session_id from URL
-        const sessionMatch = data.match(/session_id=([^&]+)/);
-        if (sessionMatch) {
-          const sessionId = sessionMatch[1];
-          const domain = toDomain(site.url);
-          const toolsCmd = `${SELF} post ${domain} '{"jsonrpc":"2.0","method":"tools/list","id":1}' ${sessionId}`;
-          const pingCmd = `${SELF} post ${domain} '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"mcp_ping","arguments":{}},"id":2}' ${sessionId}`;
-          
-          console.error(c('white', 'Test the connection in another terminal:'));
-          console.error(c('white', 'Simple ping test:'));
-          console.error(c('lightblue', pingCmd));
-          console.error('');
-          console.error(c('white', 'List all available tools:'));
-          console.error(c('lightblue', toolsCmd));
-          console.error('');
-          console.error(c('white', 'For raw JSON responses, add'), c('lightblue', '--raw'), c('white', 'to any command'));
-          console.error(c('blue', 'Results will appear in this terminal.'));
-          console.error('');
-        }
+
+        const domain = toDomain(site.url);
+        const toolsCmd = `${SELF} post ${domain} '{"jsonrpc":"2.0","method":"tools/list","id":1}' ${sessionId}`;
+        const pingCmd = `${SELF} post ${domain} '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"mcp_ping","arguments":{}},"id":2}' ${sessionId}`;
+
+        console.error(c('white', 'Test the connection in another terminal:'));
+        console.error(c('white', 'Simple ping test:'));
+        console.error(c('lightblue', pingCmd));
+        console.error('');
+        console.error(c('white', 'List all available tools:'));
+        console.error(c('lightblue', toolsCmd));
+        console.error('');
+        console.error(c('white', 'For raw JSON responses, add'), c('lightblue', '--raw'), c('white', 'to any command'));
+        console.error(c('blue', 'Results will appear in this terminal.'));
+        console.error('');
       }
       backlog.splice(0).forEach(b => forward(b.rawLine, b.id));
       return;
@@ -589,7 +626,6 @@ async function runRelay(site, verbose, showRaw = false) {
     if (messagesURL) {
       try {
         const headers = { 'content-type': 'application/json' };
-        if (site.token) headers.authorization = `Bearer ${site.token}`;
         await fetchFn(messagesURL, {
           method: 'POST',
           headers,
