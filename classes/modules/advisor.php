@@ -48,7 +48,7 @@ Instead of focusing on individual plugins, provide more general and holistic rec
 
   public function init() {
     // Handle manual refresh request
-    if ( $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['refresh_advisor_nonce'] ) ) {
+    if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['refresh_advisor_nonce'] ) ) {
       if ( wp_verify_nonce( $_POST['refresh_advisor_nonce'], 'refresh_advisor_action' ) ) {
         $this->run_advisor();
         wp_safe_redirect( remove_query_arg( 'refresh_advisor' ) );

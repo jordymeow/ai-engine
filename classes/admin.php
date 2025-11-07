@@ -362,6 +362,13 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     wp_set_script_translations( 'mwai', 'ai-engine' );
 
     // Prepare localization data
+    // Get build reference for asset management
+    $build_ref = null;
+    if ( class_exists( 'MeowCommonPro_Integrity' ) ) {
+      $integrity = new MeowCommonPro_Integrity( MWAI_PREFIX, MWAI_PATH );
+      $build_ref = $integrity->get_build_ref( MWAI_VERSION );
+    }
+
     $localize_data = [
       'api_url' => get_rest_url( null, 'mwai/v1' ),
       'rest_url' => get_rest_url(),
@@ -371,6 +378,7 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
       'domain' => MWAI_DOMAIN,
       'is_pro' => class_exists( 'MeowPro_MWAI_Core' ),
       'is_registered' => !!$this->is_registered(),
+      'build_ref' => $build_ref,
       'rest_nonce' => wp_create_nonce( 'wp_rest' ),
       'session' => $this->core->get_session_id(),
       'options' => $this->core->get_all_options(),

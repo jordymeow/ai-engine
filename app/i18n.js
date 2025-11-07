@@ -405,6 +405,7 @@ i18n.HELP = {
   AZURE_API_KEY_URL: 'https://oai.azure.com/portal',
   AZURE_API_KEY_LINK_TEXT: __( 'Azure Account ↗', 'ai-engine' ),
   AZURE_ENDPOINT: __( 'Enter just your Azure resource domain (e.g., <code>myresource.openai.azure.com</code>). AI Engine will automatically construct the appropriate API endpoint based on the model type.', 'ai-engine' ),
+  AZURE_REGION: __( 'Optional: Specify your Azure deployment region (e.g., <code>swedencentral</code>, <code>eastus2</code>, <code>westus</code>). This is required for Realtime API connections. If not specified, AI Engine will attempt to auto-detect the region from your endpoint or use <code>eastus2</code> as default.', 'ai-engine' ),
   ANTHROPIC_API_KEY: __( 'You can get your API Keys in your %s.', 'ai-engine' ),
   ANTHROPIC_API_KEY_URL: 'https://console.anthropic.com/settings/keys',
   ANTHROPIC_API_KEY_LINK_TEXT: __( 'Anthropic Account ↗', 'ai-engine' ),

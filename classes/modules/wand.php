@@ -344,7 +344,12 @@ class Meow_MWAI_Modules_Wand {
     $text = $this->core->get_post_content( $postId );
     $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
-    $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.\n\n", $arguments );
+    $language = $keepLanguage = '';
+    if ( !empty( $postId ) ) {
+      $language = $this->core->get_post_language( $postId );
+      $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
+    }
+    $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs." . $keepLanguage . "\n\n", $arguments );
     $query->set_message( $prompt . $text );
     $query->set_max_results( 5 );
     $reply = $this->core->run_query( $query );
@@ -364,7 +369,12 @@ class Meow_MWAI_Modules_Wand {
     $text = $this->core->get_post_content( $postId );
     $query = new Meow_MWAI_Query_Text( '', 4096 );
     $query->set_scope( 'admin-tools' );
-    $prompt = apply_filters( 'mwai_prompt_suggestTitles', "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.\n\n", $arguments );
+    $language = $keepLanguage = '';
+    if ( !empty( $postId ) ) {
+      $language = $this->core->get_post_language( $postId );
+      $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
+    }
+    $prompt = apply_filters( 'mwai_prompt_suggestTitles', "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content." . $keepLanguage . "\n\n", $arguments );
     $query->set_message( $prompt . $text );
     $query->set_max_results( 5 );
     $reply = $this->core->run_query( $query );

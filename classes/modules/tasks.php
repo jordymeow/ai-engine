@@ -577,7 +577,7 @@ class Meow_MWAI_Modules_Tasks {
       // Default result if nothing handles it
       if ( $result === null ) {
         $result = [
-          'ok' => false,
+          'ok' => true,
           'message' => "No handler for '{$task->task_name}'",
         ];
       }

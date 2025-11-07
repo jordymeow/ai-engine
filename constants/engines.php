@@ -18,7 +18,7 @@ define( 'MWAI_ENGINES', [
   [
     'name' => 'Azure (OpenAI)',
     'type' => 'azure',
-    'inputs' => ['apikey', 'endpoint'],
+    'inputs' => ['apikey', 'endpoint', 'region'],
     'internal' => true,
     'models' => []
   ],

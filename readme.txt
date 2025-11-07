@@ -5,11 +5,11 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.6
+Stable tag: 3.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Bring AI to WordPress. Create chatbots, generate content, and automate workflows.
+AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
 
 == Description ==
 
@@ -238,6 +238,16 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.1.7 (2025/11/07) =
+* Add: Custom Theme CSS for Cross-Site .  
+* Add: New 'Region' field for Azure (Realtime API needs this).
+* Add: New filters (mwai_ai_embeddings_query and mwai_ai_feedback_query).  
+* Fix: Correct language detection in suggestions.  
+* Fix: Ensure tasks return success even when handlers are missing. 
+* Fix: Resolved issues with the embeddings sync task.  
+* Update: Optimized the "Push All" feature for embeddings (now much, much faster).
+* Fix: Got rid of a few warnings.
 
 = 3.1.6 (2025/10/24) =
 * Fix: Resolved MCP SSE worker exhaustion issue by handling agent cancellation signals.

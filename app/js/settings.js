@@ -1,7 +1,9 @@
-// Previous: 2.8.5
-// Current: 3.0.8
+// Previous: 3.0.8
+// Current: 3.1.7
 
 /* eslint-disable no-undef */
+import { checkIntegrity } from '@common/integrity-checker';
+
 const prefix = mwai.prefix;
 const domain = mwai.domain;
 const restUrl = mwai.rest_url.replace(/\/+$/, "");
@@ -9,7 +11,8 @@ const apiUrl = mwai.api_url.replace(/\/+$/, "");
 const pluginUrl = mwai.plugin_url.replace(/\/+$/, "");
 const userData = mwai.user_data;
 const isPro = mwai.is_pro === true || mwai.is_pro === 1 || mwai.is_pro === '1';
-const isRegistered = isPro && (mwai.is_registered === true || mwai.is_registered === 1 || mwai.is_registered === '1');
+const isRegistered = isPro && checkIntegrity() && (mwai.is_registered === true || mwai.is_registered === 1 || mwai.is_registered === '1');
+
 let restNonce = mwai.rest_nonce;
 const options = mwai.options;
 const session = mwai.session;

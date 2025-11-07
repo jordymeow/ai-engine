@@ -1318,16 +1318,23 @@ class Meow_MWAI_Rest {
 
   public function rest_helpers_posts_ids( $request ) {
     try {
+      global $wpdb;
       $params = $request->get_query_params();
       $postType = $params['postType'];
       $postStatus = !empty( $params['postStatus'] ) ? explode( ',', $params['postStatus'] ) : [ 'publish' ];
-      $posts = get_posts( [
-        'posts_per_page' => -1,
-        'post_type' => $postType,
-        'post_status' => $postStatus,
-        'fields' => 'ids'
-      ] );
-      return $this->create_rest_response( [ 'success' => true, 'postIds' => $posts ], 200 );
+
+      // Use direct SQL query instead of get_posts to avoid memory issues with large sites
+      $statusPlaceholders = implode( ',', array_fill( 0, count( $postStatus ), '%s' ) );
+      $query = "SELECT ID FROM {$wpdb->posts}
+                WHERE post_type = %s
+                AND post_status IN ($statusPlaceholders)
+                ORDER BY ID ASC";
+
+      $prepareArgs = array_merge( [ $postType ], $postStatus );
+      $postIds = $wpdb->get_col( $wpdb->prepare( $query, ...$prepareArgs ) );
+      $postIds = array_map( 'intval', $postIds );
+
+      return $this->create_rest_response( [ 'success' => true, 'postIds' => $postIds ], 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
@@ -1377,6 +1384,7 @@ class Meow_MWAI_Rest {
   // Batch check which posts have content (for Push All optimization)
   public function rest_helpers_check_posts_content( $request ) {
     try {
+      global $wpdb;
       $params = $request->get_json_params();
       $postIds = isset( $params['postIds'] ) ? $params['postIds'] : [];
 
@@ -1387,17 +1395,26 @@ class Meow_MWAI_Rest {
         ], 400 );
       }
 
+      // Sanitize post IDs
+      $postIds = array_map( 'intval', $postIds );
+
+      // Use single SQL query to check for non-empty content
+      // Note: This checks raw post_content only, not content added via shortcodes/blocks
+      // For most embeddings use cases, checking saved content is sufficient
+
+      // Chunk IDs to avoid max_allowed_packet issues with very large sites (100k+ posts)
+      $chunkSize = 5000;
       $postsWithContent = [];
 
-      // Check each post ID for content
-      foreach ( $postIds as $postId ) {
-        $postId = (int) $postId;
-        $content = $this->core->get_post_content( $postId );
+      foreach ( array_chunk( $postIds, $chunkSize ) as $chunk ) {
+        $placeholders = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+        $query = "SELECT ID FROM {$wpdb->posts}
+                  WHERE ID IN ($placeholders)
+                  AND post_content != ''
+                  AND post_content IS NOT NULL";
 
-        // Only include posts that have content
-        if ( !empty( $content ) ) {
-          $postsWithContent[] = $postId;
-        }
+        $chunkResults = $wpdb->get_col( $wpdb->prepare( $query, ...$chunk ) );
+        $postsWithContent = array_merge( $postsWithContent, array_map( 'intval', $chunkResults ) );
       }
 
       return $this->create_rest_response( [

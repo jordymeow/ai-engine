@@ -211,8 +211,12 @@ class Meow_MWAI_Core {
   public function run_query( $query, $streamCallback = null, $markdown = false ) {
 
     // Allow to modify the query before it is sent.
-    // Embedding and Feedback queries are not allowed to be modified.
-    if ( !( $query instanceof Meow_MWAI_Query_Embed ) && !( $query instanceof Meow_MWAI_Query_Feedback ) ) {
+    // Different query types have specific filters for type-safe modifications.
+    if ( $query instanceof Meow_MWAI_Query_Embed ) {
+      $query = apply_filters( 'mwai_ai_embeddings_query', $query );
+    } else if ( $query instanceof Meow_MWAI_Query_Feedback ) {
+      $query = apply_filters( 'mwai_ai_feedback_query', $query );
+    } else {
       $query = apply_filters( 'mwai_ai_query', $query );
     }
 
@@ -988,6 +992,18 @@ class Meow_MWAI_Core {
             $theme['customCSS'] = $customCSS;
           }
         }
+
+        // Add CSS URL for cross-site and dynamic loading support
+        // Internal themes can use physical file, custom themes use REST endpoint
+        $theme_type = $theme['type'] ?? 'internal';
+        if ( $theme_type === 'internal' ) {
+          $theme['cssUrl'] = MWAI_URL . 'themes/' . $themeId . '.css';
+        }
+        else {
+          // Custom themes use REST endpoint (requires Cross-Site module to be enabled)
+          $theme['cssUrl'] = get_rest_url( null, 'mwai-ui/v1/cross-site/theme-css' ) . '?themeId=' . $themeId;
+        }
+
         return $theme;
       }
     }
