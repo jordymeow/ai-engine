@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.8
+Stable tag: 3.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,7 +239,9 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
-= 3.1.8 (2025/11/07) =
+= 3.1.9 (2025/11/08) =
+* Add: IP validation for image uploads/downloads to prevent SSRF. 
+* Add: Security measures to prevent PHAR deserialization.
 * Add: Custom Theme CSS for Cross-Site .  
 * Add: New 'Region' field for Azure (Realtime API needs this).
 * Add: New filters (mwai_ai_embeddings_query and mwai_ai_feedback_query).  

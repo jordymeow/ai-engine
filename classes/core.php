@@ -370,6 +370,45 @@ class Meow_MWAI_Core {
   }
   #endregion
 
+  #region Security Helpers
+  /**
+  * Sanitize file path to prevent PHAR deserialization attacks.
+  * Strips dangerous stream wrappers that could trigger object injection.
+  *
+  * @param string $path The file path to sanitize.
+  * @return string The sanitized file path.
+  * @throws Exception If a dangerous stream wrapper is detected.
+  */
+  public static function sanitize_file_path( $path ) {
+    if ( empty( $path ) || !is_string( $path ) ) {
+      return $path;
+    }
+
+    // List of dangerous stream wrappers that could trigger deserialization
+    $dangerous_wrappers = [
+      'phar://',
+      'php://',
+      'zip://',
+      'zlib://',
+      'data://',
+      'glob://',
+      'rar://',
+      'ogg://',
+      'expect://'
+    ];
+
+    // Check if the path contains any dangerous wrappers
+    $lower_path = strtolower( $path );
+    foreach ( $dangerous_wrappers as $wrapper ) {
+      if ( strpos( $lower_path, $wrapper ) === 0 ) {
+        throw new Exception( 'Invalid file path: Stream wrappers are not allowed for security reasons.' );
+      }
+    }
+
+    return $path;
+  }
+  #endregion
+
   #region Image-Related Helpers
   public static function is_image( $file ) {
     global $mwai_core;

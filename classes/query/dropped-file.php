@@ -21,6 +21,8 @@ class Meow_MWAI_Query_DroppedFile {
   }
 
   public static function from_path( $path, $purpose, $mimeType = null ) {
+    // Sanitize path to prevent PHAR deserialization attacks
+    $path = Meow_MWAI_Core::sanitize_file_path( $path );
     $data = file_get_contents( $path );
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $path );

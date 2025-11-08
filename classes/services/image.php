@@ -40,8 +40,18 @@ class Meow_MWAI_Services_Image {
     // Try to use mime_content_type for local files
     if ( !$mimeType ) {
       $isUrl = filter_var( $file, FILTER_VALIDATE_URL );
-      if ( !$isUrl && function_exists( 'mime_content_type' ) && file_exists( $file ) ) {
-        $mimeType = mime_content_type( $file );
+      if ( !$isUrl && function_exists( 'mime_content_type' ) ) {
+        try {
+          // Sanitize file path to prevent PHAR deserialization attacks
+          $sanitized_file = Meow_MWAI_Core::sanitize_file_path( $file );
+          if ( file_exists( $sanitized_file ) ) {
+            $mimeType = mime_content_type( $sanitized_file );
+          }
+        }
+        catch ( Exception $e ) {
+          // If sanitization fails, fall through to extension-based detection
+          Meow_MWAI_Logging::warn( 'File path sanitization failed: ' . $e->getMessage() );
+        }
       }
     }
 
@@ -96,6 +106,23 @@ class Meow_MWAI_Services_Image {
     $parsed_url = parse_url( $url );
     if ( empty( $parsed_url['scheme'] ) || !in_array( $parsed_url['scheme'], [ 'http', 'https' ] ) ) {
       throw new Exception( 'Invalid URL scheme. Only HTTP and HTTPS are allowed.' );
+    }
+
+    // Check against banned IPs to prevent SSRF attacks
+    $host = $parsed_url['host'] ?? '';
+    if ( empty( $host ) ) {
+      throw new Exception( 'Invalid URL: no host specified.' );
+    }
+
+    // Resolve hostname to IP
+    $ip = gethostbyname( $host );
+
+    // Check if the resolved IP is in the banned IPs list
+    $banned_ips = $this->core->get_option( 'banned_ips' );
+    if ( !empty( $banned_ips ) && !empty( $this->core->security ) ) {
+      if ( $this->core->security->is_blocked_ip( $ip, $banned_ips ) ) {
+        throw new Exception( 'Access to this IP address is not allowed.' );
+      }
     }
 
     // Disable redirects to prevent bypass attacks
