@@ -1,12 +1,12 @@
 <?php
 
-class MeowCommon_Rest {
+class MeowKit_MWAI_Rest {
   private $namespace = 'meow-common/v1';
   public static $instance = null;
 
   public static function init_once() {
-    if ( !MeowCommon_Rest::$instance ) {
-      MeowCommon_Rest::$instance = new self();
+    if ( !MeowKit_MWAI_Rest::$instance ) {
+      MeowKit_MWAI_Rest::$instance = new self();
     }
   }
 
@@ -129,7 +129,7 @@ class MeowCommon_Rest {
   }
 
   public function rest_error_logs( $request ) {
-    return new WP_REST_Response( [ 'success' => true, 'data' => MeowCommon_Helpers::php_error_logs() ], 200 );
+    return new WP_REST_Response( [ 'success' => true, 'data' => MeowKit_MWAI_Helpers::php_error_logs() ], 200 );
   }
 
 }

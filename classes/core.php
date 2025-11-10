@@ -39,7 +39,7 @@ class Meow_MWAI_Core {
   public function __construct() {
     Meow_MWAI_Logging::init( 'mwai_options', 'AI Engine' );
     $this->site_url = get_site_url();
-    $this->is_rest = MeowCommon_Helpers::is_rest();
+    $this->is_rest = MeowKit_MWAI_Helpers::is_rest();
     $this->is_cli = defined( 'WP_CLI' );
     $this->files = new Meow_MWAI_Modules_Files( $this );
     $this->tasks = new Meow_MWAI_Modules_Tasks( $this );

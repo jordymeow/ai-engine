@@ -1,8 +1,8 @@
 <?php
 
-if ( !class_exists( 'MeowCommon_Admin' ) ) {
+if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
 
-  class MeowCommon_Admin {
+  class MeowKit_MWAI_Admin {
     public static $loaded = false;
     public static $version = '4.0';
     public static $admin_version = '4.0';
@@ -32,7 +32,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
     // Store constructor params that affect per-instance setup
     private $disableReview = false;
 
-    public static $logo = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAxNDM0IDk0NyI+CiAgPHBhdGggZmlsbD0iIzAwMCIgZD0iTTgwNSA3NzdhNzkyIDc5MiAwIDAgMS0yNjItNDMgODExIDgxMSAwIDAgMS0yODYtMTY0QTk1OSA5NTkgMCAwIDEgNiAyMDAgMTU4IDE1OCAwIDAgMSAzMDQgOTdjNDEgOTYgOTQgMTc1IDE1OSAyMzNhNDk3IDQ5NyAwIDAgMCAzNzYgMTI5IDYwIDYwIDAgMCAxIDY3IDYwbDI3IDE4NmM0IDMzLTE4IDYzLTUxIDY4LTYgMC0zNCA0LTc3IDRaTTEyMiAxNjhsMiA1YTg0MSA4NDEgMCAwIDAgMjEyIDMwNyA2OTIgNjkyIDAgMCAwIDQ2OSAxNzdsLTExLTc2YTYxNiA2MTYgMCAwIDEtNDEyLTE2MiA3NjkgNzY5IDAgMCAxLTE4OC0yNzYgMzggMzggMCAwIDAtNTAtMjBjLTE4IDctMjcgMjctMjIgNDVaIi8+CiAgPHBhdGggZmlsbD0iI0ZEQTk2MCIgZD0ibTY0IDE4NCA0IDEyYTkwMCA5MDAgMCAwIDAgMjI4IDMyOSA3NTIgNzUyIDAgMCAwIDU3NyAxODhsLTI3LTE5NGE1NjMgNTYzIDAgMCAxLTQyMy0xNDQgNzA5IDcwOSAwIDAgMS0xNzQtMjU1IDk4IDk4IDAgMCAwLTE4NSA2NFoiLz4KICA8bWFzayBpZD0iYSIgd2lkdGg9IjgxNCIgaGVpZ2h0PSI2NTciIHg9IjYwIiB5PSI2MCIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgc3R5bGU9Im1hc2stdHlwZTpsdW1pbmFuY2UiPgogICAgPHBhdGggZmlsbD0iI2ZmZiIgZD0ibTY0IDE4NCA0IDEyYTkwMCA5MDAgMCAwIDAgMjI4IDMyOSA3NTIgNzUyIDAgMCAwIDU3NyAxODhsLTI3LTE5NGE1NjMgNTYzIDAgMCAxLTQyMy0xNDQgNzA5IDcwOSAwIDAgMS0xNzQtMjU1IDk4IDk4IDAgMCAwLTE4NSA2NFoiLz4KICA8L21hc2s+CiAgPGcgbWFzaz0idXJsKCNhKSI+CiAgICA8cGF0aCBmaWxsPSIjODA0NjI1IiBkPSJNMTIwIDUzMmMtNDEgMC04NC01LTEzMC0xNWwzMS0xNDVjMTAxIDIxIDE4MCAxMiAyMzMtMjcgNzAtNTEgODAtMTQxIDgwLTE0MmwxNDkgMTNhMzYzIDM2MyAwIDAgMS0xMzkgMjQ4IDM1MSAzNTEgMCAwIDEtMjI0IDY4Wm0zNjkgMTc1YzQ3LTMxIDg0LTcxIDExMC0xMTYgMzItNTYgNDYtMTIzIDQyLTE5Mi0zLTUxLTE1LTg3LTE2LTkxbC0xNDEgNDhhMjI1IDIyNSAwIDAgMS0xNSAxNjFjLTMzIDU4LTEwMSA5OS0yMDMgMTIwbDMwIDE0NmM3Ni0xNiAxNDEtNDEgMTkzLTc2Wk02MiAyNjljNjQtNCAxMjItMjIgMTc0LTUzQTQxMyA0MTMgMCAwIDAgNDIxLTQ3TDE4NC05MnYtMXMtMTYgNzEtNzMgMTAzQzkyIDIxIDcwIDI3IDQ0IDI5IDcgMzEtMzcgMjQtODYgOGwtNzQgMjI5YTYyMyA2MjMgMCAwIDAgMjIyIDMyWiIvPgogIDwvZz4KICA8cGF0aCBmaWxsPSIjMDAwIiBkPSJNMTM3MyA5NDdoLTExMGMtMzMgMC02MC0yNy02MC02MHYtOTdsLTM2IDg3YTYyIDYyIDAgMCAxLTU2IDM3aC03OWMtMjUgMC00Ni0xNC01Ni0zN2wtMzYtODd2OTdjMCAzMy0yNyA2MC02MCA2MEg3NjljLTMzIDAtNjAtMjctNjAtNjBWMzE2YzAtMzMgMjctNjAgNjAtNjBoMTQxYzI0IDAgNDYgMTUgNTUgMzdsMTA2IDI1OCAxMDctMjU4YzktMjIgMzEtMzcgNTUtMzdoMTQwYzM0IDAgNjAgMjcgNjAgNjB2NTcxYzAgMzMtMjYgNjAtNjAgNjBabS0zMTYtMTg4IDE0IDM0IDE1LTM0LTExIDFoLTdsLTExLTFabTE5OS0zMTRoN2MyMSAwIDQwIDExIDUwIDI4di05N2gtNDBsLTI5IDcwIDEyLTFabS00MjctNjl2OTdjMTEtMTcgMjktMjggNTEtMjhoNmwxMyAxLTI5LTcwaC00MVoiLz4KICA8cGF0aCBmaWxsPSIjZmZmIiBkPSJNNzY5IDg4N1YzMTZoMTQxbDE1OCAzODRoN2wxNTgtMzg0aDE0MHY1NzFoLTExMFY1MDVoLTdsLTE0NSAzNDloLTc5TDg4NiA1MDVoLTZ2MzgySDc2OVoiLz4KPC9zdmc+Cg==';
+    public static $logo = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNDYiIHZpZXdCb3g9IjAgMCA2NCA0NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZyBjbGlwUGF0aD0idXJsKCNjbGlwMF8zMTBfMjI5KSI+CiAgICA8cGF0aCBkPSJNNjQgMzAuNjQwOEM2NCAyNy43OTg1IDYwLjA4MTYgMjUuODMwMyA1NS44Mjk4IDI1LjgzMDNDNTQuODU5MyAyNS44MzAzIDUzLjkzMTEgMjUuOTMzIDUzLjA3NiAyNi4xMjUzQzQ5Ljg4NjUgMTkuMDc5IDQxLjY1MzkgMTMuMDg1MyAzMi4wMDAyIDEzLjA4NTNDMzAuODMzNyAxMy4wODUzIDI5LjY4ODEgMTMuMTcyNyAyOC41Njk4IDEzLjMzOTJDMjcuMjA2OSAxMC4zMDc2IDIyLjY3NjIgMi40MzQyNiAxMS41OTU0IDAuMDgzMDA2NEMxMS4wNDkxIC0wLjAzMjc0NTYgMTAuNDk0NiAwLjI0MDU3OCAxMC4yNTkgMC43NDY5QzguODU5MTMgMy43NTYwOCA0Ljc0MjQ3IDE0LjQxMTYgMTAuMjQwMyAyNS45OTMxQzkuNTgxNjUgMjUuODg2NCA4Ljg4NzUxIDI1LjgzMDMgOC4xNzAyMiAyNS44MzAzQzMuOTE4MzkgMjUuODMwMyAwIDI3Ljc5ODUgMCAzMC42NDA4QzAgMzMuNDgzIDMuOTE4MzkgMzUuMjI3MiA4LjE3MDIyIDM1LjIyNzJDOC43MTEyNyAzNS4yMjcyIDkuMjM5MjUgMzUuMTk4OCA5Ljc0ODkzIDM1LjE0MzVDOS40MzYwMiAzNS4yNjY0IDkuMTIyNzUgMzUuNDA3NSA4LjgxMTcxIDM1LjU2NzdDNS42OTM4OCAzNy4xNzA3IDMuOTY4OCA0MC4wMzEyIDQuOTU5MDQgNDEuOTU2OEM1Ljk0ODkgNDMuODgyNCA5LjI3OTIgNDQuMTQ0MiAxMi4zOTcgNDIuNTQxMkMxMy4wNDY0IDQyLjIwNzQgMTMuNjM0OCA0MS44MTkgMTQuMTUxNiA0MS4zOTZDMTguMjYyNyA0NC40OTY3IDI0LjcyODMgNDUuOTgwOSAzMS45OTk4IDQ1Ljk4MDlDMzkuMjcxMyA0NS45ODA5IDQ1LjczNyA0NC40OTY3IDQ5Ljg0OCA0MS4zOTZDNTAuMzY0NCA0MS44MTkgNTAuOTUzMyA0Mi4yMDc0IDUxLjYwMjYgNDIuNTQxMkM1NC43MjA0IDQ0LjE0NDIgNTguMDUwMyA0My44ODI0IDU5LjA0MDYgNDEuOTU2OEM2MC4wMzA1IDQwLjAzMTIgNTguMzA1NyAzNy4xNzA3IDU1LjE4NzkgMzUuNTY3N0M1NC44NzYxIDM1LjQwNzUgNTQuNTYyMSAzNS4yNjY3IDU0LjI0ODUgMzUuMTQzNUM1NC43NTg5IDM1LjE5ODggNTUuMjg3NiAzNS4yMjc1IDU1LjgyOTQgMzUuMjI3NUM2MC4wODEyIDM1LjIyNzUgNjMuOTk5NiAzMy40ODM0IDYzLjk5OTYgMzAuNjQxMUw2NCAzMC42NDA4WiIgZmlsbD0id2hpdGUiLz4KICAgIDxwYXRoIGQ9Ik0yMi4yMjkzIDM2Ljc0NDNDMjYuNTkzNSAzNi43NDQzIDMwLjEzMTQgMzMuMjA2NCAzMC4xMzE0IDI4Ljg0MjJDMzAuMTMxNCAyNC40NzggMjYuNTkzNSAyMC45NDAxIDIyLjIyOTMgMjAuOTQwMUMxNy44NjUxIDIwLjk0MDEgMTQuMzI3MSAyNC40NzggMTQuMzI3MSAyOC44NDIyQzE0LjMyNzEgMzMuMjA2NCAxNy44NjUxIDM2Ljc0NDMgMjIuMjI5MyAzNi43NDQzWiIgZmlsbD0iIzAwRTI4RSIvPgogICAgPHBhdGggZD0iTTIyLjI2NTUgMzMuMTM2MUMyMy41MDIyIDMzLjEzNjEgMjQuNTA0NyAzMS4yODA1IDI0LjUwNDcgMjguOTkxNUMyNC41MDQ3IDI2LjcwMjQgMjMuNTAyMiAyNC44NDY4IDIyLjI2NTUgMjQuODQ2OEMyMS4wMjg4IDI0Ljg0NjggMjAuMDI2MiAyNi43MDI0IDIwLjAyNjIgMjguOTkxNUMyMC4wMjYyIDMxLjI4MDUgMjEuMDI4OCAzMy4xMzYxIDIyLjI2NTUgMzMuMTM2MVoiIGZpbGw9IiMzQzZFOEIiLz4KICAgIDxwYXRoIGQ9Ik0zMS45OTk4IDM3LjkxNTZDMzMuNDIzNyAzNy45MTU2IDM0LjU3ODEgMzcuMzQwOSAzNC41NzgxIDM2LjYzMTlDMzQuNTc4MSAzNS45MjI5IDMzLjQyMzcgMzUuMzQ4MSAzMS45OTk4IDM1LjM0ODFDMzAuNTc1OCAzNS4zNDgxIDI5LjQyMTUgMzUuOTIyOSAyOS40MjE1IDM2LjYzMTlDMjkuNDIxNSAzNy4zNDA5IDMwLjU3NTggMzcuOTE1NiAzMS45OTk4IDM3LjkxNTZaIiBmaWxsPSIjRkY5NDkzIi8+CiAgICA8cGF0aCBkPSJNNTQuMjUwMyAzNS4xMDU4QzU0Ljc2IDM1LjE2MTEgNTUuMjg3OSAzNS4xODk0IDU1LjgyOSAzNS4xODk0QzYwLjA4MDggMzUuMTg5NCA2My45OTkyIDMzLjQ0NTMgNjMuOTk5MiAzMC42MDNDNjMuOTk5MiAyNy43NjA4IDYwLjA4MDggMjUuNzkyNiA1NS44MjkgMjUuNzkyNkM1NS4xMTE3IDI1Ljc5MjYgNTQuNDE3NiAyNS44NDkgNTMuNzU4NSAyNS45NTU4QzU5LjI1NjcgMTQuMzc0MiA1NS4xMzk3IDMuNzE4NzIgNTMuNzQwMiAwLjcwOTU0NkM1My41MDQ2IDAuMjAzMjI1IDUyLjk1MDEgLTAuMDcwMDk5MSA1Mi40MDM4IDAuMDQ1NjUyOUM0MS4zMjMgMi4zOTY5MSAzNi43OTIzIDEwLjI3MDcgMzUuNDI5OCAxMy4zMDE1QzM0LjQ1NDEgMTMuMTU2NiAzMy40NTc5IDEzLjA3MTEgMzIuNDQ1MiAxMy4wNTE3QzMxLjI3NDMgMjAuMDMzIDI4Ljk2NTYgNDMuOTM2NSA1NC4zNDM2IDM1LjE0MzlDNTQuMzEyMyAzNS4xMzEyIDU0LjI4MTMgMzUuMTE4MSA1NC4yNDk5IDM1LjEwNThINTQuMjUwM1oiIGZpbGw9IiMyQjlERkYiLz4KICAgIDxwYXRoIGQ9Ik00MS43MzQyIDMzLjEzNjFDNDIuOTcwOSAzMy4xMzYxIDQzLjk3MzUgMzEuMjgwNSA0My45NzM1IDI4Ljk5MTVDNDMuOTczNSAyNi43MDI0IDQyLjk3MDkgMjQuODQ2OCA0MS43MzQyIDI0Ljg0NjhDNDAuNDk3NSAyNC44NDY4IDM5LjQ5NSAyNi43MDI0IDM5LjQ5NSAyOC45OTE1QzM5LjQ5NSAzMS4yODA1IDQwLjQ5NzUgMzMuMTM2MSA0MS43MzQyIDMzLjEzNjFaIiBmaWxsPSIjM0M2RThCIi8+CiAgPC9nPgogIDxkZWZzPgogICAgPGNsaXBQYXRoIGlkPSJjbGlwMF8zMTBfMjI5Ij4KICAgICAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjQ1Ljk2MTciIGZpbGw9IndoaXRlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIDAuMDE5MTY1KSIvPgogICAgPC9jbGlwUGF0aD4KICA8L2RlZnM+Cjwvc3ZnPgo=';
 
     public function __construct( $prefix, $mainfile, $domain, $isPro = false, $disableReview = false, $freeOnly = false ) {
 
@@ -46,7 +46,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       if ( is_admin() ) {
 
         // Skip AJAX and REST requests to avoid unnecessary processing
-        if ( MeowCommon_Helpers::is_asynchronous_request() ) {
+        if ( MeowKit_MWAI_Helpers::is_asynchronous_request() ) {
           return;
         }
 
@@ -109,7 +109,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       // If they somehow don't, log a warning and bail (this should never happen)
       if ( !function_exists( 'current_user_can' ) || !function_exists( 'wp_get_current_user' ) ) {
         trigger_error(
-          'MeowCommon_Admin: Pluggable functions still unavailable on init hook. ' .
+          'MeowKit_MWAI_Admin: Pluggable functions still unavailable on init hook. ' .
           'This should never happen and indicates a serious WordPress core issue.',
           E_USER_WARNING
         );
@@ -143,9 +143,9 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
      */
     private function run_admin_setup() {
       // SHARED SETUP: Only run once for all Meow Apps plugins
-      if ( !MeowCommon_Admin::$loaded ) {
+      if ( !MeowKit_MWAI_Admin::$loaded ) {
         // Check for potential issues with WordPress install, other plugins, etc.
-        new MeowCommon_Issues( $this->prefix, $this->mainfile, $this->domain );
+        new MeowKit_MWAI_Issues( $this->prefix, $this->mainfile, $this->domain );
 
         // Create the unified Meow Apps menu (priority 5 to ensure early creation)
         add_action( 'admin_menu', [ $this, 'admin_menu_start' ], 5 );
@@ -156,16 +156,16 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
           add_filter( 'admin_footer_text', [ $this, 'admin_footer_text' ], 100000, 1 );
         }
 
-        MeowCommon_Admin::$loaded = true;
+        MeowKit_MWAI_Admin::$loaded = true;
       }
 
       // PER-INSTANCE SETUP: Run for each plugin that uses this library
       // Only admins get ratings prompts and news
       if ( $this->is_user_admin() ) {
         if ( !$this->disableReview ) {
-          new MeowCommon_Ratings( $this->prefix, $this->mainfile, $this->domain );
+          new MeowKit_MWAI_Ratings( $this->prefix, $this->mainfile, $this->domain );
         }
-        new MeowCommon_News( $this->domain );
+        new MeowKit_MWAI_News( $this->domain );
       }
     }
 
@@ -261,7 +261,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       if ( !isset( $submenu[ 'meowapps-main-menu' ] ) ) {
         add_menu_page(
           'Meow Apps',
-          '<img alt="Meow Apps" style="width: 22px; margin-left: -30px; position: absolute; margin-top: -0px;" src="' . MeowCommon_Admin::$logo . '" />Meow Apps',
+          '<img alt="Meow Apps" style="width: 21px; margin-left: -28px; position: absolute; margin-top: 2px;" src="' . MeowKit_MWAI_Admin::$logo . '" />Meow Apps',
           'manage_options',
           'meowapps-main-menu',
           [ $this, 'admin_meow_apps' ],
@@ -292,7 +292,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       $html = '<input type="checkbox" id="meowapps_hide_meowapps" name="meowapps_hide_meowapps" value="1" ' .
       checked( 1, get_option( 'meowapps_hide_meowapps' ), false ) . '/>';
       $html .= __( '<label>Hide <b>Meow Apps</b> Menu</label><br /><small>Hide Meow Apps menu and all its components, for a cleaner admin. This option will be reset if a new Meow Apps plugin is installed.<br /><b>Once activated, an option will be added in your General settings to display it again.</b></small>', $this->domain );
-      echo MeowCommon_Helpers::wp_kses( $html );
+      echo MeowKit_MWAI_Helpers::wp_kses( $html );
     }
 
     public function is_registered() {
@@ -327,7 +327,7 @@ if ( !class_exists( 'MeowCommon_Admin' ) ) {
       return sprintf(
         // translators: %1$s is the version of the interface; %2$s is a file path.
         __( 'Thanks for using <a href="https://meowapps.com">Meow Apps</a>! This is the Meow Admin %1$s <br /><i>Loaded from %2$s </i>', $this->domain ),
-        MeowCommon_Admin::$version,
+        MeowKit_MWAI_Admin::$version,
         __FILE__
       );
     }

@@ -145,7 +145,7 @@ Instead of focusing on individual plugins, provide more general and holistic rec
       $finalPrompt .= "- Today's Date: " . date( 'Y-m-d' ) . "\n";
       $finalPrompt .= "\n";
 
-      $errors = MeowCommon_Helpers::php_error_logs();
+      $errors = MeowKit_MWAI_Helpers::php_error_logs();
       $errors = array_slice( $errors, -10 );
       if ( !empty( $errors ) ) {
         $finalPrompt .= "PHP Errors: \n";

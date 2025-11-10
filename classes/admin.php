@@ -1,6 +1,6 @@
 <?php
 
-class Meow_MWAI_Admin extends MeowCommon_Admin {
+class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
   public $core;
   public $contentGeneratorEnabled;
   public $imagesGeneratorEnabled;
@@ -364,8 +364,8 @@ class Meow_MWAI_Admin extends MeowCommon_Admin {
     // Prepare localization data
     // Get build reference for asset management
     $build_ref = null;
-    if ( class_exists( 'MeowCommonPro_Integrity' ) ) {
-      $integrity = new MeowCommonPro_Integrity( MWAI_PREFIX, MWAI_PATH );
+    if ( class_exists( 'MeowKitPro_MWAI_Integrity' ) ) {
+      $integrity = new MeowKitPro_MWAI_Integrity( MWAI_PREFIX, MWAI_PATH );
       $build_ref = $integrity->get_build_ref( MWAI_VERSION );
     }
 

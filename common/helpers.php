@@ -1,9 +1,9 @@
 <?php
 
-if ( !class_exists( 'MeowCommon_Helpers' ) ) {
+if ( !class_exists( 'MeowKit_MWAI_Helpers' ) ) {
 
-  class MeowCommon_Helpers {
-    //public static $version = MeowCommon_Admin::version;
+  class MeowKit_MWAI_Helpers {
+    //public static $version = MeowKit_MWAI_Admin::version;
     private static $startTimes = [];
     private static $startQueries = [];
 
@@ -98,19 +98,19 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 
       // WP 6.5+: only reliable after parse_request; otherwise skip this branch.
       if ( function_exists( 'wp_is_serving_rest_request' ) && did_action( 'parse_request' ) && wp_is_serving_rest_request() ) {
-        MeowCommon_Rest::init_once();
+        MeowKit_MWAI_Rest::init_once();
         return true;
       }
 
       // Classic flag set during REST bootstrap (safe at any time).
       if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-        MeowCommon_Rest::init_once();
+        MeowKit_MWAI_Rest::init_once();
         return true;
       }
 
       // Plain permalinks: ?rest_route=/... (route does NOT include the prefix).
       if ( isset( $_GET['rest_route'] ) ) {
-        MeowCommon_Rest::init_once();
+        MeowKit_MWAI_Rest::init_once();
         return true;
       }
 
@@ -131,7 +131,7 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
 
         $path = trailingslashit( $req_path );
         if ( strpos( $path, $base ) === 0 || strpos( $path, $base_index ) === 0 ) {
-          MeowCommon_Rest::init_once();
+          MeowKit_MWAI_Rest::init_once();
           return true;
         }
       }
@@ -145,7 +145,7 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
     //   // WP_REST_Request init.
     //   $is_rest_request = defined( 'REST_REQUEST' ) && REST_REQUEST;
     //   if ( $is_rest_request ) {
-    //     MeowCommon_Rest::init_once();
+    //     MeowKit_MWAI_Rest::init_once();
     //     return true;
     //   }
 
@@ -153,7 +153,7 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
     //   $prefix = rest_get_url_prefix();
     //   $request_contains_rest = isset( $_GET['rest_route'] ) && strpos( trim( $_GET['rest_route'], '\\/' ), $prefix, 0 ) === 0;
     //   if ( $request_contains_rest ) {
-    //     MeowCommon_Rest::init_once();
+    //     MeowKit_MWAI_Rest::init_once();
     //     return true;
     //   }
 
@@ -172,7 +172,7 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
     //   if ( !empty( $current_url['path'] ) && !empty( $rest_url['path'] ) ) {
     //     $request_contains_rest = strpos( $current_url['path'], $rest_url['path'], 0 ) === 0;
     //     if ( $request_contains_rest ) {
-    //       MeowCommon_Rest::init_once();
+    //       MeowKit_MWAI_Rest::init_once();
     //       return true;
     //     }
     //   }
@@ -281,24 +281,24 @@ if ( !class_exists( 'MeowCommon_Helpers' ) ) {
     }
 
     public static function timer_start( $timerName = 'default' ) {
-      MeowCommon_Helpers::$startQueries[ $timerName ] = get_num_queries();
-      MeowCommon_Helpers::$startTimes[ $timerName ] = microtime( true );
+      MeowKit_MWAI_Helpers::$startQueries[ $timerName ] = get_num_queries();
+      MeowKit_MWAI_Helpers::$startTimes[ $timerName ] = microtime( true );
     }
 
     public static function timer_elapsed( $timerName = 'default' ) {
-      return microtime( true ) - MeowCommon_Helpers::$startTimes[ $timerName ];
+      return microtime( true ) - MeowKit_MWAI_Helpers::$startTimes[ $timerName ];
     }
 
     public static function timer_log_elapsed( $timerName = 'default' ) {
-      $elapsed = MeowCommon_Helpers::timer_elapsed( $timerName );
-      $queries = get_num_queries() - MeowCommon_Helpers::$startQueries[ $timerName ];
+      $elapsed = MeowKit_MWAI_Helpers::timer_elapsed( $timerName );
+      $queries = get_num_queries() - MeowKit_MWAI_Helpers::$startQueries[ $timerName ];
       error_log( $timerName . ': ' . $elapsed . 'ms (' . $queries . ' queries)' );
     }
   }
 
   // Asked by WP Security Team to remove this.
 
-  // if ( MeowCommon_Helpers::is_rest() ) {
+  // if ( MeowKit_MWAI_Helpers::is_rest() ) {
   //   ini_set( 'display_errors', 0 );
   // }
 }

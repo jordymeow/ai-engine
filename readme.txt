@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.9
+Stable tag: 3.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,16 +239,17 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
-= 3.1.9 (2025/11/08) =
+= 3.2.0 (2025/11/10) =
 * Add: IP validation for image uploads/downloads to prevent SSRF. 
 * Add: Security measures to prevent PHAR deserialization.
 * Add: Custom Theme CSS for Cross-Site .  
 * Add: New 'Region' field for Azure (Realtime API needs this).
 * Add: New filters (mwai_ai_embeddings_query and mwai_ai_feedback_query).  
+* Update: MeowCommon is now MeowKit.
+* Update: Optimized the "Push All" feature for embeddings (now much, much faster).
 * Fix: Correct language detection in suggestions.  
 * Fix: Ensure tasks return success even when handlers are missing. 
 * Fix: Resolved issues with the embeddings sync task.  
-* Update: Optimized the "Push All" feature for embeddings (now much, much faster).
 * Fix: Got rid of a few warnings.
 
 = 3.1.6 (2025/10/24) =
