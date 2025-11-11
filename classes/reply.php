@@ -14,6 +14,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
   public $usageAccuracy = 'none'; // DEPRECATED: Use $usage['accuracy'] instead
   public $query = null;
   public $type = 'text';
+  public $model = null; // Actual model used by the API (may differ from query model)
 
   // Code interpreter code (separate from main content)
   public $contentCode = '';
@@ -73,6 +74,10 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   public function set_type( $type ) {
     $this->type = $type;
+  }
+
+  public function set_model( $model ) {
+    $this->model = $model;
   }
 
   public function get_total_tokens() {

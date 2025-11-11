@@ -72,13 +72,13 @@ spl_autoload_register( function ( $class ) {
     $file = MWAI_PATH . '/classes/' . $filename . '.php';
   }
   else if ( strpos( $class, 'MeowKit_MWAI_' ) !== false ) {
-    // Strip MeowCommon_MWAI_ prefix to get just the class name
+    // Strip MeowKit_MWAI_ prefix to get just the class name
     $filename = str_replace( 'meowkit_mwai_', '', strtolower( $class ) );
     $filename = str_replace( '_', '-', $filename );
     $file = MWAI_PATH . '/common/' . $filename . '.php';
   }
   else if ( strpos( $class, 'MeowKitPro_MWAI_' ) !== false ) {
-    // Strip MeowCommonPro_MWAI_ prefix to get just the class name
+    // Strip MeowKitPro_MWAI_ prefix to get just the class name
     $filename = str_replace( 'meowkitpro_mwai_', '', strtolower( $class ) );
     // Special case for rest_license to maintain backward compatibility
     if ( $filename === 'rest_license' ) {

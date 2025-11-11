@@ -82,6 +82,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       return false;
     }
 
+    // Check if this is a prompt query - prompts REQUIRE Responses API
+    if ( isset( $this->currentQuery ) ) {
+      $promptData = $this->currentQuery->getExtraParam( 'prompt' );
+      if ( !empty( $promptData ) && !empty( $promptData['id'] ) ) {
+        return true;
+      }
+    }
+
     // Azure supports Responses API in preview
     // Model tag check below will determine if the specific model supports it
 
@@ -1909,6 +1917,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
         $returned_id = $this->inId;
         $returned_model = $this->inModel ? $this->inModel : $query->model;
+
+        // Debug: Log model extraction for streaming
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] Model extraction (streaming):' );
+          error_log( '  - Stream model: ' . ( $this->inModel ?? 'NOT SET' ) );
+          error_log( '  - Query model: ' . $query->model );
+          error_log( '  - Using model: ' . $returned_model );
+        }
+
         $message = [ 'role' => 'assistant', 'content' => $this->streamContent ];
         
         // Store code interpreter code if any
@@ -2027,6 +2044,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         // Handle Responses API response format
         $returned_id = $data['id'] ?? null;
         $returned_model = $data['model'] ?? $query->model;
+
+        // Debug: Log model extraction
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] Model extraction:' );
+          error_log( '  - Response model: ' . ( $data['model'] ?? 'NOT SET' ) );
+          error_log( '  - Query model: ' . $query->model );
+          error_log( '  - Using model: ' . $returned_model );
+        }
 
         // Extract content from Responses API format
         $content = '';

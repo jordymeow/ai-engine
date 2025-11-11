@@ -74,18 +74,28 @@ class Meow_MWAI_Services_ModelEnvironment {
       throw new Exception( 'The environment is required.' );
     }
     else if ( !empty( $env ) && empty( $model ) ) {
-      // Use specialized defaults based on query type
+      // EnvId is set but model is empty - get first model from selected environment
+      $envData = $this->get_ai_env( $env );
+      if ( !empty( $envData['models'] ) && is_array( $envData['models'] ) ) {
+        $firstModel = reset( $envData['models'] );
+        if ( !empty( $firstModel['model'] ) ) {
+          $query->model = $firstModel['model'];
+          return;
+        }
+      }
+
+      // Fallback: if environment has no models, try type-specific defaults
       if ( $query instanceof Meow_MWAI_Query_Image ) {
-        $this->set_default_env_and_model( $query, 'ai_images_default_env', 'ai_images_default_model' );
+        $this->set_default_model_only( $query, 'ai_images_default_model' );
       }
       else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-        $this->set_default_env_and_model( $query, 'ai_audio_default_env', 'ai_audio_default_model' );
+        $this->set_default_model_only( $query, 'ai_audio_default_model' );
       }
       else if ( $query instanceof Meow_MWAI_Query_Embed ) {
-        $this->set_default_env_and_model( $query, 'ai_embeddings_default_env', 'ai_embeddings_default_model' );
+        $this->set_default_model_only( $query, 'ai_embeddings_default_model' );
       }
       else {
-        $this->set_default_env_and_model( $query, 'ai_default_env', 'ai_default_model' );
+        $this->set_default_model_only( $query, 'ai_default_model' );
       }
     }
     else {
@@ -101,6 +111,14 @@ class Meow_MWAI_Services_ModelEnvironment {
       $query->envId = $env;
       // Note: Don't set $query->env here as it expects an object, not a string
     }
+    if ( !empty( $model ) ) {
+      $query->model = $model;
+    }
+  }
+
+  private function set_default_model_only( $query, $modelOption ) {
+    // Only set the model, preserve existing envId
+    $model = $this->core->get_option( $modelOption );
     if ( !empty( $model ) ) {
       $query->model = $model;
     }

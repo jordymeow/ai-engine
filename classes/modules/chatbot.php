@@ -592,14 +592,14 @@ class Meow_MWAI_Modules_Chatbot {
           unset( $params['embeddingsNamespace'] );
           unset( $params['contentAware'] );
           unset( $params['context'] );
-          
+
           // Clear function calling and MCP servers
           unset( $params['functions'] );
           unset( $params['mcpServers'] );
-          
+
           // Clear tools
           unset( $params['tools'] );
-          
+
           // Clear temperature, reasoning, verbosity as they're configured in the prompt
           unset( $params['temperature'] );
           unset( $params['reasoningEffort'] );

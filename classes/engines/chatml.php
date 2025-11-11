@@ -1296,6 +1296,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     );
     $reply->set_usage( $usage );
 
+    // Store the actual model returned by the API
+    $reply->set_model( $returned_model );
+
     // Set default accuracy to 'estimated' for engines that don't override
     // Most engines (Google, Anthropic, etc.) estimate tokens and calculate price
     $reply->set_usage_accuracy( 'estimated' );
