@@ -192,10 +192,15 @@ define( 'MWAI_OPTIONS', [
   'embeddings_default_env' => null,
   'embeddings_envs' => [
     [
-      'name' => 'Pinecone',
-      'type' => 'pinecone',
+      'name' => 'Chroma',
+      'type' => 'chroma',
       'apikey' => '',
-      'server' => ''
+      'server' => 'https://api.trychroma.com',
+      'deployment' => 'cloud',
+      'tenant' => '',
+      'database' => 'default_database',
+      'collection' => 'mwai',
+      'embeddings_source' => 'Qwen/Qwen3-Embedding-0.6B'
     ]
   ],
   'embeddings' => [

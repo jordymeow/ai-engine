@@ -1,6 +1,14 @@
-// Previous: none
-// Current: 2.9.9
+// Previous: 3.0.0
+// Current: 3.2.2
 
+/**
+ * StandardMessages Component
+ *
+ * Visual: scrollable message list with optional shortcuts and blocks inside the scroll area.
+ * Used when `messagesType === 'standard'`.
+ * Maintenance: if the messages container styling changes, ensure theme CSS
+ * for `.mwai-conversation` and scrollbar tweaks are kept in sync.
+ */
 const { useRef, useEffect } = wp.element;
 import ChatbotReply from '../../ChatbotReply';
 
@@ -17,13 +25,11 @@ const StandardMessages = ({ messages, conversationRef, onScroll, shortcuts, bloc
   });
 
   return (
-    <>
-      <div ref={conversationRef} className="mwai-conversation" onScroll={onScroll}>
-        {messageList}
-        {shortcuts}
-      </div>
+    <div ref={conversationRef} className="mwai-conversation" onScroll={onScroll}>
+      {messageList}
+      {shortcuts}
       {blocks}
-    </>
+    </div>
   );
 };
 

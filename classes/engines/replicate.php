@@ -281,7 +281,7 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
       $this->apiKey = $query->apiKey;
     }
     if ( empty( $this->apiKey ) ) {
-      throw new Exception( 'No API Key provided. Please visit the Settings.' );
+      throw new Exception( 'No API Key provided. Please visit the Settings. (Replicate Engine)' );
     }
     $headers = [
       'Content-Type' => 'application/json',

@@ -471,7 +471,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $this->apiKey = $query->apiKey;
     }
     if ( empty( $this->apiKey ) ) {
-      throw new Exception( 'No API Key provided. Please visit the Settings.' );
+      throw new Exception( 'No API Key provided. Please visit the Settings. (ChatML Engine)' );
     }
     $headers = [
       'Content-Type' => 'application/json',
@@ -1989,7 +1989,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     $models = apply_filters( 'mwai_openai_models', MWAI_OPENAI_MODELS );
     $finetunes = !empty( $this->env['finetunes'] ) ? $this->env['finetunes'] : [];
     foreach ( $finetunes as $finetune ) {
-      if ( $finetune['status'] !== 'succeeded' ) {
+      if ( empty( $finetune['status'] ) || $finetune['status'] !== 'succeeded' ) {
+        continue;
+      }
+      if ( empty( $finetune['base_model'] ) || empty( $finetune['model'] ) || empty( $finetune['suffix'] ) ) {
         continue;
       }
       $baseModel = self::get_model_without_release_date( $finetune['base_model'] );

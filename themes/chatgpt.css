@@ -2511,10 +2511,31 @@
   margin-top: 0;
   border: 2px solid var(--mwai-backgroundPrimaryColor);
   padding: calc(var(--mwai-spacing) / 2);
+  padding-right: calc(var(--mwai-spacing) / 2 + 10px);
   border-radius: var(--mwai-borderRadius);
-  display: flex;
-  justify-content: center;
   font-size: 80%;
+  text-align: center;
+  max-height: 120px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mwai-backgroundHeaderColor) transparent;
+}
+.mwai-chatgpt-theme .mwai-realtime .mwai-last-transcript::-webkit-scrollbar {
+  width: 6px;
+}
+.mwai-chatgpt-theme .mwai-realtime .mwai-last-transcript::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+.mwai-chatgpt-theme .mwai-realtime .mwai-last-transcript::-webkit-scrollbar-thumb {
+  background: var(--mwai-backgroundHeaderColor);
+  border-radius: 10px;
+}
+.mwai-chatgpt-theme .mwai-realtime .mwai-last-transcript::-webkit-scrollbar-thumb:hover {
+  background: var(--mwai-primaryColor);
 }
 .mwai-chatgpt-theme .mwai-realtime .mwai-statistics {
   display: grid;

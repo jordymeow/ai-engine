@@ -38,7 +38,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
       $this->apiKey = $query->apiKey;
     }
     if ( empty( $this->apiKey ) ) {
-      throw new Exception( 'No API Key provided. Please visit the Settings.' );
+      throw new Exception( 'No API Key provided. Please visit the Settings. (OpenRouter Engine)' );
     }
     return [
       'Content-Type' => 'application/json',

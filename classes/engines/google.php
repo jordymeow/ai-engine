@@ -430,7 +430,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $this->apiKey = $query->apiKey;
     }
     if ( empty( $this->apiKey ) ) {
-      throw new Exception( 'No API Key provided. Please visit the Settings.' );
+      throw new Exception( 'No API Key provided. Please visit the Settings. (Google Engine)' );
     }
     return [ 'Content-Type' => 'application/json' ];
   }
@@ -1101,8 +1101,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $tools = [];
 
       if ( $family === 'imagen' ) {
-        $tags[] = 'image-generation';
-        $features = [ 'image-generation' ];
+        // Skip Imagen models - they don't work currently
+        continue;
       }
       else if ( $family === 'veo' ) {
         $tags[] = 'video-generation';
@@ -1135,6 +1135,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
         // Image generation - only specific Flash Image models
         if ( preg_match( '/flash-image|image-preview/', $model_id ) ) {
+          $tags[] = 'image';
           $tags[] = 'image-generation';
           $features[] = 'image-generation';
           $tools[] = 'image_generation';
@@ -1200,19 +1201,19 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       if ( in_array( 'image-generation', $tags ) ) {
         $model['resolutions'] = [
           // Landscape
-          [ 'name' => '21:9', 'label' => '21:9 (Ultrawide)' ],
-          [ 'name' => '16:9', 'label' => '16:9 (Wide)' ],
-          [ 'name' => '4:3', 'label' => '4:3 (Standard)' ],
-          [ 'name' => '3:2', 'label' => '3:2 (Classic)' ],
+          [ 'name' => '21:9', 'label' => '21:9' ],
+          [ 'name' => '16:9', 'label' => '16:9' ],
+          [ 'name' => '4:3', 'label' => '4:3' ],
+          [ 'name' => '3:2', 'label' => '3:2' ],
           // Square
-          [ 'name' => '1:1', 'label' => '1:1 (Square)' ],
+          [ 'name' => '1:1', 'label' => '1:1' ],
           // Portrait
-          [ 'name' => '2:3', 'label' => '2:3 (Classic Portrait)' ],
-          [ 'name' => '3:4', 'label' => '3:4 (Portrait)' ],
-          [ 'name' => '9:16', 'label' => '9:16 (Tall)' ],
+          [ 'name' => '2:3', 'label' => '2:3' ],
+          [ 'name' => '3:4', 'label' => '3:4' ],
+          [ 'name' => '9:16', 'label' => '9:16' ],
           // Flexible
-          [ 'name' => '5:4', 'label' => '5:4 (Near Square)' ],
-          [ 'name' => '4:5', 'label' => '4:5 (Near Square Portrait)' ]
+          [ 'name' => '5:4', 'label' => '5:4' ],
+          [ 'name' => '4:5', 'label' => '4:5' ]
         ];
 
         // Set pricing for image generation models
@@ -1554,11 +1555,32 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
               // Handle local download if requested
               if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
-                $fileId = $this->core->files->upload_file( $dataUrl, null, 'generated', [
+                // Generate a proper filename based on mime type
+                $extension = 'png'; // default
+                if ( strpos( $mimeType, 'jpeg' ) !== false || strpos( $mimeType, 'jpg' ) !== false ) {
+                  $extension = 'jpg';
+                }
+                else if ( strpos( $mimeType, 'webp' ) !== false ) {
+                  $extension = 'webp';
+                }
+                $filename = 'generated-' . time() . '-' . uniqid() . '.' . $extension;
+
+                // Decode base64 and create a temp file
+                $binary = base64_decode( $base64Data );
+                $tmp_path = wp_tempnam( 'mwai-image' );
+                file_put_contents( $tmp_path, $binary );
+
+                $fileId = $this->core->files->upload_file( $tmp_path, $filename, 'generated', [
                   'query_envId' => $query->envId,
                   'query_session' => $query->session,
                   'query_model' => $query->model,
                 ], $query->envId, $query->localDownload, $query->localDownloadExpiry );
+
+                // Clean up temp file if uploaded to library
+                if ( $query->localDownload === 'library' && file_exists( $tmp_path ) ) {
+                  @unlink( $tmp_path );
+                }
+
                 $fileUrl = $this->core->files->get_url( $fileId );
                 $images[] = $fileUrl;
               }

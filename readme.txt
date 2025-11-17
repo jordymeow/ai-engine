@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.2.1
+Stable tag: 3.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -238,6 +238,16 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.2 (2025/11/17) =
+- Fix: HTML Blocks are now in the scrollable conversation.
+- Fix: Corrected MinScore of 0 to be recognized as a valid score.
+- Fix: Fixed bulk sync process to correctly include vectors with model or env mismatches.
+- Fix: Realtime transcript is now scrollable.
+- Fix: Resolved the Embeddings Sync task to run properly with admin rights.
+- Fix: Fixed undefined array key warnings in finetunes handling.
+- Add: Support for Chroma Cloud embeddings with the Qwen3 model.
+- Update: Minor enhancements in the UI.
 
 = 3.2.1 (2025/11/11) =
 * Add: IP validation for image uploads/downloads to prevent SSRF. 
