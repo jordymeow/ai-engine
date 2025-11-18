@@ -4,6 +4,32 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   /*
+    GPT-5.1
+    Demo model with enhanced capabilities
+    https://platform.openai.com/docs/models/gpt-5.1
+    */
+  [
+    'model' => 'gpt-5.1',
+    'name' => 'GPT-5.1',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.25,
+      'out' => 10.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
     GPT-5
     The best model for coding and agentic tasks across domains
     https://platform.openai.com/docs/models/gpt-5
@@ -25,7 +51,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
-      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
     ]
   ],
@@ -51,7 +77,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
-      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
     ]
   ],
@@ -77,7 +103,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
-      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
     ]
   ],
@@ -128,7 +154,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
-      'reasoning' => ['minimal', 'low', 'medium', 'high'],
+      'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
       'verbosity' => ['low', 'medium', 'high']
     ]
   ],

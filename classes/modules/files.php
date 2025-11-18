@@ -774,9 +774,24 @@ class Meow_MWAI_Modules_Files {
     if ( !$purpose ) {
       return new WP_REST_Response( [ 'success' => false, 'message' => 'Purpose is required.' ], 400 );
     }
+    // Validate file type - allow audio files for transcription purpose
     $fileTypeCheck = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
+
+    // If WordPress doesn't recognize the type, check if it's an audio file for transcription
     if ( !$fileTypeCheck['type'] ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
+      // Get file extension
+      $ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+
+      // Whisper supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm
+      $audioExtensions = [ 'flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm' ];
+
+      if ( in_array( $ext, $audioExtensions ) ) {
+        // This is a valid audio file for transcription - override the type check
+        $fileTypeCheck['type'] = 'audio/' . $ext;
+        $fileTypeCheck['ext'] = $ext;
+      } else {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
+      }
     }
 
     try {

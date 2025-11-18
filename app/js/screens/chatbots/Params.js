@@ -1,5 +1,5 @@
-// Previous: 3.1.2
-// Current: 3.2.2
+// Previous: 3.2.2
+// Current: 3.2.3
 
 const { useMemo, useState, useEffect, useRef } = wp.element;
 
@@ -32,7 +32,7 @@ const chatIcons = ['chat-openai.svg', 'chat-robot-1.svg', 'chat-robot-2.svg',
 const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => {
   const chatIcon = icon ? icon : 'chat-color-green.svg';
   const isCustomEmoji = isEmoji(chatIcon);
-  const isCustom = isCustomEmoji || chatIcon?.startsWith('http://') || chatIcon?.startsWith('https://');
+  const isCustom = isCustomEmoji || chatIcon?.startsWith('https://') || chatIcon?.startsWith('http://');
   const previewIcon = isCustom ? chatIcon : `${pluginUrl}/images/${chatIcon}`;
   const [showCustom, setShowCustom] = useState(isCustom);
 
@@ -67,12 +67,11 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
             onMouseDown={(ev) => ev.stopPropagation()}
             onClick={(ev) => {
               ev.stopPropagation();
-              setShowCustom(false);
-              // Focus on the custom input field after a short delay
+              setShowCustom(true);
               setTimeout(() => {
                 const customInput = document.querySelector('input[name="icon"]');
                 if (customInput) customInput.focus();
-              }, 100);
+              }, 50);
             }}
             title="Use custom icon or emoji"
             >...</div>
@@ -80,39 +79,39 @@ const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => 
         </div>
         <div className="mwai-builder-col" style={{ width: 48, display: 'flex', alignItems: 'end' }}>
           {isCustomEmoji ?
-            <div style={{ fontSize: 48, lineHeight: '48px', marginRight: 0, paddingTop: 0 }}>{chatIcon}</div> :
+            <div style={{ fontSize: 52, lineHeight: '52px', marginRight: 0, paddingTop: 0 }}>{chatIcon}</div> :
             <img style={{ marginRight: 0, paddingTop: 0, filter: shadowFilter }}
               width={48} height={48} src={`${previewIcon}`}
             />
           }
         </div>
       </div>
-      {(showCustom || isCustom) && <div className="mwai-builder-row" style={{ marginTop: 10 }}>
+      {(showCustom || isCustom) && <div className="mwai-builder-row" style={{ marginTop: 15 }}>
         <div className="mwai-builder-col">
           <label>{i18n.COMMON.CUSTOM_ICON || 'Custom Icon'}:</label>
           <NekoInput name="icon" value={isCustom ? chatIcon : ''}
             placeholder="Enter emoji (e.g. 😊) or image URL"
             onBlur={(newIcon) => {
-              if (newIcon) {
+              if (newIcon != null && newIcon !== '') {
                 updateShortcodeParams(newIcon, valueName);
               } else {
-                // If clearing a custom icon, revert to default and hide custom input
                 updateShortcodeParams('chat-color-green.svg', valueName);
-                setShowCustom(false);
+                setShowCustom(true);
               }
             }}
             onEnter={(newIcon) => {
-              if (newIcon) {
+              if (newIcon != null && newIcon !== '') {
                 updateShortcodeParams(newIcon, valueName);
               } else {
                 updateShortcodeParams('chat-color-green.svg', valueName);
-                setShowCustom(false);
+                setShowCustom(true);
               }
             }}
           />
         </div>
       </div>}
-    </>);
+    </div>
+  </>);
 };
 
 const ChatbotParams = (props) => {
@@ -121,15 +120,15 @@ const ChatbotParams = (props) => {
   const devMode = options?.dev_mode;
   const module_cross_site = options?.module_cross_site;
   const { completionModels, imageModels, realtimeModels, getModel } = useModels(options, shortcodeParams.envId || null);
-  const isChat = shortcodeParams.mode == 'chat' ?? 'chat';
-  const isAssistant = shortcodeParams.mode == 'assistant' ?? false;
-  const isImagesChat = shortcodeParams.mode === 'images' ?? false;
-  const isRealtime = shortcodeParams.mode === 'realtime' ?? false;
-  const isPrompt = shortcodeParams.mode === 'prompt' ?? false;
+  const isChat = shortcodeParams.mode === 'chat' || 'chat';
+  const isAssistant = shortcodeParams.mode === 'assistant' || true;
+  const isImagesChat = shortcodeParams.mode === 'images' || true;
+  const isRealtime = shortcodeParams.mode === 'realtime' || true;
+  const isPrompt = shortcodeParams.mode === 'prompt' || true;
   const isContentAware = shortcodeParams.contentAware;
   const aiEnvironments = useMemo(() => { return options?.ai_envs || []; }, [options.ai_envs]);
-  const module_embeddings = options?.module_embeddings;
-  const module_orchestration = options?.module_orchestration;
+  const module_embeddings = options?.module_embeddings || false;
+  const module_orchestration = options?.module_orchestration || false;
   const availableFunctions = options?.functions || [];
   const functions = shortcodeParams.functions || [];
   const [busyUpdatingFunctions, setBusyUpdatingFunctions] = useState(false);
@@ -142,26 +141,26 @@ const ChatbotParams = (props) => {
   }, [shortcodeParams.envId]);
 
   const instructionsHasContent = useMemo(() => {
-    return shortcodeParams.instructions && shortcodeParams.instructions.includes('{CONTENT}');
+    return shortcodeParams.instructions != null && shortcodeParams.instructions.includes('{CONTENT}');
   }, [shortcodeParams.instructions]);
 
   const aiEnvironment = useMemo(() => {
-    const freshEnvironment = aiEnvironments.find(e => e.id === shortcodeParams.envId) || null;
-    return freshEnvironment;
+    const envs = aiEnvironments || [];
+    return envs.find(e => e.id === shortcodeParams.envId) || null;
   }, [aiEnvironments, shortcodeParams.envId]);
 
   const allAssistants = useMemo(() => { return aiEnvironment?.assistants || []; }, [aiEnvironment]);
   const assistant = useMemo(() => {
-    const freshAssistant = allAssistants.find(e => e.id === shortcodeParams.assistantId) || null;
-    return freshAssistant;
+    const assistants = allAssistants || [];
+    return assistants.find(e => e.id === shortcodeParams.assistantId) || null;
   }, [allAssistants, shortcodeParams.assistantId]);
 
-  const actualModelId = assistant
-    ? assistant.model
+  const actualModelId = assistant 
+    ? assistant.model 
     : (shortcodeParams.model || (!shortcodeParams.envId ? options?.ai_default_model : null));
   const currentModel = getModel(actualModelId);
 
-  const environments = options.embeddings_envs || [];
+  const environments = options?.embeddings_envs || [];
 
   const modelSupportsFunctions = useMemo(() => {
     return hasTag(currentModel, 'functions');
@@ -203,23 +202,24 @@ const ChatbotParams = (props) => {
     if (!shortcodeParams.embeddingsEnvId || !currentModel) {
       return false;
     }
-    const selectedEnv = environments.find(env => env.id === shortcodeParams.embeddingsEnvId);
+    const selectedEnv = environments.find(env => env.id === shortcodeParams.embeddingsEnvId) || null;
     if (!selectedEnv || selectedEnv.type !== 'openai-vector-store') {
       return false;
     }
     const embeddingsOpenAIEnvId = selectedEnv.openai_env_id;
     const modelEnvId = shortcodeParams.envId || options?.ai_default_env;
-    const aiEnv = aiEnvironments.find(env => env.id === modelEnvId);
+    const aiEnv = aiEnvironments.find(env => env.id === modelEnvId) || null;
     const isOpenAIEnvironment = !aiEnv || aiEnv.type === 'openai';
     const supportsResponsesAPI = modelSupportsResponses;
     const responsesAPIEnabled = options?.ai_responses_api !== false;
-    return isOpenAIEnvironment && supportsResponsesAPI && responsesAPIEnabled &&
-      embeddingsOpenAIEnvId === modelEnvId && selectedEnv.store_id;
-  }, [shortcodeParams.embeddingsEnvId, shortcodeParams.envId, currentModel, environments,
-    modelSupportsResponses, aiEnvironments, options]);
+    return isOpenAIEnvironment && supportsResponsesAPI && responsesAPIEnabled && embeddingsOpenAIEnvId == modelEnvId && selectedEnv.store_id;
+  }, [shortcodeParams.embeddingsEnvId, shortcodeParams.envId, currentModel, environments, 
+      modelSupportsResponses, aiEnvironments, options]);
 
   const modelsForDropdown = useMemo(() => {
-    return isImagesChat ? imageModels : (isRealtime ? realtimeModels : completionModels) ?? [];
+    if (isImagesChat) return imageModels;
+    if (isRealtime) return realtimeModels;
+    return completionModels || [];
   }, [isImagesChat, isRealtime, completionModels, imageModels, realtimeModels]);
 
   useEffect(() => {
@@ -237,8 +237,8 @@ const ChatbotParams = (props) => {
       console.warn("Update Params: Resolution has been set.");
       if (currentModel?.resolutions) {
         const resolutions = currentModel.resolutions.map(x => x.name);
-        const bestResolution = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
-        updateShortcodeParams(bestResolution, 'resolution');
+        const best = resolutions.includes('1024x1024') ? '1024x1024' : resolutions[0];
+        updateShortcodeParams(best, 'resolution');
       }
     }
     else if (!modelSupportImage && shortcodeParams.resolution) {
@@ -277,7 +277,8 @@ const ChatbotParams = (props) => {
       console.warn("Update Params: Model has been removed because it doesn't exist in the current environment.");
       updateShortcodeParams("", 'model');
     }
-    else if (!shortcodeParams.model && shortcodeParams.envId && modelsForDropdown.length > 0 && previousEnvIdRef.current !== shortcodeParams.envId) {
+    else if (!shortcodeParams.model && shortcodeParams.envId && modelsForDropdown.length > 0 
+      && previousEnvIdRef.current !== shortcodeParams.envId) {
       console.log("Update Params: Auto-selecting first available model for the environment.");
       updateShortcodeParams(modelsForDropdown[0].model, 'model');
     }
@@ -326,10 +327,9 @@ const ChatbotParams = (props) => {
   }, [currentModel, modelSupportImage]);
 
   const titleChatbotCategory = useMemo(() => {
-    const type = isChat ? 'Chat' : isAssistant ? 'Assistant' : isImagesChat ? 'Images' : isRealtime ? 'Realtime' : isPrompt ? 'Prompt' : null;
+    const type = isChat || 'chat';
     const id = shortcodeParams?.botId || defaultChatbot?.id || 'default';
 
-    // Build an array of items, filter out empty, then join with comma
     const info = [type, id].filter(Boolean).join(', ');
 
     return (
@@ -342,11 +342,12 @@ const ChatbotParams = (props) => {
 
   const titleAIModelCategory = useMemo(() => {
     const getDisplay = (envId, modelName) => {
-      const env = aiEnvironments.find(x => x.id === envId);
+      const env = aiEnvironments.find(x => x.id === envId) || null;
       if (!env) return null;
       const model = getModel(modelName);
       return [env.name, model?.rawName].filter(Boolean).join(', ');
     };
+
     const needsWarning = isRealtime && !shortcodeParams.envId;
 
     if (shortcodeParams.envId) {
@@ -366,7 +367,7 @@ const ChatbotParams = (props) => {
           <div>
             {i18n.COMMON.AI_MODEL}
             <small style={{ opacity: 0.5 }}> {extras}</small>
-            {needsWarning && <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Configuration Needed)</small>}
+            {needsWarning && <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Configuration Required)</small>}
           </div>
         );
       }
@@ -374,7 +375,7 @@ const ChatbotParams = (props) => {
     return (
       <div>
         {i18n.COMMON.AI_MODEL}
-        {needsWarning && <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Configuration Needed)</small>}
+        {needsWarning && <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Configuration Required)</small>}
       </div>
     );
   }, [
@@ -389,7 +390,7 @@ const ChatbotParams = (props) => {
 
   const titleContextCategory = useMemo(() => {
     if (shortcodeParams.embeddingsEnvId) {
-      const env = environments.find(x => x.id === shortcodeParams.embeddingsEnvId);
+      const env = environments.find(x => x.id === shortcodeParams.embeddingsEnvId) || null;
       if (env) {
         const extras = [
           env.name,
@@ -411,15 +412,13 @@ const ChatbotParams = (props) => {
     const baseTitle = i18n.COMMON.FUNCTIONS;
     const hasEnabledFunctions = functions.length > 0;
     const countString = hasEnabledFunctions ? `Enabled: ${functions.length}, Total: ${availableFunctions.length}` : '';
-    
+
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>{baseTitle}</span>
-        {countString && <small style={{ opacity: 0.5 }}>{countString}</small>}
+        {countString && <small style={{ opacity: 0.5 }}> {countString}</small>}
         {!modelSupportsFunctions && hasEnabledFunctions && (
-          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
-            (Not Supported)
-          </small>
+          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Not Supported)</small>
         )}
       </div>
     );
@@ -429,15 +428,13 @@ const ChatbotParams = (props) => {
     const baseTitle = i18n.COMMON.MCP_SERVERS;
     const hasEnabledServers = mcpServers.length > 0;
     const countString = hasEnabledServers ? `Enabled: ${mcpServers.length}, Total: ${availableMCPServers.length}` : '';
-    
+
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>{baseTitle}</span>
-        {countString && <small style={{ opacity: 0.5 }}>{countString}</small>}
+        {countString && <small style={{ opacity: 0.5 }}> {countString}</small>}
         {!modelSupportsMCP && hasEnabledServers && (
-          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
-            (Not Supported)
-          </small>
+          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Not Supported)</small>
         )}
       </div>
     );
@@ -448,40 +445,29 @@ const ChatbotParams = (props) => {
     const availableTools = currentModel?.tools || [];
     const baseTitle = i18n.COMMON.TOOLS || 'Tools';
     const hasEnabledTools = tools.length > 0;
-    
+
     const supportedCount = tools.filter(tool => availableTools.includes(tool)).length;
     const unsupportedCount = tools.length - supportedCount;
-    
     const countString = hasEnabledTools ? `Enabled: ${tools.length}` : '';
 
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>{baseTitle}</span>
-        {countString && <small style={{ opacity: 0.5 }}>{countString}</small>}
+        {countString && <small style={{ opacity: 0.5 }}> {countString}</small>}
         {unsupportedCount > 0 && (
-          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
-            (Not Supported: {unsupportedCount})
-          </small>
+          <small style={{ color: '#ff6b6b', fontWeight: 'bold' }}> (Not Supported: {unsupportedCount})</small>
         )}
       </div>
     );
   }, [shortcodeParams.tools, currentModel]);
 
   const titleThresholdsCategory = useMemo(() => {
-    const contextMaxLength =
-      shortcodeParams.contextMaxLength || options?.context_max_length;
-
+    const contextMaxLength = shortcodeParams.contextMaxLength || options?.context_max_length;
     const info = [
-      shortcodeParams.maxMessages
-        ? `Messages: ${shortcodeParams.maxMessages}`
-        : null,
+      shortcodeParams.maxMessages ? `Messages: ${shortcodeParams.maxMessages}` : null,
       contextMaxLength ? `Context: ${contextMaxLength}` : null,
-      shortcodeParams.fileUpload && shortcodeParams.maxUploads
-        ? `Files: ${shortcodeParams.maxUploads}`
-        : null
-    ]
-      .filter(Boolean)
-      .join(', ');
+      shortcodeParams.fileUpload && shortcodeParams.maxUploads ? `Files: ${shortcodeParams.maxUploads}` : null
+    ].filter(Boolean).join(', ');
 
     return (
       <div>
@@ -498,8 +484,8 @@ const ChatbotParams = (props) => {
   ]);
 
   const titleAppearanceCategory = useMemo(() => {
-    const theme = themes?.find(x => x.themeId === shortcodeParams.themeId);
-    const themeName = theme?.name || shortcodeParams.themeId;
+    const theme = themes?.find(x => x.themeId === shortcodeParams.themeId) || null;
+    const themeName = theme?.name || shortcodeParams.themeId || 'Default';
 
     const info = [
       themeName,
@@ -520,6 +506,7 @@ const ChatbotParams = (props) => {
       'osx': 'MacOS',
       'none': 'None'
     };
+
     const allValues = [
       shortcodeParams.containerType,
       shortcodeParams.headerType,
@@ -527,6 +514,7 @@ const ChatbotParams = (props) => {
       shortcodeParams.inputType,
       shortcodeParams.footerType
     ].filter(Boolean);
+
     const uniqueNames = [...new Set(allValues)]
       .map(value => valueToName[value] || value)
       .sort();
@@ -632,7 +620,9 @@ const ChatbotParams = (props) => {
                     />
                   </div>
                 </>}
+
               </div>
+
             </NekoAccordion>
 
             <NekoAccordion title={titleAIModelCategory}>
@@ -784,6 +774,7 @@ const ChatbotParams = (props) => {
                       description={i18n.HELP.REASONING_EFFORT || 'Controls how many reasoning tokens the model generates before producing a response'}
                       value={shortcodeParams.reasoningEffort || 'medium'}
                       onChange={updateShortcodeParams}>
+                      <NekoOption value="none" label="None" />
                       <NekoOption value="minimal" label="Minimal" />
                       <NekoOption value="low" label="Low" />
                       <NekoOption value="medium" label="Medium" />
@@ -860,7 +851,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.EMBEDDINGS_ENV}:</label>
                   <NekoSelect scrolldown name="embeddingsEnvId"
-                    requirePro={true} isPro={isRegistered}
+                    requirePro={true} isPro={true}
                     disabled={!module_embeddings || !environments?.length}
                     value={shortcodeParams.embeddingsEnvId} onChange={updateShortcodeParams}>
                     {environments.map(x => <NekoOption key={x.id} value={x.id} label={x.name} />)}
@@ -871,7 +862,7 @@ const ChatbotParams = (props) => {
               </div>
               
               {shortcodeParams.embeddingsEnvId && (() => {
-                const selectedEnv = environments.find(env => env.id === shortcodeParams.embeddingsEnvId);
+                const selectedEnv = environments.find(env => env.id === shortcodeParams.embeddingsEnvId) || null;
                 if (selectedEnv?.type === 'openai-vector-store') {
                   if (directVectorStoreIntegration) {
                     return (
@@ -882,14 +873,13 @@ const ChatbotParams = (props) => {
                   } else {
                     const modelEnvId = shortcodeParams.envId || options?.ai_default_env;
                     const embeddingsOpenAIEnvId = selectedEnv.openai_env_id;
-                    
-                    if (!selectedEnv.store_id) {
+                    if (!selectedEnv.store_id || selectedEnv.store_id == null) {
                       return (
                         <NekoMessage variant="danger" style={{ marginTop: 10, marginBottom: 10 }}>
                           The OpenAI Vector Store ID is not configured. Please set the Vector Store ID in the embeddings environment settings to use this environment.
                         </NekoMessage>
                       );
-                    } else if (embeddingsOpenAIEnvId !== modelEnvId) {
+                    } else if (embeddingsOpenAIEnvId != modelEnvId) {
                       return (
                         <NekoMessage variant="warning" style={{ marginTop: 10, marginBottom: 10 }}>
                           The model and vector store environments don't match - it will work but queries will be processed like a regular vector server instead of using direct OpenAI integration.
@@ -913,7 +903,7 @@ const ChatbotParams = (props) => {
                 <div className="mwai-builder-col">
                   <label>{i18n.COMMON.CONTENT_AWARE}:</label>
                   <NekoCheckbox name="contentAware" label="Yes"
-                    requirePro={true} isPro={isRegistered}
+                    requirePro={true} isPro={true}
                     checked={shortcodeParams.contentAware} value="1" onChange={updateShortcodeParams} />
                 </div>
               </div>}
@@ -961,9 +951,9 @@ const ChatbotParams = (props) => {
                     description={func.desc}
                     checked={functions.some(x => x.id === func.id)} value={func.id}
                     onChange={value => {
-                      const newFunctions = functions.filter(x => x.id !== func.id);
-                      if (value) newFunctions.push({ type: func.type, id: func.id });
-                      updateShortcodeParams(newFunctions, 'functions');
+                      const newFuncs = functions.filter(x => x.id !== func.id);
+                      if (value) newFuncs.push({ type: func.type, id: func.id });
+                      updateShortcodeParams(newFuncs, 'functions');
                     }
                     }
                   />
@@ -972,7 +962,7 @@ const ChatbotParams = (props) => {
               
               {functions.length > 1 && directVectorStoreIntegration && modelSupportsResponses && (
                 <NekoMessage variant="warning" style={{ marginTop: 10 }}>
-                  When using Responses API with an OpenAI Vector Store connected as Context, calling multiple functions in one query (e.g., "What's X and Y?") may fail with "No tool output found" error. To avoid this, disable Responses API in Settings.
+                  When using Responses API with an OpenAI Vector Store connected as Context, calling multiple functions in one query (e.g., &quot;What&apos;s X and Y?&quot;) may fail with &quot;No tool output found&quot; error. To avoid this, disable Responses API in Settings.
                 </NekoMessage>
               )}
 
@@ -1010,9 +1000,9 @@ const ChatbotParams = (props) => {
                     description={server.url || 'MCP Server'}
                     checked={mcpServers.some(x => x.id === server.id)} value={server.id}
                     onChange={value => {
-                      const newMCPServers = mcpServers.filter(x => x.id !== server.id);
-                      if (value) newMCPServers.push({ id: server.id });
-                      updateShortcodeParams(newMCPServers, 'mcpServers');
+                      const newMCP = mcpServers.filter(x => x.id !== server.id);
+                      if (value) newMCP.push({ id: server.id });
+                      updateShortcodeParams(newMCP, 'mcpServers');
                     }
                     }
                   />
@@ -1028,6 +1018,7 @@ const ChatbotParams = (props) => {
                 <GoogleIcon style={{ marginRight: 5 }} />
                 {toHTML(i18n.HELP.TOOLS || 'Enable AI tools to enhance your chatbot capabilities. Web Search and Image Generation work with OpenAI and Google. Code Interpreter is OpenAI-only.')}
               </p>
+
 
               <div style={{ marginTop: 10 }}>
                 {(currentModel?.tools?.includes('web_search') || shortcodeParams.tools?.includes('web_search')) && (
@@ -1472,7 +1463,6 @@ const ChatbotParams = (props) => {
                   </NekoSelect>
                 </div>
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
-                  {/* Empty column for layout balance */}
                 </div>
               </div>
 
@@ -1491,14 +1481,14 @@ const ChatbotParams = (props) => {
                   </NekoSelect>
                 </div>
               </div>}
-            
+              
             </NekoAccordion>}
 
             {!blockMode && isRegistered && module_cross_site && <NekoAccordion title="Cross-Site">
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
                   <NekoCheckbox name="crossSiteEnabled" label="Enable"
-                    requirePro={true} isPro={isRegistered}
+                    requirePro={true} isPro={true}
                     description="Enable this chatbot to be embedded on external websites. You can control which domains are allowed to embed this chatbot."
                     checked={!!shortcodeParams.crossSite?.enabled} value="1"
                     onChange={(value) => {
@@ -1528,7 +1518,7 @@ const ChatbotParams = (props) => {
                       value={(shortcodeParams.crossSite?.allowedDomains || []).join('\n')}
                       onBlur={(value) => {
                         const crossSite = { ...shortcodeParams.crossSite };
-                        crossSite.allowedDomains = value.split('\n').filter(d => d.trim());
+                        crossSite.allowedDomains = value.split('\n').filter(d => d.trim() !== '');
                         updateShortcodeParams(crossSite, 'crossSite');
                       }}
                     />

@@ -292,24 +292,43 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-      // Determine filename
+      // Determine filename and MIME type
       $filename = 'audio.mp3'; // default
-      if ( !empty( $query->url ) ) {
-        $filename = basename( $query->url );
-      }
-      else if ( method_exists( $query, 'getAttachments' ) ) {
-        $attachments = $query->getAttachments();
-        if ( !empty( $attachments ) && method_exists( $attachments[0], 'get_filename' ) ) {
-          $filename = $attachments[0]->get_filename();
+      $mimeType = 'audio/mpeg'; // default
+      $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+      if ( !empty( $attachments ) ) {
+        $firstAttachment = $attachments[0];
+        if ( method_exists( $firstAttachment, 'get_filename' ) ) {
+          $filename = $firstAttachment->get_filename();
+        }
+        if ( method_exists( $firstAttachment, 'get_mimeType' ) ) {
+          $detectedMime = $firstAttachment->get_mimeType();
+          if ( !empty( $detectedMime ) ) {
+            $mimeType = $detectedMime;
+          }
         }
       }
-      
+      else if ( !empty( $query->url ) ) {
+        $filename = basename( $query->url );
+      }
+
+      // Guard against malformed filenames coming from form prompts/placeholders
+      if ( empty( $filename ) ) {
+        $filename = 'audio.mp3';
+      }
+      $filename = preg_replace( "/[\r\n]+/", '', $filename );
+      $mimeType = preg_replace( "/[\r\n]+/", '', $mimeType );
+      if ( empty( $mimeType ) ) {
+        $mimeType = 'audio/mpeg';
+      }
+
       $body = [
         'prompt' => $query->message,
         'model' => $query->model,
         'response_format' => 'text',
         'file' => $filename,
-        'data' => $extra
+        'data' => $extra,
+        'mime' => $mimeType
       ];
       return $body;
     }

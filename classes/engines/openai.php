@@ -345,7 +345,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'reasoning', $modelInfo['tags'] ) ) {
           // Add reasoning parameter as an object (Responses API expects object)
-          // { reasoning: { effort: 'minimal|low|medium|high' } }
+          // { reasoning: { effort: 'none|minimal|low|medium|high' } }
           $body['reasoning'] = [ 'effort' => $query->reasoning ];
         }
       }

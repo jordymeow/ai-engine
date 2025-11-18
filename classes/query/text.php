@@ -156,12 +156,12 @@ class Meow_MWAI_Query_Text extends Meow_MWAI_Query_Base implements JsonSerializa
 
   /**
   * Set the reasoning effort for GPT-5 models.
-  * @param string $reasoning The reasoning effort level (minimal, low, medium, high).
+  * @param string $reasoning The reasoning effort level (none, minimal, low, medium, high).
   */
   public function set_reasoning( string $reasoning ): void {
-    $valid = ['minimal', 'low', 'medium', 'high'];
+    $valid = ['none', 'minimal', 'low', 'medium', 'high'];
     if ( !in_array( $reasoning, $valid ) ) {
-      throw new Exception( 'AI Engine: Invalid reasoning level. Must be one of: minimal, low, medium, high.' );
+      throw new Exception( 'AI Engine: Invalid reasoning level. Must be one of: none, minimal, low, medium, high.' );
     }
     $this->reasoning = $reasoning;
   }

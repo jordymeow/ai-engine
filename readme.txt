@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.2.2
+Stable tag: 3.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -185,6 +185,10 @@ IP hashing, GDPR tools, secure file handling, and session-based tracking. You co
 **Constantly Evolving**
 Weekly updates based on real user feedback. We listen, we improve.
 
+== My Dream for AI ==
+
+I am excited about AI, but I believe we need to use it with intention and clarity. Social media showed us how powerful tools can reshape our lives in ways we never expected, sometimes for the better, sometimes not. I want to avoid repeating those mistakes. AI should help us remove the meaningless, tedious work or enhance the work we enjoy. Modern tools should give us more time for what truly matters: spending beautiful moments with the people we love! 💕
+
 == Installation ==
 
 1. Upload `ai-engine` to `/wp-content/plugins/`
@@ -239,15 +243,19 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
-= 3.2.2 (2025/11/17) =
-- Fix: HTML Blocks are now in the scrollable conversation.
-- Fix: Corrected MinScore of 0 to be recognized as a valid score.
-- Fix: Fixed bulk sync process to correctly include vectors with model or env mismatches.
-- Fix: Realtime transcript is now scrollable.
-- Fix: Resolved the Embeddings Sync task to run properly with admin rights.
-- Fix: Fixed undefined array key warnings in finetunes handling.
-- Add: Support for Chroma Cloud embeddings with the Qwen3 model.
-- Update: Minor enhancements in the UI.
+= 3.2.3 (2025/11/18) =
+* Add: Added support for the new gpt-5.1 model and included a 'none' option for reasoning effort settings.
+* Add: Support for Chroma Cloud embeddings with the Qwen3 model.
+* Fix: Enhanced error detection for Chroma responses.  
+* Fix: Improved accuracy of audio transcription in AI Forms.  
+* Fix: HTML Blocks are now in the scrollable conversation.
+* Fix: Corrected MinScore of 0 to be recognized as a valid score.
+* Fix: Fixed bulk sync process to correctly include vectors with model or env mismatches.
+* Fix: Realtime transcript is now scrollable.
+* Fix: Resolved the Embeddings Sync task to run properly with admin rights.
+* Fix: Fixed undefined array key warnings in finetunes handling.
+* Update: Removed deprecated fields from the embeddings section in AI Forms.
+* Update: Minor enhancements in the UI.
 
 = 3.2.1 (2025/11/11) =
 * Add: IP validation for image uploads/downloads to prevent SSRF. 

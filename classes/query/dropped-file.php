@@ -65,8 +65,8 @@ class Meow_MWAI_Query_DroppedFile {
     if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' && $type !== 'provider_file_id' ) {
       throw new Exception( 'AI Engine: The file type can only be refId, url, data, or provider_file_id.' );
     }
-    if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' && $purpose !== 'files' ) {
-      throw new Exception( 'AI Engine: The file purpose can only be assistant, vision or files.' );
+    if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' && $purpose !== 'files' && $purpose !== 'transcription' ) {
+      throw new Exception( 'AI Engine: The file purpose can only be assistant, vision, files, or transcription.' );
     }
     $this->data = $data;
     $this->type = $type;
@@ -94,18 +94,36 @@ class Meow_MWAI_Query_DroppedFile {
       throw new Exception( 'AI Engine: Cannot get raw data for provider file ID (file_id: ' . $this->data . '). Use get_refId() instead.' );
     }
     if ( $this->type === 'refId' ) {
-      // For refId, fetch the URL from database and load the file
       global $mwai_core;
+
+      // Prefer loading from disk to avoid HTTP rewrites or CDN issues
+      $path = $mwai_core->files->get_path( $this->data );
+      if ( !empty( $path ) ) {
+        $path = Meow_MWAI_Core::sanitize_file_path( $path );
+        if ( file_exists( $path ) && is_readable( $path ) ) {
+          $data = file_get_contents( $path );
+          if ( $data === false ) {
+            throw new Exception( 'AI Engine: Failed to read file contents for refId: ' . $this->data );
+          }
+          $this->rawData = $data;
+          return $this->rawData;
+        }
+      }
+
+      // Fallback to the public URL if the local path is unavailable
       $url = $mwai_core->files->get_url( $this->data );
       if ( empty( $url ) ) {
         throw new Exception( 'AI Engine: Could not find file URL for refId: ' . $this->data );
       }
-      // Validate URL scheme to prevent SSRF attacks
       $parts = wp_parse_url( $url );
       if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
         throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
       }
-      $this->rawData = file_get_contents( $url );
+      $data = file_get_contents( $url );
+      if ( $data === false ) {
+        throw new Exception( 'AI Engine: Failed to download file contents for refId: ' . $this->data );
+      }
+      $this->rawData = $data;
       return $this->rawData;
     }
     else if ( $this->type === 'url' ) {
