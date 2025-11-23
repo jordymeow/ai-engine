@@ -1,9 +1,8 @@
-// Previous: 3.1.9
-// Current: 3.2.2
+// Previous: 3.2.2
+// Current: 3.2.4
 
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 
-// NekoUI
 import { NekoButton, NekoInput, NekoPage, NekoBlock, NekoContainer, NekoSettings, NekoSpacer, NekoTypo,
   NekoSelect, NekoOption, NekoTabs, NekoTab, NekoCheckboxGroup, NekoCheckbox, NekoWrapper,
   NekoQuickLinks, NekoLink, NekoColumn, NekoModal } from '@neko-ui';
@@ -162,9 +161,11 @@ const Settings = () => {
       const engine = options.ai_engines.find(eng => eng.type === aiEnv.type);
       if (!engine || !engine.models) return false;
 
-      return engine.models.some(model =>
+      const hasEmbeddingModels = engine.models.some(model =>
         hasTag(model, 'embedding')
       );
+
+      return hasEmbeddingModels;
     });
   }, [ai_envs, options]);
 
@@ -263,7 +264,7 @@ const Settings = () => {
               }
 
               if (!validDimensions.includes(parseInt(dimensions))) {
-                const newDimensions = validDimensions[validDimensions.length -1] || null;
+                const newDimensions = validDimensions[0] || null;
                 if (newDimensions !== null) {
                   newOptions.ai_embeddings_default_dimensions = newDimensions;
                   console.warn(`Updating embeddings default dimensions to ${newDimensions}`);
@@ -279,15 +280,14 @@ const Settings = () => {
         await updateOptions(newOptions);
       }
     };
-
     performChecks();
   }, [ai_envs, options, updateOptions, embeddingsModels]);
 
   const refreshOptions = async () => {
     setBusyAction(true);
     try {
-      const options = await retrieveOptions();
-      setOptions(options);
+      const optionsData = await retrieveOptions();
+      setOptions(optionsData);
     }
     catch (err) {
       console.error(i18n.ERROR.GETTING_OPTIONS, err?.message ? { message: err.message } : { err });
@@ -369,10 +369,11 @@ const Settings = () => {
   const onExportSettings = async () => {
     setBusyAction('exportSettings');
     try {
-      const chatbots = await retrieveChatbots();
-      const themes = await retrieveThemes();
-      const options = await retrieveOptions();
-      const data = { chatbots, themes, options };
+      const chatbotsPromise = retrieveChatbots();
+      const themesPromise = retrieveThemes();
+      const optionsPromise = retrieveOptions();
+      const [chatbots, themes, optionsData] = await Promise.all([chatbotsPromise, themesPromise, optionsPromise]);
+      const data = { chatbots, themes, options: optionsData };
       const blob = new Blob([nekoStringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -459,8 +460,9 @@ const Settings = () => {
   useEffect(() => {
     const isValidSection = () => {
       if (settingsSection === 'ai' || settingsSection === 'files' ||
-          settingsSection === 'rest_api' || settingsSection === 'mcp' ||
-          settingsSection === 'others' || settingsSection === 'addons') {
+          settingsSection === 'php_api' || settingsSection === 'rest_api' ||
+          settingsSection === 'mcp' || settingsSection === 'others' ||
+          settingsSection === 'addons') {
         return true;
       }
       if (settingsSection === 'chatbot' && module_chatbots) return true;
@@ -1264,7 +1266,7 @@ const Settings = () => {
   </>;
 
   const jsxKnowledgeEnvironmentDefault =
-    <NekoSelect scrolldown name="embeddings_default_env" value={embeddings_envs} onChange={updateOption}>
+    <NekoSelect scrolldown name="embeddings_default_env" value={embeddings_default_env} onChange={updateOption}>
       {embeddings_envs.map((x) => (
         <NekoOption key={x.id} value={x.id} label={x.name}></NekoOption>
       ))}
@@ -1372,6 +1374,8 @@ const Settings = () => {
               />
             </NekoTab>}
 
+            {/* Assistants top-level tab removed; now lives under Settings */}
+
             {module_finetunes && <NekoTab key="finetunes" title={i18n.COMMON.FINETUNES}>
               <FineTunes options={options} updateOption={updateOption} refreshOptions={refreshOptions} />
             </NekoTab>}
@@ -1398,7 +1402,8 @@ const Settings = () => {
                     {module_orchestration && <NekoLink title="Orchestration" value="orchestration" />}
                     {module_assistants && <NekoLink title={i18n.COMMON.ASSISTANTS} value="assistants" />}
                     <NekoLink title="Files & Media" value="files" />
-                    <NekoLink title="Public API" value="rest_api" />
+                    <NekoLink title="PHP API" value="php_api" />
+                    <NekoLink title="REST API" value="rest_api" />
                     <NekoLink title="MCP" value="mcp" />
                     <NekoLink title="Add-ons" value="addons" />
                     <NekoLink title={i18n.COMMON.OTHERS} value="others" />
@@ -1635,21 +1640,109 @@ const Settings = () => {
                             {jsxMcpThemes}
                             {jsxMcpDynamicRest}
                             <p style={{ marginTop: 15 }}>
-                              If you are a developer, you might be interested in hooking your own tools. They will appear automatically in the MCP Functions section on the right. Learn more in the <a href="https://ai.thehiddendocs.com/using-mcp/" target="_blank" rel="noreferrer">documentation</a>.
+                              If you are a developer, you might be interested in hooking your own tools. They will appear automatically in the MCP Functions section on the right. Learn more in the <a href="https://ai.thehiddendocs.com/mcp/" target="_blank" rel="noreferrer">documentation ↗</a>.
                             </p>
                           </NekoBlock>
                         )}
                       </>}
 
+                      {settingsSection === 'php_api' && <>
+                        <NekoBlock busy={busy} title="PHP API" className="primary">
+                          <p style={{ marginBottom: 12, fontSize: 13 }}>
+                            This internal API is why AI Engine was created originally. AI Engine is designed to be the <strong>AI Engine for WordPress</strong>, providing a unified interface for integrating AI capabilities into your site through simple PHP code.
+                          </p>
+
+                          <p style={{ marginBottom: 12, fontSize: 13 }}>
+                            Access AI Engine through the global <code>$mwai</code> object. Each query type automatically uses its corresponding default environment and model from <strong>AI &gt; Default Environments</strong>. Override these by passing custom options (see Advanced Examples).
+                          </p>
+
+                          <p style={{ marginBottom: 12, fontSize: 13 }}>
+                            For easy code integration, use <a href="https://wordpress.org/plugins/code-engine/" target="_blank" rel="noreferrer">Code Engine ↗</a> to create and manage your PHP snippets.
+                          </p>
+
+                          <p style={{ marginBottom: 0, fontSize: 13 }}>
+                            To go deeper: <a href={i18n.HELP.PHP_API_FUNCTIONS_URL} target="_blank" rel="noreferrer">{i18n.HELP.PHP_API_FUNCTIONS_TEXT}</a>, <a href={i18n.HELP.PHP_API_CLASSES_URL} target="_blank" rel="noreferrer">{i18n.HELP.PHP_API_CLASSES_TEXT}</a>, <a href={i18n.HELP.PHP_API_FILTERS_URL} target="_blank" rel="noreferrer">{i18n.HELP.PHP_API_FILTERS_TEXT}</a>.
+                          </p>
+                        </NekoBlock>
+
+                        <NekoBlock busy={busy} title="Basic Examples" className="primary">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
+                              <div style={{ marginBottom: 10 }}>
+                                <strong style={{ fontSize: 13 }}>Text Query</strong>
+                              </div>
+                              <pre style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: 12, borderRadius: 4, fontSize: 11, overflow: 'auto', margin: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+{`global $mwai;
+$result = $mwai->simpleTextQuery( "Write a haiku about AI" );
+echo $result;`}
+                              </pre>
+                              <p style={{ marginTop: 10, fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)', lineHeight: '14px', margin: '10px 0 0 0' }}>
+                                Get AI-generated text responses for any prompt.
+                              </p>
+                            </div>
+
+                            <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
+                              <div style={{ marginBottom: 10 }}>
+                                <strong style={{ fontSize: 13 }}>Image Generation</strong>
+                              </div>
+                              <pre style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: 12, borderRadius: 4, fontSize: 11, overflow: 'auto', margin: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+{`global $mwai;
+$url = $mwai->simpleImageQuery( "A serene mountain landscape" );
+echo '<img src="' . esc_url( $url ) . '" />';`}
+                              </pre>
+                              <p style={{ marginTop: 10, fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)', lineHeight: '14px', margin: '10px 0 0 0' }}>
+                                Generate images from text descriptions.
+                              </p>
+                            </div>
+
+                            <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
+                              <div style={{ marginBottom: 10 }}>
+                                <strong style={{ fontSize: 13 }}>Vision Query</strong>
+                              </div>
+                              <pre style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: 12, borderRadius: 4, fontSize: 11, overflow: 'auto', margin: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+{`global $mwai;
+$result = $mwai->simpleVisionQuery(
+  "What's in this image?",
+  "https://example.com/photo.jpg"
+);
+echo $result;`}
+                              </pre>
+                              <p style={{ marginTop: 10, fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)', lineHeight: '14px', margin: '10px 0 0 0' }}>
+                                Analyze images with AI vision capabilities.
+                              </p>
+                            </div>
+
+                            <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
+                              <div style={{ marginBottom: 10 }}>
+                                <strong style={{ fontSize: 13 }}>Structured JSON Response</strong>
+                              </div>
+                              <pre style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: 12, borderRadius: 4, fontSize: 11, overflow: 'auto', margin: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+{`global $mwai;
+$data = $mwai->simpleJsonQuery( "Generate a product review" );
+// Returns structured JSON data
+print_r( $data );`}
+                              </pre>
+                              <p style={{ marginTop: 10, fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)', lineHeight: '14px', margin: '10px 0 0 0' }}>
+                                Get structured data responses for easy parsing.
+                              </p>
+                            </div>
+
+                          </div>
+                        </NekoBlock>
+                      </>}
+
                       {settingsSection === 'rest_api' && <>
-                        <NekoBlock busy={busy} title={i18n.COMMON.REST_API} className="primary">
+                        <NekoBlock busy={busy} title="REST API" className="primary">
                           <p>{formatWithLink(
                             i18n.HELP.REST_API_INTRO,
                             i18n.HELP.REST_API_MAKE_URL,
                             i18n.HELP.REST_API_MAKE_TEXT
                           )}</p>
                           <p style={{ marginTop: 10, fontSize: 13 }}>
-                            The Public API uses the environments and models configured in <strong>AI &gt; Default Environments</strong>.
+                            The REST API uses the environments and models configured in <strong>AI &gt; Default Environments</strong>, except if <code>envId</code> or <code>model</code> are specified in the <code>options</code> parameter.
+                          </p>
+                          <p style={{ marginTop: 10, fontSize: 13 }}>
+                            For complete API reference and advanced usage, see the <a href={i18n.HELP.REST_API_DOCS_URL} target="_blank" rel="noreferrer">{i18n.HELP.REST_API_DOCS_TEXT}</a>.
                           </p>
                           <NekoSpacer />
                           {jsxPublicAPI}
@@ -1668,7 +1761,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                             <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <span style={{ padding: '2px 8px', backgroundColor: '#2196F3', color: 'white', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>GET</span>
+                                  <span style={{ padding: '2px 8px', backgroundColor: '#4CAF50', color: 'white', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>GET</span>
                                   <code style={{ fontSize: 14 }}>/mwai/v1/simpleAuthCheck</code>
                                 </div>
                                 <NekoButton
@@ -1689,12 +1782,102 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                             </div>
                           </NekoBlock>
                         )}
+
+                        {public_api && (
+                          <NekoBlock busy={busy} title="Options" className="primary">
+                            <p style={{ marginBottom: 15, fontSize: 13 }}>
+                              Most endpoints accept an <code>options</code> parameter (JSON object) to customize AI behavior. Common options include:
+                            </p>
+
+                            <div style={{ marginBottom: 15 }}>
+                              <strong style={{ fontSize: 13 }}>Core Options:</strong>
+                              <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13, lineHeight: 1.6 }}>
+                                <li><code>envId</code> (string): AI Environment ID to use (find IDs in AI &#8594; Environments)</li>
+                                <li><code>scope</code> (string): Request scope (default: 'public-api')</li>
+                                <li><code>model</code> (string): Specific AI model to use (e.g., 'gpt-4', 'claude-3-5-sonnet-20241022')</li>
+                                <li><code>temperature</code> (number): Creativity level, 0-1 (default varies by model)</li>
+                                <li><code>maxTokens</code> (number): Maximum response length in tokens</li>
+                              </ul>
+                            </div>
+
+                            <div style={{ marginBottom: 15 }}>
+                              <strong style={{ fontSize: 13 }}>Image Options:</strong>
+                              <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13, lineHeight: 1.6 }}>
+                                <li><code>resolution</code> (string): Image size (e.g., '1024x1024', '1792x1024')</li>
+                              </ul>
+                            </div>
+
+                            <div style={{ marginBottom: 10 }}>
+                              <strong style={{ fontSize: 13 }}>Example:</strong>
+                            </div>
+                            <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: 12, overflow: 'auto' }}>
+{`{
+  "message": "Write a haiku about AI",
+  "options": {
+    "envId": "your-env-id",
+    "model": "gpt-4",
+    "temperature": 0.7,
+    "maxTokens": 150
+  }
+}`}
+                            </pre>
+                          </NekoBlock>
+                        )}
                       </>}
 
 
                     </NekoColumn>
 
                     <NekoColumn minimal>
+
+                      {settingsSection === 'php_api' && <>
+                        <NekoBlock busy={busy} title="Advanced Examples" className="primary">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
+                              <div style={{ marginBottom: 10 }}>
+                                <strong style={{ fontSize: 13 }}>Chatbot with Memory</strong>
+                              </div>
+                              <pre style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: 12, borderRadius: 4, fontSize: 11, overflow: 'auto', margin: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+{`global $mwai;
+$result = $mwai->simpleChatbotQuery( "default", "Hello!" );
+$chatId = $result['chatId'];
+echo $result['reply'];
+
+// Follow-up with memory
+$reply = $mwai->simpleChatbotQuery(
+  "default",
+  "What did I just say?",
+  [ 'chatId' => $chatId ]
+);
+echo $reply['reply'];`}
+                              </pre>
+                              <p style={{ marginTop: 10, fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)', lineHeight: '14px', margin: '10px 0 0 0' }}>
+                                Maintain conversation context by reusing the chatId for follow-up questions.
+                              </p>
+                            </div>
+
+                            <div style={{ padding: 15, border: '1px solid #ddd', borderRadius: 8, background: '#f8f8f8' }}>
+                              <div style={{ marginBottom: 10 }}>
+                                <strong style={{ fontSize: 13 }}>Using Custom Options</strong>
+                              </div>
+                              <pre style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: '#fff', padding: 12, borderRadius: 4, fontSize: 11, overflow: 'auto', margin: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+{`global $mwai;
+$options = [
+  'envId' => 'your-env-id',
+  'model' => 'gpt-4',
+  'temperature' => 0.7,
+  'maxTokens' => 500
+];
+$result = $mwai->simpleTextQuery( "Your prompt", $options );
+echo $result;`}
+                              </pre>
+                              <p style={{ marginTop: 10, fontSize: 'var(--neko-small-font-size)', color: 'var(--neko-gray-60)', lineHeight: '14px', margin: '10px 0 0 0' }}>
+                                Override defaults with custom environment, model, and parameters.
+                              </p>
+                            </div>
+                          </div>
+                        </NekoBlock>
+                      </>}
 
                       {settingsSection === 'mcp' && options?.module_mcp && (
                         <MCPFunctions options={options} />
@@ -1844,7 +2027,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                       onClick={() => setCurlModal({
                                         isOpen: true,
                                         title: 'simpleTextQuery',
-                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleTextQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "message": "Write a haiku about AI",\n    "temperature": 0.7\n  }'`
+                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleTextQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "message": "Write a haiku about AI",\n    "options": {\n      "scope": "workflow",\n      "temperature": 0.7,\n      "maxTokens": 150\n    }\n  }'`
                                       })}
                                       title="Show cURL command"
                                     >
@@ -1856,9 +2039,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                     <strong style={{ fontSize: 13 }}>Parameters:</strong>
                                     <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13 }}>
                                       <li><code>message</code> or <code>prompt</code> (required): Text input</li>
-                                      <li><code>model</code> (optional): AI model to use</li>
-                                      <li><code>temperature</code> (optional): 0-1, creativity level</li>
-                                      <li><code>maxTokens</code> (optional): Max response length</li>
+                                      <li><code>options</code> (optional): JSON object with settings (see Options section above)</li>
                                     </ul>
                                   </div>
                                 </div>
@@ -1877,7 +2058,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                       onClick={() => setCurlModal({
                                         isOpen: true,
                                         title: 'simpleImageQuery',
-                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleImageQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "prompt": "A futuristic city at sunset"\n  }'`
+                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleImageQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "prompt": "A futuristic city at sunset",\n    "resolution": "1024x1024",\n    "options": {\n      "scope": "workflow"\n    }\n  }'`
                                       })}
                                       title="Show cURL command"
                                     >
@@ -1889,7 +2070,8 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                     <strong style={{ fontSize: 13 }}>Parameters:</strong>
                                     <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13 }}>
                                       <li><code>prompt</code> (required): Image description</li>
-                                      <li><code>resolution</code> (optional): e.g., "1024x1024"</li>
+                                      <li><code>resolution</code> (optional): Image size, e.g., "1024x1024"</li>
+                                      <li><code>options</code> (optional): JSON object with settings (see Options section above)</li>
                                     </ul>
                                   </div>
                                 </div>
@@ -1941,7 +2123,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                       onClick={() => setCurlModal({
                                         isOpen: true,
                                         title: 'simpleVisionQuery',
-                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleVisionQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "message": "What is in this image?",\n    "url": "https://example.com/image.jpg"\n  }'`
+                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleVisionQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "message": "What is in this image?",\n    "url": "https://example.com/image.jpg",\n    "options": {\n      "scope": "workflow"\n    }\n  }'`
                                       })}
                                       title="Show cURL command"
                                     >
@@ -1954,6 +2136,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                     <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13 }}>
                                       <li><code>message</code> (required): Question about the image</li>
                                       <li><code>url</code> (required): Image URL to analyze</li>
+                                      <li><code>options</code> (optional): JSON object with settings (see Options section above)</li>
                                     </ul>
                                   </div>
                                 </div>
@@ -1972,7 +2155,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                       onClick={() => setCurlModal({
                                         isOpen: true,
                                         title: 'simpleJsonQuery',
-                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleJsonQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "message": "Generate a user profile",\n    "schema": {"type": "object", "properties": {"name": {"type": "string"}, "age": {"type": "number"}}}\n  }'`
+                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleJsonQuery" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "message": "Generate a user profile",\n    "schema": {"type": "object", "properties": {"name": {"type": "string"}, "age": {"type": "number"}}},\n    "options": {\n      "scope": "workflow"\n    }\n  }'`
                                       })}
                                       title="Show cURL command"
                                     >
@@ -1985,6 +2168,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                     <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13 }}>
                                       <li><code>message</code> (required): Your prompt</li>
                                       <li><code>schema</code> (optional): JSON schema for response structure</li>
+                                      <li><code>options</code> (optional): JSON object with settings (see Options section above)</li>
                                     </ul>
                                   </div>
                                 </div>
@@ -2003,7 +2187,7 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                       onClick={() => setCurlModal({
                                         isOpen: true,
                                         title: 'simpleTranscribeAudio',
-                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleTranscribeAudio" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "url": "https://example.com/audio.mp3"\n  }'`
+                                        command: `curl -X POST "${restUrl}/mwai/v1/simpleTranscribeAudio" \\\n  -H "Authorization: Bearer ${options?.public_api_bearer_token || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "url": "https://example.com/audio.mp3",\n    "options": {\n      "scope": "workflow"\n    }\n  }'`
                                       })}
                                       title="Show cURL command"
                                     >
@@ -2014,7 +2198,8 @@ Authorization: Bearer {options?.public_api_bearer_token || 'YOUR_TOKEN'}
                                   <div style={{ marginTop: 10 }}>
                                     <strong style={{ fontSize: 13 }}>Parameters:</strong>
                                     <ul style={{ marginLeft: 20, marginTop: 5, fontSize: 13 }}>
-                                      <li><code>url</code> (required): Audio file URL</li>
+                                      <li><code>url</code> or <code>mediaId</code> (required): Audio file URL or WordPress media ID</li>
+                                      <li><code>options</code> (optional): JSON object with settings (see Options section above)</li>
                                     </ul>
                                   </div>
                                 </div>

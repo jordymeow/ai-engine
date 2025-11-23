@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.2.3
+Stable tag: 3.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,13 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.4 (2025/11/23) =
+* Add: Introduced a Mime Types selector (for Upload Files in Chatbots).
+* Update: Added a new PHP API section and defined the REST API section. AI Engine is extremely easy to use with workflow automation tools like n8n, Make, Zapier, etc, so try it out! ✨
+* Update: Renamed the "Context" section to "Knowledge & Context" and "Tools" to "Tools & Capabilities".
+* Update: Better links to tutorials and documentation.
+* Fix: Corrected the display of model names in Query Logs (such as GPT-4.1 and GPT-5.1).
 
 = 3.2.3 (2025/11/18) =
 * Add: Added support for the new gpt-5.1 model and included a 'none' option for reasoning effort settings.

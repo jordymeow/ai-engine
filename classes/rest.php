@@ -2611,7 +2611,14 @@ class Meow_MWAI_Rest {
         throw new Exception( 'Attachment ID is required.' );
       }
 
-      // Delete attachment from WordPress
+      // Convert from mwai_image/mwai_video to attachment post type first
+      // This ensures wp_delete_attachment properly deletes the physical file
+      wp_update_post( [
+        'ID' => $attachment_id,
+        'post_type' => 'attachment'
+      ] );
+
+      // Delete attachment from WordPress (now that it's a proper attachment, files will be deleted)
       wp_delete_attachment( $attachment_id, true );
 
       // Remove from draft media list

@@ -1,7 +1,7 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'maxUploads', 'fileUploads', 'fileSearch', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'maxUploads', 'fileUploads', 'fileSearch', 'allowedMimeTypes', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'talkMode', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite', 'promptId', 'promptVariables', 'reasoningEffort', 'verbosity' ] );
 
@@ -1023,7 +1023,7 @@ class Meow_MWAI_Modules_Chatbot {
     $frontParams = [];
     // Define text parameters that need sanitization (excluding those that support HTML)
     $textParams = ['aiName', 'userName', 'guestName', 'textSend', 'textClear', 'textInputPlaceholder',
-      'startSentence', 'iconText', 'iconAlt', 'headerSubtitle', 'popupTitle'];
+      'startSentence', 'iconText', 'iconAlt', 'headerSubtitle', 'popupTitle', 'allowedMimeTypes'];
     // Parameters that support HTML content
     $htmlParams = ['textCompliance'];
     // Boolean parameters that need special handling
@@ -1066,7 +1066,7 @@ class Meow_MWAI_Modules_Chatbot {
           // Convert to proper boolean for chatbot defaults too
           // Handle various boolean representations
           $value = $chatbot[$param];
-          
+
           if ( is_bool( $value ) ) {
             $frontParams[$param] = $value;
           } else if ( is_string( $value ) ) {
