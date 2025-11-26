@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.2.4
+Stable tag: 3.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,7 +97,7 @@ Create intelligent knowledge bases and semantic search.
 
 **Vector Databases:**
 
-* Pinecone, Chroma, Qdrant
+* Chroma, Qdrant, Pinecone
 * OpenAI Vector Store
 * Automatic synchronization
 * Dimension validation
@@ -242,6 +242,15 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.5 (2025/11/26) =
+* Update: Redesign the Knowledge settings section.
+* Fix: Prevent DOM elements from being selected behind the chatbot while dragging it.
+* Fix: Ensure Qdrant and Pinecone correctly use their intended embedding environment.
+* 🎵 Discuss with others about Ai Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, check our [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 3.2.4 (2025/11/23) =
 * Add: Introduced a Mime Types selector (for Upload Files in Chatbots).
@@ -536,10 +545,6 @@ Add: Vector-Aware Search – override the default WordPress search with either A
 * Fix: Clear button and reset logic in the event viewer.
 * Security: Patched a potential MCP injection vector.
 * Misc: Many small optimisations, typo/translation fixes, and cleaner source comments.
-* 🎵 Discuss with others about AI Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, we started a [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 2.8.2 (2025/05/23) =
 * Add: New Claude 4 models for enhanced AI capabilities.
