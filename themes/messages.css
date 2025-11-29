@@ -258,6 +258,7 @@
   --mwai-backgroundPrimaryColor: #fafafa;
   --mwai-backgroundHeaderColor: #0084ff;
   --mwai-bubbleColor: #0084ff;
+  --mwai-iconSize: 60px;
   --mwai-headerColor: white;
   --mwai-conversationsBackgroundColor: white;
   --mwai-backgroundUserColor: #0084ff;
@@ -1866,25 +1867,25 @@
   opacity: 1 !important;
 }
 .mwai-messages-theme.mwai-bubble .mwai-trigger .mwai-icon-container {
-  background: var(--mwai-bubbleColor) !important;
-  width: 60px !important;
-  height: 60px !important;
-  border-radius: 100% !important;
+  background: var(--mwai-bubbleColor);
+  width: var(--mwai-iconSize, 60px);
+  height: var(--mwai-iconSize, 60px);
+  border-radius: 100%;
   transition: all 0.2s ease-out;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .mwai-messages-theme.mwai-bubble .mwai-trigger .mwai-icon-container .mwai-icon {
-  max-width: 50% !important;
-  max-height: 50% !important;
-  filter: none !important;
+  max-width: 50%;
+  max-height: 50%;
+  filter: none;
 }
 .mwai-messages-theme.mwai-bubble .mwai-trigger .mwai-icon-container .mwai-icon:hover {
-  transform: none !important;
+  transform: none;
 }
 .mwai-messages-theme.mwai-bubble .mwai-trigger .mwai-icon-container .mwai-emoji {
-  font-size: 30px !important;
+  font-size: calc(var(--mwai-iconSize, 60px) / 2);
 }
 .mwai-messages-theme.mwai-bubble .mwai-trigger .mwai-icon-container:hover {
   cursor: pointer;

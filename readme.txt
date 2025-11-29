@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.2.5
+Stable tag: 3.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,14 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.6 (2025/11/29) =
+* Fix: Corrected the expected embedding model display for Qdrant and Pinecone.
+* Fix: Corrected spacing between uploaded files/images and chatbot messages.
+* Fix: Improved file handling in the Responses API to safely check file types.
+* Fix: Resolved issues with mwai_forms_submit_params.
+* Update: Refined the Discussions tab.
+* Update: Added the --mwai-iconSize CSS variable to make the icon size adjustable.
 
 = 3.2.5 (2025/11/26) =
 * Update: Redesign the Knowledge settings section.

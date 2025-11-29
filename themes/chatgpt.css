@@ -250,6 +250,7 @@
   --mwai-backgroundPrimaryColor: #454654;
   --mwai-backgroundHeaderColor: #343541;
   --mwai-bubbleColor: #343541;
+  --mwai-iconSize: 60px;
   --mwai-accentColor: #10a37f;
   --mwai-headerColor: #FFFFFF;
   --mwai-conversationsBackgroundColor: #202123;
@@ -2061,25 +2062,25 @@
   opacity: 1 !important;
 }
 .mwai-chatgpt-theme.mwai-bubble .mwai-trigger .mwai-icon-container {
-  background: var(--mwai-bubbleColor) !important;
-  width: 60px !important;
-  height: 60px !important;
-  border-radius: 100% !important;
+  background: var(--mwai-bubbleColor);
+  width: var(--mwai-iconSize, 60px);
+  height: var(--mwai-iconSize, 60px);
+  border-radius: 100%;
   transition: all 0.2s ease-out;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .mwai-chatgpt-theme.mwai-bubble .mwai-trigger .mwai-icon-container .mwai-icon {
-  max-width: 50% !important;
-  max-height: 50% !important;
-  filter: none !important;
+  max-width: 50%;
+  max-height: 50%;
+  filter: none;
 }
 .mwai-chatgpt-theme.mwai-bubble .mwai-trigger .mwai-icon-container .mwai-icon:hover {
-  transform: none !important;
+  transform: none;
 }
 .mwai-chatgpt-theme.mwai-bubble .mwai-trigger .mwai-icon-container .mwai-emoji {
-  font-size: 30px !important;
+  font-size: calc(var(--mwai-iconSize, 60px) / 2);
 }
 .mwai-chatgpt-theme.mwai-bubble .mwai-trigger .mwai-icon-container:hover {
   cursor: pointer;
