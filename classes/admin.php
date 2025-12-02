@@ -386,6 +386,15 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       'themes' => $this->core->get_themes(),
       'stream' => $this->core->get_option( 'ai_streaming' ),
       'cache_buster' => $cache_buster, // Pass cache buster for lazy-loaded chunks
+      'fallback_models' => [
+        'default' => MWAI_FALLBACK_MODEL,
+        'fast' => MWAI_FALLBACK_MODEL_FAST,
+        'vision' => MWAI_FALLBACK_MODEL_VISION,
+        'json' => MWAI_FALLBACK_MODEL_JSON,
+        'images' => MWAI_FALLBACK_MODEL_IMAGES,
+        'audio' => MWAI_FALLBACK_MODEL_AUDIO,
+        'embeddings' => MWAI_FALLBACK_MODEL_EMBEDDINGS,
+      ],
     ];
 
     wp_localize_script( 'mwai', 'mwai', $localize_data );

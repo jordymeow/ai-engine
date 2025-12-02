@@ -1422,6 +1422,8 @@ class Meow_MWAI_Core {
     // The IDs for the AI environments are generated here.
     $allEnvIds = [];
     $ai_default_exists = false;
+    // Allow empty string as valid "None" selection
+    $ai_default_is_none = isset( $options['ai_default_env'] ) && $options['ai_default_env'] === '';
     if ( isset( $options['ai_envs'] ) ) {
       foreach ( $options['ai_envs'] as &$env ) {
         if ( !isset( $env['id'] ) ) {
@@ -1434,7 +1436,7 @@ class Meow_MWAI_Core {
         $allEnvIds[] = $env['id'];
       }
     }
-    if ( !$ai_default_exists ) {
+    if ( !$ai_default_exists && !$ai_default_is_none ) {
       $options['ai_default_env'] = $options['ai_envs'][0]['id'] ?? null;
       $needs_update = true;
     }
@@ -1487,9 +1489,10 @@ class Meow_MWAI_Core {
   }
 
   public function update_options( $options ) {
-    if ( !update_option( $this->option_name, $options, false ) ) {
-      return false;
-    }
+    // update_option returns false both when update fails AND when value is unchanged
+    // We just attempt the update and always return the current options
+    // The frontend will see if the values actually changed
+    update_option( $this->option_name, $options, false );
     $options = $this->get_all_options( true, true );
     return $options;
   }

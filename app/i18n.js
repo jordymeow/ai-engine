@@ -482,7 +482,7 @@ i18n.HELP = {
 };
 
 i18n.SETTINGS = {
-  AI_ENV_SETUP: __( 'To leverage the functionalities of AI Engine, it needs to be connected directly to AI services. We recommend starting with OpenAI. Create an account and generate an API Key by visiting the %s website. Once obtained, navigate to the <b>Settings</b> tab and input your OpenAI API Key in the "Environments for AI" section.', 'ai-engine' ),
+  AI_ENV_SETUP: __( 'AI Engine connects directly to AI services. We recommend starting with OpenAI. Visit the %s website to create an account and generate an API Key. Then, go to <b>Settings > AI > Environments for AI</b> to enter your key. Once done, try talking to the default chatbot - it should work right away! 🐱', 'ai-engine' ),
   AI_ENV_SETUP_URL: 'https://platform.openai.com/api-keys',
   AI_ENV_SETUP_LINK_TEXT: __( 'OpenAI ↗', 'ai-engine' ),
   PINECONE_SETUP: __( 'You choose to use Embeddings. To use them, you need to a Pinecone account. Visit the %s website to create an account, then insert your Pinecone API Key in the <b>Settings</b> tab.', 'ai-engine' ),

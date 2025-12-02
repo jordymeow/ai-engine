@@ -24,6 +24,9 @@ class Meow_MWAI_Query_Embed extends Meow_MWAI_Query_Base {
     $ai_embeddings_default_env = $mwai_core->get_option( 'ai_embeddings_default_env' );
     $ai_embeddings_default_model = $mwai_core->get_option( 'ai_embeddings_default_model' );
     $ai_embeddings_default_dimensions = $mwai_core->get_option( 'ai_embeddings_default_dimensions' );
+    if ( empty( $ai_embeddings_default_env ) || empty( $ai_embeddings_default_model ) ) {
+      throw new Exception( __( 'No default embeddings environment or model is configured. Please go to Settings > AI > Default Environments for AI > Embeddings and select an environment and model.', 'ai-engine' ) );
+    }
     $this->set_env_id( $ai_embeddings_default_env );
     $this->set_model( $ai_embeddings_default_model );
     if ( $ai_embeddings_default_dimensions ) {

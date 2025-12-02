@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: ai, chatbot, gpt, claude, openai
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.2.6
+Stable tag: 3.2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,14 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.7 (2025/12/02) =
+* Add: Support for OpenRouter embedding models.
+* Update: Friendlier onboarding.  
+* Update: Improve default environments with better validation.
+* Update: Clearer warnings for misconfigured setups.
+* Update: Enhanced the default CSS for Custom Theme.
+* Fix: A few issues with Qdrant.
 
 = 3.2.6 (2025/11/29) =
 * Fix: Corrected the expected embedding model display for Qdrant and Pinecone.
