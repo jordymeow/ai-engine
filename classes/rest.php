@@ -20,6 +20,7 @@ class Meow_MWAI_Rest {
     if ( isset( $params['message'] ) ) {
       $message = $params['message'];
     }
+    // TODO: Remove after March 2026 - Legacy "prompt" parameter support
     elseif ( isset( $params['prompt'] ) ) {
       $message = $params['prompt'];
       unset( $params['prompt'] );

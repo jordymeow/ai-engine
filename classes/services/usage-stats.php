@@ -45,6 +45,7 @@ class Meow_MWAI_Services_UsageStats {
     }
   }
 
+  // TODO: Remove after April 2026 - Simplify to single argument format
   public function estimate_tokens( ...$args ) {
     // Handle multiple argument formats for backward compatibility
     $text = '';

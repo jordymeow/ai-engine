@@ -355,7 +355,7 @@ class Meow_MWAI_Modules_Tasks_Examples {
     $response = wp_remote_get( "https://{$host}", [
       'timeout' => 5,
       'redirection' => 0,
-      'sslverify' => false,
+      'sslverify' => MWAI_SSL_VERIFY,
     ] );
     
     $end_time = microtime( true );

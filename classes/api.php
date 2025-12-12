@@ -349,16 +349,16 @@ class Meow_MWAI_API {
             // Try exact match first
             $model_key = $chatbot['model'];
             $model_info = $all_models[$model_key] ?? null;
-            
+
             // If not found and it's an OpenRouter model, try without prefix
             if ( !$model_info && strpos( $model_key, '/' ) !== false ) {
               $model_key = substr( $model_key, strpos( $model_key, '/' ) + 1 );
               $model_info = $all_models[$model_key] ?? null;
             }
-            
+
             if ( $model_info ) {
               $model_tools = $model_info['tools'] ?? [];
-              
+
               // Only include tools that are both configured AND supported by the model
               foreach ( $chatbot['tools'] as $tool ) {
                 if ( in_array( $tool, $model_tools ) ) {
@@ -548,7 +548,7 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $url = isset( $params['url'] ) ? $params['url'] : '';
-      
+
       // Check for common parameter mistakes and provide helpful guidance
       if ( empty( $url ) && isset( $params['imageUrl'] ) ) {
         throw new Exception( 'Parameter "url" is required. Did you mean to use "url" instead of "imageUrl"?' );
@@ -556,7 +556,7 @@ class Meow_MWAI_API {
       if ( empty( $url ) && isset( $params['image_url'] ) ) {
         throw new Exception( 'Parameter "url" is required. Did you mean to use "url" instead of "image_url"?' );
       }
-      
+
       $options = isset( $params['options'] ) ? $params['options'] : [];
       $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
@@ -619,7 +619,7 @@ class Meow_MWAI_API {
     try {
       $params = $request->get_params();
       $text = isset( $params['text'] ) ? $params['text'] : '';
-      
+
       // Check for common parameter mistakes and provide helpful guidance
       if ( empty( $text ) && isset( $params['message'] ) ) {
         throw new Exception( 'Parameter "text" is required. Did you mean to use "text" instead of "message"?' );
@@ -627,7 +627,7 @@ class Meow_MWAI_API {
       if ( empty( $text ) && isset( $params['content'] ) ) {
         throw new Exception( 'Parameter "text" is required. Did you mean to use "text" instead of "content"?' );
       }
-      
+
       if ( empty( $text ) ) {
         throw new Exception( 'The "text" parameter is required for content moderation.' );
       }
@@ -651,7 +651,7 @@ class Meow_MWAI_API {
       $params = $request->get_params();
       $url = isset( $params['url'] ) ? $params['url'] : '';
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
-      
+
       // Check for common parameter mistakes and provide helpful guidance
       if ( empty( $url ) && empty( $mediaId ) ) {
         if ( isset( $params['audioUrl'] ) ) {
@@ -664,15 +664,15 @@ class Meow_MWAI_API {
           throw new Exception( 'Use "url" for remote files or "mediaId" for uploaded files. Found "file" parameter instead.' );
         }
       }
-      
+
       $options = isset( $params['options'] ) ? $params['options'] : [];
       $options = $this->sanitize_rest_options( $options );
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
-      
+
       if ( !empty( $scope ) ) {
         $options['scope'] = $scope;
       }
-      
+
       // Get file path from mediaId if provided
       $path = null;
       if ( $mediaId > 0 ) {
@@ -681,16 +681,17 @@ class Meow_MWAI_API {
           throw new Exception( 'The media file cannot be found.' );
         }
       }
-      
+
       if ( empty( $url ) && empty( $path ) ) {
         throw new Exception( 'Either a "url" parameter or a "mediaId" parameter is required for audio transcription.' );
       }
 
       if ( $this->debug ) {
-        $debug = sprintf( 'REST [SimpleTranscribeAudio]: url=%s, mediaId=%d, %s', 
-          $url ? 'provided' : 'none', 
+        $debug = sprintf(
+          'REST [SimpleTranscribeAudio]: url=%s, mediaId=%d, %s',
+          $url ? 'provided' : 'none',
           $mediaId,
-          json_encode( $options ) 
+          json_encode( $options )
         );
         Meow_MWAI_Logging::log( $debug );
       }
@@ -707,58 +708,60 @@ class Meow_MWAI_API {
     try {
       $params = $request->get_params();
       $files = $request->get_file_params();
-      
+
       // Check if file is provided
       if ( empty( $files['file'] ) ) {
         // Check for base64 encoded file data
         $base64 = isset( $params['base64'] ) ? $params['base64'] : '';
         $filename = isset( $params['filename'] ) ? $params['filename'] : '';
-        
+
         if ( empty( $base64 ) ) {
           throw new Exception( 'Either a file upload or base64 encoded data is required.' );
         }
-        
+
         // Handle base64 upload
         $options = isset( $params['options'] ) ? $params['options'] : [];
-        $purpose = isset( $params['purpose'] ) ? $params['purpose'] : 'files';
+        $purpose = isset( $params['purpose'] ) ? $params['purpose'] : 'analysis';
         $ttl = isset( $params['ttl'] ) ? intval( $params['ttl'] ) : 3600;
         $target = isset( $params['target'] ) ? $params['target'] : null;
         $metadata = isset( $params['metadata'] ) ? $params['metadata'] : [];
-        
+
         if ( empty( $filename ) ) {
           $filename = 'upload-' . time() . '.png'; // Default filename for base64
         }
-        
+
         // Log the request if debug is enabled
         if ( $this->debug ) {
-          $debug = sprintf( 'REST [SimpleFileUpload]: base64 upload, filename=%s, purpose=%s', 
-            $filename, 
-            $purpose 
+          $debug = sprintf(
+            'REST [SimpleFileUpload]: base64 upload, filename=%s, purpose=%s',
+            $filename,
+            $purpose
           );
           Meow_MWAI_Logging::log( $debug );
         }
-        
+
         $result = $this->simpleFileUpload( null, $base64, $filename, $purpose, $ttl, $target, $metadata );
       }
       else {
         // Handle regular file upload
         $file = $files['file'];
-        $purpose = isset( $params['purpose'] ) ? $params['purpose'] : 'files';
+        $purpose = isset( $params['purpose'] ) ? $params['purpose'] : 'analysis';
         $ttl = isset( $params['ttl'] ) ? intval( $params['ttl'] ) : 3600;
         $target = isset( $params['target'] ) ? $params['target'] : null;
         $metadata = isset( $params['metadata'] ) ? $params['metadata'] : [];
-        
+
         if ( $this->debug ) {
-          $debug = sprintf( 'REST [SimpleFileUpload]: file upload, name=%s, purpose=%s', 
-            $file['name'], 
-            $purpose 
+          $debug = sprintf(
+            'REST [SimpleFileUpload]: file upload, name=%s, purpose=%s',
+            $file['name'],
+            $purpose
           );
           Meow_MWAI_Logging::log( $debug );
         }
-        
+
         $result = $this->simpleFileUpload( $file, null, null, $purpose, $ttl, $target, $metadata );
       }
-      
+
       return new WP_REST_Response( [ 'success' => true, 'data' => $result ], 200 );
     }
     catch ( Exception $e ) {
@@ -822,21 +825,21 @@ class Meow_MWAI_API {
         $discussion = $this->discussions_module->get_discussion( $botId, $params['chatId'] );
         if ( !empty( $discussion ) ) {
           $params['messages'] = $discussion['messages'];
-          
+
           // CRITICAL: Also pass the discussion metadata for Responses API support
           // The chatbot module needs the previousResponseId from discussion's extra field
           if ( !empty( $discussion['extra'] ) ) {
             $extra = json_decode( $discussion['extra'], true );
-            
+
             // Check for both possible field names
             $responseId = $extra['previousResponseId'] ?? $extra['responseId'] ?? null;
             $responseDate = $extra['previousResponseDate'] ?? $extra['responseDate'] ?? null;
-            
+
             if ( !empty( $responseId ) ) {
               // Check if the response ID is still valid (not older than 30 days)
               $responseDateTimestamp = !empty( $responseDate ) ? strtotime( $responseDate ) : 0;
               $thirtyDaysAgo = time() - ( 30 * 24 * 60 * 60 );
-              
+
               if ( $responseDateTimestamp > $thirtyDaysAgo ) {
                 // Pass the previousResponseId directly in params
                 // This will be picked up by inject_params in the query
@@ -875,48 +878,48 @@ class Meow_MWAI_API {
   public function simpleFastTextQuery( $message, $params = [] ) {
     global $mwai_core;
     $query = new Meow_MWAI_Query_Text( $message );
-    
+
     // Use the Default (Fast) model and environment
     $fastDefaultModel = $mwai_core->get_option( 'ai_fast_default_model' );
     if ( !empty( $fastDefaultModel ) ) {
       $query->set_model( $fastDefaultModel );
     }
-    
+
     $fastDefaultEnv = $mwai_core->get_option( 'ai_fast_default_env' );
     if ( !empty( $fastDefaultEnv ) ) {
       $query->set_env_id( $fastDefaultEnv );
     }
-    
+
     // Inject any additional params (which may override the defaults)
     $query->inject_params( $params );
-    
+
     try {
       $reply = $mwai_core->run_query( $query );
       return $reply->result;
     }
     catch ( Exception $e ) {
       // If Fast Model fails, try with default model
-      Meow_MWAI_Logging::warn( "Fast Model failed: " . $e->getMessage() . " - Falling back to default model." );
-      
+      Meow_MWAI_Logging::warn( 'Fast Model failed: ' . $e->getMessage() . ' - Falling back to default model.' );
+
       // Create a new query with default model/env
       $fallbackQuery = new Meow_MWAI_Query_Text( $message );
-      
+
       $defaultModel = $mwai_core->get_option( 'ai_default_model' );
       if ( !empty( $defaultModel ) ) {
         $fallbackQuery->set_model( $defaultModel );
       }
-      
+
       $defaultEnv = $mwai_core->get_option( 'ai_default_env' );
       if ( !empty( $defaultEnv ) ) {
         $fallbackQuery->set_env_id( $defaultEnv );
       }
-      
+
       // Inject params again (except model/env which we just set)
       $fallbackParams = $params;
       unset( $fallbackParams['model'] );
       unset( $fallbackParams['envId'] );
       $fallbackQuery->inject_params( $fallbackParams );
-      
+
       $reply = $mwai_core->run_query( $fallbackQuery );
       return $reply->result;
     }
@@ -1042,41 +1045,41 @@ class Meow_MWAI_API {
    *
    * @return array Array with 'id' (refId) and 'url' of the uploaded file.
    */
-  public function simpleFileUpload( $file = null, $base64 = null, $filename = null, $purpose = 'files', $ttl = 3600, $target = null, $metadata = [] ) {
+  public function simpleFileUpload( $file = null, $base64 = null, $filename = null, $purpose = 'analysis', $ttl = 3600, $target = null, $metadata = [] ) {
     global $mwai_core;
-    
+
     if ( !$this->core->files ) {
       throw new Exception( 'Files module is not available.' );
     }
-    
+
     // Determine target from settings if not provided
     if ( empty( $target ) ) {
       $target = $this->core->get_option( 'image_local_upload', 'uploads' );
     }
-    
+
     try {
       if ( !empty( $base64 ) ) {
         // Handle base64 upload
         if ( empty( $filename ) ) {
           $filename = 'upload-' . time() . '.dat';
         }
-        
+
         // Validate filename extension for base64 uploads
         $validate = wp_check_filetype( $filename );
         if ( $validate['type'] == false ) {
           throw new Exception( 'File type is not allowed.' );
         }
-        
+
         // For base64 uploads, we need to decode and create a temp file first
         $binary = base64_decode( $base64 );
         if ( !$binary ) {
           throw new Exception( 'Invalid base64 data.' );
         }
-        
+
         // Create a temporary file
         $tmp_path = wp_tempnam( 'mwai-upload' );
         file_put_contents( $tmp_path, $binary );
-        
+
         // Use the regular upload method
         $refId = $this->core->files->upload_file(
           $tmp_path,
@@ -1087,14 +1090,14 @@ class Meow_MWAI_API {
           $target,
           $ttl
         );
-        
+
         // Clean up temp file if it was uploaded to library
         if ( $target === 'library' && file_exists( $tmp_path ) ) {
           @unlink( $tmp_path );
         }
-        
+
         $url = $this->core->files->get_url( $refId );
-        
+
         return [
           'id' => $refId,
           'url' => $url
@@ -1105,7 +1108,7 @@ class Meow_MWAI_API {
         if ( !empty( $file['error'] ) ) {
           throw new Exception( 'File upload error: ' . $file['error'] );
         }
-        
+
         $refId = $this->core->files->upload_file(
           $file['tmp_name'],
           $file['name'],
@@ -1115,9 +1118,9 @@ class Meow_MWAI_API {
           $target,
           $ttl
         );
-        
+
         $url = $this->core->files->get_url( $refId );
-        
+
         return [
           'id' => $refId,
           'url' => $url
@@ -1145,34 +1148,32 @@ class Meow_MWAI_API {
     global $mwai_core;
     $ai_audio_default_env = $this->core->get_option( 'ai_audio_default_env' );
     $ai_audio_default_model = $this->core->get_option( 'ai_audio_default_model' );
-    
+
     if ( empty( $ai_audio_default_model ) ) {
       $ai_audio_default_model = 'whisper-1'; // Default transcription model
     }
-    
+
     $query = new Meow_MWAI_Query_Transcribe();
-    
+
     if ( !empty( $ai_audio_default_env ) ) {
       $query->set_env_id( $ai_audio_default_env );
     }
     if ( !empty( $ai_audio_default_model ) ) {
       $query->set_model( $ai_audio_default_model );
     }
-    
+
     $query->inject_params( $params );
-    
+
     if ( !empty( $url ) ) {
-      // Use 'files' as the purpose for audio files
-      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'files' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis' ) );
     }
     else if ( !empty( $path ) ) {
-      // Use 'files' as the purpose for audio files
-      $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'files' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'analysis' ) );
     }
     else {
       throw new Exception( 'Either a URL or a path must be provided for the audio file.' );
     }
-    
+
     $reply = $mwai_core->run_query( $query );
     return $reply->result;
   }

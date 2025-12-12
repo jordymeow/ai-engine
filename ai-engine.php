@@ -4,7 +4,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
-Version: 3.2.7
+Version: 3.2.8
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -12,7 +12,7 @@ License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-define( 'MWAI_VERSION', '3.2.7' );
+define( 'MWAI_VERSION', '3.2.8' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -21,6 +21,9 @@ define( 'MWAI_URL', plugin_dir_url( __FILE__ ) );
 define( 'MWAI_ITEM_ID', 17631833 );
 if ( !defined( 'MWAI_TIMEOUT' ) ) {
   define( 'MWAI_TIMEOUT', 60 * 5 );
+}
+if ( !defined( 'MWAI_SSL_VERIFY' ) ) {
+  define( 'MWAI_SSL_VERIFY', false );
 }
 define( 'MWAI_FALLBACK_MODEL', 'gpt-5-chat-latest' );
 define( 'MWAI_FALLBACK_MODEL_FAST', 'gpt-5-chat-latest' );

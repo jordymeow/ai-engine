@@ -520,7 +520,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
-      'sslverify' => false
+      'sslverify' => MWAI_SSL_VERIFY
     ];
     return $options;
   }
@@ -1916,7 +1916,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
-      'sslverify' => false
+      'sslverify' => MWAI_SSL_VERIFY
     ];
 
     // Check if queries debug is enabled

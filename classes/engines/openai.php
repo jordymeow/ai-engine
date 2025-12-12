@@ -343,7 +343,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'reasoning', $modelInfo['tags'] ) ) {
           // Add reasoning parameter as an object (Responses API expects object)
-          // { reasoning: { effort: 'none|minimal|low|medium|high' } }
+          // { reasoning: { effort: 'none|minimal|low|medium|high|xhigh' } }
           $body['reasoning'] = [ 'effort' => $query->reasoning ];
         }
       }
@@ -897,7 +897,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         'method' => $method,
         'timeout' => MWAI_TIMEOUT,
         'body' => $body,
-        'sslverify' => false
+        'sslverify' => MWAI_SSL_VERIFY
       ];
 
       // Log if debug enabled
@@ -2857,6 +2857,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           $fileId = $uploadedFile['id'] ?? null;
 
           if ( $fileId ) {
+            // Store provider file_id in metadata for cleanup later
+            $localFileId = $this->core->files->get_id_from_refId( $refId );
+            if ( $localFileId ) {
+              $this->core->files->add_metadata( $localFileId, 'file_id', $fileId );
+              $this->core->files->add_metadata( $localFileId, 'provider', 'openai' );
+            }
+
             // Replace with provider_file_id reference in both arrays
             if ( !empty( $query->attachedFiles ) && isset( $query->attachedFiles[$index] ) ) {
               $query->attachedFiles[$index] = Meow_MWAI_Query_DroppedFile::from_provider_file_id(

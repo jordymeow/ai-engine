@@ -51,22 +51,27 @@ class Meow_MWAI_Query_DroppedFile {
 
   /**
    * @deprecated Use from_provider_file_id() instead
-   * Kept for backward compatibility
+   * TODO: Remove after March 2026 - Legacy method
    */
   public static function from_openai_file_id( $fileId, $purpose, $mimeType = null ) {
     return self::from_provider_file_id( $fileId, $purpose, $mimeType );
   }
 
   public function __construct( $data, $type, $purpose, $mimeType = null, $fileId = null ) {
-    // Support both old 'openai_file_id' and new 'provider_file_id' for backward compatibility
+    // TODO: Remove after March 2026 - Legacy type support
     if ( $type === 'openai_file_id' ) {
       $type = 'provider_file_id';
     }
     if ( !empty( $type ) && $type !== 'refId' && $type !== 'url' && $type !== 'data' && $type !== 'provider_file_id' ) {
       throw new Exception( 'AI Engine: The file type can only be refId, url, data, or provider_file_id.' );
     }
-    if ( !empty( $purpose ) && $purpose !== 'assistant-in' && $purpose !== 'vision' && $purpose !== 'files' && $purpose !== 'transcription' ) {
-      throw new Exception( 'AI Engine: The file purpose can only be assistant, vision, files, or transcription.' );
+    // TODO: Remove after March 2026 - Legacy purpose mapping
+    $legacyPurposes = [ 'vision', 'files', 'transcription', 'code_execution', 'assistant-in' ];
+    if ( in_array( $purpose, $legacyPurposes, true ) ) {
+      $purpose = 'analysis';
+    }
+    if ( !empty( $purpose ) && $purpose !== 'analysis' && $purpose !== 'generated' ) {
+      throw new Exception( 'AI Engine: The file purpose can only be analysis or generated.' );
     }
     $this->data = $data;
     $this->type = $type;
@@ -116,7 +121,7 @@ class Meow_MWAI_Query_DroppedFile {
         throw new Exception( 'AI Engine: Could not find file URL for refId: ' . $this->data );
       }
       $parts = wp_parse_url( $url );
-      if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+      if ( !isset( $parts['scheme'] ) || !in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
         throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
       }
       $data = file_get_contents( $url );
@@ -129,7 +134,7 @@ class Meow_MWAI_Query_DroppedFile {
     else if ( $this->type === 'url' ) {
       // Validate URL scheme to prevent SSRF attacks
       $parts = wp_parse_url( $this->data );
-      if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+      if ( !isset( $parts['scheme'] ) || !in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
         throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
       }
 

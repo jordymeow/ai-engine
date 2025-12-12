@@ -4,6 +4,80 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   /*
+    GPT-5.2
+    The best model for coding and agentic tasks across industries
+    https://platform.openai.com/docs/models/gpt-5.2
+    */
+  [
+    'model' => 'gpt-5.2',
+    'name' => 'GPT-5.2',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.75,
+      'out' => 14.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5.2 Chat
+    GPT-5.2 model used in ChatGPT
+    https://platform.openai.com/docs/models/gpt-5.2
+    */
+  [
+    'model' => 'gpt-5.2-chat-latest',
+    'name' => 'GPT-5.2 Chat',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.75,
+      'out' => 14.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'responses', 'mcp'],
+    'tools' => ['web_search', 'file_search', 'code_interpreter']
+  ],
+  /*
+    GPT-5.2 Pro
+    Version of GPT-5.2 that produces smarter and more precise responses
+    https://platform.openai.com/docs/models/gpt-5.2-pro
+    */
+  [
+    'model' => 'gpt-5.2-pro',
+    'name' => 'GPT-5.2 Pro',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 21.00,
+      'out' => 168.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
     GPT-5.1
     Demo model with enhanced capabilities
     https://platform.openai.com/docs/models/gpt-5.1
@@ -884,7 +958,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-sonnet-4-5',
@@ -900,7 +975,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-opus-4-1-20250805',
@@ -916,7 +992,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 32000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-opus-4-1',
@@ -932,7 +1009,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 32000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-opus-4-20250514',
@@ -948,7 +1026,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 32000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-opus-4-0',
@@ -964,7 +1043,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 32000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-sonnet-4-20250514',
@@ -980,7 +1060,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-sonnet-4-0',
@@ -996,7 +1077,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-haiku-4-5-20251001',
@@ -1012,7 +1094,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-haiku-4-5',
@@ -1028,7 +1111,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-3-7-sonnet-latest',
@@ -1044,7 +1128,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tools' => ['code_interpreter', 'thinking']
   ],
   [
     'model' => 'claude-3-5-sonnet-latest',
@@ -1157,7 +1242,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 8192,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files']
+    'tags' => ['core', 'chat', 'vision', 'files'],
+    'tools' => ['code_interpreter']
   ],
   [
     'model' => 'claude-3-5-haiku-latest',
@@ -1173,7 +1259,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 8192,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'latest']
+    'tags' => ['core', 'chat', 'vision', 'files', 'latest'],
+    'tools' => ['code_interpreter']
   ],
   [
     'model' => 'claude-3-haiku-20240307',

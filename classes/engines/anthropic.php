@@ -38,19 +38,38 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       return;
     }
 
-    // Process each attachment - upload PDFs to Anthropic Files API
+    // Check if code_interpreter is enabled
+    $hasCodeInterpreter = !empty( $query->tools ) && is_array( $query->tools ) && in_array( 'code_interpreter', $query->tools );
+
+    // MIME types supported by Code Execution tool (container_upload)
+    $codeExecutionMimes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/json',
+      'application/xml',
+      'text/xml',
+      'text/plain',
+      'text/markdown',
+    ];
+
+    // Process each attachment - upload files to Anthropic Files API
     foreach ( $attachments as $index => $file ) {
       $mimeType = $file->get_mimeType() ?? '';
       $isPDF = strpos( $mimeType, 'application/pdf' ) === 0;
+      $isImage = $file->is_image();
+      $isCodeExecutionFile = $hasCodeInterpreter && in_array( $mimeType, $codeExecutionMimes );
 
       // Skip files already uploaded (type = provider_file_id)
       if ( $file->get_type() === 'provider_file_id' ) {
         continue;
       }
 
-      // Only PDFs need to be uploaded to Anthropic Files API
-      // Images are handled differently (base64 in build_messages)
-      if ( $isPDF ) {
+      // Upload PDFs to Files API (always)
+      // Upload other documents to Files API only if code_interpreter is enabled
+      if ( $isPDF || $isCodeExecutionFile ) {
         try {
           // Get file data from WordPress uploads directory
           $refId = $file->get_refId();
@@ -62,11 +81,18 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           $fileId = $uploadedFile['id'] ?? null;
 
           if ( $fileId ) {
+            // Store provider file_id in metadata for cleanup later
+            $localFileId = $this->core->files->get_id_from_refId( $refId );
+            if ( $localFileId ) {
+              $this->core->files->add_metadata( $localFileId, 'file_id', $fileId );
+              $this->core->files->add_metadata( $localFileId, 'provider', 'anthropic' );
+            }
+
             // Replace the file object in attachedFiles array with provider_file_id type
             if ( !empty( $query->attachedFiles ) && isset( $query->attachedFiles[$index] ) ) {
               $query->attachedFiles[$index] = Meow_MWAI_Query_DroppedFile::from_provider_file_id(
                 $fileId,
-                $file->get_purpose(),
+                'analysis',
                 $file->get_mimeType()
               );
             }
@@ -74,14 +100,19 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
             if ( $index === 0 && !empty( $query->attachedFile ) ) {
               $query->attachedFile = Meow_MWAI_Query_DroppedFile::from_provider_file_id(
                 $fileId,
-                $file->get_purpose(),
+                'analysis',
                 $file->get_mimeType()
               );
             }
+
+            if ( $isCodeExecutionFile ) {
+              Meow_MWAI_Logging::log( "Anthropic: Uploaded file for code execution: {$filename} ({$mimeType}) -> {$fileId}" );
+            }
           }
-        } catch ( Exception $e ) {
-          error_log( '[AI Engine] Failed to upload PDF to Anthropic Files API: ' . $e->getMessage() );
-          // Keep the original file - build_messages() will fall back to base64
+        }
+        catch ( Exception $e ) {
+          error_log( '[AI Engine] Failed to upload file to Anthropic Files API: ' . $e->getMessage() );
+          // Keep the original file - build_messages() will fall back to base64 for PDFs
         }
       }
     }
@@ -156,7 +187,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       'Content-Type' => 'application/json',
       'x-api-key' => $this->apiKey,
       'anthropic-version' => '2023-06-01',
-      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04, files-api-2025-04-14',
+      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04, files-api-2025-04-14, code-execution-2025-08-25',
       'User-Agent' => 'AI Engine',
     ];
     return $headers;
@@ -216,12 +247,38 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         ]
       ];
 
+      // MIME types that require Code Execution tool (container_upload)
+      $codeExecutionMimes = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/json',
+        'application/xml',
+        'text/xml',
+        'text/plain',
+        'text/markdown',
+      ];
+
       // Process each file and add to content array
       foreach ( $attachments as $file ) {
         $mime = $file->get_mimeType();
         $isPDF = $mime === 'application/pdf';
         $isIMG = !$isPDF && $file->is_image();
         $isProviderFile = $file->get_type() === 'provider_file_id';
+        $isCodeExecutionFile = in_array( $mime, $codeExecutionMimes, true );
+
+        // ===== CODE EXECUTION FILES (DOCX, XLSX, CSV, etc.) =====
+        // These are uploaded via Files API and used with container_upload block
+        if ( $isCodeExecutionFile && $isProviderFile ) {
+          $fileId = $file->get_refId();
+          $content[] = [
+            'type' => 'container_upload',
+            'file_id' => $fileId
+          ];
+          continue;
+        }
 
         // ===== PDF FILES =====
         if ( $isPDF ) {
@@ -234,7 +291,8 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
               'type' => 'file',
               'file_id' => $fileId  // e.g., file_011CTkNhtS6cU3CKcvTPCfvw
             ];
-          } else {
+          }
+          else {
             // Fallback: File not uploaded yet (shouldn't happen if prepare_query ran)
             // This handles edge cases where prepare_query was skipped
             try {
@@ -245,14 +303,23 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
               $fileId = $uploadedFile['id'] ?? null;
 
               if ( $fileId ) {
+                // Store provider file_id in metadata for cleanup later
+                $localFileId = $this->core->files->get_id_from_refId( $refId );
+                if ( $localFileId ) {
+                  $this->core->files->add_metadata( $localFileId, 'file_id', $fileId );
+                  $this->core->files->add_metadata( $localFileId, 'provider', 'anthropic' );
+                }
+
                 $documentSource = [
                   'type' => 'file',
                   'file_id' => $fileId
                 ];
-              } else {
+              }
+              else {
                 throw new Exception( 'Upload failed - no file_id returned' );
               }
-            } catch ( Exception $e ) {
+            }
+            catch ( Exception $e ) {
               error_log( '[AI Engine] Failed to upload PDF to Anthropic Files API: ' . $e->getMessage() . ', falling back to base64' );
               // Last resort: base64 encoding (less efficient)
               $data = $file->get_base64();
@@ -280,7 +347,8 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
               'type' => 'file',
               'file_id' => $fileId
             ];
-          } else {
+          }
+          else {
             // Use base64 encoding (standard for images)
             $data = $file->get_base64();
             $imageSource = [
@@ -345,31 +413,33 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       if ( !empty( $query->blocks ) ) {
         foreach ( $query->blocks as $feedback_block ) {
           $contentBlock = $feedback_block['rawMessage']['content'];
-          
+
           // Process each content item individually to ensure proper handling of multiple tool_use blocks
           if ( is_array( $contentBlock ) ) {
             foreach ( $contentBlock as &$contentItem ) {
               if ( isset( $contentItem['type'] ) && $contentItem['type'] === 'tool_use' ) {
                 // Debug logging for tool_use blocks
                 if ( $this->core->get_option( 'queries_debug_mode' ) ) {
-                  error_log( 'AI Engine: Anthropic tool_use block - ID: ' . ( $contentItem['id'] ?? 'unknown' ) . 
-                    ', Name: ' . ( $contentItem['name'] ?? 'unknown' ) . 
+                  error_log( 'AI Engine: Anthropic tool_use block - ID: ' . ( $contentItem['id'] ?? 'unknown' ) .
+                    ', Name: ' . ( $contentItem['name'] ?? 'unknown' ) .
                     ', Input type: ' . gettype( $contentItem['input'] ?? null ) .
                     ', Input value: ' . json_encode( $contentItem['input'] ?? null ) );
                 }
-                
+
                 // Ensure input is an object, not an array
                 if ( isset( $contentItem['input'] ) ) {
                   if ( empty( $contentItem['input'] ) || ( is_array( $contentItem['input'] ) && count( $contentItem['input'] ) === 0 ) ) {
                     $contentItem['input'] = new stdClass();
-                  } else {
+                  }
+                  else {
                     // Apply replaceEmptyArrayWithObject only to the input field
                     $contentItem['input'] = $this->replaceEmptyArrayWithObject( $contentItem['input'] );
                   }
-                } else {
+                }
+                else {
                   $contentItem['input'] = new stdClass();
                 }
-                
+
                 // Debug logging after conversion
                 if ( $this->core->get_option( 'queries_debug_mode' ) ) {
                   error_log( 'AI Engine: After conversion - Input type: ' . gettype( $contentItem['input'] ) .
@@ -379,12 +449,12 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
             }
             unset( $contentItem );
           }
-          
+
           // Final debug logging before adding the message
           if ( $this->core->get_option( 'queries_debug_mode' ) && is_array( $contentBlock ) ) {
             error_log( 'AI Engine: Final contentBlock being added to messages: ' . json_encode( $contentBlock ) );
           }
-          
+
           $assistantMessageIndex = count( $body['messages'] );
           $body['messages'][] = [
             'role' => 'assistant',
@@ -393,7 +463,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
 
           // Collect all tool results for this message
           $toolResults = [];
-          
+
           foreach ( $feedback_block['feedbacks'] as $feedback ) {
             $feedbackValue = $feedback['reply']['value'];
             if ( !is_string( $feedbackValue ) ) {
@@ -415,7 +485,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
             // Note: Function result events are now emitted centrally in core.php
             // when the function is actually executed
           }
-          
+
           // Add all tool results in a single user message
           // Anthropic requires all tool_results for a message to be in one content array
           if ( !empty( $toolResults ) ) {
@@ -538,6 +608,18 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         }
       }
 
+      // Add code_execution tool if code_interpreter is enabled
+      if ( !empty( $query->tools ) && is_array( $query->tools ) && in_array( 'code_interpreter', $query->tools ) ) {
+        if ( !isset( $body['tools'] ) ) {
+          $body['tools'] = [];
+        }
+        $body['tools'][] = [
+          'type' => 'code_execution_20250825',
+          'name' => 'code_execution'
+        ];
+        Meow_MWAI_Logging::log( 'Anthropic: Added code_execution tool to request' );
+      }
+
       return $body;
     }
     else {
@@ -636,14 +718,14 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       if ( isset( $block['input'] ) && is_string( $block['input'] ) ) {
         $block['input'] = json_decode( $block['input'], true );
       }
-      
+
       // For tool_use blocks, ensure empty inputs are objects, not arrays
       if ( $block['type'] === 'tool_use' && isset( $block['input'] ) ) {
         if ( empty( $block['input'] ) || ( is_array( $block['input'] ) && count( $block['input'] ) === 0 ) ) {
           $block['input'] = new stdClass();
         }
       }
-      
+
       $this->streamBlocks['content'][$index] = $block;
 
       // Send event for content block completion
@@ -732,20 +814,21 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     $returned_choices = [];
     $tool_calls = [];
     $text_content = '';
-    
+
     // First, collect all tool calls and text content
     foreach ( $data['content'] as $content ) {
       if ( $content['type'] === 'tool_use' ) {
         // Collect all tool calls
         $arguments = $content['input'] ?? new stdClass();
-        
+
         // Ensure arguments is properly formatted
         if ( empty( $arguments ) ) {
           $arguments = new stdClass();
-        } else if ( is_array( $arguments ) && count( $arguments ) === 0 ) {
+        }
+        else if ( is_array( $arguments ) && count( $arguments ) === 0 ) {
           $arguments = new stdClass();
         }
-        
+
         $tool_calls[] = [
           'id' => $content['id'],
           'type' => 'function',
@@ -759,25 +842,25 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         $text_content .= $content['text'];
       }
     }
-    
+
     // Create a single choice with both tool calls and text content (like OpenAI does)
     $message = [];
-    
+
     if ( !empty( $text_content ) ) {
       $message['content'] = $text_content;
     }
-    
+
     if ( !empty( $tool_calls ) ) {
       $message['tool_calls'] = $tool_calls;
     }
-    
+
     // Only create a choice if there's content or tool calls
     if ( !empty( $message ) ) {
       $returned_choices[] = [
         'message' => $message
       ];
     }
-    
+
     return $returned_choices;
   }
 
@@ -786,7 +869,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
    */
   protected function reset_request_state() {
     parent::reset_request_state();
-    
+
     // Reset Anthropic-specific state
     $this->mcpTools = [];
     $this->mcpToolCount = 0;
@@ -819,7 +902,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     $options = $this->build_options( $headers, $body );
 
     // Emit "Request sent" event for feedback queries
-    if ( $this->currentDebugMode && !empty( $streamCallback ) && 
+    if ( $this->currentDebugMode && !empty( $streamCallback ) &&
          ( $query instanceof Meow_MWAI_Query_Feedback || $query instanceof Meow_MWAI_Query_AssistFeedback ) ) {
       $event = Meow_MWAI_Event::request_sent()
         ->set_metadata( 'is_feedback', true )
@@ -843,7 +926,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           $returned_out_tokens = $this->streamOutTokens;
         }
         $data = $this->streamBlocks;
-        
+
         // Clean up streaming data as well
         if ( isset( $data['content'] ) && is_array( $data['content'] ) ) {
           foreach ( $data['content'] as &$content ) {
@@ -855,13 +938,13 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           }
           unset( $content );
         }
-        
+
         $returned_choices = $this->create_choices( $this->streamBlocks );
       }
       // Standard Mode
       else {
         $data = $res['data'];
-        
+
         // Clean up tool_use inputs in the raw data BEFORE it gets stored
         if ( isset( $data['content'] ) && is_array( $data['content'] ) ) {
           foreach ( $data['content'] as &$content ) {
@@ -873,7 +956,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           }
           unset( $content );
         }
-        
+
         $returned_id = $data['id'];
         $returned_model = $data['model'];
         $usage = $data['usage'];
@@ -883,7 +966,6 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         }
         $returned_choices = $this->create_choices( $data );
       }
-
 
       $reply->set_choices( $returned_choices, $data );
       if ( !empty( $returned_id ) ) {
@@ -933,13 +1015,13 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       // JSON_FORCE_OBJECT would force everything to be an object, which we don't want
       // Instead, we've already converted empty arrays to stdClass in build_body
       $body = $this->safe_json_encode( $json, 'request body' );
-      
+
       // Debug logging to verify JSON encoding
       if ( $this->core->get_option( 'queries_debug_mode' ) ) {
         // Check if the body contains tool_use blocks with empty inputs
         if ( strpos( $body, '"tool_use"' ) !== false ) {
           error_log( 'AI Engine: Anthropic JSON body after encoding (first 1000 chars): ' . substr( $body, 0, 1000 ) );
-          
+
           // Check specifically for "input":[] which would be wrong
           if ( strpos( $body, '"input":[]' ) !== false ) {
             error_log( 'AI Engine: WARNING - Found "input":[] in JSON body, this should be "input":{} for Anthropic API' );
@@ -952,7 +1034,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       'method' => $method,
       'timeout' => MWAI_TIMEOUT,
       'body' => $body,
-      'sslverify' => false
+      'sslverify' => MWAI_SSL_VERIFY
     ];
     return $options;
   }
@@ -991,7 +1073,8 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     if ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
       // Anthropic provides token counts from API = tokens accuracy
       $reply->set_usage_accuracy( 'tokens' );
-    } else {
+    }
+    else {
       // Fallback to estimated
       $reply->set_usage_accuracy( 'estimated' );
     }
@@ -1009,10 +1092,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     try {
       // Get the endpoint
       $endpoint = apply_filters( 'mwai_anthropic_endpoint', 'https://api.anthropic.com/v1', $this->env );
-      
+
       // For Anthropic, we'll use the messages endpoint with a minimal request to verify auth
       $url = trailingslashit( $endpoint ) . 'messages';
-      
+
       // Create a minimal query just to test authentication
       $testBody = [
         'model' => 'claude-3-haiku-20240307',  // Use cheapest model
@@ -1024,22 +1107,22 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           'user_id' => 'connection_test'
         ]
       ];
-      
+
       // Build headers with a dummy query
       $dummyQuery = new Meow_MWAI_Query_Text( 'test' );
       $headers = $this->build_headers( $dummyQuery );
       $options = $this->build_options( $headers, $testBody );
-      
+
       // Try to make a minimal request
       $response = $this->run_query( $url, $options );
-      
+
       // If we get here without exception, the API key is valid
       // Get the list of available models from our constants
       $models = $this->get_models();
-      $modelNames = array_map( function( $model ) {
+      $modelNames = array_map( function ( $model ) {
         return $model['model'] ?? $model['name'] ?? 'unknown';
       }, $models );
-      
+
       return [
         'models' => array_slice( $modelNames, 0, 10 ),  // Return first 10 models
         'service' => 'Anthropic'
@@ -1048,7 +1131,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     catch ( Exception $e ) {
       // Check if it's an authentication error
       $message = $e->getMessage();
-      if ( strpos( $message, 'authentication_error' ) !== false || 
+      if ( strpos( $message, 'authentication_error' ) !== false ||
            strpos( $message, 'invalid x-api-key' ) !== false ||
            strpos( $message, '401' ) !== false ) {
         throw new Exception( 'Invalid API key' );
@@ -1077,7 +1160,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     $body = '';
     $body .= "--$boundary\r\n";
     $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$filename}\"\r\n";
-    $body .= "Content-Type: " . $mimeType . "\r\n\r\n";
+    $body .= 'Content-Type: ' . $mimeType . "\r\n\r\n";
     $body .= $data . "\r\n";
     $body .= "--$boundary\r\n";
     $body .= "Content-Disposition: form-data; name=\"mime_type\"\r\n\r\n";
@@ -1121,6 +1204,44 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     // Check for API errors
     if ( isset( $result['error'] ) ) {
       throw new Exception( 'Anthropic Files API error: ' . ( $result['error']['message'] ?? 'Unknown error' ) );
+    }
+
+    return $result;
+  }
+
+  /**
+   * Delete a file from Anthropic Files API
+   *
+   * @param string $fileId The Anthropic file ID to delete
+   * @return array The response from the API
+   * @throws Exception If deletion fails
+   */
+  public function delete_file( $fileId ) {
+    $endpoint = apply_filters( 'mwai_anthropic_endpoint', 'https://api.anthropic.com/v1', $this->env );
+    $url = $endpoint . '/files/' . $fileId;
+
+    $response = wp_remote_request( $url, [
+      'method' => 'DELETE',
+      'headers' => [
+        'x-api-key' => $this->apiKey,
+        'anthropic-version' => '2023-06-01',
+        'anthropic-beta' => 'files-api-2025-04-14',
+      ],
+      'timeout' => 30
+    ] );
+
+    if ( is_wp_error( $response ) ) {
+      throw new Exception( 'File deletion failed: ' . $response->get_error_message() );
+    }
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $response_body = wp_remote_retrieve_body( $response );
+    $result = json_decode( $response_body, true );
+
+    // Check for API errors
+    if ( $response_code >= 400 ) {
+      $error_message = isset( $result['error']['message'] ) ? $result['error']['message'] : 'Unknown error';
+      throw new Exception( 'Anthropic Files API error: ' . $error_message );
     }
 
     return $result;

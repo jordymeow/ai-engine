@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.2.7
+Stable tag: 3.2.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,19 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.8 (2025/12/12) =
+* Add: Support for GPT-5.2 models (including gpt-5.2, gpt-5.2-chat-latest, and gpt-5.2-pro).
+* Add: Support for placeholders in chatbot instructions.
+* Add: MWAI_SSL_VERIFY constant so you can override SSL verification.
+* Add: Files Manager in Dev Tools (+ improved file cleanup, locally and remotely at OpenAI and Anthropic).
+* Update: Increased the maximum embeddings results limit from 100 to 1000.
+* Update: Simplified file “purpose” options to just “analysis” or “generated” for clearer file handling.
+* Update: Enhanced the Embeddings Query Mode and Dev Tools.
+* Fix: Resolved a UI crash when selecting OpenRouter or other environments with non-standard models.
+* Fix: Chroma integration now auto-creates the database and collection when needed.
+* Fix: Prevented a rare crash in the Discussions tab.
+* Fix: Clarified and improved error messages.
 
 = 3.2.7 (2025/12/02) =
 * Add: Support for OpenRouter embedding models.

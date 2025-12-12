@@ -97,7 +97,6 @@ class Meow_MWAI_Core {
       $this->magicWand = new Meow_MWAI_Modules_Wand( $this );
     }
 
-
     // Chatbots & Discussions
     if ( $this->get_option( 'module_chatbots' ) ) {
       $this->chatbot = new Meow_MWAI_Modules_Chatbot();
@@ -214,9 +213,11 @@ class Meow_MWAI_Core {
     // Different query types have specific filters for type-safe modifications.
     if ( $query instanceof Meow_MWAI_Query_Embed ) {
       $query = apply_filters( 'mwai_ai_embeddings_query', $query );
-    } else if ( $query instanceof Meow_MWAI_Query_Feedback ) {
+    }
+    else if ( $query instanceof Meow_MWAI_Query_Feedback ) {
       $query = apply_filters( 'mwai_ai_feedback_query', $query );
-    } else {
+    }
+    else {
       $query = apply_filters( 'mwai_ai_query', $query );
     }
 
@@ -357,15 +358,20 @@ class Meow_MWAI_Core {
   }
 
   public function do_placeholders( $text ) {
-    $defaultPlaceholders = [];
+    $defaultPlaceholders = [
+      // Date and time in a clear, AI-friendly format (e.g., "December 11, 2025 at 3:45 PM")
+      'DATE_TIME' => date_i18n( 'F j, Y \a\t g:i A' ),
+    ];
     $dataPlaceholders = $this->get_user_data();
     if ( !empty( $dataPlaceholders ) ) {
       $defaultPlaceholders = array_merge( $defaultPlaceholders, $dataPlaceholders );
     }
     $placeholders = apply_filters( 'mwai_placeholders', $defaultPlaceholders );
     foreach ( $placeholders as $key => $value ) {
-      $text = str_replace( '{' . $key . '}', $value, $text );
+      $text = str_replace( '{' . $key . '}', $value ?? '', $text );
     }
+    // Replace any remaining unmatched placeholders with a clear indicator
+    $text = preg_replace( '/\{[A-Z_]+\}/', '[N/A]', $text );
     return $text;
   }
   #endregion
@@ -703,8 +709,7 @@ class Meow_MWAI_Core {
     $excerpt = $post['post_excerpt'];
     $url = get_permalink( $post['ID'] );
     $checksum = wp_hash( $content . $title . $url );
-    
-    
+
     return [
       'postId' => (int) $post['ID'],
       'title' => $title,
@@ -725,35 +730,36 @@ class Meow_MWAI_Core {
     $date = strtotime( $date_string );
     $now = time();
     $diff = $now - $date;
-    
+
     // Less than a minute
     if ( $diff < 60 ) {
       return 'Just now';
     }
-    
+
     // Less than an hour
     if ( $diff < 3600 ) {
       $minutes = floor( $diff / 60 );
       return $minutes . 'm ago';
     }
-    
+
     // Less than a day
     if ( $diff < 86400 ) {
       $hours = floor( $diff / 3600 );
       return $hours . 'h ago';
     }
-    
+
     // Less than a week
     if ( $diff < 604800 ) {
       $days = floor( $diff / 86400 );
       return $days . 'd ago';
     }
-    
+
     // Format as date
     $is_current_year = date( 'Y', $date ) === date( 'Y', $now );
     if ( $is_current_year ) {
       return date( 'M jS', $date );
-    } else {
+    }
+    else {
       return date( 'M jS, Y', $date );
     }
   }
@@ -917,7 +923,8 @@ class Meow_MWAI_Core {
       if ( !isset( $chatbot['maxUploads'] ) ) {
         if ( isset( $chatbot['fileUploads'] ) && $chatbot['fileUploads'] > 0 ) {
           $chatbot['maxUploads'] = $chatbot['fileUploads'];
-        } else {
+        }
+        else {
           $chatbot['maxUploads'] = 1; // Default to 1 file
         }
         $hasChanges = true;
@@ -976,33 +983,33 @@ class Meow_MWAI_Core {
         // Append custom CSS to theme data for frontend rendering (check for non-empty trimmed string)
         if ( isset( $theme['settings']['customCSS'] ) && trim( $theme['settings']['customCSS'] ) !== '' ) {
           $customCSS = $theme['settings']['customCSS'];
-          
+
           // Add theme class prefix to all CSS rules for proper scoping
           $themeClass = '.mwai-' . $themeId . '-theme';
           $lines = explode( "\n", $customCSS );
           $processedCSS = '';
           $inRule = false;
-          
+
           foreach ( $lines as $line ) {
             $trimmedLine = trim( $line );
-            
+
             // Skip empty lines and comments
             if ( empty( $trimmedLine ) || strpos( $trimmedLine, '/*' ) === 0 ) {
               $processedCSS .= $line . "\n";
               continue;
             }
-            
+
             // If line contains a selector (has { but not })
             if ( strpos( $line, '{' ) !== false && strpos( $line, '}' ) === false ) {
               // Extract selector and the rest
               $parts = explode( '{', $line, 2 );
               $selector = trim( $parts[0] );
-              
+
               // Add theme class prefix if not already present
               if ( strpos( $selector, $themeClass ) !== 0 ) {
                 // Handle multiple selectors separated by comma
                 $selectors = explode( ',', $selector );
-                $prefixedSelectors = array_map( function( $sel ) use ( $themeClass ) {
+                $prefixedSelectors = array_map( function ( $sel ) use ( $themeClass ) {
                   $sel = trim( $sel );
                   // Don't prefix if it's a keyframe or similar
                   if ( strpos( $sel, '@' ) === 0 || strpos( $sel, 'from' ) === 0 || strpos( $sel, 'to' ) === 0 || preg_match( '/^\d+%/', $sel ) ) {
@@ -1012,16 +1019,17 @@ class Meow_MWAI_Core {
                 }, $selectors );
                 $selector = implode( ', ', $prefixedSelectors );
               }
-              
+
               $processedCSS .= $selector . ' {' . ( isset( $parts[1] ) ? $parts[1] : '' ) . "\n";
               $inRule = true;
-            } else {
+            }
+            else {
               $processedCSS .= $line . "\n";
             }
           }
-          
+
           $customCSS = $processedCSS;
-          
+
           // For custom themes (type: 'css'), append to style property
           if ( $theme['type'] === 'css' ) {
             $theme['style'] = ( $theme['style'] ?? '' ) . "\n\n/* Custom CSS */\n" . $customCSS;
@@ -1050,6 +1058,7 @@ class Meow_MWAI_Core {
   }
 
   public function update_chatbots( $chatbots ) {
+    // TODO: Remove after January 2026 - Legacy chatbot fields cleanup
     $deprecatedFields = [ 'env', 'embeddingsIndex', 'embeddingsNamespace', 'service' ];
     // TODO: I think some HTML fields are missing, guestName, maybe others.
     $htmlFields = [ 'instructions', 'textCompliance', 'aiName', 'userName', 'startSentence' ];
@@ -1074,13 +1083,16 @@ class Meow_MWAI_Core {
           // Convert various representations to boolean
           if ( is_bool( $value ) ) {
             // Already boolean, keep as is
-          } else if ( $value === 1 || $value === '1' || $value === true || $value === 'true' || $value === 'yes' ) {
+          }
+          else if ( $value === 1 || $value === '1' || $value === true || $value === 'true' || $value === 'yes' ) {
             // These are true values
             $value = true;
-          } else if ( $value === 0 || $value === '0' || $value === false || $value === 'false' || $value === 'no' || $value === '' || $value === null ) {
+          }
+          else if ( $value === 0 || $value === '0' || $value === false || $value === 'false' || $value === 'no' || $value === '' || $value === null ) {
             // These are false values
             $value = false;
-          } else {
+          }
+          else {
             // Default to checking if not empty
             $value = !empty( $value );
           }
@@ -1177,14 +1189,15 @@ class Meow_MWAI_Core {
     $populating = true;
 
     // Languages - use custom languages as the complete list
-    $custom_languages = isset( $options['custom_languages'] ) && !empty( $options['custom_languages'] ) 
-      ? $options['custom_languages'] 
+    $custom_languages = isset( $options['custom_languages'] ) && !empty( $options['custom_languages'] )
+      ? $options['custom_languages']
       : [];
-    
+
     // If no custom languages defined, fall back to defaults
     if ( empty( $custom_languages ) ) {
       $options['languages'] = apply_filters( 'mwai_languages', MWAI_LANGUAGES );
-    } else {
+    }
+    else {
       // Process custom languages
       $processed_languages = [];
       foreach ( $custom_languages as $custom_lang ) {
@@ -1196,13 +1209,14 @@ class Meow_MWAI_Core {
             $lang_name = trim( $matches[1] );
             $lang_code = strtolower( trim( $matches[2] ) );
             $processed_languages[$lang_code] = $lang_name;
-          } else {
+          }
+          else {
             // No code provided, add as-is
             $processed_languages[] = $custom_lang;
           }
         }
       }
-      
+
       $options['languages'] = apply_filters( 'mwai_languages', $processed_languages );
     }
 
@@ -1350,7 +1364,7 @@ class Meow_MWAI_Core {
     // Populate usage data from ai_usage to ai_models_usage for the frontend
     $ai_usage = $this->get_option( 'ai_usage', [] );
     $options['ai_models_usage'] = $ai_usage;
-    
+
     // Also include daily usage data
     $ai_usage_daily = $this->get_option( 'ai_usage_daily', [] );
     $options['ai_models_usage_daily'] = $ai_usage_daily;
@@ -1370,10 +1384,10 @@ class Meow_MWAI_Core {
       }
       $options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
       $options['default_limits'] = MWAI_LIMITS;
-      
+
       // Force sanitization if custom_languages is not set (migration)
       $needs_language_migration = !isset( $options['custom_languages'] ) || empty( $options['custom_languages'] );
-      
+
       if ( $sanitize || $init_mode || $needs_language_migration ) {
         $options = $this->sanitize_options( $options );
       }
@@ -1469,7 +1483,7 @@ class Meow_MWAI_Core {
     if ( !isset( $options['custom_languages'] ) || empty( $options['custom_languages'] ) ) {
       $options['custom_languages'] = [
         'English (en)',
-        'German (de)', 
+        'German (de)',
         'French (fr)',
         'Spanish (es)',
         'Italian (it)',
@@ -1556,27 +1570,27 @@ class Meow_MWAI_Core {
     return $this->get_all_options( true );
   }
   #endregion
-  
+
   #region Cron Tracking
   public function track_cron_start( $hook ) {
     // Set running transient (expires in 5 minutes as a safety measure)
     set_transient( 'mwai_cron_running_' . $hook, true, 300 );
   }
-  
+
   public function track_cron_end( $hook, $status = 'success', $error_message = '' ) {
     // Remove running transient
     delete_transient( 'mwai_cron_running_' . $hook );
-    
+
     // Get existing data
     $cron_data = get_transient( 'mwai_cron_last_run' ) ?: [];
-    
+
     // Update this cron's data - use time() for consistency
     $cron_data[$hook] = [
       'time' => time(),
       'status' => $status,
       'error' => $error_message
     ];
-    
+
     // Store for 7 days
     set_transient( 'mwai_cron_last_run', $cron_data, 7 * DAY_IN_SECONDS );
   }

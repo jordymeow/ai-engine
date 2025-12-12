@@ -155,7 +155,7 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML {
         'headers' => $headers,
         'method' => 'GET',
         'timeout' => 10,
-        'sslverify' => false
+        'sslverify' => MWAI_SSL_VERIFY
       ];
       
       // Make the request

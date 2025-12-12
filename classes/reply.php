@@ -11,7 +11,8 @@ class Meow_MWAI_Reply implements JsonSerializable {
     'price' => null,
     'accuracy' => 'none', // 'none', 'estimated', 'tokens', 'price', 'full'
   ];
-  public $usageAccuracy = 'none'; // DEPRECATED: Use $usage['accuracy'] instead
+  // TODO: Remove after January 2026 - Use $usage['accuracy'] instead
+  public $usageAccuracy = 'none';
   public $query = null;
   public $type = 'text';
   public $model = null; // Actual model used by the API (may differ from query model)
@@ -163,14 +164,13 @@ class Meow_MWAI_Reply implements JsonSerializable {
   */
   public function set_choices( $choices, $rawMessage = null ) {
     $this->results = [];
-    
+
     // Initialize feedback arrays at the start to accumulate across all choices
     // This is important for engines like Google that split multiple function calls
     // into separate choices
     $this->needFeedbacks = [];
     $this->needClientActions = [];
-    
-    
+
     if ( is_array( $choices ) ) {
       foreach ( $choices as $choice ) {
 

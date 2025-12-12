@@ -231,7 +231,7 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
           'User-Agent' => 'AI Engine'
         ],
         'timeout' => 10,
-        'sslverify' => false
+        'sslverify' => MWAI_SSL_VERIFY
       ];
 
       $response = wp_remote_get( $url, $options );

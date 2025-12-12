@@ -63,8 +63,7 @@ class Meow_MWAI_Query_Assistant extends Meow_MWAI_Query_Base implements JsonSeri
 
   /**
    * Get all attached files as a normalized array.
-   * This method provides backward compatibility by merging both attachedFile (legacy)
-   * and attachedFiles (current) into a single array.
+   * TODO: Remove after April 2026 - Legacy attachedFile support
    *
    * @return Meow_MWAI_Query_DroppedFile[] Array of attached files
    */

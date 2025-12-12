@@ -25,7 +25,7 @@ class Meow_MWAI_Modules_Discussions {
       //   wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
       // }
       // add_action( 'mwai_discussions', [ $this, 'cron_discussions' ] );
-      
+
       // Register task handler
       add_filter( 'mwai_task_cleanup_discussions', [ $this, 'handle_cleanup_task' ], 10, 2 );
     }
@@ -184,17 +184,17 @@ class Meow_MWAI_Modules_Discussions {
       }
     }
 
-    $base_prompt = __( "Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.", 'ai-engine' ) . "\n\n" . __( 'Conversation:', 'ai-engine' ) . "\n$conversation_text\n";
+    $base_prompt = __( 'Based on the following conversation, generate a concise and specific title for the discussion, strictly less than 64 characters. Focus on the main topic, avoiding unnecessary words such as articles, pronouns, or adjectives. Do not include any punctuation at the end. Do not include anything else than the title itself, only one sentence, no line breaks, just the title.', 'ai-engine' ) . "\n\n" . __( 'Conversation:', 'ai-engine' ) . "\n$conversation_text\n";
     $prompt = apply_filters( 'mwai_discussions_title_prompt', $base_prompt, $conversation_text, $discussion );
 
     // Run the AI query using the fast environment
     global $mwai;
     $params = [ 'scope' => 'discussions' ];
-    
+
     // Use simpleFastTextQuery which handles Fast Model configuration
     try {
       $answer = $mwai->simpleFastTextQuery( $prompt, $params );
-      
+
       // Clean up the answer
       $title = trim( $answer );
       $title = rtrim( $title, '.!?:;,—–-–' ); // Remove trailing punctuation
@@ -202,14 +202,16 @@ class Meow_MWAI_Modules_Discussions {
       if ( empty( $title ) ) {
         $title = __( 'Untitled', 'ai-engine' );
       }
-    } catch ( Exception $e ) {
+    }
+    catch ( Exception $e ) {
       // Handle content filter or other API errors
       $error_message = $e->getMessage();
-      if ( strpos( $error_message, 'content_filter' ) !== false || 
+      if ( strpos( $error_message, 'content_filter' ) !== false ||
            strpos( $error_message, 'ResponsibleAIPolicyViolation' ) !== false ) {
         error_log( "AI Engine: Content filter blocked title generation for discussion ID {$discussion->id}. Using fallback title." );
         $title = __( 'Discussion', 'ai-engine' ) . ' ' . date( 'Y-m-d H:i' );
-      } else {
+      }
+      else {
         error_log( "AI Engine: Failed to generate title for discussion ID {$discussion->id}: " . $error_message );
         $title = __( 'Untitled', 'ai-engine' );
       }
@@ -282,7 +284,7 @@ class Meow_MWAI_Modules_Discussions {
   public function cron_discussions() {
     // Track cron execution start
     $this->core->track_cron_start( 'mwai_discussions' );
-    
+
     try {
       $this->check_db();
 
@@ -293,35 +295,36 @@ class Meow_MWAI_Modules_Discussions {
       }
       // END NEW CHECK
 
-    // Set the current user to the first admin to avoid guest limits
-    $admin_users = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
-    if ( ! empty( $admin_users ) ) {
-      $admin_user = $admin_users[0];
-      wp_set_current_user( $admin_user->ID );
-    }
+      // Set the current user to the first admin to avoid guest limits
+      $admin_users = get_users( [ 'role' => 'administrator', 'number' => 1 ] );
+      if ( !empty( $admin_users ) ) {
+        $admin_user = $admin_users[0];
+        wp_set_current_user( $admin_user->ID );
+      }
 
-    $now = date( 'Y-m-d H:i:s' );
-    $ten_days_ago = date( 'Y-m-d H:i:s', strtotime( '-10 days' ) );
+      $now = date( 'Y-m-d H:i:s' );
+      $ten_days_ago = date( 'Y-m-d H:i:s', strtotime( '-10 days' ) );
 
-    // Get 5 latest discussions, not older than 10 days, which have no 'title' yet
-    $query = $this->wpdb->prepare(
-      "SELECT * FROM {$this->table_chats}
+      // Get 5 latest discussions, not older than 10 days, which have no 'title' yet
+      $query = $this->wpdb->prepare(
+        "SELECT * FROM {$this->table_chats}
                                                                                                                                                                                   WHERE title IS NULL AND updated >= %s
                                                                                                                                                                                   ORDER BY updated DESC LIMIT 5",
-      $ten_days_ago
-    );
-    $discussions = $this->wpdb->get_results( $query );
-    if ( empty( $discussions ) ) {
-      $this->core->track_cron_end( 'mwai_discussions', 'success' );
-      return;
-    }
+        $ten_days_ago
+      );
+      $discussions = $this->wpdb->get_results( $query );
+      if ( empty( $discussions ) ) {
+        $this->core->track_cron_end( 'mwai_discussions', 'success' );
+        return;
+      }
 
-    foreach ( $discussions as $discussion ) {
-      $this->generate_title_for_discussion( $discussion );
-    }
-    
+      foreach ( $discussions as $discussion ) {
+        $this->generate_title_for_discussion( $discussion );
+      }
+
       $this->core->track_cron_end( 'mwai_discussions', 'success' );
-    } catch ( Exception $e ) {
+    }
+    catch ( Exception $e ) {
       $this->core->track_cron_end( 'mwai_discussions', 'error', $e->getMessage() );
     }
   }
@@ -391,7 +394,7 @@ class Meow_MWAI_Modules_Discussions {
         // Decode messages JSON to get the count
         $messages = json_decode( $chatRow['messages'], true );
         $message_count = is_array( $messages ) ? count( $messages ) : 0;
-        
+
         // Add formatted metadata that can be filtered
         $chatRow['metadata_display'] = [
           'start_date' => apply_filters( 'mwai_discussion_metadata_start_date', $this->core->format_discussion_date( $chatRow['created'] ), $chatRow ),
@@ -548,10 +551,10 @@ class Meow_MWAI_Modules_Discussions {
     }
     $newMessage = isset( $params['newMessage'] ) ? $params['newMessage'] : $query->get_message();
 
-    // If there are files for "Vision", add them to the message
+    // If there are images, add them to the message for display purposes
     $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
     foreach ( $attachments as $attachedFile ) {
-      if ( $attachedFile->get_purpose() === 'vision' && $attachedFile->get_type() === 'url' ) {
+      if ( $attachedFile->is_image() && $attachedFile->get_type() === 'url' ) {
         $newMessage = "![Uploaded Image]({$attachedFile->get_url()})\n" . $newMessage;
       }
     }
@@ -779,7 +782,7 @@ class Meow_MWAI_Modules_Discussions {
     $start = microtime( true );
     $retention_days = 90; // 3 months retention period
     $cutoff = date( 'Y-m-d H:i:s', strtotime( "-{$retention_days} days" ) );
-    
+
     // Check if discussions table exists
     $table_exists = $this->wpdb->get_var( "SHOW TABLES LIKE '{$this->table_chats}'" );
     if ( !$table_exists ) {
@@ -789,39 +792,41 @@ class Meow_MWAI_Modules_Discussions {
         'message' => 'Discussions table does not exist yet',
       ];
     }
-    
+
     // Get current progress
     $deleted_total = isset( $job['meta']['deleted_total'] ) ? (int) $job['meta']['deleted_total'] : 0;
     $last_id = isset( $job['meta']['last_id'] ) ? (int) $job['meta']['last_id'] : 0;
-    
+
     // Delete in batches
     $batch_size = 100;
     $deleted_batch = 0;
-    
+
     $old_discussions = $this->wpdb->get_results( $this->wpdb->prepare(
       "SELECT id FROM {$this->table_chats} 
        WHERE updated < %s AND id > %d 
        ORDER BY id ASC 
        LIMIT %d",
-      $cutoff, $last_id, $batch_size
+      $cutoff,
+      $last_id,
+      $batch_size
     ) );
-    
+
     if ( !empty( $old_discussions ) ) {
       $ids = wp_list_pluck( $old_discussions, 'id' );
       $ids_string = implode( ',', array_map( 'intval', $ids ) );
-      
+
       $deleted_batch = $this->wpdb->query(
         "DELETE FROM {$this->table_chats} WHERE id IN ($ids_string)"
       );
-      
+
       $deleted_total += $deleted_batch;
       $last_id = end( $ids );
     }
-    
+
     // Check if we have more to process or time is running out
     $has_more = count( $old_discussions ) === $batch_size;
     $time_elapsed = microtime( true ) - $start;
-    
+
     if ( $has_more && $time_elapsed < 8 ) {
       // Continue processing
       return [
@@ -836,7 +841,7 @@ class Meow_MWAI_Modules_Discussions {
         'step_name' => 'batch_' . ( $job['step'] + 1 ),
       ];
     }
-    
+
     // Completed
     return [
       'ok' => true,

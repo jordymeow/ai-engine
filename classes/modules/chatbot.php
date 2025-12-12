@@ -135,7 +135,7 @@ class Meow_MWAI_Modules_Chatbot {
     }
 
     // Handle null or convert to string for strlen
-    $messageStr = $newMessage === null ? '' : (string)$newMessage;
+    $messageStr = $newMessage === null ? '' : (string) $newMessage;
     $length = strlen( $messageStr );
     if ( $length < 1 ) {
       Meow_MWAI_Logging::warn( 'The query was rejected - message was too short.' );
@@ -511,9 +511,9 @@ class Meow_MWAI_Modules_Chatbot {
           $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
 
           if ( $isIMG ) {
-            $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision', $mimeType ) );
+            $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis', $mimeType ) );
             $fileId = $this->core->files->get_id_from_refId( $fileForImage );
-            $this->core->files->update_purpose( $fileId, 'vision' );
+            $this->core->files->update_purpose( $fileId, 'analysis' );
           }
         }
         else {
@@ -606,26 +606,26 @@ class Meow_MWAI_Modules_Chatbot {
           unset( $params['verbosity'] );
           unset( $params['maxTokens'] );
         }
-        
+
         $query->inject_params( $params );
-        
+
         // Handle Prompt mode specifics
         if ( $mode === 'prompt' && !empty( $params['promptId'] ) ) {
           $promptData = [
             'id' => $params['promptId']
           ];
-          
+
           // TODO: Prompt Variables support - might be added later
           // Add prompt version if provided
           // if ( !empty( $params['promptVersion'] ) ) {
           //   $promptData['version'] = $params['promptVersion'];
           // }
-          
+
           // Add prompt variables if provided
           // if ( !empty( $params['promptVariables'] ) ) {
           //   try {
-          //     $variables = is_string( $params['promptVariables'] ) ? 
-          //       json_decode( $params['promptVariables'], true ) : 
+          //     $variables = is_string( $params['promptVariables'] ) ?
+          //       json_decode( $params['promptVariables'], true ) :
           //       $params['promptVariables'];
           //     if ( $variables ) {
           //       $promptData['variables'] = $variables;
@@ -634,7 +634,7 @@ class Meow_MWAI_Modules_Chatbot {
           //     // Invalid JSON, skip variables
           //   }
           // }
-          
+
           $query->setExtraParam( 'prompt', $promptData );
         }
 
@@ -710,7 +710,7 @@ class Meow_MWAI_Modules_Chatbot {
               $internalFileId = $this->core->files->get_id_from_refId( $fileToProcess );
               $this->core->files->update_refId( $internalFileId, $openAiRefId );
               $this->core->files->update_envId( $internalFileId, $query->envId );
-              $this->core->files->update_purpose( $internalFileId, 'assistant-in' );
+              $this->core->files->update_purpose( $internalFileId, 'analysis' );
               $this->core->files->add_metadata( $internalFileId, 'assistant_storeId', $storeId );
               $this->core->files->add_metadata( $internalFileId, 'assistant_storeFileId', $storeFileId );
               $fileToProcess = $openAiRefId;
@@ -727,16 +727,16 @@ class Meow_MWAI_Modules_Chatbot {
               $url = $this->core->files->get_url( $internalRefId );
               $mimeType = $this->core->files->get_mime_type( $internalRefId );
               $isIMG = in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] );
-              $purposeType = $isIMG ? 'vision' : 'files';
 
               // Create DroppedFile object - provider-agnostic approach
               // Images use URL (can be sent as base64 or URL in messages)
               // PDFs use refId (engines will upload to their Files API as needed)
               if ( $isIMG ) {
-                $droppedFile = Meow_MWAI_Query_DroppedFile::from_url( $url, $purposeType, $mimeType );
-              } else {
+                $droppedFile = Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis', $mimeType );
+              }
+              else {
                 // For PDFs and documents, use refId so engines can access file data directly
-                $droppedFile = Meow_MWAI_Query_DroppedFile::from_refId( $internalRefId, $purposeType, $mimeType );
+                $droppedFile = Meow_MWAI_Query_DroppedFile::from_refId( $internalRefId, 'analysis', $mimeType );
               }
 
               // IMPORTANT: Always use add_file() to add to attachedFiles array
@@ -747,7 +747,7 @@ class Meow_MWAI_Modules_Chatbot {
               // Update metadata using the internal refId (not OpenAI file ID)
               $fileId = $this->core->files->get_id_from_refId( $internalRefId );
               $this->core->files->update_envId( $fileId, $query->envId );
-              $this->core->files->update_purpose( $fileId, $purposeType );
+              $this->core->files->update_purpose( $fileId, 'analysis' );
               $this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
               $this->core->files->add_metadata( $fileId, 'query_session', $query->session );
             }
@@ -1050,9 +1050,11 @@ class Meow_MWAI_Modules_Chatbot {
           $value = $atts[$param];
           if ( is_bool( $value ) ) {
             $frontParams[$param] = $value;
-          } else if ( is_string( $value ) ) {
+          }
+          else if ( is_string( $value ) ) {
             $frontParams[$param] = !empty( $value ) && $value !== 'false' && $value !== '0' && $value !== 'no';
-          } else {
+          }
+          else {
             $frontParams[$param] = !empty( $value );
           }
         }
@@ -1069,9 +1071,11 @@ class Meow_MWAI_Modules_Chatbot {
 
           if ( is_bool( $value ) ) {
             $frontParams[$param] = $value;
-          } else if ( is_string( $value ) ) {
+          }
+          else if ( is_string( $value ) ) {
             $frontParams[$param] = !empty( $value ) && $value !== 'false' && $value !== '0';
-          } else {
+          }
+          else {
             $frontParams[$param] = !empty( $value );
           }
         }

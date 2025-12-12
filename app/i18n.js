@@ -382,6 +382,7 @@ i18n.HELP = {
   POST_STATUS: __( 'Enable for these post statuses (publish, draft, future, private, etc); separate with commas.', 'ai-engine' ),
   POST_CATEGORIES: __( 'Enable for these categories (slugs); separate with commas. If none, it will be enabled for all.', 'ai-engine' ),
   CONTEXT_MAX_LENGTH: __( 'Truncate the context (Content-Aware, Embeddings, etc) to make sure it is below this number of characters.', 'ai-engine' ),
+  INSTRUCTIONS: __( 'Placeholders: {DATE_TIME}, {DISPLAY_NAME}, {FIRST_NAME}, {LAST_NAME}, {USER_LOGIN}. With Content-Aware: {CONTENT}, {EXCERPT}, {TITLE}, {URL}.', 'ai-engine' ),
   MAX_MESSAGES: __( 'Maximum number of historical messages that is sent to the AI model.', 'ai-engine' ),
   INPUT_MAX_LENGTH: __( 'Maximum number of characters that can be input by the user.', 'ai-engine' ),
   STATISTICS: __( ' In the Insights tab, you can browse through all your users\' activity. Contextual data is excluded unless you activate the options below. Make sure your users are aware of this.', 'ai-engine' ),
