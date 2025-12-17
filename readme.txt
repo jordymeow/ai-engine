@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.2.8
+Stable tag: 3.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,12 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.2.9 (2025/12/17) =
+* Add: Added support for the new gpt-image-1.5 model, works quite well! 😊  
+* Fix: Restored reliable image editing (added missing file attachment handling, separating the edit mode prompt from templates, and preventing double dots in generated filenames).  
+* Fix: Corrected Mistral model filtering so available models now appear and work as expected.  
+* Fix: Resolved a UI crash when selecting OpenRouter providers that use non-standard model data.
 
 = 3.2.8 (2025/12/12) =
 * Add: Support for GPT-5.2 models (including gpt-5.2, gpt-5.2-chat-latest, and gpt-5.2-pro).

@@ -5,6 +5,7 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
   public ?string $style = null;
   public ?string $localDownload = 'uploads';
   public ?string $localDownloadExpiry = 'uploads';
+  public ?array $attachedFiles = null;
 
   #region Constructors, Serialization
 
@@ -64,6 +65,25 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
     $this->localDownload = $localDownload;
   }
 
+  public function add_file( Meow_MWAI_Query_DroppedFile $file ): void {
+    if ( $this->attachedFiles === null ) {
+      $this->attachedFiles = [];
+    }
+    $this->attachedFiles[] = $file;
+  }
+
+  public function set_files( array $files ): void {
+    $this->attachedFiles = $files;
+  }
+
+  public function get_files(): ?array {
+    return $this->attachedFiles;
+  }
+
+  public function getAttachments(): array {
+    return $this->attachedFiles ?? [];
+  }
+
   // Based on the params of the query, update the attributes
   public function inject_params( array $params ): void {
     parent::inject_params( $params );
@@ -78,7 +98,8 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
     // Check both camelCase and snake_case versions for compatibility
     if ( array_key_exists( 'localDownload', $params ) ) {
       $this->set_local_download( $params['localDownload'] );
-    } elseif ( array_key_exists( 'local_download', $params ) ) {
+    }
+    elseif ( array_key_exists( 'local_download', $params ) ) {
       $this->set_local_download( $params['local_download'] );
     }
   }

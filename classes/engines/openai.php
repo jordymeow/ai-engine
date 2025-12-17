@@ -532,7 +532,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
       // For image generation, we can use the integrated approach
-      if ( $query->model === 'gpt-image-1' ) {
+      if ( strpos( $query->model, 'gpt-image' ) === 0 ) {
         $body['tools'] = [[
           'type' => 'image_generation'
         ]];
@@ -959,8 +959,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             // Look for an image deployment in the Azure deployments
             if ( isset( $this->env['deployments'] ) && is_array( $this->env['deployments'] ) ) {
               foreach ( $this->env['deployments'] as $deployment ) {
-                // Check if this is an image model deployment (gpt-image-1)
-                if ( isset( $deployment['model'] ) && $deployment['model'] === 'gpt-image-1' && isset( $deployment['name'] ) ) {
+                // Check if this is a gpt-image model deployment
+                if ( isset( $deployment['model'] ) && strpos( $deployment['model'], 'gpt-image' ) === 0 && isset( $deployment['name'] ) ) {
                   $headers['x-ms-oai-image-generation-deployment'] = $deployment['name'];
                   Meow_MWAI_Logging::log( 'Responses API: Added Azure image generation deployment header: ' . $deployment['name'] );
                   break;

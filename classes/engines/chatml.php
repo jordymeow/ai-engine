@@ -390,7 +390,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       // TODO: Let's clean this up; with a better Query Image class.
       // https://platform.openai.com/docs/api-reference/images/create#images-create-quality
 
-      if ( $model === 'gpt-image-1' || $model === 'gpt-image-1-mini' ) {
+      if ( strpos( $model, 'gpt-image' ) === 0 ) {
         // GPT Image models (token-based pricing)
         $body['model'] = $model; // Use the actual model name
         $body['quality'] = 'high';
@@ -742,7 +742,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           'content' => null
         ];
       }
-      
+
       // Handle thinking/reasoning content (from Ollama and potentially other models)
       // This can appear alongside or instead of regular content
       if ( isset( $json['choices'][0]['delta']['reasoning'] ) ) {
@@ -799,11 +799,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   public function run( $query, $streamCallback = null, $maxDepth = 5 ) {
     // Check if this is a realtime model being used with chat completions
     if ( $this->is_realtime_model( $query->model ) ) {
-      throw new Exception( 
+      throw new Exception(
         'Realtime models (like ' . $query->model . ') are designed for voice/audio interactions and cannot be used with this API.'
       );
     }
-    
+
     if ( $streamCallback ) {
       // Disable streaming only for "o1" (as December 2024, it works for preview and mini)
       if ( $query->model === 'o1' ) {
@@ -945,13 +945,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
   private function get_audio( $url ) {
     require_once( ABSPATH . 'wp-admin/includes/media.php' );
-    
+
     // Validate URL scheme to prevent SSRF attacks
     $parts = wp_parse_url( $url );
-    if ( ! isset( $parts['scheme'] ) || ! in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+    if ( !isset( $parts['scheme'] ) || !in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
       throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
     }
-    
+
     $tmpFile = tempnam( sys_get_temp_dir(), 'audio_' );
     file_put_contents( $tmpFile, file_get_contents( $url ) );
     $length = null;
@@ -966,7 +966,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
   public function run_transcribe_query( $query ) {
     $audioData = null;
-    
+
     // Priority 1: Direct audio data
     if ( !empty( $query->audioData ) ) {
       $audioData = [
@@ -1092,7 +1092,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     if ( $this->is_gpt5_model( $query->model ) ) {
       throw new Exception( 'GPT-5 models only support the Responses API. Please enable "Use Responses API" in AI Engine settings to use ' . $query->model . '.' );
     }
-    
+
     $isStreaming = !is_null( $streamCallback );
 
     // Initialize debug mode
@@ -1143,7 +1143,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         }
         $returned_id = $this->inId;
         $returned_model = $this->inModel ? $this->inModel : $query->model;
-        
+
         // Use regular content if available, otherwise fall back to thinking/reasoning
         $finalContent = $this->streamContent;
         if ( empty( $finalContent ) && !empty( $this->streamThinking ) ) {
@@ -1151,13 +1151,13 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           // This happens with Ollama when it returns only reasoning/thinking
           // Wrap in asterisks to show as italics in markdown
           $finalContent = '*' . $this->streamThinking . '*';
-          
+
           // Log this for debugging
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
             error_log( '[AI Engine] Using thinking/reasoning content as fallback (no regular content available)' );
           }
         }
-        
+
         $message = [ 'role' => 'assistant', 'content' => $finalContent ];
         // Prefer tool_calls; fall back to legacy only if necessary
         if ( !empty( $this->streamToolCalls ) ) {
@@ -1166,7 +1166,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         elseif ( !empty( $this->streamFunctionCall ) ) {
           $message['function_call'] = $this->streamFunctionCall;
         }
-        
+
         // Optionally include thinking as metadata if both content and thinking exist
         if ( !empty( $this->streamContent ) && !empty( $this->streamThinking ) ) {
           $message['thinking'] = $this->streamThinking;
@@ -1230,7 +1230,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         if ( empty( $data ) ) {
           throw new Exception( 'No content received (res is null).' );
         }
-        
+
         // Comprehensive logging for non-streaming mode - capture FULL response
         $queries_debug = $this->core->get_option( 'queries_debug_mode' );
         if ( $queries_debug ) {
@@ -1238,11 +1238,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           error_log( '[AI Engine Queries] FULL RESPONSE STRUCTURE (Non-streaming ChatML):' );
           error_log( json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) );
           error_log( '[AI Engine Queries] ========================================' );
-          
+
           // Look specifically for container_id
           $this->search_for_container_id_recursive( $data, '' );
         }
-        
+
         if ( !$data['model'] ) {
           $service = $this->get_service_name();
           Meow_MWAI_Logging::error( "$service: Invalid response (no model information)." );
@@ -1901,7 +1901,6 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $url = $url . ( $hasQuery ? '&' : '?' ) . $this->azureApiVersion;
     }
 
-
     // If it's a GET, body should be null, and we should append the query to the URL.
     if ( $method === 'GET' ) {
       if ( !empty( $query ) ) {
@@ -1953,19 +1952,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
       $res = wp_remote_retrieve_body( $res );
 
-      
       // Handle empty responses for container LIST API only (not for file content downloads)
-      if ( strpos( $url, '/containers/' ) !== false && 
-           strpos( $url, '/files' ) !== false && 
+      if ( strpos( $url, '/containers/' ) !== false &&
+           strpos( $url, '/files' ) !== false &&
            strpos( $url, '/content' ) === false &&  // Don't apply this to content downloads
            empty( $res ) ) {
         // Return empty array for empty container files LIST response
         $data = $json ? [] : '';
         error_log( '[AI Engine] Container LIST API returned empty response, treating as empty array' );
-      } else {
+      }
+      else {
         $data = $json ? json_decode( $res, true ) : $res;
       }
-      
+
       // Debug logging for decoded data (skip for content downloads)
       if ( strpos( $url, '/containers/' ) !== false && strpos( $url, '/files' ) !== false && strpos( $url, '/content' ) === false ) {
         error_log( '[AI Engine] After json_decode:' );
@@ -1979,7 +1978,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           error_log( '[AI Engine] - JSON decode error: ' . json_last_error_msg() );
         }
       }
-      
+
       $this->handle_response_errors( $data );
 
       // Log the response if queries debug is enabled
@@ -2044,12 +2043,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     if ( is_array( $data ) || is_object( $data ) ) {
       foreach ( $data as $key => $value ) {
         $currentPath = $path ? $path . '.' . $key : $key;
-        
+
         // Check if this key is container_id
         if ( $key === 'container_id' ) {
           error_log( '[AI Engine Queries] *** FOUND container_id at path: ' . $currentPath . ' = ' . $value . ' ***' );
         }
-        
+
         // Recursively search in nested structures
         if ( is_array( $value ) || is_object( $value ) ) {
           $this->search_for_container_id_recursive( $value, $currentPath );

@@ -1,7 +1,6 @@
 <?php
 
 class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
-
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
   }
@@ -121,7 +120,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     if ( strpos( $modelId, 'magistral' ) !== false ) {
       if ( strpos( $modelId, 'medium' ) !== false ) {
         $name = 'Magistral Medium';
-      } else if ( strpos( $modelId, 'small' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'small' ) !== false ) {
         $name = 'Magistral Small';
       }
       // Add version number for Magistral
@@ -131,15 +131,20 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'mistral' ) !== false ) {
       if ( strpos( $modelId, 'large' ) !== false ) {
         $name = 'Mistral Large';
-      } else if ( strpos( $modelId, 'medium' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'medium' ) !== false ) {
         $name = 'Mistral Medium';
-      } else if ( strpos( $modelId, 'small' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'small' ) !== false ) {
         $name = 'Mistral Small';
-      } else if ( strpos( $modelId, 'saba' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'saba' ) !== false ) {
         $name = 'Mistral Saba';
-      } else if ( strpos( $modelId, 'tiny' ) !== false || strpos( $modelId, 'nemo' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'tiny' ) !== false || strpos( $modelId, 'nemo' ) !== false ) {
         $name = 'Mistral Nemo';
-      } else if ( strpos( $modelId, 'embed' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'embed' ) !== false ) {
         $name = 'Mistral Embed';
       }
     }
@@ -147,7 +152,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'pixtral' ) !== false ) {
       if ( strpos( $modelId, 'large' ) !== false ) {
         $name = 'Pixtral Large';
-      } else if ( strpos( $modelId, '12b' ) !== false ) {
+      }
+      else if ( strpos( $modelId, '12b' ) !== false ) {
         $name = 'Pixtral 12B';
       }
       // No (Latest) suffix needed
@@ -156,7 +162,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'codestral' ) !== false ) {
       if ( strpos( $modelId, 'embed' ) !== false ) {
         $name = 'Codestral Embed';
-      } else {
+      }
+      else {
         $name = 'Codestral';
         // No version suffix for Codestral
       }
@@ -165,7 +172,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'devstral' ) !== false ) {
       if ( strpos( $modelId, 'medium' ) !== false ) {
         $name = 'Devstral Medium';
-      } else if ( strpos( $modelId, 'small' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'small' ) !== false ) {
         $name = 'Devstral Small';
         // No version suffix for Devstral
       }
@@ -175,7 +183,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'ministral' ) !== false ) {
       if ( strpos( $modelId, '8b' ) !== false ) {
         $name = 'Ministral 8B';
-      } else if ( strpos( $modelId, '3b' ) !== false ) {
+      }
+      else if ( strpos( $modelId, '3b' ) !== false ) {
         $name = 'Ministral 3B';
       }
       // No (Latest) suffix needed
@@ -184,7 +193,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'voxtral' ) !== false ) {
       if ( strpos( $modelId, 'small' ) !== false ) {
         $name = 'Voxtral Small';
-      } else if ( strpos( $modelId, 'mini' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'mini' ) !== false ) {
         $name = 'Voxtral Mini';
       }
       if ( strpos( $modelId, 'transcribe' ) !== false ) {
@@ -195,11 +205,14 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     else if ( strpos( $modelId, 'open-' ) === 0 ) {
       if ( strpos( $modelId, 'mistral-7b' ) !== false ) {
         $name = 'Mistral 7B (Open)';
-      } else if ( strpos( $modelId, 'mistral-nemo' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'mistral-nemo' ) !== false ) {
         $name = 'Mistral Nemo (Open)';
-      } else if ( strpos( $modelId, 'mixtral-8x7b' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'mixtral-8x7b' ) !== false ) {
         $name = 'Mixtral 8x7B (Open)';
-      } else if ( strpos( $modelId, 'mixtral-8x22b' ) !== false ) {
+      }
+      else if ( strpos( $modelId, 'mixtral-8x22b' ) !== false ) {
         $name = 'Mixtral 8x22B (Open)';
       }
     }
@@ -348,7 +361,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
         // Use context_length if available
         if ( isset( $model['max_context_length'] ) ) {
           $maxContextualTokens = (int) $model['max_context_length'];
-        } else if ( isset( $model['context_window'] ) ) {
+        }
+        else if ( isset( $model['context_window'] ) ) {
           $maxContextualTokens = (int) $model['context_window'];
         }
 
@@ -362,62 +376,75 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
           if ( strpos( $modelId, 'medium' ) !== false ) {
             $priceIn = 4.00;
             $priceOut = 12.00;
-          } else {
+          }
+          else {
             $priceIn = 2.00;
             $priceOut = 6.00;
           }
-        } else if ( strpos( $modelId, 'mistral-large' ) !== false || strpos( $modelId, 'pixtral-large' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'mistral-large' ) !== false || strpos( $modelId, 'pixtral-large' ) !== false ) {
           $priceIn = 3.00;
           $priceOut = 9.00;
-        } else if ( strpos( $modelId, 'mistral-medium' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'mistral-medium' ) !== false ) {
           $priceIn = 2.70;
           $priceOut = 8.10;
-        } else if ( strpos( $modelId, 'mistral-small' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'mistral-small' ) !== false ) {
           $priceIn = 1.00;
           $priceOut = 3.00;
-        } else if ( strpos( $modelId, 'codestral' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'codestral' ) !== false ) {
           if ( strpos( $modelId, '2501' ) !== false || strpos( $modelId, '2508' ) !== false ) {
             $priceIn = 0.30;
             $priceOut = 0.90;
-          } else {
+          }
+          else {
             $priceIn = 1.00;
             $priceOut = 3.00;
           }
-        } else if ( strpos( $modelId, 'devstral' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'devstral' ) !== false ) {
           $priceIn = 0.50;
           $priceOut = 1.50;
-        } else if ( strpos( $modelId, 'ministral' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'ministral' ) !== false ) {
           $priceIn = 0.10;
           $priceOut = 0.10;
-        } else if ( strpos( $modelId, 'pixtral-12b' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'pixtral-12b' ) !== false ) {
           $priceIn = 0.15;
           $priceOut = 0.15;
-        } else if ( strpos( $modelId, 'voxtral' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'voxtral' ) !== false ) {
           $priceIn = 0.50;
           $priceOut = 1.50;
-        } else if ( strpos( $modelId, 'mistral-saba' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'mistral-saba' ) !== false ) {
           $priceIn = 0.20;
           $priceOut = 0.60;
-        } else if ( strpos( $modelId, 'open-mistral' ) !== false || strpos( $modelId, 'mistral-tiny' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'open-mistral' ) !== false || strpos( $modelId, 'mistral-tiny' ) !== false ) {
           $priceIn = 0.15;
           $priceOut = 0.15;
-        } else if ( strpos( $modelId, 'open-mixtral-8x7b' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'open-mixtral-8x7b' ) !== false ) {
           $priceIn = 0.50;
           $priceOut = 0.50;
-        } else if ( strpos( $modelId, 'open-mixtral-8x22b' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'open-mixtral-8x22b' ) !== false ) {
           $priceIn = 0.90;
           $priceOut = 0.90;
-        } else if ( strpos( $modelId, 'embed' ) !== false ) {
+        }
+        else if ( strpos( $modelId, 'embed' ) !== false ) {
           $priceIn = 0.10;
           $priceOut = 0.00;
-        } else {
+        }
+        else {
           // Default pricing for unknown models
           $priceIn = 1.00;
           $priceOut = 3.00;
         }
-
-        // Mark this model as seen
-        $seenModels[$modelName] = true;
 
         // Only include latest models and key open-source versions
         // This keeps the list clean and manageable
@@ -458,6 +485,9 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
           continue;
         }
 
+        // Mark this model as seen (after confirming it will be included)
+        $seenModels[$modelName] = true;
+
         $models[] = [
           'model' => $modelId,
           'name' => $modelName,
@@ -483,7 +513,6 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
       return [];
     }
   }
-
 
   /**
    * Connection check for Mistral API

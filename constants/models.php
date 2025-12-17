@@ -616,6 +616,36 @@ define( 'MWAI_OPENAI_MODELS', [
       https://platform.openai.com/docs/models/dall-e-3
       */
   [
+    'model' => 'gpt-image-1.5',
+    'name' => 'GPT Image 1.5',
+    'family' => 'gpt-image',
+    'features' => ['text-to-image'],
+    'resolutions' => [
+      [
+        'name' => '1024x1024',
+        'label' => '1024x1024'
+      ],
+      [
+        'name' => '1024x1536',
+        'label' => '1024x1536'
+      ],
+      [
+        'name' => '1536x1024',
+        'label' => '1536x1024'
+      ]
+    ],
+    'type' => 'token',
+    'mode' => 'image',
+    'price' => [
+      'in' => 8.00,
+      'out' => 32.00,
+      'cached' => 2.00
+    ],
+    'unit' => 1 / 1000000,
+    'finetune' => false,
+    'tags' => ['core', 'image', 'image-edit', 'responses']
+  ],
+  [
     'model' => 'gpt-image-1',
     'name' => 'GPT Image 1',
     'family' => 'gpt-image',
