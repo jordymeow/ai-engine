@@ -187,7 +187,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       'Content-Type' => 'application/json',
       'x-api-key' => $this->apiKey,
       'anthropic-version' => '2023-06-01',
-      'anthropic-beta' => 'tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04, files-api-2025-04-14, code-execution-2025-08-25',
+      'anthropic-beta' => 'prompt-caching-2024-07-31, tools-2024-04-04, pdfs-2024-09-25, mcp-client-2025-04-04, files-api-2025-04-14, code-execution-2025-08-25',
       'User-Agent' => 'AI Engine',
     ];
     return $headers;
@@ -404,7 +404,13 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       ];
 
       if ( !empty( $query->instructions ) ) {
-        $body['system'] = $query->instructions;
+        $body['system'] = [
+          [
+            'type' => 'text',
+            'text' => $query->instructions,
+            'cache_control' => [ 'type' => 'ephemeral' ]
+          ]
+        ];
       }
 
       // Build the messages
@@ -541,18 +547,24 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         $body['stop'] = $query->stop;
       }
 
-      // First, we need to add the first message (the instructions).
+      // Build system prompt with caching support.
+      // Instructions are cached (static per chatbot), context is not (varies per query).
+      $systemBlocks = [];
       if ( !empty( $query->instructions ) ) {
-        $body['system'] = $query->instructions;
+        $systemBlocks[] = [
+          'type' => 'text',
+          'text' => $query->instructions,
+          'cache_control' => [ 'type' => 'ephemeral' ]
+        ];
       }
-
-      // If there is a context, we need to add it.
       if ( !empty( $query->context ) ) {
-        if ( empty( $body['system'] ) ) {
-          $body['system'] = '';
-        }
-        $body['system'] = empty( $body['system'] ) ? '' : $body['system'] . "\n\n";
-        $body['system'] = $body['system'] . "Context:\n\n" . $query->context;
+        $systemBlocks[] = [
+          'type' => 'text',
+          'text' => "Context:\n\n" . $query->context
+        ];
+      }
+      if ( !empty( $systemBlocks ) ) {
+        $body['system'] = $systemBlocks;
       }
 
       // Support for functions

@@ -736,20 +736,6 @@ class Meow_MWAI_Modules_Discussions {
       );
     }
 
-    // LATER: REMOVE THIS AFTER MARCH 2025
-    // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_chats LIKE 'title'" );
-    // if ( ! $this->db_check ) {
-    //   $this->wpdb->query( "ALTER TABLE $this->table_chats ADD COLUMN title VARCHAR(64) NULL" );
-    //   $this->db_check = true;
-    // }
-
-    // LATER: REMOVE THIS AFTER SEPTEMBER 2025
-    // Migrate guest users from userId = 0 to userId = NULL
-    $guest_count = $this->wpdb->get_var( "SELECT COUNT(*) FROM $this->table_chats WHERE userId = 0" );
-    if ( $guest_count > 0 ) {
-      $this->wpdb->query( "UPDATE $this->table_chats SET userId = NULL WHERE userId = 0" );
-    }
-
     return $this->db_check;
   }
 

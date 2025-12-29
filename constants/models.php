@@ -937,40 +937,6 @@ define( 'MWAI_OPENAI_MODELS', [
     'finetune' => false,
     'tags' => ['core', 'image', 'deprecated']
   ],
-  // [
-  //   "model" => "gpt-3.5-turbo-16k",
-  //   "description" => "Offers 4 times the context length of gpt-3.5-turbo at twice the price.",
-  //   "name" => "GPT-3.5 Turbo 16k",
-  //   "family" => "turbo",
-  //   "features" => ['completion'],
-  //   "price" => [
-  //     "in" => 30.00,
-  //     "out" => 40.0,
-  //   ],
-  //   "type" => "token",
-  //   "unit" => 1 / 1000000,
-  //   "maxTokens" => 16385,
-  //   "finetune" => false,
-  //   "tags" => ['core', 'chat', '16k']
-  // ],
-  // [
-  //   "model" => "gpt-3.5-turbo-instruct",
-  //   "name" => "GPT-3.5 Turbo Instruct",
-  //   "family" => "turbo-instruct",
-  //   "features" => ['completion'],
-  //   "price" => [
-  //     "in" => 0.50,
-  //     "out" => 2.00,
-  //   ],
-  //   "type" => "token",
-  //   "unit" => 1 / 1000000,
-  //   "finetune" => [
-  //     "in" => 0.03,
-  //     "out" => 0.06,
-  //   ],
-  //   "maxTokens" => 4096,
-  //   "tags" => ['core', 'chat', '4k']
-  // ],
 ] );
 
 define( 'MWAI_ANTHROPIC_MODELS', [
@@ -1226,6 +1192,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'deprecated']
   ],
   [
+    // Deprecated: Anthropic retired Claude 3 Opus on January 5, 2026.
     'model' => 'claude-3-opus-latest',
     'name' => 'Claude-3 Opus (Latest)',
     'family' => 'claude-3',
@@ -1239,10 +1206,10 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 4096,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'deprecated']
   ],
   [
-    // TODO: Starting January 5, 2026 at 9AM PT, Anthropic is retiring and will no longer support Claude Opus 3 (claude-3-opus-20240229) on the API.
+    // Deprecated: Anthropic retired Claude 3 Opus on January 5, 2026.
     'model' => 'claude-3-opus-20240229',
     'name' => 'Claude-3 Opus (2024/02/29)',
     'family' => 'claude-3',
@@ -1256,7 +1223,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 4096,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions']
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'deprecated']
   ],
   [
     'model' => 'claude-3-5-haiku-20241022',

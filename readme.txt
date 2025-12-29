@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.2.9
+Stable tag: 3.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,17 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.0 (2025/12/29) =
+* Add: Added title filter to the Embeddings table.
+* Add: Added filter to all model dropdowns.  
+* Add: Enabled custom placeholder support and model-aware credit customization via new and updated filters for developers.  
+* Add: Introduced prompt caching for Anthropic and a free-text dimension input for non-OpenAI embeddings.  
+* Add: Added dimension mismatch warnings for Pinecone and Qdrant to help diagnose configuration issues.  
+* Add: Included "speech_recognition" support in the embed.js system.
+* Fix: Resolved multiple embedding issues, including OpenRouter parameter compatibility, Pinecone Serverless URLs, and vector store file uploads.  
+* Fix: Improved compatibility with multilingual plugins, placeholder processing, and post content handling through dedicated filters.  
+* Update: Performed an end-of-year cleanup by removing expired database migrations, deprecating outdated Claude 3 Opus models, and tidying up legacy debug and commented code.
 
 = 3.2.9 (2025/12/17) =
 * Add: Added support for the new gpt-image-1.5 model, works quite well! 😊  

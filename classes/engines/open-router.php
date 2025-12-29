@@ -51,9 +51,19 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
     $body = parent::build_body( $query, $streamCallback, $extra );
-    // Use transforms from OpenRouter docs
-    $body['transforms'] = ['middle-out'];
-    $body['usage'] = [ 'include' => true ];
+    // Only add transforms and usage for chat completions, not embeddings
+    if ( !( $query instanceof Meow_MWAI_Query_Embed ) ) {
+      $body['transforms'] = ['middle-out'];
+      $body['usage'] = [ 'include' => true ];
+    }
+    else {
+      // Only OpenAI embedding models support the dimensions parameter
+      // Remove it for other providers to avoid errors
+      $model = $query->model ?? '';
+      if ( isset( $body['dimensions'] ) && strpos( $model, 'openai/' ) !== 0 ) {
+        unset( $body['dimensions'] );
+      }
+    }
     return $body;
   }
 

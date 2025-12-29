@@ -615,56 +615,6 @@ class Meow_MWAI_Modules_Files {
     return [ $sql, $params ];
   }
 
-  // public function search( $userId = null, $purpose = null, $metadata = [], $limit = 10, $offset = 0 ) {
-  //   $sql = "SELECT * FROM $this->table_files WHERE 1=1";
-  //   $actualUserId = $this->core->get_user_id();
-  //   $canAdmin = $this->core->can_access_settings();
-  //   if ( $userId !== $actualUserId ) {
-  //     if ( !$canAdmin ) {
-  //       throw new Exception( 'You are not allowed to access files from another user.' );
-  //     }
-  //   }
-  //   if ( $userId ) {
-  //     $sql .= $this->wpdb->prepare( " AND userId = %d", $userId );
-  //   }
-  //   if ( $purpose ) {
-  //     if ( is_array( $purpose ) ) {
-  //       $sql .= " AND (";
-  //       foreach ( $purpose as $p ) {
-  //         $sql .= $this->wpdb->prepare( " purpose = %s OR", $p );
-  //       }
-  //       $sql = rtrim( $sql, 'OR' );
-  //       $sql .= ")";
-  //     }
-  //     else {
-  //       $sql .= $this->wpdb->prepare( " AND purpose = %s", $purpose );
-  //     }
-  //   }
-  //   if ( $metadata ) {
-  //     foreach ( $metadata as $metaKey => $metaValue ) {
-  //       $sql .= $this->wpdb->prepare( " AND EXISTS ( SELECT * FROM $this->table_filemeta
-  //         WHERE file_id = $this->table_files.id AND meta_key = %s AND meta_value = %s )",
-  //         $metaKey, $metaValue
-  //       );
-  //     }
-  //   }
-  //   $sql .= " ORDER BY updated DESC";
-  //   if ( $limit ) {
-  //     $sql .= $this->wpdb->prepare( " LIMIT %d", $limit );
-  //   }
-  //   if ( $offset ) {
-  //     $sql .= $this->wpdb->prepare( " OFFSET %d", $offset );
-  //   }
-  //   $files = $this->wpdb->get_results( $sql, ARRAY_A );
-
-  //   // Add metadata
-  //   foreach ( $files as &$file ) {
-  //     $file['metadata'] = $this->get_metadata( $file['refId'] );
-  //   }
-
-  //   return $files;
-  // }
-
   public function get_id_from_refId( $refId ) {
     $file = null;
     if ( $this->check_db() ) {
@@ -943,29 +893,6 @@ class Meow_MWAI_Modules_Files {
         $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN userId VARCHAR(64) NULL" );
       }
     }
-
-    // LATER: REMOVE THIS AFTER MARCH 2024
-    // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'userId'" );
-    // if ( !$this->db_check ) {
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN userId BIGINT(20) UNSIGNED NULL" );
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN purpose VARCHAR(32) NULL" );
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN path TEXT NULL" );
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN metadata" );
-    //   $this->db_check = true;
-    // }
-    // // LATER: REMOVE THIS AFTER MARCH 2024
-    // $this->db_check = $this->db_check && !$this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'fileId'" );
-    // if ( !$this->db_check ) {
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN refId VARCHAR(64) NOT NULL" );
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files DROP COLUMN fileId" );
-    //   $this->db_check = true;
-    // }
-    // // LATER: REMOVE THIS AFTER MARCH 2024
-    // $this->db_check = $this->db_check && $this->wpdb->get_var( "SHOW COLUMNS FROM $this->table_files LIKE 'envId'" );
-    // if ( !$this->db_check ) {
-    //   $this->wpdb->query( "ALTER TABLE $this->table_files ADD COLUMN envId VARCHAR(128) NULL" );
-    //   $this->db_check = true;
-    // }
 
     return $this->db_check;
   }

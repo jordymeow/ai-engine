@@ -611,30 +611,7 @@ class Meow_MWAI_Modules_Chatbot {
 
         // Handle Prompt mode specifics
         if ( $mode === 'prompt' && !empty( $params['promptId'] ) ) {
-          $promptData = [
-            'id' => $params['promptId']
-          ];
-
-          // TODO: Prompt Variables support - might be added later
-          // Add prompt version if provided
-          // if ( !empty( $params['promptVersion'] ) ) {
-          //   $promptData['version'] = $params['promptVersion'];
-          // }
-
-          // Add prompt variables if provided
-          // if ( !empty( $params['promptVariables'] ) ) {
-          //   try {
-          //     $variables = is_string( $params['promptVariables'] ) ?
-          //       json_decode( $params['promptVariables'], true ) :
-          //       $params['promptVariables'];
-          //     if ( $variables ) {
-          //       $promptData['variables'] = $variables;
-          //     }
-          //   } catch ( Exception $e ) {
-          //     // Invalid JSON, skip variables
-          //   }
-          // }
-
+          $promptData = [ 'id' => $params['promptId'] ];
           $query->setExtraParam( 'prompt', $promptData );
         }
 

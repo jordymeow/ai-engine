@@ -40,7 +40,7 @@ class Meow_MWAI_Rest {
 
   /**
    * Helper method to create REST responses with automatic token refresh
-   * 
+   *
    * @param array $data The response data
    * @param int $status HTTP status code
    * @return WP_REST_Response
@@ -49,18 +49,18 @@ class Meow_MWAI_Rest {
     // Always check if we need to provide a new nonce
     $current_nonce = $this->core->get_nonce( true );
     $request_nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? $_SERVER['HTTP_X_WP_NONCE'] : null;
-    
+
     // Check if nonce is approaching expiration (WordPress nonces last 12-24 hours)
     // We'll refresh if the nonce is older than 10 hours to be safe
     $should_refresh = false;
-    
+
     if ( $request_nonce ) {
       // Try to determine the age of the nonce
       // WordPress uses a tick system where each tick is 12 hours
       // If we're in the second half of the nonce's life, refresh it
       $time = time();
       $nonce_tick = wp_nonce_tick();
-      
+
       // Verify if the nonce is still valid but getting old
       $verify = wp_verify_nonce( $request_nonce, 'wp_rest' );
       if ( $verify === 2 ) {
@@ -69,17 +69,17 @@ class Meow_MWAI_Rest {
         // Log will be written when token is included in response
       }
     }
-    
+
     // If the nonce has changed or should be refreshed, include the new one
     if ( $should_refresh || ( $request_nonce && $current_nonce !== $request_nonce ) ) {
       $data['new_token'] = $current_nonce;
-      
+
       // Log if server debug mode is enabled
       if ( $this->core->get_option( 'server_debug_mode' ) ) {
         error_log( '[AI Engine] Token refresh: Nonce refreshed (12-24 hours old)' );
       }
     }
-    
+
     return new WP_REST_Response( $data, $status );
   }
 
@@ -445,13 +445,13 @@ class Meow_MWAI_Rest {
     try {
       $sessionId = $this->core->get_session_id();
       $restNonce = $this->core->get_nonce( true );
-      
+
       $response = [
         'success' => true,
         'sessionId' => $sessionId,
         'restNonce' => $restNonce
       ];
-      
+
       // If in test mode and we have a new token, it will be added by create_rest_response
       // But we also want to ensure the restNonce matches the test token if available
       if ( get_option( 'mwai_token_test_mode' ) ) {
@@ -460,7 +460,7 @@ class Meow_MWAI_Rest {
           $response['restNonce'] = $token_data['token'];
         }
       }
-      
+
       return $this->create_rest_response( $response, 200 );
     }
     catch ( Exception $e ) {
@@ -481,10 +481,10 @@ class Meow_MWAI_Rest {
       // Only show AI Engine cron events (those starting with mwai_)
       $cron_events = [];
       $crons = _get_cron_array();
-      
+
       // Get transient data for last run status (we'll store this when crons run)
       $last_run_data = get_transient( 'mwai_cron_last_run' ) ?: [];
-      
+
       // Get all scheduled events and filter for AI Engine ones
       foreach ( $crons as $timestamp => $cron ) {
         foreach ( $cron as $hook => $details ) {
@@ -492,16 +492,16 @@ class Meow_MWAI_Rest {
           if ( strpos( $hook, 'mwai_' ) !== 0 ) {
             continue;
           }
-          
+
           $schedule_key = array_keys( $details )[0];
           $schedule_info = $details[$schedule_key];
-          
+
           // Get schedule display name
           $schedule = $schedule_info['schedule'];
           $schedules = wp_get_schedules();
-          $schedule_display = isset( $schedules[$schedule]['display'] ) ? 
+          $schedule_display = isset( $schedules[$schedule]['display'] ) ?
             $schedules[$schedule]['display'] : $schedule;
-          
+
           $event_info = [
             'hook' => $hook,
             'name' => $this->get_cron_display_name( $hook ),
@@ -509,64 +509,69 @@ class Meow_MWAI_Rest {
             'next_run' => $timestamp,
             'next_run_human' => '',
             'last_run' => isset( $last_run_data[$hook]['time'] ) ? $last_run_data[$hook]['time'] : null,
-            'last_run_human' => isset( $last_run_data[$hook]['time'] ) ? 
-              human_time_diff( $last_run_data[$hook]['time'], time() ) . ' ago' : 
+            'last_run_human' => isset( $last_run_data[$hook]['time'] ) ?
+              human_time_diff( $last_run_data[$hook]['time'], time() ) . ' ago' :
               'Never',
             'last_status' => isset( $last_run_data[$hook]['status'] ) ? $last_run_data[$hook]['status'] : 'unknown',
             'schedule' => $schedule_display,
             'is_running' => false,
             'is_scheduled' => true
           ];
-          
+
           // Calculate next run time properly
           // If we have a last run time and schedule interval, calculate the actual next run
           if ( isset( $last_run_data[$hook]['time'] ) && isset( $schedules[$schedule]['interval'] ) ) {
             $interval = $schedules[$schedule]['interval'];
             $last_run = $last_run_data[$hook]['time'];
             $expected_next_run = $last_run + $interval;
-            
-            // If the scheduled timestamp is in the past but we ran recently, 
+
+            // If the scheduled timestamp is in the past but we ran recently,
             // the next run should be based on the last actual run
-            if ( $timestamp < time() && 
+            if ( $timestamp < time() &&
                  $last_run > ( time() - $interval ) ) {
               // Cron ran recently, calculate next run from last run time
               $event_info['next_run'] = $expected_next_run;
               $event_info['next_run_human'] = 'In ' . human_time_diff( time(), $expected_next_run );
-            } else if ( $timestamp < time() ) {
+            }
+            else if ( $timestamp < time() ) {
               // Genuinely overdue
               $event_info['next_run_human'] = 'Overdue by ' . human_time_diff( time(), $timestamp );
-            } else {
+            }
+            else {
               // Future scheduled time
               $event_info['next_run_human'] = 'In ' . human_time_diff( time(), $timestamp );
             }
-          } else {
+          }
+          else {
             // No last run data, use the scheduled timestamp but be conservative about "overdue"
             if ( $timestamp < time() ) {
               // Only show as overdue if it's significantly past due (more than the schedule interval)
               // to avoid false positives for crons that might be running but not tracked
               $time_past_due = time() - $timestamp;
               $interval = isset( $schedules[$schedule]['interval'] ) ? $schedules[$schedule]['interval'] : 3600; // Default 1 hour
-              
+
               if ( $time_past_due > $interval ) {
                 $event_info['next_run_human'] = 'Overdue by ' . human_time_diff( time(), $timestamp );
-              } else {
+              }
+              else {
                 $event_info['next_run_human'] = 'Due to run';
               }
-            } else {
+            }
+            else {
               $event_info['next_run_human'] = 'In ' . human_time_diff( time(), $timestamp );
             }
           }
-          
+
           // Check if currently running (via transient)
           $running_transient = get_transient( 'mwai_cron_running_' . $hook );
           if ( $running_transient ) {
             $event_info['is_running'] = true;
           }
-          
+
           $cron_events[] = $event_info;
         }
       }
-      
+
       return $this->create_rest_response( [ 'success' => true, 'events' => $cron_events ], 200 );
     }
     catch ( Exception $e ) {
@@ -579,11 +584,11 @@ class Meow_MWAI_Rest {
     try {
       $params = $request->get_json_params();
       $hook = isset( $params['hook'] ) ? $params['hook'] : null;
-      
+
       if ( empty( $hook ) ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'No cron hook provided' ], 400 );
       }
-      
+
       // Only allow running AI Engine crons (starting with mwai_)
       if ( strpos( $hook, 'mwai_' ) !== 0 ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid cron hook' ], 400 );
@@ -605,8 +610,8 @@ class Meow_MWAI_Rest {
       // Run the cron action
       do_action( $hook );
 
-      return $this->create_rest_response( [ 
-        'success' => true, 
+      return $this->create_rest_response( [
+        'success' => true,
         'message' => 'Cron executed successfully',
         'hook' => $hook
       ], 200 );
@@ -616,7 +621,7 @@ class Meow_MWAI_Rest {
       return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
     }
   }
-  
+
   private function get_cron_display_name( $hook ) {
     $names = [
       'mwai_tasks_internal_run' => 'Tasks Runner',
@@ -627,7 +632,7 @@ class Meow_MWAI_Rest {
     ];
     return isset( $names[$hook] ) ? $names[$hook] : $hook;
   }
-  
+
   private function get_cron_description( $hook ) {
     $descriptions = [
       'mwai_tasks_internal_run' => 'Processes background tasks and queued operations.',
@@ -685,7 +690,7 @@ class Meow_MWAI_Rest {
     try {
       $params = $request->get_json_params();
       $envId = $params['env_id'];
-      
+
       // Get the environment details
       $env = null;
       $envs = $this->core->get_option( 'ai_envs' );
@@ -695,15 +700,15 @@ class Meow_MWAI_Rest {
           break;
         }
       }
-      
+
       if ( !$env ) {
         throw new Exception( __( 'Environment not found.', 'ai-engine' ) );
       }
-      
+
       // Get the engine and test connection
       $engine = Meow_MWAI_Engines_Factory::get( $this->core, $envId );
       $result = $engine->connection_check();
-      
+
       // Format the response based on provider
       $response = [
         'success' => true,
@@ -711,13 +716,13 @@ class Meow_MWAI_Rest {
         'name' => $env['name'],
         'data' => $result
       ];
-      
+
       return $this->create_rest_response( $response, 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-      return $this->create_rest_response( [ 
-        'success' => false, 
+      return $this->create_rest_response( [
+        'success' => false,
         'error' => $message,
         'provider' => isset( $env ) ? $env['type'] : 'unknown'
       ], 200 ); // Return 200 even on error for consistent modal display
@@ -1385,7 +1390,6 @@ class Meow_MWAI_Rest {
   // Batch check which posts have content (for Push All optimization)
   public function rest_helpers_check_posts_content( $request ) {
     try {
-      global $wpdb;
       $params = $request->get_json_params();
       $postIds = isset( $params['postIds'] ) ? $params['postIds'] : [];
 
@@ -1399,23 +1403,21 @@ class Meow_MWAI_Rest {
       // Sanitize post IDs
       $postIds = array_map( 'intval', $postIds );
 
-      // Use single SQL query to check for non-empty content
-      // Note: This checks raw post_content only, not content added via shortcodes/blocks
-      // For most embeddings use cases, checking saved content is sufficient
-
-      // Chunk IDs to avoid max_allowed_packet issues with very large sites (100k+ posts)
-      $chunkSize = 5000;
+      // Check content using the mwai_pre_post_content filter to support page builders,
+      // ACF, and other plugins that store content outside of post_content
       $postsWithContent = [];
 
-      foreach ( array_chunk( $postIds, $chunkSize ) as $chunk ) {
-        $placeholders = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
-        $query = "SELECT ID FROM {$wpdb->posts}
-                  WHERE ID IN ($placeholders)
-                  AND post_content != ''
-                  AND post_content IS NOT NULL";
-
-        $chunkResults = $wpdb->get_col( $wpdb->prepare( $query, ...$chunk ) );
-        $postsWithContent = array_merge( $postsWithContent, array_map( 'intval', $chunkResults ) );
+      foreach ( $postIds as $postId ) {
+        $post = get_post( $postId );
+        if ( !$post ) {
+          continue;
+        }
+        // Apply the same filter used by get_post_content() in core.php
+        $content = apply_filters( 'mwai_pre_post_content', $post->post_content, $postId );
+        $content = trim( strip_tags( $content ) );
+        if ( !empty( $content ) ) {
+          $postsWithContent[] = $postId;
+        }
       }
 
       return $this->create_rest_response( [
@@ -1472,7 +1474,7 @@ class Meow_MWAI_Rest {
     try {
       global $wpdb;
       $results = [];
-      
+
       // Add indexes to optimize query performance
       $indexes = [
         // mwai_logs indexes
@@ -1481,59 +1483,61 @@ class Meow_MWAI_Rest {
         [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_envId', 'columns' => 'envId' ],
         [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_refId', 'columns' => 'refId' ],
         [ 'table' => 'mwai_logs', 'name' => 'idx_mwai_logs_time_model', 'columns' => 'time, model' ],
-        
+
         // mwai_logmeta indexes
         [ 'table' => 'mwai_logmeta', 'name' => 'idx_mwai_logmeta_log_id', 'columns' => 'log_id' ],
-        
+
         // mwai_vectors indexes
         [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_envId_status_dbId', 'columns' => 'envId, status, dbId' ],
         [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_refId', 'columns' => 'refId' ],
         [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_status', 'columns' => 'status' ],
         [ 'table' => 'mwai_vectors', 'name' => 'idx_mwai_vectors_updated', 'columns' => 'updated' ],
-        
+
         // mwai_files indexes
         [ 'table' => 'mwai_files', 'name' => 'idx_mwai_files_expires', 'columns' => 'expires' ],
         [ 'table' => 'mwai_files', 'name' => 'idx_mwai_files_userId', 'columns' => 'userId' ],
         [ 'table' => 'mwai_files', 'name' => 'idx_mwai_files_purpose', 'columns' => 'purpose' ],
-        
+
         // mwai_filemeta indexes
         [ 'table' => 'mwai_filemeta', 'name' => 'idx_mwai_filemeta_file_id', 'columns' => 'file_id' ],
-        
+
         // mwai_chats indexes
         [ 'table' => 'mwai_chats', 'name' => 'idx_mwai_chats_chatId_botId', 'columns' => 'chatId, botId' ],
         [ 'table' => 'mwai_chats', 'name' => 'idx_mwai_chats_chatId_userId', 'columns' => 'chatId, userId' ],
         [ 'table' => 'mwai_chats', 'name' => 'idx_mwai_chats_updated', 'columns' => 'updated' ],
       ];
-      
+
       // Add indexes
       foreach ( $indexes as $index ) {
         $table = $wpdb->prefix . $index['table'];
         $index_name = $index['name'];
         $columns = $index['columns'];
-        
+
         // Check if index already exists
         $existing = $wpdb->get_var( $wpdb->prepare(
-          "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
-           WHERE table_schema = %s AND table_name = %s AND index_name = %s",
-          DB_NAME, $table, $index_name
+          'SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+           WHERE table_schema = %s AND table_name = %s AND index_name = %s',
+          DB_NAME,
+          $table,
+          $index_name
         ) );
-        
+
         if ( !$existing ) {
           $wpdb->query( "ALTER TABLE `$table` ADD INDEX `$index_name` ($columns)" );
           $results[] = "Added index $index_name on $table";
         }
       }
-      
+
       // Clean up old logs (older than 3 months)
       $three_months_ago = date( 'Y-m-d H:i:s', strtotime( '-3 months' ) );
-      
+
       // Delete old logs
       $deleted_logs = $wpdb->query( $wpdb->prepare(
         "DELETE FROM {$wpdb->prefix}mwai_logs WHERE time < %s",
         $three_months_ago
       ) );
       $results[] = "Deleted $deleted_logs old log entries";
-      
+
       // Delete orphaned logmeta
       $deleted_logmeta = $wpdb->query(
         "DELETE lm FROM {$wpdb->prefix}mwai_logmeta lm
@@ -1541,21 +1545,21 @@ class Meow_MWAI_Rest {
          WHERE l.id IS NULL"
       );
       $results[] = "Deleted $deleted_logmeta orphaned logmeta entries";
-      
+
       // Delete old chats (older than 3 months)
       $deleted_chats = $wpdb->query( $wpdb->prepare(
         "DELETE FROM {$wpdb->prefix}mwai_chats WHERE updated < %s",
         $three_months_ago
       ) );
       $results[] = "Deleted $deleted_chats old chat discussions";
-      
+
       // Optimize tables
       $tables = [ 'mwai_logs', 'mwai_logmeta', 'mwai_vectors', 'mwai_files', 'mwai_filemeta', 'mwai_chats' ];
       foreach ( $tables as $table ) {
         $wpdb->query( "OPTIMIZE TABLE {$wpdb->prefix}$table" );
       }
-      $results[] = "Optimized all AI Engine tables";
-      
+      $results[] = 'Optimized all AI Engine tables';
+
       $message = implode( "\n", $results );
       return $this->create_rest_response( [ 'success' => true, 'message' => $message ], 200 );
     }
@@ -1674,13 +1678,14 @@ class Meow_MWAI_Rest {
       $params = $request->get_json_params();
       $days = isset( $params['days'] ) ? intval( $params['days'] ) : 31;
       $byModel = isset( $params['byModel'] ) ? (bool) $params['byModel'] : false;
-      
+
       if ( $byModel ) {
         $data = apply_filters( 'mwai_stats_logs_activity_daily_by_model', [], $days );
-      } else {
+      }
+      else {
         $data = apply_filters( 'mwai_stats_logs_activity_daily', [], $days );
       }
-      
+
       return $this->create_rest_response( [ 'success' => true, 'data' => $data ], 200 );
     }
     catch ( Exception $e ) {
@@ -1714,7 +1719,7 @@ class Meow_MWAI_Rest {
       $url = !empty( $params['url'] ) ? $params['url'] : null;
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
       $path = !empty( $params['path'] ) ? $params['path'] : null;
-      
+
       // If mediaId is provided, get the file path
       if ( !$path && $mediaId > 0 ) {
         $path = get_attached_file( $mediaId );
@@ -1722,12 +1727,12 @@ class Meow_MWAI_Rest {
           throw new Exception( __( 'The media file cannot be found.', 'ai-engine' ) );
         }
       }
-      
+
       // Set the scope for admin tools
       if ( !isset( $params['scope'] ) ) {
         $params['scope'] = 'admin-tools';
       }
-      
+
       $result = $mwai->simpleTranscribeAudio( $url, $path, $params );
       return $this->create_rest_response( [ 'success' => true, 'data' => $result ], 200 );
     }
@@ -1865,16 +1870,16 @@ class Meow_MWAI_Rest {
         'orderby' => 'date',
         'order' => 'DESC'
       ];
-      
+
       $posts = get_posts( $args );
-      $forms = array_map( function( $post ) {
+      $forms = array_map( function ( $post ) {
         return [
           'id' => $post->ID,
           'title' => $post->post_title,
           'status' => $post->post_status
         ];
       }, $posts );
-      
+
       return $this->create_rest_response( [ 'success' => true, 'forms' => $forms ], 200 );
     }
     catch ( Exception $e ) {
@@ -1888,17 +1893,17 @@ class Meow_MWAI_Rest {
       if ( !$id ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid form ID' ], 400 );
       }
-      
+
       $post = get_post( $id );
       if ( !$post || $post->post_type !== 'mwai_form' ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Form not found' ], 404 );
       }
-      
+
       $form = [
         'id' => $post->ID,
-        'title' => [ 
+        'title' => [
           'raw' => $post->post_title,
-          'rendered' => $post->post_title 
+          'rendered' => $post->post_title
         ],
         'content' => [
           'raw' => $post->post_content,
@@ -1906,7 +1911,7 @@ class Meow_MWAI_Rest {
         ],
         'status' => $post->post_status
       ];
-      
+
       return $this->create_rest_response( [ 'success' => true, 'form' => $form ], 200 );
     }
     catch ( Exception $e ) {
@@ -1918,30 +1923,30 @@ class Meow_MWAI_Rest {
     try {
       $params = $request->get_json_params();
       $title = isset( $params['title'] ) ? $params['title'] : 'Untitled Form';
-      
+
       $post_data = [
         'post_title' => $title,
         'post_content' => '',
         'post_status' => 'draft',
         'post_type' => 'mwai_form'
       ];
-      
+
       $post_id = wp_insert_post( $post_data );
-      
+
       if ( is_wp_error( $post_id ) ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => $post_id->get_error_message() ], 500 );
       }
-      
+
       $post = get_post( $post_id );
       $form = [
         'id' => $post->ID,
-        'title' => [ 
+        'title' => [
           'raw' => $post->post_title,
-          'rendered' => $post->post_title 
+          'rendered' => $post->post_title
         ],
         'status' => $post->post_status
       ];
-      
+
       return $this->create_rest_response( [ 'success' => true, 'form' => $form ], 200 );
     }
     catch ( Exception $e ) {
@@ -1953,42 +1958,42 @@ class Meow_MWAI_Rest {
     try {
       $params = $request->get_json_params();
       $id = isset( $params['id'] ) ? intval( $params['id'] ) : 0;
-      
+
       if ( !$id ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid form ID' ], 400 );
       }
-      
+
       $post = get_post( $id );
       if ( !$post || $post->post_type !== 'mwai_form' ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Form not found' ], 404 );
       }
-      
+
       $post_data = [ 'ID' => $id ];
-      
+
       if ( isset( $params['title'] ) ) {
         $post_data['post_title'] = $params['title'];
       }
-      
+
       if ( isset( $params['content'] ) ) {
         $post_data['post_content'] = $params['content'];
       }
-      
+
       if ( isset( $params['status'] ) ) {
         $post_data['post_status'] = $params['status'];
       }
-      
+
       $result = wp_update_post( $post_data );
-      
+
       if ( is_wp_error( $result ) ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => $result->get_error_message() ], 500 );
       }
-      
+
       $post = get_post( $id );
       $form = [
         'id' => $post->ID,
-        'title' => [ 
+        'title' => [
           'raw' => $post->post_title,
-          'rendered' => $post->post_title 
+          'rendered' => $post->post_title
         ],
         'content' => [
           'raw' => $post->post_content,
@@ -1996,7 +2001,7 @@ class Meow_MWAI_Rest {
         ],
         'status' => $post->post_status
       ];
-      
+
       return $this->create_rest_response( [ 'success' => true, 'form' => $form ], 200 );
     }
     catch ( Exception $e ) {
@@ -2008,22 +2013,22 @@ class Meow_MWAI_Rest {
     try {
       $params = $request->get_json_params();
       $id = isset( $params['id'] ) ? intval( $params['id'] ) : 0;
-      
+
       if ( !$id ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Invalid form ID' ], 400 );
       }
-      
+
       $post = get_post( $id );
       if ( !$post || $post->post_type !== 'mwai_form' ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Form not found' ], 404 );
       }
-      
+
       $result = wp_delete_post( $id, true );
-      
+
       if ( !$result ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Failed to delete form' ], 500 );
       }
-      
+
       return $this->create_rest_response( [ 'success' => true ], 200 );
     }
     catch ( Exception $e ) {
@@ -2574,7 +2579,7 @@ class Meow_MWAI_Rest {
       $user_id = get_current_user_id();
       $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
       if ( is_array( $draft_media ) ) {
-        $draft_media = array_filter( $draft_media, function( $item ) use ( $attachment_id ) {
+        $draft_media = array_filter( $draft_media, function ( $item ) use ( $attachment_id ) {
           return $item['attachment_id'] !== $attachment_id;
         } );
         update_user_meta( $user_id, 'mwai_draft_media', array_values( $draft_media ) );
@@ -2626,7 +2631,7 @@ class Meow_MWAI_Rest {
       $user_id = get_current_user_id();
       $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
       if ( is_array( $draft_media ) ) {
-        $draft_media = array_filter( $draft_media, function( $item ) use ( $attachment_id ) {
+        $draft_media = array_filter( $draft_media, function ( $item ) use ( $attachment_id ) {
           return $item['attachment_id'] !== $attachment_id;
         } );
         update_user_meta( $user_id, 'mwai_draft_media', array_values( $draft_media ) );

@@ -201,16 +201,20 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     // and ended up encoded when reaching the server.
     $instructions = html_entity_decode( $instructions );
 
-    // Apply placeholders (e.g., {DATE}, {DISPLAY_NAME}, etc.)
-    if ( $mwai_core ) {
-      $instructions = $mwai_core->do_placeholders( $instructions );
-    }
-
-    $this->instructions = apply_filters( 'mwai_ai_context', $instructions, $this );
-    if ( $this->instructions !== $instructions ) {
+    // Apply filters first, so developers can add their own placeholders
+    $filtered = apply_filters( 'mwai_ai_context', $instructions, $this );
+    if ( $filtered !== $instructions ) {
       Meow_MWAI_Logging::deprecated( '"mwai_ai_context" filter is deprecated. Please use "mwai_ai_instructions" instead.' );
     }
-    $this->instructions = apply_filters( 'mwai_ai_instructions', $this->instructions, $this );
+    $filtered = apply_filters( 'mwai_ai_instructions', $filtered, $this );
+
+    // Apply placeholders (e.g., {DATE_TIME}, {DISPLAY_NAME}, etc.) after filters,
+    // so custom placeholders added by developers are also processed.
+    if ( $mwai_core ) {
+      $filtered = $mwai_core->do_placeholders( $filtered );
+    }
+
+    $this->instructions = $filtered;
   }
 
   /**

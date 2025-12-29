@@ -118,19 +118,15 @@ if ( !class_exists( 'MeowKit_MWAI_Helpers' ) ) {
       // This works early in the bootstrap (no dependency on $wp_rewrite).
       $req_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : null;
       if ( $req_path ) {
-        $home_path = wp_parse_url( home_url( '/' ), PHP_URL_PATH ); // e.g. '/' or '/blog/'
-        $home_path = trailingslashit( $home_path ? $home_path : '/' );
+        $prefix = rest_get_url_prefix(); // e.g. 'wp-json' or custom
 
-        $prefix = trim( rest_get_url_prefix(), '/' ); // e.g. 'wp-json' or custom
-
-        // /wp-json/ or /blog/wp-json/
-        $base = $home_path . trailingslashit( $prefix );
-
-        // /index.php/wp-json/ or /blog/index.php/wp-json/ (index permalinks)
-        $base_index = $home_path . 'index.php/' . trailingslashit( $prefix );
-
+        // Check if the path contains /wp-json/ or /index.php/wp-json/
+        // This handles multilingual plugins (WPML, Polylang) that add language prefixes like /fr/wp-json/
         $path = trailingslashit( $req_path );
-        if ( strpos( $path, $base ) === 0 || strpos( $path, $base_index ) === 0 ) {
+        $rest_pattern = '/' . trim( $prefix, '/' ) . '/';
+        $rest_pattern_index = '/index.php/' . trim( $prefix, '/' ) . '/';
+
+        if ( strpos( $path, $rest_pattern ) !== false || strpos( $path, $rest_pattern_index ) !== false ) {
           MeowKit_MWAI_Rest::init_once();
           return true;
         }
