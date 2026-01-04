@@ -1,11 +1,11 @@
-=== AI Engine ===
+=== AI Engine - The Chatbot and AI Framework for WordPress ===
 Contributors: TigrouMeow
 Tags: ai, chatbot, gpt, claude, openai
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.0
+Stable tag: 3.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,10 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.1 (2026/01/04) =
+* Update: Removed unused files and code to reduce clutter and improve performance.
+* Info: Wishing you a Happy New Year 2026 ☀️🎉 No doubt this year will be full of surprises again, let’s continue riding the AI wave together! 😊
 
 = 3.3.0 (2025/12/29) =
 * Add: Added title filter to the Embeddings table.
