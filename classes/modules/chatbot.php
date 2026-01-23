@@ -734,7 +734,9 @@ class Meow_MWAI_Modules_Chatbot {
         // Takeover
         $takeoverAnswer = apply_filters( 'mwai_chatbot_takeover', null, $query, $params );
         if ( !empty( $takeoverAnswer ) ) {
-          $rawText = apply_filters( 'mwai_chatbot_reply', $takeoverAnswer, $query, $params, [] );
+          $reply = new Meow_MWAI_Reply( $query );
+          $reply->result = $takeoverAnswer;
+          $rawText = apply_filters( 'mwai_chatbot_reply', $takeoverAnswer, $reply, $params, [] );
           return [
             'reply' => $rawText,
             'chatId' => $this->core->fix_chat_id( $query, $params ),
@@ -815,7 +817,7 @@ class Meow_MWAI_Modules_Chatbot {
         $extra['responseId'] = $reply->id;
         $extra['responseDate'] = gmdate( 'Y-m-d H:i:s' ); // Track age for 30-day expiry
       }
-      $rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $query, $params, $extra );
+      $rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $reply, $params, $extra );
 
       // Integrity Check: We need to store the checksum of the messages sent by the client.
       $stored_messages = $client_messages;

@@ -625,6 +625,7 @@ class Meow_MWAI_Modules_Tasks {
       'step_name' => null,
       'data' => null,
       'meta' => null,
+      'next_run_delay' => null,
     ];
     
     return wp_parse_args( $result, $defaults );
@@ -671,7 +672,11 @@ class Meow_MWAI_Modules_Tasks {
       if ( !$result['done'] ) {
         // Multi-step task not finished - continue quickly
         $update_data['status'] = 'pending';
-        $update_data['next_run'] = gmdate( 'Y-m-d H:i:s', $now_ts + 10 );
+        $delay = isset( $result['next_run_delay'] ) ? (int) $result['next_run_delay'] : 10;
+        if ( $delay < 1 ) {
+          $delay = 1;
+        }
+        $update_data['next_run'] = gmdate( 'Y-m-d H:i:s', $now_ts + $delay );
       }
       else if ( $task->schedule === 'once' ) {
         // One-off task completed

@@ -1737,8 +1737,9 @@
 }
 .mwai-chatgpt-theme.mwai-window .mwai-header {
   display: none;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+  padding: 0 15px;
   border-radius: var(--mwai-borderRadius) var(--mwai-borderRadius) 0 0;
   background: var(--mwai-backgroundHeaderColor);
 }

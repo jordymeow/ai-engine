@@ -535,8 +535,9 @@ class Meow_MWAI_Modules_Discussions {
     return $chats;
   }
 
-  public function chatbot_reply( $rawText, $query, $params, $extra ) {
+  public function chatbot_reply( $rawText, $reply, $params, $extra ) {
     global $mwai_core;
+    $query = $reply->query;
     $userIp = $mwai_core->get_ip_address();
     $userId = $mwai_core->get_user_id();
     $botId = isset( $params['botId'] ) ? $params['botId'] : null;

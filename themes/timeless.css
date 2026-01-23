@@ -407,6 +407,10 @@
   background: var(--mwai-backgroundUserColor);
   color: white;
 }
+.mwai-timeless-theme .mwai-conversation .mwai-reply.mwai-user .mwai-filename {
+  color: white;
+  border-color: var(--mwai-backgroundPrimaryColor);
+}
 .mwai-timeless-theme .mwai-conversation.mwai-terminal {
   --mwai-terminal-active-color: var(--mwai-accentColor);
 }
@@ -424,9 +428,9 @@
 .mwai-timeless-theme .mwai-text .mwai-filename {
   display: flex;
   text-decoration: none;
-  border: 1px solid var(--mwai-backgroundPrimaryColor);
+  border: 1px solid var(--mwai-borderColor);
   border-radius: var(--mwai-borderRadius);
-  color: white;
+  color: var(--mwai-fontColor);
   padding: 5px 10px;
   margin-bottom: 10px;
 }
@@ -1666,8 +1670,9 @@
 }
 .mwai-timeless-theme.mwai-window .mwai-header {
   display: none;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+  padding: 0 15px;
   border-radius: var(--mwai-borderRadius) var(--mwai-borderRadius) 0 0;
   background: var(--mwai-backgroundHeaderColor);
 }

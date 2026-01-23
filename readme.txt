@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.1
+Stable tag: 3.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -242,6 +242,18 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.2 (2026/01/23) =
+* Add: New "Remote URL" feature for Embeddings to create and auto-sync embeddings from external URLs with change detection.  
+* Fix: Corrected auto-scroll behavior for non-streaming chatbots so conversations stay in view.  
+* Add: Enabled multi-block support for Magic Wand tools (Correct Text, Enhance Text, and Translate Text).  
+* Add: Introduce a user.query filter in the JS API so developers can intercept, modify, or cancel user messages before sending.  
+* Add: Support next_run_delay for multi-step tasks to better control task scheduling.  
+* Fix: Resolved an issue where multi-file uploads were empty.  
+* Fix: Ensured the Standard Header correctly displays the Popup Title.  
+* Fix: Adjusted link colors in the Timeless theme.  
+* Fix: Prevent shortcuts from bypassing locked chatbots (GDPR consent, for example).  
+* ⚠️ Important: Changed the mwai_chatbot_reply filter to pass a reply object instead of a query. Developer! Use reply->query where query was previously used.
 
 = 3.3.1 (2026/01/04) =
 * Update: Removed unused files and code to reduce clutter and improve performance.

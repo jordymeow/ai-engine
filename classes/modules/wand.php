@@ -9,14 +9,16 @@ class Meow_MWAI_Modules_Wand {
       'sublabel' => 'Grammar & Spelling',
       'arguments' => ['postId', 'text'],
       'where' => 'blockContext',
-      'group' => 'first'
+      'group' => 'first',
+      'multiBlock' => true
     ],
     'enhanceText' => [
       'label' => 'Enhance Text',
       'sublabel' => 'Readibility & Quality',
       'arguments' => ['postId', 'text'],
       'where' => 'blockContext',
-      'group' => 'first'
+      'group' => 'first',
+      'multiBlock' => true
     ],
     'longerText' => [
       'label' => 'Longer Text',
@@ -37,7 +39,8 @@ class Meow_MWAI_Modules_Wand {
       'sublabel' => 'To Post Language',
       'arguments' => ['postId', 'text', 'language'],
       'where' => 'blockContext',
-      'group' => 'first'
+      'group' => 'first',
+      'multiBlock' => true
     ],
     'translateSection' => [
       'label' => 'Translate Post',
@@ -85,6 +88,9 @@ class Meow_MWAI_Modules_Wand {
     }
   }
 
+  // Separator used for multi-block content (must match frontend)
+  public const BLOCK_SEPARATOR = "\n\n---MWAI_BLOCK_SEPARATOR---\n\n";
+
   /**
   * Common method to process text actions (e.g., correct, enhance, lengthen, shorten text).
   *
@@ -95,6 +101,7 @@ class Meow_MWAI_Modules_Wand {
   private function processTextAction( $arguments, $messagePrefix ) {
     $postId = $arguments['postId'];
     $isJson = isset( $arguments['json'] ) && !empty( $arguments['json'] );
+    $isMultiBlock = isset( $arguments['isMultiBlock'] ) && $arguments['isMultiBlock'];
     $blockType = isset( $arguments['blockType'] ) ? $arguments['blockType'] : null;
 
     if ( $isJson ) {
@@ -113,6 +120,13 @@ class Meow_MWAI_Modules_Wand {
       }
 
       $messagePrefix .= $jsonInstructions;
+    }
+    elseif ( $isMultiBlock ) {
+      // Handle multi-block content with separators
+      $text = $arguments['text'];
+      $blockCount = isset( $arguments['blockCount'] ) ? (int) $arguments['blockCount'] : 0;
+      $multiBlockInstructions = "\n\nIMPORTANT: The input contains {$blockCount} separate text blocks, separated by '---MWAI_BLOCK_SEPARATOR---'. You MUST preserve these exact separators in your response. Process each block independently while maintaining the separator structure. Do not merge blocks or remove separators.";
+      $messagePrefix .= $multiBlockInstructions;
     }
     else {
       // Handle regular text
@@ -349,7 +363,7 @@ class Meow_MWAI_Modules_Wand {
       $language = $this->core->get_post_language( $postId );
       $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
     }
-    $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', "Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs." . $keepLanguage . "\n\n", $arguments );
+    $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', 'Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.' . $keepLanguage . "\n\n", $arguments );
     $query->set_message( $prompt . $text );
     $query->set_max_results( 5 );
     $reply = $this->core->run_query( $query );
@@ -374,7 +388,7 @@ class Meow_MWAI_Modules_Wand {
       $language = $this->core->get_post_language( $postId );
       $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
     }
-    $prompt = apply_filters( 'mwai_prompt_suggestTitles', "Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content." . $keepLanguage . "\n\n", $arguments );
+    $prompt = apply_filters( 'mwai_prompt_suggestTitles', 'Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.' . $keepLanguage . "\n\n", $arguments );
     $query->set_message( $prompt . $text );
     $query->set_max_results( 5 );
     $reply = $this->core->run_query( $query );
