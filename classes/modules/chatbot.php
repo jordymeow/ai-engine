@@ -163,6 +163,7 @@ class Meow_MWAI_Modules_Chatbot {
     $actions = $this->sanitize_actions( $actions );
     $blocks = $this->sanitize_blocks( $blocks );
     $shortcuts = $this->sanitize_shortcuts( $shortcuts );
+    $shortcuts = $this->prepare_shortcuts_for_client( $shortcuts, $botId );
     $result = [
       'success' => true,
       'reply' => $reply,
@@ -207,6 +208,21 @@ class Meow_MWAI_Modules_Chatbot {
     $newFileId = $params['newFileId'] ?? null;
     $newFileIds = $params['newFileIds'] ?? [];
     $crossSite = $params['crossSite'] ?? false;
+    $shortcutId = $params['shortcutId'] ?? null;
+
+    // If shortcutId is provided, look up the actual message
+    if ( $shortcutId && empty( $newMessage ) ) {
+      $shortcutMessage = $this->get_shortcut_message( $shortcutId, $botId );
+      if ( $shortcutMessage ) {
+        $newMessage = $shortcutMessage;
+      }
+      else {
+        return $this->create_rest_response( [
+          'success' => false,
+          'message' => 'Invalid or expired shortcut.'
+        ], 400 );
+      }
+    }
 
     if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId ) ) {
       return $this->create_rest_response( [
@@ -307,6 +323,79 @@ class Meow_MWAI_Modules_Chatbot {
       'callback' => ['label', 'onClick'],
     ];
     return $this->sanitize_items( $shortcuts, $supported_shortcut_types, 'shortcut' );
+  }
+
+  /**
+   * Prepare shortcuts for client by replacing messages with shortcutIds.
+   * The actual messages are stored server-side and looked up when the shortcut is clicked.
+   * This keeps the prompt content private and not exposed in the browser.
+   *
+   * @param array $shortcuts The shortcuts to prepare.
+   * @param string $botId The bot ID for validation.
+   * @return array The prepared shortcuts with shortcutIds instead of messages.
+   */
+  public function prepare_shortcuts_for_client( $shortcuts, $botId ) {
+    if ( empty( $shortcuts ) ) {
+      return $shortcuts;
+    }
+
+    $prepared = [];
+    foreach ( $shortcuts as $shortcut ) {
+      $type = $shortcut['type'] ?? '';
+      $data = $shortcut['data'] ?? [];
+
+      // Only process shortcuts that have a message (not callbacks)
+      if ( isset( $data['message'] ) && !empty( $data['message'] ) ) {
+        // Generate a unique shortcut ID
+        $shortcutId = wp_generate_uuid4();
+
+        // Store the message server-side (transient with 1 hour expiry)
+        $transient_key = 'mwai_shortcut_' . $shortcutId;
+        set_transient( $transient_key, [
+          'message' => $data['message'],
+          'botId' => $botId,
+        ], HOUR_IN_SECONDS );
+
+        // Replace message with shortcutId
+        unset( $data['message'] );
+        $data['shortcutId'] = $shortcutId;
+      }
+
+      $prepared[] = [
+        'type' => $type,
+        'data' => $data,
+      ];
+    }
+
+    return $prepared;
+  }
+
+  /**
+   * Look up a shortcut message by its ID.
+   *
+   * @param string $shortcutId The shortcut ID.
+   * @param string $botId The bot ID for validation.
+   * @return string|null The message, or null if not found.
+   */
+  public function get_shortcut_message( $shortcutId, $botId ) {
+    if ( empty( $shortcutId ) ) {
+      return null;
+    }
+
+    $transient_key = 'mwai_shortcut_' . $shortcutId;
+    $shortcut_data = get_transient( $transient_key );
+
+    if ( !$shortcut_data || !isset( $shortcut_data['message'] ) ) {
+      return null;
+    }
+
+    // Validate botId matches (security check)
+    if ( isset( $shortcut_data['botId'] ) && $shortcut_data['botId'] !== $botId ) {
+      Meow_MWAI_Logging::warn( "Shortcut botId mismatch: expected {$shortcut_data['botId']}, got {$botId}" );
+      return null;
+    }
+
+    return $shortcut_data['message'];
   }
 
   #region Messages Integrity Check
@@ -1167,7 +1256,9 @@ class Meow_MWAI_Modules_Chatbot {
     $shortcuts = apply_filters( 'mwai_chatbot_shortcuts', [], $filterParams );
     $frontSystem['actions'] = $this->sanitize_actions( $actions );
     $frontSystem['blocks'] = $this->sanitize_blocks( $blocks );
-    $frontSystem['shortcuts'] = $this->sanitize_shortcuts( $shortcuts );
+    $shortcuts = $this->sanitize_shortcuts( $shortcuts );
+    $shortcuts = $this->prepare_shortcuts_for_client( $shortcuts, $botId );
+    $frontSystem['shortcuts'] = $shortcuts;
 
     // Client-side: Prepare JSON for Front Params and System Params
     $theme = isset( $frontParams['themeId'] ) ? $this->core->get_theme( $frontParams['themeId'] ) : null;

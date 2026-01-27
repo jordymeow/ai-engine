@@ -821,6 +821,9 @@ define( 'MWAI_OPENAI_MODELS', [
     'tags' => ['core', 'video']
   ],
   // Embedding models:
+  // OpenAI v3 models support Matryoshka embeddings (MRL) allowing dimension truncation
+  // while preserving semantic meaning. The dimensions array lists native + recommended sizes.
+  // See: https://huggingface.co/blog/matryoshka
   [
     'model' => 'text-embedding-3-small',
     'name' => 'Embedding 3-Small',
@@ -830,8 +833,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'type' => 'token',
     'unit' => 1 / 1000000,
     'finetune' => false,
-    'dimensions' => [ 512, 1536 ],
-    'tags' => ['core', 'embedding'],
+    'dimensions' => 1536, // Native output dimension
+    'tags' => ['core', 'embedding', 'matryoshka'],
   ],
   [
     'model' => 'text-embedding-3-large',
@@ -842,9 +845,10 @@ define( 'MWAI_OPENAI_MODELS', [
     'type' => 'token',
     'unit' => 1 / 1000000,
     'finetune' => false,
-    'dimensions' => [ 256, 1024, 3072 ],
-    'tags' => ['core', 'embedding'],
+    'dimensions' => 3072, // Native output dimension
+    'tags' => ['core', 'embedding', 'matryoshka'],
   ],
+  // Ada-002 is a legacy model with fixed dimensions (no truncation support)
   [
     'model' => 'text-embedding-ada-002',
     'name' => 'Embedding Ada-002',
@@ -854,7 +858,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'type' => 'token',
     'unit' => 1 / 1000000,
     'finetune' => false,
-    'dimensions' => [ 1536 ],
+    'dimensions' => 1536, // Fixed dimension (no matryoshka support)
     'tags' => ['core', 'embedding'],
   ],
   // Audio Models:

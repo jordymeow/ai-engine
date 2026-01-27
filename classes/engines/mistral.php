@@ -78,6 +78,12 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     // Use parent's build_body for standard ChatML format
     $body = parent::build_body( $query, $streamCallback, $extra );
 
+    // Mistral embedding models don't support the dimensions parameter
+    if ( $query instanceof Meow_MWAI_Query_Embed ) {
+      unset( $body['dimensions'] );
+      return $body;
+    }
+
     // Mistral uses 'max_tokens' instead of 'max_completion_tokens'
     if ( isset( $body['max_completion_tokens'] ) ) {
       $body['max_tokens'] = $body['max_completion_tokens'];
@@ -282,8 +288,6 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
           'moderation',      // Moderation models
           'ocr',            // OCR-specific models
           'transcribe',     // Transcription-specific models
-          'mistral-embed',  // Legacy embed model (we'll include newer ones)
-          'codestral-embed' // Code-specific embed model
         ];
 
         $shouldSkip = false;
@@ -336,14 +340,23 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
         }
 
         // Check for embeddings capability
-        // Skip older embedding models in favor of newer ones
+        $dimensions = null;
         if ( strpos( $modelId, 'embed' ) !== false ) {
-          // Only include the latest embed models
-          if ( $modelId === 'mistral-embed-2312' || $modelId === 'mistral-embed' ) {
-            continue; // Skip legacy embed models
+          // Skip only the dated legacy version
+          if ( $modelId === 'mistral-embed-2312' ) {
+            continue;
           }
           $features = ['embedding'];
           $tags = ['core', 'embedding'];
+          // Set dimensions based on model type
+          // mistral-embed: 1024 dimensions (fixed)
+          // codestral-embed: 3072 dimensions (fixed)
+          if ( strpos( $modelId, 'codestral' ) !== false ) {
+            $dimensions = 3072;
+          }
+          else {
+            $dimensions = 1024;
+          }
         }
 
         // Check for audio capability (voxtral models for chat, not transcription)
@@ -488,7 +501,7 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
         // Mark this model as seen (after confirming it will be included)
         $seenModels[$modelName] = true;
 
-        $models[] = [
+        $modelData = [
           'model' => $modelId,
           'name' => $modelName,
           'family' => 'mistral',
@@ -503,6 +516,11 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
           'maxContextualTokens' => $maxContextualTokens,
           'tags' => $tags,
         ];
+        // Add dimensions for embedding models (fixed, not configurable)
+        if ( $dimensions !== null ) {
+          $modelData['dimensions'] = $dimensions;
+        }
+        $models[] = $modelData;
       }
 
       return $models;

@@ -558,9 +558,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         ];
       }
       if ( !empty( $query->context ) ) {
+        $framedContext = $this->core->frame_context( $query->context );
         $systemBlocks[] = [
           'type' => 'text',
-          'text' => "Context:\n\n" . $query->context
+          'text' => $framedContext
         ];
       }
       if ( !empty( $systemBlocks ) ) {

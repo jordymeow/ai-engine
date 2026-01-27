@@ -1137,6 +1137,26 @@ class Meow_MWAI_Rest {
       if ( !empty( $filename ) ) {
         $file_path = get_attached_file( $attachment_id );
         if ( $file_path ) {
+          // Security: Validate file extension to prevent arbitrary file upload attacks
+          $original_ext = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
+          $new_ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+
+          // Allowlist of safe media extensions (no executable types)
+          $allowed_extensions = [
+            'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'ico', 'svg', 'avif',
+            'mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'm4v',
+            'mp3', 'wav', 'flac', 'aac', 'm4a', 'wma',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'rtf'
+          ];
+
+          // Extension must be in allowlist AND match original extension
+          if ( !in_array( $new_ext, $allowed_extensions, true ) ) {
+            throw new Exception( __( 'Invalid file extension. Only media file extensions are allowed.', 'ai-engine' ) );
+          }
+          if ( $new_ext !== $original_ext ) {
+            throw new Exception( __( 'File extension must match the original file type.', 'ai-engine' ) );
+          }
+
           $path_parts = pathinfo( $file_path );
           $new_file_path = $path_parts['dirname'] . '/' . $filename;
           if ( rename( $file_path, $new_file_path ) ) {

@@ -112,6 +112,7 @@ define( 'MWAI_OPTIONS', [
   'search_frontend_env_id' => null,
   'search_website_context' => 'This is a website with useful information and content.',
   'module_forms' => false,
+  'forms_editor' => true,
   'module_blocks' => false,
   'module_playground' => true,
   'module_generator_content' => true,

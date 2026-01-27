@@ -117,9 +117,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       $messages[] = $message;
     }
 
-    // If there is a context, we need to add it.
+    // If there is a context, we need to add it with proper framing.
     if ( !empty( $query->context ) ) {
-      $messages[] = [ 'role' => 'system', 'content' => $query->context ];
+      $framedContext = $this->core->frame_context( $query->context );
+      $messages[] = [ 'role' => 'system', 'content' => $framedContext ];
     }
 
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.
@@ -952,8 +953,21 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
     }
 
+    // Use wp_safe_remote_get to block localhost/private IPs (SSRF protection)
+    $response = wp_safe_remote_get( $url, [
+      'timeout' => 60,
+      'redirection' => 0  // Prevent redirect-based bypass
+    ] );
+    if ( is_wp_error( $response ) ) {
+      throw new Exception( 'Failed to download audio: ' . $response->get_error_message() );
+    }
+    $audio_data = wp_remote_retrieve_body( $response );
+    if ( empty( $audio_data ) ) {
+      throw new Exception( 'Failed to download audio: empty response.' );
+    }
+
     $tmpFile = tempnam( sys_get_temp_dir(), 'audio_' );
-    file_put_contents( $tmpFile, file_get_contents( $url ) );
+    file_put_contents( $tmpFile, $audio_data );
     $length = null;
     $metadata = wp_read_audio_metadata( $tmpFile );
     if ( isset( $metadata['length'] ) ) {

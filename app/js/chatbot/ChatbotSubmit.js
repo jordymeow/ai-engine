@@ -1,44 +1,64 @@
-// Previous: 2.6.9
-// Current: 2.7.7
+// Previous: 3.0.0
+// Current: 3.3.3
 
 // React & Vendor Libs
 const { useMemo, useCallback } = wp.element;
-import { Send, Eraser } from 'lucide-react';
+import { Send, SendHorizontal, Eraser, ArrowUp } from 'lucide-react';
 
 import { useChatbotContext } from "./ChatbotContext";
 
 const ChatbotSubmit = () => {
   const { state, actions } = useChatbotContext();
   const { onClear, onSubmitAction, setIsListening } = actions;
-  const { textClear, textSend, uploadedFile, inputText, messages,
-    isListening, timeElapsed, busy, submitButtonConf, locked } = state;
+  const { textClear, textSend, uploadedFile, uploadedFiles, inputText, messages,
+    isListening, timeElapsed, busy, submitButtonConf, locked, theme } = state;
 
   const isFileUploading = !!uploadedFile?.uploadProgress;
   const hasFileUploaded = !!uploadedFile?.uploadedId;
-  const clearMode = !hasFileUploaded && inputText.length < 1 && messages?.length > 1;
+  const hasMultiFiles = uploadedFiles && uploadedFiles.length > 0;
+  const clearMode = !hasFileUploaded && !hasMultiFiles && inputText.length < 1 && messages?.length > 1;
+  const hasContent = inputText.length > 0 || hasFileUploaded || hasMultiFiles;
+
+  const isChatGPTTheme = theme?.themeId === 'chatgpt';
 
   const buttonContent = useMemo(() => {
     if (busy) {
       return timeElapsed ? <div className="mwai-timer">{timeElapsed}</div> : null;
     }
-    // If there are text values for the button, use them
+    // ChatGPT theme uses ArrowUp icon
+    if (isChatGPTTheme) {
+      if (clearMode) return <Eraser size="20" />;
+      return <ArrowUp size="20" />;
+    }
+    // Prefer Lucide icons for themes that request it (e.g., Timeless)
+    if (submitButtonConf?.useLucide) {
+      if (clearMode) return <Eraser size="20" />;
+      return <SendHorizontal size="20" />;
+    }
+    // If there are image assets configured, use them
     if (submitButtonConf?.imageSend && submitButtonConf?.imageClear) {
       return <img src={clearMode ? submitButtonConf.imageClear : submitButtonConf.imageSend} alt={clearMode ? textClear : textSend} />;
     }
     // If there are no text or images, use the default send icon
     if (!clearMode && !textSend) {
-      return <Send size="20" style={{ marginLeft: 10 }} />;
+      return <Send size="20" />;
     }
     if (clearMode && !textClear) {
       return <Eraser size="20" />;
     }
 
     return <span>{clearMode ? textClear : textSend}</span>;
-  }, [busy, timeElapsed, clearMode, textClear, textSend, submitButtonConf]);
+  }, [busy, timeElapsed, clearMode, textClear, textSend, submitButtonConf, isChatGPTTheme]);
+
+  // Button is "active" (blue) when there's content to send OR messages to clear
+  const isClickable = hasContent || clearMode;
 
   const buttonClassName = useMemo(() => {
-    return `mwai-input-submit ${busy ? 'mwai-busy' : ''}`;
-  }, [busy]);
+    const classes = ['mwai-input-submit'];
+    if (busy) classes.push('mwai-busy');
+    if (isClickable) classes.push('mwai-has-content');
+    return classes.join(' ');
+  }, [busy, isClickable]);
 
   const onSubmitClick = useCallback(() => {
     if (isListening) {

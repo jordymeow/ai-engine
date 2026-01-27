@@ -85,7 +85,7 @@ class Meow_MWAI_Labs_MCP {
       },
     ] );
 
-    // No-Auth URL endpoints (with token in path)
+    // No-Auth URL endpoints (with token in path) - Legacy SSE
     $noauth_enabled = $this->core->get_option( 'mcp_noauth_url' );
     if ( $noauth_enabled && !empty( $this->bearer_token ) ) {
       register_rest_route( $this->namespace, '/' . $this->bearer_token . '/sse', [
@@ -111,6 +111,31 @@ class Meow_MWAI_Labs_MCP {
         'callback' => [ $this, 'handle_message' ],
         'permission_callback' => function ( $request ) {
           return $this->handle_noauth_access( $request );
+        },
+        'show_in_index' => false,
+      ] );
+    }
+
+    // Streamable HTTP endpoint (Modern transport for Claude Code)
+    // Uses Authorization: Bearer header for authentication
+    // Automatically enabled when MCP module is active and bearer token is set
+    if ( !empty( $this->bearer_token ) ) {
+      // Main endpoint with Authorization header (at /http path)
+      register_rest_route( $this->namespace, '/http', [
+        'methods' => [ 'GET', 'POST', 'DELETE' ],
+        'callback' => [ $this, 'handle_streamable_http' ],
+        'permission_callback' => function ( $request ) {
+          return $this->can_access_mcp( $request );
+        },
+        'show_in_index' => false,
+      ] );
+
+      // Alternative endpoint with token in URL (for clients that don't support headers)
+      register_rest_route( $this->namespace, '/' . $this->bearer_token, [
+        'methods' => [ 'GET', 'POST', 'DELETE' ],
+        'callback' => [ $this, 'handle_streamable_http' ],
+        'permission_callback' => function ( $request ) {
+          return $this->handle_noauth_access_streamable( $request );
         },
         'show_in_index' => false,
       ] );
@@ -146,7 +171,7 @@ class Meow_MWAI_Labs_MCP {
     // If no authorization header but bearer token is configured, deny access
     if ( !$hdr && !empty( $this->bearer_token ) ) {
       if ( $this->logging ) {
-        error_log( '[AI Engine MCP] ❌ No authorization header provided.' );
+        error_log( '[AI Engine MCP] ❌ No authorization header provided. Server may be stripping headers.' );
       }
       return false;
     }
@@ -177,9 +202,8 @@ class Meow_MWAI_Labs_MCP {
           wp_set_current_user( $admin->ID, $admin->user_login );
         }
         $auth_result = 'static';
-        // Only log auth for SSE endpoint
-        if ( $this->logging && strpos( $request->get_route(), '/sse' ) !== false ) {
-          error_log( '[AI Engine MCP] 🔐 Auth OK' );
+        if ( $this->logging ) {
+          error_log( '[AI Engine MCP] 🔐 Bearer token auth OK' );
         }
         return true;
       }
@@ -227,6 +251,25 @@ class Meow_MWAI_Labs_MCP {
     }
     return true;
   }
+
+  public function handle_noauth_access_streamable( $request ) {
+    // For Streamable HTTP with token in URL path (no trailing slash)
+    $route = $request->get_route();
+    $expected = '/' . $this->namespace . '/' . $this->bearer_token;
+    if ( $route !== $expected ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP] ❌ Invalid Streamable HTTP no-auth URL access attempt.' );
+      }
+      return false;
+    }
+
+    // Set the current user to admin since token is valid
+    if ( $admin = $this->core->get_admin_user() ) {
+      wp_set_current_user( $admin->ID, $admin->user_login );
+    }
+    return true;
+  }
+
   #endregion
 
   #region Helpers (log / JSON-RPC utils)
@@ -380,7 +423,7 @@ class Meow_MWAI_Labs_MCP {
             'result' => [
               'protocolVersion' => $this->protocol_version,
               'serverInfo' => (object) [
-                'name' => get_bloginfo( 'name' ) . ' MCP',
+                'name' => 'AI Engine - ' . get_bloginfo( 'name' ),
                 'version' => $this->server_version,
               ],
               'capabilities' => (object) [
@@ -637,6 +680,198 @@ class Meow_MWAI_Labs_MCP {
   }
   #endregion
 
+  #region Handle Streamable HTTP (Modern MCP transport)
+  /**
+   * Handle Streamable HTTP requests per MCP specification.
+   * This is the modern transport used by Claude Code and other MCP clients.
+   *
+   * - POST: Send JSON-RPC request, receive JSON response (or SSE for streaming)
+   * - GET: Open SSE stream for server-initiated messages
+   * - DELETE: Terminate the session
+   *
+   * @see https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http
+   */
+  public function handle_streamable_http( WP_REST_Request $request ) {
+    $method = $request->get_method();
+
+    switch ( $method ) {
+      case 'POST':
+        return $this->handle_streamable_http_post( $request );
+
+      case 'GET':
+        return $this->handle_streamable_http_get( $request );
+
+      case 'DELETE':
+        return $this->handle_streamable_http_delete( $request );
+
+      default:
+        return new WP_REST_Response( [
+          'error' => 'Method not allowed'
+        ], 405 );
+    }
+  }
+
+  /**
+   * Handle POST requests for Streamable HTTP.
+   * This processes JSON-RPC requests and returns JSON responses.
+   */
+  private function handle_streamable_http_post( WP_REST_Request $request ) {
+    $raw_body = $request->get_body();
+
+    if ( empty( $raw_body ) ) {
+      return new WP_REST_Response( [
+        'jsonrpc' => '2.0',
+        'id' => null,
+        'error' => [ 'code' => -32700, 'message' => 'Parse error: empty body' ]
+      ], 400 );
+    }
+
+    $data = json_decode( $raw_body, true );
+
+    if ( json_last_error() !== JSON_ERROR_NONE ) {
+      return new WP_REST_Response( [
+        'jsonrpc' => '2.0',
+        'id' => null,
+        'error' => [ 'code' => -32700, 'message' => 'Parse error: invalid JSON' ]
+      ], 400 );
+    }
+
+    // Log the request if debugging is enabled
+    if ( $this->logging && isset( $data['method'] ) ) {
+      error_log( '[AI Engine MCP HTTP] ↓ ' . $data['method'] );
+    }
+
+    // Reuse the existing direct JSON-RPC handler
+    return $this->handle_direct_jsonrpc( $request, $data );
+  }
+
+  /**
+   * Handle GET requests for Streamable HTTP.
+   * This opens an SSE stream for server-to-client messages.
+   * Used when the server needs to send notifications or progress updates.
+   */
+  private function handle_streamable_http_get( WP_REST_Request $request ) {
+    // Check Accept header - must accept text/event-stream
+    $accept = $request->get_header( 'accept' );
+    if ( strpos( $accept, 'text/event-stream' ) === false ) {
+      return new WP_REST_Response( [
+        'error' => 'Accept header must include text/event-stream'
+      ], 406 );
+    }
+
+    // Get or create session ID
+    $session_header = $request->get_header( 'mcp-session-id' );
+    $session_id = !empty( $session_header ) ? sanitize_text_field( $session_header ) : wp_generate_uuid4();
+
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP HTTP] 📡 SSE stream opened for session: ' . substr( $session_id, 0, 8 ) . '...' );
+    }
+
+    // Set up SSE output
+    @ini_set( 'zlib.output_compression', '0' );
+    @ini_set( 'output_buffering', '0' );
+    @ini_set( 'implicit_flush', '1' );
+    if ( function_exists( 'ob_implicit_flush' ) ) {
+      ob_implicit_flush( true );
+    }
+
+    header( 'Content-Type: text/event-stream' );
+    header( 'Cache-Control: no-cache' );
+    header( 'X-Accel-Buffering: no' );
+    header( 'Connection: keep-alive' );
+    header( 'Mcp-Session-Id: ' . $session_id );
+
+    while ( ob_get_level() ) {
+      ob_end_flush();
+    }
+
+    $this->session_id = $session_id;
+    $this->last_action_time = time();
+
+    // Send initial connection event
+    echo "event: open\n";
+    echo 'data: {"session":"' . esc_js( $session_id ) . "\"}\n\n";
+    flush();
+
+    // Main SSE loop - listen for server-initiated messages
+    while ( true ) {
+      $max_time = $this->logging ? 30 : 60 * 3;
+      $idle = ( time() - $this->last_action_time ) >= $max_time;
+
+      if ( connection_aborted() || $idle ) {
+        if ( $this->logging ) {
+          error_log( '[AI Engine MCP HTTP] 🔚 SSE closed (' . ( $idle ? 'idle' : 'abort' ) . ')' );
+        }
+        break;
+      }
+
+      // Check for queued messages
+      foreach ( $this->fetch_messages( $session_id ) as $msg ) {
+        if ( isset( $msg['method'] ) && $msg['method'] === 'mwai/kill' ) {
+          echo "event: close\ndata: {}\n\n";
+          flush();
+          exit;
+        }
+
+        echo "event: message\n";
+        echo 'data: ' . wp_json_encode( $msg, JSON_UNESCAPED_UNICODE ) . "\n\n";
+        flush();
+        $this->last_action_time = time();
+      }
+
+      // Heartbeat every 10 seconds
+      $time_since_last = time() - $this->last_action_time;
+      if ( $time_since_last >= 10 && $time_since_last % 10 === 0 ) {
+        echo ": heartbeat\n\n";
+        flush();
+      }
+
+      usleep( 200000 ); // 200ms
+    }
+
+    exit;
+  }
+
+  /**
+   * Handle DELETE requests for Streamable HTTP.
+   * This terminates the session and cleans up any resources.
+   */
+  private function handle_streamable_http_delete( WP_REST_Request $request ) {
+    $session_header = $request->get_header( 'mcp-session-id' );
+
+    if ( empty( $session_header ) ) {
+      return new WP_REST_Response( [
+        'error' => 'Mcp-Session-Id header required'
+      ], 400 );
+    }
+
+    $session_id = sanitize_text_field( $session_header );
+
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP HTTP] 🗑️ Session terminated: ' . substr( $session_id, 0, 8 ) . '...' );
+    }
+
+    // Queue kill signal for any active SSE streams
+    $this->store_message( $session_id, [
+      'jsonrpc' => '2.0',
+      'method' => 'mwai/kill'
+    ] );
+
+    // Clean up any remaining transients for this session
+    global $wpdb;
+    $like = $wpdb->esc_like( '_transient_' . "{$this->queue_key}_{$session_id}_" ) . '%';
+    $wpdb->query(
+      $wpdb->prepare(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+        $like
+      )
+    );
+
+    // Return 204 No Content on successful termination
+    return new WP_REST_Response( null, 204 );
+  }
+  #endregion
+
   #region Handle /messages (JSON-RPC ingress)
   public function handle_message( WP_REST_Request $request ) {
     $sess = sanitize_text_field( $request->get_param( 'session_id' ) );
@@ -732,7 +967,7 @@ class Meow_MWAI_Labs_MCP {
             'result' => [
               'protocolVersion' => $this->protocol_version,
               'serverInfo' => (object) [
-                'name' => get_bloginfo( 'name' ) . ' MCP',
+                'name' => 'AI Engine - ' . get_bloginfo( 'name' ),
                 'version' => $this->server_version,
               ],
               'capabilities' => (object) [
@@ -975,10 +1210,12 @@ class Meow_MWAI_Labs_MCP {
               if ( !isset( $definition['description'] ) ) {
                 $definition['description'] = 'Value can be of any type';
               }
-            } else {
+            }
+            else {
               $definition['type'] = $type_array;
             }
-          } else {
+          }
+          else {
             $definition['type'] = (string) $definition['type'];
           }
         }

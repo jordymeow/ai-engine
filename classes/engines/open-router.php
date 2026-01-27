@@ -128,6 +128,135 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
   }
 
   /**
+   * OpenRouter uses /chat/completions with modalities parameter for image generation,
+   * not the standard /images/generations endpoint.
+   */
+  public function run_image_query( $query, $streamCallback = null ) {
+    $body = [
+      'model' => $query->model,
+      'messages' => [
+        [
+          'role' => 'user',
+          'content' => $query->get_message()
+        ]
+      ],
+      'modalities' => [ 'text', 'image' ],
+    ];
+
+    // Add number of images if specified
+    if ( !empty( $query->maxResults ) && $query->maxResults > 1 ) {
+      $body['n'] = $query->maxResults;
+    }
+
+    // Add image config for Gemini models (aspect ratio support)
+    if ( !empty( $query->resolution ) && strpos( $query->model, 'google/' ) === 0 ) {
+      $body['image_config'] = [
+        'aspect_ratio' => $query->resolution
+      ];
+    }
+
+    $endpoint = apply_filters( 'mwai_openrouter_endpoint', 'https://openrouter.ai/api/v1', $this->env );
+    $url = trailingslashit( $endpoint ) . 'chat/completions';
+    $headers = $this->build_headers( $query );
+    $options = $this->build_options( $headers, $body );
+
+    try {
+      $res = $this->run_query( $url, $options );
+      $data = $res['data'];
+
+      if ( empty( $data ) || !isset( $data['choices'] ) ) {
+        throw new Exception( 'No image generated in response.' );
+      }
+
+      $reply = new Meow_MWAI_Reply( $query );
+      $reply->set_type( 'images' );
+      $images = [];
+
+      // Extract images from the response
+      foreach ( $data['choices'] as $choice ) {
+        $message = $choice['message'] ?? [];
+
+        // Check for images in the message (OpenRouter format)
+        // Each image is: { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } }
+        if ( isset( $message['images'] ) && is_array( $message['images'] ) ) {
+          foreach ( $message['images'] as $image ) {
+            if ( is_array( $image ) && isset( $image['image_url']['url'] ) ) {
+              $images[] = [ 'url' => $image['image_url']['url'] ];
+            }
+            elseif ( is_array( $image ) && isset( $image['image_url'] ) && is_string( $image['image_url'] ) ) {
+              $images[] = [ 'url' => $image['image_url'] ];
+            }
+            elseif ( is_string( $image ) ) {
+              // Direct base64 string
+              $images[] = [ 'url' => $image ];
+            }
+          }
+        }
+
+        // Also check content array for image parts
+        if ( isset( $message['content'] ) && is_array( $message['content'] ) ) {
+          foreach ( $message['content'] as $part ) {
+            if ( isset( $part['type'] ) && $part['type'] === 'image_url' ) {
+              if ( isset( $part['image_url']['url'] ) ) {
+                $images[] = [ 'url' => $part['image_url']['url'] ];
+              }
+              elseif ( is_string( $part['image_url'] ) ) {
+                $images[] = [ 'url' => $part['image_url'] ];
+              }
+            }
+          }
+        }
+      }
+
+      if ( empty( $images ) ) {
+        throw new Exception( 'No images found in the response.' );
+      }
+
+      // Record usage
+      $model = $query->model;
+      $resolution = !empty( $query->resolution ) ? $query->resolution : '1024x1024';
+
+      if ( isset( $data['usage'] ) ) {
+        $usage = $data['usage'];
+        $promptTokens = $usage['prompt_tokens'] ?? 0;
+        $completionTokens = $usage['completion_tokens'] ?? 0;
+        $this->core->record_tokens_usage( $model, $promptTokens, $completionTokens );
+        $usage['queries'] = 1;
+        $usage['accuracy'] = 'tokens';
+        $reply->set_usage( $usage );
+        $reply->set_usage_accuracy( 'tokens' );
+      }
+      else {
+        $usage = $this->core->record_images_usage( $model, $resolution, count( $images ) );
+        $reply->set_usage( $usage );
+        $reply->set_usage_accuracy( 'estimated' );
+      }
+
+      $reply->set_choices( $images );
+
+      // Handle local download if enabled
+      if ( $query->localDownload === 'uploads' || $query->localDownload === 'library' ) {
+        foreach ( $reply->results as &$result ) {
+          $fileId = $this->core->files->upload_file( $result, null, 'generated', [
+            'query_envId' => $query->envId,
+            'query_session' => $query->session,
+            'query_model' => $query->model,
+          ], $query->envId, $query->localDownload, $query->localDownloadExpiry );
+          $fileUrl = $this->core->files->get_url( $fileId );
+          $result = $fileUrl;
+        }
+      }
+
+      $reply->result = $reply->results[0];
+      return $reply;
+    }
+    catch ( Exception $e ) {
+      Meow_MWAI_Logging::error( 'OpenRouter: ' . $e->getMessage() );
+      throw new Exception( 'OpenRouter: ' . $e->getMessage() );
+    }
+  }
+
+  /**
   * Retrieve the models from OpenRouter, adding tags/features accordingly.
   */
   public function retrieve_models() {
@@ -263,7 +392,20 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
       $tags[] = 'vision';
     }
 
-    return [
+    // Check if the model supports image generation (if "image" is in the output part after "->")
+    // e.g. "text->image" or "text+image->text+image" means it can generate images
+    $isImageGeneration = false;
+    if ( strpos( $modality_lc, '->' ) !== false ) {
+      $parts = explode( '->', $modality_lc );
+      $outputPart = $parts[1] ?? '';
+      $isImageGeneration = strpos( $outputPart, 'image' ) !== false;
+    }
+    if ( $isImageGeneration ) {
+      $features = [ 'text-to-image' ];
+      $tags = [ 'core', 'image' ];
+    }
+
+    $entry = [
       'model' => $model['id'] ?? '',
       'name' => trim( $model['name'] ?? '' ),
       'family' => $family,
@@ -278,6 +420,13 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
       'maxContextualTokens' => $maxContextualTokens,
       'tags' => $tags,
     ];
+
+    // Add mode for image generation models
+    if ( $isImageGeneration ) {
+      $entry['mode'] = 'image';
+    }
+
+    return $entry;
   }
 
   /**

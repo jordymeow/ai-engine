@@ -100,6 +100,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     if ( isset( $rawMessage['role'] ) && isset( $rawMessage['parts'] ) &&
         !isset( $rawMessage['content'] ) && !isset( $rawMessage['tool_calls'] ) && !isset( $rawMessage['function_call'] ) ) {
       // Clean up any empty args arrays in functionCall parts
+      // IMPORTANT: Preserve thought_signature exactly as Google returns it (Gemini 3 requirement)
       $cleanedMessage = $rawMessage;
       if ( isset( $cleanedMessage['parts'] ) ) {
         foreach ( $cleanedMessage['parts'] as &$part ) {
@@ -109,6 +110,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
               unset( $part['functionCall']['args'] );
             }
           }
+          // Note: thought_signature is preserved as-is (don't normalize to camelCase)
+          // Gemini 3 requires the exact format it returns
         }
       }
       return $cleanedMessage;
@@ -198,10 +201,11 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
     // 3. Context (if any).
     if ( !empty( $query->context ) ) {
+      $framedContext = $this->core->frame_context( $query->context );
       $messages[] = [
         'role' => 'model',
         'parts' => [
-          [ 'text' => $query->context ]
+          [ 'text' => $framedContext ]
         ]
       ];
     }
@@ -300,7 +304,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         $messages[] = $formattedMessage;
         foreach ( $feedback_block['feedbacks'] as $feedback ) {
           $functionResponseMessage = [
-            'role' => 'function',
+            'role' => 'user',
             'parts' => [
               [
                 'functionResponse' => [
@@ -356,9 +360,15 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
   protected function build_body( $query, $streamCallback = null ) {
     $body = [];
 
+    // Gemini 3 models don't support multiple candidates
+    $candidateCount = $query->maxResults;
+    if ( preg_match( '/gemini-3/', $query->model ) && $candidateCount > 1 ) {
+      $candidateCount = 1;
+    }
+
     // Build generation config
     $body['generationConfig'] = [
-      'candidateCount' => $query->maxResults,
+      'candidateCount' => $candidateCount,
       'maxOutputTokens' => $query->maxTokens,
       'temperature' => $query->temperature,
       'stopSequences' => []
@@ -567,9 +577,22 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $hasGeneratedImage = false;
 
           if ( isset( $content['parts'] ) ) {
-            // Debug: Log the parts structure when thinking is enabled
-            if ( $this->core->get_option( 'queries_debug_mode' ) && !empty( $query->tools ) && in_array( 'thinking', $query->tools ) ) {
-              error_log( '[AI Engine] Response parts: ' . json_encode( $content['parts'] ) );
+            // Debug: Log the parts structure when debug mode is enabled and there are function calls
+            $hasFunctionCalls = false;
+            foreach ( $content['parts'] as $checkPart ) {
+              if ( isset( $checkPart['functionCall'] ) ) {
+                $hasFunctionCalls = true;
+                break;
+              }
+            }
+            if ( $this->core->get_option( 'queries_debug_mode' ) && $hasFunctionCalls ) {
+              error_log( '[AI Engine Queries] Google response parts with function calls: ' . json_encode( $content['parts'] ) );
+              // Check for thoughtSignature in parts
+              foreach ( $content['parts'] as $debugPart ) {
+                if ( isset( $debugPart['thoughtSignature'] ) || isset( $debugPart['thought_signature'] ) ) {
+                  error_log( '[AI Engine Queries] Found thoughtSignature in response' );
+                }
+              }
             }
 
             foreach ( $content['parts'] as $part ) {
@@ -1121,8 +1144,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
         }
 
-        // Vision capabilities - all 2.5, 2.0, and 1.5 models support vision and files
-        if ( preg_match( '/gemini-(2\.5|2\.0|1\.5)/', $model_id ) ) {
+        // Vision capabilities - all 3.x, 2.5, 2.0, and 1.5 models support vision and files
+        if ( preg_match( '/gemini-(3|2\.5|2\.0|1\.5)/', $model_id ) ) {
           $tags[] = 'vision';
           $tags[] = 'files'; // All vision models support PDFs/documents
           $features[] = 'vision';
@@ -1253,6 +1276,15 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $priceIn = 0.30;
           $priceOut = 30.00; // Output is $30 per 1M tokens
         }
+        else if ( preg_match( '/gemini-3.*image/', $model_id ) ) {
+          // Gemini 3 Pro Image: token-based pricing (like Flash Image)
+          // Pricing not yet officially announced, using estimate based on ~1500 tokens/image
+          // Target: ~$0.04 per image → $26.67 per 1M output tokens
+          $model['unit'] = 1 / 1000000; // Per 1M tokens
+          $model['mode'] = 'image';
+          $priceIn = 0.30; // Estimate similar to Flash Image
+          $priceOut = 26.67; // ~$0.04 per image at ~1500 tokens
+        }
       }
 
       // Add dimensions for embedding models
@@ -1264,7 +1296,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $model['dimensions'] = [ 3072 ];
         }
       }
-      if ( $priceIn > 0 && $priceOut > 0 ) {
+      // Set price if either input or output has a cost (image models often have $0 input)
+      if ( $priceIn > 0 || $priceOut > 0 ) {
         $model['price'] = [ 'in' => $priceIn, 'out' => $priceOut ];
       }
 
@@ -1486,6 +1519,12 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       call_user_func( $streamCallback, $event );
     }
 
+    // Gemini 3 models don't support multiple candidates
+    $candidateCount = $query->maxResults;
+    if ( preg_match( '/gemini-3/', $query->model ) && $candidateCount > 1 ) {
+      $candidateCount = 1;
+    }
+
     // Build the request for image generation
     $body = [
       'contents' => [
@@ -1496,7 +1535,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         ]
       ],
       'generationConfig' => [
-        'candidateCount' => $query->maxResults
+        'candidateCount' => $candidateCount
       ]
     ];
 

@@ -272,10 +272,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
           // Add context if present
           if ( !empty( $query->context ) ) {
+            $framedContext = $this->core->frame_context( $query->context );
             // Prepend context as a separate input_text in the same message
             array_unshift( $body['input'][0]['content'], [
               'type' => 'input_text',
-              'text' => $query->context . "\n\n"
+              'text' => $framedContext . "\n\n"
             ] );
           }
         }
@@ -305,14 +306,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
         // Add context if present
         if ( !empty( $query->context ) ) {
+          $framedContext = $this->core->frame_context( $query->context );
           if ( isset( $body['input'] ) && is_string( $body['input'] ) ) {
-            $body['input'] = $query->context . "\n\n" . $body['input'];
+            $body['input'] = $framedContext . "\n\n" . $body['input'];
           }
           else {
             // Add context as system message
             array_unshift( $body['input'], [
               'role' => 'system',
-              'content' => $query->context
+              'content' => $framedContext
             ] );
           }
         }

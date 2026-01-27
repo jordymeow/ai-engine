@@ -59,6 +59,10 @@ class Meow_MWAI_Core {
   #region Init & Scripts
   public function init() {
     global $mwai;
+
+    // Language
+    load_plugin_textdomain( MWAI_DOMAIN, false, basename( MWAI_PATH ) . '/languages' );
+
     $this->chatbot = null;
     $this->discussions = null;
 
@@ -147,6 +151,11 @@ class Meow_MWAI_Core {
       // Plugins - Pro plugin management MCP tools
       if ( $this->get_option( 'mcp_plugins' ) && class_exists( 'MeowPro_MWAI_MCP_Plugin' ) ) {
         new MeowPro_MWAI_MCP_Plugin( $this );
+      }
+
+      // Polylang - Pro multilingual MCP tools (only if Polylang is active)
+      if ( $this->get_option( 'mcp_polylang' ) && class_exists( 'MeowPro_MWAI_MCP_Polylang' ) && function_exists( 'pll_get_post_language' ) ) {
+        new MeowPro_MWAI_MCP_Polylang( $this );
       }
     }
   }
@@ -535,6 +544,24 @@ class Meow_MWAI_Core {
     $context['length'] = strlen( $context['content'] );
     return $context;
   }
+
+  /**
+   * Wrap context content with framing instructions for AI.
+   * This helps the AI understand that the context is background knowledge.
+   *
+   * @param string $context The raw context content.
+   * @return string The framed context with instructions.
+   */
+  public function frame_context( $context ) {
+    if ( empty( $context ) ) {
+      return $context;
+    }
+    $framing = "The following is your knowledge about this topic. " .
+      "Use it naturally when relevant - never mention or acknowledge that this information was provided to you. " .
+      "If the user's message is unrelated (e.g., greetings, thanks), respond naturally without using it.";
+    $framing = apply_filters( 'mwai_context_framing', $framing, $context );
+    return $framing . "\n\n---\n" . $context . "\n---";
+  }
   #endregion
 
   #region Users/Sessions Helpers
@@ -870,6 +897,10 @@ class Meow_MWAI_Core {
       ],
       'timeless' => [
         'type' => 'internal', 'name' => 'Timeless', 'themeId' => 'timeless',
+        'settings' => [], 'style' => ''
+      ],
+      'foundation' => [
+        'type' => 'internal', 'name' => 'Foundation', 'themeId' => 'foundation',
         'settings' => [], 'style' => ''
       ],
     ];

@@ -395,6 +395,9 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
         'audio' => MWAI_FALLBACK_MODEL_AUDIO,
         'embeddings' => MWAI_FALLBACK_MODEL_EMBEDDINGS,
       ],
+      'integrations' => [
+        'polylang' => function_exists( 'pll_get_post_language' ),
+      ],
     ];
 
     wp_localize_script( 'mwai', 'mwai', $localize_data );

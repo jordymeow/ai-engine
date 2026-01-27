@@ -52,9 +52,10 @@ class Meow_MWAI_Engines_Replicate extends Meow_MWAI_Engines_Core {
       $messages[] = $message;
     }
 
-    // If there is a context, we need to add it.
+    // If there is a context, we need to add it with proper framing.
     if ( !empty( $query->context ) ) {
-      $messages[] = [ 'role' => 'system', 'content' => $query->context ];
+      $framedContext = $this->core->frame_context( $query->context );
+      $messages[] = [ 'role' => 'system', 'content' => $framedContext ];
     }
 
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.

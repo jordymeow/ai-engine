@@ -1544,7 +1544,7 @@
   display: none;
   justify-content: space-between;
   align-items: center;
-  padding: 0 15px;
+  padding: 0 0 0 15px;
   border-radius: var(--mwai-borderRadius) var(--mwai-borderRadius) 0 0;
   background: var(--mwai-backgroundHeaderColor);
 }
@@ -1568,7 +1568,7 @@
   position: absolute;
   height: 13px;
   width: 13px;
-  border: 1px solid var(--mwai-headerColor);
+  border: 1.2px solid var(--mwai-headerColor);
 }
 .mwai-messages-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
   width: 16px;
@@ -1595,7 +1595,7 @@
   cursor: pointer;
   position: absolute;
   height: 22px;
-  width: 1px;
+  width: 1.2px;
   background-color: var(--mwai-headerColor);
 }
 .mwai-messages-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:before {

@@ -9,6 +9,42 @@ class Meow_MWAI_Query_DroppedFile {
   private $fileId; // The ID of the file in the database
   public $originalPath; // The original file path (for files loaded from disk)
 
+  /**
+   * Fetch content from a URL, handling internal vs external URLs differently.
+   * Internal URLs (same site) use wp_remote_get to avoid SSRF blocking issues.
+   * External URLs use wp_safe_remote_get for SSRF protection.
+   */
+  private static function fetch_url_content( $url ) {
+    $parts = wp_parse_url( $url );
+    if ( !isset( $parts['scheme'] ) || !in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
+      throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
+    }
+
+    // Check if internal URL by comparing hostnames (handles http/https mismatch)
+    $site_host = wp_parse_url( get_site_url(), PHP_URL_HOST );
+    $url_host = wp_parse_url( $url, PHP_URL_HOST );
+    $is_internal = ( $site_host === $url_host );
+
+    if ( $is_internal ) {
+      $response = wp_remote_get( $url, [ 'timeout' => 60, 'sslverify' => false ] );
+    }
+    else {
+      // SSRF protection for external URLs
+      $response = wp_safe_remote_get( $url, [ 'timeout' => 60, 'redirection' => 0 ] );
+    }
+
+    if ( is_wp_error( $response ) ) {
+      throw new Exception( 'AI Engine: Failed to download file: ' . $response->get_error_message() );
+    }
+
+    $data = wp_remote_retrieve_body( $response );
+    if ( empty( $data ) ) {
+      throw new Exception( 'AI Engine: Failed to download file contents from URL.' );
+    }
+
+    return $data;
+  }
+
   public static function from_url( $url, $purpose, $mimeType = null, $fileId = null ) {
     if ( empty( $mimeType ) ) {
       $mimeType = Meow_MWAI_Core::get_mime_type( $url );
@@ -120,25 +156,32 @@ class Meow_MWAI_Query_DroppedFile {
       if ( empty( $url ) ) {
         throw new Exception( 'AI Engine: Could not find file URL for refId: ' . $this->data );
       }
-      $parts = wp_parse_url( $url );
-      if ( !isset( $parts['scheme'] ) || !in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
-        throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
-      }
-      $data = file_get_contents( $url );
-      if ( $data === false ) {
-        throw new Exception( 'AI Engine: Failed to download file contents for refId: ' . $this->data );
-      }
-      $this->rawData = $data;
+      $this->rawData = self::fetch_url_content( $url );
       return $this->rawData;
     }
     else if ( $this->type === 'url' ) {
-      // Validate URL scheme to prevent SSRF attacks
-      $parts = wp_parse_url( $this->data );
-      if ( !isset( $parts['scheme'] ) || !in_array( $parts['scheme'], [ 'http', 'https' ], true ) ) {
-        throw new Exception( 'Invalid URL scheme; only HTTP/HTTPS allowed.' );
+      // For internal URLs, try to read from disk first (more efficient)
+      $site_host = wp_parse_url( get_site_url(), PHP_URL_HOST );
+      $url_host = wp_parse_url( $this->data, PHP_URL_HOST );
+      if ( $site_host === $url_host ) {
+        $upload_dir = wp_upload_dir();
+        // Normalize protocols for comparison (http vs https)
+        $normalized_url = preg_replace( '/^https?:/', '', $this->data );
+        $normalized_upload_url = preg_replace( '/^https?:/', '', $upload_dir['baseurl'] );
+        if ( strpos( $normalized_url, $normalized_upload_url ) === 0 ) {
+          $local_path = str_replace( $normalized_upload_url, $upload_dir['basedir'], $normalized_url );
+          $local_path = Meow_MWAI_Core::sanitize_file_path( $local_path );
+          if ( file_exists( $local_path ) && is_readable( $local_path ) ) {
+            $this->rawData = file_get_contents( $local_path );
+            if ( $this->rawData !== false ) {
+              return $this->rawData;
+            }
+          }
+        }
       }
 
-      $this->rawData = file_get_contents( $this->data );
+      // Fetch via HTTP (handles internal vs external URLs with SSRF protection)
+      $this->rawData = self::fetch_url_content( $this->data );
       return $this->rawData;
     }
     else if ( $this->type === 'data' ) {
