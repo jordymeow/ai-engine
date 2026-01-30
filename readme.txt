@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.3
+Stable tag: 3.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,9 +21,9 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 Hello! ☀️ I built AI Engine to bring OpenAI, Claude, and other AI models into WordPress. Create chatbots that understand your content, generate posts in your voice, translate instantly, create images, or build custom AI tools.
 
-For developers: internal APIs, REST endpoints, function calling, and MCP support. Build AI features, automate workflows, or create SaaS applications on WordPress.
+For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [REST endpoints](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/), and [MCP support](https://ai.thehiddendocs.com/mcp/). Build AI features, automate workflows, or create SaaS applications on WordPress.
 
-Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect Claude Code or ChatGPT through MCP, giving AI direct access to your site. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
+Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), or [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/) through MCP, giving AI direct access to your site. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
 
 You'll be having a blast before you've explored everything.
 
@@ -133,7 +133,7 @@ Extend WordPress with AI capabilities.
 
 == MCP (Model Context Protocol) ==
 
-AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT and Claude can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
+AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT, Claude, and Claude Code can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
 
 **What AI Agents Can Do:**
 
@@ -149,6 +149,7 @@ AI Engine turns your WordPress site into an intelligent MCP server. AI agents li
 * [General MCP Overview](https://ai.thehiddendocs.com/mcp/)
 * [MCP with ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/)
 * [MCP with Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/)
+* [MCP with Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/)
 
 **Plugin Integration:**
 
@@ -162,11 +163,15 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 
 == Pro Features ==
 
-* AI Forms
-* Embeddings & Vector Databases
-* Advanced Usage Control
-* Realtime Audio Chatbot
-* Priority Support
+* **AI Forms** — Create dynamic forms that generate answers, images, or files using AI.
+* **Embeddings & Vector Databases** — Build knowledge bases from your content and PDFs for semantic search.
+* **Content-Aware** — Let AI use your post and page content as context for smarter responses.
+* **Function Calling** — Connect AI to WordPress functions, WooCommerce, or any custom API.
+* **Cross-Site Chatbots** — Embed your chatbots on external websites.
+* **Realtime Audio** — Voice-based conversations with AI in real time.
+* **Statistics & Usage Control** — Track usage, set limits per role, and monitor costs.
+* **MCP Tools** — Manage plugins, themes, and Polylang translations through AI agents.
+* **Priority Support** — Get faster help from the Meow Apps team.
 
 == Why AI Engine? ==
 
@@ -174,7 +179,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 Built specifically for WordPress with seamless integration. No clunky interfaces, just native WordPress experience.
 
 **Flexible & Powerful**
-Support for multiple AI providers: OpenAI, Anthropic, Google, Hugging Face, and more. Use the models that work best for you.
+Support for multiple AI providers: OpenAI, Anthropic, Google, OpenRouter, Mistral, and more. Use the models that work best for you.
 
 **Developer Friendly**
 Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire SaaS applications on WordPress.
@@ -242,6 +247,14 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.4 (2026/01/30) =
+* Fix: Prevent duplicate shortcut transients from being created on every page.  
+* Fix: Hotfix TypeError crashes in MCP tool calls when JSON-RPC requests are missing an id field.  
+* Add: Introduce a new wp_upload_request MCP tool that generates one-time upload URLs so agents can upload local files via curl instead of base64.  
+* Add: Add a new MCP "Database" module that lets you execute SQL queries.  
+* Update: Remove the default popup title and AI name fallback so leaving the title field empty now shows no title at all.  
+* Fix: Resolve a PHP 8.2 deprecation warning related to a dynamic property.
 
 = 3.3.3 (2026/01/27) =
 * Add: Introduce a Streamable HTTP transport for MCP so Claude Code can connect directly to WordPress. 

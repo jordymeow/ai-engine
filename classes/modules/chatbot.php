@@ -346,15 +346,17 @@ class Meow_MWAI_Modules_Chatbot {
 
       // Only process shortcuts that have a message (not callbacks)
       if ( isset( $data['message'] ) && !empty( $data['message'] ) ) {
-        // Generate a unique shortcut ID
-        $shortcutId = wp_generate_uuid4();
-
-        // Store the message server-side (transient with 1 hour expiry)
+        // Generate a deterministic shortcut ID based on content
+        $shortcutId = md5( $botId . '|' . $data['message'] );
         $transient_key = 'mwai_shortcut_' . $shortcutId;
-        set_transient( $transient_key, [
-          'message' => $data['message'],
-          'botId' => $botId,
-        ], HOUR_IN_SECONDS );
+
+        // Only set transient if it doesn't already exist
+        if ( false === get_transient( $transient_key ) ) {
+          set_transient( $transient_key, [
+            'message' => $data['message'],
+            'botId' => $botId,
+          ], HOUR_IN_SECONDS );
+        }
 
         // Replace message with shortcutId
         unset( $data['message'] );

@@ -495,16 +495,43 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_upload_media' => [
         'name' => 'wp_upload_media',
-        'description' => 'Download file from URL and add to Media Library.',
+        'description' => 'Upload a file to the WordPress Media Library. Provide either a url (WordPress will download it) or base64-encoded content with a filename. Base64 mode is useful for local files but doubles the payload size — keep files under a few MB to avoid memory or timeout issues.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
-            'url' => [ 'type' => 'string' ],
+            'url' => [
+              'type' => 'string',
+              'description' => 'URL to download the file from. Use this OR base64/filename.',
+            ],
+            'base64' => [
+              'type' => 'string',
+              'description' => 'Base64-encoded file content. Must be used together with filename.',
+            ],
+            'filename' => [
+              'type' => 'string',
+              'description' => 'Filename with extension (e.g. photo.jpg). Required when using base64.',
+            ],
             'title' => [ 'type' => 'string' ],
             'description' => [ 'type' => 'string' ],
             'alt' => [ 'type' => 'string' ],
           ],
-          'required' => [ 'url' ],
+        ],
+      ],
+      'wp_upload_request' => [
+        'name' => 'wp_upload_request',
+        'description' => 'Upload a local file to the WordPress Media Library via a temporary upload endpoint. Use this instead of wp_upload_media when you have a local file (not a URL) — passing large base64 strings through MCP is impractical and will likely exceed context limits. Call this tool with the filename and optional metadata; it returns a one-time upload URL. Then use curl to POST the file: curl -X POST -F "file=@/local/path/file.jpg" "<upload_url>". The upload URL expires after 5 minutes and can only be used once.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'filename' => [
+              'type' => 'string',
+              'description' => 'Filename with extension (e.g. photo.jpg).',
+            ],
+            'title' => [ 'type' => 'string' ],
+            'description' => [ 'type' => 'string' ],
+            'alt' => [ 'type' => 'string' ],
+          ],
+          'required' => [ 'filename' ],
         ],
       ],
       'wp_update_media' => [
@@ -615,7 +642,7 @@ class Meow_MWAI_Labs_MCP_Core {
   #endregion
 
   #region Callback
-  public function handle_call( $prev, string $tool, array $args, int $id ) {
+  public function handle_call( $prev, string $tool, array $args, ?int $id ) {
     // Security check is already done in the MCP auth layer
     // If we reach here, the user is authorized to use MCP
     if ( !empty( $prev ) || !isset( $this->tools()[ $tool ] ) ) {
@@ -626,7 +653,7 @@ class Meow_MWAI_Labs_MCP_Core {
   #endregion
 
   #region Dispatcher
-  private function dispatch( string $tool, array $a, int $id ): array {
+  private function dispatch( string $tool, array $a, ?int $id ): array {
     $r = [ 'jsonrpc' => '2.0', 'id' => $id ];
 
     switch ( $tool ) {
@@ -1357,19 +1384,34 @@ class Meow_MWAI_Labs_MCP_Core {
 
         /* ===== Media: upload ===== */
       case 'wp_upload_media':
-        if ( empty( $a['url'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'url required' ];
+        $has_url = !empty( $a['url'] );
+        $has_base64 = !empty( $a['base64'] ) && !empty( $a['filename'] );
+        if ( !$has_url && !$has_base64 ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Provide either url, or base64 + filename.' ];
           break;
         }
         try {
           require_once ABSPATH . 'wp-admin/includes/file.php';
           require_once ABSPATH . 'wp-admin/includes/media.php';
           require_once ABSPATH . 'wp-admin/includes/image.php';
-          $tmp = download_url( $a['url'] );
-          if ( is_wp_error( $tmp ) ) {
-            throw new Exception( $tmp->get_error_message(), $tmp->get_error_code() );
+
+          if ( $has_url ) {
+            $tmp = download_url( $a['url'] );
+            if ( is_wp_error( $tmp ) ) {
+              throw new Exception( $tmp->get_error_message(), $tmp->get_error_code() );
+            }
+            $file = [ 'name' => basename( parse_url( $a['url'], PHP_URL_PATH ) ), 'tmp_name' => $tmp ];
           }
-          $file = [ 'name' => basename( parse_url( $a['url'], PHP_URL_PATH ) ), 'tmp_name' => $tmp ];
+          else {
+            $decoded = base64_decode( $a['base64'], true );
+            if ( $decoded === false ) {
+              throw new Exception( 'Invalid base64 data.' );
+            }
+            $tmp = wp_tempnam( $a['filename'] );
+            file_put_contents( $tmp, $decoded );
+            $file = [ 'name' => sanitize_file_name( $a['filename'] ), 'tmp_name' => $tmp ];
+          }
+
           $id = media_handle_sideload( $file, 0, $a['description'] ?? '' );
           @unlink( $tmp );
           if ( is_wp_error( $id ) ) {
@@ -1382,6 +1424,34 @@ class Meow_MWAI_Labs_MCP_Core {
             update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( $a['alt'] ) );
           }
           $this->add_result_text( $r, wp_get_attachment_url( $id ) );
+        }
+        catch ( \Throwable $e ) {
+          $r['error'] = [ 'code' => $e->getCode() ?: -32603, 'message' => $e->getMessage() ];
+        }
+        break;
+
+        /* ===== Media: upload alternative (two-step) ===== */
+      case 'wp_upload_request':
+        if ( empty( $a['filename'] ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'filename required' ];
+          break;
+        }
+        try {
+          $token = wp_generate_password( 32, false );
+          $transient_key = 'mwai_mcp_upload_' . $token;
+          $data = [
+            'filename' => sanitize_file_name( $a['filename'] ),
+            'title' => $a['title'] ?? '',
+            'description' => $a['description'] ?? '',
+            'alt' => $a['alt'] ?? '',
+          ];
+          set_transient( $transient_key, $data, 5 * MINUTE_IN_SECONDS );
+          $upload_url = rest_url( 'mcp/v1/upload/' . $token );
+          $this->add_result_text( $r, wp_json_encode( [
+            'upload_url' => $upload_url,
+            'expires_in' => '5 minutes',
+            'usage' => 'curl -X POST -F "file=@/path/to/' . $a['filename'] . '" "' . $upload_url . '"',
+          ], JSON_PRETTY_PRINT ) );
         }
         catch ( \Throwable $e ) {
           $r['error'] = [ 'code' => $e->getCode() ?: -32603, 'message' => $e->getMessage() ];

@@ -140,6 +140,15 @@ class Meow_MWAI_Labs_MCP {
         'show_in_index' => false,
       ] );
     }
+
+    // File upload endpoint for wp_upload_request
+    // Uses a one-time token in the URL for authentication (no bearer header needed from curl)
+    register_rest_route( $this->namespace, '/upload/(?P<token>[a-zA-Z0-9]+)', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'handle_upload' ],
+      'permission_callback' => '__return_true',
+      'show_in_index' => false,
+    ] );
   }
   #endregion
 
@@ -1344,6 +1353,67 @@ class Meow_MWAI_Labs_MCP {
     catch ( Exception $e ) {
       return $this->rpc_error( $id, -32603, $e->getMessage() );
     }
+  }
+  #endregion
+
+  #region Handle /upload (one-time file upload via token)
+  public function handle_upload( WP_REST_Request $request ) {
+    $token = $request->get_param( 'token' );
+    if ( empty( $token ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Missing token.' ], 400 );
+    }
+
+    $transient_key = 'mwai_mcp_upload_' . $token;
+    $data = get_transient( $transient_key );
+    if ( empty( $data ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid or expired upload token.' ], 403 );
+    }
+
+    // Immediately delete the transient so the token can only be used once
+    delete_transient( $transient_key );
+
+    $files = $request->get_file_params();
+    if ( empty( $files['file'] ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided. Use: curl -X POST -F "file=@/path/to/file" "<url>"' ], 400 );
+    }
+
+    $uploaded = $files['file'];
+    if ( $uploaded['error'] !== UPLOAD_ERR_OK ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Upload error code: ' . $uploaded['error'] ], 400 );
+    }
+
+    // Set admin context for media handling
+    if ( !current_user_can( 'administrator' ) ) {
+      wp_set_current_user( 1 );
+    }
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+
+    // Use the filename from the transient (sanitized at creation time)
+    $file = [
+      'name' => $data['filename'],
+      'tmp_name' => $uploaded['tmp_name'],
+    ];
+
+    $attachment_id = media_handle_sideload( $file, 0, $data['description'] );
+    if ( is_wp_error( $attachment_id ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $attachment_id->get_error_message() ], 500 );
+    }
+
+    if ( !empty( $data['title'] ) ) {
+      wp_update_post( [ 'ID' => $attachment_id, 'post_title' => sanitize_text_field( $data['title'] ) ] );
+    }
+    if ( !empty( $data['alt'] ) ) {
+      update_post_meta( $attachment_id, '_wp_attachment_image_alt', sanitize_text_field( $data['alt'] ) );
+    }
+
+    return new WP_REST_Response( [
+      'success' => true,
+      'attachment_id' => $attachment_id,
+      'url' => wp_get_attachment_url( $attachment_id ),
+    ], 200 );
   }
   #endregion
 
