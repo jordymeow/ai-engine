@@ -326,13 +326,60 @@ class Meow_MWAI_Modules_Chatbot {
   }
 
   /**
-   * Prepare shortcuts for client by replacing messages with shortcutIds.
-   * The actual messages are stored server-side and looked up when the shortcut is clicked.
+   * Get the encryption key derived from WordPress salts.
+   *
+   * @return string The 32-byte encryption key.
+   */
+  private function get_shortcut_encryption_key() {
+    return substr( hash( 'sha256', wp_salt( 'auth' ) . 'mwai_shortcuts' ), 0, 32 );
+  }
+
+  /**
+   * Encrypt shortcut data for safe transmission to the client.
+   *
+   * @param array $data The data to encrypt (message, botId).
+   * @return string|null The base64-encoded encrypted payload, or null on failure.
+   */
+  private function encrypt_shortcut_data( $data ) {
+    $key = $this->get_shortcut_encryption_key();
+    $iv = openssl_random_pseudo_bytes( 16 );
+    $json = json_encode( $data );
+    $encrypted = openssl_encrypt( $json, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
+    if ( $encrypted === false ) {
+      return null;
+    }
+    return base64_encode( $iv . $encrypted );
+  }
+
+  /**
+   * Decrypt shortcut data received from the client.
+   *
+   * @param string $payload The base64-encoded encrypted payload.
+   * @return array|null The decrypted data, or null on failure.
+   */
+  private function decrypt_shortcut_data( $payload ) {
+    $key = $this->get_shortcut_encryption_key();
+    $decoded = base64_decode( $payload, true );
+    if ( $decoded === false || strlen( $decoded ) < 17 ) {
+      return null;
+    }
+    $iv = substr( $decoded, 0, 16 );
+    $encrypted = substr( $decoded, 16 );
+    $decrypted = openssl_decrypt( $encrypted, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
+    if ( $decrypted === false ) {
+      return null;
+    }
+    return json_decode( $decrypted, true );
+  }
+
+  /**
+   * Prepare shortcuts for client by replacing messages with encrypted shortcutIds.
+   * The messages are encrypted and can only be decrypted server-side.
    * This keeps the prompt content private and not exposed in the browser.
    *
    * @param array $shortcuts The shortcuts to prepare.
    * @param string $botId The bot ID for validation.
-   * @return array The prepared shortcuts with shortcutIds instead of messages.
+   * @return array The prepared shortcuts with encrypted shortcutIds instead of messages.
    */
   public function prepare_shortcuts_for_client( $shortcuts, $botId ) {
     if ( empty( $shortcuts ) ) {
@@ -346,21 +393,17 @@ class Meow_MWAI_Modules_Chatbot {
 
       // Only process shortcuts that have a message (not callbacks)
       if ( isset( $data['message'] ) && !empty( $data['message'] ) ) {
-        // Generate a deterministic shortcut ID based on content
-        $shortcutId = md5( $botId . '|' . $data['message'] );
-        $transient_key = 'mwai_shortcut_' . $shortcutId;
+        // Encrypt the message and botId
+        $shortcutId = $this->encrypt_shortcut_data( [
+          'message' => $data['message'],
+          'botId' => $botId,
+        ] );
 
-        // Only set transient if it doesn't already exist
-        if ( false === get_transient( $transient_key ) ) {
-          set_transient( $transient_key, [
-            'message' => $data['message'],
-            'botId' => $botId,
-          ], HOUR_IN_SECONDS );
+        if ( $shortcutId ) {
+          // Replace message with encrypted shortcutId
+          unset( $data['message'] );
+          $data['shortcutId'] = $shortcutId;
         }
-
-        // Replace message with shortcutId
-        unset( $data['message'] );
-        $data['shortcutId'] = $shortcutId;
       }
 
       $prepared[] = [
@@ -373,21 +416,21 @@ class Meow_MWAI_Modules_Chatbot {
   }
 
   /**
-   * Look up a shortcut message by its ID.
+   * Decrypt and retrieve a shortcut message from its encrypted ID.
    *
-   * @param string $shortcutId The shortcut ID.
+   * @param string $shortcutId The encrypted shortcut ID.
    * @param string $botId The bot ID for validation.
-   * @return string|null The message, or null if not found.
+   * @return string|null The message, or null if decryption fails or botId mismatches.
    */
   public function get_shortcut_message( $shortcutId, $botId ) {
     if ( empty( $shortcutId ) ) {
       return null;
     }
 
-    $transient_key = 'mwai_shortcut_' . $shortcutId;
-    $shortcut_data = get_transient( $transient_key );
+    $shortcut_data = $this->decrypt_shortcut_data( $shortcutId );
 
     if ( !$shortcut_data || !isset( $shortcut_data['message'] ) ) {
+      Meow_MWAI_Logging::warn( "Shortcut decryption failed for botId: {$botId}" );
       return null;
     }
 

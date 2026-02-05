@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.4
+Stable tag: 3.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -247,6 +247,13 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.5 (2026/02/05) =
+* Update: Deprecated GPT-4o, GPT-4o mini, GPT-4.1, GPT-4.1 mini, and their related realtime/transcribe models to guide users toward newer, supported options.
+* Update: Replaced shortcut-based data storage with AES-256 encryption to avoid cache corruption issues.
+* Add: Enhanced the wp_update_post MCP tool with better truncated JSON detection, content verification, and richer response data.
+* Update: Linked PDF chunks via unique refChecksum and added ref filter to embeddings table.
+* Add: Added WooCommerce MCP module with 25 tools for managing products, orders, inventory, customers, reviews, and analytics.
 
 = 3.3.4 (2026/01/30) =
 * Fix: Prevent duplicate shortcut transients from being created on every page.  

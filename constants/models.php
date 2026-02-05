@@ -251,7 +251,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 32768,
     'maxContextualTokens' => 1047576,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
@@ -273,7 +273,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 32768,
     'maxContextualTokens' => 1047576,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'responses', 'mcp', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
@@ -317,7 +317,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 16384,
     'maxContextualTokens' => 128000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
@@ -343,7 +343,7 @@ define( 'MWAI_OPENAI_MODELS', [
       'out' => 0.60,
       'train' => 3.00
     ],
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses'],
+    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'finetune', 'mcp', 'responses', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
@@ -512,7 +512,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 4096,
     'maxContextualTokens' => 128000,
     'finetune' => false,
-    'tags' => ['core', 'realtime', 'functions', 'vision']
+    'tags' => ['core', 'realtime', 'functions', 'vision', 'deprecated']
   ],
   /*
             GPT-4o mini Realtime
@@ -541,7 +541,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 4096,
     'maxContextualTokens' => 128000,
     'finetune' => false,
-    'tags' => ['core', 'realtime', 'functions', 'vision']
+    'tags' => ['core', 'realtime', 'functions', 'vision', 'deprecated']
   ],
   /*
         GPT-4
@@ -871,7 +871,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'type' => 'second',
     'unit' => 1,
     'finetune' => false,
-    'tags' => ['core', 'audio'],
+    'tags' => ['core', 'audio', 'deprecated'],
   ],
   [
     'model' => 'gpt-4o-mini-transcribe',
@@ -882,7 +882,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'type' => 'second',
     'unit' => 1,
     'finetune' => false,
-    'tags' => ['core', 'audio'],
+    'tags' => ['core', 'audio', 'deprecated'],
   ],
   [
     'model' => 'whisper-1',

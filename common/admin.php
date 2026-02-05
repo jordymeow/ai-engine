@@ -6,6 +6,8 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
     public static $loaded = false;
     public static $version = '4.0';
     public static $admin_version = '4.0';
+    public static $network_license_modal_added = false;
+    public static $network_license_plugins = [];
 
     /**
      * Storage for instances that need deferred initialization.
@@ -197,17 +199,189 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
       }
       $isIssue = $this->isPro && !$this->is_registered();
       if ( strpos( $pathName, $thisPathName ) !== false ) {
-        $new_links = [
-          'settings' =>
-          sprintf( __( '<a href="admin.php?page=%s_settings">Settings</a>', $this->domain ), $this->prefix ),
-          'license' =>
-          $this->is_registered() ?
-            ( '<span style="color: #a75bd6;">' . __( 'Pro Version', $this->domain ) . '</span>' ) :
-                ( $isIssue ? ( sprintf( '<span style="color: #ff3434;">' . __( 'License Issue', $this->domain ), $this->prefix ) . '</span>' ) : ( sprintf( '<span>' . __( '<a target="_blank" href="https://meowapps.com">Get the <u>Pro Version</u></a>', $this->domain ), $this->prefix ) . '</span>' ) ),
-        ];
+        // In network admin, handle differently (no settings page available)
+        if ( is_network_admin() ) {
+          if ( $this->isPro && !$this->is_registered() ) {
+            // Show "Register License" link for unregistered Pro plugins
+            $new_links = [
+              'license' => sprintf(
+                '<a href="#" class="meowapps-network-license-link" data-prefix="%s" data-plugin="%s" style="color: #d63638;">%s</a>',
+                esc_attr( $this->prefix ),
+                esc_attr( $this->nice_name_from_file( $this->mainfile ) ),
+                __( 'Register License', $this->domain )
+              ),
+            ];
+            // Track this plugin for the modal
+            self::$network_license_plugins[ $this->prefix ] = $this->nice_name_from_file( $this->mainfile );
+            // Add modal output hook (only once)
+            if ( !self::$network_license_modal_added ) {
+              add_action( 'admin_footer', [ __CLASS__, 'output_network_license_modal' ] );
+              self::$network_license_modal_added = true;
+            }
+          }
+          elseif ( $this->isPro && $this->is_registered() ) {
+            // Pro plugin is registered
+            $new_links = [
+              'license' => '<span style="color: #a75bd6;">' . __( 'Pro Version', $this->domain ) . '</span>',
+            ];
+          }
+          else {
+            // Free plugin
+            $new_links = [
+              'license' => sprintf( '<span>' . __( '<a target="_blank" href="https://meowapps.com">Get the <u>Pro Version</u></a>', $this->domain ), $this->prefix ) . '</span>',
+            ];
+          }
+        }
+        else {
+          // Regular admin - show settings and license status
+          $new_links = [
+            'settings' =>
+            sprintf( __( '<a href="admin.php?page=%s_settings">Settings</a>', $this->domain ), $this->prefix ),
+            'license' =>
+            $this->is_registered() ?
+              ( '<span style="color: #a75bd6;">' . __( 'Pro Version', $this->domain ) . '</span>' ) :
+                  ( $isIssue ? ( sprintf( '<span style="color: #ff3434;">' . __( 'License Issue', $this->domain ), $this->prefix ) . '</span>' ) : ( sprintf( '<span>' . __( '<a target="_blank" href="https://meowapps.com">Get the <u>Pro Version</u></a>', $this->domain ), $this->prefix ) . '</span>' ) ),
+          ];
+        }
         $links = array_merge( $new_links, $links );
       }
       return $links;
+    }
+
+    /**
+     * Output the network license registration modal.
+     * Called via admin_footer hook in network admin.
+     */
+    public static function output_network_license_modal() {
+      $rest_url = esc_url( rest_url() );
+      $nonce = wp_create_nonce( 'wp_rest' );
+      ?>
+      <div id="meowapps-network-license-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100000; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:24px; border-radius:8px; max-width:450px; width:90%; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+          <h2 style="margin:0 0 8px 0; font-size:18px;">Register License</h2>
+          <p id="meowapps-license-plugin-name" style="margin:0 0 16px 0; color:#666;"></p>
+          <input type="text" id="meowapps-license-key-input" placeholder="Enter your license key" style="width:100%; padding:10px; font-size:14px; border:1px solid #8c8f94; border-radius:4px; box-sizing:border-box;" />
+          <p id="meowapps-license-message" style="margin:12px 0 0 0; padding:10px; border-radius:4px; display:none;"></p>
+          <div style="margin-top:16px; display:flex; gap:10px; justify-content:flex-end;">
+            <button type="button" id="meowapps-license-cancel" class="button">Cancel</button>
+            <button type="button" id="meowapps-license-submit" class="button button-primary">Validate & Register</button>
+          </div>
+        </div>
+      </div>
+      <script>
+      (function() {
+        var modal = document.getElementById('meowapps-network-license-modal');
+        var input = document.getElementById('meowapps-license-key-input');
+        var message = document.getElementById('meowapps-license-message');
+        var pluginName = document.getElementById('meowapps-license-plugin-name');
+        var submitBtn = document.getElementById('meowapps-license-submit');
+        var cancelBtn = document.getElementById('meowapps-license-cancel');
+        var currentPrefix = '';
+
+        function showMessage(text, isError) {
+          message.textContent = text;
+          message.style.display = 'block';
+          message.style.background = isError ? '#fcf0f1' : '#edfaef';
+          message.style.color = isError ? '#d63638' : '#1e7e34';
+          message.style.border = '1px solid ' + (isError ? '#d63638' : '#1e7e34');
+        }
+
+        function hideMessage() {
+          message.style.display = 'none';
+        }
+
+        function openModal(prefix, plugin) {
+          currentPrefix = prefix;
+          pluginName.textContent = plugin;
+          input.value = '';
+          hideMessage();
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Validate & Register';
+          modal.style.display = 'flex';
+          input.focus();
+        }
+
+        function closeModal() {
+          modal.style.display = 'none';
+          currentPrefix = '';
+        }
+
+        // Handle click on "Register License" links
+        document.addEventListener('click', function(e) {
+          if (e.target.classList.contains('meowapps-network-license-link')) {
+            e.preventDefault();
+            var prefix = e.target.getAttribute('data-prefix');
+            var plugin = e.target.getAttribute('data-plugin');
+            openModal(prefix, plugin);
+          }
+        });
+
+        // Close modal on cancel or clicking outside
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeModal();
+        });
+
+        // Handle escape key
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && modal.style.display === 'flex') {
+            closeModal();
+          }
+        });
+
+        // Handle enter key in input
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            submitBtn.click();
+          }
+        });
+
+        // Submit license
+        submitBtn.addEventListener('click', function() {
+          var licenseKey = input.value.trim();
+          if (!licenseKey) {
+            showMessage('Please enter a license key.', true);
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Validating...';
+          hideMessage();
+
+          var restUrl = '<?php echo $rest_url; ?>meow-licenser/' + currentPrefix + '/v1/set_license/';
+
+          fetch(restUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-WP-Nonce': '<?php echo $nonce; ?>'
+            },
+            body: JSON.stringify({ serialKey: licenseKey })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.success && data.data && !data.data.issue) {
+              showMessage('License registered successfully! Reloading...', false);
+              setTimeout(function() { location.reload(); }, 1500);
+            } else {
+              var errorMsg = 'License validation failed.';
+              if (data.data && data.data.issue) {
+                errorMsg = 'License issue: ' + data.data.issue;
+              }
+              showMessage(errorMsg, true);
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Validate & Register';
+            }
+          })
+          .catch(function(error) {
+            showMessage('Error: ' + error.message, true);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Validate & Register';
+          });
+        });
+      })();
+      </script>
+      <?php
     }
 
     public function request_verify_ssl() {

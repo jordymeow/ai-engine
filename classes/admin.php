@@ -397,6 +397,7 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       ],
       'integrations' => [
         'polylang' => function_exists( 'pll_get_post_language' ),
+        'woocommerce' => class_exists( 'WooCommerce' ),
       ],
     ];
 

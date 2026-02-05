@@ -162,6 +162,11 @@ class Meow_MWAI_Core {
       if ( $this->get_option( 'mcp_polylang' ) && class_exists( 'MeowPro_MWAI_MCP_Polylang' ) && function_exists( 'pll_get_post_language' ) ) {
         new MeowPro_MWAI_MCP_Polylang( $this );
       }
+
+      // WooCommerce - Pro WooCommerce store management MCP tools (only if WooCommerce is active)
+      if ( $this->get_option( 'mcp_woocommerce' ) && class_exists( 'MeowPro_MWAI_MCP_WooCommerce' ) && class_exists( 'WooCommerce' ) ) {
+        new MeowPro_MWAI_MCP_WooCommerce( $this );
+      }
     }
   }
 
