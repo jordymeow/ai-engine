@@ -256,11 +256,7 @@ class Meow_MWAI_Engines_Core {
       if ( !$isResponsesApi && !empty( $query->model ) ) {
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'responses', $modelInfo['tags'] ) ) {
-          // Also check if Responses API is enabled in settings
-          $responsesApiEnabled = $this->core->get_option( 'ai_responses_api' ) ?? true;
-          if ( $responsesApiEnabled ) {
-            $isResponsesApi = true;
-          }
+          $isResponsesApi = true;
         }
       }
 

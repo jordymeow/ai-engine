@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.6
+Stable tag: 3.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,7 @@ Hello! ☀️ I built AI Engine to bring OpenAI, Claude, and other AI models int
 
 For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [REST endpoints](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/), and [MCP support](https://ai.thehiddendocs.com/mcp/). Build AI features, automate workflows, or create SaaS applications on WordPress.
 
-Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), or [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/) through MCP, giving AI direct access to your site. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
+Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://openclaw.com/) through MCP, giving AI direct access to your site. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
 
 You'll be having a blast before you've explored everything.
 
@@ -32,8 +32,8 @@ You'll be having a blast before you've explored everything.
 🤖 **Chatbots**
 Create intelligent chatbots with customizable themes, realtime audio, and multi-file support. Features modular UI Builder, conversation memory, and MacOS-style components.
 
-🎨 **Content & Images**
-Generate content, translate text, create images from prompts, and use Copilot in the WordPress editor for instant suggestions and rewrites.
+🎨 **Content & Media**
+Generate content, translate text, create images and videos from prompts, and use Copilot in the WordPress editor to correct, enhance, translate, or rewrite text.
 
 📝 **AI Forms**
 Build custom AI-powered forms that handle text, images, audio, or file uploads. Create advanced apps with conditional logic.
@@ -43,6 +43,12 @@ Fine-tune models, create embeddings, and build knowledge bases from PDFs. Connec
 
 🔧 **Function Calling**
 Connect AI to WordPress functions, WooCommerce, appointments, or custom APIs. Let AI interact with your site's data and services in real-time.
+
+🛡️ **Security & Moderation**
+IP banning, word filtering, and content moderation to keep your AI interactions safe.
+
+💡 **Advisor**
+AI-powered recommendations and insights to help you set up and optimize your WordPress site.
 
 🔌 **Developer Tools**
 Internal APIs, REST endpoints, MCP support, and extensive hooks. Build AI-driven features, automate workflows, or create SaaS applications.
@@ -61,20 +67,23 @@ Transform visitor interactions with intelligent, customizable chatbots.
 * Cross-site embedding
 * GDPR compliance tools
 
-== 🎨 Content & Images ==
+== 🎨 Content & Media ==
 
 Create, refine, and visualize content with AI assistance.
 
-**Content Generation:**
+**Copilot (Magic Wand):**
 
-* Generate posts in your voice
-* Translate naturally across languages
-* Copilot integration in WordPress editor
-* Real-time suggestions and rewrites
+* Correct grammar and spelling
+* Enhance text for readability and quality
+* Make text longer or shorter
+* Translate text and full posts
+* Generate content from scratch
+* Multi-block support in the WordPress editor
 
-**Image Tools:**
+**Image & Video Tools:**
 
 * Create images from text prompts
+* Generate videos with AI (Sora)
 * Edit existing images with AI
 * Vision AI for image analysis
 * Automatic alt text generation
@@ -133,7 +142,7 @@ Extend WordPress with AI capabilities.
 
 == MCP (Model Context Protocol) ==
 
-AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT, Claude, and Claude Code can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
+AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT, Claude, Claude Code, and OpenClaw can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
 
 **What AI Agents Can Do:**
 
@@ -143,6 +152,9 @@ AI Engine turns your WordPress site into an intelligent MCP server. AI agents li
 * Customize themes
 * Check SEO and analytics
 * Manage media files
+* Run SQL queries
+* Manage WooCommerce products, orders, inventory, and customers
+* Handle Polylang translations
 
 **Setup Guides:**
 
@@ -170,7 +182,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 * **Cross-Site Chatbots** — Embed your chatbots on external websites.
 * **Realtime Audio** — Voice-based conversations with AI in real time.
 * **Statistics & Usage Control** — Track usage, set limits per role, and monitor costs.
-* **MCP Tools** — Manage plugins, themes, and Polylang translations through AI agents.
+* **Extra MCP Tools** — Adds plugin, theme, database, Polylang, and WooCommerce management to the MCP server.
 * **Priority Support** — Get faster help from the Meow Apps team.
 
 == Why AI Engine? ==
@@ -183,6 +195,9 @@ Support for multiple AI providers: OpenAI, Anthropic, Google, OpenRouter, Mistra
 
 **Developer Friendly**
 Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire SaaS applications on WordPress.
+
+**Real MCP, for Real WordPress**
+You may have heard of MCP Adapter, built by the WordPress team primarily for their WordPress.com hosting service. It's essentially a thin layer on top of the REST API. AI Engine takes a different approach: its MCP tools are specifically crafted for AI agents, with rich context, smart defaults, and practical actions that go far beyond what a generic REST API wrapper can offer. And it works on any WordPress installation, regardless of your hosting provider. AI Engine also exposes its REST API as MCP tools if you want that, but the dedicated tools are where the real power is.
 
 **Privacy First**
 IP hashing, GDPR tools, secure file handling, and session-based tracking. You control your data.
@@ -224,7 +239,7 @@ AI Engine can be used by site owners, administrators, and visitors via chat widg
 
 = Does the chatbot support my language? =
 
-AI models support many languages, but quality varies. There's no definitive list since models are constantly updated. [Test your language](https://ai.thehiddendocs.com/faq/does-it-support-my-language) in the AI Playground.
+AI models support many languages, but quality varies. There's no definitive list since models are constantly updated. Test your language in the AI Playground.
 
 = How does MCP work, and what can I do with it? =
 
@@ -247,6 +262,13 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.7 (2026/02/14) =
+* Add: Introduced role-based access control for MCP with three levels (admin, read-write, read-only).
+* Add: Improved Content Aware features (better placeholder replacement, more accurate context detection, etc).
+* Fix: Automatic bearer token generation when MCP is first enabled.
+* Update: Improvements in the Realtime module, more to come soon.  
+* Update: OpenAI now exclusively uses the Responses API, simplified and optimized the code.
 
 = 3.3.6 (2026/02/06) =
 * Add: Support for the new Claude Opus 4.6 and Opus 4.5 models for improved AI responses.
@@ -282,7 +304,6 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 * 🎵 Discuss with others about Ai Engine on [the Discord](https://discord.gg/bHDGh38).
 * 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
 * 🥰 If you want to help us, check our [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 3.3.2 (2026/01/23) =
 * Add: New "Remote URL" feature for Embeddings to create and auto-sync embeddings from external URLs with change detection.  

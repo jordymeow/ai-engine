@@ -502,7 +502,7 @@ i18n.SETTINGS = {
   MODULES_INTRO: __( 'To avoid cluttering the UI and your WP, only enable the features you need.', 'ai-engine' ),
   ALERT_INJECT_BUT_NO_POPUP: __( 'You choose to inject the chatbot in your website. You probably also want to use the chatbot in a Popup.', 'ai-engine' ),
   ALERT_CASUALLY_BUT_NO_FINETUNE: __( 'Normally, you should not check the Casually Fine Tuned option with a non-finetuned model. Make sure that\'s what you want.', 'ai-engine' ),
-  ALERT_CONTENTAWARE_BUT_NO_CONTENT: __( 'Content Aware requires your Context to use the {CONTENT} placeholder. It will be replaced by the content of page the chatbot is on. More info %s.', 'ai-engine' ),
+  ALERT_CONTENTAWARE_BUT_NO_CONTENT: __( 'Content Aware requires your Instructions to use at least one placeholder. More info %s.', 'ai-engine' ),
   ALERT_CONTENTAWARE_URL: 'https://meowapps.com/ai-engine/tutorial/#contextualization',
   ALERT_CONTENTAWARE_LINK_TEXT: __( 'here ↗', 'ai-engine' ),
   SET_AS_DEFAULT_PARAMETERS: __( 'Set as Default Parameters', 'ai-engine' ),

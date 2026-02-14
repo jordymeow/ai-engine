@@ -408,11 +408,11 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       }
       // Use dynamic thinking by default (-1 lets the model decide)
       $body['generationConfig']['thinkingConfig']['thinkingBudget'] = -1;
-      
+
       // Always include thought summaries when thinking is enabled
       // This allows us to see thinking events in the UI
       $body['generationConfig']['thinkingConfig']['includeThoughts'] = true;
-      
+
       // Log that thinking is enabled
       if ( $this->core->get_option( 'queries_debug_mode' ) ) {
         error_log( '[AI Engine] Thinking tool enabled for Gemini with dynamic budget' );
@@ -699,7 +699,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           // Extract base64 data from data URL if needed
           if ( strpos( $imageDataUrl, 'data:' ) === 0 ) {
             // Extract base64 portion from data URL
-            $base64Part = substr( $imageDataUrl, strpos( $imageDataUrl, ',') + 1 );
+            $base64Part = substr( $imageDataUrl, strpos( $imageDataUrl, ',' ) + 1 );
             $returned_choices[] = [ 'b64_json' => $base64Part ];
           }
           else {
@@ -739,17 +739,17 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       // Handle usage metadata including thinking tokens if present
       if ( isset( $data['usageMetadata'] ) ) {
         $usageMetadata = $data['usageMetadata'];
-        
+
         // Extract thinking tokens if available
         if ( isset( $usageMetadata['thoughtsTokenCount'] ) ) {
           $reply->extraData['thoughtsTokenCount'] = $usageMetadata['thoughtsTokenCount'];
-          
+
           // Log thinking tokens in debug mode
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
             error_log( '[AI Engine Queries] Thinking tokens used: ' . $usageMetadata['thoughtsTokenCount'] );
           }
         }
-        
+
         // Pass token counts if available
         $inTokens = isset( $usageMetadata['promptTokenCount'] ) ? $usageMetadata['promptTokenCount'] : null;
         $outTokens = isset( $usageMetadata['candidatesTokenCount'] ) ? $usageMetadata['candidatesTokenCount'] : null;
@@ -758,7 +758,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       else {
         $this->handle_tokens_usage( $reply, $query, $query->model, null, null );
       }
-      
+
       return $reply;
     }
     catch ( Exception $e ) {
@@ -789,7 +789,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     if ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
       // Google provides token counts from API = tokens accuracy
       $reply->set_usage_accuracy( 'tokens' );
-    } else {
+    }
+    else {
       // Fallback to estimated
       $reply->set_usage_accuracy( 'estimated' );
     }
@@ -831,6 +832,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     $special_names = [
       'gemini-live-2.5-flash-preview' => 'Gemini 2.5 Flash Live',
       'gemini-2.0-flash-live-001' => 'Gemini 2.0 Flash Live',
+      'gemini-2.5-flash-native-audio-preview-12-2025' => 'Gemini 2.5 Flash Audio (12-2025)',
+      'gemini-2.5-flash-native-audio-preview-09-2025' => 'Gemini 2.5 Flash Audio (09-2025)',
     ];
 
     if ( isset( $special_names[$model_id] ) ) {
@@ -839,26 +842,26 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
     // Store original for differentiating similar models
     $original_id = $model_id;
-    
+
     // Remove common suffixes but keep track if we need to differentiate
     $cleaned = $model_id;
-    
+
     // Extract date suffix if present (like -preview-03-25)
     $date_suffix = '';
     if ( preg_match( '/-preview-(\d{2}-\d{2})(?:-thinking)?$/', $cleaned, $matches ) ) {
       $date_suffix = $matches[1];
       $cleaned = preg_replace( '/-preview-\d{2}-\d{2}(?:-thinking)?$/', '', $cleaned );
     }
-    
+
     // Check if it's a thinking model
     $is_thinking = strpos( $original_id, '-thinking' ) !== false;
     if ( $is_thinking ) {
       $cleaned = str_replace( '-thinking', '', $cleaned );
     }
-    
+
     // Check if it's a TTS preview model
     $is_preview_tts = strpos( $original_id, 'preview-tts' ) !== false;
-    
+
     // Keep version suffixes (like -001, -002) if they help distinguish models
     $has_version_suffix = preg_match( '/-\d{3}$/', $cleaned );
     $version_suffix = '';
@@ -867,16 +870,16 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $version_suffix = $matches[1];
       $cleaned = preg_replace( '/-\d{3}$/', '', $cleaned );
     }
-    
+
     // Track if it's a preview model
     $is_preview = strpos( $cleaned, '-preview' ) !== false || !empty( $date_suffix );
     $cleaned = preg_replace( '/-preview$/', '', $cleaned );
-    
+
     // Track if it's experimental
     $is_experimental = strpos( $original_id, '-exp' ) !== false;
     $cleaned = preg_replace( '/-exp$/', '', $cleaned );
     $cleaned = preg_replace( '/-generate$/', '', $cleaned );
-    
+
     // Don't remove -latest suffix here, we'll handle it separately
     $has_latest = strpos( $cleaned, '-latest' ) !== false;
     $cleaned = preg_replace( '/-latest$/', '', $cleaned );
@@ -964,25 +967,25 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     else if ( strpos( $name, 'Veo 2.0' ) === 0 ) {
       $name = str_replace( 'Veo 2.0', 'Veo 2', $name );
     }
-    
+
     // Remove date pattern "xx xx" where x are numbers (like "03 07") from the name
     if ( preg_match( '/\s(\d{2})\s(\d{2})$/', $name, $matches ) ) {
       $name = preg_replace( '/\s\d{2}\s\d{2}$/', '', $name );
     }
-    
+
     // Add suffixes to distinguish similar models
     $suffixes = [];
 
     // Don't add date suffixes - we want clean model names
     // Don't add Preview suffix - we already have a preview tag
-    
+
     // Add version suffix for numbered models (like -001, -002)
     // Special handling: if base model exists (without -001), then -001 should be marked
     if ( !empty( $version_suffix ) ) {
       // Extract just the number without the dash
       $version_num = str_replace( '-', '', $version_suffix );
       $version_int = intval( $version_num );
-      
+
       // Always add version suffix for -001 if it's not the only version
       // This helps distinguish when both base and -001 exist
       if ( $version_int === 1 ) {
@@ -993,25 +996,26 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
              strpos( $original_id, 'flash-lite-001' ) !== false ) {
           $suffixes[] = 'v1';
         }
-      } else {
+      }
+      else {
         // For -002 and higher, always add version
         $suffixes[] = 'v' . ltrim( $version_num, '0' );
       }
     }
-    
+
     // Don't add "Latest" suffix in name - we use the 'latest' tag instead
     // This avoids duplicate "LATEST" information in the UI
-    
+
     // Handle thinking models
     if ( $is_thinking && strpos( $name, 'Thinking' ) === false ) {
       $suffixes[] = 'Thinking';
     }
-    
+
     // Handle TTS preview models
     if ( $is_preview_tts ) {
       $suffixes[] = 'Preview TTS';
     }
-    
+
     // Append all suffixes with parentheses
     if ( !empty( $suffixes ) ) {
       $name .= ' (' . implode( ', ', $suffixes ) . ')';
@@ -1170,6 +1174,12 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $features[] = 'audio';
         }
 
+        // Realtime (Live API) capabilities
+        if ( strpos( $model_id, 'live' ) !== false || strpos( $model_id, 'native-audio' ) !== false ) {
+          $tags[] = 'realtime';
+          $features[] = 'realtime';
+        }
+
         // TTS capabilities
         if ( preg_match( '/(tts|text-to-speech)/', $model_id ) ) {
           $tags[] = 'tts';
@@ -1204,8 +1214,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       }
 
       $nice_name = $this->format_model_name( $model_id );
-      
-      
+
       $model = [
         'model' => $model_id,
         'name' => $nice_name,
@@ -1292,7 +1301,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         // Gemini embedding models have 768 dimensions (text-embedding-004) or 3072 (experimental)
         if ( strpos( $model_id, 'text-embedding-004' ) !== false ) {
           $model['dimensions'] = [ 768 ];
-        } else {
+        }
+        else {
           $model['dimensions'] = [ 3072 ];
         }
       }
@@ -1306,6 +1316,48 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $models[] = $model;
     }
 
+    // Append hardcoded Gemini Live API models (not returned by /models endpoint)
+    $live_models = [
+      [
+        'model' => 'gemini-2.5-flash-native-audio-preview-12-2025',
+        'name' => $this->format_model_name( 'gemini-2.5-flash-native-audio-preview-12-2025' ),
+        'family' => 'gemini',
+        'features' => [ 'completion', 'realtime' ],
+        'type' => 'token',
+        'unit' => 1 / 1000,
+        'maxCompletionTokens' => 8192,
+        'maxContextualTokens' => 128000,
+        'tags' => [ 'core', 'chat', 'functions', 'realtime', 'audio', 'preview' ],
+        'tools' => [ 'function_calling' ],
+      ],
+      [
+        'model' => 'gemini-2.5-flash-native-audio-preview-09-2025',
+        'name' => $this->format_model_name( 'gemini-2.5-flash-native-audio-preview-09-2025' ),
+        'family' => 'gemini',
+        'features' => [ 'completion', 'realtime' ],
+        'type' => 'token',
+        'unit' => 1 / 1000,
+        'maxCompletionTokens' => 8192,
+        'maxContextualTokens' => 128000,
+        'tags' => [ 'core', 'chat', 'functions', 'realtime', 'audio', 'preview' ],
+        'tools' => [ 'function_calling' ],
+      ],
+    ];
+    foreach ( $live_models as $lm ) {
+      // Only add if not already present (in case Google starts listing them)
+      $exists = false;
+      foreach ( $models as $existing ) {
+        if ( $existing['model'] === $lm['model'] ) {
+          $exists = true;
+          break;
+        }
+      }
+      if ( !$exists ) {
+        error_log( '[AI Engine]   -> Including (hardcoded): ' . $lm['model'] . ' → "' . $lm['name'] . '"' );
+        $models[] = $lm;
+      }
+    }
+
     // Second pass: Copy tags/features from versioned models to their -latest aliases
     foreach ( $models as &$model ) {
       if ( in_array( 'latest', $model['tags'] ?? [] ) ) {
@@ -1317,7 +1369,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         $pattern = '/^' . preg_quote( str_replace( 'gemini-', '', $alias_base ), '/' ) . '$/';
 
         // Find all matching versioned models and pick the highest version
-        $versioned_models = array_filter( $models, function( $m ) use ( $alias_base ) {
+        $versioned_models = array_filter( $models, function ( $m ) use ( $alias_base ) {
           // Match models like gemini-2.5-flash for alias gemini-flash-latest
           $model_id = $m['model'];
 
@@ -1331,7 +1383,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
         if ( !empty( $versioned_models ) ) {
           // Sort by version number (descending) to get the latest
-          usort( $versioned_models, function( $a, $b ) {
+          usort( $versioned_models, function ( $a, $b ) {
             preg_match( '/gemini-(\d+\.\d+)/', $a['model'], $matches_a );
             preg_match( '/gemini-(\d+\.\d+)/', $b['model'], $matches_b );
             $version_a = isset( $matches_a[1] ) ? floatval( $matches_a[1] ) : 0;
@@ -1364,9 +1416,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
 
     // Summary logging
     $totalModels = count( $models );
-    $latestModels = array_filter( $models, function( $m ) { return in_array( 'latest', $m['tags'] ?? [] ); } );
-    $visionModels = array_filter( $models, function( $m ) { return in_array( 'vision', $m['tags'] ?? [] ); } );
-    $embeddingModels = array_filter( $models, function( $m ) { return in_array( 'embedding', $m['tags'] ?? [] ); } );
+    $latestModels = array_filter( $models, function ( $m ) { return in_array( 'latest', $m['tags'] ?? [] ); } );
+    $visionModels = array_filter( $models, function ( $m ) { return in_array( 'vision', $m['tags'] ?? [] ); } );
+    $embeddingModels = array_filter( $models, function ( $m ) { return in_array( 'embedding', $m['tags'] ?? [] ); } );
 
     error_log( '[AI Engine] ========================================' );
     error_log( '[AI Engine] Google Models Retrieval - Summary:' );
@@ -1375,34 +1427,34 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     error_log( '[AI Engine]   Vision models: ' . count( $visionModels ) );
     error_log( '[AI Engine]   Embedding models: ' . count( $embeddingModels ) );
     error_log( '[AI Engine] ========================================' );
-    
+
     // Sort models to put most recent versions first
-    usort( $models, function( $a, $b ) {
+    usort( $models, function ( $a, $b ) {
       // First, sort by family (gemini, imagen, veo)
       $family_order = [ 'gemini' => 1, 'imagen' => 2, 'veo' => 3 ];
       $family_a = $family_order[$a['family']] ?? 999;
       $family_b = $family_order[$b['family']] ?? 999;
-      
+
       if ( $family_a !== $family_b ) {
         return $family_a - $family_b;
       }
-      
+
       // Within the same family, extract version numbers and sort descending
       $model_a = $a['model'];
       $model_b = $b['model'];
-      
+
       // Extract version numbers (e.g., 2.5, 2.0, 1.5, 1.0)
       preg_match( '/(\d+\.\d+)/', $model_a, $matches_a );
       preg_match( '/(\d+\.\d+)/', $model_b, $matches_b );
-      
+
       $version_a = isset( $matches_a[1] ) ? floatval( $matches_a[1] ) : 0;
       $version_b = isset( $matches_b[1] ) ? floatval( $matches_b[1] ) : 0;
-      
+
       // Sort by version descending (newer first)
       if ( $version_a !== $version_b ) {
         return $version_b <=> $version_a;
       }
-      
+
       // For same version, sort by model variant
       // Priority: pro > flash > flash-8b > flash-lite
       $variant_order = [
@@ -1411,47 +1463,71 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         'flash-8b' => 3,
         'flash-lite' => 4,
       ];
-      
+
       // Determine variant
       $variant_a = 'other';
       $variant_b = 'other';
-      
-      if ( strpos( $model_a, 'pro' ) !== false ) $variant_a = 'pro';
-      elseif ( strpos( $model_a, 'flash-lite' ) !== false ) $variant_a = 'flash-lite';
-      elseif ( strpos( $model_a, 'flash-8b' ) !== false ) $variant_a = 'flash-8b';
-      elseif ( strpos( $model_a, 'flash' ) !== false ) $variant_a = 'flash';
-      
-      if ( strpos( $model_b, 'pro' ) !== false ) $variant_b = 'pro';
-      elseif ( strpos( $model_b, 'flash-lite' ) !== false ) $variant_b = 'flash-lite';
-      elseif ( strpos( $model_b, 'flash-8b' ) !== false ) $variant_b = 'flash-8b';
-      elseif ( strpos( $model_b, 'flash' ) !== false ) $variant_b = 'flash';
-      
+
+      if ( strpos( $model_a, 'pro' ) !== false ) {
+        $variant_a = 'pro';
+      }
+      elseif ( strpos( $model_a, 'flash-lite' ) !== false ) {
+        $variant_a = 'flash-lite';
+      }
+      elseif ( strpos( $model_a, 'flash-8b' ) !== false ) {
+        $variant_a = 'flash-8b';
+      }
+      elseif ( strpos( $model_a, 'flash' ) !== false ) {
+        $variant_a = 'flash';
+      }
+
+      if ( strpos( $model_b, 'pro' ) !== false ) {
+        $variant_b = 'pro';
+      }
+      elseif ( strpos( $model_b, 'flash-lite' ) !== false ) {
+        $variant_b = 'flash-lite';
+      }
+      elseif ( strpos( $model_b, 'flash-8b' ) !== false ) {
+        $variant_b = 'flash-8b';
+      }
+      elseif ( strpos( $model_b, 'flash' ) !== false ) {
+        $variant_b = 'flash';
+      }
+
       $order_a = $variant_order[$variant_a] ?? 999;
       $order_b = $variant_order[$variant_b] ?? 999;
-      
+
       if ( $order_a !== $order_b ) {
         return $order_a - $order_b;
       }
-      
+
       // For same variant, sort by specific suffixes
       // Base model > latest > dated previews > numbered versions
       $is_base_a = !preg_match( '/-(?:latest|preview|\d{3})/', $model_a );
       $is_base_b = !preg_match( '/-(?:latest|preview|\d{3})/', $model_b );
-      
-      if ( $is_base_a && !$is_base_b ) return -1;
-      if ( !$is_base_a && $is_base_b ) return 1;
-      
+
+      if ( $is_base_a && !$is_base_b ) {
+        return -1;
+      }
+      if ( !$is_base_a && $is_base_b ) {
+        return 1;
+      }
+
       // Latest comes after base
       $is_latest_a = strpos( $model_a, '-latest' ) !== false;
       $is_latest_b = strpos( $model_b, '-latest' ) !== false;
-      
-      if ( $is_latest_a && !$is_latest_b ) return -1;
-      if ( !$is_latest_a && $is_latest_b ) return 1;
-      
+
+      if ( $is_latest_a && !$is_latest_b ) {
+        return -1;
+      }
+      if ( !$is_latest_a && $is_latest_b ) {
+        return 1;
+      }
+
       // Then preview models (sorted by date descending)
       preg_match( '/-preview-(\d{2})-(\d{2})/', $model_a, $date_a );
       preg_match( '/-preview-(\d{2})-(\d{2})/', $model_b, $date_b );
-      
+
       if ( !empty( $date_a ) && !empty( $date_b ) ) {
         // Compare dates (month then day)
         $month_a = intval( $date_a[1] );
@@ -1463,22 +1539,26 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
         $day_b = intval( $date_b[2] );
         return $day_b - $day_a; // Descending
       }
-      
-      if ( !empty( $date_a ) && empty( $date_b ) ) return -1;
-      if ( empty( $date_a ) && !empty( $date_b ) ) return 1;
-      
+
+      if ( !empty( $date_a ) && empty( $date_b ) ) {
+        return -1;
+      }
+      if ( empty( $date_a ) && !empty( $date_b ) ) {
+        return 1;
+      }
+
       // Finally, numbered versions (descending)
       preg_match( '/-(\d{3})$/', $model_a, $num_a );
       preg_match( '/-(\d{3})$/', $model_b, $num_b );
-      
+
       if ( !empty( $num_a ) && !empty( $num_b ) ) {
         return intval( $num_b[1] ) - intval( $num_a[1] );
       }
-      
+
       // Fallback to string comparison
       return strcasecmp( $model_a, $model_b );
-    });
-    
+    } );
+
     return $models;
   }
 

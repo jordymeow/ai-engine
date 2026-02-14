@@ -154,7 +154,6 @@ define( 'MWAI_OPTIONS', [
   'ai_models' => [],
   'ai_models_usage' => [],
   'ai_streaming' => true,
-  'ai_responses_api' => true,
   'ai_default_env' => null,
   'ai_default_model' => MWAI_FALLBACK_MODEL,
   'ai_envs' => [
@@ -219,6 +218,7 @@ define( 'MWAI_OPTIONS', [
   'debug_mode' => false,
   'server_debug_mode' => false,
   'mcp_debug_mode' => false,
+  'mcp_role' => 'admin',
   'queries_debug_mode' => false,
   'logs_path' => null,
   'resolve_shortcodes' => false,
@@ -229,7 +229,7 @@ define( 'MWAI_OPTIONS', [
   'languages' => MWAI_LANGUAGES,
   'custom_languages' => [
     'English (en)',
-    'German (de)', 
+    'German (de)',
     'French (fr)',
     'Spanish (es)',
     'Italian (it)',

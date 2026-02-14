@@ -1048,8 +1048,8 @@ class Meow_MWAI_Modules_Chatbot {
       // This prevents rest_cookie_invalid_nonce errors for logged-in users by ensuring the nonce
       // matches their authentication context from the start.
       'restNonce' => $crossSite ? null : $this->core->get_nonce(),
-      'contextId' => get_the_ID(),
-      'pluginUrl' => MWAI_URL,
+      'contextId' => is_singular() ? get_the_ID() : null,
+      'pluginUrl' => untrailingslashit( MWAI_URL ),
       'restUrl' => untrailingslashit( get_rest_url() ),
       'stream' => $this->core->get_option( 'ai_streaming' ),
       'debugMode' => $this->core->get_option( 'module_devtools' ) && $this->core->get_option( 'debug_mode' ),

@@ -34,6 +34,7 @@ class Meow_MWAI_Labs_MCP_Rest {
                 'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
+                'accessLevel' => 'read',
               ];
               break;
             }
@@ -49,6 +50,7 @@ class Meow_MWAI_Labs_MCP_Rest {
                 'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
+                'accessLevel' => 'read',
               ];
               break;
             }
@@ -64,6 +66,7 @@ class Meow_MWAI_Labs_MCP_Rest {
                 'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
+                'accessLevel' => 'write',
               ];
               break;
             }
@@ -80,6 +83,7 @@ class Meow_MWAI_Labs_MCP_Rest {
                 'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
+                'accessLevel' => 'write',
               ];
               break;
             }
@@ -95,6 +99,7 @@ class Meow_MWAI_Labs_MCP_Rest {
                 'category' => 'Dynamic REST',
                 'inputSchema' => $this->build_schema_from_args( $endpoint['args'] ),
                 'outputSchema' => $this->build_output_schema(),
+                'accessLevel' => 'admin',
               ];
               break;
             }

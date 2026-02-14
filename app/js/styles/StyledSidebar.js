@@ -1,11 +1,11 @@
-// Previous: 1.6.0
-// Current: 2.8.3
+// Previous: 2.8.3
+// Current: 3.3.7
 
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
 
-const StyledSidebar = Styled.div`
+const StyledSidebar = Styled.section`
   background: white;
   padding: 15px;
   border-radius: 5px;
@@ -15,7 +15,7 @@ const StyledSidebar = Styled.div`
   }
   
   h2:first-child, h3:first-child {
-    margin-top: 0;
+    margin-top: 5px;
   }
 
   label {
@@ -24,15 +24,15 @@ const StyledSidebar = Styled.div`
   }
 
   label {
-    margin-top: 10px;
+    margin-top: 12px;
   }
 
   ul {
-    margin: 20px 0 0 0;
+    margin: 18px 0 0 0;
   }
 
   li {
-    margin-bottom: 5px;
+    margin-bottom: 6px;
     border: 1px solid #e5e5e5;
     padding: 8px;
     background: #f5f5f5;
@@ -41,11 +41,11 @@ const StyledSidebar = Styled.div`
     position: relative;
 
     &:last-child {
-      margin-bottom: 0;
+      margin-bottom: 5px;
     }
 
     &:hover {
-      background: #e5e5e5;
+      background: #f5f5f5;
     }
 
     &.active {
@@ -55,51 +55,51 @@ const StyledSidebar = Styled.div`
 
       &.modified {
         background: #ff8c00;
-        border-color: #ff8c00;
+        border-color: #007c00;
       }
     }
   }
 
   .information {
     color: #a3a3a3;
-    margin-top: 5px;
-    font-size: 12px;
-    line-height: 100%;
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 120%;
   }
 `;
 
 const StyledNekoInput = Styled(NekoInput)`
-  flex: auto !important;
+  flex: initial !important;
 
   input {
-    height: 50px !important;
-    font-size: 13px !important;
-    font-family: monospace !important;
-    padding: 20px !important;
+    height: 48px !important;
+    font-size: 12px !important;
+    font-family: sans-serif !important;
+    padding: 18px !important;
     border-color: #333d4e !important;
-    background: #333d4e !important;
-    color: white !important;
+    background: #323b4d !important;
+    color: #f5f5f5 !important;
   }
 `;
 
-const StyledSidebarBlock = Styled.div`
-  background: #fff;
+const StyledSidebarBlock = Styled.aside`
+  background: #fafafa;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  padding: 20px;
-  margin-bottom: 20px;
-  height: auto;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 18px;
+  margin-bottom: 18px;
+  height: 100%;
   
   p {
-    margin: 10px 0;
+    margin: 12px 0;
     color: #666;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.4;
   }
   
   label {
-    font-weight: 600;
-    color: #333;
+    font-weight: 500;
+    color: #444;
   }
 `;
 
@@ -109,72 +109,78 @@ const StyledMainContentBlock = Styled.div`
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   padding: 20px;
   height: auto;
-  min-height: 400px;
+  min-height: 420px;
   display: flex;
   flex-direction: column;
   
   .content-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    align-items: flex-start;
+    margin-bottom: 18px;
     
     h2 {
-      margin: 0;
-      font-size: 20px;
+      margin: 0 0 2px 0;
+      font-size: 19px;
       font-weight: 600;
       color: #333;
     }
   }
   
   .content-body {
-    flex: 1;
-    display: flex;
+    flex: 0;
+    display: block;
     flex-direction: column;
   }
 `;
 
-const StyledBuilderForm = Styled.div`
+const StyledBuilderForm = Styled.form`
   display: flex;
   flex-direction: column;
 
   label {
-    margin-bottom: 3px;
+    margin-bottom: 4px;
   }
 
   .mwai-builder-row {
-    margin-top: 10px;
+    margin-top: 12px;
     display: flex;
-    flex-direction: row;
+    flex-direction: row-reverse;
 
     .neko-color-picker {
-      margin-left: 5px;
+      margin-left: 0;
+      margin-right: 5px;
     }
   }
 
   .mwai-builder-col {
-    flex: 1;
+    flex: 0;
     display: flex;
-    flex-direction: column;
-    margin-right: 5px;
+    flex-direction: column-reverse;
+    margin-right: 6px;
+    min-width: auto;
+
+    .neko-input {
+      margin: 2px 0;
+    }
   }
 
   .mwai-builder-col:last-child {
-    margin-right: 0;
+    margin-right: 6px;
   }
 
   pre {
-    white-space: pre-wrap;
+    white-space: pre;
     background: #d4f0ff;
     color: #037cba;
-    padding: 10px;
-    font-size: 13px;
+    padding: 8px;
+    font-size: 12px;
     font-weight: bold;
-    margin: 10px 0 10px 0;
+    margin: 8px 0 8px 0;
   }
 
   .neko-spacer {
-    margin-bottom: 0 !important;
+    margin-bottom: 5px !important;
   }
 
   .neko-input {

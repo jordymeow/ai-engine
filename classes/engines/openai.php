@@ -71,17 +71,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   }
 
   /**
-  * Check if a model should use the new Responses API
+  * Check if a model should use the Responses API
   */
   protected function should_use_responses_api( $model ) {
-    // First check if Responses API is enabled in settings
-    $options = $this->core->get_all_options();
-    $responsesApiEnabled = $options['ai_responses_api'] ?? true;
-
-    if ( !$responsesApiEnabled ) {
-      return false;
-    }
-
     // Check if this is a prompt query - prompts REQUIRE Responses API
     if ( isset( $this->currentQuery ) ) {
       $promptData = $this->currentQuery->getExtraParam( 'prompt' );
@@ -89,9 +81,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         return true;
       }
     }
-
-    // Azure supports Responses API in preview
-    // Model tag check below will determine if the specific model supports it
 
     // Check if the model has the 'responses' tag
     $modelInfo = $this->retrieve_model_info( $model );
@@ -653,55 +642,6 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     }
 
     return $messages;
-  }
-
-  /**
-  * Convert functions to Responses API tools format
-  */
-  protected function build_responses_tools( $functions ) {
-    $tools = [];
-
-    foreach ( $functions as $function ) {
-      $functionData = $function->serializeForOpenAI();
-
-      // Ensure the function data has all required fields
-      if ( !isset( $functionData['name'] ) || empty( $functionData['name'] ) ) {
-        Meow_MWAI_Logging::warn( 'Function missing required name field' );
-        continue;
-      }
-
-      // Responses API expects a flatter structure
-      $parameters = $functionData['parameters'] ?? null;
-
-      // Ensure parameters has the correct structure
-      if ( !$parameters ) {
-        $parameters = [
-          'type' => 'object',
-          'properties' => new stdClass(),
-          'required' => []
-        ];
-      }
-      else {
-        // Ensure properties is an object, not an array when empty
-        if ( isset( $parameters['properties'] ) &&
-              is_array( $parameters['properties'] ) &&
-                  empty( $parameters['properties'] ) ) {
-          $parameters['properties'] = new stdClass();
-        }
-      }
-
-      $tool = [
-        'type' => 'function',
-        'name' => $functionData['name'],
-        'description' => $functionData['description'] ?? '',
-        'parameters' => $parameters,
-        'strict' => false  // Set to false for now, can be made configurable later
-      ];
-
-      $tools[] = $tool;
-    }
-
-    return $tools;
   }
 
   /**
@@ -1772,49 +1712,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     // Store current query for should_use_responses_api check
     $this->currentQuery = $query;
 
-    // Check if this is a GPT-5 model
-    $isGpt5Model = strpos( $query->model, 'gpt-5' ) === 0;
-
-    // Check which API to use
-    $useResponsesApi = $this->should_use_responses_api( $query->model );
-
-    // GPT-5 models MUST use Responses API
-    if ( $isGpt5Model && !$useResponsesApi ) {
-      $options = $this->core->get_all_options();
-      $responsesApiEnabled = $options['ai_responses_api'] ?? true;
-
-      if ( !$responsesApiEnabled ) {
-        throw new Exception( 'GPT-5 models require the Responses API to be enabled. Please enable "Use Responses API" in AI Engine settings.' );
-      }
-
-      // If Responses API is enabled but model doesn't have the tag, force it
-      return $this->run_responses_completion_query( $query, $streamCallback );
-    }
-
     // Check if we should use Responses API
-    if ( $useResponsesApi ) {
+    if ( $this->should_use_responses_api( $query->model ) ) {
       return $this->run_responses_completion_query( $query, $streamCallback );
     }
 
     // Fallback to ChatML implementation
-    $reply = parent::run_completion_query( $query, $streamCallback );
-
-    // Check for empty output when reasoning is enabled (GPT-5 models)
-    // This safety check is here in case GPT-5 somehow uses the regular API
-    if ( strpos( $query->model, 'gpt-5' ) === 0 && !empty( $query->reasoning ) ) {
-      if ( empty( $reply->result ) || trim( $reply->result ) === '' ) {
-        if ( empty( $reply->needFeedbacks ) && empty( $reply->needClientActions ) ) {
-          throw new Exception(
-            'The model returned an empty response. This typically happens when reasoning consumes all available tokens. ' .
-            'Please increase the Max Tokens setting to allow space for both reasoning and the actual response. ' .
-            'Current Max Tokens: ' . ( $query->maxTokens ?? 'default' ) . '. ' .
-            'Try setting it to at least ' . ( ( $query->maxTokens ?? 4096 ) + 2000 ) . ' tokens.'
-          );
-        }
-      }
-    }
-
-    return $reply;
+    return parent::run_completion_query( $query, $streamCallback );
   }
 
   /**

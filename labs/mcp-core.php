@@ -44,6 +44,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'type' => 'object',
           'properties' => [ 'search' => [ 'type' => 'string' ] ],
         ],
+        'accessLevel' => 'read',
       ],
 
       /* -------- Users -------- */
@@ -60,6 +61,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'paged' => [ 'type' => 'integer' ],
           ],
         ],
+        'accessLevel' => 'admin',
       ],
       'wp_create_user' => [
         'name' => 'wp_create_user',
@@ -75,6 +77,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'user_login', 'user_email' ],
         ],
+        'accessLevel' => 'admin',
       ],
       'wp_update_user' => [
         'name' => 'wp_update_user',
@@ -96,6 +99,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'admin',
       ],
 
       /* -------- Comments -------- */
@@ -113,6 +117,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'paged' => [ 'type' => 'integer' ],
           ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_create_comment' => [
         'name' => 'wp_create_comment',
@@ -129,6 +134,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'post_id', 'comment_content' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_update_comment' => [
         'name' => 'wp_update_comment',
@@ -148,6 +154,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'comment_ID' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_delete_comment' => [
         'name' => 'wp_delete_comment',
@@ -160,6 +167,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'comment_ID' ],
         ],
+        'accessLevel' => 'admin',
       ],
 
       /* -------- Options -------- */
@@ -171,6 +179,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'properties' => [ 'key' => [ 'type' => 'string' ] ],
           'required' => [ 'key' ],
         ],
+        'accessLevel' => 'admin',
       ],
       'wp_update_option' => [
         'name' => 'wp_update_option',
@@ -183,6 +192,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'key', 'value' ],
         ],
+        'accessLevel' => 'admin',
       ],
 
       /* -------- Counts -------- */
@@ -193,6 +203,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'type' => 'object',
           'properties' => [ 'post_type' => [ 'type' => 'string' ] ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_count_terms' => [
         'name' => 'wp_count_terms',
@@ -202,6 +213,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'properties' => [ 'taxonomy' => [ 'type' => 'string' ] ],
           'required' => [ 'taxonomy' ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_count_media' => [
         'name' => 'wp_count_media',
@@ -213,6 +225,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'before' => [ 'type' => 'string' ],
           ],
         ],
+        'accessLevel' => 'read',
       ],
 
       /* -------- Post-types -------- */
@@ -220,6 +233,7 @@ class Meow_MWAI_Labs_MCP_Core {
         'name' => 'wp_get_post_types',
         'description' => 'List public post types (key, label).',
         'inputSchema' => $this->empty_schema(),
+        'accessLevel' => 'read',
       ],
 
       /* -------- Posts -------- */
@@ -239,6 +253,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'paged' => [ 'type' => 'integer' ],
           ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_get_post' => [
         'name' => 'wp_get_post',
@@ -248,6 +263,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'properties' => [ 'ID' => [ 'type' => 'integer' ] ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_get_post_snapshot' => [
         'name' => 'wp_get_post_snapshot',
@@ -269,6 +285,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_create_post' => [
         'name' => 'wp_create_post',
@@ -286,6 +303,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'post_title' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_update_post' => [
         'name' => 'wp_update_post',
@@ -317,6 +335,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_delete_post' => [
         'name' => 'wp_delete_post',
@@ -329,6 +348,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'admin',
       ],
       'wp_alter_post' => [
         'name' => 'wp_alter_post',
@@ -344,6 +364,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID', 'field', 'search', 'replace' ],
         ],
+        'accessLevel' => 'write',
       ],
 
       /* -------- Post-meta -------- */
@@ -358,6 +379,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_update_post_meta' => [
         'name' => 'wp_update_post_meta',
@@ -372,6 +394,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_delete_post_meta' => [
         'name' => 'wp_delete_post_meta',
@@ -385,6 +408,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID', 'key' ],
         ],
+        'accessLevel' => 'admin',
       ],
 
       /* -------- Featured image -------- */
@@ -399,6 +423,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'post_id' ],
         ],
+        'accessLevel' => 'write',
       ],
 
       /* -------- Taxonomies / Terms -------- */
@@ -409,6 +434,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'type' => 'object',
           'properties' => [ 'post_type' => [ 'type' => 'string' ] ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_get_terms' => [
         'name' => 'wp_get_terms',
@@ -423,6 +449,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'taxonomy' ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_create_term' => [
         'name' => 'wp_create_term',
@@ -438,6 +465,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'taxonomy', 'term_name' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_update_term' => [
         'name' => 'wp_update_term',
@@ -454,6 +482,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'term_id', 'taxonomy' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_delete_term' => [
         'name' => 'wp_delete_term',
@@ -466,6 +495,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'term_id', 'taxonomy' ],
         ],
+        'accessLevel' => 'admin',
       ],
       'wp_get_post_terms' => [
         'name' => 'wp_get_post_terms',
@@ -478,6 +508,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_add_post_terms' => [
         'name' => 'wp_add_post_terms',
@@ -492,6 +523,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID', 'terms' ],
         ],
+        'accessLevel' => 'write',
       ],
 
       /* -------- Media -------- */
@@ -507,6 +539,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'limit' => [ 'type' => 'integer' ],
           ],
         ],
+        'accessLevel' => 'read',
       ],
       'wp_upload_media' => [
         'name' => 'wp_upload_media',
@@ -531,6 +564,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'alt' => [ 'type' => 'string' ],
           ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_upload_request' => [
         'name' => 'wp_upload_request',
@@ -548,6 +582,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'filename' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_update_media' => [
         'name' => 'wp_update_media',
@@ -563,6 +598,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'write',
       ],
       'wp_delete_media' => [
         'name' => 'wp_delete_media',
@@ -575,6 +611,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'ID' ],
         ],
+        'accessLevel' => 'admin',
       ],
 
       /* -------- MWAI Vision / Image -------- */
@@ -590,6 +627,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'message' ],
         ],
+        'accessLevel' => 'read',
       ],
       'mwai_image' => [
         'name' => 'mwai_image',
@@ -606,6 +644,7 @@ class Meow_MWAI_Labs_MCP_Core {
           ],
           'required' => [ 'message' ],
         ],
+        'accessLevel' => 'write',
       ],
 
     ];

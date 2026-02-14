@@ -91,9 +91,6 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   }
 
   private function requires_developer_roles( $model ) {
-    if ( $model === 'o1' ) {
-      return true;
-    }
     return false;
   }
 
@@ -192,6 +189,45 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     }
 
     return $messages;
+  }
+
+  /**
+  * Convert functions to Responses API tools format.
+  * Shared by OpenAI and OpenRouter engines.
+  */
+  protected function build_responses_tools( $functions ) {
+    $tools = [];
+    foreach ( $functions as $function ) {
+      $functionData = $function->serializeForOpenAI();
+      if ( !isset( $functionData['name'] ) || empty( $functionData['name'] ) ) {
+        Meow_MWAI_Logging::warn( 'Function missing required name field' );
+        continue;
+      }
+      $parameters = $functionData['parameters'] ?? null;
+      if ( !$parameters ) {
+        $parameters = [
+          'type' => 'object',
+          'properties' => new stdClass(),
+          'required' => []
+        ];
+      }
+      else {
+        if ( isset( $parameters['properties'] ) &&
+              is_array( $parameters['properties'] ) &&
+                  empty( $parameters['properties'] ) ) {
+          $parameters['properties'] = new stdClass();
+        }
+      }
+      $tool = [
+        'type' => 'function',
+        'name' => $functionData['name'],
+        'description' => $functionData['description'] ?? '',
+        'parameters' => $parameters,
+        'strict' => false
+      ];
+      $tools[] = $tool;
+    }
+    return $tools;
   }
 
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
@@ -805,12 +841,6 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       );
     }
 
-    if ( $streamCallback ) {
-      // Disable streaming only for "o1" (as December 2024, it works for preview and mini)
-      if ( $query->model === 'o1' ) {
-        $streamCallback = null;
-      }
-    }
     return parent::run( $query, $streamCallback, $maxDepth );
   }
 

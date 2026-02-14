@@ -31,6 +31,8 @@ class Meow_MWAI_Labs_MCP {
   private $logging = false;
   private $last_action_time = 0;
   private $bearer_token = null;
+  private $mcp_role = 'admin';
+  private $tool_access_levels = [];
   // Placeholder for OAuth integration. Currently unused and kept for
   // future implementation once the security model is revised.
   private $oauth = null;
@@ -62,6 +64,7 @@ class Meow_MWAI_Labs_MCP {
     if ( $this->bearer_token === null ) {
       $this->bearer_token = $this->core->get_option( 'mcp_bearer_token' );
     }
+    $this->mcp_role = $this->core->get_option( 'mcp_role', 'admin' );
 
     // Only add filter once
     static $filter_added = false;
@@ -1069,6 +1072,21 @@ class Meow_MWAI_Labs_MCP {
   }
   #endregion
 
+  #region Access Control
+  private function role_has_access( string $toolLevel ): bool {
+    if ( $this->mcp_role === 'admin' ) {
+      return true;
+    }
+    if ( $this->mcp_role === 'readwrite' ) {
+      return in_array( $toolLevel, [ 'read', 'write' ] );
+    }
+    if ( $this->mcp_role === 'readonly' ) {
+      return $toolLevel === 'read';
+    }
+    return false;
+  }
+  #endregion
+
   #region Tools Definitions
   private function get_tools_list() {
     $base_tools = [
@@ -1085,6 +1103,7 @@ class Meow_MWAI_Labs_MCP {
           'destructiveHint' => false,
           'openWorldHint' => false,
         ],
+        'accessLevel' => 'read',
       ],
     ];
 
@@ -1096,6 +1115,21 @@ class Meow_MWAI_Labs_MCP {
 
     if ( $this->logging ) {
       error_log( '[AI Engine MCP] 🔧 get_tools_list() - After filters: ' . count( $filtered_tools ) . ' tools' );
+    }
+
+    // Build access level map for defense-in-depth checks in execute_tool()
+    foreach ( $filtered_tools as $tool ) {
+      if ( isset( $tool['name'] ) ) {
+        $this->tool_access_levels[ $tool['name'] ] = $tool['accessLevel'] ?? 'admin';
+      }
+    }
+
+    // Filter tools by access level based on the MCP role
+    if ( $this->mcp_role !== 'admin' ) {
+      $filtered_tools = array_filter( $filtered_tools, function ( $tool ) {
+        $level = $tool['accessLevel'] ?? 'admin';
+        return $this->role_has_access( $level );
+      } );
     }
 
     $normalized_tools = [];
@@ -1288,6 +1322,17 @@ class Meow_MWAI_Labs_MCP {
   #region Tools Call (execute_tool)
   private function execute_tool( $tool, $args, $id ) {
     try {
+      // Ensure tool access levels are populated (each HTTP request starts fresh)
+      if ( empty( $this->tool_access_levels ) ) {
+        $this->get_tools_list();
+      }
+
+      // Defense in depth: verify tool access even if it wasn't filtered from the listing
+      $tool_level = $this->tool_access_levels[ $tool ] ?? 'admin';
+      if ( !$this->role_has_access( $tool_level ) ) {
+        return $this->rpc_error( $id, -32600, "Access denied: tool '{$tool}' requires '{$tool_level}' access." );
+      }
+
       // Handle built-in tools first
       if ( $tool === 'mcp_ping' ) {
         if ( $this->logging ) {

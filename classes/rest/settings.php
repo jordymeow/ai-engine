@@ -56,7 +56,12 @@ class Meow_MWAI_Rest_Settings extends Meow_MWAI_Rest_Base {
         'module_tasks' => isset( $params['options']['module_tasks'] ),
         'module_advisor' => isset( $params['options']['module_advisor'] ),
       ] );
-      return $this->create_rest_response( [ 'success' => true ], 200 );
+      if ( !empty( $filters_options['module_mcp'] ) && empty( $this->core->get_option( 'mcp_bearer_token' ) ) ) {
+        $token = bin2hex( random_bytes( 32 ) );
+        $this->core->update_options( [ 'mcp_bearer_token' => $token ] );
+      }
+      $options = $this->core->get_all_options();
+      return $this->create_rest_response( [ 'success' => true, 'options' => $options ], 200 );
     }
     catch ( Exception $e ) {
       return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
@@ -134,13 +139,13 @@ class Meow_MWAI_Rest_Settings extends Meow_MWAI_Rest_Base {
       // Reset the actual backend options that store usage data
       $this->core->update_option( 'ai_usage', [] );
       $this->core->update_option( 'ai_usage_daily', [] );
-      
+
       // Force refresh to get updated options to return to frontend
       $options = $this->core->get_all_options( true );
-      
-      return $this->create_rest_response( [ 
-        'success' => true, 
-        'options' => $options 
+
+      return $this->create_rest_response( [
+        'success' => true,
+        'options' => $options
       ], 200 );
     }
     catch ( Exception $e ) {

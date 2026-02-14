@@ -347,41 +347,6 @@ define( 'MWAI_OPENAI_MODELS', [
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
-            o1
-            High-intelligence reasoning mode
-            https://platform.openai.com/docs/models/o1
-            */
-  [
-    'model' => 'o1',
-    'name' => 'o1',
-    'family' => 'o1',
-    'features' => ['completion'],
-    'price' => [
-      'in' => 15.00,
-      'out' => 60.00,
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 100000,
-    'maxContextualTokens' => 200000,
-    'tags' => ['core', 'chat', 'o1-model', 'reasoning', 'mcp']
-  ],
-  [
-    'model' => 'o1-mini',
-    'name' => 'o1 Mini',
-    'family' => 'o1',
-    'features' => ['completion'],
-    'price' => [
-      'in' => 1.10,
-      'out' => 4.40,
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 65536,
-    'maxContextualTokens' => 128000,
-    'tags' => ['core', 'chat', 'o1-model', 'reasoning', 'mcp']
-  ],
-  /*
             o3
             Advanced reasoning model
             https://platform.openai.com/docs/models/o3
@@ -542,73 +507,6 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxContextualTokens' => 128000,
     'finetune' => false,
     'tags' => ['core', 'realtime', 'functions', 'vision', 'deprecated']
-  ],
-  /*
-        GPT-4
-        An older high-intelligence GPT model
-        https://platform.openai.com/docs/models/gpt-4
-        */
-  [
-    'model' => 'gpt-4',
-    'name' => 'GPT-4',
-    'family' => 'gpt-4',
-    'features' => ['completion'],
-    'price' => [
-      'in' => 30.00,
-      'out' => 60.00,
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 8192,
-    'maxContextualTokens' => 8192,
-    'finetune' => false,
-    'tags' => ['core', 'chat', 'functions']
-  ],
-  /*
-        GPT-4 Turbo
-        An older high-intelligence GPT model
-        https://platform.openai.com/docs/models/gpt-4-turbo
-        */
-  [
-    'model' => 'gpt-4-turbo',
-    'name' => 'GPT-4 Turbo',
-    'family' => 'gpt-4',
-    'features' => ['completion'],
-    'price' => [
-      'in' => 10.00,
-      'out' => 30.00,
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 4096,
-    'maxContextualTokens' => 128000,
-    'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json']
-  ],
-  /*
-        GPT-3.5 Turbo
-        Legacy GPT model for cheaper chat and non-chat tasks
-        https://platform.openai.com/docs/models/gpt-3.5-turbo
-        */
-  [
-    'model' => 'gpt-3.5-turbo',
-    'name' => 'GPT-3.5 Turbo',
-    'family' => 'gpt-3',
-    'features' => ['completion'],
-    'price' => [
-      'in' => 0.50,
-      'out' => 1.50,
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 4096,
-    'maxContextualTokens' => 16385,
-    'finetune' => [
-      'in' => 3.00,
-      'out' => 6.00,
-      'train' => 8.00
-    ],
-    'tags' => ['core', 'chat', '4k', 'finetune', 'functions']
   ],
   /*
       DALL·E 3
@@ -896,24 +794,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'tags' => ['core', 'audio'],
   ],
   /*
-                  Depecated Models
+                  Deprecated Models
                   */
-  [
-    'model' => 'gpt-4.5-preview',
-    'name' => 'GPT-4.5 (Preview)',
-    'family' => 'gpt4.5',
-    'features' => ['completion'],
-    'price' => [
-      'in' => 75.00,
-      'out' => 150.00,
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 16384,
-    'maxContextualTokens' => 128000,
-    'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'functions', 'json', 'deprecated']
-  ],
   [
     'model' => 'dall-e',
     'name' => 'DALL-E 2',

@@ -23,9 +23,14 @@
   Important
   - Keep this documentation updated as we refine spacing, dvh, and safe-area behavior.
 */
-@keyframes mwai-caret-blink {
-  to {
-    visibility: hidden;
+@keyframes mwai-cursor-blink {
+  0%, 49.9% {
+    background: var(--mwai-terminal-active-color);
+    color: var(--mwai-backgroundPrimaryColor);
+  }
+  50%, 100% {
+    background: transparent;
+    color: var(--mwai-terminal-active-color);
   }
 }
 .mwai-context-menu-portal .mwai-context-menu {
@@ -1913,26 +1918,25 @@
 }
 .mwai-chatgpt-theme .mwai-terminal .mwai-terminal-cursor {
   display: inline-block;
-  width: 8px;
-  height: 16px;
+  min-width: 8px;
+  height: 1.35em;
+  color: var(--mwai-terminal-active-color);
   background: var(--mwai-terminal-active-color);
-  vertical-align: text-bottom;
-  margin-left: 2px;
-  transition: opacity 0.2s ease;
   opacity: 0.35;
-  animation: none;
+  vertical-align: text-bottom;
+  line-height: inherit;
 }
 .mwai-chatgpt-theme .mwai-terminal .mwai-terminal-cursor.mwai-terminal-cursor-active {
   opacity: 1;
-  animation: mwai-caret-blink 1s steps(2, start) infinite;
+  color: var(--mwai-backgroundPrimaryColor);
+  animation: mwai-cursor-blink 1s infinite;
 }
 .mwai-chatgpt-theme .mwai-terminal .mwai-terminal-cursor.mwai-terminal-cursor-typing {
   opacity: 1;
-  animation: none;
+  color: var(--mwai-backgroundPrimaryColor);
 }
 .mwai-chatgpt-theme .mwai-terminal .mwai-terminal-cursor.mwai-terminal-cursor-inactive {
   opacity: 0.35;
-  animation: none;
 }
 .mwai-chatgpt-theme .mwai-terminal::-webkit-scrollbar {
   width: 8px;
@@ -2089,6 +2093,7 @@
 .mwai-chatgpt-theme.mwai-window .mwai-header .mwai-buttons {
   display: flex;
   align-items: center;
+  margin-left: auto;
 }
 .mwai-chatgpt-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button {
   justify-content: center;
@@ -2642,26 +2647,25 @@
 }
 .mwai-chatgpt-theme .mwai-input .mwai-terminal-line .mwai-terminal-cursor {
   display: inline-block;
-  width: 8px;
-  height: 16px;
+  min-width: 8px;
+  height: 1.35em;
+  color: currentColor;
   background: currentColor;
-  vertical-align: text-bottom;
-  margin-left: 2px;
-  transition: opacity 0.2s ease;
   opacity: 0.35;
-  animation: none;
+  vertical-align: text-bottom;
+  line-height: inherit;
 }
 .mwai-chatgpt-theme .mwai-input .mwai-terminal-line .mwai-terminal-cursor.mwai-terminal-cursor-active {
   opacity: 1;
-  animation: mwai-caret-blink 1s steps(2, start) infinite;
+  color: var(--mwai-backgroundPrimaryColor, #1a1a2e);
+  animation: mwai-cursor-blink 1s infinite;
 }
 .mwai-chatgpt-theme .mwai-input .mwai-terminal-line .mwai-terminal-cursor.mwai-terminal-cursor-typing {
   opacity: 1;
-  animation: none;
+  color: var(--mwai-backgroundPrimaryColor, #1a1a2e);
 }
 .mwai-chatgpt-theme .mwai-input .mwai-terminal-line .mwai-terminal-cursor.mwai-terminal-cursor-inactive {
   opacity: 0.35;
-  animation: none;
 }
 .mwai-chatgpt-theme pre code.hljs {
   display: block;
