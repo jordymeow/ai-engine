@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.7
+Stable tag: 3.3.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -262,6 +262,11 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.8 (2026/02/18) =
+* Add: Support for the Claude Sonnet 4.6 model.
+* Add: Forward Anthropic keepalive events to the browser.
+* Add: Make Realtime transcript captions clickable links.
 
 = 3.3.7 (2026/02/14) =
 * Add: Introduced role-based access control for MCP with three levels (admin, read-write, read-only).

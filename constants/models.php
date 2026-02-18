@@ -861,6 +861,23 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'tools' => ['code_interpreter', 'thinking']
   ],
   [
+    'model' => 'claude-sonnet-4-6',
+    'name' => 'Claude Sonnet 4.6',
+    'family' => 'claude-4',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 3.00,
+      'out' => 15.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 64000,
+    'maxContextualTokens' => 200000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
+  ],
+  [
     'model' => 'claude-sonnet-4-5-20250929',
     'name' => 'Claude Sonnet 4.5 (2025/09/29)',
     'family' => 'claude-4',
@@ -891,7 +908,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
     'tools' => ['code_interpreter', 'thinking']
   ],
   [

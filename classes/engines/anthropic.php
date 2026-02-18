@@ -803,6 +803,14 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       //   call_user_func( $this->streamCallback, $event );
       // }
     }
+    else if ( $type === 'keepalive' ) {
+      // Forward keepalive as SSE comment to keep browser connection alive during long MCP calls
+      echo ": keepalive\n\n";
+      if ( ob_get_level() > 0 ) {
+        ob_end_flush();
+      }
+      flush();
+    }
     else {
       Meow_MWAI_Logging::log( "Anthropic: Unknown stream data type: $type" );
     }
