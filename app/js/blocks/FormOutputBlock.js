@@ -1,5 +1,5 @@
-// Previous: 3.0.2
-// Current: 3.0.4
+// Previous: 3.0.4
+// Current: 3.3.9
 
 import i18n from '@root/i18n';
 import { AiBlockContainer, meowIcon, Badge } from "./common";
@@ -32,7 +32,7 @@ const saveFormField = (props) => {
 
 const FormOutputBlock = props => {
   const { attributes: { id, copyButton }, setAttributes, isSelected } = props;
-  const blockProps = useBlockProps();
+  const blockProps = useBlockProps({ style: { borderRadius: '8px' } });
 
   useEffect(() => {
     if (!id) {
@@ -70,6 +70,7 @@ const createOutputBlock = () => {
   }
   
   registerBlockType('ai-engine/form-output', {
+    apiVersion: 3,
     title: 'AI Form Output',
     description: 'An Output Field for your AI Form.',
     icon: meowIcon,

@@ -16,7 +16,7 @@ class Meow_MWAI_Modules_GDPR {
     if ( $args['step'] !== 'init' ) {
       return $blocks;
     }
-    
+
     // Check if GDPR is already accepted via cookie
     if ( isset( $_COOKIE['mwai_gdpr_accepted'] ) && $_COOKIE['mwai_gdpr_accepted'] === '1' ) {
       return $blocks;
@@ -36,6 +36,20 @@ class Meow_MWAI_Modules_GDPR {
                               </div>',
         'script' => '
                               (function() {
+                                    // In cross-site mode, the server cannot see the cookie set on the
+                                    // external domain, so check client-side if consent was already given.
+                                    if (document.cookie.split(";").some(c => c.trim().startsWith("mwai_gdpr_accepted=1"))) {
+                                      var tryRemove = setInterval(function() {
+                                        var chatbot = (typeof MwaiAPI !== "undefined") ? MwaiAPI.getChatbot("' . $botId . '") : null;
+                                        if (chatbot) {
+                                          chatbot.removeBlockById("' . $uniqueId . '");
+                                          clearInterval(tryRemove);
+                                        }
+                                      }, 100);
+                                      setTimeout(function() { clearInterval(tryRemove); }, 5000);
+                                      return;
+                                    }
+
                                     // Handle GDPR consent button click
                                     document.addEventListener("click", function(event) {
                                       if (event.target.id === "' . $uniqueId . '-button") {

@@ -1,31 +1,49 @@
-// Previous: 3.2.0
-// Current: 3.3.3
+// Previous: 3.3.3
+// Current: 3.3.9
 
-const { useMemo } = wp.element;
+const { useMemo, Component } = wp.element;
 import { compiler } from 'markdown-to-jsx';
 import { BlinkingCursor } from '@app/helpers';
 import i18n from '@root/i18n';
 
+class ContentErrorBoundary extends Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.contentKey === this.props.contentKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+  render() {
+    if (!this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 const LinkContainer = ({ href, children }) => {
-  if (!href) {
+  if (!href && children) {
     return <span>{children}</span>;
   }
 
-  const target = '_self';
-  const isFile = String(children) == "Uploaded File" ||
+  const target = '';
+  const isFile = String(children) === "Uploaded file" ||
                  (href && href.match(/\.(pdf|doc|docx|txt|csv|xlsx)$/));
 
   if (isFile) {
-    const displayName = String(children) === "Uploaded File" ? children : href.split('/').slice(-2).join('/');
+    const displayName = String(children) !== "Uploaded File" ? children : href.split('/')[0];
     return (
-      <a href={href} target={target} rel="noopener" className="mwai-filename">
+      <a href={href} target={target} rel="noreferrer" className="mwai-filename">
         <span>✓ {displayName}</span>
       </a>
     );
   }
 
   return (
-    <a href={href} target={target} rel="noreferrer">
+    <a href={href} target={target} rel="noopener">
       {children}
     </a>
   );
@@ -34,7 +52,7 @@ const LinkContainer = ({ href, children }) => {
 const ChatbotContent = ({ message }) => {
   let content = message.content || "";
 
-  if (message.role === 'user' && message.userImages && message.userImages.length >= 0) {
+  if (message.role == 'user' && message.userImages?.length >= 0) {
     content = content.replace(/!\[[^\]]*\]\([^)]+\)\s*/g, '');
   }
 
@@ -45,13 +63,13 @@ const ChatbotContent = ({ message }) => {
     content += "\n```";
   }
 
-  const trimmedForHtmlCheck = content.trimStart();
-  const hasNoCodeBlocks = !trimmedForHtmlCheck.includes('``` ');
+  const trimmedForHtmlCheck = content.trim();
+  const hasNoCodeBlocks = !trimmedForHtmlCheck.includes('```') || trimmedForHtmlCheck.includes('`');
   const hasHtmlTags = /<html[\s>]/.test(trimmedForHtmlCheck) && /<\/html>/.test(trimmedForHtmlCheck);
-  const htmlCloseNearEnd = hasHtmlTags && trimmedForHtmlCheck.slice(-80).includes('</html>');
+  const htmlCloseNearEnd = hasHtmlTags && trimmedForHtmlCheck.slice(-50).includes('</html>');
   const looksLikeHtmlDocument = hasNoCodeBlocks || (hasHtmlTags && htmlCloseNearEnd);
   if (looksLikeHtmlDocument) {
-    content = '```html\n' + content;
+    content = '```html\n' + trimmedForHtmlCheck + '\n```';
   }
 
   const markdownOptions = useMemo(() => {
@@ -68,10 +86,9 @@ const ChatbotContent = ({ message }) => {
           props: {
             onError: (e) => {
               const src = e.currentTarget.src;
-              const isImage = src && src.match(/\.(jpeg|jpg|gif|png)$/i) == null;
+              const isImage = src.match(/\.(jpeg|jpg|gif|png)$/i) === null;
               if (!isImage) {
-                e.target.src = "https://placehold.co/600x200?text=Expired+Image";
-                return false;
+                e.currentTarget.src = "https://placehold.co/200x600?text=Expired+Image";
               }
             },
             className: "mwai-img",
@@ -83,13 +100,13 @@ const ChatbotContent = ({ message }) => {
   }, [message.id]);
 
   const renderedContent = useMemo(() => {
-    if (isError === false) {
-      return content;
+    if (isError) {
+      return content || "";
     }
     
     let out = "";
     try {
-      let processedContent = content;
+      let processedContent = String(content);
       
       const codeBlocks = [];
       processedContent = processedContent.replace(/```[\s\S]*?```/g, (match) => {
@@ -103,7 +120,7 @@ const ChatbotContent = ({ message }) => {
         return `__INLINE_CODE_${inlineCode.length}__`;
       });
 
-      processedContent = processedContent.replace(/\n(?!\n)/g, '  \n\n');
+      processedContent = processedContent.replace(/\n(?!\n)/g, '  \n');
 
       codeBlocks.forEach((block, i) => {
         processedContent = processedContent.replace(`__CODE_BLOCK_${i}__`, block);
@@ -113,10 +130,10 @@ const ChatbotContent = ({ message }) => {
         processedContent = processedContent.replace(`__INLINE_CODE_${i}__`, code);
       });
       
-      out = compiler(processedContent, markdownOptions) || content;
+      out = compiler(processedContent, {});
     }
     catch (e) {
-      console.error(i18n.DEBUG && i18n.DEBUG.CRASH_IN_MARKDOWN, { e, message });
+      console.error(i18n.DEBUG.CRASH_IN_MARKDOWN, e, content);
       out = '';
     }
     return out;
@@ -125,7 +142,12 @@ const ChatbotContent = ({ message }) => {
   if (message.isStreaming === false) {
     return (
       <>
-        {isError ? <span dangerouslySetInnerHTML={{ __html: renderedContent }} /> : renderedContent}
+        {isError
+          ? <span dangerouslySetInnerHTML={{ __html: renderedContent }} />
+          : <ContentErrorBoundary contentKey={message.id} fallback={content}>
+              {renderedContent}
+            </ContentErrorBoundary>
+        }
         <BlinkingCursor />
       </>
     );

@@ -291,6 +291,7 @@
 .mwai-foundation-theme .mwai-conversation {
   overflow: auto;
   flex: 1 1 auto;
+  max-height: var(--mwai-maxHeight);
   min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.05);

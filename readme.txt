@@ -1,11 +1,11 @@
-=== AI Engine - The Chatbot and AI Framework for WordPress ===
+=== AI Engine - The Chatbot, AI Framework & MCP for WordPress ===
 Contributors: TigrouMeow
 Tags: ai, chatbot, gpt, claude, openai
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.8
+Stable tag: 3.3.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -262,6 +262,12 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.3.9 (2026/02/21) =
+* Add: Cross Site now support shorcuts (Quick Actions), blocks (GDPR-friendly), etc.
+* Update: Modernized all Gutenberg Blocks.
+* Fix: Avoid crashes caused by Claude when using MCP tools together with function calling.
+* Fix: Prevent React-related crashes during streaming.
 
 = 3.3.8 (2026/02/18) =
 * Add: Support for the Claude Sonnet 4.6 model.

@@ -420,6 +420,34 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         foreach ( $query->blocks as $feedback_block ) {
           $contentBlock = $feedback_block['rawMessage']['content'];
 
+          // Server-managed tool blocks (MCP, web search, etc.) are handled internally by
+          // Anthropic. When the response also contains regular tool_use (stop_reason: tool_use),
+          // the server-managed tools may not have completed. We must strip these blocks from
+          // the replayed assistant message since the API rejects them without matching result
+          // blocks (which only the server can provide).
+          if ( is_array( $contentBlock ) ) {
+            $serverManagedTypes = [
+              'mcp_tool_use', 'mcp_tool_result',
+              'server_tool_use', 'web_search_tool_result'
+            ];
+            $strippedTools = [];
+            foreach ( $contentBlock as $item ) {
+              $type = $item['type'] ?? '';
+              if ( in_array( $type, $serverManagedTypes ) && $type !== 'mcp_tool_result' && $type !== 'web_search_tool_result' ) {
+                $strippedTools[] = ( $item['name'] ?? $type ) . ' (' . ( $item['server_name'] ?? 'server' ) . ')';
+              }
+            }
+            if ( !empty( $strippedTools ) ) {
+              Meow_MWAI_Logging::warn( 'Anthropic: Server-managed tool call (' . implode( ', ', $strippedTools ) .
+                ') was interrupted by a function call. This is currently a limitation of the Anthropic API ' .
+                'when MCP/server tools and function calling are used together.' );
+            }
+            $contentBlock = array_values( array_filter( $contentBlock, function ( $item ) use ( $serverManagedTypes ) {
+              $type = $item['type'] ?? '';
+              return !in_array( $type, $serverManagedTypes );
+            } ) );
+          }
+
           // Process each content item individually to ensure proper handling of multiple tool_use blocks
           if ( is_array( $contentBlock ) ) {
             foreach ( $contentBlock as &$contentItem ) {
