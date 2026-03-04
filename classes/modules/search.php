@@ -304,6 +304,7 @@ class Meow_MWAI_Modules_Search {
     $message .= "Now generate 40 queries for \"$text\":\n";
 
     $query = new Meow_MWAI_Query_Text( $message );
+    $query->set_scope( 'search' );
     $query->set_max_tokens( 2000 );  // Use max_tokens instead of max_results
 
     try {

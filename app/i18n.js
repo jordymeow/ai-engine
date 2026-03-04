@@ -103,6 +103,8 @@ i18n.COMMON = {
   MODELS: __( 'Models', 'ai-engine' ),
   FILES: __( 'Files', 'ai-engine' ),
   ASSISTANT: __( 'Assistant', 'ai-engine' ),
+  EDITOR_ASSISTANT: __( 'AI Assistant', 'ai-engine' ),
+  EDITOR_ASSISTANT_HELP: __( 'An AI sidebar in the block editor to help with your content. The Pro Version supports editing the post directly.', 'ai-engine' ),
   ASSISTANTS: __( 'Assistants', 'ai-engine' ),
   UTILITIES: __( 'Utilities', 'ai-engine' ),
   POSTS_SUGGESTIONS: __( 'AI Copilot, AI Suggestions, Magic Wands', 'ai-engine' ),

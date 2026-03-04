@@ -1329,11 +1329,24 @@ class Meow_MWAI_Rest {
 
   public function rest_helpers_count_posts( $request ) {
     try {
+      global $wpdb;
       $params = $request->get_query_params();
       $postType = $params['postType'];
       $postStatus = !empty( $params['postStatus'] ) ? explode( ',', $params['postStatus'] ) : [ 'publish' ];
-      $count = wp_count_posts( $postType );
-      $count = array_sum( array_intersect_key( (array) $count, array_flip( $postStatus ) ) );
+      $statusPlaceholders = implode( ',', array_fill( 0, count( $postStatus ), '%s' ) );
+      $ignored_ids = $wpdb->get_col(
+        "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_mwai_embedding_ignore'"
+      );
+      $exclude_sql = '';
+      if ( !empty( $ignored_ids ) ) {
+        $ignored_ids = array_map( 'intval', $ignored_ids );
+        $exclude_sql = ' AND p.ID NOT IN (' . implode( ',', $ignored_ids ) . ')';
+      }
+      $query = "SELECT COUNT(*) FROM {$wpdb->posts} p
+                WHERE p.post_type = %s
+                AND p.post_status IN ($statusPlaceholders)" . $exclude_sql;
+      $prepareArgs = array_merge( [ $postType ], $postStatus );
+      $count = (int) $wpdb->get_var( $wpdb->prepare( $query, ...$prepareArgs ) );
       return $this->create_rest_response( [ 'success' => true, 'count' => $count ], 200 );
     }
     catch ( Exception $e ) {
@@ -1351,10 +1364,18 @@ class Meow_MWAI_Rest {
 
       // Use direct SQL query instead of get_posts to avoid memory issues with large sites
       $statusPlaceholders = implode( ',', array_fill( 0, count( $postStatus ), '%s' ) );
-      $query = "SELECT ID FROM {$wpdb->posts}
-                WHERE post_type = %s
-                AND post_status IN ($statusPlaceholders)
-                ORDER BY ID ASC";
+      $ignored_ids = $wpdb->get_col(
+        "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_mwai_embedding_ignore'"
+      );
+      $exclude_sql = '';
+      if ( !empty( $ignored_ids ) ) {
+        $ignored_ids = array_map( 'intval', $ignored_ids );
+        $exclude_sql = ' AND p.ID NOT IN (' . implode( ',', $ignored_ids ) . ')';
+      }
+      $query = "SELECT p.ID FROM {$wpdb->posts} p
+                WHERE p.post_type = %s
+                AND p.post_status IN ($statusPlaceholders)" . $exclude_sql . "
+                ORDER BY p.ID ASC";
 
       $prepareArgs = array_merge( [ $postType ], $postStatus );
       $postIds = $wpdb->get_col( $wpdb->prepare( $query, ...$prepareArgs ) );

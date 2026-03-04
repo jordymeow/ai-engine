@@ -19,13 +19,6 @@ class Meow_MWAI_Modules_Discussions {
       add_filter( 'mwai_chatbot_reply', [ $this, 'chatbot_reply' ], 10, 4 );
       add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 
-      // TODO: Remove after January 2026 - Legacy cron support
-      // Old cron scheduling removed - now handled by Tasks module
-      // if ( !wp_next_scheduled( 'mwai_discussions' ) ) {
-      //   wp_schedule_event( time(), 'hourly', 'mwai_discussions' );
-      // }
-      // add_action( 'mwai_discussions', [ $this, 'cron_discussions' ] );
-
       // Register task handler
       add_filter( 'mwai_task_cleanup_discussions', [ $this, 'handle_cleanup_task' ], 10, 2 );
     }

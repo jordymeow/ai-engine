@@ -548,6 +548,10 @@ class Meow_MWAI_Modules_Chatbot {
       if ( !$chatbot && $botId ) {
         $chatbot = $this->core->get_chatbot( $botId );
       }
+      // Internal Chatbots (reserved mwai_ prefix)
+      if ( !$chatbot && $botId && strpos( $botId, 'mwai_' ) === 0 ) {
+        $chatbot = apply_filters( 'mwai_internal_chatbot', null, $botId, $params );
+      }
       // Fall back to default chatbot if no chatbot found yet
       if ( !$chatbot ) {
         $chatbot = $this->core->get_chatbot( 'default' );

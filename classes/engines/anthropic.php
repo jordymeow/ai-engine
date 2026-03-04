@@ -398,10 +398,12 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       $body = [
         'model' => $query->model,
         'max_tokens' => $query->maxTokens,
-        'temperature' => $query->temperature,
         'stream' => !is_null( $streamCallback ),
         'messages' => []
       ];
+      if ( !empty( $query->temperature ) ) {
+        $body['temperature'] = $query->temperature;
+      }
 
       if ( !empty( $query->instructions ) ) {
         $body['system'] = [
@@ -617,35 +619,44 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
 
       // Add MCP servers if available
       if ( isset( $query->mcpServers ) && is_array( $query->mcpServers ) && !empty( $query->mcpServers ) ) {
-        $body['mcp_servers'] = [];
         $mcp_envs = $this->core->get_option( 'mcp_envs' );
         $this->mcpServerNames = []; // Reset MCP server names
 
+        // Resolve all MCP servers from their IDs
+        $resolved_servers = [];
         foreach ( $query->mcpServers as $mcpServer ) {
           if ( isset( $mcpServer['id'] ) ) {
-            // Find the full MCP server configuration by ID
             foreach ( $mcp_envs as $env ) {
               if ( $env['id'] === $mcpServer['id'] ) {
-                $mcp_config = [
-                  'type' => 'url',
-                  'url' => $env['url'],
-                  'name' => $env['name'],
-                  'tool_configuration' => [
-                    'enabled' => true
-                  ]
-                ];
-
-                // Add authorization token if available
-                if ( !empty( $env['token'] ) ) {
-                  $mcp_config['authorization_token'] = $env['token'];
-                }
-
-                $body['mcp_servers'][] = $mcp_config;
-                $this->mcpServerNames[] = $env['name']; // Track MCP server names
+                $resolved_servers[] = $env;
                 break;
               }
             }
           }
+        }
+
+        // Allow filtering the full list of MCP servers
+        $resolved_servers = apply_filters( 'mwai_ai_mcp_servers', $resolved_servers, $query );
+
+        // Build API-specific MCP config
+        $body['mcp_servers'] = [];
+        foreach ( $resolved_servers as $env ) {
+          $mcp_config = [
+            'type' => 'url',
+            'url' => $env['url'],
+            'name' => $env['name'],
+            'tool_configuration' => [
+              'enabled' => true
+            ]
+          ];
+
+          // Add authorization token if available
+          if ( !empty( $env['token'] ) ) {
+            $mcp_config['authorization_token'] = $env['token'];
+          }
+
+          $body['mcp_servers'][] = $mcp_config;
+          $this->mcpServerNames[] = $env['name']; // Track MCP server names
         }
       }
 

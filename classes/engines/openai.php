@@ -388,48 +388,56 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       // Add MCP servers if available
       if ( isset( $query->mcpServers ) && is_array( $query->mcpServers ) && !empty( $query->mcpServers ) ) {
         $mcp_envs = $this->core->get_option( 'mcp_envs' );
-        $this->mcpServerCount = count( $query->mcpServers );
 
+        // Resolve all MCP servers from their IDs
+        $resolved_servers = [];
         foreach ( $query->mcpServers as $mcpServer ) {
           if ( isset( $mcpServer['id'] ) ) {
-            // Find the full MCP server configuration by ID
             foreach ( $mcp_envs as $env ) {
               if ( $env['id'] === $mcpServer['id'] ) {
-                // Sanitize server label for OpenAI requirements
-                $server_label = $env['name'] . '_' . $env['id'];
-                // Remove spaces and special characters
-                $server_label = preg_replace( '/[^a-zA-Z0-9_]/', '', $server_label );
-                // Replace double or tripe underscores with single underscore
-                $server_label = preg_replace( '/_{2,}/', '_', $server_label );
-                // Ensure it starts with a letter
-                if ( !preg_match( '/^[a-zA-Z]/', $server_label ) ) {
-                  $server_label = 'mcp_' . $server_label;
-                }
-
-                $mcp_tool = [
-                  'type' => 'mcp',
-                  'server_label' => $server_label,
-                  'server_url' => $env['url'],
-                  'require_approval' => 'never'
-                ];
-
-                // Add authorization header if available
-                if ( !empty( $env['token'] ) ) {
-                  $mcp_tool['headers'] = [
-                    'Authorization' => 'Bearer ' . $env['token']
-                  ];
-                }
-
-                // Add to tools array
-                if ( !isset( $body['tools'] ) ) {
-                  $body['tools'] = [];
-                }
-                $body['tools'][] = $mcp_tool;
-
+                $resolved_servers[] = $env;
                 break;
               }
             }
           }
+        }
+
+        // Allow filtering the full list of MCP servers
+        $resolved_servers = apply_filters( 'mwai_ai_mcp_servers', $resolved_servers, $query );
+        $this->mcpServerCount = count( $resolved_servers );
+
+        // Build API-specific MCP tools
+        foreach ( $resolved_servers as $env ) {
+          // Sanitize server label for OpenAI requirements
+          $server_label = $env['name'] . '_' . $env['id'];
+          // Remove spaces and special characters
+          $server_label = preg_replace( '/[^a-zA-Z0-9_]/', '', $server_label );
+          // Replace double or tripe underscores with single underscore
+          $server_label = preg_replace( '/_{2,}/', '_', $server_label );
+          // Ensure it starts with a letter
+          if ( !preg_match( '/^[a-zA-Z]/', $server_label ) ) {
+            $server_label = 'mcp_' . $server_label;
+          }
+
+          $mcp_tool = [
+            'type' => 'mcp',
+            'server_label' => $server_label,
+            'server_url' => $env['url'],
+            'require_approval' => 'never'
+          ];
+
+          // Add authorization header if available
+          if ( !empty( $env['token'] ) ) {
+            $mcp_tool['headers'] = [
+              'Authorization' => 'Bearer ' . $env['token']
+            ];
+          }
+
+          // Add to tools array
+          if ( !isset( $body['tools'] ) ) {
+            $body['tools'] = [];
+          }
+          $body['tools'][] = $mcp_tool;
         }
       }
 

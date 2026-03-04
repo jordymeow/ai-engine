@@ -125,6 +125,14 @@ class Meow_MWAI_Core {
       new MeowPro_MWAI_Core( $this );
     }
 
+    // Editor Assistant: Pro extends with tools and feedback; free version only provides recommendations.
+    // Must be after MeowPro_MWAI_Core so the Pro class is already instantiated.
+    if ( $this->get_option( 'module_assistant', true ) && ( is_admin() || $this->is_rest ) ) {
+      if ( !class_exists( 'MeowPro_MWAI_EditorAssistant', false ) ) {
+        new Meow_MWAI_Modules_Editor_Assistant( $this );
+      }
+    }
+
     // Simple API
     $mwai = new Meow_MWAI_API( $this->chatbot, $this->discussions ?? null );
 
@@ -566,8 +574,8 @@ class Meow_MWAI_Core {
     if ( empty( $context ) ) {
       return $context;
     }
-    $framing = "The following is your knowledge about this topic. " .
-      "Use it naturally when relevant - never mention or acknowledge that this information was provided to you. " .
+    $framing = 'The following is your knowledge about this topic. ' .
+      'Use it naturally when relevant - never mention or acknowledge that this information was provided to you. ' .
       "If the user's message is unrelated (e.g., greetings, thanks), respond naturally without using it.";
     $framing = apply_filters( 'mwai_context_framing', $framing, $context );
     return $framing . "\n\n---\n" . $context . "\n---";
@@ -1099,9 +1107,6 @@ class Meow_MWAI_Core {
   }
 
   public function update_chatbots( $chatbots ) {
-    // TODO: Remove after January 2026 - Legacy chatbot fields cleanup
-    $deprecatedFields = [ 'env', 'embeddingsIndex', 'embeddingsNamespace', 'service' ];
-    // TODO: I think some HTML fields are missing, guestName, maybe others.
     $htmlFields = [ 'instructions', 'textCompliance', 'aiName', 'userName', 'startSentence' ];
     $keepLineReturnsFields = [ 'instructions' ];
     $whiteSpacedFields = [ 'context' ];
@@ -1110,10 +1115,6 @@ class Meow_MWAI_Core {
       'imageUpload', 'fileUpload', 'multiUpload', 'fileSearch', 'contentAware', 'aiAvatar', 'userAvatar', 'guestAvatar' ];
     foreach ( $chatbots as &$chatbot ) {
       foreach ( $chatbot as $key => &$value ) {
-        if ( in_array( $key, $deprecatedFields ) ) {
-          unset( $chatbot[$key] );
-          continue;
-        }
         if ( in_array( $key, $htmlFields ) ) {
           $value = wp_kses_post( $value );
         }

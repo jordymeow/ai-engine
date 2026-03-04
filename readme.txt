@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.3.9
+Stable tag: 3.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -262,6 +262,14 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.4.0 (2026/03/04) =
+* Add: Introduce a fully featured Editor Assistant sidebar (with a client-side feedback loop for chained AI actions). It's called Assistant in the Admin Modules.
+* Add: Introduce new dev filters (`mwai_mcp_server` and `mwai_function_call_params`) for customizing MCP servers and function call parameters.
+* Add: Allow ignoring posts during embeddings sync, with a “hide” icon for linked posts, a “Show Ignored” modal, and a `mwai_embeddings_sync_post` filter for developers.
+* Fix: Hotfix chat sessions so the chat ID resets correctly when needed.
+* Fix: Restore the missing scope for AI Search.
+* Update: Remove outdated internal TODOs, deprecated fields, legacy crons, and old migration code.
 
 = 3.3.9 (2026/02/21) =
 * Add: Cross Site now support shorcuts (Quick Actions), blocks (GDPR-friendly), etc.

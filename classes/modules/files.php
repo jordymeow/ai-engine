@@ -16,8 +16,6 @@ class Meow_MWAI_Modules_Files {
     $this->table_filemeta = $this->wpdb->prefix . 'mwai_filemeta';
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 
-    // TODO: Remove after January 2026 - Legacy cron support
-    // Old cron scheduling removed - now handled by Tasks module
     // Register task handler for cleanup
     add_filter( 'mwai_task_cleanup_files', [ $this, 'handle_cleanup_task' ], 10, 2 );
   }
