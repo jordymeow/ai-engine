@@ -4,6 +4,32 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   /*
+    GPT-5.4
+    Our most capable model for professional work
+    https://platform.openai.com/docs/models/gpt-5.4
+    */
+  [
+    'model' => 'gpt-5.4',
+    'name' => 'GPT-5.4',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 2.50,
+      'out' => 15.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
     GPT-5.2
     The best model for coding and agentic tasks across industries
     https://platform.openai.com/docs/models/gpt-5.2

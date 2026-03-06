@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.0
+Stable tag: 3.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -180,6 +180,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 * **Content-Aware** — Let AI use your post and page content as context for smarter responses.
 * **Function Calling** — Connect AI to WordPress functions, WooCommerce, or any custom API.
 * **Cross-Site Chatbots** — Embed your chatbots on external websites.
+* **Editor Assistant** — An AI sidebar in the post editor that can read, rewrite, insert, and rearrange your content blocks through chained function calls.
 * **Realtime Audio** — Voice-based conversations with AI in real time.
 * **Statistics & Usage Control** — Track usage, set limits per role, and monitor costs.
 * **Extra MCP Tools** — Adds plugin, theme, database, Polylang, and WooCommerce management to the MCP server.
@@ -262,6 +263,10 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.4.1 (2026/03/06) =
+* Update: Hide the Editor Assistant functions from the chatbot settings to simplify the interface.
+* Add: Support for the new GPT-5.4 model for improved AI responses.
 
 = 3.4.0 (2026/03/04) =
 * Add: Introduce a fully featured Editor Assistant sidebar (with a client-side feedback loop for chained AI actions). It's called Assistant in the Admin Modules.

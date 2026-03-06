@@ -1305,6 +1305,7 @@ class Meow_MWAI_Core {
     $json = [];
     $functions = apply_filters( 'mwai_functions_list', [] );
     foreach ( $functions as $function ) {
+      if ( $function->type === 'editor-assistant' ) { continue; }
       $json[] = Meow_MWAI_Query_Function::toJson( $function );
     }
     $options['functions'] = $json;
