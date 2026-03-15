@@ -25,7 +25,8 @@ class Meow_MWAI_Labs_MCP {
   private $core = null;
   private $namespace = 'mcp/v1';
   private $server_version = '0.0.1';
-  private $protocol_version = '2025-06-18'; // Updated to match official MCP SDK
+  private $protocol_version = '2025-06-18';
+  private $supported_protocol_versions = [ '2024-11-05', '2025-06-18' ];
   private $queue_key = 'mwai_mcp_msg';
   private $session_id = null;
   private $logging = false;
@@ -423,9 +424,14 @@ class Meow_MWAI_Labs_MCP {
             error_log( "[AI Engine MCP] Client: {$client_name} v{$client_version}" );
           }
 
-          if ( $requested_version && $requested_version !== $this->protocol_version ) {
+          // Negotiate protocol version: use client's version if supported
+          $negotiated_version = $this->protocol_version;
+          if ( $requested_version && in_array( $requested_version, $this->supported_protocol_versions, true ) ) {
+            $negotiated_version = $requested_version;
+          }
+          else if ( $requested_version && $requested_version !== $this->protocol_version ) {
             if ( $this->logging ) {
-              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
+              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested unsupported protocol version {$requested_version}" );
             }
           }
 
@@ -433,13 +439,13 @@ class Meow_MWAI_Labs_MCP {
             'jsonrpc' => '2.0',
             'id' => $id,
             'result' => [
-              'protocolVersion' => $this->protocol_version,
+              'protocolVersion' => $negotiated_version,
               'serverInfo' => (object) [
                 'name' => 'AI Engine - ' . get_bloginfo( 'name' ),
                 'version' => $this->server_version,
               ],
               'capabilities' => (object) [
-                'tools' => new stdClass(),  // Empty object, matching official SDK
+                'tools' => new stdClass(),
               ],
             ],
           ];
@@ -967,9 +973,14 @@ class Meow_MWAI_Labs_MCP {
             error_log( "[AI Engine MCP] Client: {$client_name} v{$client_version}" );
           }
 
-          if ( $requested_version && $requested_version !== $this->protocol_version ) {
+          // Negotiate protocol version: use client's version if supported
+          $negotiated_version = $this->protocol_version;
+          if ( $requested_version && in_array( $requested_version, $this->supported_protocol_versions, true ) ) {
+            $negotiated_version = $requested_version;
+          }
+          else if ( $requested_version && $requested_version !== $this->protocol_version ) {
             if ( $this->logging ) {
-              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested protocol version {$requested_version}, but we only support {$this->protocol_version}" );
+              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested unsupported protocol version {$requested_version}" );
             }
           }
 
@@ -977,13 +988,13 @@ class Meow_MWAI_Labs_MCP {
             'jsonrpc' => '2.0',
             'id' => $id,
             'result' => [
-              'protocolVersion' => $this->protocol_version,
+              'protocolVersion' => $negotiated_version,
               'serverInfo' => (object) [
                 'name' => 'AI Engine - ' . get_bloginfo( 'name' ),
                 'version' => $this->server_version,
               ],
               'capabilities' => (object) [
-                'tools' => new stdClass(),  // Empty object, matching official SDK
+                'tools' => new stdClass(),
               ],
             ],
           ];

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.3
+Stable tag: 3.4.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -264,7 +264,8 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
-= 3.4.3 (2026/03/15) =
+= 3.4.4 (2026/03/15) =
+* Fix: Hotfix resolves MCP server connection failures with clients using protocol version 2024-11-05 by adding automatic version negotiation.
 * Add: Display shortcut prompts and names in the Discussions tab.
 * Add: Introduce image embeddings support (Gemini Embedding 2) with multimodal embedding: bulk media push, and an AI-powered Library Search that replaces the native Media Library Search.
 * Fix: Resolve a broken access control issue in the AI Forms shortcode to ensure only authorized users can access protected content (Private Page/Post).
