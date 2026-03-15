@@ -14,6 +14,10 @@ class Meow_MWAI_Modules_Files {
     $this->wpdb = $wpdb;
     $this->table_files = $this->wpdb->prefix . 'mwai_files';
     $this->table_filemeta = $this->wpdb->prefix . 'mwai_filemeta';
+
+    // Initialize database
+    $this->check_db();
+
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 
     // Register task handler for cleanup
@@ -866,6 +870,12 @@ class Meow_MWAI_Modules_Files {
       return true;
     }
 
+    // Per-module version check: skip SHOW TABLES if already verified for this version.
+    if ( get_option( 'mwai_db_version_files' ) === MWAI_VERSION ) {
+      $this->db_check = true;
+      return true;
+    }
+
     // Check if table_files exists
     $sql = $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table_files );
     $table_files_exists = strtolower( $this->wpdb->get_var( $sql ) ) === strtolower( $this->table_files );
@@ -874,22 +884,22 @@ class Meow_MWAI_Modules_Files {
     $sqlMeta = $this->wpdb->prepare( 'SHOW TABLES LIKE %s', $this->table_filemeta );
     $table_filemeta_exists = strtolower( $this->wpdb->get_var( $sqlMeta ) ) === strtolower( $this->table_filemeta );
 
-    // If either table does not exist, create them
+    // If either table does not exist, create them and re-check
     if ( !$table_files_exists || !$table_filemeta_exists ) {
       $this->create_db();
+      $table_files_exists = strtolower( $this->wpdb->get_var( $sql ) ) === strtolower( $this->table_files );
+      $table_filemeta_exists = strtolower( $this->wpdb->get_var( $sqlMeta ) ) === strtolower( $this->table_filemeta );
     }
 
-    // Update db_check for both tables
     $this->db_check = $table_files_exists && $table_filemeta_exists;
 
     // Check if userId column needs to be updated to VARCHAR for session support
-    // LATER: REMOVE THIS AFTER JANUARY 2026
     if ( $this->db_check ) {
       $column_info = $this->wpdb->get_row( "SHOW COLUMNS FROM $this->table_files WHERE Field = 'userId'" );
-      if ( $column_info && strpos( $column_info->Type, 'BIGINT' ) !== false ) {
-        // Update userId column from BIGINT to VARCHAR to support session-based IDs
+      if ( $column_info && strpos( $column_info->Type, 'bigint' ) !== false ) {
         $this->wpdb->query( "ALTER TABLE $this->table_files MODIFY COLUMN userId VARCHAR(64) NULL" );
       }
+      update_option( 'mwai_db_version_files', MWAI_VERSION, true );
     }
 
     return $this->db_check;

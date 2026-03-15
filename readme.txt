@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.1
+Stable tag: 3.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,21 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.4.3 (2026/03/15) =
+* Add: Display shortcut prompts and names in the Discussions tab.
+* Add: Introduce image embeddings support (Gemini Embedding 2) with multimodal embedding: bulk media push, and an AI-powered Library Search that replaces the native Media Library Search.
+* Fix: Resolve a broken access control issue in the AI Forms shortcode to ensure only authorized users can access protected content (Private Page/Post).
+* Fix: Prevent crashes when working with multi‑modal messages.
+* Fix: Prevent the Embeddings screen from crashing when closing a modal.
+* Update: Preserve links and inline HTML formatting in both the Editor Assistant and Magic Wand tools.
+* Update: Refactor Magic Wand actions to use system messages.
+* Update: Clean up old, deprecated options and legacy migration code.
+* Update: Fixed Quick Test for Anthropic to use the models endpoint.
+* Update: Chatbot Max Height moved to the Appearance section.
+* Update: Rename Assistant Mode to Chatbot Mode in AI Forms, you can now use any chatbot to handle your AI Forms.
+* Fix: Improve the discussions shortcode by falling back to customId to avoid invalid class names.
+* Fix: Styles for the AI Chatbot Block are back.
 
 = 3.4.1 (2026/03/06) =
 * Update: Hide the Editor Assistant functions from the chatbot settings to simplify the interface.
