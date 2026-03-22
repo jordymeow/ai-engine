@@ -800,10 +800,10 @@ class Meow_MWAI_API {
       $query->image_remote_upload = $params['image_remote_upload'];
     }
     if ( !empty( $url ) ) {
-      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'vision' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis' ) );
     }
     else if ( !empty( $path ) ) {
-      $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+      $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'analysis' ) );
     }
     $reply = $mwai_core->run_query( $query );
     return $reply->result;
@@ -941,8 +941,7 @@ class Meow_MWAI_API {
     if ( empty( $path ) ) {
       throw new Exception( 'The media cannot be found.' );
     }
-    // TODO: Maybe 'vision' should be 'edit'.
-    $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+    $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'analysis' ) );
     $reply = $mwai_core->run_query( $query );
     return $reply->result;
   }
@@ -1038,7 +1037,7 @@ class Meow_MWAI_API {
    * @param array|null $file The file array from $_FILES.
    * @param string|null $base64 Base64 encoded file data.
    * @param string|null $filename The filename for base64 uploads.
-   * @param string $purpose The purpose of the file upload (e.g., 'files', 'vision', 'assistant').
+   * @param string $purpose The purpose of the file upload ('analysis' or 'generated').
    * @param int $ttl Time to live in seconds. Default 3600 (1 hour).
    * @param string|null $target Target location: 'uploads' or 'library'.
    * @param array $metadata Additional metadata to store with the file.
@@ -1200,11 +1199,66 @@ class Meow_MWAI_API {
   #region Standard API (No REST API)
 
   /**
+  * Returns the status of AI Engine's capabilities.
+  *
+  * @return array {
+  *   @type bool   $ai        Whether at least one AI environment with an API key exists.
+  *   @type bool   $mcp       Whether the MCP module is enabled.
+  *   @type array  $env_types List of available AI provider types (e.g. 'openai', 'anthropic').
+  * }
+  */
+  public function getStatus() {
+    $env_types = [];
+    $ai_envs = $this->core->get_option( 'ai_envs' );
+    if ( !empty( $ai_envs ) ) {
+      foreach ( $ai_envs as $env ) {
+        if ( !empty( $env['apikey'] ) && !in_array( $env['type'], $env_types ) ) {
+          $env_types[] = $env['type'];
+        }
+      }
+    }
+    return [
+      'ai' => !empty( $env_types ),
+      'mcp' => (bool) $this->core->get_option( 'module_mcp' ),
+      'env_types' => $env_types,
+    ];
+  }
+
+  /**
+  * Whether at least one AI environment with an API key exists.
+  *
+  * @return bool
+  */
+  public function hasAI() {
+    $ai_envs = $this->core->get_option( 'ai_envs' );
+    if ( empty( $ai_envs ) ) {
+      return false;
+    }
+    foreach ( $ai_envs as $env ) {
+      if ( !empty( $env['apikey'] ) ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+  * Whether the MCP module is enabled.
+  *
+  * @return bool
+  */
+  public function hasMCP() {
+    return (bool) $this->core->get_option( 'module_mcp' );
+  }
+
+  /**
   * Checks the status of the AI environments.
   *
+  * @deprecated 3.5.0 Use getStatus(), hasAI(), or hasMCP() instead.
   * @return array The types of environments that are available.
   */
   public function checkStatus() {
+    _deprecated_function( __METHOD__, '3.5.0', 'getStatus(), hasAI(), or hasMCP()' );
     $env_types = [];
     $ai_envs = $this->core->get_option( 'ai_envs' );
     if ( empty( $ai_envs ) ) {

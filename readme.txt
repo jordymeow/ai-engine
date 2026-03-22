@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.4
+Stable tag: 3.4.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,13 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.4.5 (2026/03/22) =
+* Fix: Ensure additional CSS classes set in the block inspector.
+* Fix: Stop mapping tool categories to annotation titles so MCP tools display their correct names.
+* Add: Support for GPT-5.4 Pro, Mini, Nano, and GPT-5.3 Chat models.
+* Fix: Resolve an MCP dispatch type mismatch that caused some MCP tools to fail.
+* Update: Add new getStatus(), hasAI(), and hasMCP() API helpers (deprecated the older checkStatus() method).
 
 = 3.4.4 (2026/03/15) =
 * Fix: Hotfix resolves MCP server connection failures with clients using protocol version 2024-11-05 by adding automatic version negotiation.

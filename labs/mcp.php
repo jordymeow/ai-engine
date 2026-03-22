@@ -1212,13 +1212,6 @@ class Meow_MWAI_Labs_MCP {
       }
     }
 
-    if ( isset( $tool['category'] ) ) {
-      $normalized['annotations'] = $normalized['annotations'] ?? [];
-      if ( empty( $normalized['annotations']['title'] ) ) {
-        $normalized['annotations']['title'] = wp_strip_all_tags( (string) $tool['category'] );
-      }
-    }
-
     return $normalized;
   }
 

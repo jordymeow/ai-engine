@@ -39,7 +39,7 @@ Instead of focusing on individual plugins, provide more general and holistic rec
   public function __construct( $core ) {
     $this->core = $core;
     add_action( 'init', [ $this, 'init' ] );
-    
+
     // Only add dashboard widget if module is enabled and user has permissions
     if ( $this->core->get_option( 'module_advisor', false ) ) {
       add_action( 'wp_dashboard_setup', [ $this, 'add_dashboard_widget' ] );
@@ -55,10 +55,10 @@ Instead of focusing on individual plugins, provide more general and holistic rec
         exit;
       }
     }
-    
+
     // Always register the task handler (in case task exists from before)
     add_filter( 'mwai_task_advisor_daily', [ $this, 'run_advisor_task' ], 10, 2 );
-    
+
     // Only ensure the task exists if module is enabled
     if ( $this->core->get_option( 'module_advisor', false ) ) {
       // Ensure the advisor task exists
@@ -73,7 +73,7 @@ Instead of focusing on individual plugins, provide more general and holistic rec
     if ( !$this->core->tasks ) {
       return;
     }
-    
+
     $this->core->tasks->ensure( [
       'name' => 'advisor_daily',
       'description' => 'Analyze WordPress setup and provide recommendations.',
@@ -82,7 +82,7 @@ Instead of focusing on individual plugins, provide more general and holistic rec
       'deletable' => 0, // System task, not deletable
     ] );
   }
-  
+
   /**
    * Handle advisor task execution
    */
@@ -94,21 +94,22 @@ Instead of focusing on individual plugins, provide more general and holistic rec
         'message' => 'Advisor module is disabled.'
       ];
     }
-    
+
     try {
       $this->run_advisor();
       return [
         'ok' => true,
         'message' => 'Advisor analysis completed successfully.'
       ];
-    } catch ( Exception $e ) {
+    }
+    catch ( Exception $e ) {
       return [
         'ok' => false,
         'message' => 'Advisor analysis failed: ' . $e->getMessage()
       ];
     }
   }
-  
+
   private function check_and_run_advisor() {
     $last_run_data = get_option( 'mwai_advisor_data', [] );
     $last_run_time = $last_run_data['date'] ?? 0;
@@ -121,7 +122,9 @@ Instead of focusing on individual plugins, provide more general and holistic rec
   public function run_advisor() {
     try {
       global $mwai;
-      $mwai->checkStatus();
+      if ( !$mwai->hasAI() ) {
+        throw new Exception( 'There are no AI environments with an API key yet.' );
+      }
       $plugins = $this->get_all_installed_plugins();
 
       $finalPrompt = $this->prompt;

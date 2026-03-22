@@ -30,6 +30,105 @@ define( 'MWAI_OPENAI_MODELS', [
     ]
   ],
   /*
+    GPT-5.4 Pro
+    Most advanced model with enhanced reasoning for complex tasks
+    https://developers.openai.com/api/docs/models/gpt-5.4-pro
+    */
+  [
+    'model' => 'gpt-5.4-pro',
+    'name' => 'GPT-5.4 Pro',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 30.00,
+      'out' => 180.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'responses', 'mcp', 'reasoning'],
+    'tools' => ['web_search', 'image_generation', 'file_search'],
+    'params' => [
+      'reasoning' => ['medium', 'high', 'xhigh'],
+    ]
+  ],
+  /*
+    GPT-5.4 Mini
+    Fast and cost-effective GPT-5.4 variant
+    https://developers.openai.com/api/docs/models/gpt-5.4-mini
+    */
+  [
+    'model' => 'gpt-5.4-mini',
+    'name' => 'GPT-5.4 Mini',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 0.75,
+      'out' => 4.50,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5.4 Nano
+    Ultra-fast and lightweight GPT-5.4 model
+    https://developers.openai.com/api/docs/models/gpt-5.4-nano
+    */
+  [
+    'model' => 'gpt-5.4-nano',
+    'name' => 'GPT-5.4 Nano',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 0.20,
+      'out' => 1.25,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 400000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5.3 Chat
+    GPT-5.3 model used in ChatGPT
+    https://developers.openai.com/api/docs/models/gpt-5.3-chat-latest
+    */
+  [
+    'model' => 'gpt-5.3-chat-latest',
+    'name' => 'GPT-5.3 Chat',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.75,
+      'out' => 14.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp'],
+    'tools' => ['image_generation', 'code_interpreter']
+  ],
+  /*
     GPT-5.2
     The best model for coding and agentic tasks across industries
     https://platform.openai.com/docs/models/gpt-5.2
