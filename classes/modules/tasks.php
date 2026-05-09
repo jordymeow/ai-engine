@@ -1027,6 +1027,13 @@ class Meow_MWAI_Modules_Tasks {
       'schedule' => '0 3 * * *', // Daily at 3 AM UTC
     ] );
 
+    $this->ensure( [
+      'name' => 'cleanup_statistics',
+      'description' => 'Remove old query logs beyond Insights retention period.',
+      'category' => 'system',
+      'schedule' => '0 2 * * *', // Daily at 2 AM UTC
+    ] );
+
     // Ensure cleanup_files task exists
     $this->ensure( [
       'name' => 'cleanup_files',

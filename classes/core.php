@@ -1302,6 +1302,14 @@ class Meow_MWAI_Core {
           Meow_MWAI_Engines_Mistral::get_models_static()
         );
       }
+      else if ( $engine['type'] === 'xai' ) {
+        // Static fallback covers the case where dynamic model fetch failed (e.g. no credits
+        // on the xAI account). Dynamically fetched models override this list when available.
+        $engine['models'] = apply_filters(
+          'mwai_xai_models',
+          Meow_MWAI_Engines_XAI::get_models_static()
+        );
+      }
       else {
         $engine['models'] = [];
         foreach ( $options['ai_models'] as $model ) {

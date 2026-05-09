@@ -57,4 +57,18 @@ define( 'MWAI_ENGINES', [
     'internal' => true,
     'models' => []
   ],
+  [
+    'name' => 'xAI (Grok)',
+    'type' => 'xai',
+    'inputs' => ['apikey', 'dynamicModels'],
+    'internal' => true,
+    'models' => []
+  ],
+  [
+    'name' => 'Custom (OpenAI-Compatible)',
+    'type' => 'custom',
+    'inputs' => ['endpoint', 'apikey', 'dynamicModels'],
+    'internal' => true,
+    'models' => []
+  ],
 ] );

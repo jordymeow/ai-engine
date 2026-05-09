@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.7
+Stable tag: 3.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,24 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.4.8 (2026/05/09) =
+* Fix: Resolved OpenAI Responses API "No tool output found" errors during chained recursive tool calls and static-only turns. Static-skip is now disabled for Responses API because every `function_call` must be answered.
+* Add: Custom OpenAI-compatible provider for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, and similar servers.
+* Add: Built-in xAI/Grok provider with dynamic model fetching and fallback support.
+* Add: Insights retention setting with daily cleanup for old log rows. Defaults to Never.
+* Add: Embedding chunk metadata: source, partIndex, and partTotal, exposed through `mwai_embeddings_vector_metadata` for Pinecone, Qdrant, Chroma, and OpenAI Vector Store. PDF imports can now use the filename as the chunk title, and Modify Embedding can edit the new fields.
+* Add: Code Engine static/dynamic Behavior now applies to Callable function snippets, skipping AI feedback when all calls are static.
+* Update: Reworked onboarding with a default OpenAI environment, Knowledge provider chooser, one-click OpenAI vector store creation, no-key welcome message, and AI Assistant enabled by default.
+* Update: Reworked Pro license management with a Modify License flow for Re-Validate, Modify, and Remove actions.
+* Update: Hardened MCP handling by releasing PHP session locks, using proper trash hooks, deduplicating cache busts, enforcing `confirm_write` for non-read SQL, and purging LiteSpeed/WP Rocket caches after post writes.
+* Update: Usage widget preferences for Price/Units/Queries and Daily/Monthly now persist across reloads.
+* Update: Query and Reply tabs now point users to Settings > Others > Insights when data is unavailable.
+* Fix: Managed-mode WP AI Client and AI Engine integrations now satisfy WordPress 7 AI plugin credential requirements, preventing false rejections for Ollama, OpenRouter, Mistral, Perplexity, and Replicate.
+* Fix: Removed redundant vector-DB addon initialization to prevent idle "OpenAI Vector Store ID is not configured" logs.
+* Fix: Resolved PHP 8.4 nullable-parameter deprecations in query and MCP helpers.
+* Fix: ChatML base now supports string-shaped `error` fields in API responses.
+* Update: Removed the legacy snippet-vault fallback and unused per-environment usage field.
 
 = 3.4.7 (2026/04/25) =
 * Add: GPT-5.5, GPT Image 2, and Claude Opus 4.7 to the model lists.

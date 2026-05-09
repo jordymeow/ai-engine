@@ -86,6 +86,14 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_Mistral( $core, $env );
       return $engine;
     }
+    else if ( $env['type'] === 'xai' ) {
+      $engine = new Meow_MWAI_Engines_XAI( $core, $env );
+      return $engine;
+    }
+    else if ( $env['type'] === 'custom' ) {
+      $engine = new Meow_MWAI_Engines_Custom( $core, $env );
+      return $engine;
+    }
 
     // Last chance via a filter.
     $engine = apply_filters( 'mwai_init_engine', null, $core, $env );

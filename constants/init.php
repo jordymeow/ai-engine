@@ -28,9 +28,7 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   'windowAnimation' => 'zoom',
   'fullscreen' => false,
   'copyButton' => false,
-  // Default true to preserve the print-to-PDF behavior introduced in 3.4.6
-  // for installs that never opted into the new toggle.
-  'pdfButton' => true,
+  'pdfButton' => false,
   'headerSubtitle' => 'Discuss with',
   'localMemory' => true,
   'multiUpload' => false,
@@ -119,12 +117,14 @@ define( 'MWAI_OPTIONS', [
   'module_forms' => false,
   'forms_editor' => true,
   'module_blocks' => false,
+  'module_assistant' => true,
   'module_playground' => true,
   'module_generator_content' => true,
   'module_generator_images' => true,
-  'module_generator_videos' => true,
+  'module_generator_videos' => false,
   'module_moderation' => false,
   'module_statistics' => false,
+  'statistics_retention_days' => 'Never',
   'module_finetunes' => false,
   'module_embeddings' => false,
   'module_transcription' => false,
@@ -171,13 +171,7 @@ define( 'MWAI_OPTIONS', [
       'finetunes_deleted' => [],
       'legacy_finetunes' => [],
       'legacy_finetunes_deleted' => [],
-      'usage' => [], // TODO:  We should only keep the last year of usage
     ],
-    [
-      'name' => 'Claude',
-      'type' => 'anthropic',
-      'apikey' => '',
-    ]
   ],
 
   'mcp_envs' => [],
@@ -198,15 +192,10 @@ define( 'MWAI_OPTIONS', [
   'embeddings_default_env' => null,
   'embeddings_envs' => [
     [
-      'name' => 'Chroma',
-      'type' => 'chroma',
-      'apikey' => '',
-      'server' => 'https://api.trychroma.com',
-      'deployment' => 'cloud',
-      'tenant' => '',
-      'database' => 'default_database',
-      'collection' => 'mwai',
-      'embeddings_source' => 'Qwen/Qwen3-Embedding-0.6B'
+      'name' => 'OpenAI Vector Store',
+      'type' => 'openai-vector-store',
+      'openai_env_id' => null,
+      'store_id' => '',
     ]
   ],
   'embeddings' => [

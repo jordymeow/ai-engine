@@ -278,6 +278,7 @@ i18n.COMMON = {
   EVENT_LOGS: __( 'Event Logs', 'ai-engine' ),
   PRIVACY_FIRST: __( 'Privacy First', 'ai-engine' ),
   DATA_NOT_AVAILABLE: __( 'Data not available.', 'ai-engine' ),
+  DATA_NOT_AVAILABLE_HINT: __( 'Enable "Queries Data" in Settings > Others > Insights to record the content of queries and replies.', 'ai-engine' ),
   USAGE_EMPTY_SUBTITLE: __( 'Usage will appear here once AI queries start running.', 'ai-engine' ),
   ENVIRONMENTS: __( 'Environments', 'ai-engine' ),
   ENVIRONMENT_EMPTY_TITLE: __( 'No AI environment set up yet', 'ai-engine' ),
@@ -503,6 +504,7 @@ i18n.HELP = {
 
 i18n.SETTINGS = {
   AI_ENV_SETUP: __( 'Add your API key in <b>Settings → AI → Environments</b>. %s covers most cases, so it\'s a no-brainer. Let\'s try? 🐱', 'ai-engine' ),
+  AI_FRESH_INSTALL: __( 'Hello! 🐱 We have prepared an <b>OpenAI</b> environment for you, just paste your key in <b>Settings → Environments for AI</b>. Prefer Claude, Gemini, or another provider? Switch the environment type any time.', 'ai-engine' ),
   AI_DEFAULT_NO_KEY: __( 'Your default environment is %s, but it has no API key. Set one, or pick a different default in <b>Settings → AI → Environments</b>.', 'ai-engine' ),
   AI_DEFAULT_TYPE_UNAVAILABLE: __( 'Your default environment is %s, but its engine type is no longer available. Pick a different default or re-install the matching add-on.', 'ai-engine' ),
   AI_DEFAULT_MISSING: __( 'The <b>Default</b> environment or model isn\'t set. Pick one in <b>Settings → AI → AI Environment Defaults</b>.', 'ai-engine' ),

@@ -286,6 +286,20 @@ class Meow_MWAI_Labs_MCP {
   #endregion
 
   #region Helpers (log / JSON-RPC utils)
+  /**
+   * Release the PHP session lock as early as possible. Long MCP calls (e.g. content
+   * mutations on large posts) can otherwise serialize behind any other request from the
+   * same client that opened a session, since PHP holds an exclusive write lock on the
+   * session file for the lifetime of the request. The result is the ~max_execution_time
+   * hangs operators see on busy sites. Closing the session is idempotent and safe — if
+   * no session is active the call is a no-op.
+   */
+  private function release_session_lock(): void {
+    if ( function_exists( 'session_status' ) && session_status() === PHP_SESSION_ACTIVE ) {
+      session_write_close();
+    }
+  }
+
   private function log( $msg ) {
     // This method is for internal UI logs - keep it minimal
     if ( $this->logging ) {
@@ -364,6 +378,7 @@ class Meow_MWAI_Labs_MCP {
   * This method handles the direct JSON-RPC requests to maintain compatibility with Claude.
   */
   private function handle_direct_jsonrpc( WP_REST_Request $request, $data ) {
+    $this->release_session_lock();
     $id = $data['id'] ?? null;
     $method = $data['method'] ?? null;
 
@@ -734,6 +749,7 @@ class Meow_MWAI_Labs_MCP {
    * This processes JSON-RPC requests and returns JSON responses.
    */
   private function handle_streamable_http_post( WP_REST_Request $request ) {
+    $this->release_session_lock();
     $raw_body = $request->get_body();
 
     if ( empty( $raw_body ) ) {
@@ -892,6 +908,7 @@ class Meow_MWAI_Labs_MCP {
 
   #region Handle /messages (JSON-RPC ingress)
   public function handle_message( WP_REST_Request $request ) {
+    $this->release_session_lock();
     $sess = sanitize_text_field( $request->get_param( 'session_id' ) );
     $raw = $request->get_body();
     $dat = json_decode( $raw, true );

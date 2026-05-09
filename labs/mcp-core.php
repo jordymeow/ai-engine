@@ -30,6 +30,43 @@ class Meow_MWAI_Labs_MCP_Core {
   private function empty_schema(): array {
     return [ 'type' => 'object', 'properties' => (object) [] ];
   }
+
+  /**
+   * Bust post caches after a write so a follow-up wp_get_post in the next request
+   * returns fresh data on sites with persistent object caches (Redis, Memcached) or
+   * page caches (LiteSpeed, WP Rocket, Cloudflare, etc.). wp_insert_post / wp_update_post
+   * call clean_post_cache themselves; this is idempotent and also fans out third-party
+   * purge hooks plus a generic mwai_mcp_post_changed action so sites can wire their own.
+   *
+   * Per-request dedupe: agentic clients often hit the same post several times in quick
+   * succession (e.g. wp_alter_post twice on the same page within the same JSON-RPC call),
+   * which would multiply expensive third-party purges (Cloudflare global, Algolia reindex).
+   * We keep a static set of post IDs already busted in this PHP request and short-circuit
+   * repeats. The $context array is forwarded to mwai_mcp_post_changed so handlers can
+   * coalesce or defer purges across requests on their own (e.g. flush at end of batch).
+   */
+  private function bust_post_cache( int $post_id, array $context = [] ): void {
+    if ( $post_id <= 0 ) {
+      return;
+    }
+    static $already_busted = [];
+    if ( isset( $already_busted[ $post_id ] ) ) {
+      return;
+    }
+    $already_busted[ $post_id ] = true;
+
+    clean_post_cache( $post_id );
+    $context = wp_parse_args( $context, [
+      'source' => 'mcp',
+      'tool' => null,
+      'batch' => false,
+    ] );
+    do_action( 'mwai_mcp_post_changed', $post_id, $context );
+    do_action( 'litespeed_purge_post', $post_id );
+    if ( function_exists( 'rocket_clean_post' ) ) {
+      rocket_clean_post( $post_id );
+    }
+  }
   #endregion
 
   #region Tools Definitions
@@ -257,7 +294,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_get_post' => [
         'name' => 'wp_get_post',
-        'description' => 'Get basic post data by ID (title, content, status, dates). For complete data including all meta and terms, use wp_get_post_snapshot instead.',
+        'description' => 'Get basic post data by ID: title, content, status, dates, permalink. Reads through the WordPress object cache; if you just wrote with wp_create_post / wp_update_post / wp_alter_post, the write tools bust caches automatically so a follow-up read returns fresh data. For complete data including all meta and terms, use wp_get_post_snapshot instead.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [ 'ID' => [ 'type' => 'integer' ] ],
@@ -289,7 +326,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_create_post' => [
         'name' => 'wp_create_post',
-        'description' => 'Create a post or page – post_title required; Markdown accepted in post_content; defaults to draft post_status and post post_type; set categories later with wp_add_post_terms; meta_input is an associative array of custom-field key/value pairs.',
+        'description' => 'Create a new post, page, or any custom post type. post_title is required. Markdown is accepted in post_content. post_status defaults to "draft" and post_type defaults to "post" – pass post_type: "page" for a page, or any registered CPT slug (product, event, etc.). Set categories later with wp_add_post_terms; meta_input is an associative array of custom-field key/value pairs.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -339,7 +376,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_delete_post' => [
         'name' => 'wp_delete_post',
-        'description' => 'Delete/trash a post.',
+        'description' => 'Delete, trash, or remove a post, page, or any custom post type by ID. Without force, the post is moved to trash (can be restored). With force: true, the post is permanently destroyed (bypasses trash, irreversible). Works for posts, pages, products, events, attachments, or any registered CPT.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -1138,6 +1175,7 @@ class Meow_MWAI_Labs_MCP_Core {
               update_post_meta( $new, sanitize_key( $k ), maybe_serialize( $v ) );
             }
           }
+          $this->bust_post_cache( (int) $new, [ 'tool' => 'wp_create_post' ] );
           $this->add_result_text( $r, 'Post created ID ' . $new );
         }
         break;
@@ -1208,8 +1246,37 @@ class Meow_MWAI_Labs_MCP_Core {
           break;
         }
 
-        // Update post fields if any
+        // Detect trash / untrash transitions and route through wp_trash_post() /
+        // wp_untrash_post() so the proper hooks fire (ACF cleanup, search-index purges,
+        // SEO plugins, etc.). A bare wp_update_post( ['post_status' => 'trash'] ) just
+        // flips the status field and skips all of that.
         $u = $post_id;
+        if ( isset( $c['post_status'] ) ) {
+          $current = get_post( $post_id );
+          $current_status = $current ? $current->post_status : null;
+          $target_status = $c['post_status'];
+
+          if ( $target_status === 'trash' && $current_status !== 'trash' ) {
+            $trashed = wp_trash_post( $post_id );
+            if ( !$trashed ) {
+              $r['error'] = [ 'code' => -32603, 'message' => 'wp_trash_post failed' ];
+              break;
+            }
+            unset( $c['post_status'] );
+            $has_fields = count( $c ) > 1;
+          }
+          elseif ( $current_status === 'trash' && $target_status !== 'trash' ) {
+            $untrashed = wp_untrash_post( $post_id );
+            if ( !$untrashed ) {
+              $r['error'] = [ 'code' => -32603, 'message' => 'wp_untrash_post failed' ];
+              break;
+            }
+            // Leave post_status in $c: wp_untrash_post restores to a previous status, and
+            // a subsequent wp_update_post() will set the explicit one the caller asked for.
+          }
+        }
+
+        // Update post fields if any
         if ( $has_fields ) {
           $u = wp_update_post( wp_slash( $c ), true );
           if ( is_wp_error( $u ) ) {
@@ -1224,6 +1291,8 @@ class Meow_MWAI_Labs_MCP_Core {
             update_post_meta( $u, sanitize_key( $k ), maybe_serialize( $v ) );
           }
         }
+
+        $this->bust_post_cache( (int) $u, [ 'tool' => 'wp_update_post' ] );
 
         // Verify the update actually took effect
         $updated_post = get_post( $u );
@@ -1255,8 +1324,10 @@ class Meow_MWAI_Labs_MCP_Core {
           $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
           break;
         }
-        $del = wp_delete_post( intval( $a['ID'] ), !empty( $a['force'] ) );
+        $delete_id = intval( $a['ID'] );
+        $del = wp_delete_post( $delete_id, !empty( $a['force'] ) );
         if ( $del ) {
+          $this->bust_post_cache( $delete_id, [ 'tool' => 'wp_delete_post' ] );
           $this->add_result_text( $r, 'Post #' . $a['ID'] . ' deleted' );
         }
         else {
@@ -1325,6 +1396,7 @@ class Meow_MWAI_Labs_MCP_Core {
           break;
         }
 
+        $this->bust_post_cache( $post_id, [ 'tool' => 'wp_alter_post' ] );
         $this->add_result_text( $r, $count . ' replacement' . ( $count === 1 ? '' : 's' ) . ' applied to ' . $field . ' of post #' . $post_id );
         break;
 

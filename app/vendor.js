@@ -3638,7 +3638,9 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    padding: 0 15px;
+    /* Top padding so primary-button hover-lift (transform: translateY(-1px))
+       isn't clipped by the parent's overflow:hidden. */
+    padding: 4px 15px 0;
 
     .title { margin-bottom: 0; align-self: center; }
     .button-group { gap: 5px; }

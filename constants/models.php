@@ -1378,3 +1378,58 @@ define( 'MWAI_PERPLEXITY_MODELS', [
 // Mistral AI Models
 // Models are fetched dynamically from the Mistral API
 define( 'MWAI_MISTRAL_MODELS', [] );
+
+// xAI (Grok) Models
+// Models are fetched dynamically from the xAI API. The fallback list below mirrors the
+// chat-capable models that xAI publishes on https://docs.x.ai/docs/models, used only when
+// the dynamic fetch fails (e.g. invalid key during preflight).
+define( 'MWAI_XAI_MODELS', [
+  [
+    'model' => 'grok-4',
+    'name' => 'Grok 4',
+    'family' => 'grok',
+    'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 3.00, 'out' => 15.00 ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 256000,
+    'tags' => [ 'core', 'chat', 'functions', 'vision', 'reasoning' ],
+  ],
+  [
+    'model' => 'grok-4-fast',
+    'name' => 'Grok 4 Fast',
+    'family' => 'grok',
+    'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 0.20, 'out' => 0.50 ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 256000,
+    'tags' => [ 'core', 'chat', 'functions', 'vision', 'reasoning' ],
+  ],
+  [
+    'model' => 'grok-code-fast-1',
+    'name' => 'Grok Code Fast',
+    'family' => 'grok',
+    'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 0.20, 'out' => 1.50 ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 256000,
+    'tags' => [ 'core', 'chat', 'functions' ],
+  ],
+  [
+    'model' => 'grok-3-mini',
+    'name' => 'Grok 3 Mini',
+    'family' => 'grok',
+    'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 0.30, 'out' => 0.50 ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 131072,
+    'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
+  ],
+] );

@@ -1281,18 +1281,10 @@ class Meow_MWAI_API {
   * Get function name by ID
   */
   private function get_function_name_by_id( $funcId ) {
-    // Get function from registry using the static method
     $function = MeowPro_MWAI_FunctionAware::get_function( 'code-engine', $funcId );
     if ( $function && isset( $function->name ) ) {
       return $function->name;
     }
-
-    // If not found, try snippet-vault type as well
-    $function = MeowPro_MWAI_FunctionAware::get_function( 'snippet-vault', $funcId );
-    if ( $function && isset( $function->name ) ) {
-      return $function->name;
-    }
-
     return null;
   }
   #endregion

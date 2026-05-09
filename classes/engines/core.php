@@ -219,6 +219,48 @@ class Meow_MWAI_Engines_Core {
         // Note: $reply->query contains the original query that produced this reply
         $query = new $queryClass( $reply, $reply->query );
       }
+      else {
+        // Already inside a feedback chain (recursion depth >= 2). Each new reply produces a
+        // fresh response_id; the next request must reference THAT, not the original turn's id.
+        // Otherwise OpenAI's Responses API rejects with "No tool output found" because, from
+        // the original response's perspective, the new function_call_output answers a call
+        // that doesn't exist in its chain. Refresh previousResponseId from the latest reply
+        // so each recursion targets the immediately preceding turn.
+        if ( !empty( $reply->id ) ) {
+          $query->previousResponseId = $reply->id;
+        }
+        // Reset the per-turn feedback blocks; they'll be repopulated below from the new reply.
+        if ( method_exists( $query, 'clear_feedback_blocks' ) ) {
+          $query->clear_feedback_blocks();
+        }
+      }
+
+      // Determine whether every function call in this turn is "static" (no AI
+      // feedback wanted). If so, we still execute the functions below but
+      // skip the recursive AI round-trip — the AI's reply stands as-is.
+      // Mixed turns degrade to dynamic for all calls, since OpenAI/Anthropic
+      // tool-call protocols require a result for every requested call in the
+      // same message.
+      $all_static = true;
+      foreach ( $reply->needFeedbacks as $needFeedback ) {
+        $fn = $needFeedback['function'] ?? null;
+        if ( !$fn || !isset( $fn->behavior ) || $fn->behavior !== 'static' ) {
+          $all_static = false;
+          break;
+        }
+      }
+
+      // OpenAI's Responses API is stateful: when the next turn references previous_response_id,
+      // every function_call from the prior response must have a matching function_call_output,
+      // or the API rejects with "No tool output found for function call call_xxx". Skipping the
+      // round-trip on all-static turns satisfies the local user-facing reply but leaves the
+      // server-side conversation in a half-answered state, breaking any follow-up. So we
+      // disable the static-skip optimization for Responses API replies — the round-trip stays
+      // mandatory there. Chat Completions and Anthropic are stateless on tool calls and remain
+      // safe to skip.
+      if ( $all_static && ! empty( $reply->id ) && $this->core->responseIdManager->is_responses_api_id( $reply->id ) ) {
+        $all_static = false;
+      }
 
       // Validate that all function calls have proper function definitions
       foreach ( $reply->needFeedbacks as $needFeedback ) {
@@ -369,6 +411,15 @@ class Meow_MWAI_Engines_Core {
         foreach ( $feedback_blocks as $key => $block ) {
           error_log( '[AI Engine Queries] Block ' . substr( $key, 0, 8 ) . ' has ' . count( $block['feedbacks'] ) . ' feedbacks' );
         }
+      }
+
+      // Static-only turn: functions executed above for their side effects;
+      // skip the recursive AI feedback so the original reply stands.
+      if ( $all_static ) {
+        if ( $queries_debug ) {
+          error_log( '[AI Engine Queries] All function calls are static. Skipping AI feedback round-trip.' );
+        }
+        return $reply;
       }
 
       // Run the feedback query

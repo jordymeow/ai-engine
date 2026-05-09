@@ -70,7 +70,53 @@ class Meow_MWAI_Labs_WPAI_Connectors {
       // Connectors page shows providers as connected even when the AiClient
       // registry doesn't know about them (e.g. OpenRouter, Mistral).
       add_filter( 'script_module_data_options-connectors-wp-admin', [ $this, 'mark_bridged_as_connected' ], 20 );
+
+      // Fully take over the WP AI plugin's credentials gate. Once the user
+      // chose "managed", AI Engine is the source of truth for which providers
+      // are usable: the WP AI plugin shouldn't be vetoing on its own (its
+      // checks ignore Ollama, OpenRouter, Mistral, etc., and its live
+      // wp_ai_client_prompt('Test') round-trip can fail for providers WP core
+      // doesn't ship an AiClient adapter for). We declare credentials present
+      // when at least one AI Engine env is usable, and skip the live test.
+      add_filter( 'wpai_has_ai_credentials', [ $this, 'declare_credentials_present' ], 10, 1 );
+      add_filter( 'wpai_pre_has_valid_credentials_check', [ $this, 'declare_credentials_valid' ], 10, 1 );
     }
+  }
+
+  /**
+   * Filter for `wpai_has_ai_credentials`. Returns true if AI Engine has at
+   * least one usable env (api-key env with a key, or any keyless type like
+   * Ollama). Lets the WP AI plugin proceed past its own narrow check, which
+   * only counts api_key-method connectors with the matching option set.
+   */
+  public function declare_credentials_present( $has_credentials ): bool {
+    if ( $has_credentials ) {
+      return true;
+    }
+    foreach ( $this->core->get_all_options()['ai_envs'] ?? [] as $env ) {
+      $type = $env['type'] ?? '';
+      if ( ! $type ) {
+        continue;
+      }
+      if ( $type === 'ollama' ) {
+        return true;
+      }
+      if ( ! empty( $env['apikey'] ) ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Filter for `wpai_pre_has_valid_credentials_check`. Skip the WP AI
+   * plugin's live `wp_ai_client_prompt('Test')` validation: AI Engine handles
+   * its own provider routing, and the AiClient registry doesn't know about
+   * providers like OpenRouter or Mistral, so the live test would falsely
+   * report them as invalid.
+   */
+  public function declare_credentials_valid( $valid ): bool {
+    return true;
   }
 
   public function mark_bridged_as_connected( array $data ): array {
@@ -156,6 +202,18 @@ class Meow_MWAI_Labs_WPAI_Connectors {
       $auth        = [ 'method' => $type === 'ollama' ? 'none' : 'api_key' ];
       if ( isset( self::CREDENTIALS_URLS[ $type ] ) ) {
         $auth['credentials_url'] = self::CREDENTIALS_URLS[ $type ];
+      }
+      // WP core's _wp_register_default_connectors() auto-fills these for its own
+      // defaults; third-party register() calls don't get that treatment, and the
+      // WP AI plugin's has_ai_credentials() skips any connector with an empty
+      // setting_name. Mirror what WP core would have set so our connectors are
+      // recognised as having credentials.
+      if ( $auth['method'] === 'api_key' ) {
+        $sanitized_id = str_replace( '-', '_', $type );
+        $auth['setting_name']  = "connectors_ai_{$sanitized_id}_api_key";
+        $constant_case         = strtoupper( preg_replace( '/([a-z])([A-Z])/', '$1_$2', $sanitized_id ) ) . '_API_KEY';
+        $auth['constant_name'] = $constant_case;
+        $auth['env_var_name']  = $constant_case;
       }
       $args = [
         'name'           => $name,

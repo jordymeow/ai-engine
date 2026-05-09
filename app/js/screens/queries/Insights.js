@@ -1,5 +1,5 @@
-// Previous: 3.3.3
-// Current: 3.4.7
+// Previous: 3.4.7
+// Current: 3.4.8
 
 ```javascript
 const { useMemo, useState, useEffect } = wp.element;
@@ -189,7 +189,6 @@ const Insights = ({ options, updateOption, busy }) => {
   const [logs, setLogs] = useState([]);
   const [selectedLogIds, setSelectedLogIds] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => getLocalSettings().isSidebarCollapsed);
-
   const [limitSection, setLimitSection] = useState('users');
   const limits = options?.limits;
   const default_limits = options?.default_limits;
@@ -355,7 +354,9 @@ const Insights = ({ options, updateOption, busy }) => {
                   <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                     {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
                     {!isFetchingMeta && !meta && (
-                      <NekoEmpty icon="file-text" title={i18n.COMMON.DATA_NOT_AVAILABLE} />
+                      <NekoEmpty icon="file-text"
+                        title={i18n.COMMON.DATA_NOT_AVAILABLE}
+                        subtitle={i18n.COMMON.DATA_NOT_AVAILABLE_HINT} />
                     )}
                     {!isFetchingMeta && meta && (
                       <JsonViewer
@@ -376,7 +377,9 @@ const Insights = ({ options, updateOption, busy }) => {
                   <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                     {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
                     {!isFetchingMeta && !meta && (
-                      <NekoEmpty icon="file-text" title={i18n.COMMON.DATA_NOT_AVAILABLE} />
+                      <NekoEmpty icon="file-text"
+                        title={i18n.COMMON.DATA_NOT_AVAILABLE}
+                        subtitle={i18n.COMMON.DATA_NOT_AVAILABLE_HINT} />
                     )}
                     {!isFetchingMeta && meta && (
                       <JsonViewer

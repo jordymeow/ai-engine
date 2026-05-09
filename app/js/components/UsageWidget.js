@@ -1,5 +1,5 @@
-// Previous: 3.4.0
-// Current: 3.4.7
+// Previous: 3.4.7
+// Current: 3.4.8
 
 ```javascript
 const { useState, useMemo } = wp.element;
@@ -201,9 +201,24 @@ const UsageWidget = ({ options }) => {
   const ai_models_usage       = options?.ai_models_usage;
   const ai_models_usage_daily = options?.ai_models_usage_daily;
 
-  const [metric, setMetric]         = useState('queries');
-  const [viewMode, setViewMode]     = useState('daily');
-  const [expanded, setExpanded]     = useState(null);
+  const [metric, setMetricState] = useState(() => {
+    const stored = localStorage.getItem('mwai_usage_metric');
+    return ['price', 'tokens', 'queries'].includes(stored) ? stored : 'queries';
+  });
+  const [viewMode, setViewModeState] = useState(() => {
+    const stored = localStorage.getItem('mwai_usage_view_mode');
+    return ['daily', 'monthly'].includes(stored) ? stored : 'daily';
+  });
+  const [expanded, setExpanded] = useState(null);
+
+  const setMetric = (v) => {
+    setMetricState(v);
+    localStorage.setItem('mwai_usage_metric', v);
+  };
+  const setViewMode = (v) => {
+    setViewModeState(v);
+    localStorage.setItem('mwai_usage_view_mode', v);
+  };
 
   const modelToProvider = useMemo(() => {
     const map = {};

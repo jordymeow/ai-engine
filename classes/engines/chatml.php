@@ -1474,14 +1474,23 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   */
 
   // Check if there are errors in the response from OpenAI, and throw an exception if so.
+  // OpenAI uses { error: { message: ... } }; some compatible providers (xAI, etc.) use a
+  // plain string in the error field — handle both shapes.
   protected function handle_response_errors( $data ) {
-    if ( isset( $data['error'] ) && !empty( $data['error'] ) ) {
-      $message = $data['error']['message'];
-      if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
-        $message = str_replace( $matches[1], '', $message );
-      }
-      throw new Exception( $message );
+    if ( !isset( $data['error'] ) || empty( $data['error'] ) ) {
+      return;
     }
+    $err = $data['error'];
+    if ( is_array( $err ) ) {
+      $message = $err['message'] ?? json_encode( $err );
+    }
+    else {
+      $message = (string) $err;
+    }
+    if ( preg_match( '/API key provided(: .*)\./', $message, $matches ) ) {
+      $message = str_replace( $matches[1], '', $message );
+    }
+    throw new Exception( $message );
   }
 
   public function list_files( $purposeFilter = null ) {

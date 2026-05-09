@@ -6,15 +6,17 @@ class Meow_MWAI_Query_Function {
   public array $parameters;
   public string $type; // 'code-engine', etc...
   public string $target; // 'server' or 'client'
+  public string $behavior; // 'dynamic' (default) or 'static'
   public ?string $id;
 
   public function __construct(
     string $name,
     string $description,
     array $parameters = [],
-    string $type = null,
-    string $id = null,
-    string $target = null
+    ?string $type = null,
+    ?string $id = null,
+    ?string $target = null,
+    ?string $behavior = null
   ) {
     // $name: The name of the function to be called.
     // Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
@@ -34,6 +36,7 @@ class Meow_MWAI_Query_Function {
     $this->type = $type ?? 'manual';
     $this->id = $id;
     $this->target = $target ?? 'server';
+    $this->behavior = ( $behavior === 'static' ) ? 'static' : 'dynamic';
   }
 
   public function serializeForOpenAI() {
@@ -164,6 +167,7 @@ class Meow_MWAI_Query_Function {
     $funcType = $json['type'] ?? null;
     $funcId = $json['id'] ?? null;
     $funcTarget = $json['target'] ?? null;
+    $funcBehavior = $json['behavior'] ?? null;
     if ( $funcId === null && !empty( $json['snippetId'] ) ) {
       $funcId = $json['snippetId'];
     }
@@ -177,7 +181,7 @@ class Meow_MWAI_Query_Function {
         $args[] = new Meow_MWAI_Query_Parameter( $name, $desc, $type, $required );
       }
     }
-    return new self( $funcName, $funcDesc, $args, $funcType, $funcId, $funcTarget );
+    return new self( $funcName, $funcDesc, $args, $funcType, $funcId, $funcTarget, $funcBehavior );
   }
 
   public static function toJson( Meow_MWAI_Query_Function $function ): array {
@@ -187,6 +191,7 @@ class Meow_MWAI_Query_Function {
       'type' => $function->type,
       'id' => $function->id,
       'target' => $function->target,
+      'behavior' => $function->behavior,
       'args' => [],
     ];
 
