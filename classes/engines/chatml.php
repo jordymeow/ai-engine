@@ -422,9 +422,14 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         'prompt' => $query->message,
         'n' => $query->maxResults,
         'size' => $resolution,
-        'quality' => 'high',
         'moderation' => 'low',
       ];
+      // Only forward 'quality' when the caller (or final_checks) resolved one.
+      // Letting the API default decide ('auto' for gpt-image-*) keeps costs predictable
+      // and avoids forcing 'high' on every request.
+      if ( !empty( $query->quality ) ) {
+        $body['quality'] = $query->quality;
+      }
       return $body;
     }
   }

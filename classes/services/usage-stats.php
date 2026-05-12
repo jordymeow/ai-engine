@@ -30,6 +30,12 @@ class Meow_MWAI_Services_UsageStats {
       // Initialize encoder provider if needed
       if ( $this->encoder_provider === null ) {
         $this->encoder_provider = new \Yethee\Tiktoken\EncoderProvider();
+        // The library defaults its vocab cache to {sys_temp}/tiktoken — a fixed shared
+        // path. On multi-tenant hosts where each site runs as a different uid, the first
+        // site to create the directory owns it and other sites get EACCES on write. Scope
+        // the cache by ABSPATH so every install gets its own writable directory.
+        $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tiktoken-' . substr( md5( ABSPATH ), 0, 12 );
+        $this->encoder_provider->setVocabCache( $cacheDir );
       }
 
       // Get the cl100k_base encoder (standard for modern OpenAI models)

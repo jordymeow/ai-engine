@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.8
+Stable tag: 3.4.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,7 @@ Hello! ☀️ I built AI Engine to bring OpenAI, Claude, and other AI models int
 
 For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [REST endpoints](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/), and [MCP support](https://ai.thehiddendocs.com/mcp/). Build AI features, automate workflows, or create SaaS applications on WordPress.
 
-Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://openclaw.com/) through MCP, giving AI direct access to your site. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
+Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://openclaw.com/) through MCP, giving AI direct access to your site. Desktop clients can connect via OAuth: users just paste the MCP URL, sign in to WordPress, and approve. No shared token to manage. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
 
 You'll be having a blast before you've explored everything. You'll probably spot bits of AI Engine in plenty of other AI plugins, code and UI alike. Flattering, really... or fishy? 🤣 But only AI Engine keeps pushing forward with real care for its community, a drive toward perfection, and the patience to get the details right.
 
@@ -181,7 +181,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 * **Function Calling** — Connect AI to WordPress functions, WooCommerce, or any custom API.
 * **Cross-Site Chatbots** — Embed your chatbots on external websites.
 * **Editor Assistant** — An AI sidebar in the post editor that can read, rewrite, insert, and rearrange your content blocks through chained function calls.
-* **Realtime Audio** — Voice-based conversations with AI in real time.
+* **Realtime Audio** — Voice-based conversations on OpenAI's GA Realtime API, with GPT-5-class voice reasoning.
 * **Statistics & Usage Control** — Track usage, set limits per role, and monitor costs.
 * **Extra MCP Tools** — Adds plugin, theme, database, Polylang, and WooCommerce management to the MCP server.
 * **Priority Support** — Get faster help from the Meow Apps team.
@@ -192,7 +192,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 Built specifically for WordPress with seamless integration. No clunky interfaces, just native WordPress experience.
 
 **Flexible & Powerful**
-Support for multiple AI providers: OpenAI, Anthropic, Google, OpenRouter, Mistral, and more. Use the models that work best for you.
+Built-in support for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) provider that connects to Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you.
 
 **Developer Friendly**
 Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire SaaS applications on WordPress.
@@ -263,6 +263,18 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.4.9 (2026/05/12) =
+* Add: OAuth 2.1 with Dynamic Client Registration for the MCP server, allowing Claude Desktop and other browser-driven clients to connect without a shared bearer token.
+* Add: Per-quality image generation (auto/low/medium/high) for GPT Image models, available in the Image Generator UI and as a global default in Settings → Images.
+* Fix: Pulling a remote OpenAI vector store no longer creates entries containing raw JSON error bodies for files uploaded with purpose=assistants.
+* Fix: The `mwai_allow_setup` filter now properly grants menu and REST API access to non-admin roles, instead of being overridden by a hardcoded `manage_options` check.
+* Fix: Tiktoken vocab cache is now scoped per WordPress install, preventing permission conflicts on multi-tenant hosts.
+* Update: Migrated OpenAI Realtime integration from the deprecated Beta endpoint to the GA API, enabling support for gpt-realtime-2 and new voice models.
+* Update: Reorganized MCP settings panel with a dedicated section for Bearer Token and Access Level, and a new Connected Apps section to review and revoke OAuth grants.
+* Update: Generalized the `manage_options` gate in shared code so each Meow Apps plugin gets its own `{prefix}_allow_setup` filter instead of hardcoding `mwai_allow_setup`.
+* Update: Removed gpt-4o-realtime-preview, gpt-4o-mini-realtime-preview, and gpt-realtime-translate from the model list.
+* Update: SSE transport for MCP is scheduled for removal in July 2026 and is now hidden from the UI for new users.
 
 = 3.4.8 (2026/05/09) =
 * Fix: Resolved OpenAI Responses API "No tool output found" errors during chained recursive tool calls and static-only turns. Static-skip is now disabled for Responses API because every `function_call` must be answered.

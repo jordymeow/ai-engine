@@ -110,7 +110,9 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       $message = $this->retrieve_message( $params['message'] );
       $query = new Meow_MWAI_Query_Image( $message );
       $query->set_resolution( isset( $params['resolution'] ) ? $params['resolution'] : '1024x1024' );
-      $query->set_quality( isset( $params['quality'] ) ? $params['quality'] : 'standard' );
+      if ( isset( $params['quality'] ) ) {
+        $query->set_quality( $params['quality'] );
+      }
       $query->set_style( isset( $params['style'] ) ? $params['style'] : null );
       $query->set_env( $params['envId'] );
       $query->set_model( $params['model'] );

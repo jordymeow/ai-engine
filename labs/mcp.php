@@ -45,13 +45,12 @@ class Meow_MWAI_Labs_MCP {
     // Set logging based on option
     $this->logging = $this->core->get_option( 'mcp_debug_mode', false );
 
-    // OAuth support is temporarily disabled due to security concerns.
-    // The previous implementation allowed unvalidated redirect URIs which
-    // introduced an open redirect vulnerability and the possibility to
-    // steal authorization codes. Until proper client registration with
-    // strict redirect URI validation is implemented, the OAuth feature is
-    // not loaded. See labs/oauth.php for the previous code and take care
-    // when re‑enabling it in the future.
+    // OAuth 2.1 with Dynamic Client Registration. Lives alongside the bearer
+    // token: bearer is for dev tools (Claude Code, scripts), OAuth is for
+    // browser-driven clients like Claude Desktop. The new module enforces
+    // strict redirect_uri matching, PKCE S256, and refresh-token rotation.
+    require_once __DIR__ . '/mcp-oauth.php';
+    $this->oauth = new Meow_MWAI_Labs_MCP_OAuth( $core, $this );
 
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
   }
@@ -67,9 +66,10 @@ class Meow_MWAI_Labs_MCP {
     }
     $this->mcp_role = $this->core->get_option( 'mcp_role', 'admin' );
 
-    // Only add filter once
+    // Auth filter runs for both bearer token and OAuth token paths; register
+    // unconditionally so that OAuth-only deployments (no static bearer set) work.
     static $filter_added = false;
-    if ( !empty( $this->bearer_token ) && !$filter_added ) {
+    if ( !$filter_added ) {
       add_filter( 'mwai_allow_mcp', [ $this, 'auth_via_bearer_token' ], 10, 2 );
       $filter_added = true;
     }
@@ -90,6 +90,11 @@ class Meow_MWAI_Labs_MCP {
     ] );
 
     // No-Auth URL endpoints (with token in path) - Legacy SSE
+    // TODO: Remove after 2026-07-01. The UI no longer exposes this to new users (only
+    // accounts that already opted in still see the toggle). Removing it lets us also
+    // delete handle_sse, handle_message, the transient message queue, and the
+    // handle_noauth_access/_streamable helpers, which together account for several
+    // hundred lines of SSE-only plumbing in this file.
     $noauth_enabled = $this->core->get_option( 'mcp_noauth_url' );
     if ( $noauth_enabled && !empty( $this->bearer_token ) ) {
       register_rest_route( $this->namespace, '/' . $this->bearer_token . '/sse', [
@@ -120,21 +125,22 @@ class Meow_MWAI_Labs_MCP {
       ] );
     }
 
-    // Streamable HTTP endpoint (Modern transport for Claude Code)
-    // Uses Authorization: Bearer header for authentication
-    // Automatically enabled when MCP module is active and bearer token is set
-    if ( !empty( $this->bearer_token ) ) {
-      // Main endpoint with Authorization header (at /http path)
-      register_rest_route( $this->namespace, '/http', [
-        'methods' => [ 'GET', 'POST', 'DELETE' ],
-        'callback' => [ $this, 'handle_streamable_http' ],
-        'permission_callback' => function ( $request ) {
-          return $this->can_access_mcp( $request );
-        },
-        'show_in_index' => false,
-      ] );
+    // Streamable HTTP endpoint (modern MCP transport). Always registered when
+    // the MCP module is enabled — auth is enforced by can_access_mcp(), which
+    // accepts either a bearer token or an OAuth access token.
+    register_rest_route( $this->namespace, '/http', [
+      'methods' => [ 'GET', 'POST', 'DELETE' ],
+      'callback' => [ $this, 'handle_streamable_http' ],
+      'permission_callback' => function ( $request ) {
+        return $this->can_access_mcp( $request );
+      },
+      'show_in_index' => false,
+    ] );
 
-      // Alternative endpoint with token in URL (for clients that don't support headers)
+    // Alternative endpoint with bearer token embedded in URL path, for clients
+    // that cannot send Authorization headers. Only registered when a bearer
+    // token is configured.
+    if ( !empty( $this->bearer_token ) ) {
       register_rest_route( $this->namespace, '/' . $this->bearer_token, [
         'methods' => [ 'GET', 'POST', 'DELETE' ],
         'callback' => [ $this, 'handle_streamable_http' ],

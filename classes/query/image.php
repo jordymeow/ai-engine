@@ -2,6 +2,7 @@
 
 class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
   public ?string $resolution = null;
+  public ?string $quality = null;
   public ?string $style = null;
   public ?string $localDownload = 'uploads';
   public ?string $localDownloadExpiry = 'uploads';
@@ -26,7 +27,8 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
       'ai' => [
         'model' => $this->model,
         'feature' => $this->feature,
-        'resolution' => $this->resolution
+        'resolution' => $this->resolution,
+        'quality' => $this->quality
       ],
 
       'system' => [
@@ -51,6 +53,10 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
   public function set_resolution( string $resolution ) {
     $this->resolution = $resolution;
+  }
+
+  public function set_quality( ?string $quality ) {
+    $this->quality = $quality !== null && $quality !== '' ? $quality : null;
   }
 
   public function set_style( string $style ) {
@@ -91,6 +97,9 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
     if ( !empty( $params['resolution'] ) ) {
       $this->set_resolution( $params['resolution'] );
+    }
+    if ( array_key_exists( 'quality', $params ) ) {
+      $this->set_quality( $params['quality'] );
     }
     if ( !empty( $params['style'] ) ) {
       $this->set_style( $params['style'] );
@@ -164,6 +173,38 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
       $error = sprintf( 'The model %s does not support the resolution %s (using %s instead). Supported resolutions are: %s.', $this->model, $this->resolution, $resolutions[0]['name'], $supportedResolutions );
       $this->resolution = $resolutions[0]['name'];
       Meow_MWAI_Logging::error( $error, '🖼️' );
+    }
+
+    // Quality: only validate when the model declares supported qualities. Otherwise leave it as-is
+    // (null means "do not send the quality param to the API"; the provider picks its default).
+    if ( !empty( $modelInfo['qualities'] ) && empty( $this->quality ) ) {
+      // Fall back to the global default. If the saved default is not supported by the active
+      // model (e.g. user switched from GPT Image to a model with different vocabulary), the
+      // validation block below will silently reset it to the model's first declared quality.
+      $defaultQuality = $mwai_core->get_option( 'ai_images_default_quality' );
+      if ( !empty( $defaultQuality ) ) {
+        $this->quality = $defaultQuality;
+      }
+    }
+    if ( !empty( $modelInfo['qualities'] ) && !empty( $this->quality ) ) {
+      $qualities = $modelInfo['qualities'];
+      $foundQuality = false;
+      foreach ( $qualities as $quality ) {
+        if ( $quality['name'] === $this->quality ) {
+          $foundQuality = true;
+          break;
+        }
+      }
+      if ( !$foundQuality ) {
+        $supportedQualities = [];
+        foreach ( $qualities as $quality ) {
+          $supportedQualities[] = $quality['name'];
+        }
+        $supportedQualities = implode( ', ', $supportedQualities );
+        $error = sprintf( 'The model %s does not support the quality %s (using %s instead). Supported qualities are: %s.', $this->model, $this->quality, $qualities[0]['name'], $supportedQualities );
+        $this->quality = $qualities[0]['name'];
+        Meow_MWAI_Logging::error( $error, '🖼️' );
+      }
     }
   }
 

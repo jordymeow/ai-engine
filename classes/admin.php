@@ -411,17 +411,24 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
   }
 
   public function app_menu() {
+    // The menu is only registered when can_access_settings() passed (see __construct).
+    // Pass a low cap here so WordPress doesn't hide the submenu from filter-approved
+    // users who don't have manage_options. The page callback re-checks access for
+    // defense in depth.
     add_submenu_page(
       'meowapps-main-menu',
       'AI Engine',
       'AI Engine',
-      'manage_options',
+      'read',
       'mwai_settings',
       [ $this, 'admin_settings' ]
     );
   }
 
   public function admin_settings() {
+    if ( !$this->core->can_access_settings() ) {
+      wp_die( __( 'Sorry, you are not allowed to access this page.', 'ai-engine' ), 403 );
+    }
     echo '<div id="mwai-admin-settings"></div>';
   }
 }

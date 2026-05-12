@@ -309,6 +309,7 @@ i18n.COMMON = {
   FILE_SEARCH: __( 'File Search', 'ai-engine' ),
   PROMPT_TO_JSON: __( 'Prompt ➡ JSON', 'ai-engine' ),
   RESOLUTION: __( 'Resolution', 'ai-engine' ),
+  QUALITY: __( 'Quality', 'ai-engine' ),
   DEFAULT: __( 'Default', 'ai-engine' ),
   DEFAULTS: __( 'Defaults', 'ai-engine' ),
   DEFAULT_FAST: __( 'Fast', 'ai-engine' ),

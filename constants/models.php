@@ -544,6 +544,39 @@ define( 'MWAI_OPENAI_MODELS', [
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
+                GPT Realtime 2
+                Voice model with GPT-5-class reasoning, stronger instruction following, and multilingual support.
+                https://platform.openai.com/docs/models/gpt-realtime-2
+                */
+  [
+    'model' => 'gpt-realtime-2',
+    'name' => 'GPT Realtime 2',
+    'family' => 'realtime',
+    'features' => ['core', 'realtime', 'functions'],
+    'price' => [
+      'text' => [
+        'in' => 4.00,
+        'cache' => 0.40,
+        'out' => 16.00,
+      ],
+      'audio' => [
+        'in' => 32.00,
+        'cache' => 0.40,
+        'out' => 64.00,
+      ],
+      'image' => [
+        'in' => 5.00,
+        'cache' => 0.50,
+      ]
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 4096,
+    'maxContextualTokens' => 128000,
+    'finetune' => false,
+    'tags' => ['core', 'realtime', 'functions', 'vision', 'mcp']
+  ],
+  /*
                 GPT Realtime
                 Production-ready speech-to-speech model with MCP, image input, and SIP support
                 https://platform.openai.com/docs/models/gpt-realtime
@@ -603,67 +636,15 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 4096,
     'maxContextualTokens' => 32000,
     'finetune' => false,
-    // Shutdown: July 23, 2026.
     'tags' => ['core', 'realtime', 'functions', 'vision', 'deprecated']
   ],
-  /*
-                GPT-4o Realtime
-                Model capable of realtime text and audio inputs and outputs
-                https://platform.openai.com/docs/models/gpt-4o-realtime-preview
-                */
-  [
-    'model' => 'gpt-4o-realtime-preview',
-    'name' => 'GPT-4o Realtime (Preview)',
-    'family' => 'realtime',
-    'features' => ['core', 'realtime', 'functions'],
-    'price' => [
-      'text' => [
-        'in' => 5.00,
-        'cache' => 2.50,
-        'out' => 20.00,
-      ],
-      'audio' => [
-        'in' => 40.00,
-        'cache' => 2.50,
-        'out' => 80.00,
-      ]
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 4096,
-    'maxContextualTokens' => 128000,
-    'finetune' => false,
-    'tags' => ['core', 'realtime', 'functions', 'vision', 'deprecated']
-  ],
-  /*
-            GPT-4o mini Realtime
-            Smaller realtime model for text and audio inputs and outputs
-            https://platform.openai.com/docs/models/gpt-4o-mini-realtime-preview
-            */
-  [
-    'model' => 'gpt-4o-mini-realtime-preview',
-    'name' => 'GPT-4o Mini Realtime (Preview)',
-    'family' => 'realtime',
-    'features' => ['core', 'realtime', 'functions'],
-    'price' => [
-      'text' => [
-        'in' => 0.60,
-        'cache' => 0.30,
-        'out' => 2.40,
-      ],
-      'audio' => [
-        'in' => 10.00,
-        'cache' => 0.30,
-        'out' => 20.00,
-      ]
-    ],
-    'type' => 'token',
-    'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 4096,
-    'maxContextualTokens' => 128000,
-    'finetune' => false,
-    'tags' => ['core', 'realtime', 'functions', 'vision', 'deprecated']
-  ],
+  // TODO: gpt-realtime-translate and gpt-realtime-whisper are intentionally
+  // not exposed yet. Both run on their own OpenAI endpoints
+  // (/v1/realtime/translations/client_secrets and the realtime transcription
+  // session) with a one-way streaming contract, no tools, no conversation,
+  // and a different event prefix. They do not fit the chatbot session shape
+  // in premium/realtime.php and would warrant their own "Live Translation"
+  // and "Live Transcription" modes if a clear WordPress use case shows up.
   /*
       GPT Image
       OpenAI's image generation models (token-based pricing)
@@ -687,6 +668,12 @@ define( 'MWAI_OPENAI_MODELS', [
         'name' => '1536x1024',
         'label' => '1536x1024'
       ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ]
     ],
     'type' => 'token',
     'mode' => 'image',
@@ -718,6 +705,12 @@ define( 'MWAI_OPENAI_MODELS', [
         'label' => '1536x1024'
       ]
     ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ]
+    ],
     'type' => 'token',
     'mode' => 'image',
     'price' => [
@@ -747,6 +740,12 @@ define( 'MWAI_OPENAI_MODELS', [
         'name' => '1536x1024',
         'label' => '1536x1024'
       ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ]
     ],
     'type' => 'token',
     'mode' => 'image',
@@ -778,6 +777,12 @@ define( 'MWAI_OPENAI_MODELS', [
         'name' => '1536x1024',
         'label' => '1536x1024'
       ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ]
     ],
     'type' => 'token',
     'mode' => 'image',
