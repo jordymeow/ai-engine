@@ -125,6 +125,7 @@ define( 'MWAI_OPTIONS', [
   'module_moderation' => false,
   'module_statistics' => false,
   'statistics_retention_days' => 'Never',
+  // TODO: Remove module_finetunes after 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06).
   'module_finetunes' => false,
   'module_embeddings' => false,
   'module_transcription' => false,
@@ -167,6 +168,7 @@ define( 'MWAI_OPTIONS', [
       'name' => 'OpenAI',
       'type' => 'openai',
       'apikey' => '',
+      // TODO: Drop the four finetunes* keys after 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06).
       'finetunes' => [],
       'finetunes_deleted' => [],
       'legacy_finetunes' => [],

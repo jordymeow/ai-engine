@@ -2,6 +2,8 @@
 
 // Price as of June 2024: https://openai.com/api/pricing/
 
+// TODO: After 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06), drop the `finetune` key from every model entry below and remove 'finetune' from every model's `tags` array.
+
 define( 'MWAI_OPENAI_MODELS', [
   /*
     GPT-5.5
@@ -137,6 +139,7 @@ define( 'MWAI_OPENAI_MODELS', [
     GPT-5.3 Chat
     GPT-5.3 model used in ChatGPT
     https://developers.openai.com/api/docs/models/gpt-5.3-chat-latest
+    Shutdown: August 10, 2026.
     */
   [
     'model' => 'gpt-5.3-chat-latest',
@@ -152,7 +155,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 16384,
     'maxContextualTokens' => 128000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'deprecated'],
     'tools' => ['image_generation', 'code_interpreter']
   ],
   /*
@@ -185,6 +188,7 @@ define( 'MWAI_OPENAI_MODELS', [
     GPT-5.2 Chat
     GPT-5.2 model used in ChatGPT
     https://platform.openai.com/docs/models/gpt-5.2
+    Shutdown: August 10, 2026.
     */
   [
     'model' => 'gpt-5.2-chat-latest',
@@ -200,7 +204,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'responses', 'mcp'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'responses', 'mcp', 'deprecated'],
     'tools' => ['web_search', 'file_search', 'code_interpreter']
   ],
   /*

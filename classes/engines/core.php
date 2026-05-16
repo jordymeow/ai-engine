@@ -445,7 +445,7 @@ class Meow_MWAI_Engines_Core {
 
     // Check if the model is available, except if it's an assistant
     if ( !( $query instanceof Meow_MWAI_Query_Assistant ) ) {
-      // TODO: Avoid checking on the finetuned models for now.
+      // TODO: Remove the ft: bypass after 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06). Until then we skip model validation for fine-tunes so user-created models still resolve.
       if ( substr( $query->model, 0, 3 ) === 'ft:' ) {
         return;
       }

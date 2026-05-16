@@ -204,6 +204,16 @@ class Meow_MWAI_Labs_MCP {
       if ( $this->oauth ) {
         $token_data = $this->oauth->validate_token( $token );
         if ( $token_data ) {
+          // Defense in depth: even if a token was issued (or stored from before
+          // the authorize-time admin gate landed), only accept it if the linked
+          // user still holds administrator capability. Otherwise a Subscriber's
+          // OAuth token would inherit the global mcp_role and reach admin tools.
+          if ( !$this->oauth->user_can_authorize( $token_data['user_id'] ) ) {
+            if ( $this->logging ) {
+              error_log( '[AI Engine MCP] ❌ OAuth token rejected: user ' . $token_data['user_id'] . ' is not an administrator.' );
+            }
+            return false;
+          }
           // Set current user based on OAuth token
           wp_set_current_user( $token_data['user_id'] );
           $auth_result = 'oauth';

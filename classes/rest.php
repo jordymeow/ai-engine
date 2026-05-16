@@ -352,6 +352,7 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_openai_files_download' ],
       ] );
+      // TODO: Remove all the /openai/finetunes/* and /openai/files/finetune routes after 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06).
       register_rest_route( $this->namespace, '/openai/files/finetune', [
         'methods' => 'POST',
         'permission_callback' => [ $this->core, 'can_access_settings' ],
@@ -1183,6 +1184,7 @@ class Meow_MWAI_Rest {
     }
   }
 
+  // TODO: Remove all the rest_openai_*finetune* handlers below after 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06).
   public function rest_openai_deleted_finetunes_get() {
     try {
       $envId = isset( $_GET['envId'] ) ? $_GET['envId'] : null;

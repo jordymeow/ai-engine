@@ -17,12 +17,11 @@ if ( !defined( 'ABSPATH' ) ) {
  * like Claude Desktop that drive the user through a browser authorize flow.
  */
 class Meow_MWAI_Labs_MCP_OAuth {
-
-  const DB_VERSION = '1.0.0';
-  const ACCESS_TOKEN_TTL = 3600;       // 1 hour
-  const REFRESH_TOKEN_TTL = 2592000;   // 30 days
-  const AUTH_CODE_TTL = 60;            // seconds
-  const NONCE_ACTION = 'mwai_mcp_oauth_consent';
+  public const DB_VERSION = '1.0.0';
+  public const ACCESS_TOKEN_TTL = 3600;       // 1 hour
+  public const REFRESH_TOKEN_TTL = 2592000;   // 30 days
+  public const AUTH_CODE_TTL = 60;            // seconds
+  public const NONCE_ACTION = 'mwai_mcp_oauth_consent';
 
   private $core;
   private $mcp;
@@ -384,6 +383,17 @@ class Meow_MWAI_Labs_MCP_OAuth {
     }
 
     $user = wp_get_current_user();
+    // Capability gate. MCP grants administrative tool access by design; allowing a
+    // non-admin to mint an OAuth token would let them act through the MCP layer with
+    // privileges they do not hold in WordPress itself.
+    if ( !$this->user_can_authorize( $user->ID ) ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP OAuth] ❌ Non-admin user ' . $user->ID . ' tried to authorize client ' . $params['client_id'] );
+      }
+      $this->render_error_page( 'Only administrators can authorize MCP applications on this site.' );
+      exit;
+    }
+
     $this->render_consent_page( $client, $params, $user );
     exit;
   }
@@ -391,6 +401,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
   private function handle_authorize_submit( WP_REST_Request $request ) {
     if ( !is_user_logged_in() ) {
       wp_safe_redirect( wp_login_url() );
+      exit;
+    }
+
+    if ( !$this->user_can_authorize( get_current_user_id() ) ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP OAuth] ❌ Non-admin user ' . get_current_user_id() . ' attempted authorize submit' );
+      }
+      $this->render_error_page( 'Only administrators can authorize MCP applications on this site.' );
       exit;
     }
 
@@ -614,9 +632,26 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $hash = hash( 'sha256', $token );
     $wpdb->query( $wpdb->prepare(
       "UPDATE {$this->table_tokens} SET revoked = 1 WHERE access_token_hash = %s OR refresh_token_hash = %s",
-      $hash, $hash
+      $hash,
+      $hash
     ) );
     return new WP_REST_Response( null, 200 );
+  }
+  #endregion
+
+  #region Capability gate
+  /**
+   * Whether a user is allowed to authorize an OAuth client and to use an OAuth
+   * access token against the MCP endpoint. Defaults to administrator only,
+   * matching the documented MCP access model. The filter exists so the planned
+   * multi-user MCP work can broaden this safely once per-token capability
+   * scoping lands; until then, allowing a non-admin here re-opens CVE-class
+   * privilege escalation through tools like wp_create_user.
+   */
+  public function user_can_authorize( $user_id ) {
+    $user_id = (int) $user_id;
+    $allowed = $user_id > 0 && user_can( $user_id, 'administrator' );
+    return (bool) apply_filters( 'mwai_mcp_oauth_user_can_authorize', $allowed, $user_id );
   }
   #endregion
 

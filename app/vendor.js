@@ -2339,8 +2339,11 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
   > .neko-settings-head {
     font-family: var(--neko-font-family);
     font-size: var(--neko-font-size);
-    /* Match control height so the title text vertically centers with checkboxes/inputs */
-    line-height: var(--neko-control-height);
+    /* Tight line-height + a small top pad: single-line titles still sit roughly
+       centred with the 30px controls, and wrapped titles don't get a 30px gap
+       between lines. */
+    line-height: 17px;
+    padding-top: 6px;
     flex: 0 0 140px;
     min-width: 0;
     margin-right: 16px;
@@ -2350,11 +2353,6 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
        but don't let it blow up the row — hyphenate-and-wrap. */
     word-break: break-word;
     hyphens: auto;
-    /* Slightly smaller line-height when wrapped keeps multi-line titles tight. */
-    &:has(> br), &.is-multiline {
-      line-height: 17px;
-      padding-top: 6px;
-    }
   }
 
   /* Controls align top-flush with the settings title — the title has line-height 17px

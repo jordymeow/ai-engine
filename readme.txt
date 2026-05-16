@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 3.4.9
+Stable tag: 3.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,13 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.0 (2026/05/16) =
+* Fix: MCP OAuth authorization and token validation now require administrator capability, preventing privilege escalation by non-admin users.
+* Update: Marked gpt-5.2-chat-latest and gpt-5.3-chat-latest as deprecated (OpenAI shutting them off August 10, 2026).
+* Update: Added a deprecation banner on the Finetunes screen due to OpenAI sunsetting self-serve fine-tuning.
+* Fix: CSV import for fine-tuning now shows an explicit error when no usable prompt/completion columns are found.
+* Fix: Updated the broken OpenAI tutorial link on the Finetunes screen.
 
 = 3.4.9 (2026/05/12) =
 * Add: OAuth 2.1 with Dynamic Client Registration for the MCP server, allowing Claude Desktop and other browser-driven clients to connect without a shared bearer token.

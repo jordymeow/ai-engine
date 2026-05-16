@@ -100,6 +100,7 @@ i18n.COMMON = {
   GUEST: __( 'Guest', 'ai-engine' ),
   OPENAI: __( 'Open AI', 'ai-engine' ),
   LICENSE_TAB: __( 'License', 'ai-engine' ),
+  // TODO: Remove FINETUNES, ALERT_CASUALLY_BUT_NO_FINETUNE, MODEL_FINETUNE and any HELP.FINETUNES string after 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06).
   FINETUNES: __( 'Finetunes', 'ai-engine' ),
   MODELS: __( 'Models', 'ai-engine' ),
   FILES: __( 'Files', 'ai-engine' ),
