@@ -1,5 +1,5 @@
-// Previous: 2.4.6
-// Current: 2.4.7
+// Previous: 2.4.7
+// Current: 3.5.1
 
 // React & Vendor Libs
 const { useMemo } = wp.element;
@@ -94,7 +94,7 @@ function formatName(template, guestName, userData) {
 
   return Object.entries(userData).reduce((acc, [placeholder, value]) => {
     const realPlaceholder = `{${placeholder}}`;
-    return acc.includes(realPlaceholder) ? acc.replace(realPlaceholder, value) : acc;
+    return acc.includes(realPlaceholder) ? acc.replace(realPlaceholder, () => value) : acc;
   }, template);
 }
 

@@ -59,6 +59,7 @@ i18n.COMMON = {
   ICON: __( 'Icon', 'ai-engine' ),
   ICON_TEXT: __( 'Icon Text', 'ai-engine' ),
   ICON_TEXT_DELAY: __( 'Icon Text Delay', 'ai-engine' ),
+  ICON_SIZE: __( 'Icon Size', 'ai-engine' ),
   FULL_SCREEN: __( 'Full Screen', 'ai-engine' ),
   CASUALLY_FINE_TUNED: __( 'Casually Fine-Tuned', 'ai-engine' ),
   CONTENT_AWARE: __( 'Content Aware', 'ai-engine' ),

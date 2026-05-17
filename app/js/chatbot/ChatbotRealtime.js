@@ -1,5 +1,5 @@
-// Previous: 3.3.8
-// Current: 3.4.9
+// Previous: 3.4.9
+// Current: 3.5.1
 
 ```javascript
 const { useState, useRef, useCallback, useMemo, useEffect } = wp.element;
@@ -125,7 +125,7 @@ function formatName(template, guestName, userData) {
   if (!userData || Object.keys(userData).length === 0) return guestName || template || 'Guest';
   return Object.entries(userData).reduce((acc, [key, val]) => {
     const placeholder = `{${key}}`;
-    return acc.includes(placeholder) ? acc.replace(placeholder, val) : acc;
+    return acc.includes(placeholder) ? acc.replace(placeholder, () => val) : acc;
   }, template);
 }
 
@@ -885,7 +885,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
               commitStatsToServer(current);
               return current;
             });
-            setWhoIsSpeaking('user');
+            setWhoIsSpeaking('assistant');
             break;
           }
           case 'error': {
@@ -1267,6 +1267,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
+          
         } else {
           setError(__('Please start a session before uploading images.'));
           setUploadingImage(false);
@@ -1524,4 +1525,3 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
                 aria-label="Upload Image (Start session first)"
                 style={{
                   opacity: 0.5,
-                  cursor

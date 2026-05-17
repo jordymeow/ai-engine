@@ -3,9 +3,9 @@ Contributors: TigrouMeow
 Tags: ai, chatbot, gpt, claude, openai
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.0
+Stable tag: 3.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,11 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.1 (2026/05/17) =
+* Add: Popup Icon Size option in chatbot settings to resize the popup trigger without custom CSS.
+* Fix: Chatbots admin preview now keeps long discussions, fullscreen toggles, and resize actions contained within the preview pane instead of clipping or overflowing the viewport.
+* Fix: Chatbot rendering bug where a `$` inside an inline code span caused other message text to leak into the code display.
 
 = 3.5.0 (2026/05/16) =
 * Fix: MCP OAuth authorization and token validation now require administrator capability, preventing privilege escalation by non-admin users.
