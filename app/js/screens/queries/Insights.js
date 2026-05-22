@@ -1,5 +1,5 @@
-// Previous: 3.4.7
-// Current: 3.4.8
+// Previous: 3.4.8
+// Current: 3.5.2
 
 ```javascript
 const { useMemo, useState, useEffect } = wp.element;
@@ -291,9 +291,9 @@ const Insights = ({ options, updateOption, busy }) => {
   };
 
   const limitSectionParams = useMemo(() => {
-    return limits?.[limitSection]
-      ? limits[limitSection]
-      : {
+    const saved = limits?.[limitSection];
+    if (!saved) {
+      return {
         credits: 1,
         creditType: 'price',
         timeFrame: 'month',
@@ -301,6 +301,11 @@ const Insights = ({ options, updateOption, busy }) => {
         overLimitMessage: 'You have reached the limit.',
         ignoredUsers: ''
       };
+    }
+    if (saved.creditType === 'units') {
+      return { ...saved, creditType: 'tokens' };
+    }
+    return saved;
   }, [limits, limitSection]);
 
   const updateLimitSection = async (value, id) => {
@@ -328,7 +333,7 @@ const Insights = ({ options, updateOption, busy }) => {
   return (
     <>
       <NekoSplitView
-        mainFlex={2.5}
+        mainFlex={2}
         sidebarFlex={1}
         minimal
         isCollapsed={isSidebarCollapsed}
@@ -348,8 +353,7 @@ const Insights = ({ options, updateOption, busy }) => {
         <NekoSplitView.Sidebar>
           {logId && (
             <>
-              <NekoSpacer large />
-              <NekoTabs inversed style={{ marginRight: 10, marginLeft: 10 }}>
+              <NekoTabs inversed>
                 <NekoTab title={i18n.COMMON.QUERY}>
                   <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
                     {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
@@ -439,8 +443,7 @@ const Insights = ({ options, updateOption, busy }) => {
             </>
           )}
 
-          <NekoSpacer />
-          <NekoBlock className="primary" title={i18n.COMMON.ACTIVITY} style={{ flex: 1 }}>
+          <NekoBlock className="primary" title={i18n.COMMON.ACTIVITY}>
             <style>{activityCSS}</style>
             <div className="mwai-activity">
               {!activityData && (
@@ -515,7 +518,7 @@ const Insights = ({ options, updateOption, busy }) => {
           </NekoBlock>
 
           <StyledBuilderForm>
-            <NekoBlock className="primary" busy={busy} title={i18n.COMMON.LIMITS} style={{ flex: 1 }}>
+            <NekoBlock className="primary" busy={busy} title={i18n.COMMON.LIMITS}>
               <NekoCheckbox
                 name="enabled"
                 label={i18n.STATISTICS.ENABLE_LIMITS}
@@ -584,7 +587,7 @@ const Insights = ({ options, updateOption, busy }) => {
                         onChange={updateLimitSection}
                       >
                         <NekoOption key="queries" id="queries" value="queries" label="Queries" />
-                        <NekoOption key="units" id="units" value="units" label="Tokens" />
+                        <NekoOption key="tokens" id="tokens" value="tokens" label="Tokens" />
                         <NekoOption key="price" id="price" value="price" label="Dollars" />
                       </NekoSelect>
                     </div>

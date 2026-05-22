@@ -1551,6 +1551,20 @@ class Meow_MWAI_Core {
       ) );
     }
 
+    // Migration: limits.creditType 'units' → 'tokens'. The read path in
+    // premium/statistics.php still accepts both, so this is purely cosmetic
+    // alignment with the new "Tokens" labels. One-shot per install.
+    // TODO: Remove after 2026-11.
+    if ( isset( $options['limits'] ) && is_array( $options['limits'] ) ) {
+      foreach ( [ 'system', 'users', 'guests' ] as $bucket ) {
+        if ( isset( $options['limits'][$bucket]['creditType'] )
+          && $options['limits'][$bucket]['creditType'] === 'units' ) {
+          $options['limits'][$bucket]['creditType'] = 'tokens';
+          $needs_update = true;
+        }
+      }
+    }
+
     // Migration: Populate custom_languages if empty for existing installations
     if ( !isset( $options['custom_languages'] ) || empty( $options['custom_languages'] ) ) {
       $options['custom_languages'] = [

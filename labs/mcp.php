@@ -1206,26 +1206,24 @@ class Meow_MWAI_Labs_MCP {
 
   #region Tool Normalization Helpers
   private function normalize_tool_definition( $tool, $index ) {
+    // NOTE: tool-registration warnings below are always emitted (no $this->logging
+    // gate). Each fires only when a tool is silently auto-fixed or auto-skipped at
+    // registration — exactly the case where the author needs to know. They're rare
+    // in normal operation and the only reliable diagnostic when something is off.
     if ( !is_array( $tool ) ) {
-      if ( $this->logging ) {
-        error_log( '[AI Engine MCP] ⚠️ Tool definition at index ' . $index . ' skipped (expected array).' );
-      }
+      error_log( '[AI Engine MCP] ⚠️ Tool definition at index ' . $index . ' skipped (expected array).' );
       return null;
     }
 
     $name = isset( $tool['name'] ) ? trim( (string) $tool['name'] ) : '';
     if ( $name === '' ) {
-      if ( $this->logging ) {
-        error_log( '[AI Engine MCP] ⚠️ Tool skipped due to missing name at index ' . $index );
-      }
+      error_log( '[AI Engine MCP] ⚠️ Tool skipped due to missing name at index ' . $index );
       return null;
     }
 
     $normalized_schema = $this->normalize_input_schema( $tool['inputSchema'] ?? null, $name );
     if ( !$normalized_schema ) {
-      if ( $this->logging ) {
-        error_log( '[AI Engine MCP] ⚠️ Tool "' . $name . '" skipped due to invalid input schema.' );
-      }
+      error_log( '[AI Engine MCP] ⚠️ Tool "' . $name . '" skipped due to invalid input schema.' );
       return null;
     }
 
@@ -1255,9 +1253,7 @@ class Meow_MWAI_Labs_MCP {
 
     $type = isset( $schema['type'] ) ? (string) $schema['type'] : 'object';
     if ( $type !== 'object' ) {
-      if ( $this->logging ) {
-        error_log( '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" has unsupported schema type: ' . $type );
-      }
+      error_log( '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" has unsupported schema type: ' . $type );
       return null;
     }
 
@@ -1277,13 +1273,11 @@ class Meow_MWAI_Labs_MCP {
             // Check for complex types that need additional schema details
             $complex_types = array_intersect( $type_array, [ 'object', 'array' ] );
             if ( !empty( $complex_types ) ) {
-              if ( $this->logging ) {
-                error_log(
-                  '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" property "' . $prop_name .
-                  '" has problematic union type with complex types: [' . implode( ', ', $type_array ) .
-                  ']. This breaks ChatGPT. Auto-fixing by removing type constraint.'
-                );
-              }
+              error_log(
+                '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" property "' . $prop_name .
+                '" has problematic union type with complex types: [' . implode( ', ', $type_array ) .
+                ']. This breaks ChatGPT. Auto-fixing by removing type constraint.'
+              );
               // Auto-fix: Remove the type constraint to accept any value
               unset( $definition['type'] );
               // Keep description if present, or add one

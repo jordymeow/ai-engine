@@ -1045,7 +1045,15 @@ class Meow_MWAI_Modules_Chatbot {
       'botId' => ( $customId && $customId !== '' ) ? null : sanitize_text_field( $botId ),
       'customId' => ( $customId && $customId !== '' ) ? sanitize_text_field( $customId ) : null,
       'userData' => $this->core->get_user_data(),
-      'sessionId' => $this->core->get_session_id(),
+      // For logged-out users we deliberately do NOT embed a sessionId at HTML
+      // render time. Page caches (WP Rocket, Cloudflare, Varnish, etc.) and
+      // multi-backend setups would otherwise freeze one sessionId into the
+      // cached markup and serve it to every visitor — collapsing per-visitor
+      // rate limits, file ownership, and stats. The frontend fetches a fresh
+      // sessionId via /start_session on first interaction, and the server
+      // always derives session from the mwai_session_id cookie anyway
+      // (Query_Base::__construct + inject_params ignore empty client values).
+      'sessionId' => is_user_logged_in() ? $this->core->get_session_id() : null,
       // IMPORTANT: REST nonce handling differs by user state:
       // - Logged-in users: get_nonce() returns a user-specific nonce created in current session context
       // - Logged-out users: get_nonce() returns null, they'll fetch via /start_session endpoint

@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Usage tracking lives in two WP options:
+ *   - ai_usage:       monthly totals,  keyed by 'YYYY-MM' then by model id
+ *   - ai_usage_daily: daily totals,    keyed by 'YYYY-MM-DD' then by model id
+ *
+ * Each per-model entry uses one of three shapes, depending on the billing
+ * unit returned by the provider:
+ *
+ *   token-billed (default, most providers including OpenAI/Anthropic/Gemini
+ *   text and image-gen): { prompt_tokens, completion_tokens, total_tokens,
+ *                          returned_price, queries }
+ *
+ *   per-image (legacy Imagen, Replicate per-image models, OAI-compatible
+ *   custom servers without `usage`): { resolution: {…}, images, queries }
+ *
+ *   per-second (Whisper, Sora, Realtime audio fallback): { seconds, queries }
+ *   per-second + resolution (Sora video): { resolution: {…}, seconds, queries }
+ *
+ * Token-billed is the canonical shape and what we encourage going forward.
+ * The user-facing label across the admin UI is "Tokens" (see Migration plan
+ * in this repo). The `unit`/`units` terminology is legacy and retained only
+ * for back-compat (DB column on wp_mwai_logs, the Reply::get_units() public
+ * helper, and dual-emit fields in the stats REST output).
+ */
 class Meow_MWAI_Services_UsageStats {
   private $core;
   private $tiktoken_encoders = [];

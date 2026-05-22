@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.1
+Stable tag: 3.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,23 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.2 (2026/05/22) =
+* Add: Setup Assistant on the Dashboard that walks through essential configuration with a progress bar and per-step actions.
+* Add: Direct file upload to OpenAI Vector Store via a new Documents tab, with async status polling, Sync from OpenAI action, and clearer PHP upload-limit errors.
+* Add: `setField` and `prefill` methods to the AI Forms JS API for setting values programmatically without manual `dispatchEvent` workarounds.
+* Update: Redesigned the Dashboard Usage panel into an analytics card with headline, week-over-week delta, daily bar chart, and provider/peak/average/per-query tiles.
+* Update: Reorganized the Modules tab into clearer sections with short intros, concise descriptions, renamed Utilities to AI Copilot, and surfaced MCP and Public API as proper modules.
+* Update: Renamed the user-facing "Units" metric to "Tokens" across the dashboard, queries explorer, insights, and `[mwai_stats]` shortcode, with full back-compat on REST output and legacy settings.
+* Update: Aligned the Discussions, Insights, and Knowledge layouts by standardizing column ratios and removing custom margin and header overrides.
+* Update: Added a Refresh button to the Usage panel header, widened the Tokens column in Queries Explorer, and showed "N/A" for queries with no scope.
+* Update: MCP tool-registration warnings are now always written to the PHP error log instead of requiring the debug logging flag.
+* Fix: Stripped inline citation markers from OpenAI's file_search Responses API text that were surfacing as gibberish in chatbot replies.
+* Fix: Stopped embedding the sessionId in chatbot and forms HTML for logged-out visitors, so page caches no longer share one sessionId across all visitors.
+* Fix: Guarded REST AI endpoints so they no longer overwrite the cookie-derived session with an empty client-sent sessionId.
+* Fix: Gemini embedding queries no longer report bogus token counts by correctly reading promptTokenCount from the response.
+* Fix: Dynamic MCP REST tool schemas no longer serialize the meta arg on media/posts/pages as an array, which Claude's MCP validator was rejecting.
+* Fix: Translate Post now translates list items inside modern Gutenberg lists, which were silently skipped since WP 6.1+.
 
 = 3.5.1 (2026/05/17) =
 * Add: Popup Icon Size option in chatbot settings to resize the popup trigger without custom CSS.

@@ -94,7 +94,9 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       }
       $query->set_env( $params['envId'] );
       $query->set_model( $params['model'] );
-      $query->session = $params['sessionId'];
+      if ( !empty( $params['sessionId'] ) ) {
+        $query->session = $params['sessionId'];
+      }
       $query->user = $this->core->get_user_by( 'id', get_current_user_id() );
       $reply = $this->core->run_query( $query );
       return $this->create_rest_response( [ 'success' => true, 'data' => $reply->result ], 200 );
@@ -189,7 +191,9 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       }
       $query->set_env( $params['envId'] );
       $query->set_model( $params['model'] );
-      $query->session = $params['sessionId'];
+      if ( !empty( $params['sessionId'] ) ) {
+        $query->session = $params['sessionId'];
+      }
       $query->user = $this->core->get_user_by( 'id', get_current_user_id() );
       if ( isset( $params['context'] ) ) {
         $context = $params['context'];
@@ -316,7 +320,9 @@ class Meow_MWAI_Rest_AI extends Meow_MWAI_Rest_Base {
       $query->responseFormat = 'json_object';
       $query->set_env( $params['envId'] );
       $query->set_model( $params['model'] );
-      $query->session = $params['sessionId'];
+      if ( !empty( $params['sessionId'] ) ) {
+        $query->session = $params['sessionId'];
+      }
       $query->user = $this->core->get_user_by( 'id', get_current_user_id() );
       $reply = $this->core->run_query( $query );
       $json = json_decode( $reply->result );
