@@ -225,7 +225,12 @@ class Meow_MWAI_Labs_MCP_Core {
           'type' => 'object',
           'properties' => [
             'key' => [ 'type' => 'string' ],
-            'value' => [ 'type' => [ 'string', 'number', 'boolean', 'object', 'array' ] ],
+            // No type constraint here on purpose: WordPress options accept any
+            // value (string, number, boolean, array, object). Declaring a union
+            // that includes "object"/"array" makes ChatGPT reject the schema,
+            // and the runtime normalizer would strip the type anyway and log a
+            // warning every list_tools call. Keep it permissive from the start.
+            'value' => [ 'description' => 'Option value. Accepts strings, numbers, booleans, arrays, or objects (non-scalars are JSON-serialised).' ],
           ],
           'required' => [ 'key', 'value' ],
         ],

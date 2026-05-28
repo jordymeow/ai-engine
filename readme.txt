@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.2
+Stable tag: 3.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,7 +19,7 @@ Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/discla
 
 == Quick Intro ==
 
-Hello! ☀️ I built AI Engine to bring OpenAI, Claude, and other AI models into WordPress. Create chatbots that understand your content, generate posts in your voice, translate instantly, create images, or build custom AI tools.
+Hello! ☀️ I built AI Engine to bring OpenAI, Anthropic, and other AI models into WordPress. Create chatbots that understand your content, generate posts in your voice, translate instantly, create images, or build custom AI tools.
 
 For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [REST endpoints](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/), and [MCP support](https://ai.thehiddendocs.com/mcp/). Build AI features, automate workflows, or create SaaS applications on WordPress.
 
@@ -39,7 +39,7 @@ Generate content, translate text, create images and videos from prompts, and use
 Build custom AI-powered forms that handle text, images, audio, or file uploads. Create advanced apps with conditional logic.
 
 🧠 **Knowledge & Embeddings**
-Fine-tune models, create embeddings, and build knowledge bases from PDFs. Connect with Pinecone, Chroma, Qdrant, or OpenAI Vector Store for semantic search.
+Create embeddings and build knowledge bases from PDFs. Connect with Pinecone, Chroma, Qdrant, or OpenAI Vector Store for semantic search.
 
 🔧 **Function Calling**
 Connect AI to WordPress functions, WooCommerce, appointments, or custom APIs. Let AI interact with your site's data and services in real-time.
@@ -175,16 +175,16 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 
 == Pro Features ==
 
-* **AI Forms** — Create dynamic forms that generate answers, images, or files using AI.
-* **Embeddings & Vector Databases** — Build knowledge bases from your content and PDFs for semantic search.
-* **Content-Aware** — Let AI use your post and page content as context for smarter responses.
-* **Function Calling** — Connect AI to WordPress functions, WooCommerce, or any custom API.
-* **Cross-Site Chatbots** — Embed your chatbots on external websites.
-* **Editor Assistant** — An AI sidebar in the post editor that can read, rewrite, insert, and rearrange your content blocks through chained function calls.
-* **Realtime Audio** — Voice-based conversations on OpenAI's GA Realtime API, with GPT-5-class voice reasoning.
-* **Statistics & Usage Control** — Track usage, set limits per role, and monitor costs.
-* **Extra MCP Tools** — Adds plugin, theme, database, Polylang, and WooCommerce management to the MCP server.
-* **Priority Support** — Get faster help from the Meow Apps team.
+* **AI Forms**: Create dynamic forms that generate answers, images, or files using AI.
+* **Embeddings & Vector Databases**: Build knowledge bases from your content and PDFs for semantic search.
+* **Content-Aware**: Let AI use your post and page content as context for smarter responses.
+* **Function Calling**: Connect AI to WordPress functions, WooCommerce, or any custom API.
+* **Cross-Site Chatbots**: Embed your chatbots on external websites.
+* **Editor Assistant**: An AI sidebar in the post editor that can read, rewrite, insert, and rearrange your content blocks through chained function calls.
+* **Realtime Audio**: Voice-based conversations on OpenAI's GA Realtime API, with the latest voice reasoning capabilities.
+* **Statistics & Usage Control**: Track usage, set limits per role, and monitor costs.
+* **Extra MCP Tools**: Adds plugin, theme, database, Polylang, and WooCommerce management to the MCP server.
+* **Priority Support**: Get faster help from the Meow Apps team.
 
 == Why AI Engine? ==
 
@@ -263,6 +263,24 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.3 (2026/05/28) =
+* Fix: Filenames with underscores (e.g. `Some_File_2026.pdf`) were getting partially italicized by the chatbot's markdown renderer.
+* Fix: ReferenceError (`data is not defined`) in the chatbot response handler that masked the real error message when a host returned a non-JSON body.
+* Fix: The Push All button showed "(null)" when a post type had zero matching posts.
+* Fix: The `wp_update_option` MCP tool schema no longer logs a "problematic union type" warning on every `list_tools` call.
+* Fix: The Meow Apps menu icon now shows correctly in both the expanded and collapsed sidebar states.
+* Fix: Hotfix for the MCP endpoint URL being hidden until a bearer token was generated, even though OAuth doesn't need one. It now appears as soon as the MCP Server is enabled.
+* Add: Claude Opus 4.8 to the Anthropic model list, with the `latest` tag moved to it.
+* Add: AI Forms multi-upload fields now stack new file selections on top of previous ones, with a staged list and per-file remove buttons.
+* Add: `mwai-bouncing-loader` and `mwai-bouncing-dot` CSS classes to the chatbot loading dots for custom styling.
+* Add: MCP Logs view in Insights with per-tool-call capture, status, duration, and a top tools widget.
+* Add: MCP Connection Test in MCP Server settings that detects host-level WAF blocks (e.g. WP Engine's default) before they surface in claude.ai.
+* Update: Aligned Forms and Playground markdown rendering with the chatbot so single newlines now produce visible line breaks.
+* Update: Extended CORS headers on MCP endpoints with Mcp-Protocol-Version, Mcp-Session-Id, Accept, and Last-Event-ID for browser-context MCP clients.
+* Update: Claude Sonnet 4 and Opus 4 (2025/05/14) marked as deprecated ahead of Anthropic's 2026-06-15 retirement date.
+* Update: The chatbot Functions empty state now tells Free users that function calling is Pro-only.
+* Update: Polished the plugin readme description with cleaner punctuation and brand consistency.
 
 = 3.5.2 (2026/05/22) =
 * Add: Setup Assistant on the Dashboard that walks through essential configuration with a progress bar and per-step actions.

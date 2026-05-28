@@ -435,12 +435,16 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         return;
       }
 
-      // Create standard menu if it does not already exist
+      // Create standard menu if it does not already exist.
+      // The cat logo is injected as an <img> inside the menu title (rather than passed as
+      // the $icon_url argument) so the original SVG fills are preserved — passing it via
+      // $icon_url makes WordPress add the .svg class and the admin color scheme strips
+      // the colors to a single fill.
       global $submenu;
       if ( !isset( $submenu[ 'meowapps-main-menu' ] ) ) {
         add_menu_page(
           'Meow Apps',
-          '<img alt="Meow Apps" style="width: 21px; margin-left: -28px; position: absolute; margin-top: 2px;" src="' . MeowKit_MWAI_Admin::$logo . '" />Meow Apps',
+          '<img alt="Meow Apps" class="meowapps-menu-icon" src="' . MeowKit_MWAI_Admin::$logo . '" />Meow Apps',
           'manage_options',
           'meowapps-main-menu',
           [ $this, 'admin_meow_apps' ],
@@ -457,13 +461,82 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         );
       }
 
-      // Add CSS to hide the default icon
+      // Position the cat icon so it sits in the standard icon column in both the
+      // expanded and the collapsed (folded) sidebar.
+      //
+      // The image lives inside the .wp-menu-name title (where the original code
+      // put it) so the <img> renders with its native SVG fills. When the sidebar
+      // is collapsed, WP hides .wp-menu-name (and everything inside it), so a
+      // small JS snippet below clones the same <img> into the .wp-menu-image
+      // slot — which WP keeps visible in both states. We use a real <img>
+      // (not a background-image) on purpose: at small sizes WP's admin renders
+      // background-image SVGs noticeably lighter than the equivalent <img>,
+      // and we want the colored cat in both states.
+      //
+      // The !important rules also override an older "display: none" style that
+      // previous-generation Meow Apps common copies inject for .wp-menu-image;
+      // if any of them load first, ours still wins.
       add_action( 'admin_head', function () {
         echo '<style>
-                                                                                                                                                                                    #toplevel_page_meowapps-main-menu .wp-menu-image {
-                                                                                                                                                                                    display: none;
-                                                                                                                                                                                  }
-                                                                                                                                                                                </style>';
+          #toplevel_page_meowapps-main-menu .meowapps-menu-icon {
+            width: 20px;
+            height: auto;
+            position: absolute;
+            margin-left: -28px;
+            margin-top: 3px;
+          }
+          #toplevel_page_meowapps-main-menu .wp-menu-image {
+            display: block !important;
+            position: relative;
+          }
+          #toplevel_page_meowapps-main-menu .wp-menu-image::before {
+            display: none !important;
+          }
+          #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, calc(-50% - 3px));
+            width: 20px;
+            height: auto;
+          }
+          body.folded #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded {
+            display: block;
+          }
+          body.folded #toplevel_page_meowapps-main-menu .meowapps-menu-icon {
+            display: none;
+          }
+          @media only screen and (max-width: 960px) {
+            body.auto-fold #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded {
+              display: block;
+            }
+            body.auto-fold #toplevel_page_meowapps-main-menu .meowapps-menu-icon {
+              display: none;
+            }
+          }
+        </style>';
+      }, 999 );
+
+      // Inject a clone of the in-title cat icon into the .wp-menu-image slot.
+      // CSS above shows it only when the sidebar is folded; in the normal
+      // expanded state the .wp-menu-name <img> stays the visible icon.
+      add_action( 'admin_footer', function () {
+        ?>
+        <script>
+        ( function () {
+          var li = document.getElementById( 'toplevel_page_meowapps-main-menu' );
+          if ( !li ) { return; }
+          var src = li.querySelector( '.meowapps-menu-icon' );
+          var slot = li.querySelector( '.wp-menu-image' );
+          if ( !src || !slot || slot.querySelector( '.meowapps-menu-icon-folded' ) ) { return; }
+          var clone = src.cloneNode();
+          clone.className = 'meowapps-menu-icon-folded';
+          clone.removeAttribute( 'style' );
+          slot.appendChild( clone );
+        } )();
+        </script>
+        <?php
       } );
     }
 

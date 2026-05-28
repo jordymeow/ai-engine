@@ -208,6 +208,16 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_mcp_functions' ],
       ] );
+      register_rest_route( $this->namespace, '/mcp/self_test', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_self_test' ],
+      ] );
+      register_rest_route( $this->namespace, '/system/mcp_logs/top_tools', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_top_tools' ],
+      ] );
 
       // Helpers Endpoints
       register_rest_route( $this->namespace, '/helpers/update_post_title', [
@@ -1738,12 +1748,13 @@ class Meow_MWAI_Rest {
       $params = $request->get_json_params();
       $days = isset( $params['days'] ) ? intval( $params['days'] ) : 31;
       $byModel = isset( $params['byModel'] ) ? (bool) $params['byModel'] : false;
+      $feature = isset( $params['feature'] ) ? sanitize_text_field( $params['feature'] ) : null;
 
       if ( $byModel ) {
         $data = apply_filters( 'mwai_stats_logs_activity_daily_by_model', [], $days );
       }
       else {
-        $data = apply_filters( 'mwai_stats_logs_activity_daily', [], $days );
+        $data = apply_filters( 'mwai_stats_logs_activity_daily', [], $days, $feature );
       }
 
       return $this->create_rest_response( [ 'success' => true, 'data' => $data ], 200 );
@@ -1846,6 +1857,137 @@ class Meow_MWAI_Rest {
       ];
 
       return $this->create_rest_response( $response, 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  /**
+   * Loopback test that mimics the way Anthropic's claude.ai connector probes
+   * the OAuth discovery endpoint, so admins can detect a hosting-layer block
+   * (typically WP Engine's WAF rejecting the python-httpx User-Agent on
+   * /.well-known/oauth-* paths) without waiting until they try to connect from
+   * claude.ai. Hits the site's own public PRM URL with the same UA Anthropic
+   * uses and reports the result.
+   */
+  public function rest_mcp_self_test( $request ) {
+    try {
+      $resource_url = rest_url( 'mcp/v1/http' );
+      $probe_url = home_url( '/.well-known/oauth-protected-resource' . wp_parse_url( $resource_url, PHP_URL_PATH ) );
+      $reference_url = rest_url( 'mcp/v1/.well-known/oauth-protected-resource' );
+
+      $args = [
+        'timeout' => 10,
+        'redirection' => 3,
+        'sslverify' => apply_filters( 'mwai_mcp_self_test_sslverify', true ),
+        'user-agent' => 'python-httpx/0.28.1',
+        'headers' => [
+          'Accept' => 'application/json',
+        ],
+      ];
+
+      $probe_response = wp_remote_get( $probe_url, $args );
+      $reference_args = $args;
+      $reference_args['user-agent'] = 'AI-Engine-Self-Test/1.0';
+      $reference_response = wp_remote_get( $reference_url, $reference_args );
+
+      $build = function( $url, $response ) {
+        if ( is_wp_error( $response ) ) {
+          return [
+            'url' => $url,
+            'reachable' => false,
+            'error' => $response->get_error_message(),
+            'status' => null,
+            'content_type' => null,
+          ];
+        }
+        return [
+          'url' => $url,
+          'reachable' => true,
+          'status' => (int) wp_remote_retrieve_response_code( $response ),
+          'content_type' => wp_remote_retrieve_header( $response, 'content-type' ),
+        ];
+      };
+
+      $probe = $build( $probe_url, $probe_response );
+      $reference = $build( $reference_url, $reference_response );
+
+      $verdict = 'unknown';
+      $message = '';
+      if ( $probe['reachable'] && $probe['status'] === 200 ) {
+        $verdict = 'ok';
+        $message = 'Your site allows the python-httpx User-Agent on the OAuth discovery path. Claude.ai\'s connector should be able to reach it.';
+      } else if ( $probe['reachable'] && $probe['status'] === 403 ) {
+        $verdict = 'waf_blocks_python_ua';
+        $message = 'Your host returned 403 to a User-Agent containing "python" on the OAuth discovery path. Claude.ai uses python-httpx as its outbound HTTP client, so its connector will fail with "Couldn\'t reach the MCP server". This is a common default on WP Engine. Fix: add a Cloudflare Transform Rule that rewrites the User-Agent for /.well-known/oauth-* and /wp-json/mcp/v1/* paths before the request reaches your origin. See https://meowapps.com/fix-mcp-wordpress-connection for the full recipe.';
+      } else if ( $probe['reachable'] && $probe['status'] === 404 ) {
+        $verdict = 'wellknown_blocked';
+        $message = 'Your host returned 404 for the host-root /.well-known/oauth-protected-resource path. This usually means your hosting layer (.htaccess, nginx config, or a security plugin) intercepts /.well-known/* paths before WordPress sees them. Adjust rewrites so the path reaches index.php.';
+      } else if ( !$probe['reachable'] ) {
+        $verdict = 'unreachable';
+        $message = 'The loopback request could not reach the site at all (' . esc_html( $probe['error'] ) . '). Check that the site is publicly resolvable and that the server can reach itself over HTTPS.';
+      } else {
+        $verdict = 'unexpected_status';
+        $message = 'Got HTTP ' . $probe['status'] . ' from the loopback probe. Expected 200. Investigate the response in your CDN/origin logs.';
+      }
+
+      return $this->create_rest_response( [
+        'success' => true,
+        'verdict' => $verdict,
+        'message' => $message,
+        'probe' => $probe,
+        'reference' => $reference,
+      ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  /**
+   * Top MCP tools by call count over the last N days. Powers the
+   * "Top Tools" widget in the MCP Logs view of the Insights screen.
+   * Returns rows shaped as { tool, count, success_count, error_count }.
+   */
+  public function rest_mcp_top_tools( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $days = isset( $params['days'] ) ? max( 1, intval( $params['days'] ) ) : 7;
+      $limit = isset( $params['limit'] ) ? max( 1, min( 50, intval( $params['limit'] ) ) ) : 10;
+
+      global $wpdb;
+      $table = $wpdb->prefix . 'mwai_logs';
+      $rows = $wpdb->get_results(
+        $wpdb->prepare(
+          "SELECT scope AS tool,
+                  COUNT(*) AS count,
+                  SUM(CASE WHEN stats LIKE %s THEN 1 ELSE 0 END) AS success_count,
+                  SUM(CASE WHEN stats LIKE %s THEN 1 ELSE 0 END) AS error_count
+           FROM $table
+           WHERE feature = 'mcp_tool'
+             AND time >= DATE_SUB(NOW(), INTERVAL %d DAY)
+           GROUP BY scope
+           ORDER BY count DESC
+           LIMIT %d",
+          '%"status":"success"%',
+          '%"status":"error"%',
+          $days,
+          $limit
+        ),
+        ARRAY_A
+      );
+
+      foreach ( $rows as &$row ) {
+        $row['count'] = (int) $row['count'];
+        $row['success_count'] = (int) $row['success_count'];
+        $row['error_count'] = (int) $row['error_count'];
+      }
+      unset( $row );
+
+      return $this->create_rest_response( [ 'success' => true, 'tools' => $rows ?: [] ], 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

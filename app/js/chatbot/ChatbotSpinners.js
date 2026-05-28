@@ -1,5 +1,5 @@
-// Previous: 1.5.5
-// Current: 2.7.7
+// Previous: 2.7.7
+// Current: 3.5.3
 
 const BouncingDots = () => {
   const bouncingLoaderStyles = {
@@ -34,10 +34,11 @@ const BouncingDots = () => {
           }
         `}
       </style>
-      <div style={bouncingLoaderStyles}>
+      <div className="mwai-bouncing-loader" style={bouncingLoaderStyles}>
         {animationDelays.map((delay, index) => (
           <div
             key={index}
+            className="mwai-bouncing-dot"
             style={{
               ...bouncingDotStyles,
               animationDelay: delay,

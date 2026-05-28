@@ -1,5 +1,5 @@
-// Previous: 3.4.8
-// Current: 3.5.2
+// Previous: 3.5.2
+// Current: 3.5.3
 
 ```javascript
 const { useMemo, useState, useEffect } = wp.element;
@@ -172,14 +172,15 @@ const getLocalSettings = () => {
   }
 };
 
-const retrieveLogsMeta = async (logId) => {
+const retrieveLogsMeta = async (logId, metaKeys) => {
   if (!logId) return null;
+  const keys = metaKeys && metaKeys.length ? metaKeys : ['query', 'reply', 'fields'];
   const res = await nekoFetch(`${apiUrl}/system/logs/meta`, {
     nonce: restNonce,
     method: 'POST',
     json: {
       logId,
-      metaKeys: ['query', 'reply', 'fields']
+      metaKeys: keys
     }
   });
   return res.data;
@@ -187,8 +188,19 @@ const retrieveLogsMeta = async (logId) => {
 
 const Insights = ({ options, updateOption, busy }) => {
   const [logs, setLogs] = useState([]);
+
+  const [view, setView] = useState('queries');
+  const mcpEnabled = !!options?.module_mcp;
+  const isMcpView = view === 'mcp';
+
   const [selectedLogIds, setSelectedLogIds] = useState([]);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => getLocalSettings().isSidebarCollapsed);
+
+  useEffect(() => {
+    setSelectedLogIds([]);
+  }, [view]);
+
   const [limitSection, setLimitSection] = useState('users');
   const limits = options?.limits;
   const default_limits = options?.default_limits;
@@ -215,9 +227,13 @@ const Insights = ({ options, updateOption, busy }) => {
     return log;
   }, [logs, logId]);
 
+  const metaKeys = useMemo(
+    () => (isMcpView ? ['mcp_args', 'mcp_result'] : ['query', 'reply', 'fields']),
+    [isMcpView]
+  );
   const { isFetching: isFetchingMeta, data: metaData } = useQuery({
-    queryKey: ['logsMeta', logId],
-    queryFn: () => retrieveLogsMeta(logId),
+    queryKey: ['logsMeta', logId, view],
+    queryFn: () => retrieveLogsMeta(logId, metaKeys),
     enabled: !!logId,
     staleTime: 1000 * 60 * 60 * 24
   });
@@ -227,7 +243,29 @@ const Insights = ({ options, updateOption, busy }) => {
   const { data: activityByModel } = useQuery({
     queryKey: ['logsActivityDailyByModel'],
     queryFn: () => retrieveLogsActivityDaily(31, true),
-    staleTime: 1000 * 60
+    enabled: !isMcpView,
+    staleTime: 1000 * 60 * 60
+  });
+
+  const { data: mcpActivityDaily } = useQuery({
+    queryKey: ['logsActivityDailyMcp'],
+    queryFn: () => retrieveLogsActivityDaily(31, false, 'mcp_tool'),
+    enabled: isMcpView,
+    staleTime: 1000 * 60 * 60
+  });
+
+  const { data: topToolsData } = useQuery({
+    queryKey: ['mcpTopTools'],
+    queryFn: async () => {
+      const res = await nekoFetch(`${apiUrl}/system/mcp_logs/top_tools`, {
+        nonce: restNonce,
+        method: 'POST',
+        json: { days: 7, limit: 10 }
+      });
+      return res?.tools || [];
+    },
+    enabled: isMcpView,
+    staleTime: 1000 * 60 * 5
   });
 
   const modelToProvider = useMemo(() => {
@@ -282,8 +320,26 @@ const Insights = ({ options, updateOption, busy }) => {
     return { days, max, grandTotal, providers, providerTotals };
   }, [activityByModel, getModel, modelToProvider]);
 
+  const mcpActivityData = useMemo(() => {
+    if (!mcpActivityDaily || mcpActivityDaily.length === 0) return null;
+    const len = mcpActivityDaily.length;
+    const days = mcpActivityDaily.map((count, idx) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (len - 1 - idx));
+      return {
+        key: d.toISOString().slice(0, 10),
+        label: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        total: count | 0,
+      };
+    });
+    const max = Math.max(1, ...days.map(d => d.total));
+    const grandTotal = days.reduce((s, d) => s + d.total, 0);
+    return { days, max, grandTotal };
+  }, [mcpActivityDaily]);
+
   const [hoveredDay, setHoveredDay] = useState(null);
-  const hoveredInfo = hoveredDay && activityData?.days.find(d => d.key === hoveredDay);
+  const currentActivity = isMcpView ? mcpActivityData : activityData;
+  const hoveredInfo = hoveredDay && currentActivity?.days.find(d => d.key === hoveredDay);
 
   const updateLimits = async (value, id) => {
     const newParams = { ...limits, [id]: value };
@@ -342,6 +398,9 @@ const Insights = ({ options, updateOption, busy }) => {
       >
         <NekoSplitView.Main>
           <QueriesExplorer
+            view={view}
+            setView={setView}
+            mcpEnabled={mcpEnabled}
             selectedLogIds={selectedLogIds}
             setSelectedLogIds={setSelectedLogIds}
             onDataFetched={setLogs}
@@ -351,7 +410,7 @@ const Insights = ({ options, updateOption, busy }) => {
         </NekoSplitView.Main>
 
         <NekoSplitView.Sidebar>
-          {logId && (
+          {logId && !isMcpView && (
             <>
               <NekoTabs inversed>
                 <NekoTab title={i18n.COMMON.QUERY}>
@@ -443,29 +502,98 @@ const Insights = ({ options, updateOption, busy }) => {
             </>
           )}
 
+          {logId && isMcpView && (
+            <NekoTabs inversed>
+              <NekoTab title="Arguments">
+                <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
+                  {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
+                  {!isFetchingMeta && (!meta || !meta['mcp_args']) && (
+                    <NekoEmpty icon="file-text"
+                      title="Not captured"
+                      subtitle="Enable 'Include arguments & results' under Settings → MCP → Logging to store tool arguments." />
+                  )}
+                  {!isFetchingMeta && meta && meta['mcp_args'] && (
+                    <JsonViewer
+                      value={meta['mcp_args']}
+                      rootName="arguments"
+                      indentWidth={2}
+                      displayDataTypes={false}
+                      displayObjectSize={false}
+                      displayArrayKey={false}
+                      enableClipboard={false}
+                      style={{ fontSize: 12 }}
+                    />
+                  )}
+                </div>
+              </NekoTab>
+
+              <NekoTab title="Result">
+                <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
+                  {isFetchingMeta && <i style={{ color: 'gray' }}>Loading...</i>}
+                  {!isFetchingMeta && (!meta || !meta['mcp_result']) && (
+                    <NekoEmpty icon="file-text"
+                      title="Not captured"
+                      subtitle="Enable 'Include arguments & results' under Settings → MCP → Logging to store tool results." />
+                  )}
+                  {!isFetchingMeta && meta && meta['mcp_result'] && (
+                    <JsonViewer
+                      value={meta['mcp_result']}
+                      rootName="result"
+                      indentWidth={2}
+                      displayDataTypes={false}
+                      displayObjectSize={false}
+                      displayArrayKey={false}
+                      enableClipboard={false}
+                      style={{ fontSize: 12 }}
+                    />
+                  )}
+                </div>
+              </NekoTab>
+
+              {selectedLog?.stats && (
+                <NekoTab title="Stats">
+                  <div style={{ height: 380, overflow: 'auto', maxHeight: 380 }}>
+                    <JsonViewer
+                      value={selectedLog.stats}
+                      rootName="stats"
+                      indentWidth={2}
+                      displayDataTypes={false}
+                      displayObjectSize={false}
+                      displayArrayKey={false}
+                      enableClipboard={false}
+                      style={{ fontSize: 12 }}
+                    />
+                  </div>
+                </NekoTab>
+              )}
+            </NekoTabs>
+          )}
+
           <NekoBlock className="primary" title={i18n.COMMON.ACTIVITY}>
             <style>{activityCSS}</style>
             <div className="mwai-activity">
-              {!activityData && (
+              {!currentActivity && (
                 <NekoEmpty icon="bar-chart-2" title={i18n.COMMON.DATA_NOT_AVAILABLE} />
               )}
-              {activityData && (
+              {currentActivity && (
                 <>
                   <div className="mwai-activity-hero">
                     <span className="mwai-activity-big">
-                      {(hoveredInfo ? hoveredInfo.total : activityData.grandTotal).toLocaleString()}
+                      {(hoveredInfo ? hoveredInfo.total : currentActivity.grandTotal).toLocaleString()}
                     </span>
                     <span className="mwai-activity-desc">
                       {hoveredInfo
                         ? hoveredInfo.label
-                        : <>queries over the last <b>{activityData.days.length} days</b></>}
+                        : isMcpView
+                          ? <>MCP tool calls over the last <b>{currentActivity.days.length} days</b></>
+                          : <>queries over the last <b>{currentActivity.days.length} days</b></>}
                     </span>
                   </div>
 
                   <div className="mwai-activity-bars" onMouseLeave={() => setHoveredDay(null)}>
-                    {activityData.days.map((day) => {
-                      const fillPct = (day.total / activityData.max) * 100;
-                      const segs = Object.entries(day.byProvider).sort((a, b) => b[1] - a[1]);
+                    {currentActivity.days.map((day) => {
+                      const fillPct = (day.total / currentActivity.max) * 100;
+                      const segs = isMcpView ? [] : Object.entries(day.byProvider || {}).sort((a, b) => b[1] - a[1]);
                       const isHovered = hoveredDay === day.key;
                       return (
                         <div
@@ -478,23 +606,30 @@ const Insights = ({ options, updateOption, busy }) => {
                             className="mwai-activity-bar-col"
                             style={{ height: `${fillPct}%` }}
                           >
-                            {segs.map(([provType, v]) => (
+                            {isMcpView ? (
                               <span
-                                key={provType}
                                 className="mwai-activity-seg"
-                                style={{
-                                  flex: day.total > 0 ? v / day.total : 0,
-                                  background: getNekoProviderBrand(provType).color,
-                                }}
+                                style={{ flex: 1, background: 'var(--neko-primary, #4a6cf7)' }}
                               />
-                            ))}
+                            ) : (
+                              segs.map(([provType, v]) => (
+                                <span
+                                  key={provType}
+                                  className="mwai-activity-seg"
+                                  style={{
+                                    flex: day.total > 0 ? v / day.total : 0,
+                                    background: getNekoProviderBrand(provType).color,
+                                  }}
+                                />
+                              ))
+                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  {activityData.providers.length > 0 && (
+                  {!isMcpView && currentActivity.providers && currentActivity.providers.length > 0 && (
                     <div className="mwai-activity-legend">
                       {activityData.providers.map((p) => (
                         <span key={p} className="mwai-activity-legend-item">
@@ -517,7 +652,48 @@ const Insights = ({ options, updateOption, busy }) => {
             </div>
           </NekoBlock>
 
-          <StyledBuilderForm>
+          {isMcpView && (
+            <NekoBlock className="primary" title="Top Tools (7 days)">
+              {(!topToolsData || topToolsData.length === 0) && (
+                <NekoEmpty icon="bar-chart-2" title={i18n.COMMON.DATA_NOT_AVAILABLE} />
+              )}
+              {topToolsData && topToolsData.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {topToolsData.map((row) => {
+                    const total = (row.count | 0) || 1;
+                    const successPct = Math.round((row.success_count / total) * 100);
+                    const hasErrors = (row.error_count | 0) > 0;
+                    return (
+                      <div key={row.tool} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                        <span style={{
+                          flex: '1 1 auto',
+                          fontFamily: 'Menlo, Consolas, monospace',
+                          fontSize: 12,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }} title={row.tool}>
+                          {row.tool}
+                        </span>
+                        <span style={{ color: '#999', minWidth: 30, textAlign: 'right' }}>
+                          {row.count}
+                        </span>
+                        <span style={{
+                          minWidth: 44,
+                          textAlign: 'right',
+                          color: hasErrors ? 'var(--neko-red)' : '#999',
+                        }} title={`${row.success_count} success, ${row.error_count} error`}>
+                          {successPct}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </NekoBlock>
+          )}
+
+          {!isMcpView && <StyledBuilderForm>
             <NekoBlock className="primary" busy={busy} title={i18n.COMMON.LIMITS}>
               <NekoCheckbox
                 name="enabled"
@@ -709,7 +885,7 @@ const Insights = ({ options, updateOption, busy }) => {
                 </>
               )}
             </NekoBlock>
-          </StyledBuilderForm>
+          </StyledBuilderForm>}
         </NekoSplitView.Sidebar>
       </NekoSplitView>
     </>

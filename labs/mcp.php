@@ -37,6 +37,12 @@ class Meow_MWAI_Labs_MCP {
   // Placeholder for OAuth integration. Currently unused and kept for
   // future implementation once the security model is revised.
   private $oauth = null;
+  // Resolved during auth so the MCP Logs feature can attribute tool calls
+  // to a specific connector (Claude, ChatGPT, Claude Code, …) or 'bearer'.
+  // Lives on the instance for the duration of one HTTP request.
+  private $auth_client_id = null;
+  private $auth_client_name = null;
+  private $auth_method = null; // 'oauth' | 'bearer' | null
 
   #region Initialize
   public function __construct( $core ) {
@@ -73,6 +79,24 @@ class Meow_MWAI_Labs_MCP {
       add_filter( 'mwai_allow_mcp', [ $this, 'auth_via_bearer_token' ], 10, 2 );
       $filter_added = true;
     }
+
+    // Extend the CORS allow-headers list for our MCP routes. The Streamable HTTP
+    // transport sends Mcp-Protocol-Version and Mcp-Session-Id on every request;
+    // WP core's default allow-list does not include them, so the browser-side
+    // preflight from claude.ai (and similar web connectors) was rejecting the
+    // actual POST and the client reported "Couldn't reach the MCP server".
+    add_filter( 'rest_allowed_cors_headers', function ( $headers ) {
+      $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+      if ( strpos( $uri, '/' . $this->namespace . '/' ) === false ) {
+        return $headers;
+      }
+      foreach ( [ 'Mcp-Protocol-Version', 'Mcp-Session-Id', 'Accept', 'Last-Event-ID' ] as $h ) {
+        if ( !in_array( $h, $headers, true ) ) {
+          $headers[] = $h;
+        }
+      }
+      return $headers;
+    } );
     register_rest_route( $this->namespace, '/sse', [
       'methods' => [ 'GET', 'POST', 'HEAD' ],  // Support HEAD for client endpoint checks
       'callback' => [ $this, 'handle_sse' ],
@@ -217,6 +241,9 @@ class Meow_MWAI_Labs_MCP {
           // Set current user based on OAuth token
           wp_set_current_user( $token_data['user_id'] );
           $auth_result = 'oauth';
+          $this->auth_method = 'oauth';
+          $this->auth_client_id = $token_data['client_id'] ?? null;
+          $this->auth_client_name = $token_data['client_name'] ?? null;
           // Only log auth for SSE endpoint
           if ( $this->logging && strpos( $request->get_route(), '/sse' ) !== false ) {
             error_log( '[AI Engine MCP] 🔐 OAuth OK (user: ' . $token_data['user_id'] . ')' );
@@ -231,6 +258,9 @@ class Meow_MWAI_Labs_MCP {
           wp_set_current_user( $admin->ID, $admin->user_login );
         }
         $auth_result = 'static';
+        $this->auth_method = 'bearer';
+        $this->auth_client_id = 'bearer';
+        $this->auth_client_name = null;
         if ( $this->logging ) {
           error_log( '[AI Engine MCP] 🔐 Bearer token auth OK' );
         }
@@ -251,6 +281,8 @@ class Meow_MWAI_Labs_MCP {
         if ( $admin = $this->core->get_admin_user() ) {
           wp_set_current_user( $admin->ID, $admin->user_login );
         }
+        $this->auth_method = 'bearer';
+        $this->auth_client_id = 'bearer';
         return true;
       }
     }
@@ -278,6 +310,8 @@ class Meow_MWAI_Labs_MCP {
     if ( $admin = $this->core->get_admin_user() ) {
       wp_set_current_user( $admin->ID, $admin->user_login );
     }
+    $this->auth_method = 'bearer';
+    $this->auth_client_id = 'bearer';
     return true;
   }
 
@@ -296,6 +330,8 @@ class Meow_MWAI_Labs_MCP {
     if ( $admin = $this->core->get_admin_user() ) {
       wp_set_current_user( $admin->ID, $admin->user_login );
     }
+    $this->auth_method = 'bearer';
+    $this->auth_client_id = 'bearer';
     return true;
   }
 
@@ -1352,6 +1388,10 @@ class Meow_MWAI_Labs_MCP {
 
   #region Tools Call (execute_tool)
   private function execute_tool( $tool, $args, $id ) {
+    $start = microtime( true );
+    $response = null;
+    $status = 'error';
+    $error_msg = null;
     try {
       // Ensure tool access levels are populated (each HTTP request starts fresh)
       if ( empty( $this->tool_access_levels ) ) {
@@ -1361,7 +1401,9 @@ class Meow_MWAI_Labs_MCP {
       // Defense in depth: verify tool access even if it wasn't filtered from the listing
       $tool_level = $this->tool_access_levels[ $tool ] ?? 'admin';
       if ( !$this->role_has_access( $tool_level ) ) {
-        return $this->rpc_error( $id, -32600, "Access denied: tool '{$tool}' requires '{$tool_level}' access." );
+        $error_msg = "Access denied: tool '{$tool}' requires '{$tool_level}' access.";
+        $response = $this->rpc_error( $id, -32600, $error_msg );
+        return $response;
       }
 
       // Handle built-in tools first
@@ -1373,7 +1415,7 @@ class Meow_MWAI_Labs_MCP {
           'time' => gmdate( 'Y-m-d H:i:s' ),
           'name' => get_bloginfo( 'name' ),
         ];
-        return [
+        $response = [
           'jsonrpc' => '2.0',
           'id' => $id,
           'result' => [
@@ -1386,6 +1428,8 @@ class Meow_MWAI_Labs_MCP {
             'data' => $ping_data,
           ],
         ];
+        $status = 'success';
+        return $response;
       }
 
       // Let other modules handle their tools
@@ -1413,21 +1457,48 @@ class Meow_MWAI_Labs_MCP {
       if ( $filtered !== null ) {
         // Check if it's already a full JSON-RPC response (backward compatibility)
         if ( is_array( $filtered ) && isset( $filtered['jsonrpc'] ) && isset( $filtered['id'] ) ) {
-          return $filtered;
+          $response = $filtered;
+          $status = isset( $filtered['error'] ) ? 'error' : 'success';
+          if ( $status === 'error' ) {
+            $error_msg = $filtered['error']['message'] ?? null;
+          }
+          return $response;
         }
 
         // Otherwise, wrap the result in proper JSON-RPC format
-        return [
+        $response = [
           'jsonrpc' => '2.0',
           'id' => $id,
           'result' => $this->format_tool_result( $filtered ),
         ];
+        $status = 'success';
+        return $response;
       }
 
       throw new Exception( "Unknown tool: {$tool}" );
     }
     catch ( Exception $e ) {
-      return $this->rpc_error( $id, -32603, $e->getMessage() );
+      $error_msg = $e->getMessage();
+      $response = $this->rpc_error( $id, -32603, $error_msg );
+      return $response;
+    }
+    finally {
+      $duration_ms = (int) round( ( microtime( true ) - $start ) * 1000 );
+      // Fire the action even on access denials and errors so admins can see
+      // attempted-but-blocked tool calls in MCP Logs.
+      do_action( 'mwai_mcp_tool_called', [
+        'tool'         => $tool,
+        'args'         => $args,
+        'result'       => $response,
+        'status'       => $status,
+        'error_msg'    => $error_msg,
+        'duration_ms'  => $duration_ms,
+        'client_id'    => $this->auth_client_id,
+        'client_name'  => $this->auth_client_name,
+        'auth_method'  => $this->auth_method,
+        'request_id'   => $id,
+        'user_id'      => get_current_user_id(),
+      ] );
     }
   }
   #endregion

@@ -669,7 +669,9 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $hash = hash( 'sha256', $token );
     $row = $wpdb->get_row(
       $wpdb->prepare(
-        "SELECT * FROM {$this->table_tokens} WHERE access_token_hash = %s AND revoked = 0 LIMIT 1",
+        "SELECT t.*, c.client_name FROM {$this->table_tokens} t
+         LEFT JOIN {$this->table_clients} c ON c.client_id = t.client_id
+         WHERE t.access_token_hash = %s AND t.revoked = 0 LIMIT 1",
         $hash
       )
     );
@@ -688,6 +690,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
     return [
       'user_id' => (int) $row->user_id,
       'client_id' => $row->client_id,
+      'client_name' => $row->client_name,
       'scope' => $row->scope,
     ];
   }
