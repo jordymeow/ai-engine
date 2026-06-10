@@ -17,8 +17,78 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
   */
   private static $accuratePrices = [];
 
+  /**
+  * Web search citations captured during streaming (they arrive as delta.annotations).
+  * @var array
+  */
+  protected $inAnnotations = [];
+
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
+  }
+
+  public function reset_stream() {
+    $this->inAnnotations = [];
+    return parent::reset_stream();
+  }
+
+  // Capture web search citations from the stream (they arrive as delta.annotations).
+  protected function stream_data_handler( $json ) {
+    if ( !empty( $json['choices'][0]['delta']['annotations'] ) ) {
+      $this->inAnnotations = array_merge( $this->inAnnotations, $json['choices'][0]['delta']['annotations'] );
+    }
+    return parent::stream_data_handler( $json );
+  }
+
+  /**
+  * The web plugin returns url_citation annotations. Most models already cite
+  * inline, so we only append a compact "Sources" footer for citations that
+  * aren't already linked in the answer. Annotations live on the message in
+  * non-streaming mode and are collected from the stream otherwise.
+  */
+  protected function finalize_choices( $choices, $responseData, $query ) {
+    $choices = parent::finalize_choices( $choices, $responseData, $query );
+
+    foreach ( $choices as &$choice ) {
+      if ( !isset( $choice['message']['content'] ) || !is_string( $choice['message']['content'] ) ) {
+        continue;
+      }
+      $annotations = $choice['message']['annotations'] ?? null;
+      if ( empty( $annotations ) && !empty( $this->inAnnotations ) ) {
+        $annotations = $this->inAnnotations;
+      }
+      if ( empty( $annotations ) ) {
+        continue;
+      }
+
+      $content = $choice['message']['content'];
+      $links = [];
+      $seen = [];
+      foreach ( $annotations as $annotation ) {
+        if ( ( $annotation['type'] ?? '' ) !== 'url_citation' ) {
+          continue;
+        }
+        $citation = $annotation['url_citation'] ?? [];
+        $url = $citation['url'] ?? '';
+        if ( empty( $url ) || isset( $seen[$url] ) || strpos( $content, $url ) !== false ) {
+          continue;
+        }
+        $seen[$url] = true;
+        $title = trim( $citation['title'] ?? '' );
+        if ( empty( $title ) ) {
+          $title = parse_url( $url, PHP_URL_HOST );
+          $title = $title ? str_replace( 'www.', '', $title ) : $url;
+        }
+        $links[] = '- [' . $title . '](' . $url . ')';
+      }
+
+      if ( !empty( $links ) ) {
+        $content .= "\n\n**" . __( 'Sources', 'ai-engine' ) . "**\n" . implode( "\n", $links );
+        $choice['message']['content'] = $content;
+      }
+    }
+
+    return $choices;
   }
 
   protected function set_environment() {
@@ -55,6 +125,13 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
     if ( !( $query instanceof Meow_MWAI_Query_Embed ) ) {
       $body['transforms'] = ['middle-out'];
       $body['usage'] = [ 'include' => true ];
+
+      // Web search: OpenRouter's "web" plugin works on any model (it runs the
+      // search itself and injects the results), so we only enable it on request.
+      if ( !empty( $query->tools ) && in_array( 'web_search', $query->tools, true ) ) {
+        $webPlugin = apply_filters( 'mwai_openrouter_web_plugin', [ 'id' => 'web' ], $query );
+        $body['plugins'] = array_merge( $body['plugins'] ?? [], [ $webPlugin ] );
+      }
     }
     else {
       // Only OpenAI embedding models support the dimensions parameter
@@ -420,6 +497,12 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
       'maxContextualTokens' => $maxContextualTokens,
       'tags' => $tags,
     ];
+
+    // The "web" plugin grounds any text model, so expose Web Search on every
+    // chat model (not on image generation models).
+    if ( !$isImageGeneration ) {
+      $entry['tools'] = [ 'web_search' ];
+    }
 
     // Add mode for image generation models
     if ( $isImageGeneration ) {

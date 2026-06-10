@@ -124,13 +124,14 @@ class Meow_MWAI_Modules_Chatbot {
     ] );
   }
 
-  public function basics_security_check( $botId, $customId, $newMessage, $newFileId ) {
+  public function basics_security_check( $botId, $customId, $newMessage, $newFileId, $newFileIds = [] ) {
     if ( !$botId && !$customId ) {
       Meow_MWAI_Logging::warn( 'The query was rejected - no botId nor id was specified.' );
       return false;
     }
 
-    if ( $newFileId ) {
+    // An empty message is acceptable when files are attached (single or multi upload).
+    if ( $newFileId || !empty( $newFileIds ) ) {
       return true;
     }
 
@@ -224,7 +225,7 @@ class Meow_MWAI_Modules_Chatbot {
       }
     }
 
-    if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId ) ) {
+    if ( !$this->basics_security_check( $botId, $customId, $newMessage, $newFileId, $newFileIds ) ) {
       return $this->create_rest_response( [
         'success' => false,
         'message' => apply_filters( 'mwai_ai_exception', 'Sorry, your query has been rejected.' )

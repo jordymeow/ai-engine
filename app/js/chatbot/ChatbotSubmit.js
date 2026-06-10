@@ -1,19 +1,18 @@
-// Previous: 3.0.0
-// Current: 3.3.3
+// Previous: 3.3.3
+// Current: 3.5.4
 
 // React & Vendor Libs
 const { useMemo, useCallback } = wp.element;
-import { Send, SendHorizontal, Eraser, ArrowUp } from 'lucide-react';
+import { Send, SendHorizontal, Eraser, ArrowUp, LoaderCircle } from 'lucide-react';
 
 import { useChatbotContext } from "./ChatbotContext";
 
 const ChatbotSubmit = () => {
   const { state, actions } = useChatbotContext();
   const { onClear, onSubmitAction, setIsListening } = actions;
-  const { textClear, textSend, uploadedFile, uploadedFiles, inputText, messages,
+  const { textClear, textSend, uploadedFile, uploadedFiles, isUploading, inputText, messages,
     isListening, timeElapsed, busy, submitButtonConf, locked, theme } = state;
 
-  const isFileUploading = !!uploadedFile?.uploadProgress;
   const hasFileUploaded = !!uploadedFile?.uploadedId;
   const hasMultiFiles = uploadedFiles && uploadedFiles.length > 0;
   const clearMode = !hasFileUploaded && !hasMultiFiles && inputText.length < 1 && messages?.length > 1;
@@ -24,6 +23,10 @@ const ChatbotSubmit = () => {
   const buttonContent = useMemo(() => {
     if (busy) {
       return timeElapsed ? <div className="mwai-timer">{timeElapsed}</div> : null;
+    }
+    // A file is still uploading: show a spinner so it's clear why send is disabled.
+    if (isUploading) {
+      return <LoaderCircle size="20" className="mwai-spin" />;
     }
     // ChatGPT theme uses ArrowUp icon
     if (isChatGPTTheme) {
@@ -48,7 +51,7 @@ const ChatbotSubmit = () => {
     }
 
     return <span>{clearMode ? textClear : textSend}</span>;
-  }, [busy, timeElapsed, clearMode, textClear, textSend, submitButtonConf, isChatGPTTheme]);
+  }, [busy, isUploading, timeElapsed, clearMode, textClear, textSend, submitButtonConf, isChatGPTTheme]);
 
   // Button is "active" (blue) when there's content to send OR messages to clear
   const isClickable = hasContent || clearMode;
@@ -79,7 +82,7 @@ const ChatbotSubmit = () => {
   }, [busy, onSubmitClick]);
 
   return (
-    <button className={buttonClassName} disabled={busy || isFileUploading || locked} onClick={handleClick}>
+    <button className={buttonClassName} disabled={busy || isUploading || locked} onClick={handleClick}>
       {buttonContent}
     </button>
   );

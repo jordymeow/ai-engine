@@ -36,6 +36,11 @@ class Meow_MWAI_Modules_Discussions {
       'callback' => [ $this, 'rest_discussions_delete_admin' ],
       'permission_callback' => [ $this->core, 'can_access_settings' ],
     ] );
+    register_rest_route( $this->namespace_admin, '/discussions/stats', [
+      'methods' => 'GET',
+      'callback' => [ $this, 'rest_discussions_stats' ],
+      'permission_callback' => [ $this->core, 'can_access_settings' ],
+    ] );
 
     // UI
     register_rest_route( $this->namespace_ui, '/discussions/list', [
@@ -237,6 +242,29 @@ class Meow_MWAI_Modules_Discussions {
       $chats = $this->chats_query( [], $offset, $limit, $filters, $sort );
 
       return $this->create_rest_response( [ 'success' => true, 'total' => $chats['total'], 'chats' => $chats['rows'] ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
+  }
+
+  /**
+  * Admin route for discussion counts, used by the Dashboard usage widget.
+  * Discussions are hard-deleted, so these counts never include deleted ones.
+  */
+  public function rest_discussions_stats( $request ) {
+    try {
+      $this->check_db();
+      $days = (int) $request->get_param( 'days' );
+      if ( $days < 1 || $days > 365 ) {
+        $days = 7;
+      }
+      $since = date( 'Y-m-d H:i:s', strtotime( "-{$days} days" ) );
+      $count = (int) $this->wpdb->get_var(
+        $this->wpdb->prepare( "SELECT COUNT(*) FROM {$this->table_chats} WHERE created >= %s", $since )
+      );
+      $total = (int) $this->wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_chats}" );
+      return $this->create_rest_response( [ 'success' => true, 'count' => $count, 'total' => $total, 'days' => $days ], 200 );
     }
     catch ( Exception $e ) {
       return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );

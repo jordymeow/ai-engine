@@ -18,6 +18,11 @@ class Meow_MWAI_Reply implements JsonSerializable {
   // Code interpreter code (separate from main content)
   public $contentCode = '';
 
+  // Engine-specific extras kept on the reply during a single request (e.g. Google
+  // stores generated images, thoughts and grounding metadata here). Declared so PHP
+  // 8.2+ does not warn about dynamic property creation.
+  public $extraData = [];
+
   // This is when models return a message that needs to be executed (functions, tools, etc)
   public $needFeedbacks = [];
   public $needClientActions = [];

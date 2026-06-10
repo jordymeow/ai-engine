@@ -218,16 +218,17 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           }
         }
         else {
-          // Regular user message
-          $content = [
-            [
-              'type' => 'input_text',
-              'text' => $query->get_message()
-            ]
-          ];
-
-          // Check for attached files (unified approach)
+          // Regular user message. The text part is skipped when the message is
+          // empty and files are attached (an image can be sent without text).
+          $content = [];
+          $message = $query->get_message();
           $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+          if ( ( $message !== null && $message !== '' ) || empty( $attachments ) ) {
+            $content[] = [
+              'type' => 'input_text',
+              'text' => $message
+            ];
+          }
           foreach ( $attachments as $file ) {
             // Check if it's an image or a file (PDF, etc.) BEFORE trying to get data
             $mimeType = $file->get_mimeType() ?? '';
@@ -257,6 +258,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
                 Meow_MWAI_Logging::warn( 'Responses API: File not uploaded to OpenAI yet (type: ' . $file->get_type() . ')' );
               }
             }
+          }
+
+          // If every attachment was skipped and there was no message, fall back to
+          // an empty text part rather than sending an invalid empty content array.
+          if ( empty( $content ) ) {
+            $content[] = [ 'type' => 'input_text', 'text' => '' ];
           }
 
           $body['input'] = [

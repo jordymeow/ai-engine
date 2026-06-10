@@ -1,5 +1,5 @@
-// Previous: 3.4.2
-// Current: 3.4.7
+// Previous: 3.4.7
+// Current: 3.5.4
 
 ```javascript
 const { useMemo, useState, useEffect, useCallback } = wp.element;
@@ -76,24 +76,25 @@ const StyledEmbedding = styled.div`
 `;
 
 const StyledMessageWrapper = styled.div`
-  font-size: 13px;
-  padding: 10px;
+  font-size: ${props => props.$bubble ? '15px' : '13px'};
+  padding: ${props => props.$bubble ? '15px 20px' : '10px'};
   border: 1px solid #eaeaea;
-  border-top: none;
+  border-top: ${props => props.$bubble ? '1px solid #eaeaea' : 'none'};
   background: ${props => props.$background || 'white'};
   color: #333333;
   word-break: break-word;
   overflow-wrap: break-word;
   word-wrap: break-word;
   hyphens: auto;
-  border-radius: 0 0 3px 3px;
+  border-radius: ${props => props.$bubble ? '12px' : '0 0 3px 3px'};
+  box-shadow: ${props => props.$bubble ? '0 1px 3px rgba(0, 0, 0, 0.05)' : 'none'};
 
   p, ul, ol, li, span, div, a, strong, em, blockquote, table, td, th {
-    font-size: 13px !important;
+    font-size: ${props => props.$bubble ? '15px' : '13px'} !important;
   }
 
   pre, code {
-    font-size: 12px !important;
+    font-size: ${props => props.$bubble ? '13px' : '12px'} !important;
   }
 
   ul, ol {
@@ -183,7 +184,7 @@ const options = {
   }
 };
 
-const StyledMessage = ({ content, background }) => {
+const StyledMessage = ({ content, background, bubble }) => {
   const [ processedContent, setProcessedContent ] = useState(content || '');
 
   const checkImageURL = (url) => {
@@ -219,7 +220,25 @@ const StyledMessage = ({ content, background }) => {
   const renderedContent = useMemo(() => {
     let out = "";
     try {
-      out = compiler(processedContent, options);
+      let processed = processedContent;
+      const codeBlocks = [];
+      processed = processed.replace(/```[\s\S]*?```/g, (match) => {
+        codeBlocks.push(match);
+        return `MWAICB${codeBlocks.length - 1}MWAI`;
+      });
+      const inlineCode = [];
+      processed = processed.replace(/`[^`]+`/g, (match) => {
+        inlineCode.push(match);
+        return `MWAIIC${inlineCode.length - 1}MWAI`;
+      });
+      processed = processed.replace(/(?<=[A-Za-z0-9])_(?=[A-Za-z0-9])/g, '\\_');
+      codeBlocks.forEach((block, i) => {
+        processed = processed.replace(`MWAICB${i}MWAI`, () => block);
+      });
+      inlineCode.forEach((code, i) => {
+        processed = processed.replace(`MWAIIC${i}MWAI`, () => code);
+      });
+      out = compiler(processed, options);
     }
     catch (e) {
       console.error("Crash in markdown-to-jsx! Reverting to plain text.", { e, processedContent });
@@ -229,13 +248,13 @@ const StyledMessage = ({ content, background }) => {
   }, [processedContent]);
 
   return (
-    <StyledMessageWrapper $background={background}>
+    <StyledMessageWrapper $background={background} $bubble={bubble}>
       {renderedContent}
     </StyledMessageWrapper>
   );
 };
 
-const Message = ({ message }) => {
+const Message = ({ message, variant = 'panel' }) => {
   const role = message.role || message.type;
   const colors = getRoleColors(role);
   const embeddings = message?.extra?.embeddings ? message?.extra?.embeddings : (
@@ -244,6 +263,41 @@ const Message = ({ message }) => {
   const shortcutName = message?.shortcutName;
   const shortcutPrompt = message?.shortcutPrompt;
   const [showPrompt, setShowPrompt] = useState(false);
+
+  if (variant === 'bubble') {
+    const isUser = role === 'user';
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column',
+        alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 22 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+          textTransform: 'uppercase', color: colors.label, margin: '0 6px 5px' }}>
+          {role}{shortcutName && ' (shortcut)'}
+        </div>
+        <div style={{ maxWidth: '82%', minWidth: 100 }}>
+          {Array.isArray(embeddings) && embeddings.length > 0 && <StyledEmbedding
+            style={{ borderRadius: 8, marginBottom: 5 }}>
+            {embeddings.map(embedding => <div key={embedding.id}>
+              <span>{embedding.title}</span> (<span>{(embedding.score.toFixed(4) * 100).toFixed(2)}</span>)
+            </div>)}
+          </StyledEmbedding>}
+          {shortcutName ? <div style={{
+            padding: '12px 16px', background: colors.background || '#f5f5f5',
+            border: '1px solid #eaeaea', borderRadius: 12
+          }}>
+            <span onClick={shortcutPrompt ? () => setShowPrompt(!showPrompt) : undefined} style={{
+              display: 'inline-block', padding: '4px 12px', fontSize: 12, fontWeight: 500,
+              background: colors.label || '#888', color: 'white', borderRadius: 12, opacity: 0.7,
+              cursor: shortcutPrompt ? 'pointer' : 'default'
+            }}>{shortcutName}</span>
+            {showPrompt && shortcutPrompt && <div style={{
+              marginTop: 8, fontSize: 12, color: '#555', fontStyle: 'italic'
+            }}>{shortcutPrompt}</div>}
+          </div> : <StyledMessage content={message.content || message.text}
+            background={colors.background} bubble />}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
@@ -286,6 +340,7 @@ const Discussions = () => {
   const [ busyAction, setBusyAction ] = useState(false);
   const [ autoRefresh, setAutoRefresh ] = useState(false);
   const [ isSidebarCollapsed, setIsSidebarCollapsed ] = useState(() => getLocalSettings().isSidebarCollapsed);
+  const [ isFullView, setIsFullView ] = useState(false);
 
   const { data: chatbots } = useQuery({
     queryKey: ['chatbots'], queryFn: retrieveChatbots, initialData: initChatbots
@@ -350,7 +405,7 @@ const Discussions = () => {
 
   const { isFetching: isFetchingChats, data: chatsData, error: chatsError } = useQuery({
     queryKey: ['chats', JSON.stringify(chatsQueryParams)], queryFn: refreshDiscussions,
-    refetchInterval: autoRefresh ? 1000 * 30 : null
+    refetchInterval: autoRefresh ? 1000 * 5 : null
   });
 
   useEffect(() => {
@@ -457,12 +512,30 @@ const Discussions = () => {
       id: currentDiscussion.id,
       chatId: currentDiscussion.chatId,
       botId: currentDiscussion.botId,
+      title: currentDiscussion.title,
       messages: messages,
       extra: extra,
       created: currentDiscussion.created,
       updated: currentDiscussion.updated
     };
   }, [selectedIds, chatsData]);
+
+  useEffect(() => {
+    if (isFullView && !discussion) {
+      setIsFullView(false);
+    }
+  }, [isFullView, discussion]);
+
+  useEffect(() => {
+    if (!isFullView) { return; }
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsFullView(false);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isFullView]);
 
   const onDeleteSelectedChats = async () => {
     setBusyAction(true);
@@ -513,6 +586,33 @@ const Discussions = () => {
 
   const formattedCreated = tableDateTimeFormatter(discussion?.created);
   const formattedUpdated = tableDateTimeFormatter(discussion?.updated);
+
+  if (isFullView && discussion) {
+    const metaChip = (label, value) => (
+      <span key={label} style={{ display: 'inline-flex', gap: 5, alignItems: 'baseline',
+        fontSize: 12, color: '#50575e', background: '#f0f2f5',
+        border: '1px solid #e2e6ea', borderRadius: 999, padding: '3px 11px' }}>
+        <b style={{ color: '#3c434a' }}>{label}</b> {value}
+      </span>
+    );
+    return (
+      <NekoBlock className="primary" title={discussion.title || i18n.COMMON.DISCUSSION} action={
+        <NekoButton className="secondary" onClick={() => setIsFullView(false)}>
+          {i18n.COMMON.BACK}
+        </NekoButton>
+      }>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 28 }}>
+          {metaChip('Bot', discussion.botId)}
+          {discussion.extra?.model && metaChip('Model', discussion.extra.model)}
+          {metaChip('Created', discussion.created)}
+          {metaChip('Updated', discussion.updated)}
+          {metaChip('Messages', discussion.messages?.length ?? 0)}
+        </div>
+        {Array.isArray(discussion.messages) &&
+          discussion.messages.map((x, i) => <Message key={i} message={x} variant="bubble" />)}
+      </NekoBlock>
+    );
+  }
 
   return (<>
 
@@ -594,7 +694,11 @@ const Discussions = () => {
 
       <NekoSplitView.Sidebar>
 
-        <NekoBlock className="primary" title="Selected Discussion" maxHeight={400}>
+        <NekoBlock className="primary" title="Selected Discussion" maxHeight={400} action={
+          discussion ? <NekoButton className="secondary" onClick={() => setIsFullView(true)}>
+            {i18n.COMMON.FULL_SCREEN}
+          </NekoButton> : null
+        }>
 
           {!discussion && <div style={{ textAlign: 'center', padding: 10 }}>
             No discussion selected.

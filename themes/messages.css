@@ -349,8 +349,6 @@
   overflow: auto;
   max-height: var(--mwai-maxHeight);
   padding: var(--mwai-spacing) var(--mwai-spacing) 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.05);
 }
 .mwai-messages-theme .mwai-conversation::-webkit-scrollbar {
   width: 8px;
@@ -370,6 +368,10 @@
 }
 .mwai-messages-theme .mwai-conversation::-webkit-scrollbar-thumb:active {
   background: rgba(0, 0, 0, 0.3);
+}
+.mwai-messages-theme .mwai-conversation {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.05);
 }
 .mwai-messages-theme .mwai-conversation .mwai-reply {
   margin-bottom: var(--mwai-spacing);
@@ -591,12 +593,14 @@
   margin: 0;
   overflow: hidden;
   min-height: inherit;
-  padding: var(--mwai-spacing);
-  padding-right: calc(70px + var(--mwai-spacing) + 6px);
 }
 .mwai-messages-theme .mwai-input .mwai-input-text textarea:focus {
   outline: none;
   box-shadow: none;
+}
+.mwai-messages-theme .mwai-input .mwai-input-text textarea {
+  padding: var(--mwai-spacing);
+  padding-right: calc(70px + var(--mwai-spacing) + 6px);
 }
 .mwai-messages-theme .mwai-input .mwai-input-text textarea:focus {
   outline: none;
@@ -610,7 +614,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-right: 5px;
 }
 .mwai-messages-theme .mwai-input .mwai-input-text .mwai-microphone svg {
   opacity: 0.5;
@@ -624,6 +627,9 @@
 .mwai-messages-theme .mwai-input .mwai-input-text .mwai-microphone[disabled] svg {
   opacity: 0;
   cursor: not-allowed;
+}
+.mwai-messages-theme .mwai-input .mwai-input-text .mwai-microphone {
+  margin-right: 5px;
 }
 .mwai-messages-theme .mwai-input .mwai-input-text .mwai-file-upload-icon {
   background: url(icons/white-icons.svg);
@@ -683,14 +689,16 @@
   min-width: var(--mwai-submitWidth);
   min-height: var(--mwai-submitHeight);
   transition: transform 0.15s ease-out;
+}
+.mwai-messages-theme .mwai-input .mwai-input-submit:hover {
+  transform: translateY(calc(-50% - 2px)) scale(1.03);
+}
+.mwai-messages-theme .mwai-input .mwai-input-submit {
   margin: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
-}
-.mwai-messages-theme .mwai-input .mwai-input-submit:hover {
-  transform: translateY(calc(-50% - 2px)) scale(1.03);
 }
 .mwai-messages-theme button {
   margin-left: var(--mwai-spacing);
@@ -1299,6 +1307,17 @@
 .mwai-messages-theme .mwai-file-upload-icon {
   margin-bottom: -3px;
 }
+.mwai-messages-theme .mwai-spin {
+  animation: mwai-spin 1s linear infinite;
+}
+@keyframes mwai-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 .mwai-messages-theme .mwai-terminal {
   --mwai-terminal-active-color: var(--mwai-fontColor);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -1314,8 +1333,6 @@
   flex: 1 1 auto;
   min-height: 0;
   padding-bottom: calc(var(--mwai-spacing) * 1.25);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 .mwai-messages-theme .mwai-terminal:focus {
   outline: none;
@@ -1399,6 +1416,10 @@
 }
 .mwai-messages-theme .mwai-terminal .mwai-terminal-cursor.mwai-terminal-cursor-inactive {
   opacity: 0.35;
+}
+.mwai-messages-theme .mwai-terminal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 .mwai-messages-theme .mwai-terminal::-webkit-scrollbar {
   width: 8px;
@@ -1704,9 +1725,6 @@
   margin: 0;
   z-index: 999999;
   background-color: var(--mwai-backgroundSecondaryColor);
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 .mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-header {
   border-radius: 0;
@@ -1737,6 +1755,11 @@
 }
 .mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-body .mwai-files {
   flex: 0 0 auto;
+}
+.mwai-messages-theme.mwai-fullscreen:not(.mwai-window) {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 .mwai-messages-theme.mwai-fullscreen:not(.mwai-window) .mwai-window-box {
   width: 100%;
@@ -1776,7 +1799,6 @@
   margin: 0;
   z-index: 999999;
   background-color: var(--mwai-backgroundSecondaryColor);
-  transform: none !important;
 }
 .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-header {
   border-radius: 0;
@@ -1807,6 +1829,9 @@
 }
 .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-body .mwai-files {
   flex: 0 0 auto;
+}
+.mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open {
+  transform: none !important;
 }
 .mwai-messages-theme.mwai-fullscreen.mwai-window.mwai-open .mwai-window-box {
   width: 100%;
@@ -2296,6 +2321,10 @@
   line-height: 1.2;
   font-weight: 500;
   height: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 .mwai-messages-theme .mwai-realtime .mwai-controls.mwai-hold-to-talk-mode .mwai-push-to-talk:hover:not(:disabled) {
   background: var(--mwai-backgroundPrimaryColor);
@@ -2334,8 +2363,6 @@
   overflow-x: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  scrollbar-width: thin;
-  scrollbar-color: var(--mwai-backgroundHeaderColor) transparent;
 }
 .mwai-messages-theme .mwai-realtime .mwai-last-transcript::-webkit-scrollbar {
   width: 6px;
@@ -2350,6 +2377,10 @@
 }
 .mwai-messages-theme .mwai-realtime .mwai-last-transcript::-webkit-scrollbar-thumb:hover {
   background: var(--mwai-primaryColor);
+}
+.mwai-messages-theme .mwai-realtime .mwai-last-transcript {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mwai-backgroundHeaderColor) transparent;
 }
 .mwai-messages-theme .mwai-realtime .mwai-statistics {
   display: grid;
@@ -2615,8 +2646,6 @@
   background: var(--mwai-backgroundPrimaryColor);
   max-height: 300px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.05);
 }
 .mwai-messages-theme.mwai-discussions .mwai-discussions-list::-webkit-scrollbar {
   width: 8px;
@@ -2632,6 +2661,10 @@
 }
 .mwai-messages-theme.mwai-discussions .mwai-discussions-list::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
+}
+.mwai-messages-theme.mwai-discussions .mwai-discussions-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.05);
 }
 .mwai-messages-theme.mwai-discussions .mwai-discussion {
   padding: 0;

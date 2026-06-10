@@ -186,7 +186,7 @@ define( 'MWAI_OPTIONS', [
   'ai_vision_default_env' => null,
   'ai_vision_default_model' => 'gpt-5-mini',
   'ai_images_default_env' => null,
-  'ai_images_default_model' => 'gpt-image-1.5',
+  'ai_images_default_model' => 'gpt-image-2',
   'ai_images_default_quality' => null,
   'ai_audio_default_env' => null,
   'ai_audio_default_model' => 'whisper-1',

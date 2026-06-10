@@ -32,6 +32,65 @@ class Meow_MWAI_Labs_MCP_Core {
   }
 
   /**
+   * Compile a wp_alter_post regex search into a delimited PCRE pattern.
+   *
+   * The documented contract is a BARE pattern plus an optional flags string; we wrap it
+   * with a safe delimiter internally. This is what makes Gutenberg block markers work:
+   * they contain "/" (e.g. <!-- /wp:paragraph -->), which collides with the "/" delimiter,
+   * so "/" is tried last when picking a delimiter. For backward compatibility a pattern
+   * that already compiles as a fully delimited PCRE (and no separate flags were given) is
+   * honored as-is. Returns [ compiled, error ]; exactly one is non-null.
+   */
+  private function compile_alter_regex( string $pattern, string $flags = '' ): array {
+    $flags = trim( $flags );
+    if ( $flags !== '' && !preg_match( '/^[imsxuADSUXJ]+$/', $flags ) ) {
+      return [ null, 'Invalid regex flags "' . $flags . '". Allowed: i, m, s, x, u, A, D, S, U, X, J.' ];
+    }
+
+    // Backward compat: an already-delimited pattern that compiles is used verbatim.
+    if ( $flags === '' && $pattern !== '' && $this->preg_compile_error( $pattern ) === null ) {
+      return [ $pattern, null ];
+    }
+
+    // Bare pattern: wrap with the first delimiter not present in the pattern ("/" last).
+    $delimiter = '';
+    foreach ( [ '~', '#', '%', '!', '@', '/' ] as $candidate ) {
+      if ( strpos( $pattern, $candidate ) === false ) {
+        $delimiter = $candidate;
+        break;
+      }
+    }
+    if ( $delimiter === '' ) {
+      // Pattern uses every candidate; fall back to "~" and escape its occurrences.
+      $delimiter = '~';
+      $pattern = str_replace( '~', '\~', $pattern );
+    }
+    $compiled = $delimiter . $pattern . $delimiter . $flags;
+
+    $err = $this->preg_compile_error( $compiled );
+    if ( $err !== null ) {
+      return [ null, 'Invalid regex pattern: ' . $err . ' (compiled to ' . $compiled . ')' ];
+    }
+    return [ $compiled, null ];
+  }
+
+  /**
+   * Test-compile a PCRE pattern without emitting warnings. Returns null on success, or a
+   * human-readable PCRE error message (echoing the real engine message when available).
+   */
+  private function preg_compile_error( string $pattern ): ?string {
+    set_error_handler( fn () => true );
+    $result = preg_match( $pattern, '' );
+    restore_error_handler();
+    if ( $result !== false ) {
+      return null;
+    }
+    return function_exists( 'preg_last_error_msg' )
+      ? preg_last_error_msg()
+      : 'PCRE error code ' . preg_last_error();
+  }
+
+  /**
    * Bust post caches after a write so a follow-up wp_get_post in the next request
    * returns fresh data on sites with persistent object caches (Redis, Memcached) or
    * page caches (LiteSpeed, WP Rocket, Cloudflare, etc.). wp_insert_post / wp_update_post
@@ -394,15 +453,16 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_alter_post' => [
         'name' => 'wp_alter_post',
-        'description' => 'Search-and-replace inside a post field without re-uploading the entire content. Efficient for making small edits to long content. Supports regex patterns (PHP-PCRE with delimiters like /pattern/i).',
+        'description' => 'Search-and-replace inside a post field without re-uploading the entire content. Efficient for making small edits to long content. With regex=true, pass a BARE PHP-PCRE pattern (no delimiters) in "search" and put any modifiers in "flags" (e.g. flags="i"); the pattern is wrapped with a safe delimiter internally, so patterns containing "/" (like Gutenberg block markers <!-- /wp:paragraph -->) work without escaping. Example: search="(<!-- /wp:paragraph -->)\\s*$" with flags="" appends to the last paragraph block. Backslashes must be JSON-escaped (\\s, \\d). A fully delimited pattern (/.../i) is also accepted for backward compatibility.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'ID' => [ 'type' => 'integer', 'description' => 'Post ID.' ],
             'field' => [ 'type' => 'string', 'description' => 'Field to modify: post_content, post_excerpt, or post_title.' ],
-            'search' => [ 'type' => 'string', 'description' => 'Text or regex pattern to search for.' ],
-            'replace' => [ 'type' => 'string', 'description' => 'Replacement text.' ],
-            'regex' => [ 'type' => 'boolean', 'description' => 'Treat search as regex pattern (default: false).' ],
+            'search' => [ 'type' => 'string', 'description' => 'Text to search for, or (with regex=true) a bare PCRE pattern without delimiters, e.g. <!-- /wp:paragraph -->\\s*$' ],
+            'replace' => [ 'type' => 'string', 'description' => 'Replacement text. In regex mode, backreferences like $1 / \\1 are supported.' ],
+            'regex' => [ 'type' => 'boolean', 'description' => 'Treat search as a regex pattern (default: false).' ],
+            'flags' => [ 'type' => 'string', 'description' => 'Optional PCRE modifier letters applied in regex mode, e.g. "i" (case-insensitive), "s" (dotall), "m" (multiline). Allowed: i, m, s, x, u, A, D, S, U, X, J.' ],
           ],
           'required' => [ 'ID', 'field', 'search', 'replace' ],
         ],
@@ -1351,6 +1411,7 @@ class Meow_MWAI_Labs_MCP_Core {
         $search = $a['search'];
         $replace = $a['replace'];
         $is_regex = !empty( $a['regex'] );
+        $flags = isset( $a['flags'] ) && is_string( $a['flags'] ) ? $a['flags'] : '';
 
         // Validate field
         $allowed_fields = [ 'post_content', 'post_excerpt', 'post_title' ];
@@ -1369,17 +1430,15 @@ class Meow_MWAI_Labs_MCP_Core {
         $count = 0;
 
         if ( $is_regex ) {
-          // Validate regex pattern
-          set_error_handler( fn () => false );
-          $test = preg_match( $search, '' );
-          restore_error_handler();
-          if ( $test === false ) {
-            $r['error'] = [ 'code' => -32602, 'message' => 'Invalid regex pattern' ];
+          list( $compiled, $regex_err ) = $this->compile_alter_regex( $search, $flags );
+          if ( $regex_err !== null ) {
+            $r['error'] = [ 'code' => -32602, 'message' => $regex_err ];
             break;
           }
-          $new_content = preg_replace( $search, $replace, $content, -1, $count );
+          $new_content = preg_replace( $compiled, $replace, $content, -1, $count );
           if ( $new_content === null ) {
-            $r['error'] = [ 'code' => -32603, 'message' => 'Regex error' ];
+            $msg = function_exists( 'preg_last_error_msg' ) ? preg_last_error_msg() : 'PCRE error code ' . preg_last_error();
+            $r['error'] = [ 'code' => -32603, 'message' => 'Regex replacement failed: ' . $msg ];
             break;
           }
         }

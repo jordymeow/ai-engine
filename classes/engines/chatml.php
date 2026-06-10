@@ -122,12 +122,16 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     // Finally, we need to add the message, but if there is an image, we need to add it as a system message.
     $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
     if ( !empty( $attachments ) ) {
-      $content = [
-        [
+      // The message can be empty when the user only sends files; in that case the
+      // text part is skipped entirely, as some providers reject empty text parts.
+      $content = [];
+      $message = $query->get_message();
+      if ( $message !== null && $message !== '' ) {
+        $content[] = [
           'type' => 'text',
-          'text' => $query->get_message()
-        ]
-      ];
+          'text' => $message
+        ];
+      }
 
       // Handle all attachments (unified approach)
       foreach ( $attachments as $file ) {
@@ -153,6 +157,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           ];
         }
         // Skip non-images for Chat Completions API
+      }
+
+      // If every attachment was skipped and there was no message, fall back to an
+      // empty text part rather than sending an invalid empty content array.
+      if ( empty( $content ) ) {
+        $content[] = [ 'type' => 'text', 'text' => '' ];
       }
 
       $messages[] = [
@@ -1073,7 +1083,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       if ( $token_count > $embedding_max_tokens ) {
         throw new Exception( sprintf(
           'Embedding input is %d tokens, exceeds the %d-token limit for %s. Split this entry into smaller chunks and try again.',
-          $token_count, $embedding_max_tokens, $query->model
+          $token_count,
+          $embedding_max_tokens,
+          $query->model
         ) );
       }
     }

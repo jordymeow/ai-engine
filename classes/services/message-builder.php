@@ -166,13 +166,16 @@ class Meow_MWAI_Services_MessageBuilder {
       ];
     }
     else {
-      // Message with file/image attachment(s)
-      $content = [
-        [
+      // Message with file/image attachment(s). The text part is skipped when the
+      // message is empty (an image can be sent without text).
+      $content = [];
+      $message = $query->get_message();
+      if ( $message !== null && $message !== '' ) {
+        $content[] = [
           'type' => 'input_text',
-          'text' => $query->get_message()
-        ]
-      ];
+          'text' => $message
+        ];
+      }
 
       // Process all attachments
       foreach ( $attachments as $file ) {
@@ -211,6 +214,12 @@ class Meow_MWAI_Services_MessageBuilder {
         }
       }
 
+      // If every attachment was skipped and there was no message, fall back to an
+      // empty text part rather than sending an invalid empty content array.
+      if ( empty( $content ) ) {
+        $content[] = [ 'type' => 'input_text', 'text' => '' ];
+      }
+
       $messages[] = [
         'role' => 'user',
         'content' => $content
@@ -230,11 +239,10 @@ class Meow_MWAI_Services_MessageBuilder {
       return $messages;
     }
 
-
     // For Responses API with previous_response_id, we should ONLY send function_call_output messages.
     // The API already knows about the function_call messages from the previous response.
     // According to OpenAI documentation, we should NOT echo back the function_call messages.
-    
+
     foreach ( $query->blocks as $block ) {
       if ( !isset( $block['feedbacks'] ) || empty( $block['feedbacks'] ) ) {
         continue;
@@ -242,7 +250,7 @@ class Meow_MWAI_Services_MessageBuilder {
 
       // Get the rawMessage from the first feedback (they should all have the same rawMessage)
       $rawMessage = $block['feedbacks'][0]['request']['rawMessage'] ?? null;
-      
+
       if ( !$rawMessage || !isset( $rawMessage['tool_calls'] ) ) {
         continue;
       }
@@ -251,7 +259,7 @@ class Meow_MWAI_Services_MessageBuilder {
       // But ONLY add the function_call_output messages (not the function_call messages)
       foreach ( $rawMessage['tool_calls'] as $toolCall ) {
         $callId = $toolCall['id'];
-        
+
         // Find and add the corresponding function result
         // We do NOT add the function_call message when using previous_response_id
         $foundResult = false;

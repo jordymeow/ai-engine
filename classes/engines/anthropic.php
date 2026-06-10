@@ -699,10 +699,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         // paired with user-defined tools, otherwise Claude often refuses to
         // use the sandbox because it can't tell which environment to run in.
         // https://platform.claude.com/docs/en/docs/agents-and-tools/tool-use/code-execution-tool
-        $code_exec_hint = "You have the built-in code_execution tool, which runs Python and bash commands"
-          . " in an Anthropic-hosted sandboxed container. Use it whenever computation, shell commands,"
-          . " file processing, or data analysis would help. It is separate from any client-provided"
-          . " functions; state is not shared between them.";
+        $code_exec_hint = 'You have the built-in code_execution tool, which runs Python and bash commands'
+          . ' in an Anthropic-hosted sandboxed container. Use it whenever computation, shell commands,'
+          . ' file processing, or data analysis would help. It is separate from any client-provided'
+          . ' functions; state is not shared between them.';
         if ( !isset( $body['system'] ) ) {
           $body['system'] = [];
         }
@@ -858,6 +858,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     else if ( $type === 'message_delta' ) {
       $usage = $json['usage'];
       $this->streamOutTokens = $usage['output_tokens'];
+      // Carry the stop_reason so create_choices() can detect a safety refusal.
+      if ( isset( $json['delta']['stop_reason'] ) ) {
+        $this->streamBlocks['stop_reason'] = $json['delta']['stop_reason'];
+      }
     }
     else if ( $type === 'error' ) {
       $error = $json['error'];
@@ -956,6 +960,21 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     if ( !empty( $message ) ) {
       $returned_choices[] = [
         'message' => $message
+      ];
+    }
+
+    // Safety refusal (Claude Fable 5 and newer): the request was declined by a
+    // safety classifier, so there is no content. Surface a readable message
+    // instead of letting the reply come back empty.
+    if ( empty( $returned_choices ) && ( $data['stop_reason'] ?? '' ) === 'refusal' ) {
+      $category = $data['stop_details']['category'] ?? null;
+      if ( !empty( $category ) ) {
+        Meow_MWAI_Logging::log( 'Anthropic: Request refused by safety classifier (category: ' . $category . ').' );
+      }
+      $returned_choices[] = [
+        'message' => [
+          'content' => __( 'This request was declined by the model\'s safety system. Please rephrase your message and try again.', 'ai-engine' )
+        ]
       ];
     }
 

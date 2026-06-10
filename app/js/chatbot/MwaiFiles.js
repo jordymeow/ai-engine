@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 2.9.7
+// Previous: 2.9.7
+// Current: 3.5.4
 
 const { useMemo } = wp.element;
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
@@ -38,9 +38,12 @@ const MwaiFiles = () => {
             <div className="mwai-file-name">{fileName}</div>
             {fileSize && <div className="mwai-file-size">{fileSize}</div>}
           </div>
-          {file.uploadProgress !== null && file.uploadProgress < 100 ? (
+          {/* uploadProgress stays a number until the server confirms the upload, so the
+              chip keeps showing progress (instead of the trash icon) while the file is
+              not actually usable yet. */}
+          {file.uploadProgress !== null && file.uploadProgress !== undefined ? (
             <div className="mwai-file-progress">
-              <div className="mwai-file-progress-bar" style={{ width: `${file.uploadProgress}%` }}></div>
+              <div className="mwai-file-progress-bar" style={{ width: `${Math.min(file.uploadProgress, 100)}%` }}></div>
             </div>
           ) : (
             <button 

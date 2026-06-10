@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.3
+Stable tag: 3.5.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,7 +13,7 @@ AI meets WordPress. Your site can now chat, write poetry, solve problems, and ma
 
 == Description ==
 
-**AI Engine connects WordPress with AI models.** Build intelligent chatbots, generate content, create AI forms, and automate tasks. All from your WordPress dashboard.
+**AI Engine connects WordPress with AI models.** One install, stable connectors for every major AI provider: OpenAI, Anthropic, Google, Mistral, and more. Build intelligent chatbots, generate content, create AI forms, and automate tasks. All from your WordPress dashboard.
 
 Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more information, check the official website of [AI Engine](https://meowapps.com/ai-engine/).
 
@@ -23,7 +23,7 @@ Hello! ☀️ I built AI Engine to bring OpenAI, Anthropic, and other AI models 
 
 For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [REST endpoints](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/), and [MCP support](https://ai.thehiddendocs.com/mcp/). Build AI features, automate workflows, or create SaaS applications on WordPress.
 
-Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://openclaw.com/) through MCP, giving AI direct access to your site. Desktop clients can connect via OAuth: users just paste the MCP URL, sign in to WordPress, and approve. No shared token to manage. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
+Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://meowapps.com/openclaw-wordpress-mcp/) through MCP, giving AI direct access to your site. Desktop clients can connect via OAuth: users just paste the MCP URL, sign in to WordPress, and approve. No shared token to manage. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
 
 You'll be having a blast before you've explored everything. You'll probably spot bits of AI Engine in plenty of other AI plugins, code and UI alike. Flattering, really... or fishy? 🤣 But only AI Engine keeps pushing forward with real care for its community, a drive toward perfection, and the patience to get the details right.
 
@@ -192,7 +192,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 Built specifically for WordPress with seamless integration. No clunky interfaces, just native WordPress experience.
 
 **Flexible & Powerful**
-Built-in support for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) provider that connects to Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you.
+Built-in connectors for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) connector for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you.
 
 **Developer Friendly**
 Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire SaaS applications on WordPress.
@@ -263,6 +263,23 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.4 (2026/06/10) =
+* Fix: Hold to Talk button on mobile Realtime chatbot no longer triggers the context menu (copy, select) when held.
+* Update: Images and files can now be sent without a text message; engines skip the empty text part for providers that reject it.
+* Fix: Sending is now blocked while a file is still uploading, with a spinner on the send button and a progress bar on the file preview until upload completes.
+* Fix: Eliminated the gap between the chatbot and the keyboard on iOS by locking body scroll while the mobile chatbot is open.
+* Fix: Anthropic safety refusals now show a readable message instead of an empty reply.
+* Add: Claude Fable 5 model. Marked Claude Sonnet 4, Opus 4, and Opus 4.1 as deprecated.
+* Add: Web search support for OpenRouter via the Tools & Capabilities section.
+* Add: Full Screen view for Discussions, a Discussions count on the Dashboard, and fixed filenames with underscores being rendered as italics in the admin discussion view.
+* Update: AI provider connectors now mentioned in the readme description.
+* Update: PDF import now remembers the Density, Overlap, and filename-as-title settings between imports.
+* Fix: OpenClaw link in the readme now points to our own article.
+* Update: Marked GPT Image 1.5 and GPT Image 1 Mini as deprecated; default image model moved to GPT Image 2.
+* Fix: PHP 8.2+ deprecation warning caused by an undeclared `$extraData` property on `Meow_MWAI_Reply`.
+* Add: Embeddings sync can now be restricted to specific Polylang languages via a comma-separated languages field.
+* Fix: `wp_alter_post` regex mode now handles patterns containing "/" (e.g. Gutenberg block markers) and returns the actual PCRE error instead of a generic one.
 
 = 3.5.3 (2026/05/28) =
 * Fix: Filenames with underscores (e.g. `Some_File_2026.pdf`) were getting partially italicized by the chatbot's markdown renderer.
