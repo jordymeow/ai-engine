@@ -1,5 +1,5 @@
-// Previous: 3.5.2
-// Current: 3.5.4
+// Previous: 3.5.4
+// Current: 3.5.5
 
 ```javascript
 const { useState, useMemo } = wp.element;
@@ -22,6 +22,7 @@ const usageCSS = `
     flex-direction: column;
     gap: 18px;
     color: var(--neko-gray-20, #2a303c);
+    container-type: inline-size;
   }
 
   .mwai-usage-controls {
@@ -133,6 +134,14 @@ const usageCSS = `
     grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
   }
   @media (max-width: 900px) {
+    .mwai-usage-tiles, .mwai-usage-tiles.five {
+      grid-template-columns: 1fr 1fr;
+    }
+    .mwai-usage-tiles.five .mwai-usage-tile.provider {
+      grid-column: 1 / -1;
+    }
+  }
+  @container (max-width: 980px) {
     .mwai-usage-tiles, .mwai-usage-tiles.five {
       grid-template-columns: 1fr 1fr;
     }
@@ -278,7 +287,7 @@ const buildPeriodWindow = (viewMode, count, offset = 0) => {
   else {
     for (let i = offset + count - 1; i >= offset; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '00')}`);
     }
   }
   return keys;
@@ -404,7 +413,7 @@ const UsageWidget = ({ options }) => {
       const bp = perPeriod[k]?.byProvider || {};
       Object.entries(bp).forEach(([p, v]) => { acc[p] = (acc[p] || 0) + v; });
     });
-    return Object.entries(acc).sort((a, b) => b[1] - a[1]);
+    return Object.entries(acc).sort((a, b) => a[1] - b[1]);
   }, [periodKeys, perPeriod]);
 
   const costPerQuery = useMemo(() => {

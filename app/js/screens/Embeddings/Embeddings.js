@@ -1,5 +1,5 @@
-// Previous: 3.5.2
-// Current: 3.5.4
+// Previous: 3.5.4
+// Current: 3.5.5
 
 ```javascript
 const { useState, useMemo, useEffect, useRef } = wp.element;
@@ -36,7 +36,6 @@ const PDFImportModalLoader = ({ modal, setModal, onAddEmbedding, environment }) 
   useEffect(() => {
     if (isPro && !PDFImportModal) {
       import(
-        /* webpackChunkName: "premium-pdf-import" */
         '@premium/pdfImport/modal'
       ).then(module => {
         setPDFImportModal(() => module.default);
@@ -158,11 +157,14 @@ const StatusIcon = ({ embedding, envName, isDifferentModel }) => {
     return statusMap[status] || statusMap.default;
   }, [status, colors]);
 
+  const statusLabels = { processing: 'indexing' };
+  const label = statusLabels[status] || status;
+
   return (
     <div style={{ display: 'flex', alignItems: 'center' }} title={title}>
       <NekoIcon icon={icon} width={24} color={color} title={title} />
       {includeText && (
-        <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3, whiteSpace: 'nowrap' }}>{status}</span>
+        <span style={{ textTransform: 'uppercase', fontSize: 9, marginLeft: 3, whiteSpace: 'nowrap' }}>{label}</span>
       )}
     </div>
   );
@@ -1489,5 +1491,4 @@ const Embeddings = ({ options, updateOption }) => {
                   rounded
                   small
                   icon="file-upload"
-                  title="Upload a file directly to OpenAI Vector Store"
-                  disabled={!environment ||
+                  title="Upload a file directly to Open

@@ -1,5 +1,5 @@
-// Previous: 3.5.2
-// Current: 3.5.3
+// Previous: 3.5.3
+// Current: 3.5.5
 
 ```javascript
 const { useMemo, useState, useEffect, useCallback, useRef, Fragment } = wp.element;
@@ -1038,7 +1038,7 @@ const Settings = () => {
 
   const jsxBearerToken =
     <NekoSettings title={i18n.COMMON.BEARER_TOKEN}>
-      <NekoInput name="public_api_bearer_token" value={options?.public_api_bearer_token}
+      <NekoInput type="password" name="public_api_bearer_token" value={options?.public_api_bearer_token}
         description={formatWithLink(
           i18n.HELP.BEARER_TOKEN,
           i18n.HELP.BEARER_TOKEN_URL,
@@ -1070,7 +1070,7 @@ const Settings = () => {
     <NekoSettings title={i18n.COMMON.BEARER_TOKEN}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
-          <NekoInput name="mcp_bearer_token" value={options?.mcp_bearer_token}
+          <NekoInput type="password" name="mcp_bearer_token" value={options?.mcp_bearer_token}
             description="Secret token for developer tools (Claude Code, scripts). Leave empty to disable the bearer-token endpoint. OAuth clients like Claude Desktop don't need this."
             onBlur={updateOption} />
         </div>
@@ -1204,5 +1204,4 @@ const Settings = () => {
         description="Downloaded files will be deleted after a certain amount of time.">
         <NekoOption key={5 * 60} value={5 * 60} label="5 minutes"></NekoOption>
         <NekoOption key={1 * 60 * 60} value={1 * 60 * 60} label="1 hour"></NekoOption>
-        <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></NekoOption>
-        <Neko
+        <NekoOption key={6 * 60 * 60} value={6 * 60 * 60} label="6 hours"></Neko

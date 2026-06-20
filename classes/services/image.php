@@ -174,6 +174,11 @@ class Meow_MWAI_Services_Image {
       }
       // Use the extension from the custom filename if valid
       $extension = $custom_file_type['ext'];
+      // Strip any directory components so a crafted filename (e.g.
+      // "../../../evil.png") cannot escape the uploads directory. The
+      // empty-filename branch below already sanitizes; this mirrors the
+      // hardening applied to the media-rename handler (CVE-2026-1400).
+      $filename = sanitize_file_name( basename( $filename ) );
     }
 
     $image_data = $this->download_image( $url );

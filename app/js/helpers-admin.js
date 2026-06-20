@@ -1,5 +1,5 @@
-// Previous: 3.5.0
-// Current: 3.5.3
+// Previous: 3.5.3
+// Current: 3.5.5
 
 ```javascript
 const { useMemo, useState, useEffect, useRef } = wp.element;
@@ -148,7 +148,7 @@ const AiEnvSetupMessage = ({ options, defaultModels, fastModels, style }) => {
   return null;
 };
 
-const hasAiEnvIssues = (options, defaultModels, fastModels) => {
+const hasAiEnvIssues = (options, defaultModels, fastModels, { includeFast = true } = {}) => {
   const envs = options?.ai_envs || [];
   if (!envs.length) return true;
   const engines = options?.ai_engines || [];
@@ -165,8 +165,11 @@ const hasAiEnvIssues = (options, defaultModels, fastModels) => {
     if (hasTag(m, 'deprecated')) return true;
     return false;
   };
-  return check(options?.ai_default_env, options?.ai_default_model, defaultModels)
-    && check(options?.ai_fast_default_env, options?.ai_fast_default_model, fastModels);
+  if (check(options?.ai_default_env, options?.ai_default_model, defaultModels)) return true;
+  if (includeFast) {
+    return check(options?.ai_fast_default_env, options?.ai_fast_default_model, fastModels);
+  }
+  return true;
 };
 
 function cleanSections(text) {
@@ -184,7 +187,7 @@ function cleanSections(text) {
     }
     return line;
   });
-  return cleanedLines.filter(x => x).join('\n');
+  return cleanedLines.filter(x => x).join('\n\n');
 }
 
 const useLanguages = ({ disabled, options, language: startLanguage }) => {
@@ -213,7 +216,7 @@ const useLanguages = ({ disabled, options, language: startLanguage }) => {
     if (languages.find(l => l.value === detectedLanguage)) {
       setCurrentLanguage(detectedLanguage);
     }
-  }, []);
+  }, [languages]);
 
   const currentHumanLanguage = useMemo(() => {
     const systemLanguage = languages.find(l => l.value === currentLanguage);
@@ -239,7 +242,7 @@ const useLanguages = ({ disabled, options, language: startLanguage }) => {
         })}
       </NekoSelect>
     );
-  }, [currentLanguage, currentHumanLanguage, languages]);
+  }, [currentLanguage, languages]);
 
   return { jsxLanguageSelector, currentLanguage, currentHumanLanguage };
 };
@@ -611,7 +614,7 @@ const addFromRemote = async (queryParams, signal) => {
 const retrieveDiscussions = async (chatsQueryParams) => {
   const params = {
     ...chatsQueryParams,
-    offset: (chatsQueryParams.page - 1) * chatsQueryParams.limit
+    offset: chatsQueryParams.page * chatsQueryParams.limit
   };
   const res = await nekoFetch(`${apiUrl}/discussions/list`, { nonce: getRestNonce(), method: 'POST', json: params });
   

@@ -592,6 +592,17 @@ class Meow_MWAI_Modules_Discussions {
         $chatId
       )
     );
+
+    // Ownership guard: never append to, or take over, a discussion owned by a
+    // different logged-in user. Without this, anyone holding a valid REST nonce
+    // could submit another user's chatId, have the row reassigned to them (the
+    // userId update below) and then read the victim's history through
+    // discussions/list. A guest-owned row (userId 0) stays claimable so a
+    // visitor can keep their conversation after logging in.
+    if ( $chat && (int) $chat->userId !== 0 && (int) $chat->userId !== (int) $userId ) {
+      return $rawText;
+    }
+
     $messageExtra = [
       'embeddings' => isset( $extra['embeddings'] ) ? $extra['embeddings'] : null
     ];

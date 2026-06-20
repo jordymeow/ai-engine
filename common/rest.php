@@ -77,10 +77,20 @@ class MeowKit_MWAI_Rest {
   }
 
   public function file_rand( $filesize ) {
-    $tmp_file = tmpfile();
-    fseek( $tmp_file, $filesize - 1, SEEK_CUR );
-    fwrite( $tmp_file, 'a' );
-    fclose( $tmp_file );
+    // Write the benchmark file inside a dedicated subfolder of the uploads
+    // directory (created on demand), then remove it. wp.org forbids writing to
+    // the plugin folder or the uploads root — only a sanctioned subfolder.
+    $upload = wp_upload_dir();
+    if ( !empty( $upload['error'] ) || empty( $upload['basedir'] ) ) { return; }
+    $dir = trailingslashit( $upload['basedir'] ) . 'meowapps';
+    if ( !wp_mkdir_p( $dir ) ) { return; }
+    $path = trailingslashit( $dir ) . 'speedtest-' . wp_generate_password( 12, false ) . '.tmp';
+    $fh = @fopen( $path, 'wb' );
+    if ( $fh === false ) { return; }
+    fseek( $fh, $filesize - 1, SEEK_CUR );
+    fwrite( $fh, 'a' );
+    fclose( $fh );
+    @unlink( $path );
   }
 
   public function empty_request() {

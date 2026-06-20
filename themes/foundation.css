@@ -1752,13 +1752,15 @@
   content: " ";
   cursor: pointer;
   position: absolute;
-  height: 13px;
-  width: 13px;
-  border: 1.2px solid var(--mwai-headerColor);
+  height: 20px;
+  width: 20px;
+  background-color: var(--mwai-headerColor);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M3 9V3h6'/%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M21 15v6h-6'/%3E%3Cpath d='M9 21H3v-6'/%3E%3C/svg%3E") no-repeat center/contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M3 9V3h6'/%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M21 15v6h-6'/%3E%3Cpath d='M9 21H3v-6'/%3E%3C/svg%3E") no-repeat center/contain;
 }
 .mwai-foundation-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
 }
 .mwai-foundation-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button {
   justify-content: center;
@@ -1861,12 +1863,14 @@
   margin-bottom: 0px;
 }
 .mwai-foundation-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:before {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M8 3V8H3'/%3E%3Cpath d='M21 8H16V3'/%3E%3Cpath d='M3 16H8V21'/%3E%3Cpath d='M16 21V16H21'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M8 3V8H3'/%3E%3Cpath d='M21 8H16V3'/%3E%3Cpath d='M3 16H8V21'/%3E%3Cpath d='M16 21V16H21'/%3E%3C/svg%3E");
 }
 .mwai-foundation-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
-  width: 13px;
-  height: 13px;
+  width: 22px;
+  height: 22px;
 }
 .mwai-foundation-theme.mwai-fullscreen:not(.mwai-window) {
   position: fixed;

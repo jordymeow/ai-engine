@@ -345,6 +345,18 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     }
   }
 
+  /**
+  * Coerce a possibly locale-formatted integer to an int. Plain intval() truncates
+  * at the first non-digit, so a Danish/German "64.000" (or "64,000") would become
+  * 64 and silently cap things like max_tokens. We strip grouping separators first.
+  */
+  protected function to_int( $value ): int {
+    if ( is_int( $value ) ) {
+      return $value;
+    }
+    return (int) preg_replace( '/[^0-9]/', '', (string) $value );
+  }
+
   protected function convert_keys( $params ) {
     $newParams = [];
     foreach ( $params as $key => $value ) {
@@ -406,8 +418,8 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
     if ( !empty( $params['messages'] ) ) {
       $this->set_messages( $params['messages'] );
     }
-    if ( !empty( $params['maxMessages'] ) && intval( $params['maxMessages'] ) > 0 ) {
-      $this->set_max_messages( intval( $params['maxMessages'] ) );
+    if ( !empty( $params['maxMessages'] ) && $this->to_int( $params['maxMessages'] ) > 0 ) {
+      $this->set_max_messages( $this->to_int( $params['maxMessages'] ) );
     }
     if ( !empty( $params['maxResults'] ) ) {
       $this->set_max_results( $params['maxResults'] );

@@ -884,6 +884,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       //   call_user_func( $this->streamCallback, $event );
       // }
     }
+    else if ( $type === 'ping' ) {
+      // Documented keepalive heartbeat, nothing to do.
+      // https://docs.anthropic.com/en/docs/build-with-claude/streaming#event-types
+    }
     else if ( $type === 'keepalive' ) {
       // Forward keepalive as SSE comment to keep browser connection alive during long MCP calls
       echo ": keepalive\n\n";

@@ -723,6 +723,8 @@ i18n.EMBEDDINGS = {
   SYNC_POSTS: __( 'Sync Posts', 'ai-engine' ),
   AUTO_SYNC_POSTS: __( 'Auto-Sync Posts', 'ai-engine' ),
   AUTO_SYNC_POSTS_DESCRIPTION: __( 'Embeddings will be created, updated or removed based on the activity related to your posts.', 'ai-engine' ),
+  MAINTENANCE: __( 'Maintenance', 'ai-engine' ),
+  MAINTENANCE_DESCRIPTION: __( 'Embeddings that are stale or outdated are automatically re-created in the background, for all environments.', 'ai-engine' ),
   REWRITE_CONTENT: __( 'Rewrite Content', 'ai-engine' ),
   REWRITE_CONTENT_DESCRIPTION: __( 'Shorten and improve the content for your embedding using the default model.', 'ai-engine' ),
   FORCE_RECREATE: __( 'Force Recreate', 'ai-engine' ),

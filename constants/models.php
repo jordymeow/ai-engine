@@ -278,7 +278,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    // Shutdown: December 10, 2026.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
@@ -304,7 +305,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    // Shutdown: December 10, 2026.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
@@ -330,7 +332,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    // Shutdown: December 10, 2026.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
@@ -382,7 +385,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 272000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    // Shutdown: December 10, 2026.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.4
+Stable tag: 3.5.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,30 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.5 (2026/06/20) =
+* Fix: Path traversal vulnerability in create_image and prevented chatbot discussions from being taken over by another logged-in user.
+* Fix: Add-ons were reported as disabled whenever options were fetched outside the admin context.
+* Fix: Max Tokens entered with a thousands separator (e.g. the Danish "64.000") was read as 64 and capped responses.
+* Fix: Content Aware placeholders now resolve automatically in chatbot instructions without requiring a toggle.
+* Fix: Setup Assistant no longer shows "Connect an AI Provider" as incomplete when only the Fast model is deprecated.
+* Fix: Realtime instructions now resolve placeholders like {FIRST_NAME} into their values.
+* Fix: MCP tools generated from WordPress REST endpoints could break Google Gemini due to enum on non-string types.
+* Fix: Changing the type of an AI environment now drops fields from the previous type (endpoint, region, deployments), preventing engines from calling the wrong provider's endpoint.
+* Fix: The "Default AI Environment not configured" warning no longer appears when a Chroma embeddings environment generates its own vectors.
+* Fix: The Usage widget on the Dashboard no longer overflows its panel when numbers are wide.
+* Fix: Anthropic's streaming ping keepalive events are now ignored instead of being logged as an unknown stream data type.
+* Update: Reworked embeddings sync — pages are no longer marked stale without real changes, the background task (now called Maintenance) runs for all environments, processes batches within a time budget, no longer gets blocked by a failing vector, and can be disabled in Settings > Knowledge > Sync Settings.
+* Update: API key and token fields are now masked with an eye toggle to reveal them.
+* Update: Marked the original GPT-5 models (gpt-5, gpt-5-mini, gpt-5-nano, gpt-5-pro) as deprecated per OpenAI's December 10, 2026 shutdown.
+* Update: The fullscreen resize button now uses thin corner-bracket icons that match the close button.
+* Update: OpenAI Vector Store document uploads now accept multiple files at once.
+* Add: User Memory added to the add-ons list.
+* Add: Optional capability filter for get_chatbots() to fetch only chatbots whose model supports function calling.
+* 🎵 Discuss with others about Ai Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, check our [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
 
 = 3.5.4 (2026/06/10) =
 * Fix: Hold to Talk button on mobile Realtime chatbot no longer triggers the context menu (copy, select) when held.

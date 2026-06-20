@@ -941,7 +941,12 @@ class Meow_MWAI_Core {
     return $themes;
   }
 
-  public function get_chatbots() {
+  /**
+  * Returns the registered chatbots. Pass a $filters array to narrow the list,
+  * e.g. get_chatbots( [ 'functions' => true ] ) to only keep chatbots whose
+  * model supports function calling. No filters returns every chatbot, as before.
+  */
+  public function get_chatbots( $filters = [] ) {
     $chatbots = get_option( $this->chatbots_option_name, [] );
     $hasChanges = false;
     if ( empty( $chatbots ) ) {
@@ -1011,7 +1016,85 @@ class Meow_MWAI_Core {
     if ( $hasChanges ) {
       update_option( $this->chatbots_option_name, $chatbots );
     }
+
+    // Optional filtering by capability (e.g. only function-calling chatbots).
+    if ( !empty( $filters['functions'] ) ) {
+      $chatbots = array_values( array_filter( $chatbots, function ( $chatbot ) {
+        return $this->chatbot_supports_functions( $chatbot );
+      } ) );
+    }
+
     return $chatbots;
+  }
+
+  /**
+  * Whether a chatbot's model supports function calling. The 'functions' tag is
+  * the canonical signal across all engines; dynamic providers (OpenRouter, etc.)
+  * also expose it as a feature, so we accept both.
+  */
+  public function chatbot_supports_functions( $chatbot ) {
+    $modelId = $chatbot['model'] ?? null;
+    if ( empty( $modelId ) ) {
+      return false;
+    }
+    $envId = $chatbot['envId'] ?? ( $chatbot['environment'] ?? null );
+    $model = $this->find_model_data( $modelId, $envId );
+    if ( empty( $model ) ) {
+      return false;
+    }
+    $tags = $model['tags'] ?? [];
+    $features = $model['features'] ?? [];
+    return in_array( 'functions', $tags, true ) || in_array( 'functions', $features, true );
+  }
+
+  /**
+  * Resolve a model id to its metadata (tags, features, etc.). Static providers
+  * (OpenAI, Anthropic) keep their models in 'ai_engines' by type; dynamic ones
+  * (OpenRouter, Google) store them per environment in 'ai_envs'. We check the
+  * environment first, then fall back to the engine defaults and custom models.
+  */
+  public function find_model_data( $modelId, $envId = null ) {
+    if ( empty( $modelId ) ) {
+      return null;
+    }
+    $options = $this->get_all_options();
+
+    // 1. The chatbot's own environment (covers dynamically-fetched models).
+    $envType = null;
+    if ( !empty( $envId ) && !empty( $options['ai_envs'] ) ) {
+      foreach ( $options['ai_envs'] as $env ) {
+        if ( ( $env['id'] ?? null ) !== $envId ) {
+          continue;
+        }
+        $envType = $env['type'] ?? null;
+        foreach ( $env['models'] ?? [] as $model ) {
+          if ( ( $model['model'] ?? null ) === $modelId ) {
+            return $model;
+          }
+        }
+      }
+    }
+
+    // 2. The engine defaults (constants), scoped to the env type when known.
+    foreach ( $options['ai_engines'] ?? [] as $engine ) {
+      if ( $envType !== null && ( $engine['type'] ?? null ) !== $envType ) {
+        continue;
+      }
+      foreach ( $engine['models'] ?? [] as $model ) {
+        if ( ( $model['model'] ?? null ) === $modelId ) {
+          return $model;
+        }
+      }
+    }
+
+    // 3. Custom models.
+    foreach ( $options['ai_models'] ?? [] as $model ) {
+      if ( ( $model['model'] ?? null ) === $modelId ) {
+        return $model;
+      }
+    }
+
+    return null;
   }
 
   public function get_chatbot( $botId ) {
@@ -1423,7 +1506,31 @@ class Meow_MWAI_Core {
         'stars' => 1,
         'enabled' => false
       ],
+      [
+        'slug' => 'mwai-user-memory',
+        'name' => 'User Memory',
+        'description' => 'Let your chatbot remember details about logged-in users across conversations, for more personal and context-aware replies.',
+        'install_url' => 'https://meowapps.com/products/mwai-user-memory/',
+        'settings_url' => null,
+        'stars' => 3,
+        'enabled' => false
+      ],
     ] );
+
+    // Add-ons mark themselves enabled through the `mwai_addons` filter, but they
+    // only register that hook inside is_admin(). Over REST (the settings/options
+    // endpoint, or an options auto-save) is_admin() is false, so none of them would
+    // report as enabled and the admin UI would show no enabled add-ons. Flag any
+    // add-on whose plugin is active as a context-independent fallback.
+    if ( !function_exists( 'is_plugin_active' ) ) {
+      require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+    foreach ( $options['addons'] as &$addon ) {
+      if ( empty( $addon['enabled'] ) && is_plugin_active( $addon['slug'] . '/' . $addon['slug'] . '.php' ) ) {
+        $addon['enabled'] = true;
+      }
+    }
+    unset( $addon );
 
     // Populate usage data from ai_usage to ai_models_usage for the frontend
     $ai_usage = $this->get_option( 'ai_usage', [] );
