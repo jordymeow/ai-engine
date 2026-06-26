@@ -1,5 +1,5 @@
-// Previous: 3.5.1
-// Current: 3.5.4
+// Previous: 3.5.4
+// Current: 3.5.6
 
 ```javascript
 const { useState, useRef, useCallback, useMemo, useEffect } = wp.element;
@@ -173,7 +173,8 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
 
   const [messages, setMessages] = useState([]);
   const processedItemIdsRef = useRef(new Set());
-  
+  const mcpReplyCountRef = useRef(0);
+
   const handleStreamEvent = useCallback((content, eventData) => {
     if (eventData && eventData.subtype && onStreamEvent) {
       onStreamEvent({
@@ -343,7 +344,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
         setError(__('Connection failed. Please check your network and try again.'));
         setIsConnecting(false);
         setIsSessionActive(false);
-        setIsPaused(true);
+        setIsPaused(false);
         if (uploadingImage) {
           setUploadingImage(false);
           setUploadProgress(0);
@@ -494,7 +495,23 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
           case 'response.done':
             break;
         }
-        
+
+        if (!shouldEmit && msg.type.includes('mcp')) {
+          if (msg.type.endsWith('_arguments.done') || msg.type.endsWith('.in_progress')) {
+            eventMessage = `Calling MCP tool ${msg.name || ''}...`.trim();
+            eventSubtype = STREAM_TYPES.TOOL_CALL;
+            shouldEmit = true;
+          } else if (msg.type.endsWith('.completed') || msg.type.endsWith('.done')) {
+            eventMessage = 'Got result from MCP tool.';
+            eventSubtype = STREAM_TYPES.TOOL_RESULT;
+            shouldEmit = true;
+          } else if (msg.type.endsWith('.failed')) {
+            eventMessage = 'MCP tool failed.';
+            eventSubtype = STREAM_TYPES.ERROR;
+            shouldEmit = true;
+          }
+        }
+
         if (shouldEmit) {
           eventEmitterRef.current.emit(eventSubtype, eventMessage, {
             visibility: 'visible',
@@ -513,6 +530,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
           processedItemIdsRef.current.add(itemId);
           setMessages(prev => [...prev, { id: itemId, role: 'user', content: '[Audio]' }]);
         }
+        mcpReplyCountRef.current = 0;
         setWhoIsSpeaking('user');
         break;
       }
@@ -621,7 +639,18 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
       case 'response.output_item.done': {
         console.log('Output item done:', msg);
         const item = msg.item;
-        
+
+        if (item?.type === 'mcp_call') {
+          if (eventLogs && eventEmitterRef.current) {
+            const failed = item.error || item.status === 'failed';
+            eventEmitterRef.current.emit(
+              failed ? STREAM_TYPES.ERROR : STREAM_TYPES.TOOL_RESULT,
+              failed ? `MCP tool ${item.name || ''} failed.`.trim() : `Got result from MCP tool ${item.name || ''}.`.trim(),
+              { visibility: 'visible', metadata: { event_type: 'mcp_call', tool_name: item.name } }
+            );
+          }
+        }
+
         if (processingImage) {
           console.log('Clearing processing state after response');
           setProcessingImage(false);
@@ -673,6 +702,17 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
         handleFunctionCall(call_id, name, rawArgs);
         break;
       }
+      case 'response.mcp_call.completed':
+      case 'response.mcp_call.failed': {
+        if (providerRef.current !== 'google'
+          && dataChannelRef.current?.readyState === 'open'
+          && mcpReplyCountRef.current < 8) {
+          mcpReplyCountRef.current += 1;
+          debugLog(DEBUG_LEVELS.low, 'MCP tool finished; asking the model to speak the result.');
+          dataChannelRef.current.send(JSON.stringify({ type: 'response.create' }));
+        }
+        break;
+      }
       case 'response.done': {
         const resp = msg.response;
         
@@ -716,12 +756,17 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
         } else {
           debugLog(DEBUG_LEVELS.low, 'No usage data in response.done event');
         }
-        setWhoIsSpeaking('assistant');
+
+        setWhoIsSpeaking('user');
         break;
       }
       case 'error': {
         console.error('Realtime API error:', msg);
-        if (msg.error?.message && !msg.error.message.includes('no active response')) {
+        const benignError = msg.error?.message && (
+          msg.error.message.includes('no active response') ||
+          msg.error.message.includes('already has an active response')
+        );
+        if (msg.error?.message && !benignError) {
           setError(`API Error: ${msg.error.message}`);
         }
         setUploadingImage(false);
@@ -776,7 +821,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
     debugLog(DEBUG_LEVELS.low, 'Realtime connection established.');
     setIsConnecting(false);
     setIsSessionActive(true);
-    setIsPaused(true);
+    setIsPaused(false);
     setWhoIsSpeaking('user');
   }, [enableAudioTranscription, handleFunctionCall, commitStatsToServer, eventLogs]);
 
@@ -885,7 +930,7 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
               commitStatsToServer(current);
               return current;
             });
-            setWhoIsSpeaking('assistant');
+            setWhoIsSpeaking('user');
             break;
           }
           case 'error': {
@@ -1460,68 +1505,4 @@ const ChatbotRealtime = ({ onMessagesUpdate, onStreamEvent }) => {
 
   const jsxBlocks = useMemo(() => {
     if (!blocks || blocks.length === 0) {
-      return null;
-    }
-    return <div className="mwai-blocks">
-      {blocks.map((block, index) => {
-        const { type, data } = block;
-        if (type !== 'content') {
-          console.warn(`Block type ${type} is not supported.`);
-          return null;
-        }
-        const { html, variant } = data;
-        const baseClasses = ['mwai-block'];
-        if (variant === 'success') baseClasses.push('mwai-success');
-        if (variant === 'danger') baseClasses.push('mwai-danger');
-        if (variant === 'warning') baseClasses.push('mwai-warning');
-        if (variant === 'info') baseClasses.push('mwai-info');
-
-        return <div className={baseClasses.join(' ')} key={block.id || index} dangerouslySetInnerHTML={{ __html: html }} />;
-      })}
-    </div>;
-  }, [blocks]);
-
-  return (
-    <div>
-      {jsxBlocks}
-      
-      {error && (
-        <div className="mwai-error" style={{ 
-          padding: '10px', 
-          margin: '10px 0', 
-          backgroundColor: '#fee', 
-          border: '1px solid #fcc',
-          borderRadius: '5px',
-          color: '#c00',
-          textAlign: 'center'
-        }}>
-          {error}
-        </div>
-      )}
-      
-      <audio id="mwai-audio" autoPlay />
-
-      {showUsers && (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <AudioVisualizer
-            assistantStream={assistantStream}
-            userUI={userUI}
-            assistantUI={assistantUI}
-            userStream={localStreamRef.current}
-          />
-        </div>
-      )}
-
-      <div className="mwai-controls">
-        {!isSessionActive && !isConnecting && (
-          <>
-            <button onClick={handlePlay} className="mwai-play" disabled={busy || locked} aria-label="Play">
-              <Play size={16} />
-            </button>
-            {visionEnabled && (
-              <button 
-                className="mwai-upload"
-                disabled={true}
-                aria-label="Upload Image (Start session first)"
-                style={{
-                  opacity: 0.5,
+      return null

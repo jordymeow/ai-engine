@@ -90,15 +90,6 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
       unset( $body['max_completion_tokens'] );
     }
 
-    // TEMPORARILY DISABLED: Function calling for Mistral
-    // Remove tools/functions from the request until feedback loop is properly debugged
-    if ( isset( $body['tools'] ) ) {
-      unset( $body['tools'] );
-    }
-    if ( isset( $body['tool_choice'] ) ) {
-      unset( $body['tool_choice'] );
-    }
-
     return $body;
   }
 
@@ -259,13 +250,28 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
         throw new Exception( 'AI Engine: ' . $response->get_error_message() );
       }
 
+      $code = wp_remote_retrieve_response_code( $response );
       $body = json_decode( $response['body'], true );
 
-      // Debug: Log the complete models response from Mistral
-      // error_log( "AI Engine: Mistral Models Response:\n" . print_r( $body, true ) );
-
       if ( !isset( $body['data'] ) || !is_array( $body['data'] ) ) {
-        throw new Exception( 'AI Engine: Invalid response for Mistral models list.' );
+        // Mistral returns an error object (no 'data' key) on auth or billing issues,
+        // e.g. HTTP 401 {"detail":"Unauthorized"}. Surface the real reason instead of
+        // a generic "invalid response" so the user can actually fix their key.
+        $detail = '';
+        if ( is_array( $body ) ) {
+          $detail = $body['detail'] ?? $body['message'] ?? '';
+          if ( is_array( $detail ) ) {
+            $detail = wp_json_encode( $detail );
+          }
+        }
+        if ( $detail === '' ) {
+          $detail = substr( trim( (string) wp_remote_retrieve_body( $response ) ), 0, 200 );
+        }
+        throw new Exception( sprintf(
+          'AI Engine: Mistral models list failed (HTTP %s)%s',
+          $code ? $code : '?',
+          $detail !== '' ? ': ' . $detail : '.'
+        ) );
       }
 
       $models = [];
@@ -326,13 +332,12 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
         // Parse capabilities from the API response
         $capabilities = $model['capabilities'] ?? [];
 
-        // TEMPORARILY DISABLED: Function calling tags
-        // Not adding 'functions' tag since function calling is disabled for Mistral
-        // if ( in_array( 'function_calling', $capabilities ) ||
-        //      ( isset( $model['supports_tool_choice'] ) && $model['supports_tool_choice'] ) ) {
-        //   $tags[] = 'functions';
-        //   $features[] = 'functions';
-        // }
+        // Function calling: Mistral exposes this via the model's capabilities.
+        if ( in_array( 'function_calling', $capabilities ) ||
+             ( isset( $model['supports_tool_choice'] ) && $model['supports_tool_choice'] ) ) {
+          $tags[] = 'functions';
+          $features[] = 'functions';
+        }
 
         // Check for vision capability
         if ( in_array( 'vision', $capabilities ) ) {

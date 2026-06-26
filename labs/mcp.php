@@ -90,64 +90,13 @@ class Meow_MWAI_Labs_MCP {
       if ( strpos( $uri, '/' . $this->namespace . '/' ) === false ) {
         return $headers;
       }
-      foreach ( [ 'Mcp-Protocol-Version', 'Mcp-Session-Id', 'Accept', 'Last-Event-ID' ] as $h ) {
+      foreach ( [ 'Mcp-Protocol-Version', 'Mcp-Session-Id', 'Accept' ] as $h ) {
         if ( !in_array( $h, $headers, true ) ) {
           $headers[] = $h;
         }
       }
       return $headers;
     } );
-    register_rest_route( $this->namespace, '/sse', [
-      'methods' => [ 'GET', 'POST', 'HEAD' ],  // Support HEAD for client endpoint checks
-      'callback' => [ $this, 'handle_sse' ],
-      'permission_callback' => function ( $request ) {
-        return $this->can_access_mcp( $request );
-      },
-    ] );
-
-    register_rest_route( $this->namespace, '/messages', [
-      'methods' => 'POST',
-      'callback' => [ $this, 'handle_message' ],
-      'permission_callback' => function ( $request ) {
-        return $this->can_access_mcp( $request );
-      },
-    ] );
-
-    // No-Auth URL endpoints (with token in path) - Legacy SSE
-    // TODO: Remove after 2026-07-01. The UI no longer exposes this to new users (only
-    // accounts that already opted in still see the toggle). Removing it lets us also
-    // delete handle_sse, handle_message, the transient message queue, and the
-    // handle_noauth_access/_streamable helpers, which together account for several
-    // hundred lines of SSE-only plumbing in this file.
-    $noauth_enabled = $this->core->get_option( 'mcp_noauth_url' );
-    if ( $noauth_enabled && !empty( $this->bearer_token ) ) {
-      register_rest_route( $this->namespace, '/' . $this->bearer_token . '/sse', [
-        'methods' => 'GET',
-        'callback' => [ $this, 'handle_sse' ],
-        'permission_callback' => function ( $request ) {
-          return $this->handle_noauth_access( $request );
-        },
-        'show_in_index' => false,
-      ] );
-
-      register_rest_route( $this->namespace, '/' . $this->bearer_token . '/sse', [
-        'methods' => 'POST',
-        'callback' => [ $this, 'handle_sse' ],
-        'permission_callback' => function ( $request ) {
-          return $this->handle_noauth_access( $request );
-        },
-        'show_in_index' => false,
-      ] );
-
-      register_rest_route( $this->namespace, '/' . $this->bearer_token . '/messages', [
-        'methods' => 'POST',
-        'callback' => [ $this, 'handle_message' ],
-        'permission_callback' => function ( $request ) {
-          return $this->handle_noauth_access( $request );
-        },
-        'show_in_index' => false,
-      ] );
-    }
 
     // Streamable HTTP endpoint (modern MCP transport). Always registered when
     // the MCP module is enabled — auth is enforced by can_access_mcp(), which
@@ -244,10 +193,6 @@ class Meow_MWAI_Labs_MCP {
           $this->auth_method = 'oauth';
           $this->auth_client_id = $token_data['client_id'] ?? null;
           $this->auth_client_name = $token_data['client_name'] ?? null;
-          // Only log auth for SSE endpoint
-          if ( $this->logging && strpos( $request->get_route(), '/sse' ) !== false ) {
-            error_log( '[AI Engine MCP] 🔐 OAuth OK (user: ' . $token_data['user_id'] . ')' );
-          }
           return true;
         }
       }
@@ -293,26 +238,6 @@ class Meow_MWAI_Labs_MCP {
     }
 
     return $allow;
-  }
-
-  public function handle_noauth_access( $request ) {
-    // For no-auth URLs, the token is already verified by being in the URL path
-    // Double-check that the route actually contains the token
-    $route = $request->get_route();
-    if ( strpos( $route, '/' . $this->bearer_token . '/' ) === false ) {
-      if ( $this->logging ) {
-        error_log( '[AI Engine MCP] ❌ Invalid no-auth URL access attempt.' );
-      }
-      return false;
-    }
-
-    // Set the current user to admin since token is valid
-    if ( $admin = $this->core->get_admin_user() ) {
-      wp_set_current_user( $admin->ID, $admin->user_login );
-    }
-    $this->auth_method = 'bearer';
-    $this->auth_client_id = 'bearer';
-    return true;
   }
 
   public function handle_noauth_access_streamable( $request ) {
@@ -371,11 +296,6 @@ class Meow_MWAI_Labs_MCP {
     return [ 'jsonrpc' => '2.0', 'id' => $id, 'error' => $err ];
   }
 
-  /** Queue an error for SSE delivery */
-  private function queue_error( $sess, $id, int $code, string $msg, $extra = null ): void {
-    $this->store_message( $sess, $this->rpc_error( $id, $code, $msg, $extra ) );
-  }
-
   /** Format tool result for MCP protocol */
   private function format_tool_result( $result ): array {
     // If result is a string, wrap it in the MCP content format
@@ -420,14 +340,11 @@ class Meow_MWAI_Labs_MCP {
   }
   #endregion
 
-  #region Handle direct JSON-RPC (for Claude's MCP client)
+  #region Handle direct JSON-RPC
   /**
-  * Claude's MCP client (via Anthropic API) sends JSON-RPC requests directly to the SSE endpoint
-  * as POST requests, rather than following the typical SSE flow:
-  * - Normal flow: GET /sse → establish SSE stream → POST /messages for JSON-RPC
-  * - Claude's flow: POST /sse with JSON-RPC body → expect immediate JSON response
-  *
-  * This method handles the direct JSON-RPC requests to maintain compatibility with Claude.
+  * Shared JSON-RPC processor: takes a decoded request body, dispatches the method,
+  * and returns an immediate WP_REST_Response. Used by the Streamable HTTP POST handler
+  * (the modern transport for Claude Desktop, Claude.ai, ChatGPT, Claude Code).
   */
   private function handle_direct_jsonrpc( WP_REST_Request $request, $data ) {
     $this->release_session_lock();
@@ -611,47 +528,7 @@ class Meow_MWAI_Labs_MCP {
   }
   #endregion
 
-  #region Handle SSE (stream loop)
-  private function reply( string $event, $data = null, string $enc = 'json' ) {
-    // Handle special events
-    if ( $event === 'bye' ) {
-      echo "event: bye\ndata: \n\n";
-      if ( ob_get_level() ) {
-        ob_end_flush();
-      }
-      flush();
-      $this->last_action_time = time();
-      $this->log( 'Clean disconnection' );
-      return;
-    }
-
-    if ( $enc === 'json' && $data === null ) {
-      $this->log( "no data for {$event}" );
-      return;
-    }
-    echo "event: {$event}\n";
-    if ( $enc === 'json' ) {
-      $data = $data === null ? '{}' : wp_json_encode( $data, JSON_UNESCAPED_UNICODE );
-    }
-    echo 'data: ' . $data . "\n\n";
-
-    if ( ob_get_level() ) {
-      ob_end_flush();
-    }
-    flush();
-
-    $this->last_action_time = time();
-    // Only log endpoint announcements
-    if ( $event === 'endpoint' ) {
-      $this->log( 'SSE endpoint ready' );
-    }
-  }
-
-  private function generate_sse_id( $req ) {
-    $last = $req ? $req->get_header( 'last-event-id' ) : '';
-    return $last ?: str_replace( '-', '', wp_generate_uuid4() );
-  }
-
+  #region Session helpers
   private function attach_session_header( WP_REST_Response $response, string $session_id ) {
     if ( empty( $session_id ) ) {
       return $response;
@@ -664,104 +541,6 @@ class Meow_MWAI_Labs_MCP {
     }
 
     return $response;
-  }
-
-  public function handle_sse( WP_REST_Request $request ) {
-    // Handle HEAD request - just confirm endpoint exists
-    if ( $request->get_method() === 'HEAD' ) {
-      return new WP_REST_Response( null, 200, [
-        'Content-Type' => 'text/event-stream',
-        'Cache-Control' => 'no-cache',
-      ] );
-    }
-
-    $raw_body = $request->get_body();
-
-    // Handle POST request with JSON-RPC body (Direct MCP client behavior)
-    // Both Claude.ai and OpenAI/ChatGPT send JSON-RPC requests directly to the SSE endpoint
-    // instead of establishing an SSE connection first. This is non-standard but we need to support it.
-    // Expected flow: GET /sse (establish stream) → POST /messages (send JSON-RPC)
-    // Actual flow: POST /sse with JSON-RPC body → expects immediate JSON response
-    if ( $request->get_method() === 'POST' && !empty( $raw_body ) ) {
-      $data = json_decode( $raw_body, true );
-      if ( $data && isset( $data['method'] ) ) {
-        // Don't log here - it's already logged by log_requests()
-        // Process as a direct JSON-RPC request instead of starting SSE stream
-        return $this->handle_direct_jsonrpc( $request, $data );
-      }
-    }
-
-    @ini_set( 'zlib.output_compression', '0' );
-    @ini_set( 'output_buffering', '0' );
-    @ini_set( 'implicit_flush', '1' );
-    if ( function_exists( 'ob_implicit_flush' ) ) {
-      ob_implicit_flush( true );
-    }
-
-    header( 'Content-Type: text/event-stream' );
-    header( 'Cache-Control: no-cache' );
-    header( 'X-Accel-Buffering: no' );
-    header( 'Connection: keep-alive' );
-    while ( ob_get_level() ) {
-      ob_end_flush();
-    }
-
-    /* — greet client —*/
-    $this->session_id = $this->generate_sse_id( $request );
-    $this->last_action_time = time();
-    echo "id: {$this->session_id}\n\n";
-    flush();
-
-    $msg_uri = sprintf(
-      '%s/messages?session_id=%s',
-      rest_url( $this->namespace ),
-      $this->session_id
-    );
-    $this->reply( 'endpoint', $msg_uri, 'text' );
-    if ( $this->logging ) {
-      error_log( '[AI Engine MCP] ✅ SSE connected (' . substr( $this->session_id, 0, 8 ) . '...)' );
-    }
-
-    /* — main loop —*/
-    while ( true ) {
-      // Reduced timeout to free workers faster when agents disconnect
-      $max_time = $this->logging ? 30 : 60 * 3; // 30 seconds in debug, 3 minutes in production
-      $idle = ( time() - $this->last_action_time ) >= $max_time;
-      if ( connection_aborted() || $idle ) {
-        $this->reply( 'bye' );
-        if ( $this->logging ) {
-          error_log( '[AI Engine MCP] 🔚 SSE closed (' . ( $idle ? 'idle' : 'abort' ) . ')' );
-        }
-        break;
-      }
-
-      // Send heartbeat every 10 seconds to detect dead connections
-      $time_since_last = time() - $this->last_action_time;
-      if ( $time_since_last >= 10 && $time_since_last % 10 === 0 ) {
-        echo ": heartbeat\n\n";
-        if ( ob_get_level() ) {
-          ob_end_flush();
-        }
-        flush();
-      }
-
-      foreach ( $this->fetch_messages( $this->session_id ) as $p ) {
-        // Check for kill signal in the message queue
-        if ( isset( $p['method'] ) && $p['method'] === 'mwai/kill' ) {
-          if ( $this->logging ) {
-            error_log( '[AI Engine MCP] Kill signal - terminating' );
-          }
-          $this->reply( 'bye' );
-          exit;
-        }
-
-        // Don't log SSE responses - they clutter the logs
-        $this->reply( 'message', $p );
-      }
-
-      usleep( 200000 ); // 200 ms
-    }
-    exit;
   }
   #endregion
 
@@ -954,200 +733,6 @@ class Meow_MWAI_Labs_MCP {
     );
 
     // Return 204 No Content on successful termination
-    return new WP_REST_Response( null, 204 );
-  }
-  #endregion
-
-  #region Handle /messages (JSON-RPC ingress)
-  public function handle_message( WP_REST_Request $request ) {
-    $this->release_session_lock();
-    $sess = sanitize_text_field( $request->get_param( 'session_id' ) );
-    $raw = $request->get_body();
-    $dat = json_decode( $raw, true );
-
-    // Only log important methods in detail
-    if ( $this->logging && $dat && isset( $dat['method'] ) ) {
-      $method = $dat['method'];
-      // Skip logging for repetitive/less important notifications
-      if ( !in_array( $method, ['notifications/initialized', 'notifications/cancelled'] ) ) {
-        error_log( '[AI Engine MCP] ↓ ' . $method );
-      }
-    }
-
-    if ( json_last_error() !== JSON_ERROR_NONE ) {
-      $this->queue_error( $sess, null, -32700, 'Parse error: invalid JSON' );
-      return new WP_REST_Response( null, 204 );
-    }
-    if ( !is_array( $dat ) ) {
-      $this->queue_error( $sess, null, -32600, 'Invalid Request' );
-      return new WP_REST_Response( null, 204 );
-    }
-
-    $id = $dat['id'] ?? null;
-    $method = $dat['method'] ?? null;
-
-    /* — notifications —*/
-    if ( $method === 'initialized' ) {
-      return new WP_REST_Response( null, 204 );
-    }
-    if ( $method === 'notifications/cancelled' ) {
-      // Agent finished - queue kill signal to close SSE immediately
-      if ( $this->logging ) {
-        error_log( '[AI Engine MCP] Agent cancelled - closing SSE connection' );
-      }
-      $this->store_message( $sess, [
-        'jsonrpc' => '2.0',
-        'method' => 'mwai/kill'
-      ] );
-      return new WP_REST_Response( null, 204 );
-    }
-    if ( $method === 'mwai/kill' ) {
-      // Kill signal received - no need for verbose logging
-      // Queue the kill message for SSE to pick up before exiting
-      $this->store_message( $sess, [
-        'jsonrpc' => '2.0',
-        'method' => 'mwai/kill'
-      ] );
-      // Give it a moment to be stored
-      usleep( 100000 ); // 100ms
-      return new WP_REST_Response( null, 204 );
-    }
-
-    // It's a notification, no ID = no reply
-    if ( $id === null && $method !== null ) {
-      return new WP_REST_Response( null, 204 );
-    }
-
-    if ( !$method ) {
-      $this->queue_error( $sess, $id, -32600, 'Invalid Request: method missing' );
-      return new WP_REST_Response( null, 204 );
-    }
-
-    try {
-
-      $reply = null;
-
-      #region Methods switch
-      switch ( $method ) {
-
-        case 'initialize':
-          // Check if client requests a specific protocol version
-          $params = $dat['params'] ?? [];
-          $requested_version = $params['protocolVersion'] ?? null;
-          $client_info = $params['clientInfo'] ?? null;
-
-          if ( $this->logging && $client_info ) {
-            $client_name = $client_info['name'] ?? 'unknown';
-            $client_version = $client_info['version'] ?? 'unknown';
-            error_log( "[AI Engine MCP] Client: {$client_name} v{$client_version}" );
-          }
-
-          // Negotiate protocol version: use client's version if supported
-          $negotiated_version = $this->protocol_version;
-          if ( $requested_version && in_array( $requested_version, $this->supported_protocol_versions, true ) ) {
-            $negotiated_version = $requested_version;
-          }
-          else if ( $requested_version && $requested_version !== $this->protocol_version ) {
-            if ( $this->logging ) {
-              Meow_MWAI_Logging::warn( "[AI Engine MCP] Client requested unsupported protocol version {$requested_version}" );
-            }
-          }
-
-          $reply = [
-            'jsonrpc' => '2.0',
-            'id' => $id,
-            'result' => [
-              'protocolVersion' => $negotiated_version,
-              'serverInfo' => (object) [
-                'name' => 'AI Engine - ' . get_bloginfo( 'name' ),
-                'version' => $this->server_version,
-              ],
-              'capabilities' => (object) [
-                'tools' => new stdClass(),
-              ],
-            ],
-          ];
-          break;
-
-        case 'tools/list':
-          $tools = $this->get_tools_list();
-
-          // Debug logging for tools/list
-          if ( $this->logging ) {
-            $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
-            error_log( '[AI Engine MCP] 📋 tools/list requested by: ' . $user_agent );
-            error_log( '[AI Engine MCP] 📊 Returning ' . count( $tools ) . ' tools' );
-            if ( count( $tools ) > 0 ) {
-              $tool_names = array_column( $tools, 'name' );
-              error_log( '[AI Engine MCP] 🛠️ Tool names: ' . implode( ', ', $tool_names ) );
-            }
-            else {
-              error_log( '[AI Engine MCP] ⚠️ WARNING: No tools returned!' );
-            }
-          }
-
-          $reply = [
-            'jsonrpc' => '2.0',
-            'id' => $id,
-            'result' => [ 'tools' => $tools ],
-          ];
-          break;
-
-        case 'resources/list':
-          $reply = [
-            'jsonrpc' => '2.0',
-            'id' => $id,
-            'result' => [ 'resources' => $this->get_resources_list() ],
-          ];
-          break;
-
-        case 'prompts/list':
-          $reply = [
-            'jsonrpc' => '2.0',
-            'id' => $id,
-            'result' => [ 'prompts' => $this->get_prompts_list() ],
-          ];
-          break;
-
-        case 'tools/call':
-          $params = $dat['params'] ?? [];
-          $tool = $params['name'] ?? '';
-          $arguments = $params['arguments'] ?? [];
-
-          if ( $this->logging ) {
-            error_log( '[AI Engine MCP SSE] 🔧 tools/call - Tool: ' . $tool );
-            error_log( '[AI Engine MCP SSE] 🔧 tools/call - Arguments: ' . wp_json_encode( $arguments ) );
-          }
-
-          try {
-            $reply = $this->execute_tool( $tool, $arguments, $id );
-            if ( $this->logging ) {
-              error_log( '[AI Engine MCP SSE] ✅ tools/call - Success for tool: ' . $tool );
-            }
-          }
-          catch ( Exception $e ) {
-            if ( $this->logging ) {
-              error_log( '[AI Engine MCP SSE] ❌ tools/call - Error: ' . $e->getMessage() );
-            }
-            throw $e;
-          }
-          break;
-
-        default:
-          $reply = $this->rpc_error( $id, -32601, "Method not found: {$method}" );
-      }
-      #endregion
-
-      if ( $reply ) {
-        // Don't log response queuing - it's too noisy
-        $this->store_message( $sess, $reply );
-      }
-
-    }
-    catch ( Exception $e ) {
-      $this->queue_error( $sess, $id, -32603, 'Internal error', $e->getMessage() );
-    }
-
     return new WP_REST_Response( null, 204 );
   }
   #endregion

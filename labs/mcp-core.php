@@ -24,6 +24,47 @@ class Meow_MWAI_Labs_MCP_Core {
   private function clean_html( string $v ): string {
     return wp_kses_post( wp_unslash( $v ) );
   }
+
+  // Prepare post_content for wp_create_post. If the caller already sent HTML,
+  // Gutenberg blocks, or shortcodes, keep it as-is (sanitized like the update
+  // path) instead of running the markdown parser. Parsedown would HTML-encode
+  // the quotes in shortcode attributes ([x a="b"] -> a=&quot;b&quot;), auto-link
+  // URLs, and <p>-wrap lines, silently breaking shortcode rendering. Markdown
+  // conversion is reserved for plain prose with no existing markup.
+  private function prepare_new_content( string $v ): string {
+    $hasBlocks = strpos( $v, '<!-- wp:' ) !== false;
+    $hasHtml = (bool) preg_match( '/<(?:p|div|h[1-6]|ul|ol|li|figure|table|blockquote|section|img|a|br|span|strong|em)\b[^>]*>/i', $v );
+    // Generic shortcode detection (independent of whether the shortcode is
+    // registered on THIS site): an attribute assignment inside brackets
+    // [name attr="x"] or a closing [/name]. Deliberately does not match a
+    // Markdown link [text](url), which has neither "=" nor a leading slash.
+    $hasShortcode = (bool) preg_match( '/\[[a-zA-Z][\w-]*\s+[^\]]*?=[^\]]*\]|\[\/[a-zA-Z]/', $v );
+    if ( $hasBlocks || $hasHtml || $hasShortcode ) {
+      return $this->clean_html( $v );
+    }
+    return $this->core->markdown_to_html( $v );
+  }
+
+  // Recursively blank out every block's attributes. Gallery/media blocks (e.g.
+  // meow-gallery) store their whole image list as JSON in the block-delimiter
+  // comment, which can be hundreds of KB and overflows the tool's token cap on
+  // read. Keep the small delimiter marker and the inner prose/HTML.
+  private function strip_block_attrs( array $blocks ): array {
+    foreach ( $blocks as &$b ) {
+      $b['attrs'] = [];
+      if ( !empty( $b['innerBlocks'] ) ) {
+        $b['innerBlocks'] = $this->strip_block_attrs( $b['innerBlocks'] );
+      }
+    }
+    unset( $b );
+    return $blocks;
+  }
+
+  // Return the post content with block-attribute JSON stripped, so a gallery-heavy
+  // post collapses to its few KB of actual prose without re-rendering any block.
+  private function prose_content( string $v ): string {
+    return trim( serialize_blocks( $this->strip_block_attrs( parse_blocks( wp_unslash( $v ) ) ) ) );
+  }
   private function post_excerpt( WP_Post $p ): string {
     return wp_trim_words( wp_strip_all_tags( $p->post_excerpt ?: $p->post_content ), 55 );
   }
@@ -201,13 +242,15 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Comments -------- */
       'wp_get_comments' => [
         'name' => 'wp_get_comments',
-        'description' => 'Retrieve comments (fields: comment_ID, comment_post_ID, comment_author, comment_content, comment_date, comment_approved). Returns 10 by default.',
+        'description' => 'Retrieve comments (fields: comment_ID, comment_post_ID, comment_author, comment_content, comment_date, comment_approved). Returns 10 by default. Filter by commenter with `user_id` (registered user ID) or `author_email`.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'post_id' => [ 'type' => 'integer' ],
             'status' => [ 'type' => 'string' ],
             'search' => [ 'type' => 'string' ],
+            'user_id' => [ 'type' => 'integer', 'description' => 'Filter by the registered user ID of the commenter.' ],
+            'author_email' => [ 'type' => 'string', 'description' => 'Filter by the commenter email address.' ],
             'limit' => [ 'type' => 'integer' ],
             'offset' => [ 'type' => 'integer' ],
             'paged' => [ 'type' => 'integer' ],
@@ -269,17 +312,20 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Options -------- */
       'wp_get_option' => [
         'name' => 'wp_get_option',
-        'description' => 'Get a single WordPress option value (scalar or array) by key.',
+        'description' => 'Get a single WordPress option value (scalar or array) by key. Set raw to true to read the stored value straight from the database, bypassing the object cache and any option_* filters (e.g. Polylang filters sticky_posts per-language on REST requests, so a normal read can differ from the DB / wp-cli).',
         'inputSchema' => [
           'type' => 'object',
-          'properties' => [ 'key' => [ 'type' => 'string' ] ],
+          'properties' => [
+            'key' => [ 'type' => 'string' ],
+            'raw' => [ 'type' => 'boolean', 'description' => 'Read the unfiltered value directly from the database (bypasses object cache and option_* filters).' ],
+          ],
           'required' => [ 'key' ],
         ],
         'accessLevel' => 'admin',
       ],
       'wp_update_option' => [
         'name' => 'wp_update_option',
-        'description' => 'Create or update a WordPress option (JSON-serialised if necessary).',
+        'description' => 'Create or update a WordPress option. Arrays/objects are stored natively (a JSON string is decoded back to an array first). WordPress refreshes the option cache automatically, but full-page caches (Varnish, WP Rocket, Cloudflare) are not purged, so a front-end may lag until its cache expires; integrations can hook the mwai_mcp_mutate action to purge on writes.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -340,13 +386,16 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Posts -------- */
       'wp_get_posts' => [
         'name' => 'wp_get_posts',
-        'description' => 'Retrieve posts (fields: ID, title, status, excerpt, link). No full content. **If no limit is supplied it returns 10 posts by default.** `paged` is ignored if `offset` is used.',
+        'description' => 'Retrieve posts (fields: ID, title, status, excerpt, link). No full content. **If no limit is supplied it returns 10 posts by default.** `paged` is ignored if `offset` is used. Filter by author with `author` (user ID) or `author_name` (user slug).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'post_type' => [ 'type' => 'string' ],
             'post_status' => [ 'type' => 'string' ],
             'search' => [ 'type' => 'string' ],
+            'author' => [ 'type' => 'integer', 'description' => 'Filter by author user ID.' ],
+            'author_name' => [ 'type' => 'string', 'description' => 'Filter by author user slug (nicename). Ignored if author is set.' ],
+            'author__not_in' => [ 'type' => 'array', 'items' => [ 'type' => 'integer' ], 'description' => 'Exclude posts by these author user IDs.' ],
             'after' => [ 'type' => 'string' ],
             'before' => [ 'type' => 'string' ],
             'limit' => [ 'type' => 'integer' ],
@@ -358,10 +407,13 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_get_post' => [
         'name' => 'wp_get_post',
-        'description' => 'Get basic post data by ID: title, content, status, dates, permalink. Reads through the WordPress object cache; if you just wrote with wp_create_post / wp_update_post / wp_alter_post, the write tools bust caches automatically so a follow-up read returns fresh data. For complete data including all meta and terms, use wp_get_post_snapshot instead.',
+        'description' => 'Get basic post data by ID: title, content, status, dates, permalink. Reads through the WordPress object cache; if you just wrote with wp_create_post / wp_update_post / wp_alter_post, the write tools bust caches automatically so a follow-up read returns fresh data. For complete data including all meta and terms, use wp_get_post_snapshot instead. Set content_format to "prose" to strip block-attribute JSON (e.g. huge gallery blobs) and return just the prose.',
         'inputSchema' => [
           'type' => 'object',
-          'properties' => [ 'ID' => [ 'type' => 'integer' ] ],
+          'properties' => [
+            'ID' => [ 'type' => 'integer' ],
+            'content_format' => [ 'type' => 'string', 'enum' => [ 'full', 'prose' ], 'description' => 'full (default) returns raw content; prose strips block-attribute JSON, keeping prose, headings and block markers.' ],
+          ],
           'required' => [ 'ID' ],
         ],
         'accessLevel' => 'read',
@@ -383,6 +435,7 @@ class Meow_MWAI_Labs_MCP_Core {
               'description' => 'Optional: fields to exclude from post data. Options: content (useful for posts with huge content like many galleries)',
               'items' => [ 'type' => 'string' ],
             ],
+            'content_format' => [ 'type' => 'string', 'enum' => [ 'full', 'prose' ], 'description' => 'full (default) returns raw content; prose strips block-attribute JSON (huge gallery blobs), keeping prose and block markers. Ignored if content is excluded.' ],
           ],
           'required' => [ 'ID' ],
         ],
@@ -390,7 +443,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_create_post' => [
         'name' => 'wp_create_post',
-        'description' => 'Create a new post, page, or any custom post type. post_title is required. Markdown is accepted in post_content. post_status defaults to "draft" and post_type defaults to "post" – pass post_type: "page" for a page, or any registered CPT slug (product, event, etc.). Set categories later with wp_add_post_terms; meta_input is an associative array of custom-field key/value pairs.',
+        'description' => 'Create a new post, page, or any custom post type. post_title is required. post_content accepts HTML, Gutenberg blocks, and shortcodes (stored as-is, attribute quotes preserved); plain prose with no markup is converted from Markdown. post_status defaults to "draft" and post_type defaults to "post" – pass post_type: "page" for a page, or any registered CPT slug (product, event, etc.). Set categories later with wp_add_post_terms; meta_input is an associative array of custom-field key/value pairs. For small surgical edits to an existing post (insert/replace a paragraph or shortcode without resending the whole body), use wp_alter_post instead.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -408,7 +461,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_update_post' => [
         'name' => 'wp_update_post',
-        'description' => 'Update post fields and/or meta in ONE call. Pass ID + "fields" object (post_title, post_content, post_status, etc.) and/or "meta_input" object for custom fields. Efficient for WooCommerce products: update title + price + stock together. Note: post_category REPLACES categories; use wp_add_post_terms to append instead. Use schedule_for to easily schedule posts.',
+        'description' => 'Update post fields and/or meta in ONE call. Pass ID + "fields" object (post_title, post_content, post_status, etc.) and/or "meta_input" object for custom fields. Post fields may also be passed at the top level (e.g. ID + post_title directly). Efficient for WooCommerce products: update title + price + stock together. Note: post_category REPLACES categories; use wp_add_post_terms to append instead. Use schedule_for to easily schedule posts.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -631,11 +684,13 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Media -------- */
       'wp_get_media' => [
         'name' => 'wp_get_media',
-        'description' => 'List media items.',
+        'description' => 'List media items. Filter by uploader with `author` (user ID) or `author_name` (user slug).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'search' => [ 'type' => 'string' ],
+            'author' => [ 'type' => 'integer', 'description' => 'Filter by uploader user ID.' ],
+            'author_name' => [ 'type' => 'string', 'description' => 'Filter by uploader user slug (nicename). Ignored if author is set.' ],
             'after' => [ 'type' => 'string' ],
             'before' => [ 'type' => 'string' ],
             'limit' => [ 'type' => 'integer' ],
@@ -812,6 +867,29 @@ class Meow_MWAI_Labs_MCP_Core {
   private function dispatch( string $tool, array $a, ?int $id ): array {
     $r = [ 'jsonrpc' => '2.0', 'id' => $id ];
 
+    // Accept common aliases for the primary record id. The post tools use the
+    // WordPress-native "ID" (matching wp_update_post() / $post->ID), while
+    // wp_set_featured_image, the comment tools, and the SEO/Woo suites use
+    // "post_id". Agents hopping between tools guess the wrong spelling and hit a
+    // bare "ID required". No tool in this suite uses two of these keys to mean
+    // two different things, so mirroring them is safe; each handler still reads
+    // its own canonical key.
+    $idAliases = [ 'ID', 'post_id', 'id' ];
+    $primaryId = null;
+    foreach ( $idAliases as $k ) {
+      if ( isset( $a[ $k ] ) && $a[ $k ] !== '' ) {
+        $primaryId = $a[ $k ];
+        break;
+      }
+    }
+    if ( $primaryId !== null ) {
+      foreach ( $idAliases as $k ) {
+        if ( !isset( $a[ $k ] ) || $a[ $k ] === '' ) {
+          $a[ $k ] = $primaryId;
+        }
+      }
+    }
+
     switch ( $tool ) {
 
       /* ===== Users ===== */
@@ -884,6 +962,12 @@ class Meow_MWAI_Labs_MCP_Core {
           'search' => $a['search'] ?? '',
           'number' => max( 1, intval( $a['limit'] ?? 10 ) ),
         ];
+        if ( isset( $a['user_id'] ) ) {
+          $args['user_id'] = intval( $a['user_id'] );
+        }
+        if ( $a['author_email'] ?? '' ) {
+          $args['author_email'] = sanitize_email( $a['author_email'] );
+        }
         if ( isset( $a['offset'] ) ) {
           $args['offset'] = max( 0, intval( $a['offset'] ) );
         }
@@ -963,12 +1047,38 @@ class Meow_MWAI_Labs_MCP_Core {
 
         /* ===== Options ===== */
       case 'wp_get_option':
-        $val = get_option( sanitize_key( $a['key'] ) );
+        $opt_key = sanitize_key( $a['key'] );
+        if ( !empty( $a['raw'] ) ) {
+          // Read straight from the DB so neither the object cache nor an
+          // option_* filter can mask the stored value. Mirrors what `wp-cli
+          // option get` returns under CLI (where front-end filters aren't loaded).
+          global $wpdb;
+          $stored = $wpdb->get_var( $wpdb->prepare(
+            "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+            $opt_key
+          ) );
+          $val = is_null( $stored ) ? false : maybe_unserialize( $stored );
+        }
+        else {
+          $val = get_option( $opt_key );
+        }
         $this->add_result_text( $r, wp_json_encode( $val, JSON_PRETTY_PRINT ) );
         break;
 
       case 'wp_update_option':
-        $set = update_option( sanitize_key( $a['key'] ), $a['value'], 'yes' );
+        $value = $a['value'];
+        // MCP clients commonly send array/object option values as a JSON string.
+        // Decode them back to native PHP arrays before writing: storing the raw
+        // JSON string for an array option (e.g. sticky_posts) corrupts it and can
+        // fatal hooks that expect an array (Polylang's sync_sticky_posts runs
+        // array_diff on it). Scalars and plain strings are left untouched.
+        if ( is_string( $value ) && isset( $value[0] ) && ( $value[0] === '[' || $value[0] === '{' ) ) {
+          $decoded = json_decode( $value, true );
+          if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+            $value = $decoded;
+          }
+        }
+        $set = update_option( sanitize_key( $a['key'] ), $value, 'yes' );
         if ( $set ) {
           $this->add_result_text( $r, 'Option "' . $a['key'] . '" updated' );
         }
@@ -1049,6 +1159,15 @@ class Meow_MWAI_Labs_MCP_Core {
         if ( isset( $a['paged'] ) ) {
           $q['paged'] = max( 1, intval( $a['paged'] ) );
         }
+        if ( isset( $a['author'] ) ) {
+          $q['author'] = intval( $a['author'] );
+        }
+        elseif ( $a['author_name'] ?? '' ) {
+          $q['author_name'] = sanitize_title( $a['author_name'] );
+        }
+        if ( !empty( $a['author__not_in'] ) && is_array( $a['author__not_in'] ) ) {
+          $q['author__not_in'] = array_map( 'intval', $a['author__not_in'] );
+        }
         $date = [];
         if ( $a['after'] ?? '' ) {
           $date['after'] = $a['after'];
@@ -1075,7 +1194,7 @@ class Meow_MWAI_Labs_MCP_Core {
         /* ===== Posts: single ===== */
       case 'wp_get_post':
         if ( empty( $a['ID'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post ID required (pass "ID", e.g. {"ID": 123}; "post_id" is also accepted).' ];
           break;
         }
         $p = get_post( intval( $a['ID'] ) );
@@ -1087,7 +1206,9 @@ class Meow_MWAI_Labs_MCP_Core {
           'ID' => $p->ID,
           'post_title' => $p->post_title,
           'post_status' => $p->post_status,
-          'post_content' => $this->clean_html( $p->post_content ),
+          'post_content' => ( ( $a['content_format'] ?? 'full' ) === 'prose' )
+            ? $this->prose_content( $p->post_content )
+            : $this->clean_html( $p->post_content ),
           'post_excerpt' => $this->post_excerpt( $p ),
           'permalink' => get_permalink( $p ),
           'post_date' => $p->post_date,
@@ -1099,7 +1220,7 @@ class Meow_MWAI_Labs_MCP_Core {
         /* ===== Posts: snapshot ===== */
       case 'wp_get_post_snapshot':
         if ( empty( $a['ID'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post ID required (pass "ID", e.g. {"ID": 123}; "post_id" is also accepted).' ];
           break;
         }
 
@@ -1138,7 +1259,9 @@ class Meow_MWAI_Labs_MCP_Core {
 
         // Include content unless excluded (useful for posts with huge content)
         if ( !in_array( 'content', $exclude ) ) {
-          $snapshot['post']['post_content'] = $this->clean_html( $p->post_content );
+          $snapshot['post']['post_content'] = ( ( $a['content_format'] ?? 'full' ) === 'prose' )
+            ? $this->prose_content( $p->post_content )
+            : $this->clean_html( $p->post_content );
         }
 
         // Include all post meta
@@ -1212,7 +1335,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'post_type' => sanitize_key( $a['post_type'] ?? 'post' ),
         ];
         if ( $a['post_content'] ?? '' ) {
-          $ins['post_content'] = $this->core->markdown_to_html( $a['post_content'] );
+          $ins['post_content'] = $this->prepare_new_content( $a['post_content'] );
         }
         if ( $a['post_excerpt'] ?? '' ) {
           $ins['post_excerpt'] = $this->clean_html( $a['post_excerpt'] );
@@ -1248,7 +1371,7 @@ class Meow_MWAI_Labs_MCP_Core {
         /* ===== Posts: update ===== */
       case 'wp_update_post':
         if ( empty( $a['ID'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post ID required (pass "ID", e.g. {"ID": 123}; "post_id" is also accepted).' ];
           break;
         }
         $post_id = intval( $a['ID'] );
@@ -1266,6 +1389,22 @@ class Meow_MWAI_Labs_MCP_Core {
           }
         }
         $fields = $fields ?? [];
+        if ( !is_array( $fields ) ) {
+          $fields = [];
+        }
+
+        // Convenience: also accept post fields passed at the top level instead of
+        // nested in "fields". Agents routinely send { ID, post_title } directly and
+        // would otherwise get a misleading "no fields provided" error. Nested
+        // values win on conflict.
+        $topLevelFields = [ 'post_title', 'post_content', 'post_status', 'post_name',
+          'post_excerpt', 'post_category', 'post_type', 'post_author', 'post_parent',
+          'post_date', 'menu_order', 'comment_status', 'ping_status', 'page_template' ];
+        foreach ( $topLevelFields as $fk ) {
+          if ( array_key_exists( $fk, $a ) && !array_key_exists( $fk, $fields ) ) {
+            $fields[ $fk ] = $a[ $fk ];
+          }
+        }
 
         // Track what we're trying to update for verification
         $content_to_verify = null;
@@ -1307,7 +1446,7 @@ class Meow_MWAI_Labs_MCP_Core {
           if ( isset( $a['fields'] ) || isset( $a['meta_input'] ) ) {
             $hint = ' (parameters were provided but parsed as empty - check for malformed JSON)';
           }
-          $r['error'] = [ 'code' => -32602, 'message' => 'No fields or meta_input provided to update' . $hint ];
+          $r['error'] = [ 'code' => -32602, 'message' => 'No fields or meta_input provided to update. Pass post fields inside a "fields" object (or at the top level), e.g. {"ID": 123, "fields": {"post_title": "..."}}, and/or "meta_input" for custom fields.' . $hint ];
           break;
         }
 
@@ -1675,6 +1814,12 @@ class Meow_MWAI_Labs_MCP_Core {
           'posts_per_page' => max( 1, intval( $a['limit'] ?? 10 ) ),
           'post_status' => 'inherit',
         ];
+        if ( isset( $a['author'] ) ) {
+          $q['author'] = intval( $a['author'] );
+        }
+        elseif ( $a['author_name'] ?? '' ) {
+          $q['author_name'] = sanitize_title( $a['author_name'] );
+        }
         $d = [];
         if ( $a['after'] ?? '' ) {
           $d['after'] = $a['after'];
@@ -1880,7 +2025,28 @@ class Meow_MWAI_Labs_MCP_Core {
 
       default: $r['error'] = [ 'code' => -32601, 'message' => 'Unknown tool' ];
     }
+
+    // Generic post-write hook: fires after any successful content-mutating tool
+    // (create/update/delete of posts, terms, meta, media, comments, users,
+    // options...). Integrations can hook this to purge page/object caches, reindex
+    // search, write an audit log, etc. The options/object cache is already updated
+    // by WordPress, but full-page caches (Varnish, WP Rocket, Cloudflare) are not,
+    // so a cache layer should listen here. Reads never trigger it.
+    if ( empty( $r['error'] ) && $this->is_mutating_tool( $tool ) ) {
+      do_action( 'mwai_mcp_mutate', $tool, $a, $r );
+    }
     return $r;
+  }
+
+  // Whether a tool changes site state (so the mwai_mcp_mutate hook should fire).
+  // Anything declared accessLevel "write" mutates; a few "admin" tools mutate too
+  // (the rest, e.g. wp_get_option, are reads).
+  private function is_mutating_tool( string $tool ): bool {
+    $defs = $this->tools();
+    if ( ( $defs[ $tool ]['accessLevel'] ?? '' ) === 'write' ) {
+      return true;
+    }
+    return in_array( $tool, [ 'wp_update_option', 'wp_create_user', 'wp_update_user' ], true );
   }
   #endregion
 }

@@ -1,5 +1,5 @@
-// Previous: 3.5.3
-// Current: 3.5.5
+// Previous: 3.5.5
+// Current: 3.5.6
 
 ```javascript
 const { useMemo, useState, useEffect, useRef } = wp.element;

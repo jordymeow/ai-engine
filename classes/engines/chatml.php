@@ -591,7 +591,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       if ( $json['delta']['step_details']['type'] === 'tool_calls' ) {
         foreach ( $json['delta']['step_details']['tool_calls'] as $tool_call ) {
           $index = $tool_call['index'] ?? null;
-          $currentStreamToolCall = null;
+          // unset (not "= null") to break the reference from the previous loop
+          // iteration. Assigning null would null out the tool call we just stored
+          // in $this->streamToolCalls, leaving a null hole for parallel tool calls
+          // (Mistral rejects that with a 422; OpenAI silently tolerates it).
+          unset( $currentStreamToolCall );
           if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
             $currentStreamToolCall = &$this->streamToolCalls[$index];
           }
@@ -685,7 +689,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
           case 'tool_call':
             $tool_call = $delta['tool_call'];
             $index = $tool_call['index'] ?? null;
-            $currentStreamToolCall = null;
+            // unset (not "= null") to break the reference from the previous loop
+            // iteration. Assigning null would null out the tool call we just stored
+            // in $this->streamToolCalls, leaving a null hole for parallel tool calls
+            // (Mistral rejects that with a 422; OpenAI silently tolerates it).
+            unset( $currentStreamToolCall );
             if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
               $currentStreamToolCall = &$this->streamToolCalls[$index];
             }
@@ -734,7 +742,11 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
         foreach ( $json['choices'][0]['delta']['tool_calls'] as $tool_call ) {
           $index = $tool_call['index'] ?? null;
-          $currentStreamToolCall = null;
+          // unset (not "= null") to break the reference from the previous loop
+          // iteration. Assigning null would null out the tool call we just stored
+          // in $this->streamToolCalls, leaving a null hole for parallel tool calls
+          // (Mistral rejects that with a 422; OpenAI silently tolerates it).
+          unset( $currentStreamToolCall );
           if ( $index !== null && isset( $this->streamToolCalls[$index] ) ) {
             $currentStreamToolCall = &$this->streamToolCalls[$index];
           }
@@ -873,36 +885,35 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
 
       $responseCode = wp_remote_retrieve_response_code( $res );
+
+      // For streaming requests the response body is written to a temp file, so
+      // wp_remote_retrieve_body() comes back empty. Read it back here so provider
+      // error details (e.g. a 422 from Mistral) aren't lost on streaming requests.
+      $errorBody = wp_remote_retrieve_body( $res );
+      if ( empty( $errorBody ) && $isStream && !empty( $options['filename'] ) && file_exists( $options['filename'] ) ) {
+        $errorBody = file_get_contents( $options['filename'] );
+      }
+
       if ( $responseCode === 404 ) {
         throw new Exception( 'The model\'s API URL was not found: ' . $url );
       }
       else if ( $responseCode === 400 ) {
-        $message = wp_remote_retrieve_body( $res );
-        // Log the full response body for debugging
-        error_log( '[AI Engine] 400 Bad Request - Full response body: ' . $message );
-        if ( empty( $message ) ) {
-          $message = wp_remote_retrieve_response_message( $res );
-        }
+        error_log( '[AI Engine] 400 Bad Request - Full response body: ' . $errorBody );
+        $message = !empty( $errorBody ) ? $errorBody : wp_remote_retrieve_response_message( $res );
         if ( empty( $message ) ) {
           $message = 'Bad Request';
         }
         throw new Exception( $message );
       }
       else if ( $responseCode === 422 ) {
-        $message = wp_remote_retrieve_body( $res );
-        if ( empty( $message ) ) {
-          $message = wp_remote_retrieve_response_message( $res );
-        }
+        $message = !empty( $errorBody ) ? $errorBody : wp_remote_retrieve_response_message( $res );
         if ( empty( $message ) ) {
           $message = 'Unprocessable Entity';
         }
         throw new Exception( $message );
       }
       else if ( $responseCode === 500 ) {
-        $message = wp_remote_retrieve_body( $res );
-        if ( empty( $message ) ) {
-          $message = wp_remote_retrieve_response_message( $res );
-        }
+        $message = !empty( $errorBody ) ? $errorBody : wp_remote_retrieve_response_message( $res );
         if ( empty( $message ) ) {
           $message = 'Internal Server Error';
         }

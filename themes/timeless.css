@@ -109,6 +109,10 @@
   background: rgba(0, 0, 0, 0.05);
   color: #374151;
 }
+.mwai-chunks .mwai-chunks-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
 .mwai-chunks .mwai-chunk {
   margin-bottom: 4px;
   padding: 6px 8px;
@@ -162,6 +166,20 @@
   white-space: pre-wrap;
   word-break: break-word;
   color: #4b5563;
+}
+
+.mwai-user-images {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.mwai-user-images .mwai-user-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--mwai-borderRadius);
 }
 
 /*

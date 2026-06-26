@@ -1160,9 +1160,14 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $features[] = 'vision';
         }
 
-        // Web search capabilities - all Gemini 2.5 and 1.5 Pro models
-        if ( preg_match( '/gemini-(2\.5|1\.5-pro)/', $model_id ) ) {
+        // Web search capabilities - Gemini 3.x, 2.5, and 1.5 Pro models
+        if ( preg_match( '/gemini-(3|2\.5|1\.5-pro)/', $model_id ) ) {
           $tools[] = 'web_search';
+        }
+
+        // Google Maps grounding - Gemini 3.x and 2.5 models
+        if ( preg_match( '/gemini-(3|2\.5)/', $model_id ) ) {
+          $tools[] = 'google_maps';
         }
 
         // Image generation - only specific Flash Image models

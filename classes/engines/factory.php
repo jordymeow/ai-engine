@@ -63,8 +63,13 @@ class Meow_MWAI_Engines_Factory {
       return $engine;
     }
     else if ( $env['type'] === 'google' ) {
-      $engine = Meow_MWAI_Engines_Google::create( $core, $env );
-      return $engine;
+      // The Interactions API is the default for Gemini. The classic
+      // generateContent engine stays as the fallback, selected when the
+      // "Use Standard API" option is enabled (Settings > AI > General).
+      if ( $core->get_option( 'google_use_standard_api' ) ) {
+        return Meow_MWAI_Engines_Google::create( $core, $env );
+      }
+      return new Meow_MWAI_Engines_GoogleInteractions( $core, $env );
     }
     else if ( $env['type'] === 'anthropic' ) {
       $engine = new Meow_MWAI_Engines_Anthropic( $core, $env );
@@ -92,6 +97,10 @@ class Meow_MWAI_Engines_Factory {
     }
     else if ( $env['type'] === 'custom' ) {
       $engine = new Meow_MWAI_Engines_Custom( $core, $env );
+      return $engine;
+    }
+    else if ( $env['type'] === 'ovh' ) {
+      $engine = new Meow_MWAI_Engines_OVH( $core, $env );
       return $engine;
     }
 

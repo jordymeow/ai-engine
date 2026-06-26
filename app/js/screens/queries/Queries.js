@@ -1,5 +1,5 @@
-// Previous: 3.5.2
-// Current: 3.5.3
+// Previous: 3.5.3
+// Current: 3.5.6
 
 ```javascript
 const { useMemo, useState, useEffect } = wp.element;
@@ -14,7 +14,8 @@ import {
   NekoMessage,
   NekoSplitButton,
   NekoQuickLinks,
-  NekoLink
+  NekoLink,
+  NekoIcon
 } from '@neko-ui';
 import {
   tableDateTimeFormatter,
@@ -199,22 +200,25 @@ const Queries = ({
             ? <span style={{ color: '#b5b5b5' }}>—</span>
             : <span>{durationMs}<small style={{ marginLeft: 2, color: '#999' }}>ms</small></span>;
           const clientName = parsedStats?.client_name;
-          const isBearer = x.envId === 'bearer';
-          const client = isBearer ? (
+          const authMethod = parsedStats?.auth_method;
+          const clientLabel = (icon, label, subtitle, title) => (
             <div>
-              <span style={{ fontWeight: 500 }}>Bearer Token</span>
-              <br />
-              <small style={{ color: '#999' }}>shared secret</small>
-            </div>
-          ) : (
-            <div>
-              <span style={{ fontWeight: 500 }} title={x.envId}>
-                {clientName || 'Unnamed OAuth client'}
+              <span style={{ fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5 }} title={title}>
+                <NekoIcon icon={icon} width={14} style={{ opacity: 0.6 }} />
+                {label}
               </span>
               <br />
-              <small style={{ color: '#999' }}>OAuth</small>
+              <small style={{ color: '#999' }}>{subtitle}</small>
             </div>
           );
+          let client;
+          if (authMethod === 'bearer' || x.envId === 'bearer') {
+            client = clientLabel('key', 'Bearer Token', 'shared secret');
+          } else if (authMethod === 'oauth') {
+            client = clientLabel('plug', clientName || 'Unknown app', 'OAuth', x.envId);
+          } else {
+            client = clientLabel('user', 'WordPress', 'admin session');
+          }
           return {
             id: x.id,
             time: <div style={{ textAlign: 'right' }}>{time}</div>,
@@ -227,7 +231,7 @@ const Queries = ({
         });
     }
     return logsData.logs
-      .sort((a, b) => b.created_at - a.created_at)
+      .sort((a, b) => a.created_at - b.created_at)
       .map((x) => {
         const time = tableDateTimeFormatter(x.time);
         const user = tableUserIPFormatter(x.userId, x.ip);

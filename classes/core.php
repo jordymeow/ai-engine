@@ -1262,7 +1262,7 @@ class Meow_MWAI_Core {
           if ( is_array( $value ) ) {
             foreach ( $value as $tool ) {
               $sanitized_tool = sanitize_text_field( $tool );
-              if ( in_array( $sanitized_tool, ['web_search', 'image_generation', 'thinking', 'code_interpreter'] ) ) {
+              if ( in_array( $sanitized_tool, ['web_search', 'image_generation', 'thinking', 'code_interpreter', 'google_maps'] ) ) {
                 $tools[] = $sanitized_tool;
               }
             }
@@ -1359,7 +1359,22 @@ class Meow_MWAI_Core {
     // Consolidate the Engines and their Models
     // PS: We should ABSOLUTELY AVOID to use ai_models directly (except for saving)
     // Engine Example: [ 'name' => 'Ollama', 'type' => 'ollama', inputs => ['apikey', 'endpoint'], models => [] ]
-    $options['ai_engines'] = apply_filters( 'mwai_engines', MWAI_ENGINES );
+    $engines = MWAI_ENGINES;
+
+    // OVHcloud is integrated but not yet promoted publicly (pending the OVHcloud
+    // partnership). It only appears as a selectable provider when Dev Mode is on,
+    // so production sites never see it until we decide to ship it.
+    if ( $this->get_option( 'dev_mode' ) ) {
+      $engines[] = [
+        'name' => 'OVHcloud',
+        'type' => 'ovh',
+        'inputs' => [ 'apikey', 'dynamicModels' ],
+        'internal' => true,
+        'models' => [],
+      ];
+    }
+
+    $options['ai_engines'] = apply_filters( 'mwai_engines', $engines );
     foreach ( $options['ai_engines'] as &$engine ) {
       if ( $engine['type'] === 'openai' ) {
         $engine['models'] = apply_filters(

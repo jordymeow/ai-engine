@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.5
+Stable tag: 3.5.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -192,7 +192,7 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 Built specifically for WordPress with seamless integration. No clunky interfaces, just native WordPress experience.
 
 **Flexible & Powerful**
-Built-in connectors for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) connector for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you.
+Built-in connectors for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) connector for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you. Google (Gemini) runs on the new Interactions API by default, bringing stateful conversations, streaming with a live event log, function calling, and built-in Google Search and Google Maps grounding, with the classic API kept as a one-click fallback.
 
 **Developer Friendly**
 Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire SaaS applications on WordPress.
@@ -263,6 +263,24 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.6 (2026/06/26) =
+* Add: Gemini Interactions API engine as the default for Google, with streaming, function calling, and in-chat image generation (classic API kept as a fallback).
+* Add: Google Search and Maps grounding as Gemini chatbot tools, plus a setting to fall back to the standard Gemini API.
+* Add: MCP server support to Realtime voice chatbots — tools were selectable but previously did nothing — and the model now speaks tool results aloud.
+* Add: `mwai_mcp_mutate` action that fires after any content-mutating MCP tool, letting integrations purge caches, reindex, or audit.
+* Add: `raw` option to the MCP `wp_get_option` tool to read directly from the database, bypassing object cache and filters.
+* Add: `author__not_in` to MCP `wp_get_posts`, and a `content_format=prose` option to `wp_get_post`/`wp_get_post_snapshot` that strips block-attribute JSON to reduce token usage.
+* Fix: `wp_create_post` MCP tool no longer corrupts shortcode and HTML content via the markdown parser.
+* Fix: MCP log entries mislabeled as OAuth; admin and bearer calls now display correctly.
+* Fix: Streaming parallel tool calls leaving a null in the `tool_calls` array, which broke function calling on strict providers.
+* Fix: MCP `wp_get_posts`, `wp_get_media`, and `wp_get_comments` filters by author, `user_id`, and email were accepted but silently ignored.
+* Fix: `wp_update_option` now decodes JSON-string array values into real arrays before saving, preventing corruption of array options like `sticky_posts`.
+* Fix: Chatbot events panel is now scrollable and error messages are dismissable.
+* Update: Removed the legacy MCP SSE transport, keeping only the Streamable HTTP endpoint.
+* Update: Enabled function calling for Mistral.
+* Update: Uploaded images now fill the message bubble width in the chatbot across all themes.
+* Update: MCP post tools now accept `ID`, `post_id`, or `id` interchangeably, and `wp_update_post` accepts top-level fields with clearer error messages.
 
 = 3.5.5 (2026/06/20) =
 * Fix: Path traversal vulnerability in create_image and prevented chatbot discussions from being taken over by another logged-in user.
