@@ -255,10 +255,10 @@ class Meow_MWAI_Engines_Core {
       // or the API rejects with "No tool output found for function call call_xxx". Skipping the
       // round-trip on all-static turns satisfies the local user-facing reply but leaves the
       // server-side conversation in a half-answered state, breaking any follow-up. So we
-      // disable the static-skip optimization for Responses API replies — the round-trip stays
-      // mandatory there. Chat Completions and Anthropic are stateless on tool calls and remain
-      // safe to skip.
-      if ( $all_static && ! empty( $reply->id ) && $this->core->responseIdManager->is_responses_api_id( $reply->id ) ) {
+      // disable the static-skip optimization for stateful replies (OpenAI Responses
+      // and Google Interactions) — the round-trip stays mandatory there. Chat
+      // Completions and Anthropic are stateless on tool calls and remain safe to skip.
+      if ( $all_static && !empty( $reply->id ) && $this->core->responseIdManager->is_stateful_conversation_id( $reply->id ) ) {
         $all_static = false;
       }
 

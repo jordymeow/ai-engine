@@ -4,7 +4,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
-Version: 3.5.6
+Version: 3.5.7
 Author: Jordy Meow
 Author URI: https://jordymeow.com
 Text Domain: ai-engine
@@ -12,7 +12,7 @@ License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-define( 'MWAI_VERSION', '3.5.6' );
+define( 'MWAI_VERSION', '3.5.7' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );
@@ -23,7 +23,11 @@ if ( !defined( 'MWAI_TIMEOUT' ) ) {
   define( 'MWAI_TIMEOUT', 60 * 5 );
 }
 if ( !defined( 'MWAI_SSL_VERIFY' ) ) {
-  define( 'MWAI_SSL_VERIFY', false );
+  // Verify TLS certificates by default (matches WordPress core). Outbound calls
+  // carry provider API keys, so disabling verification would expose them to MITM.
+  // Self-hosted endpoints with self-signed certs can opt out by defining this as
+  // false in wp-config.php.
+  define( 'MWAI_SSL_VERIFY', true );
 }
 define( 'MWAI_FALLBACK_MODEL', 'gpt-5.5' );
 define( 'MWAI_FALLBACK_MODEL_FAST', 'gpt-5-mini' );

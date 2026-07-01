@@ -178,6 +178,8 @@ class Meow_MWAI_Services_Image {
       // "../../../evil.png") cannot escape the uploads directory. The
       // empty-filename branch below already sanitizes; this mirrors the
       // hardening applied to the media-rename handler (CVE-2026-1400).
+      // Path traversal reported by Meher Sudhakar Abbireddi (via WPScan/Automattic),
+      // fixed in 3.5.5.
       $filename = sanitize_file_name( basename( $filename ) );
     }
 

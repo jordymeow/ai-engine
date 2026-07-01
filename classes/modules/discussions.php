@@ -599,6 +599,9 @@ class Meow_MWAI_Modules_Discussions {
     // userId update below) and then read the victim's history through
     // discussions/list. A guest-owned row (userId 0) stays claimable so a
     // visitor can keep their conversation after logging in.
+    // Cross-user takeover reported by Shivamani Vastrala (via WPScan/Automattic),
+    // fixed in 3.5.5. Keep this on the write path; do not owner-scope the read
+    // path (get_discussion), which would drop legitimately shared history.
     if ( $chat && (int) $chat->userId !== 0 && (int) $chat->userId !== (int) $userId ) {
       return $rawText;
     }

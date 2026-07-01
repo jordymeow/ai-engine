@@ -46,10 +46,13 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     );
   }
 
-  protected function build_headers() {
+  protected function build_headers( $query = null ) {
+    // A query may carry a per-request API key override (set via inject_params);
+    // fall back to the environment key otherwise.
+    $apiKey = ( $query !== null && !empty( $query->apiKey ) ) ? $query->apiKey : $this->apiKey;
     return [
       'Content-Type' => 'application/json',
-      'x-goog-api-key' => $this->apiKey,
+      'x-goog-api-key' => $apiKey,
     ];
   }
 
@@ -112,11 +115,28 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       return $steps;
     }
 
-    // The API is stateful: prior turns live server-side and are referenced via
-    // previous_interaction_id. Input steps are only NEW user/function turns, so
-    // we send a single user_input step. (Replaying past model_output as input is
-    // rejected with "value at top-level must be a list".)
-    return [ $this->user_step( $query ) ];
+    $steps = [];
+
+    // When continuing an interaction, prior turns live server-side (referenced by
+    // previous_interaction_id) so we only send the new user turn. On the FIRST
+    // turn the server has no state, so we must replay the conversation history
+    // ($query->messages) as user_input / model_output steps. Without this,
+    // restored discussions and any caller-supplied history are lost. The API
+    // accepts replayed model_output steps (verified live).
+    if ( !$this->has_previous_interaction( $query ) && !empty( $query->messages ) ) {
+      foreach ( $query->messages as $message ) {
+        $text = $message['content'] ?? '';
+        if ( !is_string( $text ) || $text === '' ) {
+          continue;
+        }
+        $role = $message['role'] ?? 'user';
+        $type = ( $role === 'assistant' || $role === 'model' ) ? 'model_output' : 'user_input';
+        $steps[] = [ 'type' => $type, 'content' => [ [ 'type' => 'text', 'text' => $text ] ] ];
+      }
+    }
+
+    $steps[] = $this->user_step( $query );
+    return $steps;
   }
 
   protected function build_tools( $query ) {
@@ -177,8 +197,18 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       $body['previous_interaction_id'] = $query->previousResponseId;
     }
 
-    if ( !empty( $query->instructions ) ) {
-      $body['system_instruction'] = $query->instructions;
+    // System instructions, plus any per-query context (RAG / content-aware /
+    // Smart Search). Context is re-retrieved each turn and is not part of the
+    // server-side history, so it must be sent on every request, not just the
+    // first one. Without this, embeddings and content-aware context are silently
+    // dropped on Gemini.
+    $instructions = !empty( $query->instructions ) ? $query->instructions : '';
+    if ( !empty( $query->context ) ) {
+      $framedContext = $this->core->frame_context( $query->context );
+      $instructions = trim( $instructions . "\n\n" . $framedContext );
+    }
+    if ( $instructions !== '' ) {
+      $body['system_instruction'] = $instructions;
     }
 
     $tools = $this->build_tools( $query );
@@ -197,12 +227,43 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       $body['generation_config'] = $generationConfig;
     }
 
+    // Image-capable Gemini models (Flash Image) only return images when the
+    // request opts into image output via the top-level response_format; without
+    // it they answer in text ("I can't output an image in this chat"). The
+    // dedicated image-query path is unaffected (it runs on the classic engine).
+    if ( $this->model_supports_image_generation( $query->model ) ) {
+      $responseFormat = [ 'type' => 'image' ];
+      if ( !empty( $query->resolution ) ) {
+        $responseFormat['aspect_ratio'] = $query->resolution;
+      }
+      $body['response_format'] = $responseFormat;
+    }
+
     return apply_filters( 'mwai_google_interactions_body', $body, $query );
+  }
+
+  /**
+   * Whether the model can emit images in a chat turn (the 'image-generation'
+   * feature, e.g. Gemini Flash Image). Used to opt the request into image
+   * output via response_format.
+   */
+  protected function model_supports_image_generation( $modelId ) {
+    $model = $this->core->find_model_data( $modelId, $this->env['id'] ?? null );
+    return !empty( $model['features'] )
+      && in_array( 'image-generation', $model['features'], true );
   }
 
   #endregion
 
   public function run_completion_query( $query, $streamCallback = null ): Meow_MWAI_Reply {
+    // Non-image attachments (PDFs, documents) need the Gemini Files API upload
+    // handled by the classic engine's prepare_query() / build_messages() (Pro).
+    // The Interactions input format only carries inline image parts, so delegate
+    // those queries to the classic engine to preserve file handling.
+    if ( $this->has_non_image_attachment( $query ) ) {
+      return $this->classic_engine()->run_completion_query( $query, $streamCallback );
+    }
+
     $debug = $this->core->get_option( 'queries_debug_mode' );
     $isStreaming = !is_null( $streamCallback );
     $this->init_debug_mode( $query );
@@ -229,7 +290,7 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     }
 
     $args = [
-      'headers' => $this->build_headers(),
+      'headers' => $this->build_headers( $query ),
       'body' => wp_json_encode( $body ),
       'timeout' => apply_filters( 'mwai_request_timeout', 120, $query ),
       'sslverify' => MWAI_SSL_VERIFY,
@@ -299,14 +360,19 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
   /**
    * Handle one parsed SSE "data:" payload from the Interactions stream. Returns a
    * text string for text deltas (the Core accumulates it into streamContent and
-   * forwards to the chatbot), a Meow_MWAI_Event for thoughts, or null for
-   * bookkeeping events (function-call assembly, completion).
+   * forwards to the chatbot), a Meow_MWAI_Event for thoughts, null for
+   * bookkeeping events (function-call assembly, completion), or throws on a
+   * provider error event.
    *
    * The Core's stream_handler only forwards "data:" lines and drops the "event:"
    * line, so we dispatch on the event_type carried inside the JSON payload.
    */
   protected function stream_data_handler( $json ) {
     $type = $json['event_type'] ?? '';
+
+    if ( isset( $json['error'] ) || $type === 'error' || $type === 'interaction.failed' ) {
+      $this->throw_stream_error( $json );
+    }
 
     if ( $type === 'step.start' ) {
       $step = $json['step'] ?? [];
@@ -382,6 +448,36 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     }
 
     return null;
+  }
+
+  protected function throw_stream_error( $json ) {
+    $error = $json['error'] ?? ( $json['interaction']['error'] ?? null );
+    $message = null;
+    $code = null;
+    $status = null;
+
+    if ( is_array( $error ) ) {
+      $message = $error['message'] ?? ( $error['reason'] ?? null );
+      $code = $error['code'] ?? null;
+      $status = $error['status'] ?? ( $error['type'] ?? null );
+    }
+    elseif ( is_string( $error ) ) {
+      $message = $error;
+    }
+
+    if ( empty( $message ) ) {
+      $message = $json['message'] ?? ( $json['error_message'] ?? 'Unknown stream error.' );
+    }
+
+    $detail = $message;
+    if ( !empty( $code ) ) {
+      $detail .= ' (' . $code . ')';
+    }
+    if ( !empty( $status ) ) {
+      $detail .= ' (' . $status . ')';
+    }
+
+    throw new Exception( 'AI Engine (Gemini Interactions) stream error: ' . $detail );
   }
 
   /**
@@ -590,6 +686,30 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       $this->classicEngine = Meow_MWAI_Engines_Google::create( $this->core, $this->env );
     }
     return $this->classicEngine;
+  }
+
+  /**
+   * Whether the query carries an attachment that is not an inline image (e.g. a
+   * PDF or document). Those need the classic engine's Files API handling.
+   */
+  protected function has_non_image_attachment( $query ) {
+    $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
+    foreach ( $attachments as $file ) {
+      $mime = $file->get_mimeType();
+      if ( !empty( $mime ) && strpos( $mime, 'image/' ) !== 0 ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * The base engine's connection_check() throws "not implemented"; the test runs
+   * through the factory which now returns this engine for Google envs. The check
+   * (same /models endpoint + key) is identical to the classic engine, so delegate.
+   */
+  public function connection_check() {
+    return $this->classic_engine()->connection_check();
   }
 
   /**

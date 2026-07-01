@@ -1034,6 +1034,27 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'tools' => ['code_interpreter', 'thinking']
   ],
   [
+    'model' => 'claude-sonnet-5',
+    'name' => 'Claude Sonnet 5',
+    'family' => 'claude-5',
+    'features' => ['completion'],
+    // Standard pricing ($3/$15); Anthropic runs a $2/$10 intro through 2026-08-31.
+    'price' => [
+      'in' => 3.00,
+      'out' => 15.00,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1000000,
+    'finetune' => false,
+    // Adaptive thinking is always on (no disabled mode, no manual budget, no
+    // assistant prefill). Non-default temperature/top_p/top_k are rejected; the
+    // 'no-temperature' tag stops us sending temperature, and we never send top_p/top_k.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tools' => ['code_interpreter', 'thinking']
+  ],
+  [
     'model' => 'claude-sonnet-4-6',
     'name' => 'Claude Sonnet 4.6',
     'family' => 'claude-4',
@@ -1047,7 +1068,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 1000000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
     'tools' => ['code_interpreter', 'thinking']
   ],
   [

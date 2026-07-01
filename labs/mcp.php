@@ -112,7 +112,13 @@ class Meow_MWAI_Labs_MCP {
 
     // Alternative endpoint with bearer token embedded in URL path, for clients
     // that cannot send Authorization headers. Only registered when a bearer
-    // token is configured.
+    // token is configured. The token is high-entropy (wp_generate_password),
+    // compared with hash_equals, and the route is hidden (show_in_index=false).
+    // Kept because Claude Code and other MCP connectors currently work more
+    // reliably this way when proxies strip the Authorization header.
+    // TODO: Re-evaluate after 2026-12-27. Check whether connectors still need
+    // the URL-token fallback, or if header/OAuth auth has become reliable enough
+    // to deprecate it (flagged by WP.org automated security review, Jun 2026).
     if ( !empty( $this->bearer_token ) ) {
       register_rest_route( $this->namespace, '/' . $this->bearer_token, [
         'methods' => [ 'GET', 'POST', 'DELETE' ],

@@ -407,7 +407,9 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     if ( $query instanceof Meow_MWAI_Query_Feedback ) {
       $body = [
         'model' => $query->model,
-        'max_tokens' => $query->maxTokens,
+        // Anthropic requires a valid integer; fall back like the main path does,
+        // otherwise a function-calling loop without an explicit maxTokens 400s here.
+        'max_tokens' => !empty( $query->maxTokens ) ? $query->maxTokens : 4096,
         'stream' => !is_null( $streamCallback ),
         'messages' => []
       ];

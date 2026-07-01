@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.6
+Stable tag: 3.5.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -263,6 +263,15 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.7 (2026/07/01) =
+* Fix: Chroma "Pull All" now returns all pages of large collections instead of only the first page.
+* Add: Claude Sonnet 5 model support.
+* Fix: Anthropic function-calling loops no longer fail when no explicit max tokens is set.
+* Fix: Gemini Interactions engine now properly includes RAG context, chat history, and PDF uploads, and passes connection tests.
+* Add: In-chat image output and stream error handling for Gemini Interactions.
+* Fix: Outbound API calls now verify TLS certificates by default.
+* Update: Credited Shivamani Vastrala and Meher Sudhakar Abbireddi (via WPScan) for reporting the security issues fixed in 3.5.5.
 
 = 3.5.6 (2026/06/26) =
 * Add: Gemini Interactions API engine as the default for Google, with streaming, function calling, and in-chat image generation (classic API kept as a fallback).
