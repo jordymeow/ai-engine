@@ -161,7 +161,7 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         // Promote AI Engine on the WordPress 7 Connectors page when AI Engine
         // itself isn't installed. When AI Engine is active, its own banner
         // takes over — so this path only runs on "bare" Meow Apps installs.
-        add_action( 'admin_footer', [ $this, 'maybe_render_wpai_promo' ] );
+        add_action( 'admin_enqueue_scripts', [ $this, 'maybe_render_wpai_promo' ] );
 
         MeowKit_MWAI_Admin::$loaded = true;
       }
@@ -273,7 +273,9 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
           </div>
         </div>
       </div>
-      <script>
+      <?php
+      ob_start();
+      ?>
       (function() {
         var modal = document.getElementById('meowapps-network-license-modal');
         var input = document.getElementById('meowapps-license-key-input');
@@ -385,8 +387,8 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
           });
         });
       })();
-      </script>
       <?php
+      wp_print_inline_script_tag( ob_get_clean() );
     }
 
     public function request_verify_ssl() {
@@ -406,7 +408,10 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
     }
 
     public function admin_notices_licensed_free() {
-      if ( isset( $_POST[$this->prefix . '_reset_sub'] ) ) {
+      // Verify the nonce before removing the license from a POST request (CSRF protection).
+      if ( isset( $_POST[$this->prefix . '_reset_sub'] )
+        && isset( $_POST[ $this->prefix . '_reset_sub_nonce' ] )
+        && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ $this->prefix . '_reset_sub_nonce' ] ) ), $this->prefix . '_reset_sub' ) ) {
         delete_option( $this->prefix . '_pro_serial' );
         delete_option( $this->prefix . '_license' );
         return;
@@ -418,7 +423,7 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
       );
       $html .= '<p>
                                                                                                                                                   <form method="post" action="">
-                                                                                                                                                  <input type="hidden" name="' . $this->prefix . '_reset_sub" value="true">
+                                                                                                                                                  <input type="hidden" name="' . $this->prefix . '_reset_sub" value="true"><input type="hidden" name="' . $this->prefix . '_reset_sub_nonce" value="' . esc_attr( wp_create_nonce( $this->prefix . '_reset_sub' ) ) . '">
                                                                                                                                                   <input type="submit" name="submit" id="submit" class="button" value="'
       . __( 'Remove the license', $this->domain ) . '">
                                                                                                                                                     </form>
@@ -430,7 +435,7 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
     public function admin_menu_start() {
       // Hide the admin if user doesn't like Meow much
       if ( get_option( 'meowapps_hide_meowapps', false ) ) {
-        register_setting( 'general', 'meowapps_hide_meowapps' );
+        register_setting( 'general', 'meowapps_hide_meowapps', [ 'type' => 'boolean', 'sanitize_callback' => 'rest_sanitize_boolean' ] );
         add_settings_field( 'meowapps_hide_ads', 'Meow Apps Menu', [ $this, 'meowapps_hide_dashboard_callback' ], 'general' );
         return;
       }
@@ -476,67 +481,29 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
       // The !important rules also override an older "display: none" style that
       // previous-generation Meow Apps common copies inject for .wp-menu-image;
       // if any of them load first, ours still wins.
-      add_action( 'admin_head', function () {
-        echo '<style>
-          #toplevel_page_meowapps-main-menu .meowapps-menu-icon {
-            width: 20px;
-            height: auto;
-            position: absolute;
-            margin-left: -28px;
-            margin-top: 3px;
-          }
-          #toplevel_page_meowapps-main-menu .wp-menu-image {
-            display: block !important;
-            position: relative;
-          }
-          #toplevel_page_meowapps-main-menu .wp-menu-image::before {
-            display: none !important;
-          }
-          #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, calc(-50% - 3px));
-            width: 20px;
-            height: auto;
-          }
-          body.folded #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded {
-            display: block;
-          }
-          body.folded #toplevel_page_meowapps-main-menu .meowapps-menu-icon {
-            display: none;
-          }
+      // Enqueue the menu-icon CSS/JS through the assets API instead of echoing inline tags.
+      add_action( 'admin_enqueue_scripts', function () {
+        $css = '
+          #toplevel_page_meowapps-main-menu .meowapps-menu-icon { width: 20px; height: auto; position: absolute; margin-left: -28px; margin-top: 3px; }
+          #toplevel_page_meowapps-main-menu .wp-menu-image { display: block !important; position: relative; }
+          #toplevel_page_meowapps-main-menu .wp-menu-image::before { display: none !important; }
+          #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-50% - 3px)); width: 20px; height: auto; }
+          body.folded #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded { display: block; }
+          body.folded #toplevel_page_meowapps-main-menu .meowapps-menu-icon { display: none; }
           @media only screen and (max-width: 960px) {
-            body.auto-fold #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded {
-              display: block;
-            }
-            body.auto-fold #toplevel_page_meowapps-main-menu .meowapps-menu-icon {
-              display: none;
-            }
-          }
-        </style>';
-      }, 999 );
+            body.auto-fold #toplevel_page_meowapps-main-menu .wp-menu-image .meowapps-menu-icon-folded { display: block; }
+            body.auto-fold #toplevel_page_meowapps-main-menu .meowapps-menu-icon { display: none; }
+          }';
+        wp_add_inline_style( 'admin-menu', $css );
 
-      // Inject a clone of the in-title cat icon into the .wp-menu-image slot.
-      // CSS above shows it only when the sidebar is folded; in the normal
-      // expanded state the .wp-menu-name <img> stays the visible icon.
-      add_action( 'admin_footer', function () {
-        ?>
-        <script>
-        ( function () {
-          var li = document.getElementById( 'toplevel_page_meowapps-main-menu' );
-          if ( !li ) { return; }
-          var src = li.querySelector( '.meowapps-menu-icon' );
-          var slot = li.querySelector( '.wp-menu-image' );
-          if ( !src || !slot || slot.querySelector( '.meowapps-menu-icon-folded' ) ) { return; }
-          var clone = src.cloneNode();
-          clone.className = 'meowapps-menu-icon-folded';
-          clone.removeAttribute( 'style' );
-          slot.appendChild( clone );
-        } )();
-        </script>
-        <?php
+        // Clone the in-title cat icon into the .wp-menu-image slot (CSS shows it only when folded).
+        $js = 'document.addEventListener("DOMContentLoaded", function () {'
+          . 'var li = document.getElementById("toplevel_page_meowapps-main-menu"); if ( !li ) { return; }'
+          . 'var src = li.querySelector(".meowapps-menu-icon"); var slot = li.querySelector(".wp-menu-image");'
+          . 'if ( !src || !slot || slot.querySelector(".meowapps-menu-icon-folded") ) { return; }'
+          . 'var clone = src.cloneNode(); clone.className = "meowapps-menu-icon-folded"; clone.removeAttribute("style"); slot.appendChild(clone);'
+          . '});';
+        wp_add_inline_script( 'common', $js );
       } );
     }
 
@@ -638,8 +605,10 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         'wporgUrl'    => $wporg_url,
         'learnUrl'    => $learn_url,
       );
+      wp_register_style( 'meowapps-common-inline', false );
+      wp_enqueue_style( 'meowapps-common-inline' );
+      ob_start();
       ?>
-      <style>
         .meowapps-wpai-promo {
           margin: 0 0 16px; padding: 14px 18px;
           display: flex; align-items: flex-start; gap: 14px;
@@ -684,8 +653,13 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
           font-weight: 500; padding: 7px 10px;
         }
         .meowapps-wpai-promo-btn-dismiss:hover { color: #1e1e1e; background: rgba(0,0,0,0.04); }
-      </style>
-      <script>
+      <?php
+      wp_add_inline_style( 'meowapps-common-inline', ob_get_clean() );
+
+      wp_register_script( 'meowapps-common-inline', false, array(), false, true );
+      wp_enqueue_script( 'meowapps-common-inline' );
+      ob_start();
+      ?>
       (function () {
         var D = <?php echo wp_json_encode( $payload ); ?>;
         try { if (localStorage.getItem('meowapps-wpai-promo-dismissed') === '1') return; } catch (e) {}
@@ -768,8 +742,8 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
           new MutationObserver(ensure).observe(app, { childList: true, subtree: true });
         }
       })();
-      </script>
       <?php
+      wp_add_inline_script( 'meowapps-common-inline', ob_get_clean() );
     }
   }
 }

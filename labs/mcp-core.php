@@ -72,6 +72,142 @@ class Meow_MWAI_Labs_MCP_Core {
     return [ 'type' => 'object', 'properties' => (object) [] ];
   }
 
+  // v1 block types accepted by wp_write_blocks. Kept intentionally small and
+  // conservative: only core blocks whose canonical save markup is stable across
+  // WP 6.x, so the output opens in the block editor without "invalid content"
+  // warnings. The 'html' type is the escape hatch for anything not covered.
+  private static $write_block_types = [
+    'paragraph', 'heading', 'list', 'quote', 'image', 'buttons',
+    'group', 'columns', 'separator', 'spacer', 'code', 'html',
+  ];
+
+  // Render a simplified block-spec array into canonical Gutenberg markup.
+  // Returns [ markup, error ] with exactly one non-null. Aborts on the first bad
+  // block so we never write a half-built page.
+  private function blocks_to_markup( $blocks, string $path = 'blocks' ): array {
+    if ( !is_array( $blocks ) || $blocks === [] ) {
+      return [ null, $path . ' must be a non-empty array of block specs.' ];
+    }
+    $out = [];
+    foreach ( $blocks as $i => $block ) {
+      $at = $path . '[' . $i . ']';
+      if ( !is_array( $block ) || empty( $block['type'] ) || !is_string( $block['type'] ) ) {
+        return [ null, $at . ' is missing a string "type".' ];
+      }
+      if ( !in_array( $block['type'], self::$write_block_types, true ) ) {
+        return [ null, $at . ' has unsupported type "' . $block['type'] . '". Supported: ' . implode( ', ', self::$write_block_types ) . '.' ];
+      }
+      list( $markup, $err ) = $this->render_block_spec( $block['type'], $block, $at );
+      if ( $err !== null ) {
+        return [ null, $err ];
+      }
+      $out[] = $markup;
+    }
+    return [ implode( "\n\n", $out ), null ];
+  }
+
+  // Build the canonical markup for one supported block. Returns [ markup, error ].
+  private function render_block_spec( string $type, array $b, string $at ): array {
+    switch ( $type ) {
+      case 'paragraph':
+        return [ "<!-- wp:paragraph -->\n<p>" . $this->clean_html( $b['content'] ?? '' ) . "</p>\n<!-- /wp:paragraph -->", null ];
+
+      case 'heading':
+        $level = isset( $b['level'] ) ? (int) $b['level'] : 2;
+        if ( $level < 1 || $level > 6 ) {
+          return [ null, $at . ' heading level must be between 1 and 6.' ];
+        }
+        $attrs = $level === 2 ? '' : ' ' . wp_json_encode( [ 'level' => $level ] );
+        $text = $this->clean_html( $b['content'] ?? '' );
+        return [ '<!-- wp:heading' . $attrs . " -->\n<h" . $level . ' class="wp-block-heading">' . $text . '</h' . $level . ">\n<!-- /wp:heading -->", null ];
+
+      case 'list':
+        $items = $b['items'] ?? null;
+        if ( !is_array( $items ) || $items === [] ) {
+          return [ null, $at . ' list requires a non-empty "items" array of strings.' ];
+        }
+        $ordered = !empty( $b['ordered'] );
+        $tag = $ordered ? 'ol' : 'ul';
+        $listAttrs = $ordered ? ' ' . wp_json_encode( [ 'ordered' => true ] ) : '';
+        $lis = '';
+        foreach ( $items as $it ) {
+          $lis .= "<!-- wp:list-item -->\n<li>" . $this->clean_html( is_string( $it ) ? $it : '' ) . "</li>\n<!-- /wp:list-item -->\n";
+        }
+        return [ '<!-- wp:list' . $listAttrs . " -->\n<" . $tag . ' class="wp-block-list">' . rtrim( $lis, "\n" ) . '</' . $tag . ">\n<!-- /wp:list -->", null ];
+
+      case 'quote':
+        $qInner = "<!-- wp:paragraph -->\n<p>" . $this->clean_html( $b['content'] ?? '' ) . "</p>\n<!-- /wp:paragraph -->";
+        $cite = ( isset( $b['citation'] ) && $b['citation'] !== '' ) ? '<cite>' . $this->clean_html( $b['citation'] ) . '</cite>' : '';
+        return [ "<!-- wp:quote -->\n<blockquote class=\"wp-block-quote\">" . $qInner . $cite . "</blockquote>\n<!-- /wp:quote -->", null ];
+
+      case 'image':
+        $url = esc_url_raw( $b['url'] ?? '' );
+        if ( $url === '' ) {
+          return [ null, $at . ' image requires a "url".' ];
+        }
+        $alt = esc_attr( $b['alt'] ?? '' );
+        $caption = ( isset( $b['caption'] ) && $b['caption'] !== '' ) ? '<figcaption class="wp-element-caption">' . $this->clean_html( $b['caption'] ) . '</figcaption>' : '';
+        $img = '<img src="' . $url . '" alt="' . $alt . '"/>';
+        return [ "<!-- wp:image -->\n<figure class=\"wp-block-image\">" . $img . $caption . "</figure>\n<!-- /wp:image -->", null ];
+
+      case 'buttons':
+        $buttons = $b['buttons'] ?? null;
+        if ( !is_array( $buttons ) || $buttons === [] ) {
+          return [ null, $at . ' buttons requires a non-empty "buttons" array of {text, url}.' ];
+        }
+        $btnInner = '';
+        foreach ( $buttons as $bi => $btn ) {
+          if ( !is_array( $btn ) || empty( $btn['text'] ) ) {
+            return [ null, $at . ' button[' . $bi . '] requires "text".' ];
+          }
+          $href = esc_url_raw( $btn['url'] ?? '' );
+          $hrefAttr = $href !== '' ? ' href="' . $href . '"' : '';
+          $btnInner .= "<!-- wp:button -->\n<div class=\"wp-block-button\"><a class=\"wp-block-button__link wp-element-button\"" . $hrefAttr . '>' . $this->clean_html( $btn['text'] ) . "</a></div>\n<!-- /wp:button -->\n";
+        }
+        return [ "<!-- wp:buttons -->\n<div class=\"wp-block-buttons\">" . rtrim( $btnInner, "\n" ) . "</div>\n<!-- /wp:buttons -->", null ];
+
+      case 'group':
+        list( $gInner, $gErr ) = $this->blocks_to_markup( $b['blocks'] ?? null, $at . '.blocks' );
+        if ( $gErr !== null ) {
+          return [ null, $gErr ];
+        }
+        return [ "<!-- wp:group -->\n<div class=\"wp-block-group\">" . $gInner . "</div>\n<!-- /wp:group -->", null ];
+
+      case 'columns':
+        $columns = $b['columns'] ?? null;
+        if ( !is_array( $columns ) || $columns === [] ) {
+          return [ null, $at . ' columns requires a non-empty "columns" array (an array of block-spec arrays).' ];
+        }
+        $colsInner = '';
+        foreach ( $columns as $ci => $colBlocks ) {
+          list( $colInner, $colErr ) = $this->blocks_to_markup( $colBlocks, $at . '.columns[' . $ci . ']' );
+          if ( $colErr !== null ) {
+            return [ null, $colErr ];
+          }
+          $colsInner .= "<!-- wp:column -->\n<div class=\"wp-block-column\">" . $colInner . "</div>\n<!-- /wp:column -->\n";
+        }
+        return [ "<!-- wp:columns -->\n<div class=\"wp-block-columns\">" . rtrim( $colsInner, "\n" ) . "</div>\n<!-- /wp:columns -->", null ];
+
+      case 'separator':
+        return [ "<!-- wp:separator -->\n<hr class=\"wp-block-separator has-alpha-channel-opacity\"/>\n<!-- /wp:separator -->", null ];
+
+      case 'spacer':
+        $h = isset( $b['height'] ) ? (int) $b['height'] : 100;
+        if ( $h < 1 || $h > 2000 ) {
+          return [ null, $at . ' spacer height must be between 1 and 2000 (px).' ];
+        }
+        return [ '<!-- wp:spacer ' . wp_json_encode( [ 'height' => $h . 'px' ] ) . " -->\n<div style=\"height:" . $h . "px\" aria-hidden=\"true\" class=\"wp-block-spacer\"></div>\n<!-- /wp:spacer -->", null ];
+
+      case 'code':
+        return [ "<!-- wp:code -->\n<pre class=\"wp-block-code\"><code>" . esc_html( wp_unslash( (string) ( $b['content'] ?? '' ) ) ) . "</code></pre>\n<!-- /wp:code -->", null ];
+
+      case 'html':
+        // core/html stores raw HTML and is always valid on re-open. Sanitize to post-safe HTML.
+        return [ "<!-- wp:html -->\n" . $this->clean_html( $b['content'] ?? '' ) . "\n<!-- /wp:html -->", null ];
+    }
+    return [ null, $at . ' could not be rendered.' ];
+  }
+
   /**
    * Compile a wp_alter_post regex search into a delimited PCRE pattern.
    *
@@ -518,6 +654,52 @@ class Meow_MWAI_Labs_MCP_Core {
             'flags' => [ 'type' => 'string', 'description' => 'Optional PCRE modifier letters applied in regex mode, e.g. "i" (case-insensitive), "s" (dotall), "m" (multiline). Allowed: i, m, s, x, u, A, D, S, U, X, J.' ],
           ],
           'required' => [ 'ID', 'field', 'search', 'replace' ],
+        ],
+        'accessLevel' => 'write',
+      ],
+      'wp_write_blocks' => [
+        'name' => 'wp_write_blocks',
+        'description' => 'Build a valid Gutenberg (block editor) layout on an existing post or page from a simple block spec, so the result opens cleanly in the editor with no "invalid content" warnings. Create the post first with wp_create_post, then pass its ID plus "blocks", an ordered array of specs like {"type":"heading","level":2,"content":"..."}. Supported types: paragraph (content), heading (content, level 1-6), list (items[], ordered), quote (content, citation), image (url, alt, caption), buttons (buttons[] of {text,url}), group (blocks[]), columns (columns[] of block-spec arrays), separator, spacer (height px), code (content), html (content, raw HTML escape hatch). content fields accept inline HTML. mode replaces (default), appends, or prepends. For prose you do not need to lay out visually, plain wp_create_post/wp_update_post with Markdown is simpler; use this when you want real, editable blocks.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'ID' => [ 'type' => 'integer', 'description' => 'Target post/page ID (create it first with wp_create_post).' ],
+            'blocks' => [
+              'type' => 'array',
+              'description' => 'Ordered array of block specs. Each item is an object with a "type" and the fields for that type (see the tool description).',
+              'items' => [ 'type' => 'object', 'additionalProperties' => true ],
+            ],
+            'mode' => [ 'type' => 'string', 'enum' => [ 'replace', 'append', 'prepend' ], 'description' => 'replace (default) overwrites post_content; append/prepend add the blocks to the existing content.' ],
+          ],
+          'required' => [ 'ID', 'blocks' ],
+        ],
+        'accessLevel' => 'write',
+      ],
+      'wp_list_block_patterns' => [
+        'name' => 'wp_list_block_patterns',
+        'description' => 'List the block patterns registered on this site (core, theme, and plugin patterns). Patterns are ready-made, pre-validated block layouts (hero/banner sections, pricing tables, testimonials, galleries, calls to action) authored by the theme, so inserting one is on-brand and always opens cleanly in the editor. Discover a layout here, insert it with wp_insert_block_pattern, then adjust the placeholder text with wp_alter_post. Returns compact metadata (name, title, categories, description) by default; set include_content to true to also get the raw block markup. Filter with search (matches title/name/description/keywords) and/or category (e.g. "call-to-action", "gallery", "testimonials").',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'search' => [ 'type' => 'string', 'description' => 'Case-insensitive filter on title, name, description, and keywords.' ],
+            'category' => [ 'type' => 'string', 'description' => 'Pattern category slug, e.g. "featured", "call-to-action", "gallery", "testimonials".' ],
+            'include_content' => [ 'type' => 'boolean', 'description' => 'Include each match\'s raw block markup (default false; can be large).' ],
+            'limit' => [ 'type' => 'integer', 'description' => 'Max patterns to return (default 50, max 500).' ],
+          ],
+        ],
+        'accessLevel' => 'read',
+      ],
+      'wp_insert_block_pattern' => [
+        'name' => 'wp_insert_block_pattern',
+        'description' => 'Insert a registered block pattern into a post or page by its name (get names from wp_list_block_patterns). Pattern markup is pre-validated theme/core content, so the result is on-brand and valid in the editor. mode "append" (default) adds it to the end, so you can compose a full page from several patterns in successive calls; "replace" overwrites the content; "prepend" adds it to the top. After inserting, swap placeholder text with wp_alter_post.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'ID' => [ 'type' => 'integer', 'description' => 'Target post/page ID (create it first with wp_create_post).' ],
+            'pattern' => [ 'type' => 'string', 'description' => 'Pattern name (slug) from wp_list_block_patterns, e.g. "core/query-standard-posts" or "twentytwentyfive/hero".' ],
+            'mode' => [ 'type' => 'string', 'enum' => [ 'append', 'replace', 'prepend' ], 'description' => 'append (default), replace, or prepend the pattern content.' ],
+          ],
+          'required' => [ 'ID', 'pattern' ],
         ],
         'accessLevel' => 'write',
       ],
@@ -1366,6 +1548,134 @@ class Meow_MWAI_Labs_MCP_Core {
           $this->bust_post_cache( (int) $new, [ 'tool' => 'wp_create_post' ] );
           $this->add_result_text( $r, 'Post created ID ' . $new );
         }
+        break;
+
+        /* ===== Posts: write blocks ===== */
+      case 'wp_write_blocks':
+        if ( empty( $a['ID'] ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post ID required (pass "ID"; create the post first with wp_create_post).' ];
+          break;
+        }
+        $wb_id = intval( $a['ID'] );
+        $wb_post = get_post( $wb_id );
+        if ( !$wb_post ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post ' . $wb_id . ' not found.' ];
+          break;
+        }
+        // Some MCP clients send arrays as JSON strings.
+        $wb_blocks = $a['blocks'] ?? null;
+        if ( is_string( $wb_blocks ) ) {
+          $wb_blocks = json_decode( $wb_blocks, true );
+        }
+        list( $wb_markup, $wb_err ) = $this->blocks_to_markup( $wb_blocks );
+        if ( $wb_err !== null ) {
+          $r['error'] = [ 'code' => -32602, 'message' => $wb_err ];
+          break;
+        }
+        $wb_mode = in_array( $a['mode'] ?? 'replace', [ 'replace', 'append', 'prepend' ], true ) ? ( $a['mode'] ?? 'replace' ) : 'replace';
+        if ( $wb_mode === 'append' ) {
+          $wb_content = trim( $wb_post->post_content . "\n\n" . $wb_markup );
+        }
+        elseif ( $wb_mode === 'prepend' ) {
+          $wb_content = trim( $wb_markup . "\n\n" . $wb_post->post_content );
+        }
+        else {
+          $wb_content = $wb_markup;
+        }
+        $wb_res = wp_update_post( wp_slash( [ 'ID' => $wb_id, 'post_content' => $wb_content ] ), true );
+        if ( is_wp_error( $wb_res ) ) {
+          $r['error'] = [ 'code' => $wb_res->get_error_code(), 'message' => $wb_res->get_error_message() ];
+          break;
+        }
+        $this->bust_post_cache( $wb_id, [ 'tool' => 'wp_write_blocks' ] );
+        $this->add_result_text( $r, 'Wrote ' . count( $wb_blocks ) . ' block(s) to post ' . $wb_id . ' (mode: ' . $wb_mode . ').' );
+        break;
+
+        /* ===== Block patterns: list ===== */
+      case 'wp_list_block_patterns':
+        if ( !class_exists( 'WP_Block_Patterns_Registry' ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'Block patterns are not available on this site.' ];
+          break;
+        }
+        $bp_all = WP_Block_Patterns_Registry::get_instance()->get_all_registered();
+        $bp_search = isset( $a['search'] ) ? strtolower( trim( (string) $a['search'] ) ) : '';
+        $bp_cat = isset( $a['category'] ) ? sanitize_title( $a['category'] ) : '';
+        $bp_content = !empty( $a['include_content'] );
+        $bp_limit = isset( $a['limit'] ) ? max( 1, min( 500, (int) $a['limit'] ) ) : 50;
+        $bp_list = [];
+        foreach ( $bp_all as $pat ) {
+          $cats = (array) ( $pat['categories'] ?? [] );
+          if ( $bp_cat !== '' && !in_array( $bp_cat, array_map( 'sanitize_title', $cats ), true ) ) {
+            continue;
+          }
+          if ( $bp_search !== '' ) {
+            $hay = strtolower( ( $pat['title'] ?? '' ) . ' ' . ( $pat['name'] ?? '' ) . ' ' . ( $pat['description'] ?? '' ) . ' ' . implode( ' ', (array) ( $pat['keywords'] ?? [] ) ) );
+            if ( strpos( $hay, $bp_search ) === false ) {
+              continue;
+            }
+          }
+          $entry = [
+            'name' => $pat['name'] ?? '',
+            'title' => $pat['title'] ?? '',
+            'categories' => array_values( $cats ),
+            'description' => $pat['description'] ?? '',
+          ];
+          if ( $bp_content ) {
+            $entry['content'] = $pat['content'] ?? '';
+          }
+          $bp_list[] = $entry;
+          if ( count( $bp_list ) >= $bp_limit ) {
+            break;
+          }
+        }
+        $this->add_result_text( $r, wp_json_encode( [ 'count' => count( $bp_list ), 'total_registered' => count( $bp_all ), 'patterns' => $bp_list ], JSON_PRETTY_PRINT ) );
+        break;
+
+        /* ===== Block patterns: insert ===== */
+      case 'wp_insert_block_pattern':
+        if ( empty( $a['ID'] ) || empty( $a['pattern'] ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Both "ID" and "pattern" (a name from wp_list_block_patterns) are required.' ];
+          break;
+        }
+        if ( !class_exists( 'WP_Block_Patterns_Registry' ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'Block patterns are not available on this site.' ];
+          break;
+        }
+        $bp_name = sanitize_text_field( $a['pattern'] );
+        $bp_reg = WP_Block_Patterns_Registry::get_instance();
+        if ( !$bp_reg->is_registered( $bp_name ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Pattern "' . $bp_name . '" is not registered. Use wp_list_block_patterns to see available names.' ];
+          break;
+        }
+        $bp_pat = $bp_reg->get_registered( $bp_name );
+        $bp_markup = (string) ( $bp_pat['content'] ?? '' );
+        if ( $bp_markup === '' ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'Pattern "' . $bp_name . '" has no content.' ];
+          break;
+        }
+        $bp_id = intval( $a['ID'] );
+        $bp_post = get_post( $bp_id );
+        if ( !$bp_post ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post ' . $bp_id . ' not found.' ];
+          break;
+        }
+        $bp_mode = in_array( $a['mode'] ?? 'append', [ 'replace', 'append', 'prepend' ], true ) ? ( $a['mode'] ?? 'append' ) : 'append';
+        if ( $bp_mode === 'replace' ) {
+          $bp_new = $bp_markup;
+        }
+        elseif ( $bp_mode === 'prepend' ) {
+          $bp_new = trim( $bp_markup . "\n\n" . $bp_post->post_content );
+        }
+        else {
+          $bp_new = trim( $bp_post->post_content . "\n\n" . $bp_markup );
+        }
+        $bp_res = wp_update_post( wp_slash( [ 'ID' => $bp_id, 'post_content' => $bp_new ] ), true );
+        if ( is_wp_error( $bp_res ) ) {
+          $r['error'] = [ 'code' => $bp_res->get_error_code(), 'message' => $bp_res->get_error_message() ];
+          break;
+        }
+        $this->bust_post_cache( $bp_id, [ 'tool' => 'wp_insert_block_pattern' ] );
+        $this->add_result_text( $r, 'Inserted pattern "' . $bp_name . '" into post ' . $bp_id . ' (mode: ' . $bp_mode . ').' );
         break;
 
         /* ===== Posts: update ===== */

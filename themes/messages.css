@@ -398,6 +398,7 @@
   font-size: var(--mwai-fontSize);
   color: var(--mwai-fontColor);
   position: relative;
+  max-width: 85%;
 }
 .mwai-messages-theme .mwai-conversation .mwai-reply .mwai-name,
 .mwai-messages-theme .mwai-conversation .mwai-reply .mwai-name-text {
@@ -459,6 +460,10 @@
   background-attachment: fixed;
   border-bottom-left-radius: 15px;
 }
+.mwai-messages-theme .mwai-conversation .mwai-reply.mwai-user .mwai-text a {
+  color: white;
+  text-decoration: underline;
+}
 .mwai-messages-theme .mwai-conversation.mwai-terminal {
   --mwai-terminal-active-color: var(--mwai-backgroundUserColor);
 }
@@ -519,7 +524,7 @@
   padding: 2px 6px;
   border-radius: 8px;
   font-size: calc(var(--mwai-fontSize) * 0.9);
-  font-family: system-ui;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 .mwai-messages-theme .mwai-text pre {
   color: var(--mwai-fontColor);
@@ -528,14 +533,15 @@
   white-space: pre-wrap;
   max-width: 100%;
   width: 100%;
-  font-family: system-ui;
+  font-size: calc(var(--mwai-fontSize) * 0.9);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   background: var(--mwai-backgroundAiSecondaryColor);
   padding: var(--mwai-spacing);
 }
 .mwai-messages-theme .mwai-text pre code {
   padding: 0 !important;
-  font-family: system-ui;
-  background: var(--mwai-backgroundAiSecondaryColor);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  background: transparent;
 }
 .mwai-messages-theme .mwai-text ul {
   list-style: disc;
@@ -592,6 +598,11 @@
   border-radius: var(--mwai-borderRadius);
   border: 1px solid var(--mwai-backgroundAiSecondaryColor);
   overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+.mwai-messages-theme .mwai-input .mwai-input-text:focus-within {
+  border-color: var(--mwai-borderColor);
+  border-color: color-mix(in srgb, var(--mwai-backgroundUserColor) 45%, transparent);
 }
 .mwai-messages-theme .mwai-input .mwai-input-text.mwai-blocked img {
   filter: grayscale(100%);
@@ -730,6 +741,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background 0.15s ease, filter 0.15s ease;
 }
 .mwai-messages-theme button .mwai-timer {
   margin-left: 5px;

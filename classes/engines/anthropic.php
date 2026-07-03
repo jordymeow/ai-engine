@@ -758,6 +758,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           $event = Meow_MWAI_Event::generating_response();
           call_user_func( $this->streamCallback, $event );
         }
+        else if ( $block['type'] === 'thinking' || $block['type'] === 'redacted_thinking' ) {
+          $event = Meow_MWAI_Event::thinking( 'Thinking...' );
+          call_user_func( $this->streamCallback, $event );
+        }
       }
     }
     else if ( $type === 'content_block_delta' ) {
@@ -786,6 +790,15 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           }
         }
         $content = $json['delta']['text'];
+      }
+      else if ( $json['delta']['type'] === 'thinking_delta' ) {
+        // Models with adaptive thinking (Sonnet 5+) stream thinking blocks. They must be
+        // accumulated in full (text + signature below), because the feedback query echoes
+        // the raw assistant message back and the API rejects incomplete thinking blocks.
+        $block['thinking'] = ( $block['thinking'] ?? '' ) . $json['delta']['thinking'];
+      }
+      else if ( $json['delta']['type'] === 'signature_delta' ) {
+        $block['signature'] = ( $block['signature'] ?? '' ) . $json['delta']['signature'];
       }
       else if ( $json['delta']['type'] === 'input_json_delta' ) {
         // Somehow, the input is set as an array, but it should be a string since it's JSON.
@@ -843,6 +856,11 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           // Regular tool use (non-MCP)
           $event = Meow_MWAI_Event::function_calling( $block['name'] ?? 'unknown', $block['input'] ?? [] )
                   ->set_metadata( 'tool_id', $block['id'] ?? '' );
+          call_user_func( $this->streamCallback, $event );
+        }
+        else if ( $block['type'] === 'thinking' || $block['type'] === 'redacted_thinking' ) {
+          $event = Meow_MWAI_Event::thinking( 'Thinking completed.' )
+            ->set_metadata( 'status', 'completed' );
           call_user_func( $this->streamCallback, $event );
         }
         else if ( $block['type'] === 'text' ) {

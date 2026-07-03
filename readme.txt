@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.7
+Stable tag: 3.5.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -173,6 +173,12 @@ Other plugins add their features to the MCP system:
 
 AI Engine can also connect to external MCP servers, extending your chatbots with tools and services beyond WordPress.
 
+**A note on safety and "full access":**
+
+AI Engine's MCP tools are curated and permission-aware on purpose. They do not run arbitrary code, so your site stays safe even while an AI agent works on it.
+
+Some people have asked us to match tools like Novamira and give an AI agent full, unrestricted control of WordPress through arbitrary PHP execution. We will not add that to the official AI Engine plugin, because it is genuinely unsafe: it effectively turns your site into remote code execution. If you specifically want that Novamira-style power on a development or staging site, we made an optional companion plugin, [AI Engine YOLO](https://github.com/jordymeow/ai-engine-yolo), which brings the same unrestricted PHP execution and file access to AI Engine's MCP server. It is dangerous by design, switches itself off on production, and is offered on GitHub only. Please never run it on a live site.
+
 == Pro Features ==
 
 * **AI Forms**: Create dynamic forms that generate answers, images, or files using AI.
@@ -263,6 +269,17 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.8 (2026/07/03) =
+* Fix: Code blocks now display correctly in the Timeless and Foundation chatbot themes (was using proportional font instead of monospace).
+* Fix: Sonnet 5 breaking with "each thinking block must contain thinking" when streaming with function calling.
+* Fix: MacOS chatbot container showing empty notches in the corners due to double-rounded borders.
+* Update: Reorganized the admin UI — Modules tab now leads with "Chatbots & Knowledge" and "MCP & Agents", and Settings tabs were reordered to match.
+* Update: Moved the Event Logs option from Settings → AI to Settings → Chatbot for easier discovery.
+* Update: Enlarged the chatbot preview pane in settings (480px → 620px) and polished the ChatGPT theme with monospace code blocks, accent border on focused input, and smoother transitions.
+* Update: Refined the Messages chatbot theme with monospace code blocks, readable links in user bubbles, input focus ring, and capped bubble width.
+* Add: Gutenberg MCP tools: wp_write_blocks, wp_list_block_patterns, and wp_insert_block_pattern.
+* Add: Nonce checks added to license, rating, and news notice forms.
 
 = 3.5.7 (2026/07/01) =
 * Fix: Chroma "Pull All" now returns all pages of large collections instead of only the first page.

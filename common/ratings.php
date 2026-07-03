@@ -56,19 +56,22 @@ if ( !class_exists( 'MeowKit_MWAI_Ratings' ) ) {
     }
 
     public function admin_notices_rating() {
-      if ( isset( $_POST[$this->prefix . '_remind_me'] ) ) {
+      // Verify the nonce before acting on any of the review-notice buttons (CSRF protection).
+      $nonce_ok = isset( $_POST[ $this->prefix . '_rating_nonce' ] )
+        && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ $this->prefix . '_rating_nonce' ] ) ), $this->prefix . '_rating' );
+      if ( $nonce_ok && isset( $_POST[$this->prefix . '_remind_me'] ) ) {
         $two_weeks = strtotime( '+2 weeks' );
         $six_weeks = strtotime( '+6 weeks' );
         $future_date = mt_rand( $two_weeks, $six_weeks );
         update_option( $this->prefix . '_rating_date', $future_date, false );
         return;
       }
-      else if ( isset( $_POST[$this->prefix . '_never_remind_me'] ) ) {
+      else if ( $nonce_ok && isset( $_POST[$this->prefix . '_never_remind_me'] ) ) {
         $twenty_years = strtotime( '+5 years' );
         update_option( $this->prefix . '_rating_date', $twenty_years, false );
         return;
       }
-      else if ( isset( $_POST[$this->prefix . '_did_it'] ) ) {
+      else if ( $nonce_ok && isset( $_POST[$this->prefix . '_did_it'] ) ) {
         $twenty_years = strtotime( '+100 years' );
         update_option( $this->prefix . '_rating_date', $twenty_years, false );
         return;
@@ -88,9 +91,10 @@ if ( !class_exists( 'MeowKit_MWAI_Ratings' ) ) {
       }
       $esc_short_url = esc_attr( $this->nice_short_url_from_file( $this->mainfile ) );
       $escaped_prefix = $this->prefix;
+      $rating_nonce = esc_attr( wp_create_nonce( $this->prefix . '_rating' ) );
       $html .= '<p style="font-size: 100%;">';
       // Translators: %1$s is a plugin nicename, %2$s is a short url (slug)
-      $url = 'https://wordpress.org/support/plugin/' . $esc_short_url . '/reviews/?rate=5#new-post';
+      $url = 'https://wordpress.org/support/plugin/' . $esc_short_url . '/reviews/';
       $html .= sprintf(
         __( '<h2 style="margin: 0" class="title">You have been using <b>%1$s</b> for some time now. Thank you! 💕</h2><p>If you have a minute, can you write a <b><a target="_blank" href="' . $url . '">little review</a></b> for me? That would <b>really</b> bring me joy and motivation! 💫 <br />Don\'t hesitate to <b>share your feature requests</b> with the review, I always check them and try my best.</p>
                                                                                                           ', $this->domain ),
@@ -101,7 +105,7 @@ if ( !class_exists( 'MeowKit_MWAI_Ratings' ) ) {
                                                                                                       ✏️ Write Review
                                                                                                       </a>
                                                                                                       <form method="post" action="" style="margin-right: 10px;">
-                                                                                                      <input type="hidden" name="' . $escaped_prefix . '_did_it" value="true">
+                                                                                                      <input type="hidden" name="' . $escaped_prefix . '_did_it" value="true"><input type="hidden" name="' . $escaped_prefix . '_rating_nonce" value="' . $rating_nonce . '">
                                                                                                       <input type="submit" name="submit" id="submit" class="button button-secondary" value="'
       . __( '✌️ Done!', $this->domain ) . '">
                                                                                                         </form>
@@ -109,13 +113,13 @@ if ( !class_exists( 'MeowKit_MWAI_Ratings' ) ) {
                                                                                                         <div style="flex: auto;"></div>
 
                                                                                                         <form method="post" action="" style="margin-right: 10px;">
-                                                                                                        <input type="hidden" name="' . $escaped_prefix . '_remind_me" value="true">
+                                                                                                        <input type="hidden" name="' . $escaped_prefix . '_remind_me" value="true"><input type="hidden" name="' . $escaped_prefix . '_rating_nonce" value="' . $rating_nonce . '">
                                                                                                         <input type="submit" name="submit" id="submit" class="button button-secondary" value="'
         . __( '⏰ Remind me later', $this->domain ) . '">
                                                                                                           </form>
 
                                                                                                           <form method="post" action="">
-                                                                                                          <input type="hidden" name="' . $escaped_prefix . '_never_remind_me" value="true">
+                                                                                                          <input type="hidden" name="' . $escaped_prefix . '_never_remind_me" value="true"><input type="hidden" name="' . $escaped_prefix . '_rating_nonce" value="' . $rating_nonce . '">
                                                                                                           <input type="submit" name="submit" id="submit" class="button-link" style="font-size: small;" value="'
           . __( 'Hide', $this->domain ) . '">
                                                                                                             </form>

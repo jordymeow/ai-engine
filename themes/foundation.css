@@ -477,7 +477,7 @@
   padding: 2px 6px;
   border-radius: 8px;
   font-size: 90%;
-  font-family: system-ui;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 .mwai-foundation-theme .mwai-reply .mwai-text pre {
   color: var(--mwai-fontColor);
@@ -485,15 +485,16 @@
   padding: calc(var(--mwai-spacing) * 2 / 3) var(--mwai-spacing);
   break-after: auto;
   white-space: pre-wrap;
-  font-size: 95%;
+  font-size: 90%;
   max-width: 100%;
   width: 100%;
-  font-family: system-ui;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   background: hsl(0 0% 0% / 30%);
 }
 .mwai-foundation-theme .mwai-reply .mwai-text pre code {
   padding: 0 !important;
-  font-family: system-ui;
+  background: transparent;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 .mwai-foundation-theme .mwai-reply .mwai-text ul, .mwai-foundation-theme .mwai-reply .mwai-text ol {
   padding: 0;

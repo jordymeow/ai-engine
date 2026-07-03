@@ -63,7 +63,10 @@ if ( !class_exists( 'MeowKit_MWAI_News' ) ) {
     }
 
     public function admin_notices_news() {
-      if ( isset( $_POST['meowapps_remind_me'] ) ) {
+      // Verify the nonce before acting on the news-notice buttons (CSRF protection).
+      $nonce_ok = isset( $_POST['meowapps_news_nonce'] )
+        && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['meowapps_news_nonce'] ) ), 'meowapps_news' );
+      if ( $nonce_ok && isset( $_POST['meowapps_remind_me'] ) ) {
         $news = get_option( 'meowapps_news' );
         $twelve_hours = strtotime( '+12 hours' );
         $thirtysix_hours = strtotime( '+36 hours' );
@@ -71,7 +74,7 @@ if ( !class_exists( 'MeowKit_MWAI_News' ) ) {
         update_option( 'meowapps_news', $news, false );
         return;
       }
-      else if ( isset( $_POST['meowapps_done_it'] ) ) {
+      else if ( $nonce_ok && isset( $_POST['meowapps_done_it'] ) ) {
         $news = get_option( 'meowapps_news' );
         $news['date'] = '';
         update_option( 'meowapps_news', $news, false );
@@ -81,22 +84,24 @@ if ( !class_exists( 'MeowKit_MWAI_News' ) ) {
       $html .= '<p style="font-size: 100%;">';
 
       // Title
-      $html .= sprintf( __( '<h2 style="margin: 0 0 10px 0" class="title">AI Engine by Meow Apps: The Power of AI into WordPress 💫</h2>' ) );
+      $html .= sprintf( __( '<h2 style="margin: 0 0 10px 0" class="title">AI Engine by Meow Apps: The Power of AI into WordPress 💫</h2>', $this->domain ) );
 
       // Content
       $html .= sprintf( __( '<p style="font-size: 14px;">Since the end of 2022, I worked a lot to craft <b>the perfect AI plugin for WordPress</b>. Since March 2023, it\'s perfectly stable and packed with features. You\'ll get chatbots, AI forms, easy model training, content and images generation, a template system that will allow you to create your personal assistants for various tasks and much more! Here it is: <a href="%s" target="_blank">AI Engine</a>. Believe me, you will enjoy this. Have fun, and let me know how it goes! 🥳</p>', $this->domain ), 'https://wordpress.org/plugins/ai-engine/' );
+
+      $news_nonce = esc_attr( wp_create_nonce( 'meowapps_news' ) );
 
       // Buttons
       $html .= '<div style="padding: 10px 0 12px 0; display: flex; align-items: center;">';
       $html .= '<a href="https://wordpress.org/plugins/ai-engine/" target="_blank" class="button button-primary" style="margin-right: 10px;">'
       . __( '👉 AI Engine at WordPress.org', $this->domain ) . '</a>';
       $html .= '<form method="post" action="" style="margin-right: 10px;">
-                                                                                                          <input type="hidden" name="meowapps_remind_me" value="true">
+                                                                                                          <input type="hidden" name="meowapps_remind_me" value="true"><input type="hidden" name="meowapps_news_nonce" value="' . $news_nonce . '">
                                                                                                           <input type="submit" name="submit" id="submit" class="button button-primary" value="'
       . __( '⏰ Remind me later', $this->domain ) . '"></form>';
       $html .= '<div style="flex: auto;"></div>';
       $html .= '<form method="post" action="">
-                                                                                                            <input type="hidden" name="meowapps_done_it" value="true">
+                                                                                                            <input type="hidden" name="meowapps_done_it" value="true"><input type="hidden" name="meowapps_news_nonce" value="' . $news_nonce . '">
                                                                                                             <input type="submit" name="submit" id="submit" class="button" value="'
       . __( '❌ Delete', $this->domain ) . '">
                                                                                                               </form>
