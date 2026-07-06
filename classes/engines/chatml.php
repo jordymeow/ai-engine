@@ -895,7 +895,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
 
       if ( $responseCode === 404 ) {
-        throw new Exception( 'The model\'s API URL was not found: ' . $url );
+        // A 404 here is almost always an invalid model name for this provider
+        // (the endpoint URL is correct), so surface the provider's own message.
+        $detail = !empty( $errorBody ) ? ' Response: ' . $errorBody : '';
+        throw new Exception( 'The API returned 404 for ' . $url . '. This usually means the model is not valid for this provider.' . $detail );
       }
       else if ( $responseCode === 400 ) {
         error_log( '[AI Engine] 400 Bad Request - Full response body: ' . $errorBody );

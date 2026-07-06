@@ -401,6 +401,11 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
         'polylang' => function_exists( 'pll_get_post_language' ),
         'woocommerce' => class_exists( 'WooCommerce' ),
       ],
+      // So the admin can render stored UTC timestamps in the site's timezone.
+      'timezone' => [
+        'string' => get_option( 'timezone_string' ),
+        'offset' => (float) get_option( 'gmt_offset' ),
+      ],
     ];
 
     wp_localize_script( 'mwai', 'mwai', $localize_data );

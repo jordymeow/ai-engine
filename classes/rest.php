@@ -1846,8 +1846,10 @@ class Meow_MWAI_Rest {
 
   public function rest_mcp_functions( $request ) {
     try {
-      // Get all registered MCP tools
-      $tools = apply_filters( 'mwai_mcp_tools', [] );
+      // Get all registered MCP tools. Handlers key entries by tool name, so the
+      // array is associative; array_values() forces a JSON array (not an object)
+      // for the client, which groups them with functions.reduce().
+      $tools = array_values( apply_filters( 'mwai_mcp_tools', [] ) );
 
       // Format the response
       $response = [
@@ -1893,7 +1895,7 @@ class Meow_MWAI_Rest {
       $reference_args['user-agent'] = 'AI-Engine-Self-Test/1.0';
       $reference_response = wp_remote_get( $reference_url, $reference_args );
 
-      $build = function( $url, $response ) {
+      $build = function ( $url, $response ) {
         if ( is_wp_error( $response ) ) {
           return [
             'url' => $url,
@@ -1919,16 +1921,20 @@ class Meow_MWAI_Rest {
       if ( $probe['reachable'] && $probe['status'] === 200 ) {
         $verdict = 'ok';
         $message = 'Your site allows the python-httpx User-Agent on the OAuth discovery path. Claude.ai\'s connector should be able to reach it.';
-      } else if ( $probe['reachable'] && $probe['status'] === 403 ) {
+      }
+      else if ( $probe['reachable'] && $probe['status'] === 403 ) {
         $verdict = 'waf_blocks_python_ua';
         $message = 'Your host returned 403 to a User-Agent containing "python" on the OAuth discovery path. Claude.ai uses python-httpx as its outbound HTTP client, so its connector will fail with "Couldn\'t reach the MCP server". This is a common default on WP Engine. Fix: add a Cloudflare Transform Rule that rewrites the User-Agent for /.well-known/oauth-* and /wp-json/mcp/v1/* paths before the request reaches your origin. See https://meowapps.com/fix-mcp-wordpress-connection for the full recipe.';
-      } else if ( $probe['reachable'] && $probe['status'] === 404 ) {
+      }
+      else if ( $probe['reachable'] && $probe['status'] === 404 ) {
         $verdict = 'wellknown_blocked';
         $message = 'Your host returned 404 for the host-root /.well-known/oauth-protected-resource path. This usually means your hosting layer (.htaccess, nginx config, or a security plugin) intercepts /.well-known/* paths before WordPress sees them. Adjust rewrites so the path reaches index.php.';
-      } else if ( !$probe['reachable'] ) {
+      }
+      else if ( !$probe['reachable'] ) {
         $verdict = 'unreachable';
         $message = 'The loopback request could not reach the site at all (' . esc_html( $probe['error'] ) . '). Check that the site is publicly resolvable and that the server can reach itself over HTTPS.';
-      } else {
+      }
+      else {
         $verdict = 'unexpected_status';
         $message = 'Got HTTP ' . $probe['status'] . ' from the loopback probe. Expected 200. Investigate the response in your CDN/origin logs.';
       }

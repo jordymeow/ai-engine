@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.8
+Stable tag: 3.5.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -269,6 +269,16 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.5.9 (2026/07/06) =
+* Fix: MCP post meta tools double-serializing array values, which stored nested arrays as strings.
+* Fix: MCP wp_create_post and wp_update_post tools stripping shortcodes, email HTML, and inline CSS for admin-authorized callers.
+* Fix: Chatbot theme styles loading outside AI Engine's admin screens, which caused Gutenberg editor iframe warnings.
+* Fix: simpleJsonQuery failing on Anthropic and Google environments by no longer forcing an OpenAI fallback model, with a clearer error message.
+* Fix: Discussions and Queries timestamps now display in the site's configured timezone instead of the browser's.
+* Fix: MCP Functions settings crashing when tools were registered due to the list being returned as an object instead of an array.
+* Fix: OpenAI Vector Store Pull All failing with a limit error by paginating the file list.
+* Update: WordPress MCP tools are now enabled by default.
 
 = 3.5.8 (2026/07/03) =
 * Fix: Code blocks now display correctly in the Timeless and Foundation chatbot themes (was using proportional font instead of monospace).

@@ -1010,17 +1010,28 @@ class Meow_MWAI_API {
     $query = new Meow_MWAI_Query_Text( $message . "\nYour reply must be a formatted JSON." );
     $query->inject_params( $params );
     $query->set_response_format( 'json' );
-    $ai_json_default_env = $mwai_core->get_option( 'ai_json_default_env' );
-    $ai_json_default_model = $mwai_core->get_option( 'ai_json_default_model' );
-    if ( !empty( $ai_json_default_env ) ) {
-      $query->set_env_id( $ai_json_default_env );
+
+    // The JSON default env/model apply only when the caller didn't specify its
+    // own, so an explicit model/env passed in $params is always respected.
+    if ( empty( $params['envId'] ) && empty( $params['model'] ) ) {
+      $ai_json_default_env = $mwai_core->get_option( 'ai_json_default_env' );
+      $ai_json_default_model = $mwai_core->get_option( 'ai_json_default_model' );
+      if ( !empty( $ai_json_default_env ) ) {
+        $query->set_env_id( $ai_json_default_env );
+      }
+      if ( !empty( $ai_json_default_model ) ) {
+        $query->set_model( $ai_json_default_model );
+      }
     }
-    if ( !empty( $ai_json_default_model ) ) {
-      $query->set_model( $ai_json_default_model );
-    }
-    else {
+
+    // Only force the OpenAI JSON fallback as a last resort. When an env is set
+    // (by the caller or the JSON default) but the model isn't, validate_env_model()
+    // picks that environment's own model, so Anthropic/Google JSON queries no longer
+    // 404 by sending a hardcoded OpenAI model name to the wrong provider.
+    if ( empty( $query->model ) && empty( $query->envId ) ) {
       $query->set_model( MWAI_FALLBACK_MODEL_JSON );
     }
+
     $reply = $mwai_core->run_query( $query );
     try {
       $json = json_decode( $reply->result, true );

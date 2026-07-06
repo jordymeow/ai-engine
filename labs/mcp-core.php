@@ -25,6 +25,16 @@ class Meow_MWAI_Labs_MCP_Core {
     return wp_kses_post( wp_unslash( $v ) );
   }
 
+  // Store post_content/excerpt the way core does for an admin editing in wp-admin:
+  // callers who can post unfiltered HTML (administrators on single-site, which is
+  // how the MCP request is authenticated) keep their markup verbatim, so shortcode
+  // attributes, email/Outlook MSO conditionals, and inline CSS survive. Lower-privilege
+  // callers still get wp_kses_post(). Previously this always ran wp_kses_post(),
+  // silently stripping that markup even for admin-authorized writes.
+  private function store_html( string $v ): string {
+    return current_user_can( 'unfiltered_html' ) ? $v : $this->clean_html( $v );
+  }
+
   // Prepare post_content for wp_create_post. If the caller already sent HTML,
   // Gutenberg blocks, or shortcodes, keep it as-is (sanitized like the update
   // path) instead of running the markdown parser. Parsedown would HTML-encode
@@ -40,7 +50,7 @@ class Meow_MWAI_Labs_MCP_Core {
     // Markdown link [text](url), which has neither "=" nor a leading slash.
     $hasShortcode = (bool) preg_match( '/\[[a-zA-Z][\w-]*\s+[^\]]*?=[^\]]*\]|\[\/[a-zA-Z]/', $v );
     if ( $hasBlocks || $hasHtml || $hasShortcode ) {
-      return $this->clean_html( $v );
+      return $this->store_html( $v );
     }
     return $this->core->markdown_to_html( $v );
   }
@@ -1542,7 +1552,10 @@ class Meow_MWAI_Labs_MCP_Core {
         else {
           if ( empty( $ins['meta_input'] ) && !empty( $meta_input ) && is_array( $meta_input ) ) {
             foreach ( $meta_input as $k => $v ) {
-              update_post_meta( $new, sanitize_key( $k ), maybe_serialize( $v ) );
+              // Pass the value as-is: update_post_meta() serializes arrays itself.
+              // maybe_serialize() here double-serialized nested arrays, so they read
+              // back as a string and consumers (e.g. Noptin) rejected them as legacy.
+              update_post_meta( $new, sanitize_key( $k ), $v );
             }
           }
           $this->bust_post_cache( (int) $new, [ 'tool' => 'wp_create_post' ] );
@@ -1720,7 +1733,7 @@ class Meow_MWAI_Labs_MCP_Core {
         $content_to_verify = null;
         if ( !empty( $fields ) && is_array( $fields ) ) {
           foreach ( $fields as $k => $v ) {
-            $c[ $k ] = in_array( $k, [ 'post_content', 'post_excerpt' ], true ) ? $this->clean_html( $v ) : sanitize_text_field( $v );
+            $c[ $k ] = in_array( $k, [ 'post_content', 'post_excerpt' ], true ) ? $this->store_html( $v ) : sanitize_text_field( $v );
           }
           if ( isset( $c['post_content'] ) ) {
             $content_to_verify = $c['post_content'];
@@ -1802,7 +1815,9 @@ class Meow_MWAI_Labs_MCP_Core {
         // Update meta if any
         if ( $has_meta ) {
           foreach ( $meta_input as $k => $v ) {
-            update_post_meta( $u, sanitize_key( $k ), maybe_serialize( $v ) );
+            // Pass the value as-is: update_post_meta() serializes arrays itself.
+            // maybe_serialize() here double-serialized nested arrays.
+            update_post_meta( $u, sanitize_key( $k ), $v );
           }
         }
 
@@ -1937,13 +1952,15 @@ class Meow_MWAI_Labs_MCP_Core {
           $meta = json_decode( $meta, true );
         }
 
+        // Pass values as-is: update_post_meta() serializes arrays itself, so
+        // maybe_serialize() here double-serialized nested arrays into a string.
         if ( !empty( $meta ) && is_array( $meta ) ) {
           foreach ( $meta as $k => $v ) {
-            update_post_meta( $pid, sanitize_key( $k ), maybe_serialize( $v ) );
+            update_post_meta( $pid, sanitize_key( $k ), $v );
           }
         }
         elseif ( isset( $a['key'], $a['value'] ) ) {
-          update_post_meta( $pid, sanitize_key( $a['key'] ), maybe_serialize( $a['value'] ) );
+          update_post_meta( $pid, sanitize_key( $a['key'] ), $a['value'] );
         }
         else {
           $r['error'] = [ 'code' => -32602, 'message' => 'meta array or key/value required' ];
@@ -1959,7 +1976,8 @@ class Meow_MWAI_Labs_MCP_Core {
         }
         $pid = intval( $a['ID'] );
         $key = sanitize_key( $a['key'] );
-        $done = isset( $a['value'] ) ? delete_post_meta( $pid, $key, maybe_serialize( $a['value'] ) ) : delete_post_meta( $pid, $key );
+        // delete_post_meta() serializes the match value itself; don't pre-serialize.
+        $done = isset( $a['value'] ) ? delete_post_meta( $pid, $key, $a['value'] ) : delete_post_meta( $pid, $key );
         if ( $done ) {
           $this->add_result_text( $r, 'Meta deleted on post #' . $pid );
         }

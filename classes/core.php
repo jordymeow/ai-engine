@@ -811,13 +811,13 @@ class Meow_MWAI_Core {
       return $days . 'd ago';
     }
 
-    // Format as date
-    $is_current_year = date( 'Y', $date ) === date( 'Y', $now );
+    // Format as date, in the site's configured timezone (wp_date), not UTC.
+    $is_current_year = wp_date( 'Y', $date ) === wp_date( 'Y', $now );
     if ( $is_current_year ) {
-      return date( 'M jS', $date );
+      return wp_date( 'M jS', $date );
     }
     else {
-      return date( 'M jS, Y', $date );
+      return wp_date( 'M jS, Y', $date );
     }
   }
   #endregion

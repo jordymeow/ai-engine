@@ -38,23 +38,25 @@ class Meow_MWAI_Modules_Chatbot {
     // Actual loading of the scripts
     $hasSiteWideChat = $this->siteWideChatId && $this->siteWideChatId !== 'none';
 
-    // Don't load chatbot scripts on the Site Editor to avoid conflicts
-    $current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-    $is_site_editor = $current_screen && $current_screen->base === 'site-editor';
+    if ( is_admin() ) {
+      // In the admin, the chatbot widget and its theme CSS are only needed for the
+      // preview on AI Engine's own screens. Loading them on every admin page pushed
+      // the frontend theme stylesheets into the block-editor iframe, which WordPress
+      // warns about ("added to the iframe incorrectly"), so scope them to our pages.
+      $current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+      $is_ai_engine_page = $current_screen && strpos( $current_screen->id, 'mwai' ) !== false;
+      if ( $is_ai_engine_page ) {
+        $this->enqueue_scripts( null );
+      }
+      return;
+    }
 
-    if ( ( is_admin() && !$is_site_editor ) || $hasSiteWideChat ) {
-      $themeId = null;
-      if ( $hasSiteWideChat ) {
-        $bot = $this->core->get_chatbot( $this->siteWideChatId );
-        if ( $bot && isset( $bot['themeId'] ) ) {
-          $themeId = $bot['themeId'];
-        }
-      }
-      $this->enqueue_scripts( is_admin() ? null : $themeId );
-      if ( $hasSiteWideChat ) {
-        // Chatbot Injection
-        add_action( 'wp_footer', [ $this, 'inject_chat' ] );
-      }
+    if ( $hasSiteWideChat ) {
+      $bot = $this->core->get_chatbot( $this->siteWideChatId );
+      $themeId = ( $bot && isset( $bot['themeId'] ) ) ? $bot['themeId'] : null;
+      $this->enqueue_scripts( $themeId );
+      // Chatbot Injection
+      add_action( 'wp_footer', [ $this, 'inject_chat' ] );
     }
   }
 
