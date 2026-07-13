@@ -35,6 +35,16 @@ class Meow_MWAI_Labs_MCP_Core {
     return current_user_can( 'unfiltered_html' ) ? $v : $this->clean_html( $v );
   }
 
+  // Return stored post_content verbatim for read tools (wp_get_post, snapshot).
+  // The DB value is NOT slashed, so clean_html()'s wp_unslash() would strip the
+  // real backslash from block-JSON Unicode escapes (Gutenberg's \uXXXX form for
+  // < and >, as Rank Math FAQ blocks use) and wp_kses_post() would drop the
+  // admin-authored markup that store_html() preserved on write. A read must
+  // round-trip losslessly through store_html(), so it returns the value as-is.
+  private function read_html( string $v ): string {
+    return $v;
+  }
+
   // Prepare post_content for wp_create_post. If the caller already sent HTML,
   // Gutenberg blocks, or shortcodes, keep it as-is (sanitized like the update
   // path) instead of running the markdown parser. Parsedown would HTML-encode
@@ -73,7 +83,10 @@ class Meow_MWAI_Labs_MCP_Core {
   // Return the post content with block-attribute JSON stripped, so a gallery-heavy
   // post collapses to its few KB of actual prose without re-rendering any block.
   private function prose_content( string $v ): string {
-    return trim( serialize_blocks( $this->strip_block_attrs( parse_blocks( wp_unslash( $v ) ) ) ) );
+    // $v is raw post_content from get_post(), which is NOT slashed; wp_unslash()
+    // here would strip the real backslash from block-JSON Unicode escapes (the
+    // \uXXXX form Gutenberg uses for < and > in Rank Math FAQ etc.) and corrupt it.
+    return trim( serialize_blocks( $this->strip_block_attrs( parse_blocks( $v ) ) ) );
   }
   private function post_excerpt( WP_Post $p ): string {
     return wp_trim_words( wp_strip_all_tags( $p->post_excerpt ?: $p->post_content ), 55 );
@@ -1110,12 +1123,27 @@ class Meow_MWAI_Labs_MCP_Core {
         break;
 
       case 'wp_create_user':
+        // Same object-level gap as wp_update_user: the MCP gate only checks the
+        // administrator role. wp_insert_user() runs no capability checks, so
+        // require create_users (which on Multisite is a network-only capability,
+        // correctly denying per-site Administrators) and refuse to assign a role
+        // the caller cannot grant (e.g. administrator).
+        if ( !current_user_can( 'create_users' ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'You are not allowed to create users.' ];
+          break;
+        }
+        $role = sanitize_key( $a['role'] ?? get_option( 'default_role', 'subscriber' ) );
+        require_once ABSPATH . 'wp-admin/includes/user.php'; // get_editable_roles()
+        if ( $role !== '' && !array_key_exists( $role, get_editable_roles() ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'You are not allowed to assign this role.' ];
+          break;
+        }
         $data = [
           'user_login' => sanitize_user( $a['user_login'] ),
           'user_email' => sanitize_email( $a['user_email'] ),
           'user_pass' => $a['user_pass'] ?? wp_generate_password( 12, true ),
           'display_name' => sanitize_text_field( $a['display_name'] ?? '' ),
-          'role' => sanitize_key( $a['role'] ?? get_option( 'default_role', 'subscriber' ) ),
+          'role' => $role,
         ];
         $uid = wp_insert_user( $data );
         if ( is_wp_error( $uid ) ) {
@@ -1131,10 +1159,32 @@ class Meow_MWAI_Labs_MCP_Core {
           $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
           break;
         }
-        $upd = [ 'ID' => intval( $a['ID'] ) ];
+        $target_id = intval( $a['ID'] );
+        // Object-level authorization. The MCP gate only checks that the caller
+        // holds the administrator role, not that they may touch THIS user.
+        // wp_update_user() runs no capability checks of its own, so without this
+        // a Multisite per-site Administrator could edit users they cannot touch
+        // in wp-admin (e.g. set a new password on the Network Owner). Delegating
+        // to edit_user enforces the same boundary core does, for every auth path.
+        // Reported by Charles Vosburgh via responsible disclosure.
+        if ( !current_user_can( 'edit_user', $target_id ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'You are not allowed to edit this user.' ];
+          break;
+        }
+        $upd = [ 'ID' => $target_id ];
         if ( !empty( $a['fields'] ) && is_array( $a['fields'] ) ) {
           foreach ( $a['fields'] as $k => $v ) {
             $upd[ $k ] = ( $k === 'role' ) ? sanitize_key( $v ) : sanitize_text_field( $v );
+          }
+        }
+        // A role change is a promotion/demotion. Require promote_user on the
+        // target and refuse any role the caller cannot themselves assign, so a
+        // lower admin cannot grant a role above their own reach.
+        if ( isset( $upd['role'] ) && $upd['role'] !== '' ) {
+          require_once ABSPATH . 'wp-admin/includes/user.php'; // get_editable_roles()
+          if ( !current_user_can( 'promote_user', $target_id ) || !array_key_exists( $upd['role'], get_editable_roles() ) ) {
+            $r['error'] = [ 'code' => -32603, 'message' => 'You are not allowed to assign this role.' ];
+            break;
           }
         }
         $u = wp_update_user( $upd );
@@ -1400,7 +1450,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'post_status' => $p->post_status,
           'post_content' => ( ( $a['content_format'] ?? 'full' ) === 'prose' )
             ? $this->prose_content( $p->post_content )
-            : $this->clean_html( $p->post_content ),
+            : $this->read_html( $p->post_content ),
           'post_excerpt' => $this->post_excerpt( $p ),
           'permalink' => get_permalink( $p ),
           'post_date' => $p->post_date,
@@ -1453,7 +1503,7 @@ class Meow_MWAI_Labs_MCP_Core {
         if ( !in_array( 'content', $exclude ) ) {
           $snapshot['post']['post_content'] = ( ( $a['content_format'] ?? 'full' ) === 'prose' )
             ? $this->prose_content( $p->post_content )
-            : $this->clean_html( $p->post_content );
+            : $this->read_html( $p->post_content );
         }
 
         // Include all post meta
@@ -2181,9 +2231,27 @@ class Meow_MWAI_Labs_MCP_Core {
           if ( $has_url ) {
             $tmp = download_url( $a['url'] );
             if ( is_wp_error( $tmp ) ) {
-              throw new Exception( $tmp->get_error_message(), $tmp->get_error_code() );
+              // WP_Error codes are strings (e.g. http_request_failed); Exception's
+              // $code must be an int, so keep the code in the message instead.
+              throw new Exception( 'Download failed (' . $tmp->get_error_code() . '): ' . $tmp->get_error_message() );
             }
-            $file = [ 'name' => basename( parse_url( $a['url'], PHP_URL_PATH ) ), 'tmp_name' => $tmp ];
+            // URLs like https://picsum.photos/800/600 have no file extension, so
+            // basename() yields a name that media_handle_sideload() rejects. Sniff
+            // the real type of the downloaded file and append a proper extension.
+            $name = basename( parse_url( $a['url'], PHP_URL_PATH ) );
+            if ( $name === '' || pathinfo( $name, PATHINFO_EXTENSION ) === '' ) {
+              $ext = '';
+              $check = wp_check_filetype_and_ext( $tmp, $name ?: 'image' );
+              if ( !empty( $check['ext'] ) ) {
+                $ext = $check['ext'];
+              }
+              elseif ( function_exists( 'mime_content_type' ) ) {
+                $map = [ 'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp' ];
+                $ext = $map[ mime_content_type( $tmp ) ] ?? '';
+              }
+              $name = ( $name ?: 'image' ) . ( $ext ? '.' . $ext : '' );
+            }
+            $file = [ 'name' => sanitize_file_name( $name ), 'tmp_name' => $tmp ];
           }
           else {
             $decoded = base64_decode( $a['base64'], true );
@@ -2198,7 +2266,7 @@ class Meow_MWAI_Labs_MCP_Core {
           $id = media_handle_sideload( $file, 0, $a['description'] ?? '' );
           @unlink( $tmp );
           if ( is_wp_error( $id ) ) {
-            throw new Exception( $id->get_error_message(), $id->get_error_code() );
+            throw new Exception( 'Sideload failed (' . $id->get_error_code() . '): ' . $id->get_error_message() );
           }
           if ( $a['title'] ?? '' ) {
             wp_update_post( wp_slash( [ 'ID' => $id, 'post_title' => sanitize_text_field( $a['title'] ) ] ) );

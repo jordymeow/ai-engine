@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.5.9
+Stable tag: 3.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -269,6 +269,16 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.6.1 (2026/07/13) =
+* Fix: MCP user tools not enforcing proper capabilities, allowing Multisite site administrators to edit users beyond their reach. Hotfix. (Thanks to Charles Vosburgh for reporting.)
+* Fix: MCP read tools corrupting block-JSON Unicode escapes by double-unslashing database content.
+* Update: Native browser dialogs (alert/confirm/prompt) are now forbidden in code; NekoModal is used instead.
+
+= 3.6.0 (2026/07/10) =
+* Add: GPT-5.6 family (Sol, Terra, and Luna) to OpenAI models, with Sol marked as the latest.
+* Fix: Gemini image models not being selectable when their ID lacks a `-preview` suffix.
+* Fix: MCP media upload tool crashing on download errors and rejecting extensionless image URLs.
 
 = 3.5.9 (2026/07/06) =
 * Fix: MCP post meta tools double-serializing array values, which stored nested arrays as strings.

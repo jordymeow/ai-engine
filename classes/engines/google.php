@@ -1170,8 +1170,12 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $tools[] = 'google_maps';
         }
 
-        // Image generation - only specific Flash Image models
-        if ( preg_match( '/flash-image|image-preview/', $model_id ) ) {
+        // Image generation - Gemini image models. Match both the -preview ids
+        // (e.g. gemini-3-pro-image-preview, "Nano Banana Pro") and their GA
+        // siblings without the suffix (e.g. gemini-3-pro-image), plus the older
+        // *-image-generation ids. A narrow flash-image|image-preview match misses
+        // gemini-3-pro-image and would break whenever Google drops -preview.
+        if ( preg_match( '/(flash|pro)-image|image-(preview|generation)/', $model_id ) ) {
           $tags[] = 'image';
           $tags[] = 'image-generation';
           $features[] = 'image-generation';

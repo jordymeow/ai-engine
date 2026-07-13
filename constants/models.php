@@ -6,8 +6,89 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   /*
+    GPT-5.6 Sol
+    Frontier tier of the GPT-5.6 family; the bare gpt-5.6 alias points here.
+    https://developers.openai.com/api/docs/models/gpt-5.6-sol
+    */
+  [
+    'model' => 'gpt-5.6-sol',
+    'name' => 'GPT-5.6 Sol',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 5.00,
+      'out' => 30.00,
+      'cached' => 0.50,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'latest'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5.6 Terra
+    Balanced tier: strong intelligence at mid pricing.
+    https://developers.openai.com/api/docs/models/gpt-5.6-terra
+    */
+  [
+    'model' => 'gpt-5.6-terra',
+    'name' => 'GPT-5.6 Terra',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 2.50,
+      'out' => 15.00,
+      'cached' => 0.25,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
+    GPT-5.6 Luna
+    Efficient, high-volume tier of the GPT-5.6 family.
+    https://developers.openai.com/api/docs/models/gpt-5.6-luna
+    */
+  [
+    'model' => 'gpt-5.6-luna',
+    'name' => 'GPT-5.6 Luna',
+    'family' => 'gpt-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.00,
+      'out' => 6.00,
+      'cached' => 0.10,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
+      'verbosity' => ['low', 'medium', 'high']
+    ]
+  ],
+  /*
     GPT-5.5
-    Latest flagship: tool-heavy agents, grounded assistants, long-context retrieval
+    Previous flagship: tool-heavy agents, grounded assistants, long-context retrieval
     https://developers.openai.com/api/docs/models/gpt-5.5
     */
   [
@@ -25,7 +106,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 1050000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
