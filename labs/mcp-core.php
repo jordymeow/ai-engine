@@ -401,12 +401,13 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Comments -------- */
       'wp_get_comments' => [
         'name' => 'wp_get_comments',
-        'description' => 'Retrieve comments (fields: comment_ID, comment_post_ID, comment_author, comment_content, comment_date, comment_approved). Returns 10 by default. Filter by commenter with `user_id` (registered user ID) or `author_email`.',
+        'description' => 'Retrieve comments (fields: comment_ID, comment_post_ID, comment_type, comment_author, comment_content, comment_date, comment_approved). Returns 10 by default. Filter by commenter with `user_id` (registered user ID) or `author_email`. Use `type` to filter by comment type; pass `type: "note"` to read WordPress 6.9 editor Notes (block-level feedback), where comment_approved "0" means open/unresolved and "1" means resolved. When reading notes, all statuses are returned unless you pass an explicit `status`.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'post_id' => [ 'type' => 'integer' ],
             'status' => [ 'type' => 'string' ],
+            'type' => [ 'type' => 'string', 'description' => 'Filter by comment type, e.g. "comment", "pingback", or "note" (WP 6.9 editor Notes). Omit to return all types.' ],
             'search' => [ 'type' => 'string' ],
             'user_id' => [ 'type' => 'integer', 'description' => 'Filter by the registered user ID of the commenter.' ],
             'author_email' => [ 'type' => 'string', 'description' => 'Filter by the commenter email address.' ],
@@ -1204,6 +1205,17 @@ class Meow_MWAI_Labs_MCP_Core {
           'search' => $a['search'] ?? '',
           'number' => max( 1, intval( $a['limit'] ?? 10 ) ),
         ];
+        // WP 6.9 Notes are comments with comment_type 'note'. Filter by type when
+        // asked (unset = all types, preserving prior behavior). Notes track their
+        // state via comment_status (hold = open, approve = resolved), so when
+        // reading notes without an explicit status, return all statuses; otherwise
+        // the 'approve' default would hide every open note.
+        if ( isset( $a['type'] ) && $a['type'] !== '' ) {
+          $args['type'] = sanitize_key( $a['type'] );
+          if ( $args['type'] === 'note' && !isset( $a['status'] ) ) {
+            $args['status'] = 'all';
+          }
+        }
         if ( isset( $a['user_id'] ) ) {
           $args['user_id'] = intval( $a['user_id'] );
         }
@@ -1221,6 +1233,7 @@ class Meow_MWAI_Labs_MCP_Core {
           $list[] = [
             'comment_ID' => $c->comment_ID,
             'comment_post_ID' => $c->comment_post_ID,
+            'comment_type' => $c->comment_type,
             'comment_author' => $c->comment_author,
             'comment_content' => wp_trim_words( wp_strip_all_tags( $c->comment_content ), 40 ),
             'comment_date' => $c->comment_date,

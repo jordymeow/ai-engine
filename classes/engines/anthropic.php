@@ -427,8 +427,29 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         ];
       }
 
-      // Build the messages
-      $body['messages'][] = [ 'role' => 'user', 'content' => $query->message ];
+      // Build the messages. Include the full prior conversation history, otherwise
+      // Claude loses all earlier context on any turn that triggers a function call.
+      // $query->messages holds that history (Anthropic-formatted, same as the normal
+      // path) and, via Meow_MWAI_Query_Feedback, ends with the assistant's tool_call
+      // message. The blocks loop below replays that assistant message with the
+      // tool_use input fix-ups, so drop the trailing assistant entry here to avoid
+      // duplicating it. Fall back to the single message when there is no history.
+      $history = is_array( $query->messages ) ? $query->messages : [];
+      if ( !empty( $history ) && ( end( $history )['role'] ?? '' ) === 'assistant' ) {
+        array_pop( $history );
+      }
+      // Anthropic requires the first message to have the 'user' role.
+      if ( !empty( $history ) && ( $history[0]['role'] ?? '' ) !== 'user' ) {
+        array_shift( $history );
+      }
+      if ( empty( $history ) ) {
+        $body['messages'][] = [ 'role' => 'user', 'content' => $query->message ];
+      }
+      else {
+        foreach ( $history as $historyMessage ) {
+          $body['messages'][] = $historyMessage;
+        }
+      }
 
       if ( !empty( $query->blocks ) ) {
         foreach ( $query->blocks as $feedback_block ) {

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.6.1
+Stable tag: 3.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -269,6 +269,12 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.6.2 (2026/07/16) =
+* Fix: Fixed block editor paragraph spacing broken by the AI Copilot handler wrapper.
+* Add: Note filtering support for the wp_get_comments MCP tool, allowing agents to read WordPress 6.9 editor Notes.
+* Fix: Fixed the Anthropic engine dropping conversation history on function-call follow-up requests.
+* Fix: Fixed duplicate embedding vectors for the same reference and environment, which left embeddings stuck at pending after a sync.
 
 = 3.6.1 (2026/07/13) =
 * Fix: MCP user tools not enforcing proper capabilities, allowing Multisite site administrators to edit users beyond their reach. Hotfix. (Thanks to Charles Vosburgh for reporting.)
