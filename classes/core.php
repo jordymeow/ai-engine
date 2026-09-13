@@ -552,6 +552,28 @@ class Meow_MWAI_Core {
   * @param array $params The client-supplied parameters.
   * @return array The parameters without the blocked keys.
   */
+  /**
+  * Resolves a client-supplied attachment id to its file path, but only when the current user
+  * may read that attachment. Media ids are guessable, so without this check any logged-in user
+  * could feed another user's private upload to the transcription or image edit routes.
+  *
+  * @throws Exception Code 403 when the attachment exists but the user may not read it.
+  */
+  public static function get_readable_attachment_path( $mediaId ) {
+    $mediaId = intval( $mediaId );
+    if ( $mediaId <= 0 || get_post_type( $mediaId ) !== 'attachment' ) {
+      throw new Exception( 'The media file cannot be found.' );
+    }
+    if ( !current_user_can( 'read_post', $mediaId ) ) {
+      throw new Exception( 'You are not allowed to access this media file.', 403 );
+    }
+    $path = get_attached_file( $mediaId );
+    if ( empty( $path ) || !file_exists( $path ) ) {
+      throw new Exception( 'The media file cannot be found.' );
+    }
+    return $path;
+  }
+
   public static function sanitize_rest_params( $params ) {
     if ( !is_array( $params ) ) {
       return [];

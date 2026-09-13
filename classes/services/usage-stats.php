@@ -28,6 +28,7 @@ class Meow_MWAI_Services_UsageStats {
   private $core;
   private $tiktoken_encoders = [];
   private $encoder_provider = null;
+  private $tiktoken_failed = false;
 
   public function __construct( $core ) {
     $this->core = $core;
@@ -44,6 +45,12 @@ class Meow_MWAI_Services_UsageStats {
       return $this->tiktoken_encoders['cl100k_base'];
     }
 
+    // A failed vocab download (blocked outbound HTTP, read-only temp dir...) is remembered for
+    // an hour so a broken host doesn't retry on every token estimate and flood the error log.
+    if ( $this->tiktoken_failed || get_transient( 'mwai_tiktoken_unavailable' ) ) {
+      return null;
+    }
+
     try {
       // Check if class exists
       if ( !class_exists( 'Yethee\Tiktoken\EncoderProvider' ) ) {
@@ -54,12 +61,13 @@ class Meow_MWAI_Services_UsageStats {
       // Initialize encoder provider if needed
       if ( $this->encoder_provider === null ) {
         $this->encoder_provider = new \Yethee\Tiktoken\EncoderProvider();
-        // The library defaults its vocab cache to {sys_temp}/tiktoken — a fixed shared
+        // The library defaults its vocab cache to {sys_temp}/tiktoken, a fixed shared
         // path. On multi-tenant hosts where each site runs as a different uid, the first
         // site to create the directory owns it and other sites get EACCES on write. Scope
         // the cache by ABSPATH so every install gets its own writable directory.
         $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tiktoken-' . substr( md5( ABSPATH ), 0, 12 );
         $this->encoder_provider->setVocabCache( $cacheDir );
+        $this->encoder_provider->setVocabLoader( new Meow_MWAI_Services_TiktokenVocabLoader( $cacheDir ) );
       }
 
       // Get the cl100k_base encoder (standard for modern OpenAI models)
@@ -70,7 +78,9 @@ class Meow_MWAI_Services_UsageStats {
       return $encoder;
     }
     catch ( \Exception $e ) {
-      error_log( '[AI Engine Tiktoken] Failed to initialize encoder: ' . $e->getMessage() );
+      $this->tiktoken_failed = true;
+      set_transient( 'mwai_tiktoken_unavailable', 1, HOUR_IN_SECONDS );
+      error_log( '[AI Engine Tiktoken] Failed to initialize encoder, falling back to estimation for an hour: ' . $e->getMessage() );
       return null;
     }
   }
@@ -101,9 +111,6 @@ class Meow_MWAI_Services_UsageStats {
       catch ( Exception $e ) {
         error_log( '[AI Engine Tiktoken] Encoding failed, falling back to estimation: ' . $e->getMessage() );
       }
-    }
-    else {
-      error_log( '[AI Engine Tiktoken] Encoder not available, using fallback' );
     }
 
     // Fallback to old estimation method

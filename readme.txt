@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.7.7
+Stable tag: 3.7.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,7 +66,7 @@ Every model you configured is one tap away, in the same conversation: start a th
 
 **Workspace for WordPress** brings all of it to your phone and tablet, on the [App Store](https://apps.apple.com/app/workspace-for-wordpress/id6794717714) and [Google Play](https://play.google.com/store/apps/details?id=com.meowapps.workspace). You scan a QR code once to pair it with your site, no password typed on a phone keyboard, and the pairing is a revocable Application Password you can cut off at any time. Your conversations, folders and themes stay on your own site, and your API keys never leave it.
 
-The app is free, the plugin is free, and there is no markup on anything: you pay your AI providers directly, at their price. More about it on [workspace.press](https://workspace.press/).
+The app is free, the plugin is free, and there is no markup on anything: you pay your AI providers directly, at their price. Workspace is off by default: enable it under AI Engine → Settings → Modules, and the Workspace entry appears in your admin menu. More about it on [workspace.press](https://workspace.press/).
 
 **Features:**
 
@@ -287,6 +287,10 @@ AI models support many languages, but quality varies. There's no definitive list
 
 MCP (Model Context Protocol) exposes WordPress tools to AI agents. [Learn how to enable the MCP endpoint](https://ai.thehiddendocs.com/mcp/), choose which tools to expose, and secure them. You can manage posts, comments, users, media, and more.
 
+= Do I need the WordPress AI plugin or the MCP Adapter to use AI Engine? =
+
+No. AI Engine is a complete, standalone solution: it talks to the providers directly and ships its own MCP server with more than fifty ready-to-use tools. The official AI plugin and its MCP Adapter are separate, experimental projects. You can keep them installed, but if both are active, let AI Engine manage the Connectors, or simply deactivate them to avoid confusion.
+
 = Can I restrict the chatbot to answer only from my site content? =
 
 You can't completely block the model's built-in knowledge, but you can [use smart prompts and embeddings](https://ai.thehiddendocs.com/restrict-chatbot-topics/) to steer conversations toward your content.
@@ -304,6 +308,16 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.7.8 (2026/09/13) =
+* Add: Redesigned Dashboard with a providers bento, weekly usage card, daily ideas and an AI visibility card, plus a slimmed Modules tab.
+* Add: MCP tools to install and update plugins and themes from the WordPress.org directory.
+* Add: GPT Image 2.5 Sunburst and Flare with the new quality levels.
+* Fix: Workspace module no longer switches itself off on sites without a Pro licence.
+* Fix: OpenAI Vector Store no longer retrieves knowledge twice on the default environment, now passes Max Results to file_search, and repairs old vectors tables missing columns.
+* Fix: Uploaded files stay in context on later turns with Claude and other stateless providers.
+* Update: The transcription and image edit API endpoints now check the caller can read the supplied attachment.
+* Update: Smart Search returns embedded pages and custom post types instead of only posts, and the debug info shows the min score and number of posts found.
 
 = 3.7.7 (2026/09/08) =
 * Add: Local Memory now stores the shortcuts and blocks of the last reply, so they persist after a reload.

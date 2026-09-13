@@ -449,10 +449,15 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
     $features = [ 'completion' ];
     $tags = [ 'core', 'chat' ];
 
-    // If the name contains (beta), (alpha) or (preview), add 'preview' tag and remove from name
-    if ( preg_match( '/\((beta|alpha|preview)\)/i', $model['name'] ) ) {
+    // If the name contains (beta), (alpha) or (preview), add 'preview' tag and remove from name.
+    // When the id itself ends with the marker (openrouter/auto-beta next to openrouter/auto),
+    // a stable sibling exists, so keep the marker in the name to avoid two identical entries.
+    if ( preg_match( '/\((beta|alpha|preview)\)/i', $model['name'], $marker ) ) {
       $tags[] = 'preview';
-      $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
+      $model['name'] = trim( preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] ) );
+      if ( preg_match( '/-(beta|alpha|preview)$/i', $model['id'] ) ) {
+        $model['name'] .= ' (' . ucfirst( strtolower( $marker[1] ) ) . ')';
+      }
     }
 
     // If model supports tools

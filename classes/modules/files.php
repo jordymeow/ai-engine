@@ -533,6 +533,34 @@ class Meow_MWAI_Modules_Files {
     return null;
   }
 
+  /**
+   * Files the current user attached earlier in a discussion (tagged query_chatId
+   * at chat time), still unexpired. Stateless engines resend history as plain
+   * text, so the chatbot re-attaches these on every turn; ownership is enforced
+   * with the same effective user id that owns uploads.
+   */
+  public function get_chat_files( $chatId ) {
+    if ( empty( $chatId ) || !$this->check_db() ) {
+      return [];
+    }
+    $sql = $this->wpdb->prepare(
+      "SELECT f.* FROM $this->table_files f
+        INNER JOIN $this->table_filemeta m ON m.file_id = f.id
+        WHERE m.meta_key = 'query_chatId' AND m.meta_value = %s
+        AND f.userId = %s AND f.purpose = 'analysis'
+        AND ( f.expires IS NULL OR f.expires > %s )
+        ORDER BY f.created ASC",
+      $chatId,
+      (string) $this->get_effective_user_id(),
+      date( 'Y-m-d H:i:s' )
+    );
+    $files = $this->wpdb->get_results( $sql, ARRAY_A );
+    foreach ( $files as &$file ) {
+      $file['metadata'] = $this->get_metadata( $file['refId'], $file['id'] );
+    }
+    return $files;
+  }
+
   public function search( $userId = null, $purpose = null, $metadata = [], $envId = null ) {
     list( $sql, $params ) = $this->_buildQuery( $userId, $purpose, $metadata, $envId, true );
     $finalQuery = $this->wpdb->prepare( $sql, $params );

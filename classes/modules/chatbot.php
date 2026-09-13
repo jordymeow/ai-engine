@@ -866,6 +866,41 @@ class Meow_MWAI_Modules_Chatbot {
           $filesToProcess[] = $newFileId;
         }
 
+        // Files from earlier turns of this discussion. Only stateful providers
+        // (OpenAI Responses, Google Interactions) keep them server-side through
+        // previousResponseId; everyone else gets the history as plain text, so
+        // the image or PDF from turn one silently vanished on turn two.
+        // Re-attach them here. Files are tagged with query_chatId below and are
+        // found again only while they exist (see the image_expires option).
+        // Note: discussions store every provider's last id as previousResponseId
+        // (Anthropic's msg_..., too), so "has an id" is not "has server-side
+        // history"; only resp_ / v1_ ids get chained by their engines.
+        $serverSideHistory = !empty( $query->previousResponseId )
+          && $query->historyStrategy !== 'internal'
+          && $this->core->responseIdManager->is_stateful_conversation_id( $query->previousResponseId );
+        if ( $mode !== 'assistant' && !$serverSideHistory ) {
+          $chatId = $this->core->fix_chat_id( $query, $params );
+          $env = $this->core->get_ai_env( $query->envId );
+          foreach ( $this->core->files->get_chat_files( $chatId ) as $earlierFile ) {
+            $refId = $earlierFile['refId'];
+            if ( in_array( $refId, $filesToProcess, true ) ) {
+              continue;
+            }
+            $mimeType = $this->core->files->get_mime_type( $refId );
+            $meta = $earlierFile['metadata'] ?? [];
+            if ( in_array( $mimeType, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ] ) ) {
+              $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $this->core->files->get_url( $refId ), 'analysis', $mimeType ) );
+            }
+            else if ( !empty( $meta['file_id'] ) && !empty( $meta['provider'] ) && $meta['provider'] === ( $env['type'] ?? null ) ) {
+              // Already on the provider's Files API (Anthropic): reference it, no re-upload.
+              $query->add_file( Meow_MWAI_Query_DroppedFile::from_provider_file_id( $meta['file_id'], 'analysis', $mimeType ) );
+            }
+            else {
+              $query->add_file( Meow_MWAI_Query_DroppedFile::from_refId( $refId, 'analysis', $mimeType ) );
+            }
+          }
+        }
+
         // Support for Uploaded Image/Files
         if ( !empty( $filesToProcess ) ) {
           // Process all files for multi-upload support
@@ -957,6 +992,7 @@ class Meow_MWAI_Modules_Chatbot {
               $this->core->files->update_purpose( $fileId, 'analysis' );
               $this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
               $this->core->files->add_metadata( $fileId, 'query_session', $query->session );
+              $this->core->files->add_metadata( $fileId, 'query_chatId', $this->core->fix_chat_id( $query, $params ) );
             }
           }
         }

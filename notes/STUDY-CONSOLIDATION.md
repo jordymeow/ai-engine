@@ -116,3 +116,10 @@ them. Fixed in commit `f93d978e`. This is the proof, not a hypothetical.
   a chatbot to a smaller Claude model. Fixed by capping max_tokens to the model's
   maxCompletionTokens in `anthropic.php` (max_tokens_for). Next: item 3 (schema-driven chatbot
   params) or item 2 (Gemini external MCP), Jordy's pick.
+- 2026-09-12: Item 1 gained IMAGEFU / PDFFU (a second turn on the same chatId without re-sending the
+  file). Written first to reproduce the Discord report that Claude "forgets" an uploaded image on the
+  next question: FAIL on Anthropic, PASS on OpenAI/Google (server-side state). Fixed by tagging uploads
+  with query_chatId and re-attaching a discussion's live files on every turn of a stateless engine
+  (chatbot.php + files.php get_chat_files). Gate now 12/12 on OpenAI, Anthropic, Google. Gotcha found on
+  the way: discussions store Anthropic's msg_ id as previousResponseId, so "has an id" must not be read
+  as "has server-side history"; gate on is_stateful_conversation_id() instead.

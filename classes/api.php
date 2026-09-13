@@ -506,6 +506,9 @@ class Meow_MWAI_API {
       if ( empty( $mediaId ) ) {
         throw new Exception( 'The mediaId is required.' );
       }
+      Meow_MWAI_Core::get_readable_attachment_path( $mediaId );
+      // The query also reads a mediaId from its params, which would bypass the check above.
+      unset( $options['mediaId'], $options['media_id'] );
       if ( !empty( $resolution ) ) {
         $options['resolution'] = $resolution;
       }
@@ -520,7 +523,8 @@ class Meow_MWAI_API {
       return new WP_REST_Response( [ 'success' => true, 'data' => $reply ], 200 );
     }
     catch ( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+      $status = $e->getCode() === 403 ? 403 : 500;
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], $status );
     }
   }
 
@@ -657,14 +661,7 @@ class Meow_MWAI_API {
         $options['scope'] = $scope;
       }
 
-      // Get file path from mediaId if provided
-      $path = null;
-      if ( $mediaId > 0 ) {
-        $path = get_attached_file( $mediaId );
-        if ( empty( $path ) ) {
-          throw new Exception( 'The media file cannot be found.' );
-        }
-      }
+      $path = $mediaId > 0 ? Meow_MWAI_Core::get_readable_attachment_path( $mediaId ) : null;
 
       if ( empty( $url ) && empty( $path ) ) {
         throw new Exception( 'Either a "url" parameter or a "mediaId" parameter is required for audio transcription.' );
@@ -684,7 +681,8 @@ class Meow_MWAI_API {
       return new WP_REST_Response( [ 'success' => true, 'data' => $reply ], 200 );
     }
     catch ( Exception $e ) {
-      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+      $status = $e->getCode() === 403 ? 403 : 500;
+      return new WP_REST_Response( [ 'success' => false, 'message' => $e->getMessage() ], $status );
     }
   }
 

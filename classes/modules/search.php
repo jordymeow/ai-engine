@@ -128,12 +128,12 @@ class Meow_MWAI_Modules_Search {
         return [];
       }
 
-      // Get the actual post objects
+      // Embeddings can be synced from any post type, so the lookup must not be limited to 'post'.
       $embeddings_posts = get_posts( [
         'post__in' => $post_ids,
         'orderby' => 'post__in',
         'posts_per_page' => count( $post_ids ),
-        'post_type' => 'post',
+        'post_type' => 'any',
         'post_status' => 'publish'
       ] );
 
@@ -787,6 +787,7 @@ class Meow_MWAI_Modules_Search {
         'debug' => [
           'total_vectors' => count( $vectors ),
           'filtered_posts' => count( $post_ids ),
+          'min_score' => isset( $env['min_score'] ) ? (float) $env['min_score'] : 35,
           'sample_vectors' => array_slice( $debug_info, 0, 5 )
         ]
       ];
@@ -853,13 +854,16 @@ class Meow_MWAI_Modules_Search {
           return $result['id'];
         }, $embedding_result['post_ids'] );
 
+        // Embeddings can be synced from any post type, so the lookup must not be limited to 'post'.
         $posts = get_posts( [
           'post__in' => $post_ids,
           'orderby' => 'post__in',
           'posts_per_page' => count( $post_ids ),
-          'post_type' => 'post',
+          'post_type' => 'any',
           'post_status' => 'publish'
         ] );
+
+        $debug_info['published_posts'] = count( $posts );
 
         // Map posts with their scores
         $score_map = [];

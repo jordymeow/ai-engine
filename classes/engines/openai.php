@@ -115,6 +115,40 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   /**
   * Build body for Responses API
   */
+  /**
+   * Snap a requested reasoning effort to the levels the model declares in
+   * models.php (params.reasoning). The Workspace keeps ONE effort preference
+   * across models, so "low" reaches a model that only accepts medium/high/xhigh
+   * and OpenAI answers 400 "Unsupported value: 'reasoning.effort'". The nearest
+   * declared level is used instead; a model without a declared list is trusted.
+   */
+  protected function closest_reasoning_effort( $effort, $modelInfo ) {
+    $declared = $modelInfo['params']['reasoning'] ?? null;
+    if ( empty( $declared ) || !is_array( $declared ) || in_array( $effort, $declared, true ) ) {
+      return $effort;
+    }
+    $scale = [ 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max' ];
+    $wanted = array_search( $effort, $scale, true );
+    $best = null;
+    $bestDistance = null;
+    foreach ( $declared as $level ) {
+      $position = array_search( $level, $scale, true );
+      if ( $position === false ) {
+        continue;
+      }
+      $distance = abs( $position - $wanted );
+      if ( $best === null || $distance < $bestDistance ) {
+        $best = $level;
+        $bestDistance = $distance;
+      }
+    }
+    if ( $best === null ) {
+      return $effort;
+    }
+    Meow_MWAI_Logging::warn( "Reasoning effort '{$effort}' is not supported by {$modelInfo['model']}; using '{$best}' instead." );
+    return $best;
+  }
+
   protected function build_responses_body( $query, $streamCallback = null ) {
     // For Azure, we need to use the deployment name as the model
     $model = $query->model;
@@ -354,8 +388,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'reasoning', $modelInfo['tags'] ) ) {
           // Add reasoning parameter as an object (Responses API expects object)
-          // { reasoning: { effort: 'none|minimal|low|medium|high|xhigh' } }
-          $body['reasoning'] = [ 'effort' => $query->reasoning ];
+          // { reasoning: { effort: 'none|minimal|low|medium|high|xhigh|max' } }
+          $body['reasoning'] = [ 'effort' => $this->closest_reasoning_effort( $query->reasoning, $modelInfo ) ];
         }
       }
 
@@ -521,11 +555,16 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
               $body['tools'] = [];
             }
 
-            // Add file_search tool with vector store ID
-            $body['tools'][] = [
+            // Add file_search tool with vector store ID. Without max_num_results,
+            // OpenAI returns 20 chunks per search; honor the environment's Max Results.
+            $fileSearchTool = [
               'type' => 'file_search',
               'vector_store_ids' => [ $embeddingsEnv['store_id'] ]
             ];
+            if ( !empty( $embeddingsEnv['max_select'] ) ) {
+              $fileSearchTool['max_num_results'] = max( 1, min( 50, (int) $embeddingsEnv['max_select'] ) );
+            }
+            $body['tools'][] = $fileSearchTool;
 
             Meow_MWAI_Logging::log( 'Responses API: Added file_search tool with vector store: ' . $embeddingsEnv['store_id'] );
           }

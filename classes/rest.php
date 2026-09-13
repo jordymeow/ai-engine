@@ -80,6 +80,27 @@ class Meow_MWAI_Rest {
         'callback' => [ $this, 'rest_start_session' ],
       ] );
 
+      // The Workspace module registers its own routes only when it is enabled.
+      // The mobile apps probe auth-check to explain a failed connection, so
+      // keep that one route answering when the module is off: otherwise the
+      // app can only say "404" and the user cannot tell that a switch in
+      // Settings → Modules is all that is missing.
+      // (Not class_exists: the autoloader makes that true whether or not the
+      // module was instantiated, so the option is the real switch.)
+      if ( !$this->core->get_option( 'module_workspace' ) ) {
+        register_rest_route( $this->namespace, '/workspace/auth-check', [
+          'methods' => 'GET',
+          'permission_callback' => '__return_true',
+          'callback' => function () {
+            return new WP_REST_Response( [
+              'success' => true,
+              'reason' => 'module_disabled',
+              'message' => 'Workspace is not enabled on this site yet. In WordPress, go to AI Engine → Settings → Modules and enable Workspace, then connect again.',
+            ], 200 );
+          },
+        ] );
+      }
+
       // Settings Endpoints
       register_rest_route( $this->namespace, '/settings/update', [
         'methods' => 'POST',
@@ -876,7 +897,10 @@ class Meow_MWAI_Rest {
       }
 
       $message = $this->retrieve_message( $params );
-      $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
+      $mediaId = intval( $params['mediaId'] ?? $params['media_id'] ?? 0 );
+      if ( $mediaId > 0 ) {
+        Meow_MWAI_Core::get_readable_attachment_path( $mediaId );
+      }
       $query = new Meow_MWAI_Query_EditImage( $message );
 
       // The inject_params method will handle setting the file from mediaId
@@ -896,7 +920,8 @@ class Meow_MWAI_Rest {
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+      $status = $e->getCode() === 403 ? 403 : 500;
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], $status );
     }
   }
 
@@ -1875,15 +1900,7 @@ class Meow_MWAI_Rest {
       $params = Meow_MWAI_Core::sanitize_rest_params( $request->get_json_params() );
       $url = !empty( $params['url'] ) ? $params['url'] : null;
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
-      $path = null;
-
-      // If mediaId is provided, get the file path
-      if ( !$path && $mediaId > 0 ) {
-        $path = get_attached_file( $mediaId );
-        if ( empty( $path ) ) {
-          throw new Exception( __( 'The media file cannot be found.', 'ai-engine' ) );
-        }
-      }
+      $path = $mediaId > 0 ? Meow_MWAI_Core::get_readable_attachment_path( $mediaId ) : null;
 
       // Set the scope for admin tools
       if ( !isset( $params['scope'] ) ) {
@@ -1895,7 +1912,8 @@ class Meow_MWAI_Rest {
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
-      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+      $status = $e->getCode() === 403 ? 403 : 500;
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], $status );
     }
   }
 

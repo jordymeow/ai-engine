@@ -34,7 +34,9 @@ define( 'MWAI_OPENAI_MODELS', [
     'tools' => ['web_search', 'code_interpreter'],
     'params' => [
       // 'max' is new with this model; the effort dropdown reads this list.
-      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh', 'max']
+      // No 'none': the API answers 400 "Unsupported value: 'none' is not supported"
+      // for this model (verified live 2026-09-12), so the engine snaps it to 'low'.
+      'reasoning' => ['low', 'medium', 'high', 'xhigh', 'max']
     ]
   ],
   /*
@@ -776,6 +778,84 @@ define( 'MWAI_OPENAI_MODELS', [
       OpenAI's image generation models (token-based pricing)
       https://platform.openai.com/docs/models/gpt-image-1
       */
+  // GPT Image 2.5 (2026-09-10): Sunburst is tuned for editing precision, Flare for fast everyday
+  // generation. Both add the xhigh and max quality levels and bill at GPT Image 2 token rates.
+  [
+    'model' => 'gpt-image-2.5-sunburst',
+    'name' => 'GPT Image 2.5 Sunburst',
+    'family' => 'gpt-image',
+    'features' => ['text-to-image'],
+    'resolutions' => [
+      [
+        'name' => '1024x1024',
+        'label' => '1024x1024'
+      ],
+      [
+        'name' => '1024x1536',
+        'label' => '1024x1536'
+      ],
+      [
+        'name' => '1536x1024',
+        'label' => '1536x1024'
+      ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ],
+      [ 'name' => 'xhigh',  'label' => 'Extra High' ],
+      [ 'name' => 'max',    'label' => 'Max' ]
+    ],
+    'type' => 'token',
+    'mode' => 'image',
+    'price' => [
+      'in' => 8.00,
+      'out' => 30.00,
+      'cached' => 2.00
+    ],
+    'unit' => 1 / 1000000,
+    'finetune' => false,
+    'tags' => ['core', 'image', 'image-edit', 'responses']
+  ],
+  [
+    'model' => 'gpt-image-2.5-flare',
+    'name' => 'GPT Image 2.5 Flare',
+    'family' => 'gpt-image',
+    'features' => ['text-to-image'],
+    'resolutions' => [
+      [
+        'name' => '1024x1024',
+        'label' => '1024x1024'
+      ],
+      [
+        'name' => '1024x1536',
+        'label' => '1024x1536'
+      ],
+      [
+        'name' => '1536x1024',
+        'label' => '1536x1024'
+      ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ],
+      [ 'name' => 'xhigh',  'label' => 'Extra High' ],
+      [ 'name' => 'max',    'label' => 'Max' ]
+    ],
+    'type' => 'token',
+    'mode' => 'image',
+    'price' => [
+      'in' => 8.00,
+      'out' => 30.00,
+      'cached' => 2.00
+    ],
+    'unit' => 1 / 1000000,
+    'finetune' => false,
+    'tags' => ['core', 'image', 'image-edit', 'responses']
+  ],
   [
     'model' => 'gpt-image-2',
     'name' => 'GPT Image 2',

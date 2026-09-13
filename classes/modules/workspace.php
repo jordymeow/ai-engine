@@ -381,6 +381,10 @@ class Meow_MWAI_Modules_Workspace {
             // a resolved boolean like 'image' above: the raw tools array never reaches
             // the UI, so checking it client-side always came back false.
             'web_search' => in_array( 'web_search', (array) ( $m['tools'] ?? [] ), true ),
+            // Reasoning levels this model accepts (models.php params.reasoning), so the
+            // app's picker can offer only those and reset a stale preference; null when
+            // the model declares no list. Additive key: the apps decode bootstrap strictly.
+            'reasoning_levels' => !empty( $m['params']['reasoning'] ) && is_array( $m['params']['reasoning'] ) ? array_values( $m['params']['reasoning'] ) : null,
           ];
         }
         if ( !empty( $chatModels ) ) {
@@ -772,6 +776,11 @@ class Meow_MWAI_Modules_Workspace {
       'callback' => [ $this, 'rest_device_revoke' ],
       'permission_callback' => [ $this, 'can_access' ],
     ] );
+    register_rest_route( 'mwai/v1', '/workspace/devices/rename', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_device_rename' ],
+      'permission_callback' => [ $this, 'can_access' ],
+    ] );
   }
 
   #region Mobile pairing (QR connect)
@@ -1048,6 +1057,30 @@ class Meow_MWAI_Modules_Workspace {
     return new WP_REST_Response( [ 'success' => true ], 200 );
   }
 
+  // The device name lives in the Application Password label ("Workspace by AI
+  // Engine - <device>"), so renaming is a label update. iOS reports every phone
+  // as "iPhone" unless the app holds Apple's device-name entitlement, which is
+  // why the list needs a rename at all.
+  public function rest_device_rename( $request ) {
+    $params = $request->get_json_params();
+    $uuid = isset( $params['uuid'] ) ? sanitize_text_field( (string) $params['uuid'] ) : '';
+    $name = isset( $params['name'] ) ? mb_substr( trim( sanitize_text_field( (string) $params['name'] ) ), 0, 60 ) : '';
+    if ( $uuid === '' || $name === '' || !class_exists( 'WP_Application_Passwords' ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Please enter a name for this device.' ], 400 );
+    }
+    $userId = get_current_user_id();
+    $target = WP_Application_Passwords::get_user_application_password( $userId, $uuid );
+    if ( !$target || strpos( $target['name'] ?? '', self::PAIR_APP_PREFIX ) !== 0 ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'That device was not found.' ], 404 );
+    }
+    $fullName = self::PAIR_APP_PREFIX . ' - ' . $name;
+    $res = WP_Application_Passwords::update_application_password( $userId, $uuid, [ 'name' => $fullName ] );
+    if ( is_wp_error( $res ) || !$res ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Could not rename that device.' ], 200 );
+    }
+    return new WP_REST_Response( [ 'success' => true, 'name' => $fullName ], 200 );
+  }
+
   #endregion
 
   #region Images (expiry info + move to Media Library)
@@ -1200,7 +1233,8 @@ class Meow_MWAI_Modules_Workspace {
         $effort = $params['advanced']['reasoningEffort'] ?? null;
         $prefs['advanced'] = [
           'temperature' => is_numeric( $temp ) ? max( 0, min( 2, (float) $temp ) ) : null,
-          'reasoningEffort' => in_array( $effort, [ 'low', 'medium', 'high' ], true ) ? $effort : null,
+          // The full OpenAI scale; the engine snaps it to what the chosen model declares.
+          'reasoningEffort' => in_array( $effort, [ 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max' ], true ) ? $effort : null,
         ];
       }
       if ( isset( $params['folders'] ) && is_array( $params['folders'] ) ) {

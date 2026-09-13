@@ -1,5 +1,5 @@
-// Previous: 3.7.4
-// Current: 3.7.5
+// Previous: 3.7.5
+// Current: 3.7.8
 
 ```javascript
 // React & Vendor Libs
@@ -25,17 +25,15 @@ import { AiNekoHeader } from '@app/styles/CommonStyles';
 import FineTunes from '@app/screens/finetunes/Finetunes';
 import Moderation from '@app/screens/misc/Moderation';
 import Embeddings from '@app/screens/embeddings/Embeddings';
-import UsageWidget from '@app/components/UsageWidget';
 import ConfirmModal from '@app/components/ConfirmModal';
-import EnvironmentsPanel from '@app/components/EnvironmentsPanel';
 import SetupAssistant, { isSetupAssistantDismissed, resetSetupAssistant } from '@app/components/SetupAssistant';
-import ModulesOverview from '@app/components/ModulesOverview';
+import DashboardWelcome from '@app/components/DashboardWelcome';
+import DashboardCards from '@app/components/DashboardCards';
 import FeatureShowcase, { isFeatureShowcaseDismissed, resetFeatureShowcase } from '@app/components/FeatureShowcase';
 import Discussions from '@app/screens/discussions/Discussions';
 import Chatbots from './chatbots/Chatbots';
 import Insights from '@app/screens/queries/Insights';
 import DevToolsTab from './settings/DevToolsTab';
-import SeoBlock from './settings/SeoBlock';
 import EmbeddingsEnvironmentsSettings from './embeddings/Environments';
 import AIEnvironmentsSettings from './ai/Environments';
 import MCPServersSettings from './orchestration/MCPServers';
@@ -62,7 +60,6 @@ const defaultEnvironmentSections = [
 ];
 
 const proOptions = [
-  'module_workspace',
   'module_forms',
   'module_statistics',
   'module_embeddings',
@@ -94,6 +91,7 @@ const Settings = () => {
   const [ integrityFailed, setIntegrityFailed ] = useState(false);
   const [ envSection, setEnvSection ] = useState('default');
   const [ assistantDismissed, setAssistantDismissed ] = useState(() => isSetupAssistantDismissed());
+  const [ assistantOpen, setAssistantOpen ] = useState(false);
   const [ showcaseDismissed, setShowcaseDismissed ] = useState(() => isFeatureShowcaseDismissed());
 
   const [ mcpSelfTest, setMcpSelfTest ] = useState(null);
@@ -208,7 +206,7 @@ const Settings = () => {
       }
 
       const dynamicModels = (options?.ai_models || []).filter(
-        m => m.type === aiEnv.type || !m.envId
+        m => m.type === aiEnv.type && (m.envId === aiEnv.id || !m.envId)
       );
       if (dynamicModels.some(model => hasTag(model, 'embedding'))) {
         return true;
@@ -942,4 +940,4 @@ const Settings = () => {
   const jsxShortcodeDiscussions =
     <NekoSettings title={i18n.COMMON.DISCUSSIONS}>
       <NekoCheckboxGroup max="1">
-        <NekoCheckbox name="chatbot_discussions" label={i18n.COMM
+        <N

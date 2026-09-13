@@ -291,6 +291,38 @@ class Meow_MWAI_Labs_MCP_Core {
   }
 
   /**
+   * Keep a draft's creation date across a partial update.
+   *
+   * wp_update_post() clears post_date on drafts, pending and auto-drafts whose
+   * post_date_gmt is still zero (which is every never-published draft) unless
+   * edit_date is set. So an agent fixing a typo through MCP silently reset the
+   * draft's date to now, and drafts have no revisions to get it back from
+   * (reported from offbeatjapan.com, 2026-09-11). Re-send the stored date with
+   * edit_date so the update is neutral on it. post_date_gmt is left alone so
+   * wp-admin keeps showing "Publish immediately".
+   *
+   * Only while the post STAYS a draft: publishing one without a date must still
+   * stamp "now", exactly as the wp-admin Publish button does.
+   */
+  private function keep_draft_date( array $c ): array {
+    if ( empty( $c['ID'] ) || isset( $c['post_date'] ) || !empty( $c['edit_date'] ) ) {
+      return $c;
+    }
+    $post = get_post( $c['ID'] );
+    if ( !$post || $post->post_date_gmt !== '0000-00-00 00:00:00' ) {
+      return $c;
+    }
+    $floating = [ 'draft', 'pending', 'auto-draft' ];
+    $target = $c['post_status'] ?? $post->post_status;
+    if ( !in_array( $post->post_status, $floating, true ) || !in_array( $target, $floating, true ) ) {
+      return $c;
+    }
+    $c['post_date'] = $post->post_date;
+    $c['edit_date'] = true;
+    return $c;
+  }
+
+  /**
    * Bust post caches after a write so a follow-up wp_get_post in the next request
    * returns fresh data on sites with persistent object caches (Redis, Memcached) or
    * page caches (LiteSpeed, WP Rocket, Cloudflare, etc.). wp_insert_post / wp_update_post
@@ -1658,7 +1690,7 @@ class Meow_MWAI_Labs_MCP_Core {
         else {
           $wb_content = $wb_markup;
         }
-        $wb_res = wp_update_post( wp_slash( [ 'ID' => $wb_id, 'post_content' => $wb_content ] ), true );
+        $wb_res = wp_update_post( wp_slash( $this->keep_draft_date( [ 'ID' => $wb_id, 'post_content' => $wb_content ] ) ), true );
         if ( is_wp_error( $wb_res ) ) {
           $r['error'] = [ 'code' => $wb_res->get_error_code(), 'message' => $wb_res->get_error_message() ];
           break;
@@ -1745,7 +1777,7 @@ class Meow_MWAI_Labs_MCP_Core {
         else {
           $bp_new = trim( $bp_post->post_content . "\n\n" . $bp_markup );
         }
-        $bp_res = wp_update_post( wp_slash( [ 'ID' => $bp_id, 'post_content' => $bp_new ] ), true );
+        $bp_res = wp_update_post( wp_slash( $this->keep_draft_date( [ 'ID' => $bp_id, 'post_content' => $bp_new ] ) ), true );
         if ( is_wp_error( $bp_res ) ) {
           $r['error'] = [ 'code' => $bp_res->get_error_code(), 'message' => $bp_res->get_error_message() ];
           break;
@@ -1868,7 +1900,7 @@ class Meow_MWAI_Labs_MCP_Core {
 
         // Update post fields if any
         if ( $has_fields ) {
-          $u = wp_update_post( wp_slash( $c ), true );
+          $u = wp_update_post( wp_slash( $this->keep_draft_date( $c ) ), true );
           if ( is_wp_error( $u ) ) {
             $r['error'] = [ 'code' => $u->get_error_code(), 'message' => $u->get_error_message() ];
             break;
@@ -1981,7 +2013,7 @@ class Meow_MWAI_Labs_MCP_Core {
         // wp_update_post() runs wp_unslash() internally, which would strip the
         // backslash from Unicode escapes like \u003c in block JSON (Rank Math
         // FAQ, etc.) and silently corrupt the post. Pre-slash to compensate.
-        $update = wp_update_post( wp_slash( [ 'ID' => $post_id, $field => $new_content ] ), true );
+        $update = wp_update_post( wp_slash( $this->keep_draft_date( [ 'ID' => $post_id, $field => $new_content ] ) ), true );
         if ( is_wp_error( $update ) ) {
           $r['error'] = [ 'code' => $update->get_error_code(), 'message' => $update->get_error_message() ];
           break;

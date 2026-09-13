@@ -67,6 +67,55 @@ class Meow_MWAI_Modules_Discussions {
       'callback' => [ $this, 'rest_discussions_ui_truncate' ],
       'permission_callback' => '__return_true'
     ] );
+    // One discussion by chatId, in the same row shape as /discussions/list but
+    // without paging or the titling pass. The Workspace apps poll it after a
+    // stream was cut while the app was in the background (the site finishes the
+    // reply on its own), so it has to stay cheap.
+    register_rest_route( $this->namespace_ui, '/discussions/get', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'rest_discussions_ui_get' ],
+      'permission_callback' => '__return_true'
+    ] );
+  }
+
+  public function rest_discussions_ui_get( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $chatId = isset( $params['chatId'] ) ? sanitize_text_field( (string) $params['chatId'] ) : '';
+      $botId = isset( $params['customId'] ) && !empty( $params['customId'] )
+        ? sanitize_text_field( (string) $params['customId'] )
+        : ( isset( $params['botId'] ) ? sanitize_text_field( (string) $params['botId'] ) : '' );
+      if ( $chatId === '' || $botId === '' ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'chatId and botId are required.' ], 400 );
+      }
+      $userId = get_current_user_id();
+      if ( !$userId ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'You need to be connected.' ], 200 );
+      }
+      $this->check_db();
+      $chat = $this->wpdb->get_row(
+        $this->wpdb->prepare(
+          "SELECT * FROM $this->table_chats WHERE chatId = %s AND botId = %s AND userId = %d",
+          $chatId,
+          $botId,
+          $userId
+        ),
+        ARRAY_A
+      );
+      if ( !$chat ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => 'That discussion was not found.' ], 404 );
+      }
+      $messages = json_decode( $chat['messages'], true );
+      $chat['metadata_display'] = [
+        'start_date' => apply_filters( 'mwai_discussion_metadata_start_date', $this->core->format_discussion_date( $chat['created'] ), $chat ),
+        'last_update' => apply_filters( 'mwai_discussion_metadata_last_update', $this->core->format_discussion_date( $chat['updated'] ), $chat ),
+        'message_count' => apply_filters( 'mwai_discussion_metadata_message_count', is_array( $messages ) ? count( $messages ) : 0, $chat )
+      ];
+      return $this->create_rest_response( [ 'success' => true, 'chat' => $chat ], 200 );
+    }
+    catch ( Exception $e ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => $e->getMessage() ], 500 );
+    }
   }
 
   public function can_delete_discussion( $request ) {
