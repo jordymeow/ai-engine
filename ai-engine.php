@@ -4,7 +4,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
-Version: 3.7.9
+Version: 3.8.0
 Requires at least: 6.0
 Requires PHP: 8.1
 Author: Jordy Meow
@@ -24,7 +24,7 @@ if ( defined( 'MWAI_VERSION' ) ) {
   return;
 }
 
-define( 'MWAI_VERSION', '3.7.9' );
+define( 'MWAI_VERSION', '3.8.0' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.7.9
+Stable tag: 3.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -311,10 +311,12 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
-= 3.7.9 (2026/09/18) =
+= 3.8.0 (2026/09/18) =
 * Add: Models API Pro module, so coding agents and OpenAI-compatible apps can use your site's AI models with one key, with usage tracked in Insights.
 * Add: Editor Access for MCP, letting Editors connect with their own account and work on content only.
 * Update: Rebuilt the Images, Playground and Content screens as studios, with image versions and brush edits, side-by-side model comparison, a guided brief-to-draft flow and shared presets.
+* Update: Knowledge sync now reports why posts were skipped instead of only the count.
+* Update: Excluded notes, archives and the Brewfile from the released package.
 * Add: Paste a file into the chatbot to upload it, and hover the reply timer to stop a response in progress.
 * Fix: Daily, weekly and monthly limits in Absolute mode no longer trip early.
 * Fix: Image, media and post creation routes now check permissions before acting.
