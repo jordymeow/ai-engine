@@ -22,6 +22,7 @@ class Meow_MWAI_Core {
   private $themes_option_name = 'mwai_themes';
   private $chatbots_option_name = 'mwai_chatbots';
   private $nonce = null;
+  private $orphan_shortcodes = [];
 
   public $chatbot = null;
   public $discussions = null;
@@ -199,6 +200,56 @@ class Meow_MWAI_Core {
       new Meow_MWAI_Labs_WPAI_Gateway( $this );
     }
 
+    // Runs after every module above has had its chance to register its own shortcodes.
+    add_action( 'init', [ $this, 'neutralize_orphan_shortcodes' ], 99 );
+    add_filter( 'render_block_ai-engine/form-container', [ $this, 'hide_orphan_form_container' ] );
+
+  }
+
+  /**
+  * A module that is switched off never registers its shortcodes, and WordPress then prints
+  * them to visitors as raw text, internal ids and url-encoded prompts included. A page built
+  * with AI Forms showed its whole markup that way once the module was turned off. Anything
+  * still unregistered by now renders nothing instead.
+  */
+  public function neutralize_orphan_shortcodes() {
+    $tags = [
+      'mwai_chatbot', 'mwai_discussions', 'mwai_form', 'mwai_stats', 'mwai_stats_current',
+      'mwai-form-field', 'mwai-form-upload', 'mwai-form-submit', 'mwai-form-reset',
+      'mwai-form-output', 'mwai-form-conditional'
+    ];
+    foreach ( $tags as $tag ) {
+      if ( !shortcode_exists( $tag ) ) {
+        add_shortcode( $tag, '__return_empty_string' );
+        $this->orphan_shortcodes[] = $tag;
+      }
+    }
+  }
+
+  /**
+  * Emptying the shortcodes above still leaves the AI Form container block on the page, and the
+  * chatbot theme gives it a padding and a solid background, so a visitor sees a coloured bar
+  * with nothing in it. When every shortcode inside the container is one we neutralized, and
+  * nothing else would show, drop the container too.
+  *
+  * This runs before do_shortcode (do_blocks is priority 9 on the_content, do_shortcode is 11),
+  * so the inner shortcodes are still raw text here. That is exactly what makes the check work:
+  * when AI Forms is on, its tags are not in $orphan_shortcodes, so their text survives the strip
+  * and the container is kept.
+  */
+  public function hide_orphan_form_container( $block_content ) {
+    if ( empty( $this->orphan_shortcodes ) ) {
+      return $block_content;
+    }
+    $remaining = $block_content;
+    foreach ( $this->orphan_shortcodes as $tag ) {
+      $remaining = preg_replace( '/\[' . preg_quote( $tag, '/' ) . '[^\]]*\]/', '', $remaining );
+    }
+    // Anything that draws without text of its own keeps the container alive.
+    if ( preg_match( '/<(img|iframe|input|button|svg|video|audio)\b/i', $remaining ) ) {
+      return $block_content;
+    }
+    return trim( wp_strip_all_tags( $remaining ) ) === '' ? '' : $block_content;
   }
 
   public function register_scripts() {
@@ -283,6 +334,16 @@ class Meow_MWAI_Core {
 
     // Let's check the default environment and model.
     $this->validate_env_model( $query );
+
+    // MCP servers only reach the model on the engines that implement them. Asking any
+    // other engine used to look like it worked: the model got no tools at all and made
+    // the results up, table included.
+    if ( isset( $query->mcpServers ) && !empty( $query->mcpServers ) ) {
+      $mcpEngine = Meow_MWAI_Engines_Factory::get( $this, $query->envId );
+      if ( $mcpEngine && !$mcpEngine->supports_mcp_servers() ) {
+        throw new Exception( __( 'This model cannot use MCP servers. Only OpenAI and Anthropic models can, for now. Turn the MCP servers off for this chat, or switch to one of those models.', 'ai-engine' ) );
+      }
+    }
 
     // Create the engine based on the query's environment
     $engine = Meow_MWAI_Engines_Factory::get( $this, $query->envId );
@@ -1764,6 +1825,17 @@ class Meow_MWAI_Core {
   // fetching home_url( '/robots.txt' ) over HTTP would be slow on an admin screen and fails
   // on hosts that block loopback requests.
   public function get_ai_crawler_access() {
+    // Nothing before WordPress has finished loading. This is reached from
+    // populate_dynamic_options(), which runs while plugins are still being included, and the
+    // robots_txt filter further down hands control to whatever other plugins hooked it. One of
+    // them (XML Sitemap & Google News) calls $wp_rewrite->using_permalinks(), and $wp_rewrite
+    // does not exist that early, so the whole site died with a fatal, front end included.
+    // Every screen that shows this value renders long after wp_loaded, and the value is
+    // recomputed on each get_all_options() call, so nothing is lost by waiting.
+    if ( !did_action( 'wp_loaded' ) ) {
+      return null;
+    }
+
     $public = get_option( 'blog_public' );
     $discouraged = (string) $public === '0';
     $has_file = file_exists( ABSPATH . 'robots.txt' );

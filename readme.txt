@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.7.8
+Stable tag: 3.7.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -202,6 +202,8 @@ AI Engine can also connect to external MCP servers, extending your chatbots with
 
 AI Engine's MCP tools are curated and permission-aware on purpose. They do not run arbitrary code, so your site stays safe even while an AI agent works on it.
 
+Each person connects with their own WordPress account, so every action shows up under their name. Administrators get full access. Editors can connect too once you turn on Editor Access, limited to the content they can already edit in WordPress: settings, users, plugins, themes and deleting stay with administrators.
+
 Some people have asked us to match tools like Novamira and give an AI agent full, unrestricted control of WordPress through arbitrary PHP execution. We will not add that to the official AI Engine plugin, because it is genuinely unsafe: it effectively turns your site into remote code execution. If you specifically want that Novamira-style power on a development or staging site, we made an optional companion plugin, [AI Engine YOLO](https://github.com/jordymeow/ai-engine-yolo), which brings the same unrestricted PHP execution and file access to AI Engine's MCP server. It is dangerous by design, switches itself off on production, and is offered on GitHub only. Please never run it on a live site.
 
 == Pro Features ==
@@ -285,7 +287,7 @@ AI models support many languages, but quality varies. There's no definitive list
 
 = How does MCP work, and what can I do with it? =
 
-MCP (Model Context Protocol) exposes WordPress tools to AI agents. [Learn how to enable the MCP endpoint](https://ai.thehiddendocs.com/mcp/), choose which tools to expose, and secure them. You can manage posts, comments, users, media, and more.
+MCP (Model Context Protocol) exposes WordPress tools to AI agents. [Learn how to enable the MCP endpoint](https://ai.thehiddendocs.com/mcp/), choose which tools to expose, and secure them. You can manage posts, comments, users, media, and more. Administrators get full access, and you can also let Editors connect with their own account for content only.
 
 = Do I need the WordPress AI plugin or the MCP Adapter to use AI Engine? =
 
@@ -308,6 +310,15 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.7.9 (2026/09/18) =
+* Add: Models API Pro module, so coding agents and OpenAI-compatible apps can use your site's AI models with one key, with usage tracked in Insights.
+* Add: Editor Access for MCP, letting Editors connect with their own account and work on content only.
+* Update: Rebuilt the Images, Playground and Content screens as studios, with image versions and brush edits, side-by-side model comparison, a guided brief-to-draft flow and shared presets.
+* Add: Paste a file into the chatbot to upload it, and hover the reply timer to stop a response in progress.
+* Fix: Daily, weekly and monthly limits in Absolute mode no longer trip early.
+* Fix: Image, media and post creation routes now check permissions before acting.
+* Fix: Listing chatbots no longer fatals on the free plugin when a chatbot uses functions.
 
 = 3.7.8 (2026/09/13) =
 * Add: Redesigned Dashboard with a providers bento, weekly usage card, daily ideas and an AI visibility card, plus a slimmed Modules tab.

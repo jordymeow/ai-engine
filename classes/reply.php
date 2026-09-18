@@ -181,7 +181,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
     $out_tokens = isset( $this->usage['completion_tokens'] ) ? $this->usage['completion_tokens'] : 0;
     if ( empty( $out_tokens ) ) {
       // NOTE: Only estimate when result is actually text. Embedding replies hold a
-      // float vector, image replies hold URLs/arrays, etc. — running estimate_tokens()
+      // float vector, image replies hold URLs/arrays, etc. Running estimate_tokens()
       // on those JSON-encodes the structure and produces huge bogus counts (a 3072-d
       // Gemini embedding estimated as ~13k tokens for a 50-char input). Anything that
       // isn't a string has no meaningful "output token" count, so return 0.
@@ -224,7 +224,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
   }
 
   /**
-   * Legacy alias for get_tokens(). Kept indefinitely — third-party code
+   * Legacy alias for get_tokens(). Kept indefinitely because third-party code
    * reachable via the mwai_ai_reply filter may call it.
    */
   public function get_units() {

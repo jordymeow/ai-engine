@@ -1,13 +1,5 @@
 <?php
 
-if ( class_exists( 'MeowPro_MWAI_Core' ) && class_exists( 'Meow_MWAI_Core' ) ) {
-  function mwai_thanks_admin_notices() {
-    echo '<div class="error"><p>' . __( 'Thanks for installing the Pro version of AI Engine :) However, the free version is still enabled. Please disable or uninstall it.', 'ai-engine' ) . '</p></div>';
-  }
-  add_action( 'admin_notices', 'mwai_thanks_admin_notices' );
-  return;
-}
-
 spl_autoload_register( function ( $class ) {
   $file = null;
 

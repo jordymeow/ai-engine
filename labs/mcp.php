@@ -49,6 +49,25 @@ class Meow_MWAI_Labs_MCP {
   private $auth_client_id = null;
   private $auth_client_name = null;
   private $auth_method = null; // 'oauth' | 'bearer' | null
+  // An OAuth user without manage_options (an Editor, when "Editor Access" is on):
+  // content tools only, each call checked against that user's own capabilities.
+  private $limited_session = false;
+
+  // What a limited session may call. An explicit list rather than the read/write
+  // levels: those levels also cover things an Editor must not reach (the plugin list,
+  // third-party and Pro module tools, some of which switch to an administrator).
+  public const LIMITED_SESSION_TOOLS = [
+    'mcp_ping',
+    'wp_get_posts', 'wp_get_post', 'wp_get_post_snapshot', 'wp_get_post_types', 'wp_count_posts',
+    'wp_create_post', 'wp_update_post', 'wp_alter_post', 'wp_write_blocks',
+    'wp_list_block_patterns', 'wp_insert_block_pattern',
+    'wp_get_post_meta', 'wp_update_post_meta',
+    'wp_get_taxonomies', 'wp_get_terms', 'wp_count_terms', 'wp_get_post_terms',
+    'wp_create_term', 'wp_update_term', 'wp_add_post_terms',
+    'wp_get_comments', 'wp_create_comment', 'wp_update_comment',
+    'wp_get_media', 'wp_count_media', 'wp_upload_media', 'wp_upload_request', 'wp_update_media',
+    'wp_set_featured_image', 'mwai_vision', 'mwai_image',
+  ];
 
   #region Initialize
   public function __construct( $core ) {
@@ -157,6 +176,9 @@ class Meow_MWAI_Labs_MCP {
   *
   * When a bearer token is configured, it overrides the default admin check, but access is DENIED
   * unless a valid token is provided. This ensures MCP is secure even with default settings.
+  *
+  * OAuth tokens are checked in auth_via_bearer_token(). When Editor Access is on, an Editor's
+  * token is accepted too, as a limited session (see limited_session_refusal()).
   */
   public function can_access_mcp( $request ) {
     // Default to requiring administrator capability for security. Checked via
@@ -192,13 +214,13 @@ class Meow_MWAI_Labs_MCP {
       if ( $this->oauth ) {
         $token_data = $this->oauth->validate_token( $token );
         if ( $token_data ) {
-          // Defense in depth: even if a token was issued (or stored from before
-          // the authorize-time admin gate landed), only accept it if the linked
-          // user still holds administrator capability. Otherwise a Subscriber's
-          // OAuth token would inherit the global mcp_role and reach admin tools.
+          // Defense in depth, checked on every request: the linked user must still be
+          // allowed to authorize. A demoted user, or an Editor after the site owner
+          // turned Editor Access off, is refused on the next call, not when the token
+          // expires.
           if ( !$this->oauth->user_can_authorize( $token_data['user_id'] ) ) {
             if ( $this->logging ) {
-              error_log( '[AI Engine MCP] ❌ OAuth token rejected: user ' . $token_data['user_id'] . ' is not an administrator.' );
+              error_log( '[AI Engine MCP] ❌ OAuth token rejected: user ' . $token_data['user_id'] . ' is no longer allowed to use MCP.' );
             }
             return false;
           }
@@ -206,6 +228,7 @@ class Meow_MWAI_Labs_MCP {
           wp_set_current_user( $token_data['user_id'] );
           $auth_result = 'oauth';
           $this->auth_method = 'oauth';
+          $this->limited_session = !user_can( $token_data['user_id'], 'manage_options' );
           $this->auth_client_id = $token_data['client_id'] ?? null;
           $this->auth_client_name = $token_data['client_name'] ?? null;
           return true;
@@ -776,17 +799,232 @@ class Meow_MWAI_Labs_MCP {
   * It governs the shared bearer token, which is what its description has always
   * said: one secret handed to a script, so the owner decides how far it reaches.
   * An OAuth connection is the opposite case. It belongs to one person who signed
-  * in as themselves, and the authorize step already refuses anyone without
-  * manage_options, so narrowing them again by a global role meant an
+  * in as themselves, so narrowing them again by a global role meant an
   * administrator on Claude Desktop silently lost every admin-level tool, with no
   * reason given and no setting on screen to explain it (the selector only appears
-  * when a bearer token is configured).
+  * when a bearer token is configured). OAuth users without manage_options are
+  * narrowed instead by limited_session_refusal(), from their own capabilities.
   *
   * Both the listing and the execution gate call this. They used to decide it
   * separately, which is how they drifted apart in the first place.
   */
   private function role_filter_applies(): bool {
     return $this->auth_method !== 'oauth' && $this->mcp_role !== 'admin';
+  }
+
+  /**
+  * Why a limited session may not run this call, or null when it may. Every check asks
+  * WordPress what this user can do, so an Editor reaches exactly what the dashboard
+  * lets them reach: edit_post maps templates and global styles to edit_theme_options,
+  * private posts to the private caps, and so on.
+  */
+  private function limited_session_refusal( string $tool, array $args ): ?string {
+    if ( !in_array( $tool, self::LIMITED_SESSION_TOOLS, true ) ) {
+      return "Access denied: '{$tool}' is only available to administrators.";
+    }
+    $cant = 'Access denied: your WordPress account is not allowed to ';
+    // Read the post ID exactly as the tool will. dispatch() in mcp-core.php fills whichever
+    // of ID, post_id and id is missing from the first one given, and each tool then reads
+    // its own key. A plain fallback chain here let a call pass an editable post as ID while
+    // wp_set_featured_image acted on another one given as post_id.
+    $id_given = null;
+    foreach ( [ 'ID', 'post_id', 'id' ] as $k ) {
+      if ( isset( $args[ $k ] ) && $args[ $k ] !== '' ) {
+        $id_given = $id_given ?? $args[ $k ];
+      }
+    }
+    $id_key = [ 'wp_set_featured_image' => 'post_id', 'mwai_image' => 'postId' ][ $tool ] ?? 'ID';
+    $id_value = ( isset( $args[ $id_key ] ) && $args[ $id_key ] !== '' ) ? $args[ $id_key ] : ( $id_key === 'postId' ? null : $id_given );
+    $post_id = (int) ( $id_value ?? 0 );
+    $fields = $args['fields'] ?? [];
+    if ( is_string( $fields ) ) {
+      $fields = json_decode( $fields, true );
+    }
+    $fields = is_array( $fields ) ? array_merge( $args, $fields ) : $args;
+
+    // Meta keys that tell WordPress where a media file lives on disk. wp-admin never lets
+    // an Editor change them; rewritten, image editing or cleanup tools would later act on
+    // a file outside uploads. Only these are refused: other protected meta (SEO plugins,
+    // page builders) stays writable on posts the user can edit. Compared lowercased, since
+    // MySQL matches meta keys case-insensitively and would update the real row.
+    $meta_keys = [];
+    if ( $tool === 'wp_update_post_meta' ) {
+      $meta = $args['meta'] ?? [];
+      if ( is_string( $meta ) ) {
+        $meta = json_decode( $meta, true );
+      }
+      $meta_keys = is_array( $meta ) ? array_keys( $meta ) : [];
+      if ( isset( $args['key'] ) ) {
+        $meta_keys[] = $args['key'];
+      }
+    }
+    elseif ( in_array( $tool, [ 'wp_create_post', 'wp_update_post' ], true ) ) {
+      // Both tools also take meta_input as a JSON string and decode it themselves.
+      $meta_input = $fields['meta_input'] ?? null;
+      if ( is_string( $meta_input ) ) {
+        $meta_input = json_decode( $meta_input, true );
+      }
+      $meta_keys = is_array( $meta_input ) ? array_keys( $meta_input ) : [];
+    }
+    $file_keys = [ '_wp_attached_file', '_wp_attachment_metadata', '_wp_attachment_backup_sizes' ];
+    $touched = array_intersect( array_map( function ( $k ) {
+      return strtolower( trim( (string) $k ) );
+    }, $meta_keys ), $file_keys );
+    if ( !empty( $touched ) ) {
+      return $cant . 'change media file references (' . implode( ', ', array_unique( $touched ) ) . ').';
+    }
+
+    switch ( $tool ) {
+      case 'wp_get_post':
+      case 'wp_get_post_snapshot':
+      case 'wp_get_post_meta':
+      case 'wp_get_post_terms':
+        if ( !$post_id || !current_user_can( 'read_post', $post_id ) ) {
+          return $cant . "read post #{$post_id}.";
+        }
+        // read_post lets any logged-in user read a published post, even of a type with
+        // no public view (global styles, navigation menus, a plugin's coupons). The
+        // dashboard only shows those to people who can edit them, so require that here.
+        if ( !is_post_type_viewable( (string) get_post_type( $post_id ) ) && !current_user_can( 'edit_post', $post_id ) ) {
+          return $cant . "read post #{$post_id}.";
+        }
+        break;
+
+      case 'wp_get_posts':
+        $type = get_post_type_object( sanitize_key( $args['post_type'] ?? 'post' ) );
+        if ( !$type ) {
+          return $cant . 'list this type of content.';
+        }
+        // Same rule as reading one post: a type with no public view is listed only for
+        // people who can edit that type.
+        if ( !is_post_type_viewable( $type ) && !current_user_can( $type->cap->edit_posts ) ) {
+          return $cant . 'list this type of content.';
+        }
+        $status = $args['post_status'] ?? 'publish';
+        if ( $status !== 'publish' && !current_user_can( $type->cap->edit_others_posts ) ) {
+          return $cant . 'list unpublished content of other authors.';
+        }
+        break;
+
+      case 'wp_create_post':
+        $type = get_post_type_object( sanitize_key( $fields['post_type'] ?? 'post' ) );
+        if ( !$type || !current_user_can( $type->cap->create_posts ) ) {
+          return $cant . 'create this type of content.';
+        }
+        if ( in_array( $fields['post_status'] ?? 'draft', [ 'publish', 'future', 'private' ], true )
+          && !current_user_can( $type->cap->publish_posts ) ) {
+          return $cant . 'publish this type of content.';
+        }
+        break;
+
+      case 'wp_update_post':
+        if ( !$post_id || !current_user_can( 'edit_post', $post_id ) ) {
+          return $cant . "edit post #{$post_id}.";
+        }
+        if ( isset( $fields['post_type'] ) && $fields['post_type'] !== get_post_type( $post_id ) ) {
+          return $cant . 'change the type of a post.';
+        }
+        // The tool routes this status to wp_trash_post(), and deleting stays with
+        // administrators, as the consent screen promises. Restoring from the trash is fine.
+        if ( ( $fields['post_status'] ?? '' ) === 'trash' ) {
+          return $cant . 'move posts to the trash. Deleting stays with administrators.';
+        }
+        // schedule_for switches the status to 'future' on its own, so it is publishing too.
+        $publishes = in_array( $fields['post_status'] ?? '', [ 'publish', 'future', 'private' ], true )
+          || !empty( $args['schedule_for'] );
+        if ( $publishes && !current_user_can( 'publish_post', $post_id ) ) {
+          return $cant . "publish post #{$post_id}.";
+        }
+        // Handing a post to another author needs edit_others_posts, as in wp-admin.
+        if ( isset( $fields['post_author'] )
+          && (int) $fields['post_author'] !== (int) get_post_field( 'post_author', $post_id ) ) {
+          $type = get_post_type_object( (string) get_post_type( $post_id ) );
+          if ( !$type || !current_user_can( $type->cap->edit_others_posts ) ) {
+            return $cant . 'change the author of a post.';
+          }
+        }
+        break;
+
+      case 'wp_alter_post':
+      case 'wp_write_blocks':
+      case 'wp_insert_block_pattern':
+      case 'wp_update_post_meta':
+      case 'wp_update_media':
+      case 'wp_set_featured_image':
+        if ( !$post_id || !current_user_can( 'edit_post', $post_id ) ) {
+          return $cant . "edit post #{$post_id}.";
+        }
+        break;
+
+      case 'wp_add_post_terms':
+        $taxonomy = get_taxonomy( sanitize_key( $args['taxonomy'] ?? 'category' ) );
+        if ( !$post_id || !current_user_can( 'edit_post', $post_id ) ) {
+          return $cant . "edit post #{$post_id}.";
+        }
+        if ( !$taxonomy || !current_user_can( $taxonomy->cap->assign_terms ) ) {
+          return $cant . 'assign terms of this taxonomy.';
+        }
+        break;
+
+      case 'wp_create_term':
+        $taxonomy = get_taxonomy( sanitize_key( $args['taxonomy'] ?? '' ) );
+        if ( !$taxonomy || !current_user_can( $taxonomy->cap->manage_terms ) ) {
+          return $cant . 'create terms in this taxonomy.';
+        }
+        break;
+
+      case 'wp_update_term':
+        if ( !current_user_can( 'edit_term', (int) ( $args['term_id'] ?? 0 ) ) ) {
+          return $cant . 'edit this term.';
+        }
+        break;
+
+      case 'wp_get_comments':
+      case 'wp_create_comment':
+        if ( !current_user_can( 'moderate_comments' ) ) {
+          return $cant . 'manage comments.';
+        }
+        break;
+
+      case 'wp_update_comment':
+        if ( !current_user_can( 'edit_comment', (int) ( $args['comment_ID'] ?? 0 ) ) ) {
+          return $cant . 'edit this comment.';
+        }
+        // The tool passes any field through to wp_update_comment(). wp-admin never lets
+        // anyone move a comment to another post or change which user wrote it, so a
+        // limited session keeps to what the comment edit screen offers.
+        $comment_fields = is_array( $args['fields'] ?? null ) ? array_keys( $args['fields'] ) : [];
+        $editable = [ 'comment_content', 'comment_approved', 'comment_author', 'comment_author_email', 'comment_author_url' ];
+        $blocked = array_diff( $comment_fields, $editable );
+        if ( !empty( $blocked ) ) {
+          return $cant . 'change these comment fields: ' . implode( ', ', $blocked ) . '.';
+        }
+        break;
+
+      case 'wp_upload_media':
+      case 'wp_upload_request':
+        if ( !current_user_can( 'upload_files' ) ) {
+          return $cant . 'upload files.';
+        }
+        break;
+
+      case 'mwai_image':
+        if ( !current_user_can( 'upload_files' ) ) {
+          return $cant . 'upload files.';
+        }
+        if ( $post_id && !current_user_can( 'edit_post', $post_id ) ) {
+          return $cant . "edit post #{$post_id}.";
+        }
+        break;
+
+      case 'mwai_vision':
+        // A local path would let the session read any file PHP can read.
+        if ( !empty( $args['path'] ) ) {
+          return $cant . 'analyze server files; pass an image URL instead.';
+        }
+        break;
+    }
+    return null;
   }
 
   private function role_has_access( string $toolLevel ): bool {
@@ -854,6 +1092,11 @@ class Meow_MWAI_Labs_MCP {
       $filtered_tools = array_filter( $filtered_tools, function ( $tool ) {
         $level = $tool['accessLevel'] ?? 'admin';
         return $this->role_has_access( $level );
+      } );
+    }
+    if ( $this->limited_session ) {
+      $filtered_tools = array_filter( $filtered_tools, function ( $tool ) {
+        return in_array( $tool['name'] ?? '', self::LIMITED_SESSION_TOOLS, true );
       } );
     }
 
@@ -1109,9 +1352,20 @@ class Meow_MWAI_Labs_MCP {
       // Defense in depth: verify tool access even if it wasn't filtered from the listing
       $tool_level = $this->tool_access_levels[ $tool ] ?? 'admin';
       if ( $this->role_filter_applies() && !$this->role_has_access( $tool_level ) ) {
+        // 'denied', not 'error': MCP Logs shows a refused call apart from a failing tool.
+        $status = 'denied';
         $error_msg = "Access denied: tool '{$tool}' requires '{$tool_level}' access.";
         $response = $this->rpc_error( $id, -32600, $error_msg );
         return $response;
+      }
+      if ( $this->limited_session ) {
+        $refusal = $this->limited_session_refusal( (string) $tool, is_array( $args ) ? $args : [] );
+        if ( $refusal !== null ) {
+          $status = 'denied';
+          $error_msg = $refusal;
+          $response = $this->rpc_error( $id, -32600, $error_msg );
+          return $response;
+        }
       }
 
       // Handle built-in tools first
@@ -1254,8 +1508,14 @@ class Meow_MWAI_Labs_MCP {
       return new WP_REST_Response( [ 'success' => false, 'message' => 'Upload error code: ' . $uploaded['error'] ], 400 );
     }
 
-    // Set admin context for media handling
-    if ( !current_user_can( 'administrator' ) ) {
+    // Upload as the user who requested the token, so an Editor session stays attributed
+    // to that Editor. Tokens created by older versions carry no user and keep the
+    // previous administrator context.
+    $uploader = (int) ( $data['user_id'] ?? 0 );
+    if ( $uploader > 0 && user_can( $uploader, 'upload_files' ) ) {
+      wp_set_current_user( $uploader );
+    }
+    elseif ( !current_user_can( 'administrator' ) ) {
       wp_set_current_user( 1 );
     }
 

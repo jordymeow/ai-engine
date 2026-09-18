@@ -1,6 +1,10 @@
 <?php
 
 class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
+  public function supports_mcp_servers() {
+    return true;
+  }
+
   // Streaming
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
@@ -513,7 +517,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
               'server_tool_use', 'web_search_tool_result',
               // Code execution (code_execution_20250825) runs entirely on
               // Anthropic's side, so the `_tool_use` blocks must be stripped
-              // when we replay the assistant message — only the server can
+              // when we replay the assistant message, only the server can
               // produce the matching `_tool_result` blocks.
               'code_execution_tool_use', 'code_execution_tool_result',
               'bash_code_execution_tool_use', 'bash_code_execution_tool_result',
@@ -521,7 +525,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
             ];
             // Block types that are server-produced RESULTS (we keep them out
             // of the "stripped tools" warning list because they're not a
-            // dev-side limitation — they're just paired results).
+            // dev-side limitation: they're just paired results).
             $serverResultTypes = [
               'mcp_tool_result', 'web_search_tool_result',
               'code_execution_tool_result',

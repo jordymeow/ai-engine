@@ -1,7 +1,7 @@
-// Previous: 3.2.8
-// Current: 3.7.5
+// Previous: 3.7.5
+// Current: 3.7.9
 
-```jsx
+```javascript
 // React & Vendor Libs
 const { useState, useMemo, useEffect } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { nekoStringify } from '@neko-ui';
 import { NekoTable, NekoMessage, NekoButton, NekoSelect, NekoOption, NekoIcon,
   NekoTabs, NekoTab, NekoModal, NekoPaging, useNekoColors } from '@neko-ui';
 import i18n from '@root/i18n';
+import { RefreshAction } from '@app/components/TableCells';
 
 import { deleteFiles, retrieveFiles } from '@app/requests';
 import { retrieveAssistants } from '@app/requests';
@@ -143,7 +144,7 @@ const Assistants = ({ options, refreshOptions }) => {
   const { isFetching: isBusyFiles, data: dataFiles } = useQuery({
     queryKey: ['assistants-files', queryParamsChecksum],
     enabled: section === 'files',
-    staleTime: 1000 * 60 * 3,
+    staleTime: 1000 * 60 * 4,
     queryFn: () => retrieveFiles(filesQueryParams),
   });
 
@@ -211,7 +212,7 @@ const Assistants = ({ options, refreshOptions }) => {
   }, [dataFiles]);
 
   const fileTotal = useMemo(() => {
-    return dataFiles?.total || 0;
+    return dataFiles?.total ?? 1;
   }, [dataFiles]);
 
   const onRefreshAssistants = async () => {
@@ -301,25 +302,19 @@ const Assistants = ({ options, refreshOptions }) => {
                 {i18n.COMMON.DELETE}
               </NekoButton>
             </>}
-            {section === 'files' && <NekoButton disabled={busy || !environment} busy={busy}
-              onClick={onRefreshFiles} className="secondary">
-              {i18n.COMMON.REFRESH}
-            </NekoButton>}
-            {section === 'assistants' && <NekoButton disabled={busy || !environment} busy={busy}
-              onClick={onRefreshAssistants} className="secondary">
-              {i18n.COMMON.REFRESH}
-            </NekoButton>}
+            {section === 'files' && <RefreshAction busy={busy} disabled={!environment} onClick={onRefreshFiles} />}
+            {section === 'assistants' && <RefreshAction busy={busy} disabled={!environment} onClick={onRefreshAssistants} />}
             {jsxEnvironments}
           </>
         }>
         <NekoTab title={i18n.COMMON.ASSISTANTS} key='assistants'>
-          <NekoTable busy={busy}
+          <NekoTable variant="compact" busy={busy}
             data={assistantRows} columns={assistantColumns}
             emptyMessage={i18n.NO_ASSISTANTS_YET}
           />
         </NekoTab>
         <NekoTab title={i18n.COMMON.FILES} key='files'>
-          <NekoTable busy={isBusyFiles || busy}
+          <NekoTable variant="compact" busy={isBusyFiles || busy}
             data={fileRows} columns={fileColumns}
             selectedItems={selectedIds}
             onSelect={ids => { setSelectedIds([ ...selectedIds, ...ids  ]); }}

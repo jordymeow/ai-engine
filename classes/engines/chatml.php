@@ -467,6 +467,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       if ( !empty( $query->model ) ) {
         $body['model'] = $query->model;
       }
+      // Edits used to ignore the chosen quality and always ran at the API default. Only
+      // models that declare qualities accept the parameter; the others answer 400.
+      if ( !empty( $query->quality ) ) {
+        try {
+          $modelInfo = $this->retrieve_model_info( $query->model );
+          if ( !empty( $modelInfo['qualities'] ) ) {
+            $body['quality'] = $query->quality;
+          }
+        }
+        catch ( Exception $e ) {
+          // Unknown model: leave the quality out rather than risk a refused request.
+        }
+      }
       return $body;
     }
     else if ( $query instanceof Meow_MWAI_Query_Image ) {
@@ -1672,7 +1685,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
   // Check if there are errors in the response from OpenAI, and throw an exception if so.
   // OpenAI uses { error: { message: ... } }; some compatible providers (xAI, etc.) use a
-  // plain string in the error field — handle both shapes.
+  // plain string in the error field. Handle both shapes.
   protected function handle_response_errors( $data ) {
     $message = is_array( $data ) ? $this->extract_error_message( $data ) : null;
     if ( is_null( $message ) ) {

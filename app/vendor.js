@@ -987,6 +987,14 @@ const Oe=(0,r.A)("file-plus",[["path",{d:"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2
     cursor: pointer;
     display: flex;
     align-items: flex-start;
+
+    /* The checkbox is a div, so nothing draws a focus ring for it. Without this a keyboard
+       user can tab onto it and have no idea where they are. */
+    &:focus-visible {
+      outline: 2px solid var(--neko-main-color, #2271b1);
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
   }
 
   .neko-checkbox-check-container {
@@ -1142,7 +1150,7 @@ const Oe=(0,r.A)("file-plus",[["path",{d:"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2
       }
     }
   }
-`,h=e=>{const{name:t,checked:n=!1,indeterminate:r=!1,onChange:a,label:i,description:s,isPro:h=!1,disabled:f,requirePro:m=!1,isBusy:g=!1,busy:y=!1,small:b=!1,color:v,variant:k,...x}=e,w=y||g;o().useEffect((()=>{g&&console.log('NekoCheckbox: The "isBusy" prop is deprecated. Please use "busy" instead.')}),[g]);const E=m&&!h,C=f||E,A=(0,u.gR)("neko-checkbox",e.className,{disabled:C},{small:b}),S=(0,u.gR)("neko-checkbox",{disabled:C,"neko-checked":n,"neko-indeterminate":r,small:b}),O=(0,u.gR)("neko-checked-mark"),M=(0,u.gR)("neko-indeterminate-mark");return o().createElement(p,d({className:A,checked:n,disabled:C,color:v,variant:k,onClick:e=>e.stopPropagation()},x),o().createElement("div",{className:"neko-checkbox-container"},o().createElement("div",{className:"neko-content",onClick:r=>{C||(a?a(!n,t,r):console.log("The onChange handler is not set for the NekoCheckbox.",e))}},o().createElement("div",{className:"neko-checkbox-check-container"},w&&o().createElement("div",{className:"neko-checkbox-busy-container"},o().createElement("div",{className:S},o().createElement(c.X,{type:"circle",size:"16px"}))),!w&&o().createElement(o().Fragment,null,o().createElement("div",{className:S},o().createElement("div",{className:O}),o().createElement("div",{className:M})))),(i||E||s)&&o().createElement("div",{className:"neko-checkbox-inner-container"},o().createElement("span",{className:"neko-label-container"},o().createElement("span",{className:"neko-label"},i),o().createElement(l.K,{className:"inline",show:E,style:{position:"relative",top:-1}})),s?"string"==typeof s?o().createElement("small",{className:"description",dangerouslySetInnerHTML:{__html:s}}):o().createElement("small",{className:"description"},s):null))))};h.propTypes={name:i().string,checked:i().bool,label:i().string,description:i().string,isPro:i().bool,requirePro:i().bool,busy:i().bool,isBusy:i().bool,small:i().bool,color:i().oneOf(["blue","purple","green","red","orange","yellow","gray"]),variant:i().oneOf(["danger"])}},9649(e,t,n){"use strict";n.d(t,{E:()=>l});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a);const s=(0,n(5396).Ay)((e=>{const{name:t,max:n=-1,isPro:r=!1}=e,a=o().Children.map(e.children,(e=>e.props.name?e:o().cloneElement(e,{name:t,isPro:r})));return o().createElement("div",{className:"neko-checkbox-group"},a)}))`
+`,h=e=>{const{name:t,checked:n=!1,indeterminate:r=!1,onChange:a,label:i,description:s,isPro:h=!1,disabled:f,requirePro:m=!1,isBusy:g=!1,busy:y=!1,small:b=!1,color:v,variant:k,...x}=e,w=y||g;o().useEffect((()=>{g&&console.log('NekoCheckbox: The "isBusy" prop is deprecated. Please use "busy" instead.')}),[g]);const E=m&&!h,C=f||E,A=(0,u.gR)("neko-checkbox",e.className,{disabled:C},{small:b}),S=(0,u.gR)("neko-checkbox",{disabled:C,"neko-checked":n,"neko-indeterminate":r,small:b}),O=(0,u.gR)("neko-checked-mark"),M=(0,u.gR)("neko-indeterminate-mark"),R=r=>{C||(a?a(!n,t,r):console.log("The onChange handler is not set for the NekoCheckbox.",e))};return o().createElement(p,d({className:A,checked:n,disabled:C,color:v,variant:k,onClick:e=>e.stopPropagation()},x),o().createElement("div",{className:"neko-checkbox-container"},o().createElement("div",{className:"neko-content",onClick:R,onKeyDown:e=>{" "!==e.key&&"Spacebar"!==e.key&&"Enter"!==e.key||(e.preventDefault(),R(e))},role:"checkbox","aria-checked":r?"mixed":!!n,"aria-disabled":!!C||void 0,tabIndex:C?-1:0},o().createElement("div",{className:"neko-checkbox-check-container"},w&&o().createElement("div",{className:"neko-checkbox-busy-container"},o().createElement("div",{className:S},o().createElement(c.X,{type:"circle",size:"16px"}))),!w&&o().createElement(o().Fragment,null,o().createElement("div",{className:S},o().createElement("div",{className:O}),o().createElement("div",{className:M})))),(i||E||s)&&o().createElement("div",{className:"neko-checkbox-inner-container"},o().createElement("span",{className:"neko-label-container"},o().createElement("span",{className:"neko-label"},i),o().createElement(l.K,{className:"inline",show:E,style:{position:"relative",top:-1}})),s?"string"==typeof s?o().createElement("small",{className:"description",dangerouslySetInnerHTML:{__html:s}}):o().createElement("small",{className:"description"},s):null))))};h.propTypes={name:i().string,checked:i().bool,label:i().string,description:i().string,isPro:i().bool,requirePro:i().bool,busy:i().bool,isBusy:i().bool,small:i().bool,color:i().oneOf(["blue","purple","green","red","orange","yellow","gray"]),variant:i().oneOf(["danger"])}},9649(e,t,n){"use strict";n.d(t,{E:()=>l});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a);const s=(0,n(5396).Ay)((e=>{const{name:t,max:n=-1,isPro:r=!1}=e,a=o().Children.map(e.children,(e=>e.props.name?e:o().cloneElement(e,{name:t,isPro:r})));return o().createElement("div",{className:"neko-checkbox-group"},a)}))`
 `,l=e=>o().createElement(s,e);l.propTypes={name:i().string,max:i().number,isPro:i().bool}},2484(e,t,n){"use strict";n.d(t,{V:()=>p});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(1863);const c=s.Ay.div`
   position: relative;
   transition: opacity 0.3s ease;
@@ -1802,6 +1810,11 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     display: inline-flex;
     position: absolute;
     top: 0;
+
+    &:focus-visible {
+      outline: 2px solid var(--neko-main-color);
+      outline-offset: 2px;
+    }
     left: 0;
     right: 0;
     bottom: 0;
@@ -1877,7 +1890,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     .neko-slider { transition: none; }
     .neko-slider:before { transition: none; }
   }
-`,d=e=>{let{width:t,height:n=24,fontSize:o="13px",onLabel:a="Yes",offLabel:i="No",onBackgroundColor:c="var(--neko-accent-color)",offBackgroundColor:d="var(--neko-disabled-color)",onValue:p,offValue:h,small:f,checked:m=!1,onChange:g,disabled:y=!1,...b}=e;const v=(0,s.gR)("neko-switch",{small:f,"neko-checked":m}),k=(0,r.useCallback)((e=>{if(y)return;g(e?void 0===p||p:void 0!==h&&h)}),[p,h,g,y]);f&&(n=20,o="11px");const x=t||(a&&""!==a||i&&""!==i?70:40);return React.createElement(u,l({className:v,width:x,height:n,fontSize:o},b,{$offBackgroundColor:d,$onBackgroundColor:c,$onLabel:a,$offLabel:i,"data-is-disabled":y?"disabled":""}),React.createElement("span",{className:"neko-slider",onClick:()=>k(!m)}))};d.propTypes={width:a().number,height:a().number,fontSize:a().string,onValue:a().string,offValue:a().string,checked:a().bool,onBackgroundColor:a().string,offBackgroundColor:a().string,onLabel:a().string,offLabel:a().string}},127(e,t,n){"use strict";n.d(t,{m:()=>p});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6038),c=n(9018);function u(){return u=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},u.apply(null,arguments)}const d=(0,s.Ay)((e=>{const{name:t,value:n="",rows:a=6,description:i,placeholder:s="",onEnter:d=null,onBlurForce:p=!1,readOnly:h=!1,avoidOnEnterWithShift:f=!1,fullHeight:m=!1,maxLength:g=null,className:y,style:b,textAreaStyle:v={},countable:k=!1,disabled:x,tabToSpaces:w,copyable:E=!1,action:C,...A}=e,[S,O]=(0,r.useState)(n),[M,R]=(0,r.useState)(0),[_,N]=(0,r.useState)(!1),[z,P]=(0,r.useState)(!1),$=!!e.onChange,T=(0,r.useRef)(null),j=(0,r.useCallback)((e=>{if(w&&"Tab"===e.key){e.preventDefault();const t=T.current.selectionStart,n=T.current.selectionEnd,r=T.current.value;T.current.value=r.substring(0,t)+"  "+r.substring(n),T.current.selectionStart=T.current.selectionEnd=t+2}else N(e.shiftKey)}),[w]),I=(0,r.useCallback)((()=>{N(!1)}),[]);(0,r.useEffect)((()=>{const e=T.current;if(e)return e.addEventListener("keydown",j,!1),e.addEventListener("keyup",I,!1),()=>{e.removeEventListener("keydown",j,!1),e.removeEventListener("keyup",I,!1)}}),[j,I]),(0,r.useEffect)((()=>{if($||O(n),"words"===k){const e=n.split(" ").filter((e=>""!==e)).length;R(e)}else k&&R(n.length)}),[n,k,$]);const L=(0,r.useCallback)((n=>{const r=g?n.target.value.substr(0,g):n.target.value;n.stopPropagation(),$?e.onChange(r,t):O(r,t)}),[g,$,e,t]),F=(0,r.useCallback)((async()=>{const e=$?n:S;if(e)try{await navigator.clipboard.writeText(e),P(!0),setTimeout((()=>P(!1)),2e3)}catch(t){const n=document.createElement("textarea");n.value=e,document.body.appendChild(n),n.select(),document.execCommand("copy"),document.body.removeChild(n),P(!0),setTimeout((()=>P(!1)),2e3)}}),[n,S,$]),D=(0,l.gR)(y,{disabled:x});return o().createElement("div",{className:D,style:b},o().createElement("div",{className:"neko-textarea-container"},o().createElement("div",{className:"neko-textarea-field"},o().createElement("textarea",u({ref:T,className:"neko-textarea",rows:a,disabled:x},A,{name:t,spellCheck:"false",placeholder:s,onChange:L,onKeyPress:n=>{if(d&&!n.shiftKey&&"Enter"===n.key){if(f&&_)return;n.preventDefault(),e.onEnter(n.target.value,t)}},onBlur:r=>{(p||e.onBlur&&n!==r.target.value)&&e.onBlur(r.target.value,t)},readOnly:h,style:{...v,height:m?"100%":v.height??void 0},value:$?n:S})),E&&(h||x)&&o().createElement("button",{className:"neko-textarea-copy-button",onClick:F,type:"button",title:z?"Copied!":"Copy to clipboard"},o().createElement(c.z,{icon:z?"check":"duplicate"})),C&&o().createElement("div",{className:"neko-textarea-action"},C)),o().createElement("div",{className:"neko-text-area-extra"},i?"string"==typeof i?o().createElement("div",{className:"neko-input-description",dangerouslySetInnerHTML:{__html:i}}):o().createElement("div",{className:"neko-input-description"},i):k?o().createElement("div",null):null,k&&o().createElement("div",{className:"neko-textarea-count"},M,g?` / ${g}`:""," ","words"===k?"words":"chars"))))}))`
+`,d=e=>{let{width:t,height:n=24,fontSize:o="13px",onLabel:a="Yes",offLabel:i="No",onBackgroundColor:c="var(--neko-accent-color)",offBackgroundColor:d="var(--neko-disabled-color)",onValue:p,offValue:h,small:f,checked:m=!1,onChange:g,disabled:y=!1,...b}=e;const v=(0,s.gR)("neko-switch",{small:f,"neko-checked":m}),k=(0,r.useCallback)((e=>{if(y)return;g(e?void 0===p||p:void 0!==h&&h)}),[p,h,g,y]);f&&(n=20,o="11px");const x=t||(a&&""!==a||i&&""!==i?70:40);return React.createElement(u,l({className:v,width:x,height:n,fontSize:o},b,{$offBackgroundColor:d,$onBackgroundColor:c,$onLabel:a,$offLabel:i,"data-is-disabled":y?"disabled":""}),React.createElement("span",{className:"neko-slider",role:"switch","aria-checked":m,"aria-disabled":y?"true":void 0,"aria-label":b["aria-label"]||(m?a:i)||void 0,tabIndex:y?-1:0,onClick:()=>k(!m),onKeyDown:e=>{"Enter"!==e.key&&" "!==e.key&&"Spacebar"!==e.key||(e.preventDefault(),k(!m))}}))};d.propTypes={width:a().number,height:a().number,fontSize:a().string,onValue:a().string,offValue:a().string,checked:a().bool,onBackgroundColor:a().string,offBackgroundColor:a().string,onLabel:a().string,offLabel:a().string}},127(e,t,n){"use strict";n.d(t,{m:()=>p});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6038),c=n(9018);function u(){return u=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},u.apply(null,arguments)}const d=(0,s.Ay)((e=>{const{name:t,value:n="",rows:a=6,description:i,placeholder:s="",onEnter:d=null,onBlurForce:p=!1,readOnly:h=!1,avoidOnEnterWithShift:f=!1,fullHeight:m=!1,maxLength:g=null,className:y,style:b,textAreaStyle:v={},countable:k=!1,disabled:x,tabToSpaces:w,copyable:E=!1,action:C,...A}=e,[S,O]=(0,r.useState)(n),[M,R]=(0,r.useState)(0),[_,N]=(0,r.useState)(!1),[z,P]=(0,r.useState)(!1),$=!!e.onChange,T=(0,r.useRef)(null),j=(0,r.useCallback)((e=>{if(w&&"Tab"===e.key){e.preventDefault();const t=T.current.selectionStart,n=T.current.selectionEnd,r=T.current.value;T.current.value=r.substring(0,t)+"  "+r.substring(n),T.current.selectionStart=T.current.selectionEnd=t+2}else N(e.shiftKey)}),[w]),I=(0,r.useCallback)((()=>{N(!1)}),[]);(0,r.useEffect)((()=>{const e=T.current;if(e)return e.addEventListener("keydown",j,!1),e.addEventListener("keyup",I,!1),()=>{e.removeEventListener("keydown",j,!1),e.removeEventListener("keyup",I,!1)}}),[j,I]),(0,r.useEffect)((()=>{if($||O(n),"words"===k){const e=n.split(" ").filter((e=>""!==e)).length;R(e)}else k&&R(n.length)}),[n,k,$]);const L=(0,r.useCallback)((n=>{const r=g?n.target.value.substr(0,g):n.target.value;n.stopPropagation(),$?e.onChange(r,t):O(r,t)}),[g,$,e,t]),F=(0,r.useCallback)((async()=>{const e=$?n:S;if(e)try{await navigator.clipboard.writeText(e),P(!0),setTimeout((()=>P(!1)),2e3)}catch(t){const n=document.createElement("textarea");n.value=e,document.body.appendChild(n),n.select(),document.execCommand("copy"),document.body.removeChild(n),P(!0),setTimeout((()=>P(!1)),2e3)}}),[n,S,$]),D=(0,l.gR)(y,{disabled:x});return o().createElement("div",{className:D,style:b},o().createElement("div",{className:"neko-textarea-container"},o().createElement("div",{className:"neko-textarea-field"},o().createElement("textarea",u({ref:T,className:"neko-textarea",rows:a,disabled:x},A,{name:t,spellCheck:"false",placeholder:s,onChange:L,onKeyPress:n=>{if(d&&!n.shiftKey&&"Enter"===n.key){if(f&&_)return;n.preventDefault(),e.onEnter(n.target.value,t)}},onBlur:r=>{(p||e.onBlur&&n!==r.target.value)&&e.onBlur(r.target.value,t)},readOnly:h,style:{...v,height:m?"100%":v.height??void 0},value:$?n:S})),E&&(h||x)&&o().createElement("button",{className:"neko-textarea-copy-button",onClick:F,type:"button",title:z?"Copied!":"Copy to clipboard"},o().createElement(c.z,{icon:z?"check":"duplicate"})),C&&o().createElement("div",{className:"neko-textarea-action"},C)),o().createElement("div",{className:"neko-text-area-extra"},i?"string"==typeof i?o().createElement("div",{className:"neko-input-description",dangerouslySetInnerHTML:{__html:i}}):o().createElement("div",{className:"neko-input-description"},i):k?o().createElement("div",null):null,k&&o().createElement("div",{className:"neko-textarea-count"},M,g?` / ${g}`:""," ","words"===k?"words":"chars"))))}))`
   .neko-textarea-container {
     position: relative;
     height: ${e=>e.fullHeight?"100%":void 0}
@@ -2228,6 +2241,11 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
   letter-spacing: 0;
   transition: color var(--neko-duration-base) var(--neko-ease-out);
 
+  &:focus-visible {
+    outline: 2px solid var(--neko-main-color);
+    outline-offset: 2px;
+  }
+
   .neko-accordion-head {
     display: inline-flex;
     align-items: center;
@@ -2308,7 +2326,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
   > div {
     padding-top: 10px;
   }
-`,h=({children:e,keepState:t})=>{const[n,a]=(0,r.useState)((()=>{if(!t)return null;try{return JSON.parse(localStorage.getItem(t))}catch{return null}}));(0,r.useEffect)((()=>{t&&localStorage.setItem(t,JSON.stringify(n))}),[n,t]);return o().createElement("div",{className:"neko-accordions"},o().Children.map(e,((e,r)=>{var i;return(null==e?void 0:e.type)===f||(null==e?void 0:e.type)===m||(null==e?void 0:e.type)===y||"NekoCollapsableCategoryDeprecated"===(null==e||null===(i=e.type)||void 0===i?void 0:i.name)?o().cloneElement(e,{isCollapsed:n!==r,onClick:()=>{var e;a(n===(e=r)?null:e)},keepState:t?`${t}-${r}`:e.props.keepState}):e})))};h.propTypes={children:i().node.isRequired,keepState:i().string};const f=({isCollapsed:e=!1,children:t,onClick:n=(()=>{}),keepState:a,disabled:i=!1,hide:s=!1,title:h,subtitle:f,icon:m,style:g})=>{const[y,b]=(0,r.useState)(e),[v,k]=(0,r.useState)(!1),x=o().Children.count(t)>0,w=(0,r.useRef)(null),[E,C]=(0,r.useState)(0);var A,S;return A=w,S=()=>{w.current&&C(w.current.scrollHeight)},(0,r.useEffect)((()=>{const e=A.current;if(!e)return;const t=new ResizeObserver((e=>{S()}));return t.observe(e),()=>t.disconnect()}),[A,S]),(0,r.useEffect)((()=>{if(a){let t=null;try{t=JSON.parse(localStorage.getItem(a))}catch{}b(null!==t?t:e)}}),[a,e]),(0,r.useEffect)((()=>{a&&localStorage.setItem(a,JSON.stringify(y))}),[y,a]),(0,r.useEffect)((()=>{b(e)}),[e]),s?null:o().createElement(c,{className:"neko-accordion",style:g},o().createElement(u,{onClick:()=>{x&&!i&&(k(!0),b(!y),n())},style:{opacity:i?.5:1,pointerEvents:i?"none":"auto"}},o().createElement("span",{className:"neko-accordion-head"},m&&o().createElement("span",{className:"neko-accordion-icon"},o().createElement(l.z,{icon:m,width:18,fill:"none",raw:!0})),m||f?o().createElement("span",null,o().createElement("span",{className:"neko-accordion-title"},h),f&&o().createElement("small",{className:"neko-accordion-subtitle"},f)):h),x&&o().createElement(d,{$isCollapsed:y})),o().createElement(p,{$isCollapsed:y,$contentHeight:E,$animate:v},o().createElement("div",{ref:w},t)))};f.propTypes={title:i().oneOfType([i().string,i().node]).isRequired,subtitle:i().node,icon:i().string,isCollapsed:i().bool,children:i().node,onClick:i().func,keepState:i().string,disabled:i().bool,hide:i().bool};const m=f,g=h,y=e=>(console.warn("[NekoUI] NekoCollapsableCategory is deprecated. Please use NekoAccordion instead."),o().createElement(f,e));y.propTypes=f.propTypes},5146(e,t,n){"use strict";n.d(t,{L:()=>p});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6038);const c=s.Ay.div`
+`,h=({children:e,keepState:t})=>{const[n,a]=(0,r.useState)((()=>{if(!t)return null;try{return JSON.parse(localStorage.getItem(t))}catch{return null}}));(0,r.useEffect)((()=>{t&&localStorage.setItem(t,JSON.stringify(n))}),[n,t]);return o().createElement("div",{className:"neko-accordions"},o().Children.map(e,((e,r)=>{var i;return(null==e?void 0:e.type)===f||(null==e?void 0:e.type)===m||(null==e?void 0:e.type)===y||"NekoCollapsableCategoryDeprecated"===(null==e||null===(i=e.type)||void 0===i?void 0:i.name)?o().cloneElement(e,{isCollapsed:n!==r,onClick:()=>{var e;a(n===(e=r)?null:e)},keepState:t?`${t}-${r}`:e.props.keepState}):e})))};h.propTypes={children:i().node.isRequired,keepState:i().string};const f=({isCollapsed:e=!1,children:t,onClick:n=(()=>{}),keepState:a,disabled:i=!1,hide:s=!1,title:h,subtitle:f,icon:m,style:g})=>{const[y,b]=(0,r.useState)(e),[v,k]=(0,r.useState)(!1),x=o().Children.count(t)>0,w=(0,r.useRef)(null),[E,C]=(0,r.useState)(0),A=()=>{w.current&&C(w.current.scrollHeight)};var S,O;S=w,O=A,(0,r.useEffect)((()=>{const e=S.current;if(!e)return;const t=new ResizeObserver((e=>{O()}));return t.observe(e),()=>t.disconnect()}),[S,O]),(0,r.useEffect)((()=>{if(a){let t=null;try{t=JSON.parse(localStorage.getItem(a))}catch{}b(null!==t?t:e)}}),[a,e]),(0,r.useEffect)((()=>{a&&localStorage.setItem(a,JSON.stringify(y))}),[y,a]),(0,r.useEffect)((()=>{b(e)}),[e]);const[M,R]=(0,r.useState)(!e);if((0,r.useEffect)((()=>{y||R(!0)}),[y]),(0,r.useEffect)((()=>{M&&A()}),[M]),s)return null;const _=x&&!i,N=()=>{_&&(k(!0),b(!y),n())};return o().createElement(c,{className:"neko-accordion",style:g},o().createElement(u,{onClick:N,role:_?"button":void 0,tabIndex:_?0:void 0,"aria-expanded":_?!y:void 0,onKeyDown:_?e=>{"Enter"!==e.key&&" "!==e.key&&"Spacebar"!==e.key||(e.preventDefault(),N())}:void 0,style:{opacity:i?.5:1,pointerEvents:i?"none":"auto"}},o().createElement("span",{className:"neko-accordion-head"},m&&o().createElement("span",{className:"neko-accordion-icon"},o().createElement(l.z,{icon:m,width:18,fill:"none",raw:!0})),m||f?o().createElement("span",null,o().createElement("span",{className:"neko-accordion-title"},h),f&&o().createElement("small",{className:"neko-accordion-subtitle"},f)):h),x&&o().createElement(d,{$isCollapsed:y})),o().createElement(p,{$isCollapsed:y,$contentHeight:E,$animate:v},o().createElement("div",{ref:w},M?t:null)))};f.propTypes={title:i().oneOfType([i().string,i().node]).isRequired,subtitle:i().node,icon:i().string,isCollapsed:i().bool,children:i().node,onClick:i().func,keepState:i().string,disabled:i().bool,hide:i().bool};const m=f,g=h,y=e=>(console.warn("[NekoUI] NekoCollapsableCategory is deprecated. Please use NekoAccordion instead."),o().createElement(f,e));y.propTypes=f.propTypes},5146(e,t,n){"use strict";n.d(t,{L:()=>p});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6038);const c=s.Ay.div`
   font-size: var(--neko-font-size);
   font-family: var(--neko-font-family);
   background-color: white;
@@ -2398,7 +2416,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
       }
     }
   }
-`,d=e=>{const{className:t,children:n,nekoErrors:a=[],style:i={}}=e,[s,d]=(0,r.useState)(!1),[p,h]=(0,r.useState)(!1),f=(0,c.gR)("neko-page",t);return(0,r.useEffect)((()=>{if(a&&!s)for(let e of a)if(e){d(e);break}}),[a,s]),o().createElement(u,{className:f,style:i},s&&o().createElement("div",{className:"neko-rest-error"},o().createElement("div",{className:"container"},!p&&o().createElement(o().Fragment,null,o().createElement("h3",null,"The Rest API is disabled or broken 😢"),o().createElement("p",null,"The Rest API is required for this plugin to work. It is enabled in WordPress by default since December 2016 and used by the Gutenberg Editor since 2019. In short, it allows more robustness and a much cleaner infrastructure. Soon, Wordpress will entirely depends on it, so it is important to keep it enabled."),o().createElement("p",null,o().createElement("i",null,"Last but not least: check your PHP Error Logs and your Debugging Console.")),o().createElement("p",{className:"neko-debug"},o().createElement("small",null,"URL: ",s.url,o().createElement("br",null),"CODE: ",s.code,o().createElement("br",null),"MESSAGE: ",s.message,o().createElement("br",null)))),s.body&&p&&o().createElement("p",{className:"neko-debug"},o().createElement("div",{dangerouslySetInnerHTML:{__html:s.body}})),s.body&&o().createElement(l.M,{color:"#a94242",onClick:()=>h(!p)},p?"Hide":"Display"," response from server"),o().createElement(l.M,{color:"#a94242",onClick:()=>{window.open("https://meowapps.com/fix-wordpress-rest-api/","_blank")}},"Learn about WordPress Debugging"))),n)},p=e=>o().createElement(d,e);p.propTypes={className:i().string,style:i().object,nekoErrors:i().array}},9804(e,t,n){"use strict";n.d(t,{d:()=>d});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6038);function c(){return c=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},c.apply(null,arguments)}const u=(0,s.Ay)((e=>{const{title:t="",contentAlign:n="left",titleStyle:r={},color:a,...i}=e,s=(0,l.gR)("neko-settings",e.className);return o().createElement("div",c({className:s},i),o().createElement("div",{className:"neko-settings-head",style:r},t||" "),o().createElement("div",{className:`neko-settings-content neko-settings-content-align-${n}`},e.children))}))`
+`,d=e=>{const{className:t,children:n,nekoErrors:a=[],style:i={}}=e,[s,d]=(0,r.useState)(!1),[p,h]=(0,r.useState)(!1),f=(0,c.gR)("neko-page",t);return(0,r.useEffect)((()=>{if(a&&!s)for(let e of a)if(e){d(e);break}}),[a,s]),o().createElement(u,{className:f,style:i},s&&o().createElement("div",{className:"neko-rest-error"},o().createElement("div",{className:"container"},!p&&o().createElement(o().Fragment,null,o().createElement("h3",null,"The Rest API is disabled or broken 😢"),o().createElement("p",null,"The Rest API is required for this plugin to work. It is enabled in WordPress by default since December 2016 and used by the Gutenberg Editor since 2019. In short, it allows more robustness and a much cleaner infrastructure. Soon, Wordpress will entirely depends on it, so it is important to keep it enabled."),o().createElement("p",null,o().createElement("i",null,"Last but not least: check your PHP Error Logs and your Debugging Console.")),o().createElement("p",{className:"neko-debug"},o().createElement("small",null,"URL: ",s.url,o().createElement("br",null),"CODE: ",s.code,o().createElement("br",null),"MESSAGE: ",s.message,o().createElement("br",null)))),s.body&&p&&o().createElement("p",{className:"neko-debug"},o().createElement("div",{dangerouslySetInnerHTML:{__html:s.body}})),s.body&&o().createElement(l.M,{color:"#a94242",onClick:()=>h(!p)},p?"Hide":"Display"," response from server"),o().createElement(l.M,{color:"#a94242",onClick:()=>{window.open("https://meowapps.com/fix-wordpress-rest-api/","_blank")}},"Learn about WordPress Debugging"))),n)},p=e=>o().createElement(d,e);p.propTypes={className:i().string,style:i().object,nekoErrors:i().array}},9804(e,t,n){"use strict";n.d(t,{d:()=>d});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6038);function c(){return c=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},c.apply(null,arguments)}const u=(0,s.Ay)((e=>{const{title:t="",contentAlign:n="left",titleStyle:a={},color:i,...s}=e,u=(0,l.gR)("neko-settings",e.className),d=(0,r.useId)(),p=""!==t&&null!=t;return o().createElement("div",c({className:u},s),o().createElement("div",{className:"neko-settings-head",id:p?d:void 0,style:a},t||" "),o().createElement("div",c({className:`neko-settings-content neko-settings-content-align-${n}`},p?{role:"group","aria-labelledby":d}:{}),e.children))}))`
   display: flex;
   font-family: var(--neko-font-family);
   
@@ -2970,7 +2988,12 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     background: color-mix(in oklab, var(--neko-main-color) 10%, transparent);
   }
 
-  /* Inversed — for use on dark/branded surfaces like TabContent (blue) */
+  &:focus-visible {
+    outline: 2px solid var(--neko-main-color);
+    outline-offset: 2px;
+  }
+
+  /* Inversed, for use on dark or branded surfaces like TabContent (blue) */
   &.inversed {
     color: rgba(255, 255, 255, 0.7);
 
@@ -2983,6 +3006,10 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
       color: white;
       background: rgba(255, 255, 255, 0.18);
     }
+
+    &:focus-visible {
+      outline-color: white;
+    }
   }
 
   span {
@@ -2991,7 +3018,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     font-weight: 400;
     font-variant-numeric: tabular-nums;
   }
-`,p=e=>{const{name:t,value:n,onChange:r,busy:a=!1,className:i,inversed:s}=e,l=(0,c.gR)("neko-quick-links",i,{inversed:s}),d=o().Children.toArray(e.children).filter((e=>!!e)).map((e=>o().cloneElement(e,{busy:a,inversed:s,isActive:e.props.value===n,onClick:e=>{e!==n&&r(e,t)}})));return o().createElement(u,{className:l},d)},h=e=>{const{title:t,value:n=0,count:r,onClick:a,busy:i,isActive:s=!1,className:u,inversed:p}=e,h=(0,c.gR)("neko-link",u,{active:s,inversed:p});return o().createElement(d,{onClick:()=>a(n),className:h},t,void 0===r?null:o().createElement("span",null,"(",i?o().createElement(l.z,{icon:"replay",spinning:!0,width:12,containerStyle:{display:"inline"}}):r,")"))},f=e=>o().createElement(p,e);f.propTypes={name:i().string,value:i().string,onChange:i().func,inversed:i().bool};const m=e=>o().createElement(h,e);m.propTypes={title:i().string,value:i().string,count:i().number,onClick:i().func,isActive:i().bool,inversed:i().bool}},1125(e,t,n){"use strict";n.d(t,{k:()=>u});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(4588),l=n(1863);const c={marginTop:10,background:"rgb(0, 72, 88)",padding:10,color:"rgb(58, 212, 58)",maxHeight:400,minHeight:200,display:"block",fontFamily:"monospace",fontSize:12,whiteSpace:"pre",overflowX:"auto",borderRadius:10,textWrap:"balance"},u=({refreshQuery:e,clearQuery:t,onRefresh:n=null,onClear:a=null,i18n:i,refreshOnMount:u=!0,scrollToBottom:d=!1,blockMaxWidth:p=800})=>{const h=(0,r.useRef)(null),[f,m]=(0,r.useState)(""),[g,y]=(0,r.useState)(!1),b=async()=>{y(!0);const t=await e();n&&n(t),m(t),y(!1)};return(0,r.useEffect)((()=>{u&&b()}),[]),(0,r.useEffect)((()=>{d&&h.current&&h.current.scrollTo(0,h.current.scrollHeight)}),[f]),o().createElement(s.z,{title:i.COMMON.LOGS,busy:g,className:"primary neko-log",style:{maxWidth:p}},o().createElement(l.M,{onClick:()=>b()},i.COMMON.REFRESH_LOGS),o().createElement(l.M,{className:"danger",onClick:()=>(async()=>{y(!0);const e=await t();a&&a(e),m(""),y(!1)})()},i.COMMON.CLEAR_LOGS),o().createElement("div",{style:c,ref:h},f))};u.propTypes={refreshQuery:i().func,clearQuery:i().func,onRefresh:i().func,onClear:i().func,i18n:i().object,refreshOnMount:i().bool,scrollToBottom:i().bool,blockMaxWidth:i().number}},7252(e,t,n){"use strict";n.d(t,{r:()=>s});var r=n(1594),o=n.n(r);const a=n(5396).Ay.div`
+`,p=e=>{const{name:t,value:n,onChange:r,busy:a=!1,className:i,inversed:s}=e,l=(0,c.gR)("neko-quick-links",i,{inversed:s}),d=o().Children.toArray(e.children).filter((e=>!!e)).map((e=>o().cloneElement(e,{busy:a,inversed:s,isActive:e.props.value===n,onClick:e=>{e!==n&&r(e,t)}})));return o().createElement(u,{className:l},d)},h=e=>{const{title:t,value:n=0,count:r,onClick:a,busy:i,isActive:s=!1,className:u,inversed:p}=e,h=(0,c.gR)("neko-link",u,{active:s,inversed:p}),f=()=>a(n);return o().createElement(d,{onClick:f,className:h,role:"button",tabIndex:0,"aria-current":s?"true":void 0,onKeyDown:e=>{"Enter"!==e.key&&" "!==e.key&&"Spacebar"!==e.key||(e.preventDefault(),f())}},t,void 0===r?null:o().createElement("span",null,"(",i?o().createElement(l.z,{icon:"replay",spinning:!0,width:12,containerStyle:{display:"inline"}}):r,")"))},f=e=>o().createElement(p,e);f.propTypes={name:i().string,value:i().string,onChange:i().func,inversed:i().bool};const m=e=>o().createElement(h,e);m.propTypes={title:i().string,value:i().string,count:i().number,onClick:i().func,isActive:i().bool,inversed:i().bool}},1125(e,t,n){"use strict";n.d(t,{k:()=>u});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(4588),l=n(1863);const c={marginTop:10,background:"rgb(0, 72, 88)",padding:10,color:"rgb(58, 212, 58)",maxHeight:400,minHeight:200,display:"block",fontFamily:"monospace",fontSize:12,whiteSpace:"pre",overflowX:"auto",borderRadius:10,textWrap:"balance"},u=({refreshQuery:e,clearQuery:t,onRefresh:n=null,onClear:a=null,i18n:i,refreshOnMount:u=!0,scrollToBottom:d=!1,blockMaxWidth:p=800})=>{const h=(0,r.useRef)(null),[f,m]=(0,r.useState)(""),[g,y]=(0,r.useState)(!1),b=async()=>{y(!0);const t=await e();n&&n(t),m(t),y(!1)};return(0,r.useEffect)((()=>{u&&b()}),[]),(0,r.useEffect)((()=>{d&&h.current&&h.current.scrollTo(0,h.current.scrollHeight)}),[f]),o().createElement(s.z,{title:i.COMMON.LOGS,busy:g,className:"primary neko-log",style:{maxWidth:p}},o().createElement(l.M,{onClick:()=>b()},i.COMMON.REFRESH_LOGS),o().createElement(l.M,{className:"danger",onClick:()=>(async()=>{y(!0);const e=await t();a&&a(e),m(""),y(!1)})()},i.COMMON.CLEAR_LOGS),o().createElement("div",{style:c,ref:h},f))};u.propTypes={refreshQuery:i().func,clearQuery:i().func,onRefresh:i().func,onClear:i().func,i18n:i().object,refreshOnMount:i().bool,scrollToBottom:i().bool,blockMaxWidth:i().number}},7252(e,t,n){"use strict";n.d(t,{r:()=>s});var r=n(1594),o=n.n(r);const a=n(5396).Ay.div`
   display: flex;
   max-width: 128px;
   max-height: 128px;
@@ -3162,7 +3189,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
       width: 1.5rem;
     }
   }
-`,f=e=>{const{currentPage:t,limit:n=0,onClick:a,total:i=0,onCurrentPageChanged:s,infinite:f=!1,maxInfinite:m=!1,controllerText:g,compact:y=!1}=e,b=!!s,v=(0,r.useMemo)((()=>f||m?0:Math.ceil(0===i?1:n>0?i/n:1)),[f,m,n,i]),k="nako-paging-controller-icon "+(f||1!==t?"":"disabled"),x="nako-paging-controller-icon "+(f||m||t!==v?"":"disabled"),[w,E]=(0,r.useState)(!1),[C,A]=(0,r.useState)(y),S=e=>{E(!1),a(e)},O=e=>{if(f)return e;const t=Number(e);return m?t<1?1:t:t>v?v:t<1?1:t},M=e=>{const t=e.target.value;isNaN(t)||s(O(t)),E(!1)},R=e=>{if("Enter"===e.key){e.preventDefault();const t=e.target.value;isNaN(t)||s(O(t)),E(!1)}},_=(0,r.useMemo)((()=>{if(!w){const e=()=>{b&&1!==v&&E(!0)},n=b&&v>1;return o().createElement("span",{className:n?"neko-paging-current-page":"",onClick:e},t)}return o().createElement("input",{autoFocus:!0,type:"text",className:b?"neko-paging-current-page":"",defaultValue:t,onBlur:M,onKeyPress:R})}),[t,w,s,v]),N=e=>{w&&e.target===e.currentTarget&&E(!1)},z=(0,r.useRef)(null);return(0,r.useEffect)((()=>{const e=()=>{if(z.current){const e=z.current.offsetWidth;A(y||e<280)}};return e(),window.addEventListener("resize",e),()=>window.removeEventListener("resize",e)}),[y]),o().createElement(h,{className:"neko-paging",ref:z},!!i&&o().createElement("span",{className:"neko-paging-text"},i," result",i>0?"s":""),o().createElement("div",{className:"neko-paging-controller",onClick:N},!f&&!m&&o().createElement(u.A,{className:k,onClick:()=>S(1),size:p.hS.chevron}),o().createElement(l.A,{className:k,onClick:()=>S(t-1),size:p.hS.chevron}),o().createElement("p",{className:"nako-paging-controller-text",onClick:N},g||(C?o().createElement(o().Fragment,null,_,"/",v):o().createElement(o().Fragment,null,"Page ",_," of ",v))),o().createElement(c.A,{className:x,onClick:()=>S(t+1),size:p.hS.chevron}),!f&&!m&&o().createElement(d.A,{className:x,onClick:()=>S(v),size:p.hS.chevron})))},m=e=>o().createElement(f,e);m.propTypes={currentPage:i().number,limit:i().number,total:i().number,onClick:i().func,lastPage:i().number,infinite:i().bool,maxInfinite:i().bool,controllerText:i().object}},896(e,t,n){"use strict";n.d(t,{B:()=>d});var r=n(1594),o=n.n(r),a=n(4928),i=n(390),s=n.n(i),l=n(5396);function c(){return c=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},c.apply(null,arguments)}const u=l.Ay.div`
+`,f=e=>{const{currentPage:t,limit:n=0,onClick:a,total:i=0,onCurrentPageChanged:s,infinite:f=!1,maxInfinite:m=!1,controllerText:g,compact:y=!1}=e,b=!!s,v=(0,r.useMemo)((()=>f||m?0:Math.ceil(0===i?1:n>0?i/n:1)),[f,m,n,i]),k="nako-paging-controller-icon "+(f||1!==t?"":"disabled"),x="nako-paging-controller-icon "+(f||m||t!==v?"":"disabled"),[w,E]=(0,r.useState)(!1),[C,A]=(0,r.useState)(y),S=e=>{E(!1),a(e)},O=e=>{if(f)return e;const t=Number(e);return m?t<1?1:t:t>v?v:t<1?1:t},M=e=>{const t=e.target.value;isNaN(t)||s(O(t)),E(!1)},R=e=>{if("Enter"===e.key){e.preventDefault();const t=e.target.value;isNaN(t)||s(O(t)),E(!1)}},_=(0,r.useMemo)((()=>{if(!w){const e=()=>{b&&1!==v&&E(!0)},n=b&&v>1;return o().createElement("span",{className:n?"neko-paging-current-page":"",onClick:e},t)}return o().createElement("input",{autoFocus:!0,type:"text",className:b?"neko-paging-current-page":"",defaultValue:t,onBlur:M,onKeyPress:R})}),[t,w,s,v]),N=e=>{w&&e.target===e.currentTarget&&E(!1)},z=(0,r.useRef)(null);return(0,r.useEffect)((()=>{const e=()=>{if(z.current){const e=z.current.offsetWidth;A(y||e<280)}};return e(),window.addEventListener("resize",e),()=>window.removeEventListener("resize",e)}),[y]),o().createElement(h,{className:"neko-paging",ref:z},!!i&&o().createElement("span",{className:"neko-paging-text"},i," result",1!==i?"s":""),o().createElement("div",{className:"neko-paging-controller",onClick:N},!f&&!m&&o().createElement(u.A,{className:k,onClick:()=>S(1),size:p.hS.chevron}),o().createElement(l.A,{className:k,onClick:()=>S(t-1),size:p.hS.chevron}),o().createElement("p",{className:"nako-paging-controller-text",onClick:N},g||(C?o().createElement(o().Fragment,null,_,"/",v):o().createElement(o().Fragment,null,"Page ",_," of ",v))),o().createElement(c.A,{className:x,onClick:()=>S(t+1),size:p.hS.chevron}),!f&&!m&&o().createElement(d.A,{className:x,onClick:()=>S(v),size:p.hS.chevron})))},m=e=>o().createElement(f,e);m.propTypes={currentPage:i().number,limit:i().number,total:i().number,onClick:i().func,lastPage:i().number,infinite:i().bool,maxInfinite:i().bool,controllerText:i().object}},896(e,t,n){"use strict";n.d(t,{B:()=>d});var r=n(1594),o=n.n(r),a=n(4928),i=n(390),s=n.n(i),l=n(5396);function c(){return c=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},c.apply(null,arguments)}const u=l.Ay.div`
   display: inline-flex;
   position: relative;
   z-index: 10;
@@ -3754,8 +3781,17 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
   font-family: var(--neko-font-family);
   border-spacing: 0;
   width: 100%;
-  word-break: break-all;
+  /* Keep words whole. Breaking at any letter turned "Sync Remote URLs" into "Sync Remot / e
+     URLs" in every narrow column. A value with no spaces, like a hash or a long id, still
+     breaks because of overflow-wrap, and a table full of those can ask for break-all again
+     with the breakAnywhere prop. */
+  word-break: normal;
+  overflow-wrap: anywhere;
   display: block;
+
+  &.neko-table-break-anywhere {
+    word-break: break-all;
+  }
 
   thead, tbody, tfoot {
     display: block;
@@ -4008,7 +4044,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
       cursor: pointer;
     }
   }
-`,A=e=>{const{checked:t,indeterminate:n,onSelect:r=(()=>{}),onUnselect:a=(()=>{}),isBusy:i=!1,busy:s=!1}=e,l=s||i;return o().useEffect((()=>{i&&console.log('TableCheckBox: The "isBusy" prop is deprecated. Please use "busy" instead.')}),[i]),o().createElement(p.R,{small:!0,onChange:(e,t,n)=>e?r(n):a(n),checked:t,indeterminate:n,busy:t&&l,disabled:l})},S=(e,t=!1)=>{let n={};return e.align&&(n={textAlign:e.align}),t&&e.verticalAlign&&(n={...n,verticalAlign:e.verticalAlign}),e.style&&(n={...n,...e.style}),n},O=e=>!0===e?"#edf8ff":e,M=(e,t)=>{console.log("[NekoUI] Missing implementation for onFilterChange.",{filter:e,value:t})},R=e=>{const{data:t=[],selectedItems:n=[],selectedRow:a,filters:i,onFilterChange:s=M}=e,{columns:p=[],busy:f=!1,isBusy:m=!1,onSelect:g,onSelectRow:y,selectOnRowClick:b=!0,onUnselect:v,onSortChange:k=(()=>{}),variant:x="default",alternateRowColor:R=!1,sort:_,emptyMessage:N="Empty.",initialLoad:z=!1}=e,P=f||m;o().useEffect((()=>{m&&console.log('NekoTable: The "isBusy" prop is deprecated. Please use "busy" instead.')}),[m]);p.length;const $=t.some((e=>void 0===e.id));$&&console.warn('Table data is missing the "id" field. Using the index as id instead, and disabling the row selection.');const T=$?t.map(((e,t)=>void 0===e.id?{...e,id:-(t+1),disabled_row:!0}:e)):t,j=(e=>e?{backgroundColor:O(e)}:{})(R),I=T.map((e=>{const t=p.map((t=>({value:e[t.accessor],style:S(t,!0)})));return{id:e.id,disabled_row:null==e?void 0:e.disabled_row,isBusy:e.isBusy||!1,cells:t}})),L=T.map((e=>({id:e.id}))),{onSelect:F}=(({list:e,selectedList:t,callback:n,key:o="id"})=>{const{pressShift:a}=(0,h.v_)(),i=(0,r.useMemo)((()=>{if(!a||!t.length)return null;const n=t[t.length-1];return e.findIndex((e=>e[o]===n))}),[o,e,a,t]);return{onSelect:(0,r.useCallback)((r=>{if(!n)return;if(null===i)return void n([...r]);const a=r[0],s=e.findIndex((e=>e[o]===a)),l=(i<s?i:s)+1,c=i<s?s:i,u=e.slice(l,c).map((e=>e[o])).filter((e=>!t.some((t=>t===e))));n([...u,...r])}),[i,e,n,t,o])}})({list:L,selectedList:n,callback:g}),D=I.map((e=>e.id)),q=0===D.length,B=D.filter((e=>n.includes(e))),H=!q&&B.length===D.length,W=!H&&n.length>0,U=p.reduce((function(e,t,n){return!1===t.visible&&e.push(n),e}),[]),Q=!!g&&!q,V=o().createElement("tr",null,Q&&o().createElement("th",{className:"table-checkbox-cell"},o().createElement(A,{checked:H,indeterminate:W,onSelect:e=>g(D,e),onUnselect:e=>{v(W?n:D,e)}})),p.filter(((e,t)=>!U.includes(t))).map((e=>{let t=_&&_.accessor===e.accessor,n=_&&"asc"===_.by;const r=S(e);return o().createElement("th",{style:r,key:e.accessor},o().createElement("div",null,o().createElement("div",null,e.title),o().createElement("div",{style:{flex:"auto"}}),e.filters&&o().createElement("div",{className:"neko-column-action"},o().createElement(w,E({accessor:e.accessor},e.filters,{onChange:(e,t)=>s(e,t),filters:(()=>{let t=(null==i?void 0:i.find((t=>t.accessor===e.accessor)))??null;return(null==t?void 0:t.value)??null})()}))),e.sortable&&o().createElement("div",{className:"neko-column-action",onClick:r=>{let o=_&&_.accessor!==e.accessor;k(e.accessor,o||t&&n?"desc":"asc",r)}},t?n?o().createElement(c.A,{className:"neko-active",size:u.hS.chevron}):o().createElement(l.A,{className:"neko-active",size:u.hS.chevron}):o().createElement(l.A,{className:t?"neko-active":"",size:u.hS.chevron}))))}))),K=(0,h.gR)("neko-table",`neko-table-${x}`,{"neko-row-selectable":!!y}),G=((e,t)=>{const n=e.filter((e=>!1!==e.visible)),r=t?["34px"]:[];return n.forEach((e=>{if(e.width)if(e.width.endsWith("%")){const t=parseFloat(e.width)/100;r.push(`${t}fr`)}else r.push(e.width);else r.push("1fr")})),r.join(" ")})(p,Q);return o().createElement(d.A,{busy:P,spinnerTop:I.length>0,overlayStyle:{top:"36px",bottom:"default"===x?"36px":0,height:"auto",borderRadius:0}},o().createElement(C,{className:K,$gridColumns:G},o().createElement("thead",null,V),o().createElement("tbody",null,!I.length&&!z&&o().createElement("tr",null,o().createElement("td",{style:{gridColumn:"1 / -1",textAlign:"center",minHeight:40,color:"gray"}},N)),I.map(((e,t)=>{const r=!!a&&a===e.id||n.includes(e.id),i=r||t%2!=0?{}:j;return o().createElement("tr",{key:`neko-row-${e.id}`,className:r?"selected":"",style:i,onClick:t=>{t.stopPropagation(),y&&b&&y(e.id,t)}},Q&&o().createElement("td",{className:"table-checkbox-cell"},o().createElement(A,{checked:n.includes(e.id),onSelect:t=>{t.stopPropagation(),F([e.id],t)},onUnselect:t=>{t.stopPropagation(),v([e.id],t)},isBusy:e.isBusy||(null==e?void 0:e.disabled_row)})),e.cells.map(((e,t)=>({...e,origIdx:t}))).filter((e=>!U.includes(e.origIdx))).map((t=>o().createElement("td",{key:`${e.id}-${t.origIdx}`,style:t.style},t.value))))}))),"default"===x&&o().createElement("tfoot",null,V)))},_=e=>o().createElement(R,e);_.propTypes={columns:i().arrayOf(i().any),data:i().arrayOf(i().any),busy:i().bool,isBusy:i().bool,onSelect:i().func,onSelectRow:i().func,selectOnRowClick:i().bool,onUnselect:i().func,selectedItems:i().arrayOf(i().any),onSortChange:i().func,variant:i().string,alternateRowColor:i().oneOfType([i().bool,i().string]),initialLoad:i().bool}},3447(e,t,n){"use strict";n.d(t,{V:()=>D,_:()=>F});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(8074),c=n(9018),u=n(3307),d=n(8865),p=n(1854),h=n(896),f=n(217),m=n(6038),g=n(1796);function y(){return y=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},y.apply(null,arguments)}const b=320,v=120,k=72,x=5,w=2,E=44,C=12,A=.25,S=s.Ay.div`
+`,A=e=>{const{checked:t,indeterminate:n,onSelect:r=(()=>{}),onUnselect:a=(()=>{}),isBusy:i=!1,busy:s=!1}=e,l=s||i;return o().useEffect((()=>{i&&console.log('TableCheckBox: The "isBusy" prop is deprecated. Please use "busy" instead.')}),[i]),o().createElement(p.R,{small:!0,onChange:(e,t,n)=>e?r(n):a(n),checked:t,indeterminate:n,busy:t&&l,disabled:l})},S=(e,t=!1)=>{let n={};return e.align&&(n={textAlign:e.align}),t&&e.verticalAlign&&(n={...n,verticalAlign:e.verticalAlign}),e.style&&(n={...n,...e.style}),n},O=e=>!0===e?"#edf8ff":e,M=(e,t)=>{console.log("[NekoUI] Missing implementation for onFilterChange.",{filter:e,value:t})},R=e=>{const{data:t=[],selectedItems:n=[],selectedRow:a,filters:i,onFilterChange:s=M}=e,{columns:p=[],busy:f=!1,isBusy:m=!1,onSelect:g,onSelectRow:y,selectOnRowClick:b=!0,onUnselect:v,onSortChange:k=(()=>{}),variant:x="default",alternateRowColor:R=!1,sort:_,emptyMessage:N="Empty.",initialLoad:z=!1,breakAnywhere:P=!1}=e,$=f||m;o().useEffect((()=>{m&&console.log('NekoTable: The "isBusy" prop is deprecated. Please use "busy" instead.')}),[m]);p.length;const T=t.some((e=>void 0===e.id));T&&console.warn('Table data is missing the "id" field. Using the index as id instead, and disabling the row selection.');const j=T?t.map(((e,t)=>void 0===e.id?{...e,id:-(t+1),disabled_row:!0}:e)):t,I=(e=>e?{backgroundColor:O(e)}:{})(R),L=j.map((e=>{const t=p.map((t=>({value:e[t.accessor],style:S(t,!0)})));return{id:e.id,disabled_row:null==e?void 0:e.disabled_row,isBusy:e.isBusy||!1,cells:t}})),F=j.map((e=>({id:e.id}))),{onSelect:D}=(({list:e,selectedList:t,callback:n,key:o="id"})=>{const{pressShift:a}=(0,h.v_)(),i=(0,r.useMemo)((()=>{if(!a||!t.length)return null;const n=t[t.length-1];return e.findIndex((e=>e[o]===n))}),[o,e,a,t]);return{onSelect:(0,r.useCallback)((r=>{if(!n)return;if(null===i)return void n([...r]);const a=r[0],s=e.findIndex((e=>e[o]===a)),l=(i<s?i:s)+1,c=i<s?s:i,u=e.slice(l,c).map((e=>e[o])).filter((e=>!t.some((t=>t===e))));n([...u,...r])}),[i,e,n,t,o])}})({list:F,selectedList:n,callback:g}),q=L.map((e=>e.id)),B=0===q.length,H=q.filter((e=>n.includes(e))),W=!B&&H.length===q.length,U=!W&&n.length>0,Q=p.reduce((function(e,t,n){return!1===t.visible&&e.push(n),e}),[]),V=!!g&&!B,K=o().createElement("tr",null,V&&o().createElement("th",{className:"table-checkbox-cell"},o().createElement(A,{checked:W,indeterminate:U,onSelect:e=>g(q,e),onUnselect:e=>{v(U?n:q,e)}})),p.filter(((e,t)=>!Q.includes(t))).map((e=>{let t=_&&_.accessor===e.accessor,n=_&&"asc"===_.by;const r=S(e);return o().createElement("th",{style:r,key:e.accessor},o().createElement("div",null,o().createElement("div",null,e.title),o().createElement("div",{style:{flex:"auto"}}),e.filters&&o().createElement("div",{className:"neko-column-action"},o().createElement(w,E({accessor:e.accessor},e.filters,{onChange:(e,t)=>s(e,t),filters:(()=>{let t=(null==i?void 0:i.find((t=>t.accessor===e.accessor)))??null;return(null==t?void 0:t.value)??null})()}))),e.sortable&&o().createElement("div",{className:"neko-column-action",onClick:r=>{let o=_&&_.accessor!==e.accessor;k(e.accessor,o||t&&n?"desc":"asc",r)}},t?n?o().createElement(c.A,{className:"neko-active",size:u.hS.chevron}):o().createElement(l.A,{className:"neko-active",size:u.hS.chevron}):o().createElement(l.A,{className:t?"neko-active":"",size:u.hS.chevron}))))}))),G=(0,h.gR)("neko-table",`neko-table-${x}`,{"neko-row-selectable":!!y},{"neko-table-break-anywhere":P}),Y=((e,t)=>{const n=e.filter((e=>!1!==e.visible)),r=t?["34px"]:[];return n.forEach((e=>{if(e.width)if(e.width.endsWith("%")){const t=parseFloat(e.width)/100;r.push(`${t}fr`)}else r.push(e.width);else r.push("1fr")})),r.join(" ")})(p,V);return o().createElement(d.A,{busy:$,spinnerTop:L.length>0,overlayStyle:{top:"36px",bottom:"default"===x?"36px":0,height:"auto",borderRadius:0}},o().createElement(C,{className:G,$gridColumns:Y},o().createElement("thead",null,K),o().createElement("tbody",null,!L.length&&!z&&o().createElement("tr",null,o().createElement("td",{style:{gridColumn:"1 / -1",textAlign:"center",minHeight:40,color:"gray"}},N)),L.map(((e,t)=>{const r=!!a&&a===e.id||n.includes(e.id),i=r||t%2!=0?{}:I;return o().createElement("tr",{key:`neko-row-${e.id}`,className:r?"selected":"",style:i,onClick:t=>{t.stopPropagation(),y&&b&&y(e.id,t)}},V&&o().createElement("td",{className:"table-checkbox-cell"},o().createElement(A,{checked:n.includes(e.id),onSelect:t=>{t.stopPropagation(),D([e.id],t)},onUnselect:t=>{t.stopPropagation(),v([e.id],t)},isBusy:e.isBusy||(null==e?void 0:e.disabled_row)})),e.cells.map(((e,t)=>({...e,origIdx:t}))).filter((e=>!Q.includes(e.origIdx))).map((t=>o().createElement("td",{key:`${e.id}-${t.origIdx}`,style:t.style},t.value))))}))),"default"===x&&o().createElement("tfoot",null,K)))},_=e=>o().createElement(R,e);_.propTypes={columns:i().arrayOf(i().any),data:i().arrayOf(i().any),busy:i().bool,isBusy:i().bool,onSelect:i().func,onSelectRow:i().func,selectOnRowClick:i().bool,onUnselect:i().func,selectedItems:i().arrayOf(i().any),onSortChange:i().func,variant:i().string,alternateRowColor:i().oneOfType([i().bool,i().string]),initialLoad:i().bool,breakAnywhere:i().bool}},3447(e,t,n){"use strict";n.d(t,{V:()=>D,_:()=>F});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(8074),c=n(9018),u=n(3307),d=n(8865),p=n(1854),h=n(896),f=n(217),m=n(6038),g=n(1796);function y(){return y=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},y.apply(null,arguments)}const b=320,v=120,k=72,x=5,w=2,E=44,C=12,A=.25,S=s.Ay.div`
   font-size: var(--neko-font-size);
   margin-bottom: 16px;
 `,O=s.Ay.div`
@@ -4323,7 +4359,21 @@ const i=(0,r.forwardRef)((({color:e="currentColor",size:t=24,strokeWidth:n=2,abs
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Activity",[["path",{d:"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",key:"169zse"}]])},8576(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Activity",[["path",{d:"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",key:"169zse"}]])},6929(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("ArrowDown",[["path",{d:"M12 5v14",key:"s699le"}],["path",{d:"m19 12-7 7-7-7",key:"1idqje"}]])},5619(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("ArrowRight",[["path",{d:"M5 12h14",key:"1ays0h"}],["path",{d:"m12 5 7 7-7 7",key:"xquz4c"}]])},8576(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4351,7 +4401,14 @@ const r=(0,n(7927).A)("Bot",[["path",{d:"M12 8V4H8",key:"hb8ula"}],["rect",{widt
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Brain",[["path",{d:"M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z",key:"l5xja"}],["path",{d:"M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z",key:"ep3f8r"}],["path",{d:"M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4",key:"1p4c4q"}],["path",{d:"M17.599 6.5a3 3 0 0 0 .399-1.375",key:"tmeiqw"}],["path",{d:"M6.003 5.125A3 3 0 0 0 6.401 6.5",key:"105sqy"}],["path",{d:"M3.477 10.896a4 4 0 0 1 .585-.396",key:"ql3yin"}],["path",{d:"M19.938 10.5a4 4 0 0 1 .585.396",key:"1qfode"}],["path",{d:"M6 18a4 4 0 0 1-1.967-.516",key:"2e4loj"}],["path",{d:"M19.967 17.484A4 4 0 0 1 18 18",key:"159ez6"}]])},7935(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Brain",[["path",{d:"M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z",key:"l5xja"}],["path",{d:"M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z",key:"ep3f8r"}],["path",{d:"M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4",key:"1p4c4q"}],["path",{d:"M17.599 6.5a3 3 0 0 0 .399-1.375",key:"tmeiqw"}],["path",{d:"M6.003 5.125A3 3 0 0 0 6.401 6.5",key:"105sqy"}],["path",{d:"M3.477 10.896a4 4 0 0 1 .585-.396",key:"ql3yin"}],["path",{d:"M19.938 10.5a4 4 0 0 1 .585.396",key:"1qfode"}],["path",{d:"M6 18a4 4 0 0 1-1.967-.516",key:"2e4loj"}],["path",{d:"M19.967 17.484A4 4 0 0 1 18 18",key:"159ez6"}]])},4949(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Brush",[["path",{d:"m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08",key:"1styjt"}],["path",{d:"M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z",key:"z0l1mu"}]])},7935(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4393,21 +4450,49 @@ const r=(0,n(7927).A)("ChevronRight",[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]]
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("CircleAlert",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["line",{x1:"12",x2:"12",y1:"8",y2:"12",key:"1pkeuh"}],["line",{x1:"12",x2:"12.01",y1:"16",y2:"16",key:"4dfq90"}]])},4228(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("CircleAlert",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["line",{x1:"12",x2:"12",y1:"8",y2:"12",key:"1pkeuh"}],["line",{x1:"12",x2:"12.01",y1:"16",y2:"16",key:"4dfq90"}]])},5849(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Database",[["ellipse",{cx:"12",cy:"5",rx:"9",ry:"3",key:"msslwz"}],["path",{d:"M3 5V19A9 3 0 0 0 21 19V5",key:"1wlel7"}],["path",{d:"M3 12A9 3 0 0 0 21 12",key:"mv7ke4"}]])},3401(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Columns3",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2",key:"afitv7"}],["path",{d:"M9 3v18",key:"fh3hqa"}],["path",{d:"M15 3v18",key:"14nvp0"}]])},948(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Eraser",[["path",{d:"m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21",key:"182aya"}],["path",{d:"M22 21H7",key:"t4ddhn"}],["path",{d:"m5 11 9 9",key:"1mo9qw"}]])},5635(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Copy",[["rect",{width:"14",height:"14",x:"8",y:"8",rx:"2",ry:"2",key:"17jyea"}],["path",{d:"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2",key:"zix9uf"}]])},4228(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Database",[["ellipse",{cx:"12",cy:"5",rx:"9",ry:"3",key:"msslwz"}],["path",{d:"M3 5V19A9 3 0 0 0 21 19V5",key:"1wlel7"}],["path",{d:"M3 12A9 3 0 0 0 21 12",key:"mv7ke4"}]])},9757(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Download",[["path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",key:"ih7n3h"}],["polyline",{points:"7 10 12 15 17 10",key:"2ggqvy"}],["line",{x1:"12",x2:"12",y1:"15",y2:"3",key:"1vk2je"}]])},3401(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Eraser",[["path",{d:"m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21",key:"182aya"}],["path",{d:"M22 21H7",key:"t4ddhn"}],["path",{d:"m5 11 9 9",key:"1mo9qw"}]])},9419(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("ExternalLink",[["path",{d:"M15 3h6v6",key:"1q9fwt"}],["path",{d:"M10 14 21 3",key:"gplh6r"}],["path",{d:"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6",key:"a6xqqp"}]])},5635(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4428,7 +4513,14 @@ const r=(0,n(7927).A)("FlaskConical",[["path",{d:"M10 2v7.527a2 2 0 0 1-.211.896
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Gauge",[["path",{d:"m12 14 4-4",key:"9kzdfg"}],["path",{d:"M3.34 19a10 10 0 1 1 17.32 0",key:"19p75a"}]])},8996(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Gauge",[["path",{d:"m12 14 4-4",key:"9kzdfg"}],["path",{d:"M3.34 19a10 10 0 1 1 17.32 0",key:"19p75a"}]])},8014(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("GitBranch",[["line",{x1:"6",x2:"6",y1:"3",y2:"15",key:"17qcm7"}],["circle",{cx:"18",cy:"6",r:"3",key:"1h7g24"}],["circle",{cx:"6",cy:"18",r:"3",key:"fqmcym"}],["path",{d:"M18 9a9 9 0 0 1-9 9",key:"n2h4wq"}]])},8996(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4442,14 +4534,35 @@ const r=(0,n(7927).A)("Globe",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Image",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2",ry:"2",key:"1m3agn"}],["circle",{cx:"9",cy:"9",r:"2",key:"af1f0g"}],["path",{d:"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21",key:"1xmnt7"}]])},1525(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Image",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2",ry:"2",key:"1m3agn"}],["circle",{cx:"9",cy:"9",r:"2",key:"af1f0g"}],["path",{d:"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21",key:"1xmnt7"}]])},2235(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Info",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"M12 16v-4",key:"1dtifu"}],["path",{d:"M12 8h.01",key:"e9boi3"}]])},2683(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Images",[["path",{d:"M18 22H4a2 2 0 0 1-2-2V6",key:"pblm9e"}],["path",{d:"m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18",key:"nf6bnh"}],["circle",{cx:"12",cy:"8",r:"2",key:"1822b1"}],["rect",{width:"16",height:"16",x:"6",y:"2",rx:"2",key:"12espp"}]])},1525(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Info",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"M12 16v-4",key:"1dtifu"}],["path",{d:"M12 8h.01",key:"e9boi3"}]])},363(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Layers",[["path",{d:"m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z",key:"8b97xw"}],["path",{d:"m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65",key:"dd6zsq"}],["path",{d:"m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65",key:"ep9fru"}]])},2045(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("ListOrdered",[["path",{d:"M10 12h11",key:"6m4ad9"}],["path",{d:"M10 18h11",key:"11hvi2"}],["path",{d:"M10 6h11",key:"c7qv1k"}],["path",{d:"M4 10h2",key:"16xx2s"}],["path",{d:"M4 6h1v4",key:"cnovpq"}],["path",{d:"M6 18H4c0-1 2-2 2-3s-1-1.5-2-1",key:"m9a95d"}]])},2683(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4505,7 +4618,14 @@ const r=(0,n(7927).A)("Paperclip",[["path",{d:"m21.44 11.05-9.19 9.19a6 6 0 0 1-
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Pause",[["rect",{x:"14",y:"4",width:"4",height:"16",rx:"1",key:"zuxfzm"}],["rect",{x:"6",y:"4",width:"4",height:"16",rx:"1",key:"1okwgv"}]])},9995(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Pause",[["rect",{x:"14",y:"4",width:"4",height:"16",rx:"1",key:"zuxfzm"}],["rect",{x:"6",y:"4",width:"4",height:"16",rx:"1",key:"1okwgv"}]])},7029(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("PenLine",[["path",{d:"M12 20h9",key:"t2du7b"}],["path",{d:"M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z",key:"1ykcvy"}]])},9995(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4526,14 +4646,28 @@ const r=(0,n(7927).A)("Play",[["polygon",{points:"6 3 20 12 6 21 6 3",key:"1oa8h
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Plus",[["path",{d:"M5 12h14",key:"1ays0h"}],["path",{d:"M12 5v14",key:"s699le"}]])},1596(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Plus",[["path",{d:"M5 12h14",key:"1ays0h"}],["path",{d:"M12 5v14",key:"s699le"}]])},3297(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("RotateCcw",[["path",{d:"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",key:"1357e3"}],["path",{d:"M3 3v5h5",key:"1xhq8a"}]])},4293(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("RefreshCw",[["path",{d:"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8",key:"v9h5vc"}],["path",{d:"M21 3v5h-5",key:"1q7to0"}],["path",{d:"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16",key:"3uifl3"}],["path",{d:"M8 16H3v5",key:"1cv678"}]])},1596(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("RotateCcw",[["path",{d:"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",key:"1357e3"}],["path",{d:"M3 3v5h5",key:"1xhq8a"}]])},8236(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Save",[["path",{d:"M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",key:"1c8476"}],["path",{d:"M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7",key:"1ydtos"}],["path",{d:"M7 3v4a1 1 0 0 0 1 1h7",key:"t51u73"}]])},4293(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4568,7 +4702,14 @@ const r=(0,n(7927).A)("Server",[["rect",{width:"20",height:"8",x:"2",y:"2",rx:"2
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("ShieldAlert",[["path",{d:"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",key:"oel41y"}],["path",{d:"M12 8v4",key:"1got3b"}],["path",{d:"M12 16h.01",key:"1drbdi"}]])},7966(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("ShieldAlert",[["path",{d:"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",key:"oel41y"}],["path",{d:"M12 8v4",key:"1got3b"}],["path",{d:"M12 16h.01",key:"1drbdi"}]])},752(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("SlidersHorizontal",[["line",{x1:"21",x2:"14",y1:"4",y2:"4",key:"obuewd"}],["line",{x1:"10",x2:"3",y1:"4",y2:"4",key:"1q6298"}],["line",{x1:"21",x2:"12",y1:"12",y2:"12",key:"1iu8h1"}],["line",{x1:"8",x2:"3",y1:"12",y2:"12",key:"ntss68"}],["line",{x1:"21",x2:"16",y1:"20",y2:"20",key:"14d8ph"}],["line",{x1:"12",x2:"3",y1:"20",y2:"20",key:"m0wm8r"}],["line",{x1:"14",x2:"14",y1:"2",y2:"6",key:"14e1ph"}],["line",{x1:"8",x2:"8",y1:"10",y2:"14",key:"1i6ji0"}],["line",{x1:"16",x2:"16",y1:"18",y2:"22",key:"1lctlv"}]])},7966(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4582,7 +4723,14 @@ const r=(0,n(7927).A)("Smartphone",[["rect",{width:"14",height:"20",x:"5",y:"2",
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Sparkles",[["path",{d:"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z",key:"4pj2yx"}],["path",{d:"M20 3v4",key:"1olli1"}],["path",{d:"M22 5h-4",key:"1gvqau"}],["path",{d:"M4 17v2",key:"vumght"}],["path",{d:"M5 18H3",key:"zchphs"}]])},858(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Sparkles",[["path",{d:"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z",key:"4pj2yx"}],["path",{d:"M20 3v4",key:"1olli1"}],["path",{d:"M22 5h-4",key:"1gvqau"}],["path",{d:"M4 17v2",key:"vumght"}],["path",{d:"M5 18H3",key:"zchphs"}]])},7936(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("SquareSplitHorizontal",[["path",{d:"M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3",key:"lubmu8"}],["path",{d:"M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3",key:"1ag34g"}],["line",{x1:"12",x2:"12",y1:"4",y2:"20",key:"1tx1rr"}]])},858(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4596,7 +4744,14 @@ const r=(0,n(7927).A)("Square",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Trash2",[["path",{d:"M3 6h18",key:"d0wm0j"}],["path",{d:"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6",key:"4alrt4"}],["path",{d:"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2",key:"v07s0e"}],["line",{x1:"10",x2:"10",y1:"11",y2:"17",key:"1uufr5"}],["line",{x1:"14",x2:"14",y1:"11",y2:"17",key:"xtxkd"}]])},7396(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Trash2",[["path",{d:"M3 6h18",key:"d0wm0j"}],["path",{d:"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6",key:"4alrt4"}],["path",{d:"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2",key:"v07s0e"}],["line",{x1:"10",x2:"10",y1:"11",y2:"17",key:"1uufr5"}],["line",{x1:"14",x2:"14",y1:"11",y2:"17",key:"xtxkd"}]])},5988(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Undo2",[["path",{d:"M9 14 4 9l5-5",key:"102s5s"}],["path",{d:"M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11",key:"f3b9sd"}]])},7396(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4610,7 +4765,14 @@ const r=(0,n(7927).A)("Upload",[["path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Users",[["path",{d:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",key:"1yyitq"}],["circle",{cx:"9",cy:"7",r:"4",key:"nufk8"}],["path",{d:"M22 21v-2a4 4 0 0 0-3-3.87",key:"kshegd"}],["path",{d:"M16 3.13a4 4 0 0 1 0 7.75",key:"1da9ce"}]])},8760(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Users",[["path",{d:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",key:"1yyitq"}],["circle",{cx:"9",cy:"7",r:"4",key:"nufk8"}],["path",{d:"M22 21v-2a4 4 0 0 0-3-3.87",key:"kshegd"}],["path",{d:"M16 3.13a4 4 0 0 1 0 7.75",key:"1da9ce"}]])},5747(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("WandSparkles",[["path",{d:"m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72",key:"ul74o6"}],["path",{d:"m14 7 3 3",key:"1r5n42"}],["path",{d:"M5 6v4",key:"ilb8ba"}],["path",{d:"M19 14v4",key:"blhpug"}],["path",{d:"M10 2v2",key:"7u0qdc"}],["path",{d:"M7 8H3",key:"zfb6yr"}],["path",{d:"M21 16h-4",key:"1cnmox"}],["path",{d:"M11 3H9",key:"1obp7u"}]])},8760(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *

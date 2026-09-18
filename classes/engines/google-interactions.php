@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Google Gemini — Interactions API engine.
+ * Google Gemini Interactions API engine.
  *
  * As of June 2026 the Interactions API is GA and Google's recommended interface
  * (https://ai.google.dev/gemini-api/docs/interactions-overview). It is stateful

@@ -1,6 +1,15 @@
 <?php
 
 class Meow_MWAI_Engines_Core {
+  /**
+  * Whether this engine can hand MCP servers to the model. Only the engines that really
+  * forward them say yes: a model that silently gets no tools answers from imagination,
+  * which looks exactly like a working tool call.
+  */
+  public function supports_mcp_servers() {
+    return false;
+  }
+
   protected $core = null;
   public $env = null;
   public $envId = null;
@@ -241,7 +250,7 @@ class Meow_MWAI_Engines_Core {
 
       // Determine whether every function call in this turn is "static" (no AI
       // feedback wanted). If so, we still execute the functions below but
-      // skip the recursive AI round-trip — the AI's reply stands as-is.
+      // skip the recursive AI round-trip: the AI's reply stands as-is.
       // Mixed turns degrade to dynamic for all calls, since OpenAI/Anthropic
       // tool-call protocols require a result for every requested call in the
       // same message.
@@ -260,7 +269,7 @@ class Meow_MWAI_Engines_Core {
       // round-trip on all-static turns satisfies the local user-facing reply but leaves the
       // server-side conversation in a half-answered state, breaking any follow-up. So we
       // disable the static-skip optimization for stateful replies (OpenAI Responses
-      // and Google Interactions) — the round-trip stays mandatory there. Chat
+      // and Google Interactions), the round-trip stays mandatory there. Chat
       // Completions and Anthropic are stateless on tool calls and remain safe to skip.
       if ( $all_static && !empty( $reply->id ) && $this->core->responseIdManager->is_stateful_conversation_id( $reply->id ) ) {
         $all_static = false;

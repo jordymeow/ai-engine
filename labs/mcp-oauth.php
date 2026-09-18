@@ -479,7 +479,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
       if ( $this->logging ) {
         error_log( '[AI Engine MCP OAuth] ❌ Non-admin user ' . $user->ID . ' tried to authorize client ' . $params['client_id'] );
       }
-      $this->render_error_page( 'Only administrators can authorize MCP applications on this site.' );
+      $this->render_error_page( $this->refusal_message() );
       exit;
     }
 
@@ -504,7 +504,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
       if ( $this->logging ) {
         error_log( '[AI Engine MCP OAuth] ❌ Non-admin user ' . get_current_user_id() . ' attempted authorize submit' );
       }
-      $this->render_error_page( 'Only administrators can authorize MCP applications on this site.' );
+      $this->render_error_page( $this->refusal_message() );
       exit;
     }
 
@@ -725,10 +725,15 @@ class Meow_MWAI_Labs_MCP_OAuth {
         . $row->access_expires . ' UTC.' );
     }
 
-    return $this->issue_token_pair( $row->client_id, (int) $row->user_id, (string) $row->scope );
+    return $this->issue_token_pair( $row->client_id, (int) $row->user_id, (string) $row->scope, $row );
   }
 
-  private function issue_token_pair( $client_id, $user_id, $scope ) {
+  /**
+  * Every refresh inserts a new row, so a grant is a chain of rows. $previous is the
+  * rotated row: the new one inherits its authorization date and last use, otherwise
+  * Connected Apps shows an app used every hour as "authorized today, never used".
+  */
+  private function issue_token_pair( $client_id, $user_id, $scope, $previous = null ) {
     global $wpdb;
     $access_token = $this->random_token( 48 );
     $refresh_token = $this->random_token( 48 );
@@ -742,8 +747,10 @@ class Meow_MWAI_Labs_MCP_OAuth {
       'access_expires' => gmdate( 'Y-m-d H:i:s', $now + self::ACCESS_TOKEN_TTL ),
       'refresh_expires' => gmdate( 'Y-m-d H:i:s', $now + self::REFRESH_TOKEN_TTL ),
       'scope' => $scope,
-      'created' => gmdate( 'Y-m-d H:i:s', $now ),
+      'created' => $previous ? $previous->created : gmdate( 'Y-m-d H:i:s', $now ),
+      'last_used' => $previous ? $previous->last_used : null,
     ] );
+    $this->prune_dead_tokens();
 
     $response = new WP_REST_Response( [
       'access_token' => $access_token,
@@ -831,7 +838,20 @@ class Meow_MWAI_Labs_MCP_OAuth {
   public function user_can_authorize( $user_id ) {
     $user_id = (int) $user_id;
     $allowed = $user_id > 0 && user_can( $user_id, 'manage_options' );
+    // Editors, when the site owner turned it on. Anyone without manage_options gets a
+    // limited session in Meow_MWAI_Labs_MCP: content tools only, each call checked
+    // against what that user can do in WordPress. That also covers users admitted
+    // through the filter below.
+    if ( !$allowed && $user_id > 0 && $this->core->get_option( 'mcp_oauth_editors', false ) ) {
+      $allowed = user_can( $user_id, 'edit_others_posts' );
+    }
     return (bool) apply_filters( 'mwai_mcp_oauth_user_can_authorize', $allowed, $user_id );
+  }
+
+  private function refusal_message() {
+    return $this->core->get_option( 'mcp_oauth_editors', false )
+      ? 'Only administrators and editors can authorize MCP applications on this site.'
+      : 'Only administrators can authorize MCP applications on this site.';
   }
   #endregion
 
@@ -900,17 +920,24 @@ class Meow_MWAI_Labs_MCP_OAuth {
   #region Admin: list / revoke grants
   public function handle_apps_list() {
     global $wpdb;
-    $rows = $wpdb->get_results(
+    $rows = $wpdb->get_results( $wpdb->prepare(
       "SELECT t.id, t.client_id, t.user_id, t.created, t.last_used, t.access_expires, t.refresh_expires, t.revoked,
               c.client_name
        FROM {$this->table_tokens} t
        LEFT JOIN {$this->table_clients} c ON c.client_id = t.client_id
-       WHERE t.revoked = 0
-       ORDER BY t.created DESC"
-    );
+       WHERE t.revoked = 0 AND COALESCE( t.refresh_expires, t.access_expires ) > %s
+       ORDER BY t.created DESC",
+      gmdate( 'Y-m-d H:i:s' )
+    ) );
     $out = [];
     foreach ( $rows as $r ) {
       $user = get_userdata( (int) $r->user_id );
+      // What this grant can reach right now, so an admin can tell a content-only
+      // Editor session apart, and spot grants that are refused on their next call.
+      $access = 'none';
+      if ( $user && $this->user_can_authorize( $user->ID ) ) {
+        $access = user_can( $user, 'manage_options' ) ? 'full' : 'content';
+      }
       $out[] = [
         'id' => (int) $r->id,
         'client_id' => $r->client_id,
@@ -918,6 +945,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
         'user_id' => (int) $r->user_id,
         'user_login' => $user ? $user->user_login : 'deleted',
         'user_display' => $user ? $user->display_name : 'Deleted user',
+        'access' => $access,
         'created' => $r->created,
         'last_used' => $r->last_used,
         'access_expires' => $r->access_expires,
@@ -959,6 +987,27 @@ class Meow_MWAI_Labs_MCP_OAuth {
        LEFT JOIN {$this->table_tokens} t ON t.client_id = c.client_id
        WHERE t.id IS NULL AND c.created < %s",
       gmdate( 'Y-m-d H:i:s', time() - 30 * DAY_IN_SECONDS )
+    ) );
+  }
+
+  /**
+  * Delete token rows that can never authenticate again: revoked or rotated rows whose
+  * access token has expired, and grants whose refresh token has expired. Nothing removed
+  * them before, so every connected app added about 24 rows a day for good.
+  *
+  * A day of grace keeps recent rows around, so the refresh and access logs can still
+  * tell "already rotated or revoked" apart from "never issued" while someone debugs.
+  * Runs whenever a token is issued, so it needs no schedule.
+  */
+  private function prune_dead_tokens() {
+    global $wpdb;
+    $cutoff = gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS );
+    $wpdb->query( $wpdb->prepare(
+      "DELETE FROM {$this->table_tokens}
+       WHERE access_expires < %s
+         AND ( revoked <> 0 OR refresh_expires IS NULL OR refresh_expires < %s )",
+      $cutoff,
+      $cutoff
     ) );
   }
 
@@ -1071,7 +1120,12 @@ class Meow_MWAI_Labs_MCP_OAuth {
     echo '<div><span class="mwai-oauth-label">Permissions</span><span class="mwai-oauth-value">' . esc_html( $role_label ) . '</span></div>';
     echo '</div>';
 
-    echo '<p class="mwai-oauth-note">The app will be able to call MCP tools using your account. You can revoke access at any time from AI Engine settings.</p>';
+    if ( user_can( $user, 'manage_options' ) ) {
+      echo '<p class="mwai-oauth-note">The app will be able to call MCP tools using your account. You can revoke access at any time from AI Engine settings.</p>';
+    }
+    else {
+      echo '<p class="mwai-oauth-note">The app will work with content only: reading, and writing or editing what your account can already edit in WordPress. Settings, users, plugins, themes and deleting stay with administrators. You can revoke access at any time from AI Engine settings.</p>';
+    }
 
     echo '<form method="POST" action="' . esc_url( $action_url ) . '">';
     foreach ( $hidden_fields as $name => $value ) {
@@ -1106,7 +1160,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $role = $user->roles[0];
     $names = [
       'administrator' => 'Administrator (full access)',
-      'editor' => 'Editor',
+      'editor' => 'Editor (content only)',
       'author' => 'Author',
       'contributor' => 'Contributor',
       'subscriber' => 'Subscriber',

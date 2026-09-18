@@ -14,6 +14,10 @@
 * @see https://platform.openai.com/docs/api-reference/responses
 */
 class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
+  public function supports_mcp_servers() {
+    return true;
+  }
+
   // Static
   private static $creating = false;
 
@@ -1342,7 +1346,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             call_user_func( $this->streamCallback, $statusEvent );
           }
           $content = $this->strip_citation_markers( $json['delta'] );
-          // After stripping, this delta may be empty — let caller skip it.
+          // After stripping, this delta may be empty, so let the caller skip it.
           if ( $content === '' ) {
             $content = null;
           }
@@ -1665,7 +1669,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         //
         // NOTE: file_search against an OpenAI Vector Store also emits annotations
         // here with type === 'file_citation' (fields: file_id, filename, index,
-        // and sometimes quote). We intentionally drop them — chatbot replies
+        // and sometimes quote). We intentionally drop them: chatbot replies
         // should not surface "Sources: my-pdf.pdf" by default. If we ever want
         // to log which files an answer was grounded on (query logs, debug
         // panels), capture $annotation here when type === 'file_citation' and
@@ -1782,11 +1786,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
    * Strip file_search citation markers (U+E200 ... U+E201, with U+E202 separators)
    * from a piece of text. Works across stream deltas because $inCitationMarker
    * persists between calls. Annotation metadata still arrives via
-   * response.output_text.annotation.added events, so citation info isn't lost —
-   * only the inline garbage is removed from displayed text.
+   * response.output_text.annotation.added events, so citation info isn't lost.
+   * Only the inline garbage is removed from displayed text.
    *
    * TODO: If we ever want to render proper inline citations ("[1]", "[2]"...), this
-   * is the seam to do it — replace the marker block with a footnote reference
+   * is the seam to do it: replace the marker block with a footnote reference
    * instead of dropping it, and emit a citations list alongside the reply.
    */
   protected function strip_citation_markers( $content ) {
@@ -1809,7 +1813,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         if ( $code === 0xE201 ) {
           $this->inCitationMarker = false;
         }
-        // Drop everything inside the marker — including U+E202 separators and
+        // Drop everything inside the marker, including U+E202 separators and
         // the "cite"/"turn0fileN" payload tokens.
         continue;
       }

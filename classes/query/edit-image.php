@@ -28,12 +28,17 @@ class Meow_MWAI_Query_EditImage extends Meow_MWAI_Query_Image {
     $mediaId = $params['mediaId'] ?? $params['media_id'] ?? null;
     if ( !empty( $mediaId ) ) {
       $this->set_media_id( intval( $mediaId ) );
-      $path = get_attached_file( $this->mediaId );
-      if ( $path ) {
-        $this->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'vision' ) );
+      // The id comes from the client, and this is the line that turns it into a file on disk and
+      // hands the contents to the AI provider. Resolving it through the helper keeps the read
+      // inside what the current user is allowed to see, so a private file or one attached to an
+      // unpublished post cannot be pulled out by guessing an id. The REST route checks the same
+      // thing before building this query; doing it here as well covers every other way in.
+      try {
+        $path = Meow_MWAI_Core::get_readable_attachment_path( $this->mediaId );
+        $this->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'analysis' ) );
       }
-      else {
-        error_log( 'EditImage: Could not find file for mediaId: ' . $this->mediaId );
+      catch ( Exception $e ) {
+        error_log( 'EditImage: mediaId ' . $this->mediaId . ' was not used: ' . $e->getMessage() );
       }
     }
     else {

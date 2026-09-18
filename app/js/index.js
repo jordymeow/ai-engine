@@ -1,5 +1,5 @@
-// Previous: 3.4.0
-// Current: 3.7.6
+// Previous: 3.7.6
+// Current: 3.7.9
 
 ```javascript
 if (window.mwai?.plugin_url || window.mwai?.cache_buster) {
@@ -21,6 +21,7 @@ if (window.mwai?.plugin_url || window.mwai?.cache_buster) {
 
 const { render } = wp.element;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import AdminErrorBoundary from '@app/components/AdminErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,10 +39,11 @@ import { Dashboard } from '@common';
 
 import { options } from './settings';
 import Settings from '@app/screens/Settings';
-import Playground from '@app/screens/Playground';
+import Workbench from '@app/screens/playground/Workbench';
 import PostsListTools from './modules/PostsListTools';
 import ContentGenerator from './screens/ContentGenerator';
-import ImageGenerator from './screens/ImageGenerator';
+import ContentStudio from './screens/contentStudio/ContentStudio';
+import ImageStudio from './screens/imageStudio/ImageStudio';
 import VideoGenerator from './screens/VideoGenerator';
 import BlockFeatures from './modules/BlockFeatures';
 import BlockCopilot from './modules/BlockCopilot';
@@ -75,53 +77,55 @@ if (editorAssistantEnabled) {
   EditorAssistant();
 }
 
+const mount = (node, element) => render(<AdminErrorBoundary>{node}</AdminErrorBoundary>, element);
+
 document.addEventListener('DOMContentLoaded', function() {
 
   const settings = document.getElementById('mwai-admin-settings');
   if (settings) {
-    render(<QueryClientProvider client={queryClient}>
+    mount(<QueryClientProvider client={queryClient}>
       <NekoUI><Settings /></NekoUI>
     </QueryClientProvider>, settings);
   }
 
   const generator = document.getElementById('mwai-content-generator');
   if (generator) {
-    render(<QueryClientProvider client={queryClient}>
-      <NekoUI><ContentGenerator /></NekoUI>
+    mount(<QueryClientProvider client={queryClient}>
+      <NekoUI>{new URLSearchParams(window.location.search).get('classic') !== null ? <ContentGenerator /> : <ContentStudio />}</NekoUI>
     </QueryClientProvider>, generator);
   }
 
   const imgGen = document.getElementById('mwai-image-generator');
   if (imgGen) {
-    render(<QueryClientProvider client={queryClient}>
-      <NekoUI><ImageGenerator /></NekoUI>
+    mount(<QueryClientProvider client={queryClient}>
+      <NekoUI><ImageStudio /></NekoUI>
     </QueryClientProvider>, imgGen);
   }
 
   const videoGen = document.getElementById('mwai-video-generator');
   if (videoGen) {
-    render(<QueryClientProvider client={queryClient}>
+    mount(<QueryClientProvider client={queryClient}>
       <NekoUI><VideoGenerator /></NekoUI>
     </QueryClientProvider>, videoGen);
   }
 
   const dashboard = document.getElementById('mwai-playground');
   if (dashboard) {
-    render(<QueryClientProvider client={queryClient}>
-      <NekoUI><Playground /></NekoUI>
+    mount(<QueryClientProvider client={queryClient}>
+      <NekoUI><Workbench /></NekoUI>
     </QueryClientProvider>, dashboard);
   }
 
-  if (assistantsEnabled || editorAssistantEnabled) {
+  if (assistantsEnabled) {
     const postsListTools = document.getElementById('mwai-admin-postsList');
     if (postsListTools) {
-      render(<NekoUI><PostsListTools /></NekoUI>, postsListTools);
+      mount(<NekoUI><PostsListTools /></NekoUI>, postsListTools);
     }
   }
 
   const meowDashboard = document.getElementById('meow-common-dashboard');
   if (meowDashboard) {
-    render(<QueryClientProvider client={queryClient}>
+    mount(<QueryClientProvider client={queryClient}>
       <NekoUI><Dashboard /></NekoUI>
     </QueryClientProvider>, meowDashboard);
   }

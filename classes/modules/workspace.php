@@ -355,6 +355,7 @@ class Meow_MWAI_Modules_Workspace {
           continue;
         }
         $models = $engine->get_models();
+        $supportsMcp = method_exists( $engine, 'supports_mcp_servers' ) ? (bool) $engine->supports_mcp_servers() : false;
         $chatModels = [];
         foreach ( (array) $models as $m ) {
           $tags = $m['tags'] ?? [];
@@ -392,6 +393,9 @@ class Meow_MWAI_Modules_Workspace {
             'id' => $env['id'],
             'name' => $env['name'],
             'type' => $env['type'],
+            // Whether MCP servers actually reach the model on this engine, so the apps
+            // can grey the option out rather than offer tools that never arrive.
+            'mcp' => $supportsMcp,
             'models' => $chatModels,
           ];
         }

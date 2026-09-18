@@ -1,5 +1,5 @@
-// Previous: 3.7.4
-// Current: 3.7.7
+// Previous: 3.7.7
+// Current: 3.7.9
 
 ```javascript
 // React & Vendor Libs
@@ -504,7 +504,9 @@ export default function useChatSession(options) {
       setMessages(prevMessages => {
         const lastMessage = prevMessages[prevMessages.length - 1];
         if (lastMessage && lastMessage.role === 'assistant' && (lastMessage.content === '' || lastMessage.content === null)) {
-          return prevMessages.slice(0, -1);
+          const fresh = prevMessages.slice(0, -1);
+          saveMessages(fresh);
+          return fresh;
         }
         return prevMessages;
       });
@@ -569,7 +571,7 @@ export default function useChatSession(options) {
       if (chatbotInputRef?.current?.focusInput) {
         setTimeout(() => {
           chatbotInputRef.current.focusInput();
-        }, 100);
+        }, 300);
       }
     }
   }, [lastFailedQuery, setInputText, chatbotInputRef]);

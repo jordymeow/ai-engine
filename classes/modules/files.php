@@ -965,7 +965,12 @@ class Meow_MWAI_Modules_Files {
     $processing_attachments = isset( $job['meta']['processing_attachments'] ) ? (bool) $job['meta']['processing_attachments'] : false;
 
     $batch_size = 100;
-    $current_time = current_time( 'mysql' );
+    // The expires column is written in UTC (see upload_file, which uses date()), and the
+    // re-attach query compares it against date() too. Comparing it here against site local
+    // time instead put the whole cleanup out by the site's offset: west of UTC nothing was
+    // deleted until hours after it should have been, and east of UTC everything was deleted
+    // on the first run whatever the setting said. Same clock on both sides.
+    $current_time = date( 'Y-m-d H:i:s' );
 
     // First, process expired files from database
     if ( !$processing_attachments ) {

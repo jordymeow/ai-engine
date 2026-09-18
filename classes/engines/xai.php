@@ -79,7 +79,7 @@ class Meow_MWAI_Engines_XAI extends Meow_MWAI_Engines_ChatML {
       return 'Grok Code Fast';
     }
 
-    // Grok 4 variants — try to capture both dotted ("4.20", "4.3") and dashed ("4-1") versions.
+    // Grok 4 variants: try to capture both dotted ("4.20", "4.3") and dashed ("4-1") versions.
     if ( strpos( $modelId, 'grok-4' ) === 0 ) {
       $name = 'Grok 4';
       if ( preg_match( '/^grok-4\.(\d+)/', $modelId, $m ) ) {
@@ -188,7 +188,7 @@ class Meow_MWAI_Engines_XAI extends Meow_MWAI_Engines_ChatML {
         }
         $seen[$modelId] = true;
 
-        // Skip image/video generation models — they don't speak the chat-completions schema
+        // Skip image/video generation models because they don't speak the chat-completions schema
         // and would only confuse users showing up in chat dropdowns. xAI exposes them under
         // separate endpoints (/v1/images, /v1/videos) that AI Engine doesn't route here yet.
         if ( strpos( $modelId, 'grok-2-image' ) !== false

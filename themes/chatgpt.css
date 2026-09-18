@@ -1,6 +1,5 @@
-@charset "UTF-8";
 /*
-  CHATGPT THEME — SPACING, INPUT, AND SAFE-AREA DOCS
+  CHATGPT THEME: SPACING, INPUT, AND SAFE-AREA DOCS
 
   Overview
   - ChatGPT-like styling with inline submit (no in-field absolute button on desktop).
@@ -184,8 +183,18 @@
   border-radius: var(--mwai-borderRadius);
 }
 
+.mwai-chat .mwai-input .mwai-input-submit.mwai-stoppable {
+  cursor: pointer !important;
+}
+.mwai-chat .mwai-input .mwai-input-submit.mwai-stoppable:before {
+  display: none !important;
+}
+.mwai-chat .mwai-input .mwai-input-submit.mwai-stoppable svg {
+  opacity: 1;
+}
+
 /*
-  CHATGPT THEME — SPACING, INPUT, AND SAFE-AREA DOCS
+  CHATGPT THEME: SPACING, INPUT, AND SAFE-AREA DOCS
 
   Overview
   - ChatGPT-like styling with inline submit (no in-field absolute button on desktop).
@@ -758,7 +767,8 @@
   resize: none;
   font-family: inherit;
   margin: 0;
-  overflow: hidden;
+  max-height: 210px;
+  overflow-y: auto;
   min-height: inherit;
 }
 .mwai-chatgpt-theme .mwai-input .mwai-input-text textarea:focus {
@@ -2133,6 +2143,7 @@
   z-index: 1;
 }
 .mwai-chatgpt-theme .mwai-trigger .mwai-icon-container .mwai-icon {
+  display: block;
   filter: drop-shadow(0px 0px 15px rgba(0, 0, 0, 0.15));
   transition: all 0.2s ease-out;
 }

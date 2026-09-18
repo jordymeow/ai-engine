@@ -1,7 +1,7 @@
-// Previous: 3.3.7
-// Current: 3.4.7
+// Previous: 3.4.7
+// Current: 3.7.9
 
-```javascript
+```jsx
 import Styled from "styled-components";
 import { NekoButton, NekoPage, NekoSelect, NekoOption, NekoModal, NekoInput,
   NekoContainer, NekoWrapper, NekoColumn, NekoTypo } from '@neko-ui';
@@ -56,7 +56,7 @@ const StyledSidebar = Styled.div`
 
       &.modified {
         background: #ff8c00;
-        border-color: #ff8000;
+        border-color: #ff8c00;
       }
     }
   }
@@ -65,7 +65,7 @@ const StyledSidebar = Styled.div`
     color: #a3a3a3;
     margin-top: 5px;
     font-size: 12px;
-    line-height: 110%;
+    line-height: 100%;
   }
 `;
 
@@ -79,7 +79,7 @@ const StyledNekoInput = Styled(NekoInput)`
     padding: 20px !important;
     border-color: #333d4e !important;
     background: #333d4e !important;
-    color: black !important;
+    color: white !important;
   }
 `;
 
@@ -99,7 +99,7 @@ const StyledSidebarBlock = Styled.div`
   }
   
   label {
-    font-weight: 400;
+    font-weight: 600;
     color: #333;
   }
 `;
@@ -112,7 +112,7 @@ const StyledMainContentBlock = Styled.div`
   height: auto;
   min-height: 400px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   
   .content-header {
     display: flex;
@@ -131,7 +131,7 @@ const StyledMainContentBlock = Styled.div`
   .content-body {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
   }
 `;
 
@@ -183,7 +183,7 @@ const StyledBuilderForm = Styled.div`
     padding: 10px;
     font-size: 13px;
     font-weight: bold;
-    margin: 10px 0 0 0;
+    margin: 10px 0 10px 0;
   }
 
   .neko-spacer {

@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 3.7.8
+// Previous: 3.7.8
+// Current: 3.7.9
 
 // DashboardWelcome.js
 //
@@ -58,7 +58,7 @@ const DashboardWelcome = ({ options, envIssues, onShowAssistant }) => {
     <Wrap>
       <p className="hello">{greeting()}. <span>{status}</span></p>
       <p className="sub">
-        {envCount} {envCount === 1 ? 'provider' : 'providers'}, {modulesOn} modules on.
+        {envCount} {envCount === 1 ? 'provider' : 'providers'}, {modulesOn} {modulesOn === 1 ? 'module' : 'modules'} on.
         {pending && <> <a onClick={onShowAssistant}>Setup steps</a></>}
       </p>
     </Wrap>

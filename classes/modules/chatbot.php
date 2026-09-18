@@ -1248,7 +1248,7 @@ class Meow_MWAI_Modules_Chatbot {
       // For logged-out users we deliberately do NOT embed a sessionId at HTML
       // render time. Page caches (WP Rocket, Cloudflare, Varnish, etc.) and
       // multi-backend setups would otherwise freeze one sessionId into the
-      // cached markup and serve it to every visitor — collapsing per-visitor
+      // cached markup and serve it to every visitor, collapsing per-visitor
       // rate limits, file ownership, and stats. The frontend fetches a fresh
       // sessionId via /start_session on first interaction, and the server
       // always derives session from the mwai_session_id cookie anyway

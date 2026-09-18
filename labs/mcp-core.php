@@ -89,7 +89,17 @@ class Meow_MWAI_Labs_MCP_Core {
     return trim( serialize_blocks( $this->strip_block_attrs( parse_blocks( $v ) ) ) );
   }
   private function post_excerpt( WP_Post $p ): string {
+    if ( $this->is_protected_for_viewer( $p ) ) {
+      return '';
+    }
     return wp_trim_words( wp_strip_all_tags( $p->post_excerpt ?: $p->post_content ), 55 );
+  }
+
+  // A password-protected post keeps its content hidden from anyone who cannot edit it,
+  // like the REST API does. Administrators and Editors can edit it, so for them nothing
+  // changes; an Author or Contributor admitted over OAuth no longer reads others' secrets.
+  private function is_protected_for_viewer( WP_Post $p ): bool {
+    return $p->post_password !== '' && !current_user_can( 'edit_post', $p->ID );
   }
   private function empty_schema(): array {
     return [ 'type' => 'object', 'properties' => (object) [] ];
@@ -361,6 +371,43 @@ class Meow_MWAI_Labs_MCP_Core {
   #endregion
 
   #region Tools Definitions
+  // Option names and meta keys are passed as-is (trimmed), never through sanitize_key():
+  // it lowercases and strips dots, so "litespeed.conf.cache-exc" or "_EventStartDate"
+  // silently landed in a different row while the tool reported success (GitHub #12).
+  // Core queries these names with prepared statements, so nothing needs stripping.
+  private function raw_key( $key ): string {
+    return is_scalar( $key ) ? trim( (string) $key ) : '';
+  }
+
+  // The option name exactly as stored, or null when there is no row. option_name is
+  // case-insensitive in MySQL but WordPress caches options by exact name: writing
+  // "Blogname" would update the "blogname" row and leave a persistent object cache stale.
+  private function stored_option_name( string $name ): ?string {
+    global $wpdb;
+    if ( $name === '' ) {
+      return null;
+    }
+    $stored = $wpdb->get_var( $wpdb->prepare(
+      "SELECT option_name FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+      $name
+    ) );
+    return is_string( $stored ) ? $stored : null;
+  }
+
+  // When the exact meta key has no value, the sanitize_key() spelling these tools used
+  // before (lowercased, dots stripped) if that one exists. Keeps data written through
+  // older versions, and wrong-case names like "_Price", readable and deletable.
+  private function legacy_meta_key( int $post_id, string $key ): ?string {
+    if ( $key === '' || metadata_exists( 'post', $post_id, $key ) ) {
+      return null;
+    }
+    $legacy = sanitize_key( $key );
+    if ( $legacy === '' || $legacy === $key || !metadata_exists( 'post', $post_id, $legacy ) ) {
+      return null;
+    }
+    return $legacy;
+  }
+
   private function tools(): array {
     return [
 
@@ -1314,7 +1361,9 @@ class Meow_MWAI_Labs_MCP_Core {
           $r['error'] = [ 'code' => $cid->get_error_code(), 'message' => $cid->get_error_message() ];
         }
         else {
-          $this->add_result_text( $r, 'Comment #' . $cid . ' updated' );
+          // wp_update_comment() returns the number of rows changed (1 or 0), not the ID:
+          // printing it said "Comment #1 updated" whatever comment was edited.
+          $this->add_result_text( $r, 'Comment #' . $c['comment_ID'] . ' updated' );
         }
         break;
 
@@ -1334,7 +1383,11 @@ class Meow_MWAI_Labs_MCP_Core {
 
         /* ===== Options ===== */
       case 'wp_get_option':
-        $opt_key = sanitize_key( $a['key'] );
+        $opt_key = $this->raw_key( $a['key'] );
+        // Exact stored name first, then the pre-fix sanitize_key() spelling (legacy data).
+        $opt_key = $this->stored_option_name( $opt_key )
+          ?? $this->stored_option_name( sanitize_key( $opt_key ) )
+          ?? $opt_key;
         if ( !empty( $a['raw'] ) ) {
           // Read straight from the DB so neither the object cache nor an
           // option_* filter can mask the stored value. Mirrors what `wp-cli
@@ -1365,9 +1418,12 @@ class Meow_MWAI_Labs_MCP_Core {
             $value = $decoded;
           }
         }
-        $set = update_option( sanitize_key( $a['key'] ), $value, 'yes' );
+        $opt_key = $this->raw_key( $a['key'] );
+        // Write to the existing row under its stored spelling, never to the legacy name.
+        $opt_key = $this->stored_option_name( $opt_key ) ?? $opt_key;
+        $set = update_option( $opt_key, $value, 'yes' );
         if ( $set ) {
-          $this->add_result_text( $r, 'Option "' . $a['key'] . '" updated' );
+          $this->add_result_text( $r, 'Option "' . $opt_key . '" updated' );
         }
         else {
           $r['error'] = [ 'code' => -32603, 'message' => 'Update failed' ];
@@ -1493,14 +1549,17 @@ class Meow_MWAI_Labs_MCP_Core {
           'ID' => $p->ID,
           'post_title' => $p->post_title,
           'post_status' => $p->post_status,
-          'post_content' => ( ( $a['content_format'] ?? 'full' ) === 'prose' )
+          'post_content' => $this->is_protected_for_viewer( $p ) ? '' : ( ( ( $a['content_format'] ?? 'full' ) === 'prose' )
             ? $this->prose_content( $p->post_content )
-            : $this->read_html( $p->post_content ),
+            : $this->read_html( $p->post_content ) ),
           'post_excerpt' => $this->post_excerpt( $p ),
           'permalink' => get_permalink( $p ),
           'post_date' => $p->post_date,
           'post_modified' => $p->post_modified,
         ];
+        if ( $this->is_protected_for_viewer( $p ) ) {
+          $out['protected'] = true;
+        }
         $this->add_result_text( $r, wp_json_encode( $out, JSON_PRETTY_PRINT ) );
         break;
 
@@ -1546,9 +1605,15 @@ class Meow_MWAI_Labs_MCP_Core {
 
         // Include content unless excluded (useful for posts with huge content)
         if ( !in_array( 'content', $exclude ) ) {
-          $snapshot['post']['post_content'] = ( ( $a['content_format'] ?? 'full' ) === 'prose' )
-            ? $this->prose_content( $p->post_content )
-            : $this->read_html( $p->post_content );
+          if ( $this->is_protected_for_viewer( $p ) ) {
+            $snapshot['post']['post_content'] = '';
+            $snapshot['post']['protected'] = true;
+          }
+          else {
+            $snapshot['post']['post_content'] = ( ( $a['content_format'] ?? 'full' ) === 'prose' )
+              ? $this->prose_content( $p->post_content )
+              : $this->read_html( $p->post_content );
+          }
         }
 
         // Include all post meta
@@ -1602,8 +1667,12 @@ class Meow_MWAI_Labs_MCP_Core {
             $snapshot['author'] = [
               'ID' => $author->ID,
               'display_name' => $author->display_name,
-              'user_login' => $author->user_login,
             ];
+            // The login name is what someone types to sign in, and wp-admin only shows it
+            // to people who can list users. An Editor session gets the display name only.
+            if ( current_user_can( 'list_users' ) ) {
+              $snapshot['author']['user_login'] = $author->user_login;
+            }
           }
         }
 
@@ -1650,7 +1719,7 @@ class Meow_MWAI_Labs_MCP_Core {
               // Pass the value as-is: update_post_meta() serializes arrays itself.
               // maybe_serialize() here double-serialized nested arrays, so they read
               // back as a string and consumers (e.g. Noptin) rejected them as legacy.
-              update_post_meta( $new, sanitize_key( $k ), $v );
+              update_post_meta( $new, $this->raw_key( $k ), $v );
             }
           }
           $this->bust_post_cache( (int) $new, [ 'tool' => 'wp_create_post' ] );
@@ -1828,6 +1897,11 @@ class Meow_MWAI_Labs_MCP_Core {
         $content_to_verify = null;
         if ( !empty( $fields ) && is_array( $fields ) ) {
           foreach ( $fields as $k => $v ) {
+            // The post is the one named by the top-level ID. An "ID" inside fields used to
+            // override it, so the update landed on another post than the one requested.
+            if ( $k === 'ID' ) {
+              continue;
+            }
             $c[ $k ] = in_array( $k, [ 'post_content', 'post_excerpt' ], true ) ? $this->store_html( $v ) : sanitize_text_field( $v );
           }
           if ( isset( $c['post_content'] ) ) {
@@ -1912,7 +1986,7 @@ class Meow_MWAI_Labs_MCP_Core {
           foreach ( $meta_input as $k => $v ) {
             // Pass the value as-is: update_post_meta() serializes arrays itself.
             // maybe_serialize() here double-serialized nested arrays.
-            update_post_meta( $u, sanitize_key( $k ), $v );
+            update_post_meta( $u, $this->raw_key( $k ), $v );
           }
         }
 
@@ -2030,7 +2104,14 @@ class Meow_MWAI_Labs_MCP_Core {
           break;
         }
         $pid = intval( $a['ID'] );
-        $out = ( $a['key'] ?? '' ) ? get_post_meta( $pid, sanitize_key( $a['key'] ), true ) : get_post_meta( $pid );
+        if ( $a['key'] ?? '' ) {
+          $key = $this->raw_key( $a['key'] );
+          $key = $this->legacy_meta_key( $pid, $key ) ?? $key;
+          $out = get_post_meta( $pid, $key, true );
+        }
+        else {
+          $out = get_post_meta( $pid );
+        }
         $this->add_result_text( $r, wp_json_encode( $out, JSON_PRETTY_PRINT ) );
         break;
 
@@ -2051,11 +2132,11 @@ class Meow_MWAI_Labs_MCP_Core {
         // maybe_serialize() here double-serialized nested arrays into a string.
         if ( !empty( $meta ) && is_array( $meta ) ) {
           foreach ( $meta as $k => $v ) {
-            update_post_meta( $pid, sanitize_key( $k ), $v );
+            update_post_meta( $pid, $this->raw_key( $k ), $v );
           }
         }
         elseif ( isset( $a['key'], $a['value'] ) ) {
-          update_post_meta( $pid, sanitize_key( $a['key'] ), $a['value'] );
+          update_post_meta( $pid, $this->raw_key( $a['key'] ), $a['value'] );
         }
         else {
           $r['error'] = [ 'code' => -32602, 'message' => 'meta array or key/value required' ];
@@ -2070,7 +2151,8 @@ class Meow_MWAI_Labs_MCP_Core {
           break;
         }
         $pid = intval( $a['ID'] );
-        $key = sanitize_key( $a['key'] );
+        $key = $this->raw_key( $a['key'] );
+        $key = $this->legacy_meta_key( $pid, $key ) ?? $key;
         // delete_post_meta() serializes the match value itself; don't pre-serialize.
         $done = isset( $a['value'] ) ? delete_post_meta( $pid, $key, $a['value'] ) : delete_post_meta( $pid, $key );
         if ( $done ) {
@@ -2340,6 +2422,8 @@ class Meow_MWAI_Labs_MCP_Core {
             'title' => $a['title'] ?? '',
             'description' => $a['description'] ?? '',
             'alt' => $a['alt'] ?? '',
+            // The upload runs later without auth; this keeps it attributed to the requester.
+            'user_id' => get_current_user_id(),
           ];
           set_transient( $transient_key, $data, 5 * MINUTE_IN_SECONDS );
           $upload_url = rest_url( 'mcp/v1/upload/' . $token );

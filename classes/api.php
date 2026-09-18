@@ -1294,6 +1294,13 @@ class Meow_MWAI_API {
   * Get function name by ID
   */
   private function get_function_name_by_id( $funcId ) {
+    // Code Engine functions are Pro only, so this class does not exist in the free plugin, and
+    // the free plugin is built from this same source. A chatbot keeps its function ids after a
+    // downgrade or a settings import, so rest_listChatbots would reach this and fatal. The caller
+    // already falls back to the raw id when it gets nothing back.
+    if ( !class_exists( 'MeowPro_MWAI_FunctionAware' ) ) {
+      return null;
+    }
     $function = MeowPro_MWAI_FunctionAware::get_function( 'code-engine', $funcId );
     if ( $function && isset( $function->name ) ) {
       return $function->name;

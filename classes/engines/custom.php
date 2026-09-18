@@ -85,7 +85,7 @@ class Meow_MWAI_Engines_Custom extends Meow_MWAI_Engines_ChatML {
 
   /**
    * Try to discover models from /v1/models. Servers that don't implement this endpoint
-   * (some llama.cpp builds, custom proxies) just return an empty list — users add models
+   * (some llama.cpp builds, custom proxies) just return an empty list, so users add models
    * manually through AI Engine's existing custom-models UI.
    */
   public function retrieve_models() {
@@ -127,14 +127,17 @@ class Meow_MWAI_Engines_Custom extends Meow_MWAI_Engines_ChatML {
       }
       $isEmbedding = strpos( strtolower( $modelId ), 'embed' ) !== false;
       $features = $isEmbedding ? [ 'embedding' ] : [ 'completion' ];
-      $tags = [ 'core', $isEmbedding ? 'embedding' : 'chat' ];
+      // Most self-hosted chat models (Ollama, LM Studio, vLLM) handle tool calls, and the
+      // /models schema cannot tell which ones do. Without this tag the chatbot settings hid
+      // Function Calling entirely; a model without tool support just errors when it is used.
+      $tags = $isEmbedding ? [ 'core', 'embedding' ] : [ 'core', 'chat', 'functions' ];
 
       $modelData = [
         'model' => $modelId,
         'name' => $modelId,
         'family' => 'custom',
         'features' => $features,
-        // Pricing is unknown for self-hosted/third-party servers — zero out so usage tracking
+        // Pricing is unknown for self-hosted/third-party servers, so zero out and usage tracking
         // doesn't invent costs. Users can add per-model pricing through the Custom Models UI.
         'price' => [ 'in' => 0, 'out' => 0 ],
         'type' => 'token',

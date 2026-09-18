@@ -166,6 +166,16 @@
   border-radius: var(--mwai-borderRadius);
 }
 
+.mwai-chat .mwai-input .mwai-input-submit.mwai-stoppable {
+  cursor: pointer !important;
+}
+.mwai-chat .mwai-input .mwai-input-submit.mwai-stoppable:before {
+  display: none !important;
+}
+.mwai-chat .mwai-input .mwai-input-submit.mwai-stoppable svg {
+  opacity: 1;
+}
+
 /*
   FOUNDATION THEME
 
@@ -589,7 +599,8 @@
   resize: none;
   font-family: inherit;
   margin: 0;
-  overflow: hidden;
+  max-height: 210px;
+  overflow-y: auto;
   min-height: inherit;
 }
 .mwai-foundation-theme .mwai-input .mwai-input-text textarea:focus {
@@ -714,16 +725,16 @@
 .mwai-foundation-theme button:hover {
   background: var(--mwai-backgroundPrimaryColor);
 }
-.mwai-foundation-theme button[disabled] {
+.mwai-foundation-theme button[disabled][disabled], .mwai-foundation-theme button.mwai-busy[disabled] {
   cursor: not-allowed;
 }
-.mwai-foundation-theme button[disabled] span {
+.mwai-foundation-theme button[disabled] span, .mwai-foundation-theme button.mwai-busy span {
   opacity: 0.5;
 }
-.mwai-foundation-theme button[disabled].mwai-busy span {
+.mwai-foundation-theme button[disabled].mwai-busy span, .mwai-foundation-theme button.mwai-busy.mwai-busy span {
   display: none;
 }
-.mwai-foundation-theme button[disabled].mwai-busy:before {
+.mwai-foundation-theme button[disabled].mwai-busy:before, .mwai-foundation-theme button.mwai-busy.mwai-busy:before {
   content: "";
   width: 18px;
   height: 18px;
@@ -1750,6 +1761,7 @@
   z-index: 1;
 }
 .mwai-foundation-theme .mwai-trigger .mwai-icon-container .mwai-icon {
+  display: block;
   filter: drop-shadow(0px 0px 15px rgba(0, 0, 0, 0.15));
   transition: all 0.2s ease-out;
 }

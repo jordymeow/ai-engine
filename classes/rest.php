@@ -898,7 +898,7 @@ class Meow_MWAI_Rest {
 
       $message = $this->retrieve_message( $params );
       $mediaId = intval( $params['mediaId'] ?? $params['media_id'] ?? 0 );
-      if ( $mediaId > 0 ) {
+      if ( $mediaId > 0 && !$this->is_user_draft_media( $mediaId ) ) {
         Meow_MWAI_Core::get_readable_attachment_path( $mediaId );
       }
       $query = new Meow_MWAI_Query_EditImage( $message );
@@ -1022,21 +1022,36 @@ class Meow_MWAI_Rest {
   public function rest_helpers_create_post( $request ) {
     try {
       $params = $request->get_json_params();
-      $title = sanitize_text_field( $params['title'] );
-      $content = sanitize_textarea_field( $params['content'] );
-      $excerpt = sanitize_text_field( $params['excerpt'] );
-      $postType = sanitize_text_field( $params['postType'] );
+      $title = sanitize_text_field( $params['title'] ?? '' );
+      $content = sanitize_textarea_field( $params['content'] ?? '' );
+      $excerpt = sanitize_text_field( $params['excerpt'] ?? '' );
+      $postType = sanitize_key( $params['postType'] ?? 'post' ) ?: 'post';
+      // The post type used to be taken as is, so any Editor could create drafts of any
+      // type, including ones they have no right to create.
+      $typeObject = get_post_type_object( $postType );
+      if ( !$typeObject || !current_user_can( $typeObject->cap->create_posts ) ) {
+        $message = sprintf( __( 'You are not allowed to create content of the type "%s".', 'ai-engine' ), $postType );
+        return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 403 );
+      }
       $post = new stdClass();
       $post->post_title = $title;
       $post->post_excerpt = $excerpt;
       $post->post_content = $content;
       $post->post_status = 'draft';
-      $post->post_type = isset( $postType ) ? $postType : 'post';
+      $post->post_type = $postType;
       // TODO: Let's try to avoid using Markdown to create the Post
       // Instead, we should create Gutenberg Blocks, or simple HTML.
       // Then, we can get rid of the library for Markdown.
       $post->post_content = $this->core->markdown_to_html( $post->post_content );
-      $postId = wp_insert_post( $post );
+      $postId = wp_insert_post( $post, true );
+      if ( is_wp_error( $postId ) ) {
+        throw new Exception( $postId->get_error_message() );
+      }
+      $featuredImageId = intval( $params['featuredImageId'] ?? 0 );
+      if ( $featuredImageId > 0 && get_post_type( $featuredImageId ) === 'attachment'
+        && current_user_can( 'edit_post', $featuredImageId ) ) {
+        set_post_thumbnail( $postId, $featuredImageId );
+      }
       return $this->create_rest_response( [ 'success' => true, 'postId' => $postId ], 200 );
     }
     catch ( Exception $e ) {
@@ -1075,6 +1090,18 @@ class Meow_MWAI_Rest {
       // Create as mwai_image post type (draft image)
       $attachmentId = $this->core->add_image_from_url( $url, $filename, $title, $description, $caption, $alt, null, 'inherit', 'mwai_image', $ai_metadata );
 
+      // Image Studio lineage: which image this version was made from, and how.
+      $parent_id = intval( $params['parentId'] ?? 0 );
+      if ( $parent_id > 0 && ( $this->is_user_draft_media( $parent_id ) || current_user_can( 'read_post', $parent_id ) ) ) {
+        update_post_meta( $attachmentId, 'mwai_parent_id', $parent_id );
+      }
+      if ( !empty( $params['prompt'] ) ) {
+        update_post_meta( $attachmentId, 'mwai_prompt', sanitize_textarea_field( $params['prompt'] ) );
+      }
+      if ( !empty( $params['operation'] ) ) {
+        update_post_meta( $attachmentId, 'mwai_operation', sanitize_key( $params['operation'] ) );
+      }
+
       // Add to user's draft media
       $user_id = get_current_user_id();
       $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
@@ -1104,6 +1131,10 @@ class Meow_MWAI_Rest {
 
       if ( empty( $attachment_id ) ) {
         throw new Exception( __( 'The attachment ID is required.', 'ai-engine' ) );
+      }
+
+      if ( !$this->is_user_draft_media( $attachment_id ) ) {
+        Meow_MWAI_Core::get_readable_attachment_path( $attachment_id );
       }
 
       // Get the file path from the attachment ID
@@ -1150,6 +1181,10 @@ class Meow_MWAI_Rest {
 
       if ( !$attachment_id ) {
         throw new Exception( __( 'Attachment ID is required.', 'ai-engine' ) );
+      }
+      $is_editable_attachment = get_post_type( $attachment_id ) === 'attachment' && current_user_can( 'edit_post', $attachment_id );
+      if ( !$this->is_user_draft_media( $attachment_id ) && !$is_editable_attachment ) {
+        throw new Exception( __( 'You are not allowed to edit this media.', 'ai-engine' ) );
       }
 
       // Generate slug from filename (without extension)
@@ -2973,6 +3008,35 @@ class Meow_MWAI_Rest {
     }
   }
 
+  /**
+  * Whether this id is one of the current user's own draft images or videos. Drafts are
+  * not attachments until saved, so the regular attachment checks refuse them, yet the
+  * Image Studio has to keep editing them.
+  */
+  private function is_user_draft_media( $id ) {
+    $id = intval( $id );
+    $draft_media = get_user_meta( get_current_user_id(), 'mwai_draft_media', true );
+    if ( $id <= 0 || !is_array( $draft_media ) ) {
+      return false;
+    }
+    $listed = false;
+    foreach ( $draft_media as $item ) {
+      if ( (int) ( $item['attachment_id'] ?? 0 ) === $id ) {
+        $listed = true;
+        break;
+      }
+    }
+    if ( !$listed ) {
+      return false;
+    }
+    // The list is plain user meta, so it is never the only signal: the post must really be
+    // one of the media types the studios create, and it must belong to this user.
+    if ( !in_array( get_post_type( $id ), [ 'mwai_image', 'mwai_video', 'attachment' ], true ) ) {
+      return false;
+    }
+    return (int) get_post_field( 'post_author', $id ) === get_current_user_id();
+  }
+
   public function rest_helpers_list_draft_media( $request ) {
     try {
       $type = $request->get_param( 'type' ); // 'image', 'video', or null for all
@@ -2997,11 +3061,24 @@ class Meow_MWAI_Rest {
           // For custom post types (mwai_image, mwai_video), build URL from file path
           $file_path = get_attached_file( $attachment_id );
           $upload_dir = wp_upload_dir();
-          $url = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $file_path );
+          // A file outside the uploads folder would otherwise leak its server path.
+          $url = strpos( (string) $file_path, (string) $upload_dir['basedir'] ) === 0
+            ? str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $file_path )
+            : wp_get_attachment_url( $attachment_id );
 
           $model = get_post_meta( $attachment_id, 'mwai_model', true );
           $generation_time = get_post_meta( $attachment_id, 'mwai_latency', true );
           $env_id = get_post_meta( $attachment_id, 'mwai_env_id', true );
+          $parent_id = (int) get_post_meta( $attachment_id, 'mwai_parent_id', true );
+          $parent_url = null;
+          if ( $parent_id > 0 ) {
+            $parent_file = get_attached_file( $parent_id );
+            if ( $parent_file ) {
+              $parent_url = strpos( (string) $parent_file, (string) $upload_dir['basedir'] ) === 0
+                ? str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $parent_file )
+                : wp_get_attachment_url( $parent_id );
+            }
+          }
 
           // Debug logging
           if ( $this->core->get_option( 'queries_debug_mode' ) ) {
@@ -3015,11 +3092,18 @@ class Meow_MWAI_Rest {
             'url' => $url,
             'title' => $attachment->post_title,
             'description' => $attachment->post_content,
+            'alt' => get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ),
             'filename' => basename( $file_path ),
             'created_at' => $item['created_at'],
             'model' => $model,
             'generation_time' => $generation_time,
-            'env_id' => $env_id
+            'env_id' => $env_id,
+            'parent_id' => $parent_id ?: null,
+            'parent_url' => $parent_url,
+            'parent_title' => $parent_id > 0 ? get_the_title( $parent_id ) : null,
+            'prompt' => get_post_meta( $attachment_id, 'mwai_prompt', true ),
+            'operation' => get_post_meta( $attachment_id, 'mwai_operation', true ),
+            'saved' => $attachment->post_type === 'attachment'
           ];
         }
       }
@@ -3041,6 +3125,10 @@ class Meow_MWAI_Rest {
       if ( empty( $attachment_id ) ) {
         throw new Exception( 'Attachment ID is required.' );
       }
+      // Any id used to be accepted, which let an Editor turn any post into an attachment.
+      if ( !$this->is_user_draft_media( $attachment_id ) ) {
+        throw new Exception( 'This media is not one of your drafts.' );
+      }
 
       // Convert from mwai_image/mwai_video to attachment post type
       wp_update_post( [
@@ -3049,12 +3137,14 @@ class Meow_MWAI_Rest {
         'post_status' => 'inherit'
       ] );
 
-      // Remove from draft media list
+      // Remove from draft media list, unless the Image Studio keeps it in its history
+      // (it then shows as saved, and new versions can still branch from it).
+      $keep = !empty( $params['keep'] );
       $user_id = get_current_user_id();
       $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
-      if ( is_array( $draft_media ) ) {
+      if ( is_array( $draft_media ) && !$keep ) {
         $draft_media = array_filter( $draft_media, function ( $item ) use ( $attachment_id ) {
-          return $item['attachment_id'] !== $attachment_id;
+          return (int) $item['attachment_id'] !== $attachment_id;
         } );
         update_user_meta( $user_id, 'mwai_draft_media', array_values( $draft_media ) );
       }
@@ -3090,6 +3180,15 @@ class Meow_MWAI_Rest {
       if ( empty( $attachment_id ) ) {
         throw new Exception( 'Attachment ID is required.' );
       }
+      // Any id used to be accepted, which let an Editor delete any attachment.
+      if ( !$this->is_user_draft_media( $attachment_id ) ) {
+        throw new Exception( 'This media is not one of your drafts.' );
+      }
+      // Once saved, it is a normal attachment: deleting it would take the file and its
+      // thumbnails out of the Media Library, so that needs to be asked for explicitly.
+      if ( get_post_type( $attachment_id ) === 'attachment' && empty( $params['force'] ) ) {
+        throw new Exception( __( 'This media is already in your Media Library. Delete it from there.', 'ai-engine' ) );
+      }
 
       // Convert from mwai_image/mwai_video to attachment post type first
       // This ensures wp_delete_attachment properly deletes the physical file
@@ -3106,7 +3205,7 @@ class Meow_MWAI_Rest {
       $draft_media = get_user_meta( $user_id, 'mwai_draft_media', true );
       if ( is_array( $draft_media ) ) {
         $draft_media = array_filter( $draft_media, function ( $item ) use ( $attachment_id ) {
-          return $item['attachment_id'] !== $attachment_id;
+          return (int) $item['attachment_id'] !== $attachment_id;
         } );
         update_user_meta( $user_id, 'mwai_draft_media', array_values( $draft_media ) );
       }

@@ -105,11 +105,11 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
       $this->set_style( $params['style'] );
     }
     // Check both camelCase and snake_case versions for compatibility
-    if ( array_key_exists( 'localDownload', $params ) ) {
-      $this->set_local_download( $params['localDownload'] );
-    }
-    elseif ( array_key_exists( 'local_download', $params ) ) {
-      $this->set_local_download( $params['local_download'] );
+    // Multipart requests cannot carry a real null, so the string "null" stands for it.
+    $localDownload = array_key_exists( 'localDownload', $params ) ? $params['localDownload']
+      : ( array_key_exists( 'local_download', $params ) ? $params['local_download'] : false );
+    if ( $localDownload !== false ) {
+      $this->set_local_download( $localDownload === 'null' ? null : $localDownload );
     }
   }
 

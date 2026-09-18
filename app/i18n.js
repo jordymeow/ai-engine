@@ -486,7 +486,6 @@ i18n.HELP = {
   REST_API_MAKE_URL: 'https://www.make.com/en/integrations/ai-engine',
   REST_API_MAKE_TEXT: __( 'Make.com ↗', 'ai-engine' ),
   MCP_BEARER_TOKEN: __( 'A secret token used to authenticate AI assistants. Required for secure access to your WordPress site.', 'ai-engine' ),
-  MCP_INTRO: __( 'ChatGPT works perfectly with the No-Auth URL. %s for step-by-step setup. For Claude, which cannot handle SSE directly, %s is needed.', 'ai-engine' ),
   MCP_TUTORIAL_URL: 'https://ai.thehiddendocs.com/mcp/',
   MCP_TUTORIAL_TEXT: __( 'Check this tutorial ↗', 'ai-engine' ),
   MCP_CLAUDE_TUTORIAL_URL: 'https://ai.thehiddendocs.com/mcp/mcp-server-claude/',
@@ -504,6 +503,10 @@ i18n.HELP = {
   NO_EMBEDDINGS_RESULTS: __( 'No results for this search. Make sure the Minimum Score is not too high.', 'ai-engine' ),
   SEARCH_EMBEDDINGS_PROMPT: __( 'Type a question above and hit AI Search to find the matching embeddings.', 'ai-engine' ),
   NO_EMBEDDINGS_ROWS: __( 'No embeddings yet in this environment.', 'ai-engine' ),
+  NO_DISCUSSIONS_YET: __( 'No discussion yet. Conversations show up here as soon as someone chats with one of your chatbots.', 'ai-engine' ),
+  NO_DISCUSSIONS_FILTERED: __( 'No discussion matches your filters. Change them in the column headers to see more.', 'ai-engine' ),
+  NO_QUERIES_YET: __( 'No query logged yet. Every request your chatbots and tools send to a model will be listed here.', 'ai-engine' ),
+  NO_QUERIES_FILTERED: __( 'No query matches your filters. Change them in the column headers to see more.', 'ai-engine' ),
   MIN_SCORE: __( 'The minimum score the embeddings need to have to be returned. Between 0 and 100 and defaults to 35.', 'ai-engine' ),
   MAX_SELECT: __( 'The maximum number of embeddings to return and to use as context. Between 1 and 100 and defaults to 10.', 'ai-engine' ),
   FUNCTIONS: __( 'Select the functions to make available for the AI model\'s choice. It will use them to enhance responses and perform specific actions. This feature is known as %s.', 'ai-engine' ),
@@ -689,7 +692,6 @@ i18n.ALERTS = {
 
 i18n.FINETUNING = {
   MODELS_INTRO: __( 'The AI models you have fine-tuned. To create more, visit <b>Files</b>.', 'ai-engine' ),
-  LEGACY_MODELS_INTRO: __( 'The AI models you have fine-tuned. <b>Do not use legacy fine-tuning anymore (based on models prior to GPT 3.5). Their deprecation has been %s for January 4th, 2024.</b><br />', 'ai-engine' ),
   LEGACY_MODELS_DEPRECATION_URL: 'https://platform.openai.com/docs/guides/legacy-fine-tuning',
   LEGACY_MODELS_DEPRECATION_TEXT: __( 'announced by OpenAI ↗', 'ai-engine' ),
   FILES_INTRO: __( 'The files you have uploaded to OpenAI. To create a new dataset file, switch from <b>Model & Files</b> to <b>Dataset Editor</b>. To train a new model, click on the <i>magic wand</i>.', 'ai-engine' ),
@@ -721,6 +723,8 @@ i18n.DISCUSSIONS = {
   DELETE_SELECTED_HISTORY: __( 'The users who own them will lose that conversation history in their chatbots and in the Workspace.', 'ai-engine' ),
   DELETE_COUNT: __( 'Discussions to be deleted: %s', 'ai-engine' ),
   DELETE_COUNT_UNKNOWN: __( 'Discussions to be deleted: all of them', 'ai-engine' ),
+  DELETE_FAILED: __( 'Nothing was deleted.', 'ai-engine' ),
+  EXPORT_FAILED: __( 'The export could not be finished, so no file was created.', 'ai-engine' ),
 };
 
 i18n.QUERIES = {
@@ -732,6 +736,7 @@ i18n.QUERIES = {
   DELETE_SELECTED_SCOPE: __( 'The selected logs will be permanently deleted, together with their metadata.', 'ai-engine' ),
   DELETE_COUNT: __( 'Logs to be deleted: %s', 'ai-engine' ),
   DELETE_COUNT_UNKNOWN: __( 'Logs to be deleted: all of them', 'ai-engine' ),
+  DELETE_FAILED: __( 'Nothing was deleted.', 'ai-engine' ),
 };
 
 i18n.LIMITS = {

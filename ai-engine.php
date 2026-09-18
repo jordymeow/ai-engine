@@ -4,7 +4,7 @@
 Plugin Name: AI Engine
 Plugin URI: https://wordpress.org/plugins/ai-engine/
 Description: AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
-Version: 3.7.8
+Version: 3.7.9
 Requires at least: 6.0
 Requires PHP: 8.1
 Author: Jordy Meow
@@ -14,7 +14,17 @@ License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
-define( 'MWAI_VERSION', '3.7.8' );
+// Free and Pro both active: WordPress loads Pro first ("ai-engine-pro/" sorts before
+// "ai-engine/"), so the second copy stops here. Checking before the constants matters:
+// redefining them logs a PHP 8 warning on every request.
+if ( defined( 'MWAI_VERSION' ) ) {
+  add_action( 'admin_notices', function () {
+    echo '<div class="error"><p>' . esc_html__( 'Thanks for installing the Pro version of AI Engine :) However, the free version is still enabled. Please disable or uninstall it.', 'ai-engine' ) . '</p></div>';
+  } );
+  return;
+}
+
+define( 'MWAI_VERSION', '3.7.9' );
 define( 'MWAI_PREFIX', 'mwai' );
 define( 'MWAI_DOMAIN', 'ai-engine' );
 define( 'MWAI_ENTRY', __FILE__ );

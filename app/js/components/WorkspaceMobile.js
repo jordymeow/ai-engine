@@ -1,13 +1,16 @@
-// Previous: 3.6.8
-// Current: 3.7.8
+// Previous: 3.7.8
+// Current: 3.7.9
 
 ```jsx
 // React & Vendor Libs
 const { useState, useEffect, useRef, useCallback } = wp.element;
 import { QRCodeSVG } from 'qrcode.react';
 
-import { NekoBlock, NekoButton, NekoInput, NekoMessage, NekoSpacer } from '@neko-ui';
+import { NekoBlock, NekoButton, NekoInput, NekoMessage, NekoModal, NekoSpacer } from '@neko-ui';
 import { restUrl } from '@app/settings';
+
+const IOS_APP_URL = 'https://apps.apple.com/app/workspace-for-wordpress/id6794717714';
+const ANDROID_APP_URL = 'https://play.google.com/store/apps/details?id=com.meowapps.workspace';
 
 const nonce = () => (window.mwai && window.mwai.rest_nonce) || (window.wpApiSettings && window.wpApiSettings.nonce);
 
@@ -117,6 +120,7 @@ function WorkspaceMobile({ busy }) {
   }, [devices.length, checkServer]);
 
   const [ renaming, setRenaming ] = useState(null);
+  const [ revoking, setRevoking ] = useState(null);
   const displayName = (name) => name.replace(/^Workspace by AI Engine\s*[-—]\s*/, '');
   const rename = useCallback(async () => {
     if (!renaming) return;
@@ -127,7 +131,7 @@ function WorkspaceMobile({ busy }) {
       setDevices(prev => prev.map(d => d.uuid === renaming.uuid ? { ...d, name: data.name } : d));
       setRenaming(null);
     }
-    else { setError(data?.message || 'Could not rename that device.'); }
+    else { setRenaming(prev => ({ ...prev, error: data?.message || 'Could not rename that device.' })); }
   }, [renaming, api]);
 
   const revoke = useCallback(async (uuid) => {
@@ -137,10 +141,10 @@ function WorkspaceMobile({ busy }) {
   }, [loadDevices]);
 
   return (
-    <NekoBlock busy={busy} title="Connect a mobile app" className="primary">
+    <NekoBlock busy={busy} title="Connect iOS or Android" className="primary">
       <p style={{ marginTop: 0 }}>
-        Connect the <b>Workspace</b> mobile app to this site. Open the app, choose
-        “Add a site”, and scan the QR code below. The app connects securely using a
+        Install the <b>Workspace</b> app for <a href={IOS_APP_URL} target="_blank" rel="noopener noreferrer">iOS ↗</a> or <a href={ANDROID_APP_URL} target="_blank" rel="noopener noreferrer">Android ↗</a>,
+        choose “Add a site”, and scan the QR code below. The app connects securely using a
         WordPress Application Password created just for that device (revocable any time).
       </p>
 
@@ -199,28 +203,45 @@ function WorkspaceMobile({ busy }) {
             <div key={d.uuid} style={{ display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 0', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
               <div style={{ flex: 1 }}>
-                {renaming?.uuid === d.uuid ? (
-                  <NekoInput value={renaming.draft} placeholder="Device name"
-                    onChange={(value) => setRenaming({ uuid: d.uuid, draft: value })}
-                    onEnter={rename} onBlur={rename} />
-                ) : (
-                  <div style={{ fontSize: 13.5, cursor: 'text' }} title="Click to rename"
-                    onClick={() => setRenaming({ uuid: d.uuid, draft: displayName(d.name) })}>
-                    {displayName(d.name)}
-                  </div>
-                )}
+                <div style={{ fontSize: 13.5 }}>{displayName(d.name)}</div>
                 <div style={{ fontSize: 11.5, color: '#999' }}>
                   Added {fmtDate(d.created) || '—'}{d.last_used ? ` · last used ${fmtDate(d.last_used)}` : ''}
                 </div>
               </div>
-              {renaming?.uuid !== d.uuid && (
-                <NekoButton className="secondary" small onClick={() => setRenaming({ uuid: d.uuid, draft: displayName(d.name) })}>Rename</NekoButton>
-              )}
-              <NekoButton className="danger" small onClick={() => revoke(d.uuid)}>Revoke</NekoButton>
+              <div>
+                <NekoButton className="primary" rounded icon="pencil" title="Rename"
+                  onClick={() => setRenaming({ uuid: d.uuid, draft: displayName(d.name) })} />
+                <NekoButton className="danger" rounded icon="trash" title="Revoke"
+                  onClick={() => setRevoking(d)} />
+              </div>
             </div>
           ))}
         </>
       )}
+
+      <NekoModal isOpen={!!revoking}
+        onRequestClose={() => setRevoking(null)}
+        title="Revoke device"
+        content={revoking && <p style={{ margin: 0 }}>
+          Disconnect <b>{displayName(revoking.name)}</b>? The app on that device loses access right away
+          and needs a new QR code to connect again.
+        </p>}
+        okButton={{ label: 'Revoke', className: 'danger', onClick: () => { revoke(revoking.uuid); setRevoking(null); } }}
+        cancelButton={{ onClick: () => setRevoking(null) }}
+      />
+
+      <NekoModal isOpen={!!renaming}
+        onRequestClose={() => setRenaming(null)}
+        title="Rename device"
+        okButton={{ label: 'Save', disabled: !renaming?.draft?.trim(), onClick: rename }}
+        cancelButton={{ onClick: () => setRenaming(null) }}
+        content={renaming && <>
+          {renaming.error && <NekoMessage variant="danger" style={{ marginBottom: 15 }}>{renaming.error}</NekoMessage>}
+          <NekoInput value={renaming.draft} placeholder="Device name"
+            onChange={(value) => setRenaming(prev => ({ ...prev, draft: value, error: null }))}
+            onEnter={rename} />
+        </>}
+      />
     </NekoBlock>
   );
 }
