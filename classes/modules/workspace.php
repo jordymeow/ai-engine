@@ -255,6 +255,10 @@ class Meow_MWAI_Modules_Workspace {
       // and bug reports; api_version is what clients compare against.
       'plugin_version' => MWAI_VERSION,
       'api_version' => self::API_VERSION,
+      // A turn rewritten through discussions/truncate (a stop, an edit) is no
+      // longer doubled by the stream finishing afterwards. Clients only save a
+      // stopped turn when this is set: on an older site that left it twice.
+      'keeps_stopped_turns' => true,
       'rest_url' => untrailingslashit( get_rest_url() ),
       'admin_url' => admin_url(),
       'api_url' => untrailingslashit( get_rest_url( null, 'mwai/v1' ) ),

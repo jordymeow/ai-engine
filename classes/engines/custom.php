@@ -130,7 +130,12 @@ class Meow_MWAI_Engines_Custom extends Meow_MWAI_Engines_ChatML {
       // Most self-hosted chat models (Ollama, LM Studio, vLLM) handle tool calls, and the
       // /models schema cannot tell which ones do. Without this tag the chatbot settings hid
       // Function Calling entirely; a model without tool support just errors when it is used.
-      $tags = $isEmbedding ? [ 'core', 'embedding' ] : [ 'core', 'chat', 'functions' ];
+      // Vision is the same story: nothing in /models says which models accept images, and
+      // without the tag the chatbot settings hide File Upload altogether, so a multimodal model
+      // served by Ollama could never be sent a picture. The request itself never needed the tag
+      // (images already go out as image_url parts), and a text-only model answers an image with
+      // its own error, which is clearer than an option that is not there.
+      $tags = $isEmbedding ? [ 'core', 'embedding' ] : [ 'core', 'chat', 'functions', 'vision' ];
 
       $modelData = [
         'model' => $modelId,

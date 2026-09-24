@@ -364,20 +364,58 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
       if ( !is_string( $key ) ) {
         continue;
       }
-      $newKey = '';
-      $capitalizeNextChar = false;
-      for ( $i = 0; $i < strlen( $key ); $i++ ) {
-        if ( $key[$i] == '_' ) {
-          $capitalizeNextChar = true;
-        }
-        else {
-          $newKey .= $capitalizeNextChar ? strtoupper( $key[$i] ) : $key[$i];
-          $capitalizeNextChar = false;
-        }
-      }
-      $newParams[$newKey] = $value;
+      $newParams[self::canonical_key( $key )] = $value;
     }
     return $newParams;
+  }
+
+  // snake_case to camelCase: 'env_id' becomes 'envId', and 'model_' becomes 'model'.
+  public static function canonical_key( string $key ): string {
+    $newKey = '';
+    $capitalizeNextChar = false;
+    for ( $i = 0; $i < strlen( $key ); $i++ ) {
+      if ( $key[$i] == '_' ) {
+        $capitalizeNextChar = true;
+      }
+      else {
+        $newKey .= $capitalizeNextChar ? strtoupper( $key[$i] ) : $key[$i];
+        $capitalizeNextChar = false;
+      }
+    }
+    return $newKey;
+  }
+
+  // Every query setting read by inject_params() that a visitor must never set on a public
+  // endpoint. Endpoints add their own server params on top (see client_params()).
+  public const CLIENT_DENIED_PARAMS = [
+    'model', 'envId', 'environment', 'apiKey', 'instructions', 'message', 'maxMessages',
+    'maxResults', 'maxTokens', 'temperature', 'stop', 'responseFormat', 'reasoning',
+    'reasoningEffort', 'verbosity', 'promptId', 'mcpServers', 'tools', 'functions',
+    'historyStrategy', 'previousResponseId', 'embeddingsEnvId', 'embeddingsEnv', 'scope',
+    'assistantId', 'threadId', 'resolution', 'quality', 'style', 'localDownload', 'mediaId', 'path',
+  ];
+
+  /**
+  * Params from a public endpoint's visitor, in the only shape inject_params() will see.
+  *
+  * Keys are canonicalized first, then the denied ones are dropped. Doing it in that order is
+  * the fix for CVE-2026-96561: convert_keys() turns 'model_', 'env_id' or 'messages_' into the
+  * real key, so a denylist or filter applied to the raw keys was bypassed with a renamed key.
+  * Anything checked afterwards (like the role filter on 'messages') sees exactly one key.
+  */
+  public static function client_params( array $params, array $denied = [] ): array {
+    $blocked = array_flip( array_map( 'strtolower', array_merge( self::CLIENT_DENIED_PARAMS, $denied ) ) );
+    $clean = [];
+    foreach ( $params as $key => $value ) {
+      if ( !is_string( $key ) ) {
+        continue;
+      }
+      $key = self::canonical_key( $key );
+      if ( !isset( $blocked[strtolower( $key )] ) ) {
+        $clean[$key] = $value;
+      }
+    }
+    return $clean;
   }
 
   public function toJson() {

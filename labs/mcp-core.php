@@ -1079,6 +1079,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'properties' => [
             'message' => [ 'type' => 'string', 'description' => 'Prompt describing the desired image.' ],
             'postId' => [ 'type' => 'integer', 'description' => 'Optional post ID to attach the image to.' ],
+            'resolution' => [ 'type' => 'string', 'description' => 'Optional aspect ratio or size, like "16:9", "1:1", "9:16" or "1536x1024". The closest shape the image model supports is used. Square by default.' ],
             'title' => [ 'type' => 'string' ],
             'caption' => [ 'type' => 'string' ],
             'description' => [ 'type' => 'string' ],
@@ -2513,7 +2514,11 @@ class Meow_MWAI_Labs_MCP_Core {
           break;
         }
 
-        $media = $mwai->imageQueryForMediaLibrary( $a['message'], [ 'scope' => 'mcp' ], $a['postId'] ?? null );
+        $params = [ 'scope' => 'mcp' ];
+        if ( !empty( $a['resolution'] ) ) {
+          $params['resolution'] = sanitize_text_field( (string) $a['resolution'] );
+        }
+        $media = $mwai->imageQueryForMediaLibrary( $a['message'], $params, $a['postId'] ?? null );
         if ( is_wp_error( $media ) ) {
           $r['error'] = [ 'code' => $media->get_error_code(), 'message' => $media->get_error_message() ];
           break;

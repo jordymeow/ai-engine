@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.0
+Stable tag: 3.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,13 +32,13 @@ You'll be having a blast before you've explored everything. You'll probably spot
 == Core Modules ==
 
 🤖 **Chatbots**
-Create intelligent chatbots with customizable themes, realtime audio, and multi-file support. Features modular UI Builder, conversation memory, and MacOS-style components.
+Create chatbots for your visitors, with five built-in themes (including the new Glass), realtime audio, file uploads, discussions, and conversation memory. Every theme can be restyled, and every text the chatbot says can be translated.
 
 🖥️ **Workspace** (with free [iPhone](https://apps.apple.com/app/workspace-for-wordpress/id6794717714) and [Android](https://play.google.com/store/apps/details?id=com.meowapps.workspace) apps)
 A full-screen AI chat inside your WordPress admin: every model you configured, conversation history and folders, a prompt library, image generation, web search, and hands-on access to your site through the MCP tools. It also runs on your phone and tablet, through [Workspace for WordPress](https://workspace.press/).
 
 🎨 **Content & Media**
-Generate content, translate text, create images and videos from prompts, and use Copilot in the WordPress editor to correct, enhance, translate, or rewrite text.
+Write posts in the Content Studio, create and edit images in the Image Studio, compare models side by side in the Playground, and use Copilot in the WordPress editor to correct, enhance, translate, or rewrite text.
 
 📝 **AI Forms**
 Build custom AI-powered forms that handle text, images, audio, or file uploads. Create advanced apps with conditional logic.
@@ -84,17 +84,25 @@ Transform visitor interactions with intelligent, customizable chatbots.
 
 **Features:**
 
-* Modular UI Builder with containers, headers, footers
-* Customizable themes and MacOS-style components
+* Five built-in themes: Timeless, Messages, ChatGPT, Foundation, and Glass, a frosted glass theme with a dark and a light mode
+* A Themes editor for colors, fonts, and custom CSS
+* Popup, inline, or fullscreen, with an optional macOS-style window
 * Realtime audio conversations
-* Multi-file upload support
-* Discussion memory and history
+* File and image uploads, several at once, or simply pasted
+* Discussions list and conversation memory
+* Every text translatable, and message actions reachable with the keyboard
 * Cross-site embedding
 * GDPR compliance tools
 
 == 🎨 Content & Media ==
 
 Create, refine, and visualize content with AI assistance.
+
+**Studios:**
+
+* Content Studio: from a brief to a full draft, with templates you can reuse
+* Image Studio: generate images, keep every version, and edit them with a brush
+* Playground: try a prompt on several models side by side
 
 **Copilot (Magic Wand):**
 
@@ -178,8 +186,9 @@ AI Engine turns your WordPress site into an intelligent MCP server. AI agents li
 * Check SEO and analytics
 * Manage media files
 * Run SQL queries
+* Create images for your posts, in the shape you need
 * Manage WooCommerce products, orders, inventory, and customers
-* Handle Polylang translations
+* Handle Polylang and WPML translations
 
 **Setup Guides:**
 
@@ -216,7 +225,8 @@ Some people have asked us to match tools like Novamira and give an AI agent full
 * **Editor Assistant**: An AI sidebar in the post editor that can read, rewrite, insert, and rearrange your content blocks through chained function calls.
 * **Realtime Audio**: Voice-based conversations on OpenAI's GA Realtime API, with the latest voice reasoning capabilities.
 * **Statistics & Usage Control**: Track usage, set limits per role, and monitor costs.
-* **Extra MCP Tools**: Adds plugin, theme, database, Polylang, and WooCommerce management to the MCP server.
+* **Extra MCP Tools**: Adds plugin, theme, database, Polylang, WPML, and WooCommerce management to the MCP server.
+* **Models API**: Let coding agents and OpenAI-compatible apps use your site's AI models with one key, with usage tracked in Insights.
 * **Priority Support**: Get faster help from the Meow Apps team.
 
 == Why AI Engine? ==
@@ -310,6 +320,26 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.1 (2026/09/24) =
+* Fix: Security: visitors could override a chatbot's or form's model, instructions or environment with renamed parameters. Fixed, and the Advisor widget now escapes its output.
+* Add: Glass, a new chatbot theme with colored light under frosted glass, a dark and a light mode, and a mode that follows the visitor's device.
+* Update: Every chatbot theme was polished: proper headings, lists and tables in replies, an empty state that introduces the bot, message actions beside the bubble, and a message field that keeps its height on every WordPress theme.
+* Update: Timeless and Messages have refreshed defaults (larger text, rounder corners, a white pane), and Messages drops its bubble tails. Customized themes keep their own values.
+* Update: Redesigned the dashboard's AI Visibility card, with visits, score and the top AI companies from SEO Engine, and an example you can hide when it is not installed.
+* Add: Templates in the Content Studio, shared with the classic generator.
+* Add: Every text the chatbot says on its own can be translated or changed with the mwai_chatbot_texts filter, plus a new Empty State Hint parameter.
+* Update: Pictures sent by visitors appear as a photo card, and message actions can be reached with the keyboard.
+* Update: The mwai_image MCP tool accepts an aspect ratio, and images requested without a size are now square instead of 21:9 on Gemini.
+* Update: Workspace now tells you when your site refuses a rename, a delete or a save, instead of failing silently.
+* Update: Deleting or resetting a chatbot, a theme or a template now asks first.
+* Fix: Embeddings were skipped on pages made with a page builder (Breakdance, Oxygen, Bricks...).
+* Fix: Models of a Custom (OpenAI-compatible) environment could not receive images.
+* Fix: The discussions list with several lists on one page, empty discussions, and its menu while scrolling.
+* Fix: The admin crashed when a chatbot's ID was changed, and a crash in one settings tab no longer locks the whole screen.
+* Fix: Stopped or edited Workspace replies no longer come back duplicated.
+* Fix: A streamed reply was rebuilt when it finished, reloading its images.
+* Fix: Dev Tools no longer polls the server every second while open.
 
 = 3.8.0 (2026/09/18) =
 * Add: Models API Pro module, so coding agents and OpenAI-compatible apps can use your site's AI models with one key, with usage tracked in Insights.

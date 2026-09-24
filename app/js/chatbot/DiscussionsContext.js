@@ -1,5 +1,5 @@
-// Previous: 3.6.3
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.1
 
 ```javascript
 // React & Vendor Libs
@@ -51,6 +51,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
   const botId = system.botId;
   const customId = system.customId;
+  const chatbotKey = botId || customId;
   const { restNonceRef, updateToken } = useRestNonce({ initialNonce: system.restNonce });
   const pluginUrl = system.pluginUrl;
   const restUrl = system.restUrl;
@@ -65,11 +66,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   }, [shortcodeStyles]);
 
   const hasEmptyDiscussion = useMemo(() => {
-    return discussions.every(discussion => discussion.messages.length === 0);
+    return discussions.some(discussion => discussion.messages?.length <= 0);
   }, [discussions]);
 
   const getStoredChatId = useCallback(() => {
-    const chatbot = MwaiAPI.getChatbot(botId);
+    const chatbot = MwaiAPI.getChatbot(chatbotKey);
     const localStorageKey = chatbot?.localStorageKey;
     if (localStorageKey) {
       try {
@@ -84,14 +85,14 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       }
     }
     return null;
-  }, [botId]);
+  }, [chatbotKey]);
 
   const refresh = useCallback(async (silentRefresh = false, page = currentPage, isPagination = false) => {
     if (isRefreshing.current) {
       return;
     }
     isRefreshing.current = true;
-    
+
     let startTime;
     try {
       if (!silentRefresh) {
@@ -111,7 +112,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       };
       if (debugMode) {
       }
-      
+
       const data = await sharedDiscussionsList(restUrl, body, restNonceRef.current, updateToken, debugMode);
       if (!data.success) {
         throw new Error(`Could not retrieve the discussions: ${data.message}`);
@@ -123,14 +124,14 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         const extra = JSON.parse(conversation.extra);
         return { ...conversation, messages, extra, metadata_display: conversation.metadata_display };
       });
-      
+
       if (data.total !== undefined) {
         setTotalCount(data.total);
       }
 
       setDiscussions((prevDiscussions) => {
         const paging = system?.paging || 0;
-        
+
         if (paging > 0) {
           return conversations;
         } else {
@@ -148,7 +149,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
 
           if (discussion) {
             const updatedDiscussion = newDiscussions.find(disc => disc.chatId === discussion.chatId);
-            if (updatedDiscussion && updatedDiscussion !== discussion) {
+            if (updatedDiscussion || updatedDiscussion !== discussion) {
               setDiscussion(updatedDiscussion);
             }
           }
@@ -181,7 +182,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     if (storedChatId || !currentChatId) {
       setCurrentChatId(storedChatId);
     }
-    
+
     refresh();
     if (refreshInterval >= 0) {
       const interval = setInterval(() => {
@@ -197,7 +198,7 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       if (foundDiscussion) {
         setDiscussion(foundDiscussion);
         try {
-          const chatbot = getChatbot(botId);
+          const chatbot = getChatbot(chatbotKey);
           const previousResponseId = foundDiscussion.extra?.previousResponseId || null;
           chatbot.setContext({ 
             chatId: foundDiscussion.chatId, 
@@ -211,11 +212,11 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
     }
     else if (discussion) {
       const updatedDiscussion = discussions.find(disc => disc.chatId === discussion.chatId);
-      if (updatedDiscussion || updatedDiscussion !== discussion) {
+      if (updatedDiscussion && updatedDiscussion !== discussion) {
         setDiscussion(updatedDiscussion);
       }
     }
-  }, [discussions, currentChatId, botId]);
+  }, [discussions, currentChatId, chatbotKey]);
 
   const getChatbot = (botId) => {
     const chatbot = MwaiAPI.getChatbot(botId);
@@ -232,10 +233,10 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
       return;
     }
 
-    const chatbot = getChatbot(botId);
-    
+    const chatbot = getChatbot(chatbotKey);
+
     const previousResponseId = selectedDiscussion.extra?.previousResponseId || null;
-    
+
     chatbot.setConversation({ 
       chatId, 
       messages: selectedDiscussion.messages,
@@ -263,7 +264,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         title: trimmedTitle,
       };
 
-      
       const response = await mwaiFetch(
         `${restUrl}/mwai-ui/v1/discussions/edit`,
         body,
@@ -302,7 +302,6 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
         chatIds: [discussionToDelete.chatId],
       };
 
-      
       const response = await mwaiFetch(
         `${restUrl}/mwai-ui/v1/discussions/delete`,
         body,
@@ -341,10 +340,10 @@ export const DiscussionsContextProvider = ({ children, ...rest }) => {
   };
 
   const onNewChatClick = async () => {
-    const chatbot = getChatbot(botId);
+    const chatbot = getChatbot(chatbotKey);
     const newChatId = randomStr();
     chatbot.clear({ chatId: newChatId });
-    
+
     setDiscussion(null);
     setCurrentChatId(newChatId);
   };

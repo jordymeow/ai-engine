@@ -1,7 +1,7 @@
 <?php
 
 // Params for the chatbot (front and server)
-define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'maxUploads', 'fileUploads', 'fileSearch', 'allowedMimeTypes', 'mode', 'textInputPlaceholder', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition', 'iconSize', 'centerOpen', 'width', 'maxHeight', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'pdfButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
+define( 'MWAI_CHATBOT_FRONT_PARAMS', [ 'id', 'customId', 'aiName', 'userName', 'guestName', 'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl', 'textSend', 'textClear', 'imageUpload', 'fileUpload', 'multiUpload', 'maxUploads', 'fileUploads', 'fileSearch', 'allowedMimeTypes', 'mode', 'textInputPlaceholder', 'textEmptyHint', 'textInputMaxLength', 'textCompliance', 'startSentence', 'localMemory', 'themeId', 'window', 'icon', 'iconText', 'iconTextDelay', 'iconTextDuration', 'iconTextOnce', 'iconAlt', 'iconPosition', 'iconSize', 'centerOpen', 'width', 'maxHeight', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen', 'copyButton', 'pdfButton', 'headerSubtitle', 'popupTitle', 'containerType', 'headerType', 'messagesType', 'inputType', 'footerType', 'talkMode' ] );
 
 define( 'MWAI_CHATBOT_SERVER_PARAMS', [ 'id', 'envId', 'scope', 'mode', 'contentAware', 'context', 'startSentence', 'embeddingsEnvId', 'embeddingsIndex', 'embeddingsNamespace', 'assistantId', 'instructions', 'resolution', 'voice', 'talkMode', 'model', 'temperature', 'maxTokens', 'contextMaxLength', 'maxResults', 'apiKey', 'functions', 'mcpServers', 'tools', 'historyStrategy', 'previousResponseId', 'parentBotId', 'crossSite', 'promptId', 'promptVariables', 'reasoningEffort', 'verbosity' ] );
 
@@ -13,6 +13,8 @@ class Meow_MWAI_Modules_Chatbot {
   private $core = null;
   private $namespace = 'mwai-ui/v1';
   private $siteWideChatId = null;
+  // Popup chatbots rendered during this request, so wp_footer can tell whether they collide.
+  private $renderedPopups = [];
 
   public function __construct() {
     global $mwai_core;
@@ -21,6 +23,8 @@ class Meow_MWAI_Modules_Chatbot {
 
     add_shortcode( 'mwai_chatbot', [ $this, 'chat_shortcode' ] );
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
+    // Late, so every shortcode in the content and the site-wide injection have all run.
+    add_action( 'wp_footer', [ $this, 'warn_about_stacked_popups' ], 99 );
     add_action( 'wp_enqueue_scripts', [ $this, 'register_scripts' ] );
     add_action( 'admin_enqueue_scripts', [ $this, 'register_scripts' ] );
     if ( $this->core->get_option( 'chatbot_discussions' ) ) {
@@ -271,7 +275,7 @@ class Meow_MWAI_Modules_Chatbot {
       // If we're in streaming mode, send the error through the stream
       if ( $stream ) {
         // Log the error
-        error_log( '[AI Engine Chatbot Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
+        error_log( '[AI Engine Chatbot Error] ' . Meow_MWAI_Core::log_safe( $e->getMessage() ) . ' in ' . $e->getFile() . ':' . $e->getLine() );
 
         // Send error event through stream. Internal errors stay generic for
         // visitors; a refusal message is meant for them, so pass it through.
@@ -296,7 +300,7 @@ class Meow_MWAI_Modules_Chatbot {
       // to visitors. Mask it to a generic message for non-admins (the real one
       // is logged); admins still see it so they can debug.
       if ( !$isRefusal && !current_user_can( 'manage_options' ) ) {
-        error_log( '[AI Engine Chatbot Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
+        error_log( '[AI Engine Chatbot Error] ' . Meow_MWAI_Core::log_safe( $e->getMessage() ) . ' in ' . $e->getFile() . ':' . $e->getLine() );
         $message = Meow_MWAI_Core::get_public_error_message( $e );
       }
       return $this->create_rest_response( [
@@ -595,9 +599,7 @@ class Meow_MWAI_Modules_Chatbot {
         $params
       );
       if ( !$allowClientServerParams && is_array( $params ) ) {
-        foreach ( MWAI_CHATBOT_SERVER_PARAMS as $serverParam ) {
-          unset( $params[$serverParam] );
-        }
+        $params = Meow_MWAI_Query_Base::client_params( $params, MWAI_CHATBOT_SERVER_PARAMS );
         // The history in the body is display context, not a control channel.
         // build_messages() appends these verbatim right after the real system
         // prompt, so a 'system' (or 'developer'/'tool') turn smuggled in here
@@ -1213,7 +1215,7 @@ class Meow_MWAI_Modules_Chatbot {
         $isRefusal = $e instanceof Meow_MWAI_RefusedException;
         $overLimit = $isRefusal && $e->reason === 'limits';
         if ( !$isRefusal && !current_user_can( 'manage_options' ) ) {
-          error_log( '[AI Engine Chatbot Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
+          error_log( '[AI Engine Chatbot Error] ' . Meow_MWAI_Core::log_safe( $e->getMessage() ) . ' in ' . $e->getFile() . ':' . $e->getLine() );
           $message = Meow_MWAI_Core::get_public_error_message( $e );
         }
         $this->core->stream_push( [
@@ -1238,6 +1240,31 @@ class Meow_MWAI_Modules_Chatbot {
       echo $this->chat_shortcode( $clean_params );
     }
     return null;
+  }
+
+  // Two popups on one page put their launchers on the same pixel, which reads as a chatbot that is
+  // open and minimised at the same time. We do not pick one for you: the page might want that, and
+  // silently dropping a chatbot someone placed on purpose would be worse. So we say it, to the
+  // people who can fix it. Runs at wp_footer, after the_content, so the list is complete.
+  public function warn_about_stacked_popups() {
+    if ( count( $this->renderedPopups ) < 2 ) {
+      return;
+    }
+    $list = implode( ', ', array_map( 'sanitize_text_field', $this->renderedPopups ) );
+    $message = 'AI Engine: this page renders ' . count( $this->renderedPopups ) . " popup chatbots ({$list}). "
+      . 'Their launchers overlap in the same corner, so opening one reveals the other underneath. '
+      . 'Set the shortcode to window="false", or turn off the site-wide chatbot for this page.';
+    // Unlike a config error, this fires on every single view of the offending page, so logging it
+    // unconditionally would fill a busy site's error log with the same line. Editors get it on
+    // screen, which is the actionable path; the log is for whoever is actually debugging.
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+      error_log( '[AI Engine] ' . $message );
+    }
+    if ( current_user_can( 'edit_posts' ) ) {
+      echo '<div class="mwai-stacked-popups-notice" style="position:fixed;bottom:0;left:0;right:0;z-index:10000000;'
+        . 'background:#8a2f12;color:#fff;font:13px/1.5 -apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
+        . 'padding:10px 14px;text-align:center">' . esc_html( $message ) . '</div>';
+    }
   }
 
   public function build_front_params( $botId, $customId, $crossSite = false ) {
@@ -1269,9 +1296,71 @@ class Meow_MWAI_Modules_Chatbot {
       'speech_recognition' => $this->core->get_option( 'speech_recognition' ),
       'speech_synthesis' => $this->core->get_option( 'speech_synthesis' ),
       'typewriter' => $this->core->get_option( 'chatbot_typewriter' ),
-      'crossSite' => $crossSite
+      'crossSite' => $crossSite,
+      'texts' => $this->get_front_texts()
     ];
     return $frontSystem;
+  }
+
+  /**
+  * The strings the chatbot says on its own, translated here and sent to the front end in the
+  * system object, keyed by their English source (app/js/chatbot/texts.js reads them). The chatbot
+  * script does not load wp-i18n, on purpose (one script less on every page), so this is how its
+  * strings get translated, Cross-Site embeds included. Add a string here and in the JavaScript;
+  * forgetting one side only means English for that string. The filter lets a site change any of
+  * them without a translation file.
+  */
+  public function get_front_texts() {
+    $texts = [
+      'Ask me anything!' => __( 'Ask me anything!', 'ai-engine' ),
+      'Jump to the latest message' => __( 'Jump to the latest message', 'ai-engine' ),
+      'Try again' => __( 'Try again', 'ai-engine' ),
+      'Conversation cleared.' => __( 'Conversation cleared.', 'ai-engine' ),
+      'Undo' => __( 'Undo', 'ai-engine' ),
+      'Done!' => __( 'Done!', 'ai-engine' ),
+      'New Chat' => __( 'New Chat', 'ai-engine' ),
+      'No messages yet' => __( 'No messages yet', 'ai-engine' ),
+      'Rename' => __( 'Rename', 'ai-engine' ),
+      'Delete' => __( 'Delete', 'ai-engine' ),
+      'Your text was cut at %d characters.' => __( 'Your text was cut at %d characters.', 'ai-engine' ),
+      'Hold to Talk' => __( 'Hold to Talk', 'ai-engine' ),
+      'Release to Send' => __( 'Release to Send', 'ai-engine' ),
+      'Press Space to talk' => __( 'Press Space to talk', 'ai-engine' ),
+      'Start session to upload images' => __( 'Start session to upload images', 'ai-engine' ),
+      'Usage limit exceeded' => __( 'Usage limit exceeded', 'ai-engine' ),
+      'Connection failed' => __( 'Connection failed', 'ai-engine' ),
+      'Connection failed. Please check your network and try again.' => __( 'Connection failed. Please check your network and try again.', 'ai-engine' ),
+      'Connection lost. Reconnecting...' => __( 'Connection lost. Reconnecting...', 'ai-engine' ),
+      'Connection lost while uploading image. Please try again.' => __( 'Connection lost while uploading image. Please try again.', 'ai-engine' ),
+      'Connection timeout: The server took too long to respond.' => __( 'Connection timeout: The server took too long to respond.', 'ai-engine' ),
+      'Could not start realtime session.' => __( 'Could not start realtime session.', 'ai-engine' ),
+      'An error occurred while starting the realtime session.' => __( 'An error occurred while starting the realtime session.', 'ai-engine' ),
+      'An error occurred while processing your request. Please try again.' => __( 'An error occurred while processing your request. Please try again.', 'ai-engine' ),
+      'An error occurred while committing the stats.' => __( 'An error occurred while committing the stats.', 'ai-engine' ),
+      'An error occurred while committing the discussion.' => __( 'An error occurred while committing the discussion.', 'ai-engine' ),
+      'An error occurred while executing the function.' => __( 'An error occurred while executing the function.', 'ai-engine' ),
+      'Authentication failed: Your session has expired. Please refresh the page.' => __( 'Authentication failed: Your session has expired. Please refresh the page.', 'ai-engine' ),
+      'Error uploading image. Please try again.' => __( 'Error uploading image. Please try again.', 'ai-engine' ),
+      'Failed to access microphone: ' => __( 'Failed to access microphone: ', 'ai-engine' ),
+      'Failed to access microphone. Please ensure microphone permissions are granted and try again.' => __( 'Failed to access microphone. Please ensure microphone permissions are granted and try again.', 'ai-engine' ),
+      'Failed to establish connection with OpenAI servers. Please try again.' => __( 'Failed to establish connection with OpenAI servers. Please try again.', 'ai-engine' ),
+      'Failed to read image file.' => __( 'Failed to read image file.', 'ai-engine' ),
+      'Failed to send image. Please try again.' => __( 'Failed to send image. Please try again.', 'ai-engine' ),
+      'Failed to upload image.' => __( 'Failed to upload image.', 'ai-engine' ),
+      'Image file size must be less than 20MB.' => __( 'Image file size must be less than 20MB.', 'ai-engine' ),
+      'Internal server error: An unexpected error occurred. Please try again.' => __( 'Internal server error: An unexpected error occurred. Please try again.', 'ai-engine' ),
+      'Invalid API key: Please check your OpenAI API key in settings.' => __( 'Invalid API key: Please check your OpenAI API key in settings.', 'ai-engine' ),
+      'Invalid request: The message format was not recognized by the server.' => __( 'Invalid request: The message format was not recognized by the server.', 'ai-engine' ),
+      'MediaDevices API not available. Please ensure you are using HTTPS and a modern browser.' => __( 'MediaDevices API not available. Please ensure you are using HTTPS and a modern browser.', 'ai-engine' ),
+      'Model overloaded: The AI model is currently experiencing high demand.' => __( 'Model overloaded: The AI model is currently experiencing high demand.', 'ai-engine' ),
+      'Network error: Failed to establish connection to the AI service.' => __( 'Network error: Failed to establish connection to the AI service.', 'ai-engine' ),
+      'Please select an image file.' => __( 'Please select an image file.', 'ai-engine' ),
+      'Please start a session before uploading images.' => __( 'Please start a session before uploading images.', 'ai-engine' ),
+      'Quota exceeded: You have reached your usage limit for this period.' => __( 'Quota exceeded: You have reached your usage limit for this period.', 'ai-engine' ),
+      'Rate limit exceeded: Too many requests. Please try again later.' => __( 'Rate limit exceeded: Too many requests. Please try again later.', 'ai-engine' ),
+      'Service unavailable: The AI service is temporarily down for maintenance.' => __( 'Service unavailable: The AI service is temporarily down for maintenance.', 'ai-engine' ),
+    ];
+    return apply_filters( 'mwai_chatbot_texts', $texts );
   }
 
   public function resolveBotInfo( &$atts ) {
@@ -1353,8 +1442,8 @@ class Meow_MWAI_Modules_Chatbot {
 
     $frontParams = [];
     // Define text parameters that need sanitization (excluding those that support HTML)
-    $textParams = ['aiName', 'userName', 'guestName', 'textSend', 'textClear', 'textInputPlaceholder',
-      'startSentence', 'iconText', 'iconAlt', 'headerSubtitle', 'popupTitle', 'allowedMimeTypes', 'maxHeight', 'iconSize'];
+    $textParams = ['aiName', 'userName', 'guestName', 'textSend', 'textClear', 'textInputPlaceholder', 'textEmptyHint',
+      'startSentence', 'iconText', 'iconTextOnce', 'iconAlt', 'headerSubtitle', 'popupTitle', 'allowedMimeTypes', 'maxHeight', 'iconSize'];
     // Parameters that support HTML content
     $htmlParams = ['textCompliance'];
     // Boolean parameters that need special handling
@@ -1448,10 +1537,10 @@ class Meow_MWAI_Modules_Chatbot {
       // Visual/UI parameters that don't affect AI behavior
       'aiName', 'userName', 'guestName',  // Display names
       'aiAvatar', 'userAvatar', 'guestAvatar', 'aiAvatarUrl', 'userAvatarUrl', 'guestAvatarUrl',  // Avatars
-      'textSend', 'textClear', 'textInputPlaceholder', 'textCompliance',  // UI text labels
+      'textSend', 'textClear', 'textInputPlaceholder', 'textEmptyHint', 'textCompliance',  // UI text labels
       'textInputMaxLength',  // Input constraint (visual)
       'themeId',  // Theme selection
-      'window', 'icon', 'iconText', 'iconTextDelay', 'iconAlt', 'iconPosition',  // Window/icon settings
+      'window', 'icon', 'iconText', 'iconTextDelay', 'iconTextDuration', 'iconTextOnce', 'iconAlt', 'iconPosition',  // Window/icon settings
       'centerOpen', 'width', 'openDelay', 'iconBubble', 'windowAnimation', 'fullscreen',  // Window behavior
       'copyButton', 'pdfButton', 'headerSubtitle', 'popupTitle',  // UI features
       'containerType', 'headerType', 'messagesType', 'inputType', 'footerType'  // UI style variants
@@ -1531,6 +1620,13 @@ class Meow_MWAI_Modules_Chatbot {
     //$jsonAttributes = htmlspecialchars(json_encode($atts), ENT_QUOTES, 'UTF-8');
 
     $this->enqueue_scripts( $frontParams['themeId'] ?? null );
+
+    // Every popup on the page anchors its launcher to the same corner with the same offsets, so
+    // two of them land on the exact same pixel. The visitor sees one icon, opens it, and the one
+    // underneath is revealed next to the open window. Remember them so we can say so below.
+    if ( !empty( $frontParams['window'] ) ) {
+      $this->renderedPopups[] = $customId ? "custom_id={$customId}" : "id={$botId}";
+    }
 
     return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
   }

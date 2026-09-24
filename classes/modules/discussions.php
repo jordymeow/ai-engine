@@ -439,7 +439,7 @@ class Meow_MWAI_Modules_Discussions {
           'userId' => $userId,
           'ip' => $this->core->get_ip_address(),
           'messages' => json_encode( $clean ),
-          'extra' => json_encode( [] ),
+          'extra' => json_encode( [ 'truncatedAt' => microtime( true ) ] ),
           'botId' => $botId,
           'chatId' => $chatId,
           'created' => $now,
@@ -451,6 +451,8 @@ class Meow_MWAI_Modules_Discussions {
       $extra = json_decode( $chat->extra, true );
       $extra = is_array( $extra ) ? $extra : [];
       unset( $extra['responseId'], $extra['previousResponseId'], $extra['responseDate'], $extra['previousResponseDate'] );
+      // Read by truncated_during_request, so a stream still running drops its append.
+      $extra['truncatedAt'] = microtime( true );
 
       $this->wpdb->update(
         $this->table_chats,
@@ -838,6 +840,9 @@ class Meow_MWAI_Modules_Discussions {
     }
 
     $nowMs = (int) round( microtime( true ) * 1000 );
+    if ( $chat && $this->truncated_during_request( $chat ) ) {
+      return $rawText;
+    }
     if ( $chat ) {
       $chat->messages = json_decode( $chat->messages );
       $userMessage = [ 'role' => 'user', 'content' => $newMessage, 'timestamp' => $nowMs ];
@@ -892,6 +897,27 @@ class Meow_MWAI_Modules_Discussions {
       $this->wpdb->insert( $this->table_chats, $chat );
     }
     return $rawText;
+  }
+
+  /**
+  * True when a client rewrote this discussion through discussions/truncate after
+  * the current request started, which makes this request's append stale.
+  *
+  * The stream keeps running after the client leaves (ignore_user_abort, so usage
+  * is still counted), and used to append its full turn on top of whatever the
+  * client had written since: a stopped reply came back doubled, and so did a
+  * turn stopped and then edited or regenerated. A request that starts after the
+  * truncate (resending, the edited turn itself) appends as usual, and so does a
+  * reply finished while a phone was in the background, since nothing truncated.
+  * Microseconds, not seconds: an edit truncates and resubmits within one second.
+  */
+  private function truncated_during_request( $chat ) {
+    $extra = json_decode( $chat->extra ?? '', true );
+    if ( !is_array( $extra ) || empty( $extra['truncatedAt'] ) ) {
+      return false;
+    }
+    $requestStart = isset( $_SERVER['REQUEST_TIME_FLOAT'] ) ? (float) $_SERVER['REQUEST_TIME_FLOAT'] : microtime( true );
+    return (float) $extra['truncatedAt'] >= $requestStart;
   }
 
   public function format_messages( $json, $format = 'html' ) {

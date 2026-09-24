@@ -1,10 +1,12 @@
-// Previous: 2.9.4
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.1
 
-```jsx
+```javascript
 import { useClasses, actionProps } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 const { useState } = wp.element;
+
+import { __ } from '@app/chatbot/texts';
 
 const svgPathCopy = '<path d="M7 5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-2v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2zm2 2h5a3 3 0 0 1 3 3v5h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1zM5 9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z" />';
 const svgPathSuccess = '<path d="M10.7673 18C10.3106 18 9.86749 17.8046 9.54432 17.4555L5.50694 13.1222C4.83102 12.3968 4.83102 11.2208 5.50694 10.4954C6.18287 9.76997 7.27871 9.76997 7.95505 10.4954L10.6794 13.4196L16.9621 5.63976C17.5874 4.86495 18.6832 4.78289 19.4031 5.45388C20.125 6.12487 20.2036 7.29638 19.5759 8.07391L12.0778 17.3589C11.7639 17.7475 11.3119 17.9801 10.8319 18C10.8087 18 10.788 18 10.7673 18Z" />';
@@ -15,7 +17,7 @@ const svgPathDelete = '<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 
 const ErrorReplyActions = ({ enabled, content, children, className, message, ...rest }) => {
   const css = useClasses();
   const { actions, state } = useChatbotContext();
-  const { setMessages, saveMessages, retryLastQuery } = actions;
+  const { setMessages, saveMessages, retryLastQuery, onSubmit } = actions;
   const { messages } = state;
   const [ copyStatus, setCopyStatus ] = useState('idle');
 
@@ -33,7 +35,7 @@ const ErrorReplyActions = ({ enabled, content, children, className, message, ...
     finally {
       setTimeout(() => {
         setCopyStatus('idle');
-      }, 2500);
+      }, 1000);
     }
   };
 
@@ -65,16 +67,30 @@ const ErrorReplyActions = ({ enabled, content, children, className, message, ...
         return updatedMessages;
       });
 
-      retryLastQuery();
+      if (message.failedQuery.file || !onSubmit) {
+        retryLastQuery();
+      }
+      else {
+        const { text } = message.failedQuery;
+        setTimeout(() => onSubmit(text), 100);
+      }
     }
   };
 
+  const canRetry = !!message.failedQuery || isLastMessage && !!retryLastQuery;
   const svgPath = copyStatus === 'success' ? svgPathSuccess : copyStatus == 'error' ? svgPathError : svgPathCopy;
 
   return (
     <div {...rest}>
       <span className={className}>
         {children}
+        {canRetry && (
+          <button type="button" className="mwai-retry" onClick={onRetry}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: svgPathRetry }} />
+            {__('Try again')}
+          </button>
+        )}
       </span>
       <div className={css('mwai-reply-actions')}>
         <div className="mwai-copy-button" {...actionProps(onCopy, 'Copy')}>
@@ -83,11 +99,6 @@ const ErrorReplyActions = ({ enabled, content, children, className, message, ...
         <div className="mwai-action-button" {...actionProps(onDelete, 'Delete')}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: svgPathDelete }} />
         </div>
-        {message.failedQuery && isLastMessage && (
-          <div className="mwai-action-button" {...actionProps(onRetry, 'Retry')}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: svgPathRetry }} />
-          </div>
-        )}
       </div>
     </div>
   );

@@ -458,7 +458,22 @@ class Meow_MWAI_Core {
     $pattern = '/\[mwai_.*?\]/';
     $text = preg_replace( $pattern, '', $text );
     if ( $this->get_option( 'resolve_shortcodes' ) ) {
-      $text = apply_filters( 'the_content', $text );
+      // Page builders that keep their layout outside post_content (Breakdance, Oxygen, Bricks)
+      // render "the current post" from inside the_content. A sync runs from REST or cron, where
+      // there is no current post, so they had nothing to render and the page came back empty. The
+      // post is made current for the time of the filter, then whatever was there is put back.
+      $previousPost = $GLOBALS['post'] ?? null;
+      $GLOBALS['post'] = $post;
+      setup_postdata( $post );
+      try {
+        $text = apply_filters( 'the_content', $text );
+      }
+      finally {
+        $GLOBALS['post'] = $previousPost;
+        if ( $previousPost ) {
+          setup_postdata( $previousPost );
+        }
+      }
     }
     else {
       $pattern = "/\[[^\]]+\]/";
@@ -633,6 +648,12 @@ class Meow_MWAI_Core {
       throw new Exception( 'The media file cannot be found.' );
     }
     return $path;
+  }
+
+  // One line, always: a CR or LF from a visitor would forge extra error log entries, and the
+  // Advisor reads that log back into an AI prompt (CVE-2026-96561).
+  public static function log_safe( $message ) {
+    return str_replace( [ "\r", "\n" ], ' ', (string) $message );
   }
 
   public static function sanitize_rest_params( $params ) {
@@ -1138,6 +1159,10 @@ class Meow_MWAI_Core {
       ],
       'foundation' => [
         'type' => 'internal', 'name' => 'Foundation', 'themeId' => 'foundation',
+        'settings' => [], 'style' => ''
+      ],
+      'glass' => [
+        'type' => 'internal', 'name' => 'Glass', 'themeId' => 'glass',
         'settings' => [], 'style' => ''
       ],
     ];
@@ -1808,6 +1833,10 @@ class Meow_MWAI_Core {
     $can_admin = function_exists( 'wp_get_current_user' ) && current_user_can( 'manage_options' );
     $options['seo_stats'] = $can_admin ? apply_filters( 'mwai_seo_stats', null ) : null;
     $options['seo_robots'] = $can_admin ? $this->get_ai_crawler_access() : null;
+    // WordPress's own page for SEO Engine, which offers Install (or Activate). Only for users
+    // who may install plugins; the dashboard falls back to the wordpress.org page otherwise.
+    $options['seo_install_url'] = $can_admin && current_user_can( 'install_plugins' )
+      ? self_admin_url( 'plugin-install.php?tab=plugin-information&plugin=seo-engine' ) : null;
 
     // Populate usage data from ai_usage to ai_models_usage for the frontend
     $ai_usage = $this->get_option( 'ai_usage', [] );

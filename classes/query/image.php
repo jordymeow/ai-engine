@@ -117,6 +117,32 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
   #region Final Checks
 
+  // Width over height for "16:9" or "1536x1024", null for anything else.
+  private static function ratio_of( $name ) {
+    if ( preg_match( '/^\s*(\d+(?:\.\d+)?)\s*[x:]\s*(\d+(?:\.\d+)?)\s*$/i', (string) $name, $m ) && (float) $m[2] > 0 ) {
+      return (float) $m[1] / (float) $m[2];
+    }
+    return null;
+  }
+
+  private function closest_resolution( $wanted, array $resolutions ) {
+    $target = self::ratio_of( $wanted ) ?? 1.0;
+    $best = $resolutions[0]['name'];
+    $bestDiff = null;
+    foreach ( $resolutions as $resolution ) {
+      $ratio = self::ratio_of( $resolution['name'] );
+      if ( $ratio === null ) {
+        continue;
+      }
+      $diff = abs( $ratio - $target );
+      if ( $bestDiff === null || $diff < $bestDiff ) {
+        $best = $resolution['name'];
+        $bestDiff = $diff;
+      }
+    }
+    return $best;
+  }
+
   public function final_checks() {
     parent::final_checks();
 
@@ -148,13 +174,13 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
       return;
     }
 
-    // If we have no resolution set, we will use the first one
+    // No resolution set: prefer a square. Lists are ordered for the UI, not as defaults
+    // (Google's starts at 21:9, so every unsized Gemini image used to come out ultra-wide).
+    $resolutions = $modelInfo['resolutions'];
     if ( empty( $this->resolution ) ) {
-      $this->resolution = $modelInfo['resolutions'][0]['name'];
+      $this->resolution = $this->closest_resolution( '1:1', $resolutions );
     }
 
-    // If we have a resolutions array ([ name, label ]), let's ensure our current resolution (name) is supported
-    $resolutions = $modelInfo['resolutions'];
     $found = false;
     foreach ( $resolutions as $resolution ) {
       if ( $resolution['name'] === $this->resolution ) {
@@ -163,16 +189,14 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
       }
     }
 
-    // If we don't find the resolution, we will set it to the first one.
+    // Unsupported: keep the requested shape as closely as the model allows, so "16:9" on
+    // GPT Image gives 1536x1024 and "1024x1024" on Gemini gives 1:1.
     if ( !$found ) {
-      $supportedResolutions = [];
-      foreach ( $resolutions as $resolution ) {
-        $supportedResolutions[] = $resolution['name'];
-      }
-      $supportedResolutions = implode( ', ', $supportedResolutions );
-      $error = sprintf( 'The model %s does not support the resolution %s (using %s instead). Supported resolutions are: %s.', $this->model, $this->resolution, $resolutions[0]['name'], $supportedResolutions );
-      $this->resolution = $resolutions[0]['name'];
-      Meow_MWAI_Logging::error( $error, '🖼️' );
+      $closest = $this->closest_resolution( $this->resolution, $resolutions );
+      $supportedResolutions = implode( ', ', array_column( $resolutions, 'name' ) );
+      $error = sprintf( 'The model %s does not support the resolution %s (using %s instead). Supported resolutions are: %s.', $this->model, $this->resolution, $closest, $supportedResolutions );
+      $this->resolution = $closest;
+      Meow_MWAI_Logging::warn( $error, '🖼️' );
     }
 
     // Quality: only validate when the model declares supported qualities. Otherwise leave it as-is

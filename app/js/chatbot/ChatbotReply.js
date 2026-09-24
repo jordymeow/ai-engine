@@ -1,5 +1,5 @@
-// Previous: 3.3.3
-// Current: 3.6.3
+// Previous: 3.6.3
+// Current: 3.8.1
 
 ```javascript
 // React & Vendor Libs
@@ -7,7 +7,7 @@ const { useState, useMemo, useEffect, useRef } = wp.element;
 import { compiler } from 'markdown-to-jsx';
 
 // AI Engine
-import { useClasses } from '@app/chatbot/helpers';
+import { useClasses, imageUnavailableSrc } from '@app/chatbot/helpers';
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
 import { BouncingDots } from '@app/chatbot/ChatbotSpinners';
 import { BlinkingCursor } from '@app/helpers';
@@ -33,7 +33,7 @@ const RawMessage = ({ message, onRendered = () => {} }) => {
     if (!isLongProcess) {
       onRendered();
     }
-    else if (isLongProcess || !isQuerying && !isStreaming) {
+    else if (isLongProcess || (!isQuerying && !isStreaming)) {
       onRendered();
     }
   }, [isLongProcess, isQuerying, isStreaming]);
@@ -71,8 +71,7 @@ const ImagesMessage = ({ message, onRendered = () => {} }) => {
   useEffect(() => { onRendered(); }, []);
 
   const handleImageError = (index) => {
-    const placeholderImage = "https://placehold.co/600x200?text=Expired+Image";
-    setImages(prevImages => prevImages.map((img, i) => i === index ? placeholderImage : img));
+    setImages(prevImages => prevImages.map((img, i) => i === index ? imageUnavailableSrc() : img));
   };
 
   if (message.isQuerying) {

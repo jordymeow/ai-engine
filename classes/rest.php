@@ -1585,19 +1585,20 @@ class Meow_MWAI_Rest {
       // Sanitize post IDs
       $postIds = array_map( 'intval', $postIds );
 
-      // Check content using the mwai_pre_post_content filter to support page builders,
-      // ACF, and other plugins that store content outside of post_content
+      // A post "has content" when the sync would have something to embed, so this asks the very
+      // function the sync uses. It used to build the content its own way (the pre-content filter
+      // plus strip_tags on the raw post_content), and the two disagreed in both directions:
+      // - A page builder that keeps its layout outside post_content (Breakdance, Oxygen, Bricks)
+      //   was skipped even with Resolve Shortcodes on, because that option only ran later, in
+      //   get_post_content(), after the post had already been counted as skipped. "Push All" then
+      //   reported every page as skipped, with nothing the owner could do about it.
+      // - A post made of a shortcode alone counted as content with the option off, although the
+      //   sync strips shortcodes in that mode and ends up with nothing.
       $postsWithContent = [];
 
       foreach ( $postIds as $postId ) {
-        $post = get_post( $postId );
-        if ( !$post ) {
-          continue;
-        }
-        // Apply the same filter used by get_post_content() in core.php
-        $content = apply_filters( 'mwai_pre_post_content', $post->post_content, $postId );
-        $content = trim( strip_tags( $content ) );
-        if ( !empty( $content ) ) {
+        $content = $this->core->get_post_content( $postId );
+        if ( is_string( $content ) && trim( $content ) !== '' ) {
           $postsWithContent[] = $postId;
         }
       }

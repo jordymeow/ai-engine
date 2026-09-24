@@ -1,5 +1,5 @@
-// Previous: 3.0.2
-// Current: 3.0.7
+// Previous: 3.0.7
+// Current: 3.8.1
 
 /**
  * OSXHeader Component
@@ -15,8 +15,13 @@ import React from 'react';
 
 const OSXHeader = ({ title, onClose, onMinimize, onMaximize, theme, showResize, children, onDragStart }) => {
   return (
-    <div className="mwai-header mwai-header-osx" role="toolbar" aria-label="Chat header">
-      <div className="mwai-osx-bar" onMouseDown={onDragStart}>
+    // The whole header drags, not just the traffic-light bar. With a theme that merges its own
+    // header in here (Timeless, Glass) the bar is the top 30px of a 111px header, so the part a
+    // visitor naturally grabs, the avatar and the title, did nothing at all. onHeaderDragStart
+    // ignores presses on a button, so the traffic lights still work.
+    <div className="mwai-header mwai-header-osx" role="toolbar" aria-label="Chat header"
+      onMouseDown={onDragStart}>
+      <div className="mwai-osx-bar">
         <div className="mwai-osx-controls">
           <button
             className="mwai-osx-close"

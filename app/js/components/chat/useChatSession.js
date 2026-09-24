@@ -1,5 +1,5 @@
-// Previous: 3.7.7
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.1
 
 ```javascript
 // React & Vendor Libs
@@ -10,12 +10,7 @@ import { applyFilters } from '@app/chatbot/MwaiAPI';
 import useRestNonce from '@app/components/chat/useRestNonce';
 import useChatUploads from '@app/components/chat/useChatUploads';
 
-const __ = (text) => {
-  if (typeof wp !== 'undefined' && wp.i18n && wp.i18n.__) {
-    return wp.i18n.__(text, 'ai-engine');
-  }
-  return text;
-};
+import { __ } from '@app/chatbot/texts';
 
 export default function useChatSession(options) {
   const {
@@ -95,7 +90,57 @@ export default function useChatSession(options) {
     setMessages(makeInitialMessages());
   };
 
+  const UNDO_CLEAR_MS = 8000;
+  const [ canUndoClear, setCanUndoClear ] = useState(false);
+  const clearedRef = useRef(null);
+  const undoTimerRef = useRef(null);
+  const chatIdRef = useRef(chatId);
+  chatIdRef.current = chatId;
+  const previousResponseIdRef = useRef(previousResponseId);
+  previousResponseIdRef.current = previousResponseId;
+
+  const forgetCleared = useCallback(() => {
+    clearTimeout(undoTimerRef.current);
+    clearedRef.current = null;
+    setCanUndoClear(false);
+  }, []);
+
+  const undoClear = useCallback(() => {
+    const cleared = clearedRef.current;
+    if (!cleared) {
+      return;
+    }
+    forgetCleared();
+    setChatId(cleared.chatId);
+    setPreviousResponseId(cleared.previousResponseId);
+    setMessages(cleared.messages);
+    if (localStorageKey && cleared.stored) {
+      localStorage.setItem(localStorageKey, cleared.stored);
+    }
+  }, [forgetCleared, localStorageKey]);
+
+  useEffect(() => {
+    if (clearedRef.current && messages !== clearedRef.current.messages
+      && messages.some(message => message.role === 'user')) {
+      forgetCleared();
+    }
+  }, [messages, forgetCleared]);
+
+  useEffect(() => () => clearTimeout(undoTimerRef.current), []);
+
   const onClear = useCallback(async ({ chatId = null } = {}) => {
+    const current = messagesRef.current || [];
+    if (current.some(message => message.role === 'user')) {
+      clearedRef.current = {
+        messages: current,
+        chatId: chatIdRef.current,
+        previousResponseId: previousResponseIdRef.current,
+        stored: localStorageKey ? localStorage.getItem(localStorageKey) : null,
+      };
+      setCanUndoClear(true);
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(forgetCleared, UNDO_CLEAR_MS);
+    }
     if (!chatId) {
       chatId = randomStr();
     }
@@ -110,7 +155,7 @@ export default function useChatSession(options) {
     }
     setPreviousResponseId(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [botId, localStorageKey, onCleared]);
+  }, [botId, localStorageKey, onCleared, forgetCleared]);
 
   useEffect(() => {
     if (!serverReply) {
@@ -281,7 +326,7 @@ export default function useChatSession(options) {
           userImages.push(file.uploadedUrl);
         } else {
           userFiles.push({ name: file.localFile?.name || 'Uploaded File', url: file.uploadedUrl });
-          fileLinks.push(`[${file.localFile?.name || 'Uploaded File'}](${file.uploadedUrl})`);
+          fileLinks.push(`[${file.localFile?.name || 'Uploaded File'}](${file.uploadedUrl} "mwai-upload")`);
         }
       });
       if (fileLinks.length > 0) {
@@ -292,7 +337,7 @@ export default function useChatSession(options) {
         userImages.push(currentImageUrl);
       } else {
         userFiles.push({ name: 'Uploaded File', url: currentImageUrl });
-        textDisplay = `[Uploaded File](${currentImageUrl})\n\n${textQuery}`;
+        textDisplay = `[Uploaded File](${currentImageUrl} "mwai-upload")\n\n${textQuery}`;
       }
     }
 
@@ -571,7 +616,7 @@ export default function useChatSession(options) {
       if (chatbotInputRef?.current?.focusInput) {
         setTimeout(() => {
           chatbotInputRef.current.focusInput();
-        }, 300);
+        }, 100);
       }
     }
   }, [lastFailedQuery, setInputText, chatbotInputRef]);
@@ -586,6 +631,7 @@ export default function useChatSession(options) {
     locked, setLocked, serverReply,
     saveMessages, resetMessages, resetError, addErrorMessage,
     onClear, onSubmit, onSubmitAction, retryLastQuery, stopGeneration,
+    canUndoClear, undoClear,
   };
 }
 ```

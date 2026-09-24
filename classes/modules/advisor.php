@@ -207,13 +207,14 @@ Instead of focusing on individual plugins, provide more general and holistic rec
       echo '<p>Everyday, AI Engine will analyze your WordPress setup and provide you with recommendations to improve it.</p>';
       echo '<ul>';
       foreach ( $recommendations as $recommendation ) {
-        $title = isset( $recommendation['title'] ) ? $recommendation['title'] : 'Miscellaneous';
-        $description = isset( $recommendation['description'] ) ? $recommendation['description'] : 'No information available.';
+        $title = is_scalar( $recommendation['title'] ?? null ) ? (string) $recommendation['title'] : 'Miscellaneous';
+        $description = is_scalar( $recommendation['description'] ?? null ) ? (string) $recommendation['description'] : 'No information available.';
         echo '<li style="display: inline;">';
         echo '<div style="display: flex; margin-bottom: 10px;">';
         echo $this->generate_badge( $recommendation['level'] );
         echo '<div>';
-        echo '<strong>' . $title . '</strong> - ' . $description;
+        // Model output: its prompt includes PHP error log lines, which visitors can influence.
+        echo '<strong>' . esc_html( $title ) . '</strong> - ' . esc_html( $description );
         echo '</div>';
         echo '</div>';
         echo '</li>';
