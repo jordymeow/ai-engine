@@ -668,6 +668,9 @@ class Meow_MWAI_Labs_MCP_OAuth {
       )
     );
     if ( !$row ) {
+      $row = $this->recover_lost_rotation( $hash, $marker );
+    }
+    if ( !$row ) {
       if ( $this->logging ) {
         // Distinguish "never existed" from "already rotated or revoked": the second is the
         // signature of a client refreshing twice with the same token, which rotation kills.
@@ -726,6 +729,47 @@ class Meow_MWAI_Labs_MCP_OAuth {
     }
 
     return $this->issue_token_pair( $row->client_id, (int) $row->user_id, (string) $row->scope, $row );
+  }
+
+  /**
+  * A client that refreshed but never kept the new pair comes back with the refresh token
+  * we had already rotated, and strict rotation then killed the connection for good.
+  * Measured on ChatGPT (2026-09-25): it refreshed on Sep 4, kept the Sep 3 token, and
+  * three weeks later every refresh was refused until the user reconnected. A lost
+  * response on a slow site does the same to any client.
+  *
+  * Recovery is allowed only for the token rotated directly into the grant's current row
+  * (same client, same user, no row in between), while that row is still live and the old
+  * refresh token has not expired. The current row is then revoked and the old one is
+  * handed back to be refreshed. A stolen old token used this way cuts the real client
+  * off on its next refresh, which is visible; refusing it silently cut off real users.
+  */
+  private function recover_lost_rotation( $hash, $marker ) {
+    global $wpdb;
+    $old = $wpdb->get_row( $wpdb->prepare(
+      "SELECT * FROM {$this->table_tokens} WHERE refresh_token_hash = %s AND revoked = %d LIMIT 1",
+      $hash,
+      self::TOKEN_ROTATED
+    ) );
+    if ( !$old || ( $old->refresh_expires && strtotime( $old->refresh_expires . ' UTC' ) < time() ) ) {
+      return null;
+    }
+    $next = $wpdb->get_row( $wpdb->prepare(
+      "SELECT * FROM {$this->table_tokens}
+       WHERE client_id = %s AND user_id = %d AND id > %d ORDER BY id ASC LIMIT 1",
+      $old->client_id,
+      $old->user_id,
+      $old->id
+    ) );
+    if ( !$next || (int) $next->revoked !== 0 ) {
+      return null;
+    }
+    $wpdb->update( $this->table_tokens, [ 'revoked' => self::TOKEN_REVOKED ], [ 'id' => $next->id ] );
+    if ( $this->logging ) {
+      error_log( '[AI Engine MCP OAuth] ♻️ Refresh token ' . $marker . ' was already rotated, but the client'
+        . ' came back with it instead of the newer one: recovering the grant and retiring the unused pair.' );
+    }
+    return $old;
   }
 
   /**

@@ -396,12 +396,13 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   ];
 
   /**
-  * Params from a public endpoint's visitor, in the only shape inject_params() will see.
+  * Params from a public endpoint's visitor, without the ones they must not set.
   *
-  * Keys are canonicalized first, then the denied ones are dropped. Doing it in that order is
-  * the fix for CVE-2026-96561: convert_keys() turns 'model_', 'env_id' or 'messages_' into the
-  * real key, so a denylist or filter applied to the raw keys was bypassed with a renamed key.
-  * Anything checked afterwards (like the role filter on 'messages') sees exactly one key.
+  * Keys are compared in their canonical form, which is the fix for CVE-2026-96561:
+  * convert_keys() turns 'model_' or 'env_id' into the real key, so a denylist of raw keys was
+  * bypassed with a renamed key. Allowed keys keep their original spelling, because add-ons read
+  * their own custom params (like 'post_id') in filters. The one exception is 'messages': every
+  * spelling is folded into that key, so the role filter that runs next sees all of them.
   */
   public static function client_params( array $params, array $denied = [] ): array {
     $blocked = array_flip( array_map( 'strtolower', array_merge( self::CLIENT_DENIED_PARAMS, $denied ) ) );
@@ -410,10 +411,11 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
       if ( !is_string( $key ) ) {
         continue;
       }
-      $key = self::canonical_key( $key );
-      if ( !isset( $blocked[strtolower( $key )] ) ) {
-        $clean[$key] = $value;
+      $canonical = self::canonical_key( $key );
+      if ( isset( $blocked[strtolower( $canonical )] ) ) {
+        continue;
       }
+      $clean[strtolower( $canonical ) === 'messages' ? 'messages' : $key] = $value;
     }
     return $clean;
   }

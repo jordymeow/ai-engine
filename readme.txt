@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.1
+Stable tag: 3.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -177,6 +177,8 @@ Extend WordPress with AI capabilities.
 
 AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT, Claude, Claude Code, and OpenClaw can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
 
+**Direct and private.** AI apps connect straight to your site. There is no relay service in between, your credentials never leave WordPress, and the MCP server is free, with no monthly fee and no usage cap.
+
 **What AI Agents Can Do:**
 
 * Create and edit posts
@@ -320,6 +322,15 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.2 (2026/09/25) =
+* Add: Connect an AI assistant card in the MCP settings, which checks the host, guides you through Claude, ChatGPT or Claude Code step by step, and confirms the connection works.
+* Add: The license section now names the actual problem (server unreachable, not activated on this site, expired) instead of an unknown error, and lets you copy the diagnosis for support.
+* Update: The MCP settings and the readme now state that connections are direct, with no relay, no fee or cap, and credentials staying on the site.
+* Fix: A site that cannot reach the license server no longer hangs the admin for minutes: connection diagnostics run once instead of once per URL, and the license check times out after 20 seconds instead of 45.
+* Fix: MCP connections no longer break when a client, such as ChatGPT, reuses a refresh token that was already replaced.
+* Fix: Chatbots with streaming disabled no longer slide the window up when a reply starts, which hid the Glass header and could make the page jump.
+* Fix: Add-ons now keep their own visitor params as sent; only denied keys are matched by their canonical name and only messages is folded into one key.
 
 = 3.8.1 (2026/09/24) =
 * Fix: Security: visitors could override a chatbot's or form's model, instructions or environment with renamed parameters. Fixed, and the Advisor widget now escapes its output.
