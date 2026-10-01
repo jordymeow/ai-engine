@@ -101,9 +101,15 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
     return parent::build_url( $query, $endpoint );
   }
 
+  // OpenRouter ranks apps by HTTP-Referer and names them with X-Title. Sending each site's own
+  // URL split AI Engine's traffic across thousands of anonymous sites, so it never appeared as an
+  // app. A site can still credit itself through the two filters below.
+  const APP_URL = 'https://meowapps.com/ai-engine/';
+  const APP_NAME = 'AI Engine';
+
   protected function build_headers( $query ) {
-    $site_url = apply_filters( 'mwai_openrouter_site_url', get_site_url(), $query );
-    $site_name = apply_filters( 'mwai_openrouter_site_name', get_bloginfo( 'name' ), $query );
+    $site_url = apply_filters( 'mwai_openrouter_site_url', self::APP_URL, $query );
+    $site_name = apply_filters( 'mwai_openrouter_site_name', self::APP_NAME, $query );
     if ( $query->apiKey ) {
       $this->apiKey = $query->apiKey;
     }
@@ -146,7 +152,9 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
         unset( $body['dimensions'] );
       }
     }
-    return $body;
+    // Lets a site inject any OpenRouter parameter AI Engine doesn't set itself
+    // (provider routing, reasoning, models fallback list...), like mwai_google_interactions_body.
+    return apply_filters( 'mwai_openrouter_body', $body, $query );
   }
 
   protected function get_service_name() {

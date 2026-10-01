@@ -1,6 +1,22 @@
 <?php
 
 class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
+
+  // Per 1M text tokens, standard paid tier, prompts up to 200k tokens, from
+  // https://ai.google.dev/gemini-api/docs/pricing (2026-09-29). The 3.6 to 3.8 Flash rates are
+  // promotional until 2026-12-31 and double on 2027-01-01: update them then.
+  const TEXT_PRICES = [
+    'gemini-3.8-flash' => [ 'in' => 0.75, 'out' => 3.75 ],
+    'gemini-3.7-flash' => [ 'in' => 0.75, 'out' => 3.75 ],
+    'gemini-3.6-flash' => [ 'in' => 0.75, 'out' => 3.75 ],
+    'gemini-3.5-flash' => [ 'in' => 1.50, 'out' => 9.00 ],
+    'gemini-3.5-flash-lite' => [ 'in' => 0.30, 'out' => 2.50 ],
+    'gemini-3.1-flash-lite' => [ 'in' => 0.25, 'out' => 1.50 ],
+    'gemini-3.1-pro-preview' => [ 'in' => 2.00, 'out' => 12.00 ],
+    'gemini-2.5-pro' => [ 'in' => 1.25, 'out' => 10.00 ],
+    'gemini-2.5-flash' => [ 'in' => 0.30, 'out' => 2.50 ],
+    'gemini-2.5-flash-lite' => [ 'in' => 0.10, 'out' => 0.40 ],
+  ];
   // Base (Google).
   protected $apiKey = null;
   protected $endpoint = null;
@@ -735,6 +751,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       }
 
       $reply->set_choices( $returned_choices, $googleRawMessage );
+      if ( ( $data['candidates'][0]['finishReason'] ?? '' ) === 'MAX_TOKENS' ) {
+        $reply->set_truncated();
+      }
 
       // Handle grounding metadata if present (from web search)
       if ( isset( $data['candidates'][0]['groundingMetadata'] ) ) {
@@ -1363,6 +1382,11 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $model['dimensions'] = [ 3072 ];
         }
       }
+      if ( $priceIn === 0 && $priceOut === 0 && isset( self::TEXT_PRICES[ $model_id ] ) ) {
+        $model['unit'] = 1 / 1000000;
+        $priceIn = self::TEXT_PRICES[ $model_id ]['in'];
+        $priceOut = self::TEXT_PRICES[ $model_id ]['out'];
+      }
       // Set price if either input or output has a cost (image models often have $0 input)
       if ( $priceIn > 0 || $priceOut > 0 ) {
         $model['price'] = [ 'in' => $priceIn, 'out' => $priceOut ];
@@ -1857,6 +1881,12 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       }
     }
 
+    // Google's models API returns no prices, so text models were never priced: their queries
+    // logged no cost and dollar limits never stopped a Gemini bot.
+    if ( $modelInfo && !isset( $modelInfo['price'] ) && isset( self::TEXT_PRICES[ $model ] ) ) {
+      $modelInfo['price'] = self::TEXT_PRICES[ $model ];
+      $modelInfo['unit'] = 1 / 1000000;
+    }
     if ( !$modelInfo || !isset( $modelInfo['price'] ) ) {
       return null;
     }

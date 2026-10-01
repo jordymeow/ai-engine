@@ -91,6 +91,19 @@ class Meow_MWAI_Modules_Wand {
   // Separator used for multi-block content (must match frontend)
   public const BLOCK_SEPARATOR = "\n\n---MWAI_BLOCK_SEPARATOR---\n\n";
 
+  private function createWandQuery( $postId ) {
+    $query = new Meow_MWAI_Query_Text( '', 4096 );
+    $query->set_scope( 'admin-tools' );
+    $language = !empty( $postId ) ? $this->core->get_post_language( $postId ) : '';
+    return [ $query, $language ];
+  }
+
+  private function keepLanguage( $language ) {
+    return !empty( $language )
+      ? " Ensure the reply is in the same language as the original text ({$language})."
+      : '';
+  }
+
   /**
   * Common method to process text actions (e.g., correct, enhance, lengthen, shorten text).
   *
@@ -133,14 +146,9 @@ class Meow_MWAI_Modules_Wand {
       $text = $arguments['text'];
     }
 
-    $query = new Meow_MWAI_Query_Text( '', 4096 );
-    $query->set_scope( 'admin-tools' );
-    $language = $keepLanguage = '';
-    if ( !empty( $postId ) ) {
-      $language = $this->core->get_post_language( $postId );
-      $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
-    }
-    $query->set_message( $messagePrefix . $keepLanguage . "\n\n" . $text );
+    [ $query, $language ] = $this->createWandQuery( $postId );
+    $query->set_instructions( $messagePrefix . $this->keepLanguage( $language ) );
+    $query->set_message( $text );
     $reply = $this->core->run_query( $query );
 
     $result = $reply->result;
@@ -225,16 +233,14 @@ class Meow_MWAI_Modules_Wand {
   */
   public function action_suggestSynonyms( $value, $arguments ) {
     $postId = $arguments['postId'];
-    $selectedText = $arguments['selectedText'];
-    $query = new Meow_MWAI_Query_Text( '', 4096 );
-    $query->set_scope( 'admin-tools' );
-    $language = $keepLanguage = '';
-    if ( !empty( $postId ) ) {
-      $language = $this->core->get_post_language( $postId );
-      $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
+    $selectedText = trim( $arguments['selectedText'] ?? '' );
+    if ( $selectedText === '' ) {
+      throw new Exception( 'Select a word or a sentence first.' );
     }
-    $prompt = apply_filters( 'mwai_prompt_suggestSynonyms', "Provide 5 synonyms or 5 ways of rephrasing the given word or sentence while retaining the original meaning and preserving the initial and final punctuation and spacing if any. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided. Separate every suggestion with a new line, and that's it." . $keepLanguage . "\n\n", $arguments );
-    $query->set_message( $prompt . $selectedText );
+    [ $query, $language ] = $this->createWandQuery( $postId );
+    $prompt = apply_filters( 'mwai_prompt_suggestSynonyms', "Provide 5 synonyms or 5 ways of rephrasing the given word or sentence while retaining the original meaning and preserving the initial and final punctuation and spacing if any. Offer only the resulting word or expression, without additional context. If a suitable synonym or alternative cannot be identified, ensure that a creative response is still provided. Separate every suggestion with a new line, and that's it." . $this->keepLanguage( $language ), $arguments );
+    $query->set_instructions( $prompt );
+    $query->set_message( $selectedText );
     $query->set_temperature( 1 );
     $reply = $this->core->run_query( $query );
     $lines = explode( "\n", $reply->result );
@@ -291,22 +297,21 @@ class Meow_MWAI_Modules_Wand {
     }
 
     $context = $arguments['context'];
-    $targetLanguage = $this->core->get_post_language( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 4096 );
-    $query->set_scope( 'admin-tools' );
-    $prompt = "Translate the following section into {$targetLanguage}:\n\n" .
-    "[SECTION TO TRANSLATE]\n{$text}\n[END SECTION TO TRANSLATE]\n\n" .
+    [ $query, $targetLanguage ] = $this->createWandQuery( $postId );
+    $instructions = "Translate the following section into {$targetLanguage}.\n\n" .
     "Translation guidelines:\n" .
     "1. Maintain the original tone, mood, and nuance.\n" .
     "2. Preserve the intended meaning as accurately as possible.\n" .
     "3. Ensure the translation fits seamlessly within the broader context.\n" .
     "4. Use appropriate idiomatic expressions in the target language when applicable.\n" .
     "5. Maintain any formatting or special characters present in the original text.\n\n" .
+    'Provide only the translated section, without any additional content.';
+    $instructions = apply_filters( 'mwai_prompt_translateSection', $instructions, $arguments );
+    $query->set_instructions( $instructions );
+    $message = "[SECTION TO TRANSLATE]\n{$text}\n[END SECTION TO TRANSLATE]\n\n" .
     "Broader context (for reference only, do not translate):\n\n" .
-    "[CONTEXT]\n{$context}\n[END CONTEXT]\n\n" .
-    "Provide only the translated section, between the markers [TRANSLATED SECTION] and [END TRANSLATED SECTION], without any additional content. Do not include the markers [TRANSLATED SECTION] and [END TRANSLATED SECTION] in your reply!\n\n";
-    $prompt = apply_filters( 'mwai_prompt_translateSection', $prompt, $arguments );
-    $query->set_message( $prompt );
+    "[CONTEXT]\n{$context}\n[END CONTEXT]";
+    $query->set_message( $message );
     $reply = $this->core->run_query( $query );
 
     // Clean up the result, just in case...
@@ -336,11 +341,10 @@ class Meow_MWAI_Modules_Wand {
   public function action_translateText( $value, $arguments ) {
     $postId = $arguments['postId'];
     $text = $arguments['text'];
-    $language = $this->core->get_post_language( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 4096 );
-    $query->set_scope( 'admin-tools' );
-    $prompt = apply_filters( 'mwai_prompt_translateText', "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.\n\n", $arguments );
-    $query->set_message( $prompt . $text );
+    [ $query, $language ] = $this->createWandQuery( $postId );
+    $prompt = apply_filters( 'mwai_prompt_translateText', "Translate the text into {$language}, preserving the tone, mood, and nuance, while staying as true as possible to the original meaning. Provide only the translated text, without any additional content.", $arguments );
+    $query->set_instructions( $prompt );
+    $query->set_message( $text );
     $reply = $this->core->run_query( $query );
     return [
       'mode' => 'replace',
@@ -356,15 +360,10 @@ class Meow_MWAI_Modules_Wand {
   public function action_suggestExcerpts( $value, $arguments ) {
     $postId = $arguments['postId'];
     $text = $this->core->get_post_content( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 4096 );
-    $query->set_scope( 'admin-tools' );
-    $language = $keepLanguage = '';
-    if ( !empty( $postId ) ) {
-      $language = $this->core->get_post_language( $postId );
-      $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
-    }
-    $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', 'Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.' . $keepLanguage . "\n\n", $arguments );
-    $query->set_message( $prompt . $text );
+    [ $query, $language ] = $this->createWandQuery( $postId );
+    $prompt = apply_filters( 'mwai_prompt_suggestExcerpts', 'Craft a clear, SEO-optimized introduction for the following text, using 120 to 170 characters. Ensure the introduction is concise and relevant, without including any URLs.' . $this->keepLanguage( $language ), $arguments );
+    $query->set_instructions( $prompt );
+    $query->set_message( $text );
     $query->set_max_results( 5 );
     $reply = $this->core->run_query( $query );
     return [
@@ -381,15 +380,10 @@ class Meow_MWAI_Modules_Wand {
   public function action_suggestTitles( $value, $arguments ) {
     $postId = $arguments['postId'];
     $text = $this->core->get_post_content( $postId );
-    $query = new Meow_MWAI_Query_Text( '', 4096 );
-    $query->set_scope( 'admin-tools' );
-    $language = $keepLanguage = '';
-    if ( !empty( $postId ) ) {
-      $language = $this->core->get_post_language( $postId );
-      $keepLanguage = " Ensure the reply is in the same language as the original text ({$language}).";
-    }
-    $prompt = apply_filters( 'mwai_prompt_suggestTitles', 'Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.' . $keepLanguage . "\n\n", $arguments );
-    $query->set_message( $prompt . $text );
+    [ $query, $language ] = $this->createWandQuery( $postId );
+    $prompt = apply_filters( 'mwai_prompt_suggestTitles', 'Generate a concise, SEO-optimized title for the following text, without using quotes or any other formatting. Focus on clarity and relevance to the content.' . $this->keepLanguage( $language ), $arguments );
+    $query->set_instructions( $prompt );
+    $query->set_message( $text );
     $query->set_max_results( 5 );
     $reply = $this->core->run_query( $query );
     return [

@@ -27,6 +27,30 @@ class Meow_MWAI_Engines_Core {
   protected $currentQuery = null;
   protected $emittedFunctionResults = [];
 
+  /**
+   * Input tokens the provider served from its prompt cache, read from any usage shape
+   * we know, or null when the response says nothing about caching. Every provider
+   * except Anthropic already counts these inside its input tokens.
+   */
+  public static function read_cached_tokens( $usage ) {
+    if ( !is_array( $usage ) ) {
+      return null;
+    }
+    $candidates = [
+      $usage['prompt_tokens_details']['cached_tokens'] ?? null, // OpenAI Chat Completions, OpenRouter
+      $usage['input_tokens_details']['cached_tokens'] ?? null, // OpenAI Responses
+      $usage['prompt_cache_hit_tokens'] ?? null, // DeepSeek
+      $usage['cache_read_input_tokens'] ?? null, // Anthropic
+      $usage['cachedContentTokenCount'] ?? null, // Gemini
+    ];
+    foreach ( $candidates as $value ) {
+      if ( is_numeric( $value ) ) {
+        return (int) $value;
+      }
+    }
+    return null;
+  }
+
   public function __construct( $core, $env ) {
     $this->core = $core;
     $this->env = $env;

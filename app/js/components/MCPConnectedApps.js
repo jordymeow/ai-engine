@@ -1,7 +1,7 @@
-// Previous: 3.4.9
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.3
 
-```jsx
+```javascript
 // React & Vendor Libs
 const { useState } = wp.element;
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,12 +19,12 @@ const ACCESS_LABELS = {
 const toDate = ( iso ) => {
   if ( !iso ) return null;
   const d = new Date( iso.replace( ' ', 'T' ) + 'Z' );
-  return isNaN( d.getTime() ) ? null : d;
+  return isNaN( d.getTime() ) ? d : null;
 };
 const formatDate = ( iso ) => toDate( iso )?.toLocaleDateString( undefined, { year: 'numeric', month: 'short', day: 'numeric' } ) || null;
 const formatDateTime = ( iso ) => toDate( iso )?.toLocaleString() || '';
 
-function MCPConnectedApps({ busy }) {
+function MCPConnectedApps({ busy, bearerActive }) {
   const queryClient = useQueryClient();
   const [ revoking, setRevoking ] = useState( null );
 
@@ -52,7 +52,7 @@ function MCPConnectedApps({ busy }) {
     onSuccess: () => queryClient.invalidateQueries( { queryKey: [ 'mcp-oauth-apps' ] } )
   } );
 
-  const apps = data?.apps ?? [];
+  const apps = data?.apps || [];
 
   const refreshButton = (
     <RefreshAction onClick={() => refetch()} busy={isRefetching && isLoading} />
@@ -103,9 +103,10 @@ function MCPConnectedApps({ busy }) {
   }
 
   return (
-    <NekoBlock busy={busy} className="primary" title="Connected Apps (OAuth)" action={refreshButton}>
+    <NekoBlock busy={busy} className="primary" title="Connections" action={refreshButton}>
       <p style={{ fontSize: 13, marginTop: 0, marginBottom: 12 }}>
         Apps that users have authorized via OAuth (Claude Desktop, ChatGPT, and similar clients). Each row is one user's grant to one app and can be revoked individually. Revoking forces the app to re-authorize on next use.
+        {bearerActive || <> Tools using the Bearer Token (Claude Code, scripts) don't sign in, so they are not listed here.</>}
       </p>
       {body}
 

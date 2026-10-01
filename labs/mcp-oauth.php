@@ -668,7 +668,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
       )
     );
     if ( !$row ) {
-      $row = $this->recover_lost_rotation( $hash, $marker );
+      $row = $this->recover_rotated_token( $hash, $marker );
     }
     if ( !$row ) {
       if ( $this->logging ) {
@@ -732,19 +732,24 @@ class Meow_MWAI_Labs_MCP_OAuth {
   }
 
   /**
-  * A client that refreshed but never kept the new pair comes back with the refresh token
-  * we had already rotated, and strict rotation then killed the connection for good.
-  * Measured on ChatGPT (2026-09-25): it refreshed on Sep 4, kept the Sep 3 token, and
-  * three weeks later every refresh was refused until the user reconnected. A lost
-  * response on a slow site does the same to any client.
+  * A rotated refresh token that comes back is refreshed again, without touching any
+  * other token of the grant.
   *
-  * Recovery is allowed only for the token rotated directly into the grant's current row
-  * (same client, same user, no row in between), while that row is still live and the old
-  * refresh token has not expired. The current row is then revoked and the old one is
-  * handed back to be refreshed. A stolen old token used this way cuts the real client
-  * off on its next refresh, which is visible; refusing it silently cut off real users.
+  * Two real cases send one: a client that refreshed but never kept the new pair
+  * (ChatGPT, 2026-09-25: refreshed on Sep 4, kept the Sep 3 token), and a client
+  * running parallel sessions that each hold their own copy of the grant (ChatGPT
+  * Desktop Work sessions, reported by jordiss on 3.8.2, 2026-09-26). 3.8.2 recovered
+  * the first case by revoking the newer row, which is exactly what the parallel
+  * sessions hold: each session's refresh knocked out the other's, and both ended in
+  * invalid_grant. So a returning token now branches the grant: it gets its own new
+  * pair, and every sibling keeps working.
+  *
+  * The trade-off is that a rotated refresh token stays usable until it expires or the
+  * grant is revoked, like a non-rotating refresh token. Revoking in Connected Apps (or
+  * through /oauth/revoke) marks every row of the grant revoked, rotated ones included,
+  * so revocation still cuts all sessions at once.
   */
-  private function recover_lost_rotation( $hash, $marker ) {
+  private function recover_rotated_token( $hash, $marker ) {
     global $wpdb;
     $old = $wpdb->get_row( $wpdb->prepare(
       "SELECT * FROM {$this->table_tokens} WHERE refresh_token_hash = %s AND revoked = %d LIMIT 1",
@@ -754,20 +759,9 @@ class Meow_MWAI_Labs_MCP_OAuth {
     if ( !$old || ( $old->refresh_expires && strtotime( $old->refresh_expires . ' UTC' ) < time() ) ) {
       return null;
     }
-    $next = $wpdb->get_row( $wpdb->prepare(
-      "SELECT * FROM {$this->table_tokens}
-       WHERE client_id = %s AND user_id = %d AND id > %d ORDER BY id ASC LIMIT 1",
-      $old->client_id,
-      $old->user_id,
-      $old->id
-    ) );
-    if ( !$next || (int) $next->revoked !== 0 ) {
-      return null;
-    }
-    $wpdb->update( $this->table_tokens, [ 'revoked' => self::TOKEN_REVOKED ], [ 'id' => $next->id ] );
     if ( $this->logging ) {
-      error_log( '[AI Engine MCP OAuth] ♻️ Refresh token ' . $marker . ' was already rotated, but the client'
-        . ' came back with it instead of the newer one: recovering the grant and retiring the unused pair.' );
+      error_log( '[AI Engine MCP OAuth] ♻️ Refresh token ' . $marker . ' was already rotated (a parallel'
+        . ' session, or a client that kept an older copy): issuing it a new pair, other sessions keep theirs.' );
     }
     return $old;
   }
@@ -853,11 +847,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
     }
     global $wpdb;
     $hash = hash( 'sha256', $token );
-    $wpdb->query( $wpdb->prepare(
-      "UPDATE {$this->table_tokens} SET revoked = 1 WHERE access_token_hash = %s OR refresh_token_hash = %s",
+    $row = $wpdb->get_row( $wpdb->prepare(
+      "SELECT client_id, user_id FROM {$this->table_tokens} WHERE access_token_hash = %s OR refresh_token_hash = %s LIMIT 1",
       $hash,
       $hash
     ) );
+    if ( $row ) {
+      $this->revoke_grant( $row->client_id, (int) $row->user_id );
+    }
     return new WP_REST_Response( null, 200 );
   }
   #endregion
@@ -970,11 +967,23 @@ class Meow_MWAI_Labs_MCP_OAuth {
        FROM {$this->table_tokens} t
        LEFT JOIN {$this->table_clients} c ON c.client_id = t.client_id
        WHERE t.revoked = 0 AND COALESCE( t.refresh_expires, t.access_expires ) > %s
-       ORDER BY t.created DESC",
+       ORDER BY t.id DESC",
       gmdate( 'Y-m-d H:i:s' )
     ) );
-    $out = [];
+    // Parallel sessions of one app each hold a live row of the same grant (see
+    // recover_rotated_token): show the grant once, with its latest use.
+    $grants = [];
     foreach ( $rows as $r ) {
+      $key = $r->client_id . '|' . $r->user_id;
+      if ( !isset( $grants[ $key ] ) ) {
+        $grants[ $key ] = $r;
+      }
+      elseif ( $r->last_used && ( !$grants[ $key ]->last_used || $r->last_used > $grants[ $key ]->last_used ) ) {
+        $grants[ $key ]->last_used = $r->last_used;
+      }
+    }
+    $out = [];
+    foreach ( $grants as $r ) {
       $user = get_userdata( (int) $r->user_id );
       // What this grant can reach right now, so an admin can tell a content-only
       // Editor session apart, and spot grants that are refused on their next call.
@@ -1005,7 +1014,12 @@ class Meow_MWAI_Labs_MCP_OAuth {
       return new WP_REST_Response( [ 'error' => 'Invalid id.' ], 400 );
     }
     global $wpdb;
-    $wpdb->update( $this->table_tokens, [ 'revoked' => 1 ], [ 'id' => $id ] );
+    // A grant is a chain of rows that can branch (see recover_rotated_token), and any
+    // unexpired rotated row can still refresh: revoke all of them, not just this one.
+    $row = $wpdb->get_row( $wpdb->prepare( "SELECT client_id, user_id FROM {$this->table_tokens} WHERE id = %d", $id ) );
+    if ( $row ) {
+      $this->revoke_grant( $row->client_id, (int) $row->user_id );
+    }
     return new WP_REST_Response( [ 'revoked' => true ], 200 );
   }
   #endregion
@@ -1035,8 +1049,8 @@ class Meow_MWAI_Labs_MCP_OAuth {
   }
 
   /**
-  * Delete token rows that can never authenticate again: revoked or rotated rows whose
-  * access token has expired, and grants whose refresh token has expired. Nothing removed
+  * Delete token rows that can never authenticate again: revoked rows whose access token
+  * has expired, and rows whose refresh token has expired. Nothing removed
   * them before, so every connected app added about 24 rows a day for good.
   *
   * A day of grace keeps recent rows around, so the refresh and access logs can still
@@ -1046,12 +1060,26 @@ class Meow_MWAI_Labs_MCP_OAuth {
   private function prune_dead_tokens() {
     global $wpdb;
     $cutoff = gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS );
+    // Rotated rows stay until their refresh token expires: another session of the same
+    // client may still hold them (see recover_rotated_token).
     $wpdb->query( $wpdb->prepare(
       "DELETE FROM {$this->table_tokens}
        WHERE access_expires < %s
-         AND ( revoked <> 0 OR refresh_expires IS NULL OR refresh_expires < %s )",
+         AND ( revoked = %d OR refresh_expires IS NULL OR refresh_expires < %s )",
       $cutoff,
+      self::TOKEN_REVOKED,
       $cutoff
+    ) );
+  }
+
+  /** Revoke every row of a grant (one client, one user), rotated ones included. */
+  private function revoke_grant( $client_id, $user_id ) {
+    global $wpdb;
+    $wpdb->query( $wpdb->prepare(
+      "UPDATE {$this->table_tokens} SET revoked = %d WHERE client_id = %s AND user_id = %d",
+      self::TOKEN_REVOKED,
+      $client_id,
+      $user_id
     ) );
   }
 

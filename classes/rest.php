@@ -768,6 +768,10 @@ class Meow_MWAI_Rest {
       // which would run the site's completions against a key of the caller's choosing.
       $params = Meow_MWAI_Core::sanitize_rest_params( $request->get_json_params() );
       $message = $this->retrieve_message( $params );
+      // An empty request still reached the provider and was billed for the instructions alone.
+      if ( trim( $message ) === '' && empty( $params['messages'] ) ) {
+        throw new Exception( 'The message is empty.' );
+      }
       $query = new Meow_MWAI_Query_Text( $message );
       $query->inject_params( $params );
 
@@ -1829,7 +1833,8 @@ class Meow_MWAI_Rest {
       $filters = $params['filters'];
       $sort = isset( $params['sort'] ) ? $params['sort'] : null;
       $logs = apply_filters( 'mwai_stats_logs_list', [], $offset, $limit, $filters, $sort );
-      return $this->create_rest_response( [ 'success' => true, 'total' => $logs['total'], 'logs' => $logs['rows'] ], 200 );
+      // Nothing hooks the filter when Insights is off (or on the free version).
+      return $this->create_rest_response( [ 'success' => true, 'total' => $logs['total'] ?? 0, 'logs' => $logs['rows'] ?? [] ], 200 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );

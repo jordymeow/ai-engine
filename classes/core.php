@@ -152,6 +152,11 @@ class Meow_MWAI_Core {
         new Meow_MWAI_Labs_MCP_Core( $this );
       }
 
+      // Abilities - tools registered by plugins through the WordPress Abilities API
+      if ( $this->get_option( 'mcp_abilities' ) ) {
+        new Meow_MWAI_Labs_MCP_Abilities();
+      }
+
       // Dynamic REST - WordPress REST API MCP tools
       if ( $this->get_option( 'mcp_dynamic_rest' ) ) {
         require_once MWAI_PATH . '/labs/mcp-rest.php';
@@ -1092,6 +1097,25 @@ class Meow_MWAI_Core {
   // function-call issue, a stream error). The real error is always logged, and admins
   // still see it; visitors only ever get this. Filterable so a site can match its own
   // tone and so a raw provider message (billing, quota, model errors) never leaks.
+  // A reply cut by Max Tokens used to stop mid-sentence with no explanation, which looks
+  // like a broken chatbot. Returns the line to append below it, or '' when it is complete.
+  public static function get_truncated_notice( $reply, $context = 'chatbot' ) {
+    if ( empty( $reply->truncated ) ) {
+      return '';
+    }
+    $maxTokens = $reply->query->maxTokens ?? null;
+    Meow_MWAI_Logging::warn( "The reply was cut: it reached Max Tokens ({$maxTokens})." );
+    $notice = $context === 'chatbot'
+      ? __( 'This answer was cut short because it reached its length limit. Just ask me to continue.', 'ai-engine' )
+      : __( 'This answer was cut short because it reached its length limit.', 'ai-engine' );
+    if ( current_user_can( 'manage_options' ) && $maxTokens ) {
+      // translators: %d is the Max Tokens value of the chatbot or form.
+      $notice .= ' ' . sprintf( __( 'Admins: raise Max Tokens (currently %d) in its settings.', 'ai-engine' ), $maxTokens );
+    }
+    $notice = apply_filters( 'mwai_reply_truncated_notice', $notice, $reply, $context );
+    return empty( $notice ) ? '' : "\n\n*" . $notice . '*';
+  }
+
   public static function get_public_error_message( $exception = null ) {
     $message = 'Oops! Something went wrong on the server. Please try again, and if you are the site developer, check the PHP Error Logs for details.';
     return apply_filters( 'mwai_public_error_message', $message, $exception );
@@ -1187,18 +1211,48 @@ class Meow_MWAI_Core {
   * e.g. get_chatbots( [ 'functions' => true ] ) to only keep chatbots whose
   * model supports function calling. No filters returns every chatbot, as before.
   */
+  // The chatbot defaults, with the texts visitors read translated into the site's language.
+  // MWAI_CHATBOT_DEFAULT_PARAMS can't do it: constants are defined before translations load,
+  // so a new site in French used to start with "Send" and "Hi! How can I help you?".
+  // Only used for new chatbots and missing keys; texts already saved are never touched.
+  private $chatbotDefaultParams = null;
+  public function get_chatbot_default_params() {
+    if ( !did_action( 'init' ) ) {
+      return MWAI_CHATBOT_DEFAULT_PARAMS;
+    }
+    if ( is_null( $this->chatbotDefaultParams ) ) {
+      // Visitors see these texts, so the site's language, not the admin's own.
+      $switched = switch_to_locale( get_locale() );
+      $this->chatbotDefaultParams = array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, [
+        'aiName' => __( 'AI: ', 'ai-engine' ),
+        'userName' => __( 'User: ', 'ai-engine' ),
+        'guestName' => __( 'Guest: ', 'ai-engine' ),
+        'textSend' => __( 'Send', 'ai-engine' ),
+        'textClear' => __( 'Clear', 'ai-engine' ),
+        'textInputPlaceholder' => __( 'Type your message...', 'ai-engine' ),
+        'startSentence' => __( 'Hi! How can I help you?', 'ai-engine' ),
+        'headerSubtitle' => __( 'Discuss with', 'ai-engine' ),
+      ] );
+      if ( $switched ) {
+        restore_previous_locale();
+      }
+    }
+    return $this->chatbotDefaultParams;
+  }
+
   public function get_chatbots( $filters = [] ) {
     $chatbots = get_option( $this->chatbots_option_name, [] );
     $hasChanges = false;
+    $defaults = $this->get_chatbot_default_params();
     if ( empty( $chatbots ) ) {
-      $chatbots = [ array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'botId' => 'default' ] ) ];
+      $chatbots = [ array_merge( $defaults, ['name' => 'Default', 'botId' => 'default' ] ) ];
     }
     $hasDefault = false;
     foreach ( $chatbots as &$chatbot ) {
       if ( $chatbot['botId'] === 'default' ) {
         $hasDefault = true;
       }
-      foreach ( MWAI_CHATBOT_DEFAULT_PARAMS as $key => $value ) {
+      foreach ( $defaults as $key => $value ) {
         // Use default value if not set.
         if ( !isset( $chatbot[$key] ) ) {
           $chatbot[$key] = $value;
@@ -1250,7 +1304,7 @@ class Meow_MWAI_Core {
       // }
     }
     if ( !$hasDefault ) {
-      $defaultBot = array_merge( MWAI_CHATBOT_DEFAULT_PARAMS, ['name' => 'Default', 'botId' => 'default' ] );
+      $defaultBot = array_merge( $defaults, ['name' => 'Default', 'botId' => 'default' ] );
       array_unshift( $chatbots, $defaultBot );
       $hasChanges = true;
     }
@@ -1989,6 +2043,7 @@ class Meow_MWAI_Core {
       $this->options = $options;
     }
     $options = $this->populate_dynamic_options( $this->options );
+    $options['chatbot_defaults'] = $this->get_chatbot_default_params();
     return $options;
   }
 

@@ -31,7 +31,8 @@ define( 'MWAI_OPENAI_MODELS', [
     // model. The GPT-5 line is caught by a name check in the engines, which a gpt-6 id does
     // not match, so the tag is what stops us sending it (verified live 2026-09-05).
     'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature', 'latest'],
-    'tools' => ['web_search', 'code_interpreter'],
+    // image_generation verified live 2026-09-26 (Responses API returned an image_generation_call).
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
     'params' => [
       // 'max' is new with this model; the effort dropdown reads this list.
       // No 'none': the API answers 400 "Unsupported value: 'none' is not supported"
@@ -164,6 +165,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 2.50,
       'out' => 15.00,
+      'cached' => 0.25,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -215,6 +217,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.75,
       'out' => 4.50,
+      'cached' => 0.075,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -241,6 +244,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.20,
       'out' => 1.25,
+      'cached' => 0.02,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -268,6 +272,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.75,
       'out' => 14.00,
+      'cached' => 0.175,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -290,6 +295,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.75,
       'out' => 14.00,
+      'cached' => 0.175,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -317,6 +323,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.75,
       'out' => 14.00,
+      'cached' => 0.175,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -365,6 +372,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.25,
       'out' => 10.00,
+      'cached' => 0.125,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -391,6 +399,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.25,
       'out' => 10.00,
+      'cached' => 0.125,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -418,6 +427,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.25,
       'out' => 2.00,
+      'cached' => 0.025,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -445,6 +455,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.05,
       'out' => 0.40,
+      'cached' => 0.005,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -472,6 +483,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.25,
       'out' => 10.00,
+      'cached' => 0.125,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -525,6 +537,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 2.00,
       'out' => 8.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -547,6 +560,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.40,
       'out' => 1.60,
+      'cached' => 0.1,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -569,6 +583,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.10,
       'out' => 0.40,
+      'cached' => 0.025,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -592,6 +607,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 2.50,
       'out' => 10.00,
+      'cached' => 1.25,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -614,6 +630,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 0.15,
       'out' => 0.60,
+      'cached' => 0.075,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -641,6 +658,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 2.00,
       'out' => 8.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -662,6 +680,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'price' => [
       'in' => 1.10,
       'out' => 4.40,
+      'cached' => 0.55,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1190,6 +1209,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 10.00,
       'out' => 50.00,
+      'cached' => 1.00,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1209,6 +1229,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 5.00,
       'out' => 25.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1228,6 +1249,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 5.00,
       'out' => 25.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1245,6 +1267,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 5.00,
       'out' => 25.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1262,6 +1285,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 5.00,
       'out' => 25.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1279,6 +1303,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 5.00,
       'out' => 25.00,
+      'cached' => 0.5,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1297,6 +1322,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 2.00,
       'out' => 10.00,
+      'cached' => 0.2,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1317,6 +1343,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 3.00,
       'out' => 15.00,
+      'cached' => 0.3,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1334,6 +1361,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 3.00,
       'out' => 15.00,
+      'cached' => 0.3,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1351,6 +1379,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 3.00,
       'out' => 15.00,
+      'cached' => 0.3,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1370,6 +1399,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 1.00,
       'out' => 5.00,
+      'cached' => 0.1,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1387,6 +1417,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 1.00,
       'out' => 5.00,
+      'cached' => 0.1,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,

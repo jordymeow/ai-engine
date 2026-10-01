@@ -23,6 +23,10 @@ class Meow_MWAI_Reply implements JsonSerializable {
   // 8.2+ does not warn about dynamic property creation.
   public $extraData = [];
 
+  // True when the model stopped because it reached the max tokens, not because it was
+  // done: the reply ends mid-sentence. Set by each engine from its own stop reason.
+  public $truncated = false;
+
   // This is when models return a message that needs to be executed (functions, tools, etc)
   public $needFeedbacks = [];
   public $needClientActions = [];
@@ -147,6 +151,21 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
   public function set_usage( $usage ) {
     $this->usage = $usage;
+  }
+
+  // Input tokens served from the provider's prompt cache, part of prompt_tokens.
+  public function set_cached_tokens( $tokens ) {
+    if ( is_numeric( $tokens ) && $tokens > 0 ) {
+      $this->usage['cached_tokens'] = (int) $tokens;
+    }
+  }
+
+  public function get_cached_tokens() {
+    return (int) ( $this->usage['cached_tokens'] ?? 0 );
+  }
+
+  public function set_truncated( $truncated = true ) {
+    $this->truncated = (bool) $truncated;
   }
 
   public function set_usage_accuracy( $accuracy ) {

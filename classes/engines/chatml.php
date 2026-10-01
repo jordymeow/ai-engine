@@ -33,7 +33,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
   protected $streamCost = null;
+  protected $cachedInTokens = null; // Input tokens served from the prompt cache (see read_cached_tokens).
   protected $streamStartEmitted = false;
+  protected $streamFinishReason = null;
 
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
@@ -50,10 +52,12 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     $this->streamThinkTag = 0;
     $this->streamInTokens = null;
     $this->streamOutTokens = null;
+    $this->cachedInTokens = null;
     $this->inModel = null;
     $this->inId = null;
     $this->emittedFunctionResults = [];
     $this->streamStartEmitted = false;
+    $this->streamFinishReason = null;
   }
 
   protected function set_environment() {
@@ -788,6 +792,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       // Could be tool_calls, means an OpenAI Assistant is doing something.
     }
     else {
+      if ( !empty( $json['choices'][0]['finish_reason'] ) ) {
+        $this->streamFinishReason = $json['choices'][0]['finish_reason'];
+      }
       if ( isset( $json['choices'][0]['text'] ) ) {
         $handledCondition = true;
         $content = $json['choices'][0]['text'];
@@ -882,6 +889,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
     if ( isset( $usage['prompt_tokens'], $usage['completion_tokens'] ) ) {
       $this->streamInTokens = (int) $usage['prompt_tokens'];
       $this->streamOutTokens = (int) $usage['completion_tokens'];
+      $this->cachedInTokens = Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
 
       if ( isset( $usage['cost'] ) ) {
         $this->streamCost = (float) $usage['cost'];
@@ -1495,6 +1503,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         $returned_in_tokens = $usage['prompt_tokens'] ?? null;
         $returned_out_tokens = $usage['completion_tokens'] ?? null;
         $returned_price = $usage['total_cost'] ?? $usage['cost'] ?? null;
+        $this->cachedInTokens = Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
         $returned_choices = $data['choices'];
         $returned_choices = $this->finalize_choices( $returned_choices, $data, $query );
 
@@ -1509,6 +1518,10 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
       // Set the results.
       $reply->set_choices( $returned_choices );
+      $finishReason = $isStreaming ? $this->streamFinishReason : ( $data['choices'][0]['finish_reason'] ?? null );
+      if ( $finishReason === 'length' ) {
+        $reply->set_truncated();
+      }
       if ( !empty( $returned_id ) ) {
         $reply->set_id( $returned_id );
       }
@@ -1525,13 +1538,17 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         $returned_out_tokens,
         $returned_price
       );
+      // After handle_tokens_usage(): its overrides replace the whole usage array.
+      $reply->set_cached_tokens( $this->cachedInTokens );
 
       return $reply;
     }
     catch ( Exception $e ) {
       $service = $this->get_service_name();
       Meow_MWAI_Logging::error( "$service: " . $e->getMessage() );
-      $message = "$service: " . $e->getMessage();
+      // A non-2xx body arrives raw (see execute()); show its message, not the JSON, as the
+      // streaming path already does.
+      $message = "$service: " . ( $this->try_decode_error( $e->getMessage() ) ?? $e->getMessage() );
       throw new Exception( $message );
     }
     finally {
@@ -2264,7 +2281,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
   }
 
   // TODO: After 2027-02 (OpenAI ends fine-tune job creation on 2027-01-06), drop the $finetune branch from calculate_price() and the finetune-detection block in get_price().
-  private function calculate_price( $modelFamily, $inUnits, $outUnits, $resolution = null, $finetune = false ) {
+  private function calculate_price( $modelFamily, $inUnits, $outUnits, $resolution = null, $finetune = false, $cachedUnits = 0 ) {
     $modelFamily = self::get_model_without_release_date( $modelFamily );
     $models = $this->get_models();
     foreach ( $models as $currentModel ) {
@@ -2282,11 +2299,16 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
         }
         $inPrice = $currentModel['price'];
         $outPrice = $currentModel['price'];
+        $cachedPrice = $currentModel['price'];
         if ( is_array( $currentModel['price'] ) ) {
           $inPrice = $currentModel['price']['in'];
           $outPrice = $currentModel['price']['out'];
+          // Cached input is billed at the model's cached rate; without one, at the normal rate.
+          $cachedPrice = $currentModel['price']['cached'] ?? $inPrice;
         }
-        $inTotalPrice = $inPrice * $currentModel['unit'] * $inUnits;
+        $cachedUnits = min( max( 0, (int) $cachedUnits ), (int) $inUnits );
+        $inTotalPrice = $inPrice * $currentModel['unit'] * ( $inUnits - $cachedUnits )
+          + $cachedPrice * $currentModel['unit'] * $cachedUnits;
         $outTotalPrice = $outPrice * $currentModel['unit'] * $outUnits;
         return $inTotalPrice + $outTotalPrice;
       }
@@ -2305,7 +2327,7 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       }
       $inUnits = $reply->get_in_tokens( $query );
       $outUnits = $reply->get_out_tokens();
-      return $this->calculate_price( $model, $inUnits, $outUnits, null, $finetune );
+      return $this->calculate_price( $model, $inUnits, $outUnits, null, $finetune, $reply->get_cached_tokens() );
     }
     else if ( is_a( $query, 'Meow_MWAI_Query_Image' ) || is_a( $query, 'Meow_MWAI_Query_EditImage' ) ) {
       // gpt-image models are billed by input/output tokens like text models.

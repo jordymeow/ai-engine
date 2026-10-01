@@ -5,7 +5,6 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
   public ?string $session = null;
   public ?string $chatId = null;
   public string $scope = '';
-  private $core = null;
 
   // Core Content
   public ?string $instructions = null;
@@ -71,8 +70,10 @@ class Meow_MWAI_Query_Base implements JsonSerializable {
       $this->set_message( $message );
     }
     $this->session = $mwai_core->get_session_id();
-    $this->core = $mwai_core;
-    $this->image_remote_upload = $this->core->get_option( 'image_remote_upload' );
+    // Never keep $mwai_core on the query: it was serialized along with it (every option, API
+    // keys included), so the Editor Assistant's feedback session weighed several MB and failed
+    // to save on the Gemini Standard API ("Feedback session expired" after every edit).
+    $this->image_remote_upload = $mwai_core->get_option( 'image_remote_upload' );
   }
 
   #[\ReturnTypeWillChange]

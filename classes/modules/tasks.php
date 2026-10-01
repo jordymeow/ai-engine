@@ -1053,7 +1053,9 @@ class Meow_MWAI_Modules_Tasks {
       'name' => 'cleanup_files',
       'category' => 'system',
       'description' => 'Delete expired files based on expiration dates.',
-      'schedule' => '0 4 * * *', // Daily at 4 AM UTC
+      // Hourly: files expire after 1 hour by default, and a daily sweep left them on the
+      // provider (OpenAI Files) for up to a day after that.
+      'schedule' => '0 * * * *',
     ] );
 
     // Ensure cleanup_tasks exists

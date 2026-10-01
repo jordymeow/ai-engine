@@ -146,6 +146,17 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     return false;
   }
 
+  /**
+   * Anthropic's input_tokens leaves out everything that went through the prompt cache
+   * (cache_read_input_tokens, cache_creation_input_tokens), unlike the other providers,
+   * so a cached conversation was counted and priced as a few tokens. Add them back.
+   */
+  private static function total_input_tokens( $usage ) {
+    return (int) ( $usage['input_tokens'] ?? 0 )
+      + (int) ( $usage['cache_read_input_tokens'] ?? 0 )
+      + (int) ( $usage['cache_creation_input_tokens'] ?? 0 );
+  }
+
   public function reset_stream() {
     $this->streamContent = null;
     $this->streamBuffer = null;
@@ -154,6 +165,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     $this->streamLastMessage = null;
     $this->streamInTokens = null;
     $this->streamOutTokens = null;
+    $this->cachedInTokens = null;
     $this->streamIsThinking = false;
     $this->mcpTools = []; // Reset MCP tools tracking
     $this->textStarted = false; // Reset text started flag
@@ -799,7 +811,8 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
 
     if ( $type === 'message_start' ) {
       $usage = $json['message']['usage'];
-      $this->streamInTokens = $usage['input_tokens'];
+      $this->streamInTokens = self::total_input_tokens( $usage );
+      $this->cachedInTokens = Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
       $this->inModel = $json['message']['model'];
       $this->inId = $json['message']['id'];
 
@@ -1134,6 +1147,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       $accumulated_content = [];
       $continuations = 0;
 
+      $returned_cached_tokens = 0;
       while ( true ) {
         $res = $this->run_query( $url, $options, $streamCallback );
 
@@ -1141,9 +1155,10 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         if ( $isStreaming ) {
           $returned_id = $this->inId;
           $returned_model = $this->inModel ? $this->inModel : $query->model;
-          if ( !is_null( $this->streamInTokens && !is_null( $this->streamOutTokens ) ) ) {
+          if ( !is_null( $this->streamInTokens ) && !is_null( $this->streamOutTokens ) ) {
             $returned_in_tokens = ( $returned_in_tokens ?? 0 ) + (int) $this->streamInTokens;
             $returned_out_tokens = ( $returned_out_tokens ?? 0 ) + (int) $this->streamOutTokens;
+            $returned_cached_tokens += (int) $this->cachedInTokens;
           }
           $data = $this->streamBlocks;
         }
@@ -1154,8 +1169,9 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
           $returned_model = $data['model'];
           $usage = $data['usage'];
           if ( !empty( $usage ) ) {
-            $returned_in_tokens = ( $returned_in_tokens ?? 0 ) + (int) ( $usage['input_tokens'] ?? 0 );
+            $returned_in_tokens = ( $returned_in_tokens ?? 0 ) + self::total_input_tokens( $usage );
             $returned_out_tokens = ( $returned_out_tokens ?? 0 ) + (int) ( $usage['output_tokens'] ?? 0 );
+            $returned_cached_tokens += (int) Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
           }
         }
 
@@ -1206,6 +1222,9 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       $returned_choices = $this->create_choices( $data );
 
       $reply->set_choices( $returned_choices, $data );
+      if ( ( $data['stop_reason'] ?? '' ) === 'max_tokens' ) {
+        $reply->set_truncated();
+      }
       if ( !empty( $returned_id ) ) {
         $reply->set_id( $returned_id );
       }
@@ -1218,6 +1237,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         $returned_in_tokens,
         $returned_out_tokens
       );
+      $reply->set_cached_tokens( $returned_cached_tokens );
 
       return $reply;
     }

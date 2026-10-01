@@ -481,6 +481,8 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
         'polylang' => function_exists( 'pll_get_post_language' ),
         'wpml' => defined( 'ICL_SITEPRESS_VERSION' ),
         'woocommerce' => class_exists( 'WooCommerce' ),
+        // Only when MCP is on: listing abilities runs every plugin's registration code.
+        'abilities' => $this->core->get_option( 'module_mcp' ) ? Meow_MWAI_Labs_MCP_Abilities::summary() : null,
       ],
       // So the admin can render stored UTC timestamps in the site's timezone.
       'timezone' => [

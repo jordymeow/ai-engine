@@ -24,6 +24,7 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
   protected $streamId = null;
   protected $streamInTokens = null;
   protected $streamOutTokens = null;
+  protected $streamStatus = null;
   protected $streamToolCalls = [];
   protected $streamImages = [];
 
@@ -352,7 +353,7 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
           $errBody = ( $tmpFile && file_exists( $tmpFile ) )
             ? file_get_contents( $tmpFile ) : wp_remote_retrieve_body( $res );
           $errData = json_decode( $errBody, true );
-          $detail = $errData['error']['message'] ?? $errBody;
+          $detail = $errData['error']['message'] ?? ( $errData[0]['error']['message'] ?? $errBody );
           throw new Exception( 'AI Engine (Gemini Interactions) HTTP ' . $code . ': ' . $detail
             . $this->model_unavailable_hint( $code, $detail, $query->model ) );
         }
@@ -368,7 +369,8 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       }
 
       if ( $code < 200 || $code >= 300 ) {
-        $detail = $data['error']['message'] ?? $rawBody;
+        // Some errors (an invalid API key) come wrapped in a list: [{"error": {...}}].
+        $detail = $data['error']['message'] ?? ( $data[0]['error']['message'] ?? $rawBody );
         throw new Exception( 'AI Engine (Gemini Interactions) HTTP ' . $code . ': ' . $detail
           . $this->model_unavailable_hint( $code, $detail, $query->model ) );
       }
@@ -389,6 +391,7 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     $this->streamId = null;
     $this->streamInTokens = null;
     $this->streamOutTokens = null;
+    $this->streamStatus = null;
     $this->streamToolCalls = [];
     $this->streamImages = [];
   }
@@ -466,6 +469,12 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       // Thought deltas carry an encrypted thought_signature, not readable text,
       // so there is nothing to surface to the user; they are intentionally skipped.
       return null;
+    }
+
+    // A cut by max_output_tokens is not an error: the interaction ends with status
+    // "incomplete" instead of "completed", so remember whichever status comes last.
+    if ( !empty( $json['interaction']['status'] ) ) {
+      $this->streamStatus = $json['interaction']['status'];
     }
 
     if ( $type === 'interaction.completed' ) {
@@ -557,11 +566,15 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     // Nothing to show (no text, image, or function call): surface a short
     // fallback instead of a blank bubble. This happens e.g. when a text-only
     // model is asked to edit an image, or the model declines a request.
+    $truncated = $this->streamStatus === 'incomplete';
     if ( empty( $choices ) ) {
-      $choices[] = [ 'role' => 'assistant', 'text' => $this->empty_reply_fallback( $query ) ];
+      $choices[] = [ 'role' => 'assistant', 'text' => $truncated ? '' : $this->empty_reply_fallback( $query ) ];
     }
 
     $reply->set_choices( $choices );
+    if ( $truncated ) {
+      $reply->set_truncated();
+    }
 
     if ( !empty( $this->streamId ) ) {
       $reply->set_id( $this->streamId );
@@ -656,12 +669,17 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     }
 
     // Surface a short fallback rather than a blank reply when there is nothing
-    // to show (no text, image, or function call).
+    // to show (no text, image, or function call). A reply cut by max tokens gets
+    // the truncated notice instead, which would contradict the fallback.
+    $truncated = ( $data['status'] ?? '' ) === 'incomplete';
     if ( empty( $choices ) ) {
-      $choices[] = [ 'role' => 'assistant', 'text' => $this->empty_reply_fallback( $query ) ];
+      $choices[] = [ 'role' => 'assistant', 'text' => $truncated ? '' : $this->empty_reply_fallback( $query ) ];
     }
 
     $reply->set_choices( $choices );
+    if ( $truncated ) {
+      $reply->set_truncated();
+    }
 
     // Stateful handle for the next turn.
     if ( !empty( $data['id'] ) ) {

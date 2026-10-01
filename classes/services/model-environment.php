@@ -91,16 +91,16 @@ class Meow_MWAI_Services_ModelEnvironment {
 
       // Fallback: if environment has no models, try type-specific defaults
       if ( $query instanceof Meow_MWAI_Query_Image ) {
-        $this->set_default_model_only( $query, 'ai_images_default_model' );
+        $this->set_default_model_only( $query, 'ai_images_default_model', 'ai_images_default_env' );
       }
       else if ( $query instanceof Meow_MWAI_Query_Transcribe ) {
-        $this->set_default_model_only( $query, 'ai_audio_default_model' );
+        $this->set_default_model_only( $query, 'ai_audio_default_model', 'ai_audio_default_env' );
       }
       else if ( $query instanceof Meow_MWAI_Query_Embed ) {
-        $this->set_default_model_only( $query, 'ai_embeddings_default_model' );
+        $this->set_default_model_only( $query, 'ai_embeddings_default_model', 'ai_embeddings_default_env' );
       }
       else {
-        $this->set_default_model_only( $query, 'ai_default_model' );
+        $this->set_default_model_only( $query, 'ai_default_model', 'ai_default_env' );
       }
     }
     else {
@@ -121,12 +121,29 @@ class Meow_MWAI_Services_ModelEnvironment {
     }
   }
 
-  private function set_default_model_only( $query, $modelOption ) {
+  private function set_default_model_only( $query, $modelOption, $envOption ) {
     // Only set the model, preserve existing envId
     $model = $this->core->get_option( $modelOption );
-    if ( !empty( $model ) ) {
-      $query->model = $model;
+    if ( empty( $model ) ) {
+      return;
     }
+    // The default model belongs to the default env's provider. Borrowing it for another
+    // provider (e.g. an OpenAI model on a Claude env) only ended in a cryptic 404 from
+    // that provider, so ask for a model instead. Same-provider envs keep working, and Azure
+    // counts as OpenAI since its deployments are resolved from OpenAI model names.
+    $family = function ( $env ) {
+      $type = $env['type'] ?? null;
+      return $type === 'azure' ? 'openai' : $type;
+    };
+    $queryEnv = $this->get_ai_env( $query->envId );
+    $defaultEnv = $this->get_ai_env( $this->core->get_option( $envOption ) );
+    if ( $queryEnv && $defaultEnv && $family( $queryEnv ) !== $family( $defaultEnv ) ) {
+      throw new Exception( sprintf(
+        __( 'No model is selected for the "%s" environment. Please pick a model for it.', 'ai-engine' ),
+        $queryEnv['name'] ?? $query->envId
+      ) );
+    }
+    $query->model = $model;
   }
 
   public function get_embeddings_env( $envId = null ) {

@@ -1,5 +1,5 @@
-// Previous: 2.8.3
-// Current: 2.9.7
+// Previous: 2.9.7
+// Current: 3.8.3
 
 // React & Vendor Libs
 const { useState } = wp.element;
@@ -43,9 +43,16 @@ const CopyableField = ({ children, value, ...rest }) => {
     }, 2000);
   };
 
+  // The displayed text can differ from the value (the MCP commands mask the bearer
+  // token), so a manual select + copy must also yield the real value, not the dots.
+  const onCopy = (e) => {
+    e.preventDefault();
+    e.clipboardData.setData('text/plain', value);
+  };
+
   return (
     <StyledCopyableField {...rest}>
-      <pre onClick={onClick}>
+      <pre onClick={onClick} onCopy={onCopy}>
         {!copyMessage && children}
         {copyMessage && <span>{copyMessage}</span>}
       </pre>

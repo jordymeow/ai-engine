@@ -236,6 +236,7 @@ define( 'MWAI_OPTIONS', [
   'server_debug_mode' => false,
   'mcp_debug_mode' => false,
   'mcp_core' => true,
+  'mcp_abilities' => false,
   'mcp_role' => 'admin',
   'mcp_oauth_editors' => false,
   'mcp_log_calls' => true,

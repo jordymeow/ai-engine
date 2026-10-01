@@ -283,7 +283,8 @@ class Meow_MWAI_Labs_WPAI_Connectors {
     if ( strpos( $option, 'connectors_ai_' ) !== 0 || substr( $option, -8 ) !== '_api_key' ) {
       return;
     }
-    if ( $old_value === $new_value ) {
+    // Never propagate an empty key: it would silently wipe a working one.
+    if ( $old_value === $new_value || ! is_string( $new_value ) || $new_value === '' ) {
       return;
     }
     $provider_id = substr( $option, strlen( 'connectors_ai_' ), -strlen( '_api_key' ) );
@@ -327,7 +328,11 @@ class Meow_MWAI_Labs_WPAI_Connectors {
           continue;
         }
         $seen[ $type ]   = true;
-        $option_name = 'connectors_ai_' . str_replace( '-', '_', $type ) . '_api_key';
+        // An env without a key must not erase the key saved in WP's Connectors.
+        if ( $key === '' ) {
+          continue;
+        }
+        $option_name = $this->connector_option_name( $type );
         $current     = get_option( $option_name, '' );
         if ( $current !== $key ) {
           update_option( $option_name, $key );
@@ -338,12 +343,40 @@ class Meow_MWAI_Labs_WPAI_Connectors {
     }
   }
 
-  /** One-shot initial sync from AI Engine envs → WP Connectors options. */
+  /**
+   * Reconcile keys: first fill AI Engine envs that have no key from WP's
+   * Connectors (so keys saved there before AI Engine are reused), then mirror
+   * AI Engine's keys back to the Connectors options.
+   */
   public function initial_sync(): void {
-    $options = $this->core->get_all_options();
+    $this->import_wp_connector_keys();
+    $options = $this->core->get_all_options( true );
     if ( ! empty( $options ) ) {
       $this->mirror_envs_to_wp_connectors( [], $options );
     }
+  }
+
+  /** Copy keys saved in WP's Connectors into AI Engine envs that have none. */
+  private function import_wp_connector_keys(): void {
+    foreach ( $this->envs_indexed_by_type() as $type => $env ) {
+      if ( $type === 'ollama' || ! empty( $env['apikey'] ) || empty( $env['id'] ) ) {
+        continue;
+      }
+      $key = get_option( $this->connector_option_name( $type ), '' );
+      if ( ! is_string( $key ) || $key === '' ) {
+        continue;
+      }
+      self::$bridging = true;
+      try {
+        $this->core->update_ai_env( $env['id'], 'apikey', $key );
+      } finally {
+        self::$bridging = false;
+      }
+    }
+  }
+
+  private function connector_option_name( string $type ): string {
+    return 'connectors_ai_' . str_replace( '-', '_', $type ) . '_api_key';
   }
 
   // ───────────────────────────────────────────────────────────────────────

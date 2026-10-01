@@ -695,6 +695,11 @@ class Meow_MWAI_Modules_Files {
       }
       $userId = $sessionUserId;
     }
+    else if ( empty( $userId ) && !empty( $params['allUsers'] ) && $this->core->can_access_settings() ) {
+      // The admin Files Manager lists everyone's files. Scoped to the admin's own ID,
+      // it showed "No files yet" while visitors' uploads sat on OpenAI (thread HS 3453872978).
+      $userId = null;
+    }
     else if ( empty( $userId ) ) {
       // For authenticated users without specified userId, use their own ID
       $userId = $currentUserId;
@@ -819,10 +824,31 @@ class Meow_MWAI_Modules_Files {
   }
 
   public function rest_upload() {
+    // A file over the site's limits used to read as "Invalid file type." (over
+    // upload_max_filesize: $_FILES has error 1 and no tmp_name) or "No file provided."
+    // (over post_max_size: PHP drops $_FILES entirely). Say what actually happened.
+    $too_large = sprintf( 'This file is larger than your site accepts (limit: %s).', size_format( wp_max_upload_size() ) );
     if ( empty( $_FILES['file'] ) ) {
+      if ( empty( $_FILES ) && (int) ( $_SERVER['CONTENT_LENGTH'] ?? 0 ) > 0 ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => $too_large ], 413 );
+      }
       return new WP_REST_Response( [ 'success' => false, 'message' => 'No file provided.' ], 400 );
     }
     $file = $_FILES['file'];
+    $upload_error = (int) ( $file['error'] ?? UPLOAD_ERR_OK );
+    if ( $upload_error === UPLOAD_ERR_INI_SIZE || $upload_error === UPLOAD_ERR_FORM_SIZE ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => $too_large ], 413 );
+    }
+    if ( $upload_error !== UPLOAD_ERR_OK ) {
+      $reasons = [
+        UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please try again.',
+        UPLOAD_ERR_NO_FILE => 'No file provided.',
+        UPLOAD_ERR_NO_TMP_DIR => 'The server has no temporary folder for uploads.',
+        UPLOAD_ERR_CANT_WRITE => 'The server could not save the file to disk.',
+        UPLOAD_ERR_EXTENSION => 'A PHP extension on the server blocked the upload.',
+      ];
+      return new WP_REST_Response( [ 'success' => false, 'message' => $reasons[ $upload_error ] ?? 'The upload failed.' ], 400 );
+    }
     $purpose = empty( $_POST['purpose'] ) ? null : $_POST['purpose'];
     $metadata = empty( $_POST['metadata'] ) ? null : json_decode( $_POST['metadata'], true );
     $envId = empty( $_POST['envId'] ) ? null : $_POST['envId'];

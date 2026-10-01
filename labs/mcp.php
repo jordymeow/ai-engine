@@ -53,6 +53,10 @@ class Meow_MWAI_Labs_MCP {
   // content tools only, each call checked against that user's own capabilities.
   private $limited_session = false;
 
+  // Exception code a tool callback throws to report a refused call as 'denied' in
+  // MCP Logs. Deliberately not 403: tools that relay an HTTP error must not match.
+  public const DENIED_CODE = 40301;
+
   // What a limited session may call. An explicit list rather than the read/write
   // levels: those levels also cover things an Editor must not reach (the plugin list,
   // third-party and Pro module tools, some of which switch to an administrator).
@@ -1423,6 +1427,22 @@ class Meow_MWAI_Labs_MCP {
           $status = isset( $filtered['error'] ) ? 'error' : 'success';
           if ( $status === 'error' ) {
             $error_msg = $filtered['error']['message'] ?? null;
+            // Tools report their own failures ("Post not found", a missing ID) as JSON-RPC
+            // errors. Returned as is, clients show a broken tool and the model never reads
+            // why, so they get the same isError result as a tool that throws.
+            $response = [
+              'jsonrpc' => '2.0',
+              'id' => $id,
+              'result' => [
+                'content' => [
+                  [
+                    'type' => 'text',
+                    'text' => 'The tool "' . $tool . '" failed: ' . ( $error_msg ?? 'Unknown error.' ),
+                  ],
+                ],
+                'isError' => true,
+              ],
+            ];
           }
           return $response;
         }
@@ -1440,6 +1460,11 @@ class Meow_MWAI_Labs_MCP {
       throw new Exception( "Unknown tool: {$tool}" );
     }
     catch ( Throwable $e ) {
+      // A tool refusing the call (the user lacks a capability) throws with
+      // DENIED_CODE, so MCP Logs shows it apart from a failing tool.
+      if ( $e->getCode() === self::DENIED_CODE ) {
+        $status = 'denied';
+      }
       // A failing tool is reported as a tool-level error (isError result),
       // NOT a JSON-RPC protocol error: clients treat protocol errors as a
       // broken server, while an isError result lets the model read the

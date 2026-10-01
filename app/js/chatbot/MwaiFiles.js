@@ -1,5 +1,5 @@
-// Previous: 2.9.7
-// Current: 3.5.4
+// Previous: 3.5.4
+// Current: 3.8.3
 
 const { useMemo } = wp.element;
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
@@ -7,12 +7,15 @@ import { Trash2 } from 'lucide-react';
 
 const MwaiFiles = () => {
   const { state, actions } = useChatbotContext();
-  const { uploadedFiles, multiUpload } = state;
-  const { removeUploadedFile } = actions;
+  const { uploadedFiles, uploadedFile, multiUpload } = state;
+  const { removeUploadedFile, resetUploadedFile } = actions;
 
+  // With Max Files at 1 the chatbot keeps its file in uploadedFile, not uploadedFiles.
+  // It gets the same chip, so a one-file chatbot also shows what is attached before sending.
+  const files = multiUpload ? uploadedFiles : ( uploadedFile?.localFile ? [uploadedFile] : [] );
+  const removeFile = multiUpload ? removeUploadedFile : () => resetUploadedFile();
 
-  // Don't render if multiUpload is disabled or no files uploaded
-  if (!multiUpload || uploadedFiles.length === 0) {
+  if (files.length === 0) {
     return null;
   }
 
@@ -48,7 +51,7 @@ const MwaiFiles = () => {
           ) : (
             <button 
               className="mwai-file-remove" 
-              onClick={() => removeUploadedFile(index)}
+              onClick={() => removeFile(index)}
               aria-label="Remove file"
             >
               <Trash2 size={20} />
@@ -61,7 +64,7 @@ const MwaiFiles = () => {
 
   return (
     <div className="mwai-files">
-      {uploadedFiles.map((file, index) => renderFilePreview(file, index))}
+      {files.map((file, index) => renderFilePreview(file, index))}
     </div>
   );
 };

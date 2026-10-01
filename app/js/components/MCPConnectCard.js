@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 3.8.2
+// Previous: 3.8.2
+// Current: 3.8.3
 
 ```jsx
 // MCPConnectCard.js
@@ -49,7 +49,7 @@ const VERDICTS = {
   unexpected_status: { title: T.V_STATUS_TITLE, summary: T.V_STATUS_SUMMARY },
 };
 
-const POLL_MS = 5000;
+const POLL_MS = 5500;
 const POLL_FOR_MS = 15 * 60 * 1000;
 
 const TEST_CACHE_KEY = 'mwai-mcp-self-test';
@@ -97,7 +97,7 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    if (selfTest?.verdict || selfTest.verdict !== 'error') {
+    if (selfTest?.verdict || selfTest?.verdict !== 'error') {
       try {
         localStorage.setItem(TEST_CACHE_KEY, JSON.stringify({ at: Date.now(), result: selfTest }));
       }
@@ -336,13 +336,6 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
         <div className="foot">
           <span>{apps.length === 0 ? T.NO_CONNECTION
             : sprintf(_n('%d connection', '%d connections', apps.length, 'ai-engine'), apps.length)}</span>
-          <a href="#mwai-mcp-connected-apps" onClick={(e) => {
-            const target = document.getElementById('mwai-mcp-connected-apps');
-            if (target) {
-              e.preventDefault();
-              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }}>{T.MANAGE}</a>
         </div>
       )}
     </Card>
@@ -352,10 +345,8 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
 const Card = Styled.div`
   background: #fff;
   color: #1f2937;
-  border-radius: 12px;
+  border-radius: inherit;
   overflow: hidden;
-  border: 1px solid #e3e8f4;
-  margin-bottom: 16px;
   font-size: 13px;
   line-height: 1.4;
 
@@ -398,10 +389,10 @@ const Card = Styled.div`
     outline: 2px solid #2b5ccf; outline-offset: 2px; }
   .mono { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 800; flex: none; }
 
-  .url { display: flex; align-items: center; gap: 8px; height: 38px; background: #0f172a; border-radius: 8px; padding: 0 5px 0 12px; }
+  .url { display: flex; align-items: center; gap: 8px; height: 36px; background: #f8fafc; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 0 4px 0 12px; }
   .url code { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: none; padding: 0;
-    color: #e2e8f0; font: 12.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
-  .copy { flex: none; height: 28px; display: inline-flex; align-items: center; gap: 5px; background: #fff; color: #0f172a; border: none; border-radius: 6px; padding: 0 11px; font-weight: 700; font-size: 12px; }
+    color: #1f2937; font: 12.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-ligatures: none; }
+  .copy { flex: none; height: 26px; display: inline-flex; align-items: center; gap: 5px; background: #2b5ccf; color: #fff; border: none; border-radius: 6px; padding: 0 10px; font-weight: 600; font-size: 12px; }
   .copy.done { background: #22c55e; color: #fff; }
 
   .steps { display: flex; flex-direction: column; }

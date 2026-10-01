@@ -622,6 +622,31 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       } ) );
     }
 
+    return $this->add_prompt_cache_key( $body, $query );
+  }
+
+  protected function build_body( $query, $streamCallback = null, $extra = null ) {
+    return $this->add_prompt_cache_key( parent::build_body( $query, $streamCallback, $extra ), $query );
+  }
+
+  /**
+  * Without a prompt_cache_key, OpenAI never matched our requests to its prompt cache: three
+  * byte-identical Workspace requests (97 tools, 12k tokens) all reported 0 cached tokens, and
+  * with a key 98% were cached from the second one. One key per site and chatbot keeps each key
+  * under OpenAI's advised ~15 requests per minute. Only sent to OpenAI itself: Azure and custom
+  * OpenAI-compatible endpoints may reject an unknown parameter.
+  */
+  protected function add_prompt_cache_key( $body, $query ) {
+    $isChat = is_array( $body ) && ( isset( $body['messages'] ) || isset( $body['input'] ) );
+    if ( $this->envType !== 'openai' || !$isChat || !( $query instanceof Meow_MWAI_Query_Text ) ) {
+      return $body;
+    }
+    $endpoint = apply_filters( 'mwai_openai_endpoint', 'https://api.openai.com/v1', $this->env );
+    if ( strpos( (string) $endpoint, 'https://api.openai.com/' ) !== 0 ) {
+      return $body;
+    }
+    $owner = $query->botId ?: ( $query->customId ?: ( $query->scope ?: 'default' ) );
+    $body['prompt_cache_key'] = 'mwai-' . substr( md5( home_url() . '|' . $owner ), 0, 16 );
     return $body;
   }
 
@@ -1061,6 +1086,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           if ( isset( $usage['cost'] ) ) {
             $this->streamCost = (float) $usage['cost'];
           }
+          $this->cachedInTokens = Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
         }
 
         $outputs = $response['output'] ?? [];
@@ -1111,6 +1137,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       case 'response.incomplete':
         // Response stopped before completion (e.g., max_tokens reached)
         $details = $json['response']['incomplete_details'] ?? [];
+        $this->streamFinishReason = $details['reason'] ?? 'incomplete';
         Meow_MWAI_Logging::warn( 'Responses API: Response incomplete - ' . json_encode( $details ) );
         break;
 
@@ -1749,6 +1776,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       if ( isset( $usage['cost'] ) ) {
         $this->streamCost = (float) $usage['cost'];
       }
+      $this->cachedInTokens = Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
     }
 
     return $content;
@@ -2245,6 +2273,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $returned_in_tokens = $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? null;
         $returned_out_tokens = $usage['output_tokens'] ?? $usage['completion_tokens'] ?? null;
         $returned_price = $usage['cost'] ?? null;
+        $this->cachedInTokens = Meow_MWAI_Engines_Core::read_cached_tokens( $usage );
       }
 
       // Store response ID for future stateful requests
@@ -2254,6 +2283,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       }
       // Set the results
       $reply->set_choices( $returned_choices );
+      $incompleteReason = $isStreaming ? $this->streamFinishReason : ( $data['incomplete_details']['reason'] ?? null );
+      if ( $incompleteReason === 'max_output_tokens' ) {
+        $reply->set_truncated();
+      }
 
       // Check for empty output when reasoning is enabled (GPT-5 models)
       // This can happen when reasoning consumes all available tokens
@@ -2281,6 +2314,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         $returned_out_tokens,
         $returned_price
       );
+      $reply->set_cached_tokens( $this->cachedInTokens );
 
       return $reply;
     }

@@ -1117,6 +1117,7 @@ class Meow_MWAI_Modules_Chatbot {
       }
       // The client keeps its own copy of the id (useChatSession), so it needs telling too.
       $resetResponseId = $hasUnresolvedClientActions;
+      $rawText .= Meow_MWAI_Core::get_truncated_notice( $reply, 'chatbot' );
       $rawText = apply_filters( 'mwai_chatbot_reply', $rawText, $reply, $params, $extra );
 
       // Integrity Check: We need to store the checksum of the messages sent by the client.
