@@ -69,6 +69,7 @@ class Meow_MWAI_Labs_MCP {
     'wp_get_taxonomies', 'wp_get_terms', 'wp_count_terms', 'wp_get_post_terms',
     'wp_create_term', 'wp_update_term', 'wp_add_post_terms',
     'wp_get_comments', 'wp_create_comment', 'wp_update_comment',
+    'wp_create_note', 'wp_update_note', 'wp_delete_note',
     'wp_get_media', 'wp_count_media', 'wp_upload_media', 'wp_upload_request', 'wp_update_media',
     'wp_set_featured_image', 'mwai_vision', 'mwai_image',
   ];
@@ -1503,6 +1504,20 @@ class Meow_MWAI_Labs_MCP {
         'request_id' => $id,
         'user_id' => get_current_user_id(),
       ] );
+      if ( $status === 'success' && $tool !== 'mcp_ping' ) {
+        $this->bring_review_notice_forward();
+      }
+    }
+  }
+
+  // A real tool call is the moment MCP has proven itself, so the review notice
+  // (common/ratings.php) shows two days later instead of weeks. A dismissed or
+  // completed notice is dated years ahead and is left alone.
+  private function bring_review_notice_forward() {
+    $date = (int) get_option( 'mwai_rating_date' );
+    $soon = time() + 2 * DAY_IN_SECONDS;
+    if ( empty( $date ) || ( $date > $soon && $date < time() + YEAR_IN_SECONDS ) ) {
+      update_option( 'mwai_rating_date', $soon, false );
     }
   }
   #endregion

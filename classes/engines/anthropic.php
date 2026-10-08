@@ -1121,7 +1121,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
 
     $this->reset_stream();
     $data = null;
-    $body = $this->build_body( $query, $streamCallback );
+    $body = apply_filters( 'mwai_anthropic_body', $this->build_body( $query, $streamCallback ), $query );
     $url = $this->build_url( $query );
     $headers = $this->build_headers( $query );
     $options = $this->build_options( $headers, $body );

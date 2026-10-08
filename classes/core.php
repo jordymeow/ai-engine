@@ -452,7 +452,21 @@ class Meow_MWAI_Core {
     return $freshText;
   }
 
-  public function get_post_content( $postId ) {
+  public function get_post_content( $postId, $maxLength = null ) {
+    $text = $this->get_post_text( $postId );
+    if ( $text === false ) {
+      return false;
+    }
+    return $this->finish_post_content( $text, $postId, $maxLength );
+  }
+
+  private function finish_post_content( $text, $postId, $maxLength = null ) {
+    $text = $this->clean_sentences( $text, $maxLength );
+    return apply_filters( 'mwai_post_content', $text, $postId );
+  }
+
+  // The post rendered as clean text, before it is cut to a maximum length.
+  private function get_post_text( $postId ) {
     // Ensure we get fresh post data by clearing cache
     clean_post_cache( $postId );
     $post = get_post( $postId );
@@ -486,10 +500,7 @@ class Meow_MWAI_Core {
       $pattern = "/<!--\s*\/?wp:[^\>]+-->/";
       $text = preg_replace( $pattern, '', $text );
     }
-    $text = $this->clean_text( $text );
-    $text = $this->clean_sentences( $text );
-    $text = apply_filters( 'mwai_post_content', $text, $postId );
-    return $text;
+    return $this->clean_text( $text );
   }
 
   public function markdown_to_html( $content ) {
@@ -990,11 +1001,27 @@ class Meow_MWAI_Core {
       return null;
     }
     $language = $this->get_post_language( $post['ID'] );
-    $content = $this->get_post_content( $post['ID'] );
     $title = $post['post_title'];
     $excerpt = $post['post_excerpt'];
     $url = get_permalink( $post['ID'] );
+
+    // Knowledge keeps at least MWAI_KNOWLEDGE_MIN_LENGTH characters per post. Sites installed
+    // before 2025-08 still have the old Context Max Length of 4,096 saved, so only the first
+    // ~600 words of every post went into Knowledge, silently.
+    $text = $this->get_post_text( $post['ID'] );
+    $contextMax = (int) $this->get_option( 'context_max_length', 4096 );
+    $maxLength = max( $contextMax, MWAI_KNOWLEDGE_MIN_LENGTH );
+    $content = $text === false ? false : $this->finish_post_content( $text, $post['ID'], $maxLength );
     $checksum = wp_hash( $content . $title . $url );
+
+    // The checksum of the shorter content those sites embedded stays valid, so the longer
+    // limit only applies when a post is edited or rebuilt (Force Recreate), never as a re-sync (and a
+    // Rewrite Content bill) of every long post right after the update.
+    $legacyChecksum = null;
+    if ( $text !== false && $contextMax > 0 && $contextMax < $maxLength && mb_strlen( $text ) > $contextMax ) {
+      $legacyContent = $this->finish_post_content( $text, $post['ID'], $contextMax );
+      $legacyChecksum = wp_hash( $legacyContent . $title . $url );
+    }
 
     return [
       'postId' => (int) $post['ID'],
@@ -1004,6 +1031,9 @@ class Meow_MWAI_Core {
       'url' => $url,
       'language' => $language ?? 'english',
       'checksum' => $checksum,
+      'legacyChecksum' => $legacyChecksum,
+      // Set when the post is longer than what Knowledge keeps, so the sync can say so.
+      'truncated' => $text !== false && mb_strlen( $text ) > $maxLength ? [ mb_strlen( $text ), $maxLength ] : null,
     ];
   }
 

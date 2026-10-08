@@ -1,15 +1,15 @@
 === AI Engine - The Chatbot, AI Framework & MCP for WordPress ===
 Contributors: TigrouMeow
-Tags: ai, chatbot, mcp, claude, openai
+Tags: ai, chatbot, mcp, ai agent, openai
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.3
+Stable tag: 3.8.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI meets WordPress. Your site can now chat, write poetry, solve problems, and maybe make you coffee.
+The AI chatbot, AI agent and MCP server for WordPress. Connect OpenAI, Claude, Gemini and more to chat, write, search and automate your site.
 
 == Description ==
 
@@ -307,6 +307,10 @@ MCP (Model Context Protocol) exposes WordPress tools to AI agents. [Learn how to
 
 Yes, but you don't need it. AI Engine already does everything WordPress AI offers, and more: it connects to every major provider, and adds chatbots, AI Forms, embeddings, a dedicated MCP server with more than fifty tools, and usage insights. That's why we don't recommend installing the WordPress AI plugin alongside it. If you already use it, that's fine: we make sure both play nicely together. On the Connectors page, choose to let AI Engine manage your providers: the API keys you already saved there are reused, both screens stay in sync, and the AI features of WordPress run through AI Engine, so their usage shows up in its Insights.
 
+= Do I need the MCP Adapter plugin? =
+
+No. AI Engine has its own MCP server, with more than fifty tools, OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and Settings → MCP → Abilities lets AI Engine's own server expose those abilities too.
+
 = Can I restrict the chatbot to answer only from my site content? =
 
 You can't completely block the model's built-in knowledge, but you can [use smart prompts and embeddings](https://ai.thehiddendocs.com/restrict-chatbot-topics/) to steer conversations toward your content.
@@ -324,6 +328,32 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.4 (2026/10/08) =
+* Fix: Security: A chatbot shortcode in a post can now only change the prompt, model or API key when its author can edit others' posts.
+* Fix: Security: The search endpoint used by the Search settings screen is now limited to administrators.
+* Add: Claude Opus 5.5 and Claude Sonnet 5.5.
+* Add: GPT-6 Sol, GPT-6 Luna and GPT-6.1 Sol.
+* Add: MCP tools to create, update, resolve and delete editor Notes, attached to the right block.
+* Add: Gemini image sizes 512px, 1K, 2K and 4K, from the mwai_image MCP tool or the imageSize query param; models limited to 1K keep their default.
+* Add: The mwai_image MCP tool now accepts an environment, a model, a quality and a file name per call, names files after the title, and records the model used.
+* Add: An mwai_generated meta on every image AI Engine saves to the Media Library, set before wp_generate_attachment_metadata runs.
+* Add: REST routes to enable MCP and check its status.
+* Add: The mwai_anthropic_body filter, to tune the Anthropic request such as the web search limits before it is sent.
+* Update: Knowledge now keeps at least 16,384 characters of each post instead of the old 4,096 default kept on older sites, and long posts are not re-synced after the update.
+* Update: Pro modules switched off while a license was missing now turn back on by themselves once the license is valid again.
+* Update: Site search with Knowledge or AI keywords skips bot and spam searches, and the same search is only paid for once a day.
+* Update: The MCP Plugins and Themes options now say they can read and edit files, and the tool sets remind you to refresh the tools in ChatGPT or Claude after a change.
+* Update: Workspace conversations continue on the model of their last reply, a new chat starts on your default model, and a default the site cannot run falls back to the first model.
+* Update: Pinecone and Qdrant now keep each chunk's text and post ID, so Pull All rebuilds a working Knowledge base after a site move.
+* Update: Current Claude models can now be picked as the default model for JSON queries.
+* Update: Marked Claude Sonnet 4.5, GPT-5.4 Nano and GPT-5.1 as deprecated.
+* Update: The review notice now shows two days after the first successful MCP tool call.
+* Fix: Qdrant and Chroma server URLs pasted from the browser, like :6333/dashboard#, now work instead of sending every request to the dashboard page.
+* Fix: Streamed replies are no longer cut after 5 minutes while still arriving, only when the connection goes silent.
+* Fix: The JSON helpers used by Meow Apps Health and add-ons now work on Claude and Gemini sites with default settings.
+* Fix: Uploading to an OpenAI Vector Store now says exactly what is wrong with the environment, such as a missing store ID, no OpenAI environment or no API key.
+* Fix: Pro sites whose server cannot reach the update server no longer hit a fatal error on PHP 8 when WordPress checks for updates.
 
 = 3.8.3 (2026/10/01) =
 * Add: Abilities to MCP, so tools registered by plugins through the WordPress Abilities API work over MCP and in Workspace, appear in MCP Logs, and are labelled Ability or Native in the renamed MCP Tools & Abilities list.

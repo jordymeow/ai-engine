@@ -3,6 +3,9 @@
 require_once( MWAI_PATH . '/constants/engines.php' );
 require_once( MWAI_PATH . '/constants/models.php' );
 
+// The least Knowledge keeps of a post, even when Context Max Length is set lower.
+define( 'MWAI_KNOWLEDGE_MIN_LENGTH', 16384 );
+
 define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   // UI Parameters
   'aiName' => 'AI: ',
@@ -144,6 +147,8 @@ define( 'MWAI_OPTIONS', [
   'module_orchestration' => false,
   'module_mcp' => false,
   'module_models_api' => false,
+  // Pro modules switched off while the licence was missing, switched back on once it is valid again.
+  'pro_modules_paused' => [],
   'models_api_key' => '',
   'speech_recognition' => false,
   'speech_synthesis' => false,

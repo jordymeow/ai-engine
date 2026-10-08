@@ -32,7 +32,10 @@ class Meow_MWAI_Modules_Search {
     register_rest_route( $this->namespace, '/search', [
       'methods' => 'POST',
       'callback' => [ $this, 'rest_search' ],
-      'permission_callback' => '__return_true'
+      // Only the admin Search screen calls this. It used to be public, which let anyone run
+      // paid searches on the site's keys against any Knowledge env and read back the titles
+      // of entries that are not published posts (sample_vectors in the debug output).
+      'permission_callback' => [ $this->core, 'can_access_settings' ]
     ] );
   }
 
@@ -49,7 +52,7 @@ class Meow_MWAI_Modules_Search {
     $frontend_method = $this->core->get_option( 'search_frontend_method', 'wordpress' );
 
     // If WordPress method is selected, do nothing (use default WordPress search)
-    if ( $frontend_method === 'wordpress' ) {
+    if ( $frontend_method === 'wordpress' || !$this->is_ai_search_allowed( $search ) ) {
       return;
     }
 
@@ -112,17 +115,15 @@ class Meow_MWAI_Modules_Search {
     }
 
     try {
-      // Perform embeddings search
-      $embedding_result = $this->search_with_embeddings( $original_search, $env_id );
-
-      if ( isset( $embedding_result['error'] ) || empty( $embedding_result['post_ids'] ) ) {
-        return []; // Return empty array if search failed or no results
-      }
-
-      // Get the post IDs from embeddings results
-      $post_ids = array_map( function ( $result ) {
-        return $result['id'];
-      }, $embedding_result['post_ids'] );
+      $post_ids = $this->cached_post_ids( 'embeddings', $original_search, function () use ( $original_search, $env_id ) {
+        $embedding_result = $this->search_with_embeddings( $original_search, $env_id );
+        if ( isset( $embedding_result['error'] ) ) {
+          return null;
+        }
+        return array_map( function ( $result ) {
+          return $result['id'];
+        }, $embedding_result['post_ids'] ?? [] );
+      } );
 
       if ( empty( $post_ids ) ) {
         return [];
@@ -150,20 +151,48 @@ class Meow_MWAI_Modules_Search {
     }
   }
 
+  // Every front-end AI search is a paid call (a Vector Store search or a completion), and bots
+  // crawling ?s= URLs ran up real bills with no visitor involved. Those, and junk terms, get
+  // the regular WordPress search instead.
+  private function is_ai_search_allowed( $search ) {
+    $length = mb_strlen( trim( $search ) );
+    if ( $length < 2 || $length > 200 || preg_match( '~https?:|www\.|<~i', $search ) ) {
+      return false;
+    }
+    $agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+    return $agent !== '' && !preg_match( '~bot|crawl|spider|slurp|scrap|curl|wget|python|headless|httpclient|monitor~i', $agent );
+  }
+
+  // The same term is only paid for once a day. A failed search returns null and is not cached.
+  private function cached_post_ids( $method, $term, callable $search ) {
+    $env_id = $this->core->get_option( 'search_frontend_env_id', '' );
+    $key = 'mwai_search_' . md5( $method . '|' . $env_id . '|' . mb_strtolower( trim( $term ) ) );
+    $post_ids = get_transient( $key );
+    if ( $post_ids === false ) {
+      $post_ids = $search();
+      if ( $post_ids === null ) {
+        return [];
+      }
+      set_transient( $key, $post_ids, DAY_IN_SECONDS );
+    }
+    return $post_ids;
+  }
+
   private function handle_frontend_keywords_search( $original_search, $query ) {
     // Get website context for keywords search
     $website_context = $this->core->get_option( 'search_website_context', '' );
 
     try {
       // Use the same search logic as the admin REST API
-      $search_queries = $this->generate_keyword_tiers( $original_search, $website_context );
-      $keyword_result = $this->search_with_keywords( $search_queries );
-
-      if ( !empty( $keyword_result['results'] ) ) {
-        // Extract post IDs from results
-        $post_ids = array_map( function ( $result ) {
+      $post_ids = $this->cached_post_ids( 'keywords', $original_search, function () use ( $original_search, $website_context ) {
+        $search_queries = $this->generate_keyword_tiers( $original_search, $website_context );
+        $keyword_result = $this->search_with_keywords( $search_queries );
+        return array_map( function ( $result ) {
           return $result['id'];
-        }, $keyword_result['results'] );
+        }, $keyword_result['results'] ?? [] );
+      } );
+
+      if ( !empty( $post_ids ) ) {
 
         // Get the actual post objects
         $posts = get_posts( [

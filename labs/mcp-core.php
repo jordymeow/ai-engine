@@ -314,6 +314,107 @@ class Meow_MWAI_Labs_MCP_Core {
    * Only while the post STAYS a draft: publishing one without a date must still
    * stamp "now", exactly as the wp-admin Publish button does.
    */
+  /**
+  * Path (indexes into nested innerBlocks) of the block a note should attach to: the first
+  * block whose own text contains $anchor_text, or the $block_index-th top-level block.
+  */
+  private function note_find_block( array $blocks, $anchor_text, $block_index ): ?array {
+    if ( $anchor_text !== null && trim( (string) $anchor_text ) !== '' ) {
+      $needle = trim( wp_strip_all_tags( html_entity_decode( (string) $anchor_text ) ) );
+      $walk = function ( array $list, array $prefix ) use ( &$walk, $needle ) {
+        foreach ( $list as $i => $b ) {
+          if ( empty( $b['blockName'] ) ) {
+            continue;
+          }
+          // Deepest match first: a paragraph inside a group is the real target, not the group.
+          if ( !empty( $b['innerBlocks'] ) ) {
+            $found = $walk( $b['innerBlocks'], array_merge( $prefix, [ $i ] ) );
+            if ( $found !== null ) {
+              return $found;
+            }
+          }
+          $text = wp_strip_all_tags( html_entity_decode( (string) ( $b['innerHTML'] ?? '' ) ) );
+          if ( stripos( $text, $needle ) !== false ) {
+            return array_merge( $prefix, [ $i ] );
+          }
+        }
+        return null;
+      };
+      return $walk( $blocks, [] );
+    }
+    if ( $block_index !== null && is_numeric( $block_index ) ) {
+      $n = 0;
+      foreach ( $blocks as $i => $b ) {
+        if ( empty( $b['blockName'] ) ) {
+          continue;
+        }
+        if ( $n === (int) $block_index ) {
+          return [ $i ];
+        }
+        $n++;
+      }
+    }
+    return null;
+  }
+
+  /**
+  * Attach a note to the block at $path ($add), or detach it from every block ($add false),
+  * the way the editor stores it: metadata.noteId, an array of note IDs. Detaching also
+  * unwraps any inline <mark class="wp-note"> highlight the editor added for that note.
+  */
+  private function note_set_block_ids( int $post_id, int $note_id, bool $add, ?array $path = null ): void {
+    $blocks = parse_blocks( get_post_field( 'post_content', $post_id ) );
+    $ids_of = function ( $metadata ) {
+      $raw = $metadata['noteId'] ?? [];
+      return array_values( array_unique( array_filter( array_map( 'intval', is_array( $raw ) ? $raw : [ $raw ] ) ) ) );
+    };
+    if ( $add ) {
+      $ref = &$blocks;
+      foreach ( $path as $depth => $i ) {
+        $ref = &$ref[ $i ];
+        if ( $depth < count( $path ) - 1 ) {
+          $ref = &$ref['innerBlocks'];
+        }
+      }
+      $ids = $ids_of( $ref['attrs']['metadata'] ?? [] );
+      $ids[] = $note_id;
+      $ref['attrs']['metadata']['noteId'] = array_values( array_unique( $ids ) );
+      unset( $ref );
+    }
+    else {
+      $mark = '#<mark\b[^>]*\bclass="wp-note"[^>]*\bdata-id="' . $note_id . '"[^>]*>(.*?)</mark>#s';
+      $strip = function ( array $list ) use ( &$strip, $note_id, $ids_of, $mark ) {
+        foreach ( $list as &$b ) {
+          if ( isset( $b['attrs']['metadata'] ) ) {
+            $ids = array_values( array_diff( $ids_of( $b['attrs']['metadata'] ), [ $note_id ] ) );
+            if ( $ids ) {
+              $b['attrs']['metadata']['noteId'] = $ids;
+            }
+            else {
+              unset( $b['attrs']['metadata']['noteId'] );
+              if ( empty( $b['attrs']['metadata'] ) ) {
+                unset( $b['attrs']['metadata'] );
+              }
+            }
+          }
+          $b['innerHTML'] = preg_replace( $mark, '$1', (string) ( $b['innerHTML'] ?? '' ) );
+          foreach ( $b['innerContent'] ?? [] as $k => $chunk ) {
+            if ( is_string( $chunk ) ) {
+              $b['innerContent'][ $k ] = preg_replace( $mark, '$1', $chunk );
+            }
+          }
+          if ( !empty( $b['innerBlocks'] ) ) {
+            $b['innerBlocks'] = $strip( $b['innerBlocks'] );
+          }
+        }
+        unset( $b );
+        return $list;
+      };
+      $blocks = $strip( $blocks );
+    }
+    wp_update_post( wp_slash( $this->keep_draft_date( [ 'ID' => $post_id, 'post_content' => serialize_blocks( $blocks ) ] ) ) );
+  }
+
   private function keep_draft_date( array $c ): array {
     if ( empty( $c['ID'] ) || isset( $c['post_date'] ) || !empty( $c['edit_date'] ) ) {
       return $c;
@@ -546,6 +647,50 @@ class Meow_MWAI_Labs_MCP_Core {
           'required' => [ 'comment_ID' ],
         ],
         'accessLevel' => 'admin',
+      ],
+
+      /* -------- Notes (WordPress editor Notes) -------- */
+      'wp_create_note' => [
+        'name' => 'wp_create_note',
+        'description' => 'Add an editor Note (WordPress 6.9+ block-level feedback, shown in the editor\'s Notes panel) to a post, attached to one block. Find the block with anchor_text (a short exact snippet of the block\'s text) or block_index (0-based, top-level blocks in order). To reply in an existing thread, pass parent_id instead (no anchor needed). Read notes with wp_get_comments and type "note".',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'post_id' => [ 'type' => 'integer', 'description' => 'The post to annotate. Not needed for a reply.' ],
+            'content' => [ 'type' => 'string', 'description' => 'The note text.' ],
+            'anchor_text' => [ 'type' => 'string', 'description' => 'A short exact snippet of text from the block the note is about. The first block containing it is used.' ],
+            'block_index' => [ 'type' => 'integer', 'description' => 'Alternative to anchor_text: 0-based position among the top-level blocks.' ],
+            'parent_id' => [ 'type' => 'integer', 'description' => 'Reply to this note instead of starting a new thread.' ],
+          ],
+          'required' => [ 'content' ],
+        ],
+        'accessLevel' => 'write',
+      ],
+      'wp_update_note' => [
+        'name' => 'wp_update_note',
+        'description' => 'Edit a note\'s text and/or mark a note thread resolved or open again, exactly like the editor does (the thread shows "Marked as resolved" / "Reopened").',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'note_id' => [ 'type' => 'integer' ],
+            'content' => [ 'type' => 'string', 'description' => 'New text for the note.' ],
+            'status' => [ 'type' => 'string', 'enum' => [ 'resolved', 'open' ], 'description' => 'Resolve or reopen the thread (top-level notes only).' ],
+          ],
+          'required' => [ 'note_id' ],
+        ],
+        'accessLevel' => 'write',
+      ],
+      'wp_delete_note' => [
+        'name' => 'wp_delete_note',
+        'description' => 'Delete a note permanently. Deleting a top-level note also deletes its replies and detaches it from its block.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'note_id' => [ 'type' => 'integer' ],
+          ],
+          'required' => [ 'note_id' ],
+        ],
+        'accessLevel' => 'write',
       ],
 
       /* -------- Options -------- */
@@ -1073,13 +1218,18 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'mwai_image' => [
         'name' => 'mwai_image',
-        'description' => 'Generate an image with AI Engine and store it in the Media Library. Optional: title, caption, description, alt. Returns { id, url, title, caption, alt }.',
+        'description' => 'Generate an image with AI Engine and store it in the Media Library. Uses the site\'s default image model unless envId/model are given. Optional: title, caption, description, alt, filename. Returns { id, url, title, caption, alt }.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'message' => [ 'type' => 'string', 'description' => 'Prompt describing the desired image.' ],
             'postId' => [ 'type' => 'integer', 'description' => 'Optional post ID to attach the image to.' ],
             'resolution' => [ 'type' => 'string', 'description' => 'Optional aspect ratio or size, like "16:9", "1:1", "9:16" or "1536x1024". The closest shape the image model supports is used. Square by default.' ],
+            'envId' => [ 'type' => 'string', 'description' => 'Optional AI environment to use, by ID or by name as shown in AI Engine settings. Defaults to the site\'s image environment.' ],
+            'model' => [ 'type' => 'string', 'description' => 'Optional image model, like "gpt-image-1.5" or a Gemini image model. Defaults to the site\'s image model.' ],
+            'quality' => [ 'type' => 'string', 'description' => 'Optional quality, for models that support it (GPT Image: "low", "medium", "high" or "auto"). Lower is cheaper.' ],
+            'size' => [ 'type' => 'string', 'description' => 'Optional output size for Gemini image models: "1K" (default), "2K" or "4K"; Gemini 3.1 Flash Image also takes "512px". Ignored by other models.' ],
+            'filename' => [ 'type' => 'string', 'description' => 'Optional file name, like "red-fox-at-dawn" (the extension is added if missing). Defaults to the title, as a slug.' ],
             'title' => [ 'type' => 'string' ],
             'caption' => [ 'type' => 'string' ],
             'description' => [ 'type' => 'string' ],
@@ -1093,6 +1243,50 @@ class Meow_MWAI_Labs_MCP_Core {
     ];
   }
   #endregion
+
+  /**
+  * Turns mwai_image's optional envId (an ID or a name) and model into query params.
+  * A model alone is checked against the default image environment first: the core only
+  * finds an environment for models it fetched dynamically, so a static OpenAI image model
+  * passed without envId used to fail with "The environment is required."
+  */
+  private function resolve_image_env_model( $envId, $model ) {
+    $params = [];
+    $envId = is_string( $envId ) ? trim( $envId ) : '';
+    $model = is_string( $model ) ? trim( $model ) : '';
+    if ( $envId !== '' ) {
+      $found = null;
+      foreach ( $this->core->get_option( 'ai_envs', [] ) as $env ) {
+        if ( ( $env['id'] ?? '' ) === $envId || strcasecmp( $env['name'] ?? '', $envId ) === 0 ) {
+          $found = $env;
+          break;
+        }
+      }
+      if ( !$found ) {
+        $names = array_map( function ( $e ) { return ( $e['name'] ?? '' ) . ' (' . ( $e['id'] ?? '' ) . ')'; }, $this->core->get_option( 'ai_envs', [] ) );
+        return new WP_Error( 'mwai_image_env', "No AI environment matches '{$envId}'. Available: " . implode( ', ', $names ) . '.' );
+      }
+      $params['envId'] = $found['id'];
+    }
+    if ( $model !== '' ) {
+      $params['model'] = sanitize_text_field( $model );
+      if ( empty( $params['envId'] ) ) {
+        $defaultEnv = $this->core->get_option( 'ai_images_default_env' );
+        if ( !empty( $defaultEnv ) ) {
+          try {
+            $engine = Meow_MWAI_Engines_Factory::get( $this->core, $defaultEnv );
+            if ( !empty( $engine->retrieve_model_info( $params['model'] ) ) ) {
+              $params['envId'] = $defaultEnv;
+            }
+          }
+          catch ( Exception $e ) {
+            // Leave it to the core, which also looks through dynamically fetched models.
+          }
+        }
+      }
+    }
+    return $params;
+  }
 
   #region Tool Registration
   public function register_rest_tools( array $prev ): array {
@@ -1366,6 +1560,122 @@ class Meow_MWAI_Labs_MCP_Core {
           // printing it said "Comment #1 updated" whatever comment was edited.
           $this->add_result_text( $r, 'Comment #' . $c['comment_ID'] . ' updated' );
         }
+        break;
+
+      case 'wp_create_note':
+        $content = trim( (string) ( $a['content'] ?? '' ) );
+        if ( $content === '' ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'content required' ];
+          break;
+        }
+        $parent = !empty( $a['parent_id'] ) ? get_comment( (int) $a['parent_id'] ) : null;
+        if ( !empty( $a['parent_id'] ) && ( !$parent || $parent->comment_type !== 'note' ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'parent_id is not a note' ];
+          break;
+        }
+        $post_id = $parent ? (int) $parent->comment_post_ID : (int) ( $a['post_id'] ?? 0 );
+        if ( !$post_id || !get_post( $post_id ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'post_id required (or a parent_id to reply to)' ];
+          break;
+        }
+        if ( !current_user_can( 'edit_post', $post_id ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'You cannot add notes to this post.' ];
+          break;
+        }
+        // A new thread must be attached to a block, or the editor has nowhere to show it.
+        $path = null;
+        if ( !$parent ) {
+          $blocks = parse_blocks( get_post_field( 'post_content', $post_id ) );
+          $path = $this->note_find_block( $blocks, $a['anchor_text'] ?? null, $a['block_index'] ?? null );
+          if ( $path === null ) {
+            $r['error'] = [ 'code' => -32602, 'message' => 'No block found: pass anchor_text (an exact snippet of the block text) or a valid block_index.' ];
+            break;
+          }
+        }
+        $user = wp_get_current_user();
+        // Same shape as the editor's own notes: open ("hold") until resolved.
+        $note_id = wp_insert_comment( [
+          'comment_post_ID' => $post_id,
+          'comment_content' => $this->clean_html( $content ),
+          'comment_type' => 'note',
+          'comment_parent' => $parent ? (int) $parent->comment_ID : 0,
+          'comment_approved' => 0,
+          'user_id' => $user->ID,
+          'comment_author' => $user->display_name,
+          'comment_author_email' => $user->user_email,
+        ] );
+        if ( !$note_id ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'The note could not be created.' ];
+          break;
+        }
+        if ( $path !== null ) {
+          $this->note_set_block_ids( $post_id, $note_id, true, $path );
+        }
+        if ( function_exists( 'wp_notify_note_mentions' ) ) {
+          wp_notify_note_mentions( get_comment( $note_id ) );
+        }
+        $this->add_result_text( $r, wp_json_encode( [ 'note_id' => $note_id, 'post_id' => $post_id, 'reply_to' => $parent ? (int) $parent->comment_ID : null ] ) );
+        break;
+
+      case 'wp_update_note':
+        $note = get_comment( (int) ( $a['note_id'] ?? 0 ) );
+        if ( !$note || $note->comment_type !== 'note' ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'note_id is not a note' ];
+          break;
+        }
+        if ( !current_user_can( 'edit_post', (int) $note->comment_post_ID ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'You cannot edit notes on this post.' ];
+          break;
+        }
+        if ( isset( $a['content'] ) && trim( (string) $a['content'] ) !== '' ) {
+          wp_update_comment( [ 'comment_ID' => (int) $note->comment_ID, 'comment_content' => $this->clean_html( $a['content'] ) ] );
+        }
+        $status = $a['status'] ?? null;
+        if ( $status === 'resolved' || $status === 'open' ) {
+          if ( (int) $note->comment_parent !== 0 ) {
+            $r['error'] = [ 'code' => -32602, 'message' => 'Only a top-level note (a thread) can be resolved or reopened.' ];
+            break;
+          }
+          // Mirrors the editor: the thread's status flips, and an empty child note records
+          // the action so the thread shows "Marked as resolved" or "Reopened".
+          wp_set_comment_status( (int) $note->comment_ID, $status === 'resolved' ? 'approve' : 'hold' );
+          $marker = wp_insert_comment( [
+            'comment_post_ID' => (int) $note->comment_post_ID,
+            'comment_content' => '',
+            'comment_type' => 'note',
+            'comment_parent' => (int) $note->comment_ID,
+            'comment_approved' => $status === 'resolved' ? 1 : 0,
+            'user_id' => get_current_user_id(),
+            'comment_author' => wp_get_current_user()->display_name,
+            'comment_author_email' => wp_get_current_user()->user_email,
+          ] );
+          if ( $marker ) {
+            update_comment_meta( $marker, '_wp_note_status', $status === 'resolved' ? 'resolved' : 'reopen' );
+          }
+        }
+        $this->add_result_text( $r, 'Note #' . (int) $note->comment_ID . ' updated' . ( $status ? " ({$status})" : '' ) );
+        break;
+
+      case 'wp_delete_note':
+        $note = get_comment( (int) ( $a['note_id'] ?? 0 ) );
+        if ( !$note || $note->comment_type !== 'note' ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'note_id is not a note' ];
+          break;
+        }
+        $post_id = (int) $note->comment_post_ID;
+        if ( !current_user_can( 'edit_post', $post_id ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'You cannot delete notes on this post.' ];
+          break;
+        }
+        // Core's wp_trash_comment() deletes notes for good, replies included.
+        if ( !wp_trash_comment( (int) $note->comment_ID ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => 'The note could not be deleted.' ];
+          break;
+        }
+        if ( (int) $note->comment_parent === 0 ) {
+          $this->note_set_block_ids( $post_id, (int) $note->comment_ID, false );
+        }
+        $this->add_result_text( $r, 'Note #' . (int) $note->comment_ID . ' deleted' );
         break;
 
       case 'wp_delete_comment':
@@ -2517,6 +2827,22 @@ class Meow_MWAI_Labs_MCP_Core {
         $params = [ 'scope' => 'mcp' ];
         if ( !empty( $a['resolution'] ) ) {
           $params['resolution'] = sanitize_text_field( (string) $a['resolution'] );
+        }
+        if ( !empty( $a['quality'] ) ) {
+          $params['quality'] = sanitize_text_field( (string) $a['quality'] );
+        }
+        if ( !empty( $a['size'] ) ) {
+          $params['imageSize'] = sanitize_text_field( (string) $a['size'] );
+        }
+        $resolved = $this->resolve_image_env_model( $a['envId'] ?? null, $a['model'] ?? null );
+        if ( is_wp_error( $resolved ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => $resolved->get_error_message() ];
+          break;
+        }
+        $params = array_merge( $params, $resolved );
+        $filename = !empty( $a['filename'] ) ? (string) $a['filename'] : ( !empty( $a['title'] ) ? sanitize_title( $a['title'] ) : '' );
+        if ( $filename !== '' ) {
+          $params['filename'] = $filename;
         }
         $media = $mwai->imageQueryForMediaLibrary( $a['message'], $params, $a['postId'] ?? null );
         if ( is_wp_error( $media ) ) {

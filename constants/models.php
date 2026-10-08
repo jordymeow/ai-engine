@@ -41,6 +41,91 @@ define( 'MWAI_OPENAI_MODELS', [
     ]
   ],
   /*
+    GPT-6.1 Sol
+    Near-Astra performance at Sol pricing, added 2026-10-01.
+    https://developers.openai.com/api/docs/models/gpt-6.1-sol
+    */
+  [
+    'model' => 'gpt-6.1-sol',
+    'name' => 'GPT-6.1 Sol',
+    'family' => 'gpt-6',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 2.00,
+      'out' => 10.00,
+      'cached' => 0.10,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    // Same tags as GPT-6 Astra: 'responses' because tool calling goes through the Responses
+    // API, 'no-temperature' because a gpt-6 id escapes the engines' gpt-5 name check.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature'],
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
+    'params' => [
+      // No 'none' here, unlike GPT-6 Sol and Luna: the model page starts at 'low'.
+      'reasoning' => ['low', 'medium', 'high', 'xhigh', 'max']
+    ]
+  ],
+  /*
+    GPT-6 Sol
+    Mid tier of the GPT-6 family, for coding and agentic work, added 2026-10-01.
+    https://developers.openai.com/api/docs/models/gpt-6-sol
+    */
+  [
+    'model' => 'gpt-6-sol',
+    'name' => 'GPT-6 Sol',
+    'family' => 'gpt-6',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 2.00,
+      'out' => 10.00,
+      'cached' => 0.20,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    // Same tags as GPT-6 Astra: 'responses' because tool calling goes through the Responses
+    // API, 'no-temperature' because a gpt-6 id escapes the engines' gpt-5 name check.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature'],
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh', 'max']
+    ]
+  ],
+  /*
+    GPT-6 Luna
+    Most efficient GPT-6 model, for focused high-volume tasks, added 2026-10-01.
+    https://developers.openai.com/api/docs/models/gpt-6-luna
+    */
+  [
+    'model' => 'gpt-6-luna',
+    'name' => 'GPT-6 Luna',
+    'family' => 'gpt-6',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 0.10,
+      'out' => 0.50,
+      'cached' => 0.01,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    // Same tags as GPT-6 Astra: 'responses' because tool calling goes through the Responses
+    // API, 'no-temperature' because a gpt-6 id escapes the engines' gpt-5 name check.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature'],
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh', 'max']
+    ]
+  ],
+  /*
     GPT-5.6 Sol
     Frontier tier of the GPT-5.6 family; the bare gpt-5.6 alias points here.
     https://developers.openai.com/api/docs/models/gpt-5.6-sol
@@ -251,7 +336,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    // Shutdown: April 1, 2027 (OpenAI notice of 2026-10-02).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh'],
@@ -379,7 +465,8 @@ define( 'MWAI_OPENAI_MODELS', [
     'maxCompletionTokens' => 128000,
     'maxContextualTokens' => 400000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity'],
+    // Shutdown: April 1, 2027 (OpenAI notice of 2026-10-02).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'verbosity', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'file_search', 'code_interpreter'],
     'params' => [
       'reasoning' => ['none', 'minimal', 'low', 'medium', 'high'],
@@ -1198,7 +1285,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     // replayed thinking blocks are bound to the conversation prefix. Our engine
     // never forces tool_choice and only replays blocks append-only within the
     // function-call loop, so no special handling is needed.
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature', 'latest'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
@@ -1218,7 +1305,27 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'finetune' => false,
     // Adaptive thinking is always on (no disabled mode, no manual budget, no
     // assistant prefill). Our engine never sends those, so no special handling.
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'no-temperature'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature'],
+    'tools' => ['code_interpreter', 'thinking', 'web_search']
+  ],
+  [
+    'model' => 'claude-opus-5-5',
+    'name' => 'Claude Opus 5.5',
+    'family' => 'claude-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 4.00,
+      'out' => 20.00,
+      'cached' => 0.2,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1000000,
+    'finetune' => false,
+    // Added 2026-10-01. Thinking cannot be disabled and forced tool_choice (any/tool) returns
+    // a 400; our engine sends neither. Effort defaults to medium (Opus 5: high).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature', 'latest'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
@@ -1238,7 +1345,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'finetune' => false,
     // Adaptive thinking (no extended-thinking param). Non-default temperature/
     // top_p/top_k are rejected, same as the other Claude 5 models.
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
@@ -1314,6 +1421,26 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
+    'model' => 'claude-sonnet-5-5',
+    'name' => 'Claude Sonnet 5.5',
+    'family' => 'claude-5',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 2.00,
+      'out' => 10.00,
+      'cached' => 0.2,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1000000,
+    'finetune' => false,
+    // Added 2026-10-01. thinking {type: disabled} and forced tool_choice (any/tool) return a
+    // 400; our engine sends neither. Non-default temperature is rejected ('no-temperature').
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tools' => ['code_interpreter', 'thinking', 'web_search']
+  ],
+  [
     'model' => 'claude-sonnet-5',
     'name' => 'Claude Sonnet 5',
     'family' => 'claude-5',
@@ -1332,7 +1459,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     // Adaptive thinking is always on (no disabled mode, no manual budget, no
     // assistant prefill). Non-default temperature/top_p/top_k are rejected; the
     // 'no-temperature' tag stops us sending temperature, and we never send top_p/top_k.
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
@@ -1368,7 +1495,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    // Retirement: November 30, 2026 (Anthropic notice of 2026-09-30).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'deprecated'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
@@ -1386,7 +1514,8 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    // Retirement: November 30, 2026 (Anthropic notice of 2026-09-30).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'deprecated'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   // Claude Opus 4.1 was retired by Anthropic on 2026-08-05 (requests error) and removed
@@ -1406,7 +1535,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
@@ -1424,7 +1553,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'reasoning', 'mcp', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'latest'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
 ] );

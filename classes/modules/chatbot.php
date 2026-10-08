@@ -15,6 +15,8 @@ class Meow_MWAI_Modules_Chatbot {
   private $siteWideChatId = null;
   // Popup chatbots rendered during this request, so wp_footer can tell whether they collide.
   private $renderedPopups = [];
+  // Posts whose content is being rendered right now (a stack, since the_content can nest).
+  private $renderingPosts = [];
 
   public function __construct() {
     global $mwai_core;
@@ -22,6 +24,9 @@ class Meow_MWAI_Modules_Chatbot {
     $this->siteWideChatId = $this->core->get_option( 'botId' );
 
     add_shortcode( 'mwai_chatbot', [ $this, 'chat_shortcode' ] );
+    // Blocks render at priority 9 and shortcodes at 11, so these wrap both.
+    add_filter( 'the_content', [ $this, 'content_render_start' ], 0 );
+    add_filter( 'the_content', [ $this, 'content_render_end' ], PHP_INT_MAX );
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
     // Late, so every shortcode in the content and the site-wide injection have all run.
     add_action( 'wp_footer', [ $this, 'warn_about_stacked_popups' ], 99 );
@@ -1401,6 +1406,33 @@ class Meow_MWAI_Modules_Chatbot {
     ];
   }
 
+  public function content_render_start( $content ) {
+    $this->renderingPosts[] = get_the_ID();
+    return $content;
+  }
+
+  public function content_render_end( $content ) {
+    array_pop( $this->renderingPosts );
+    return $content;
+  }
+
+  // A shortcode's server overrides (instructions, model, env, API key) are saved under its
+  // custom_id and shared by every visitor of that id. Inside post content, only authors who
+  // can edit others' posts may set them: otherwise a Contributor previewing a draft with the
+  // same custom_id took over a live chatbot (Patchstack, dzaku, 2026-10). Widgets, templates
+  // and theme code are written by admins, so they are not restricted.
+  private function can_override_server_params() {
+    $postId = end( $this->renderingPosts );
+    if ( empty( $postId ) ) {
+      return true;
+    }
+    $post = get_post( $postId );
+    if ( !$post ) {
+      return true;
+    }
+    return user_can( (int) $post->post_author, 'edit_others_posts' );
+  }
+
   public function chat_shortcode( $atts ) {
     $atts = empty( $atts ) ? [] : $atts;
 
@@ -1559,7 +1591,8 @@ class Meow_MWAI_Modules_Chatbot {
 
     $hasServerOverrides = count( array_intersect( array_keys( $attsForOverrideCheck ), MWAI_CHATBOT_SERVER_PARAMS ) ) > 0;
     $hasBehavioralFrontOverrides = count( array_intersect( array_keys( $attsForOverrideCheck ), $behavioralFrontParams ) ) > 0;
-    $hasOverrides = !$isSiteWide && ( $hasServerOverrides || $hasBehavioralFrontOverrides );
+    $hasOverrides = !$isSiteWide && ( $hasServerOverrides || $hasBehavioralFrontOverrides )
+      && $this->can_override_server_params();
 
     $serverParams = [];
     if ( $hasOverrides ) {

@@ -1,11 +1,10 @@
 <?php
 
 class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
-
   // Per 1M text tokens, standard paid tier, prompts up to 200k tokens, from
   // https://ai.google.dev/gemini-api/docs/pricing (2026-09-29). The 3.6 to 3.8 Flash rates are
   // promotional until 2026-12-31 and double on 2027-01-01: update them then.
-  const TEXT_PRICES = [
+  public const TEXT_PRICES = [
     'gemini-3.8-flash' => [ 'in' => 0.75, 'out' => 3.75 ],
     'gemini-3.7-flash' => [ 'in' => 0.75, 'out' => 3.75 ],
     'gemini-3.6-flash' => [ 'in' => 0.75, 'out' => 3.75 ],
@@ -1722,6 +1721,25 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       $body['generationConfig']['imageConfig'] = [
         'aspectRatio' => $query->resolution
       ];
+    }
+
+    // Output size. Per Google's image docs (2026-10): 3 Pro Image takes 1K/2K/4K, 3.1 Flash
+    // Image also 512px, while 2.5 Flash Image and 3.1 Flash Lite Image are 1K only. Sending a
+    // size a model does not take fails the request, so those fall back to their 1K default.
+    $imageSize = $query->imageSize ?? null;
+    if ( !empty( $imageSize ) ) {
+      $model = $query->model;
+      $onlyOneK = strpos( $model, 'flash-lite-image' ) !== false || strpos( $model, '2.5-flash-image' ) !== false;
+      $takes512 = strpos( $model, '3.1-flash-image' ) !== false;
+      if ( $onlyOneK && $imageSize !== '1K' ) {
+        Meow_MWAI_Logging::warn( "{$model} only generates 1K images, so the {$imageSize} size was ignored.", '🖼️' );
+      }
+      else if ( $imageSize === '512px' && !$takes512 ) {
+        Meow_MWAI_Logging::warn( "{$model} does not take the 512px size, so its 1K default was used.", '🖼️' );
+      }
+      else if ( !$onlyOneK ) {
+        $body['generationConfig']['imageConfig']['imageSize'] = $imageSize;
+      }
     }
 
     // Build URL and headers

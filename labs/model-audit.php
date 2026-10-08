@@ -151,4 +151,69 @@ foreach ( (array) $core->get_option( 'ai_envs' ) as $env ) {
   }
 }
 
+// Static engines (OpenAI, Anthropic): their models are hardcoded in constants/models.php, so a
+// new flagship stays invisible until someone adds it. GPT-6 Sol/Luna and Claude Opus/Sonnet 5.5
+// went 8 to 11 days unlisted in 2026-09 until users noticed. Compare against the live lists.
+$static = [
+  'openai' => [ 'list' => MWAI_OPENAI_MODELS, 'url' => 'https://api.openai.com/v1/models' ],
+  'anthropic' => [ 'list' => MWAI_ANTHROPIC_MODELS, 'url' => 'https://api.anthropic.com/v1/models?limit=100' ],
+];
+foreach ( $static as $type => $cfg ) {
+  if ( $only && $type !== $only ) {
+    continue;
+  }
+  $env = null;
+  foreach ( (array) $core->get_option( 'ai_envs' ) as $e ) {
+    if ( ( $e['type'] ?? '' ) === $type && !empty( $e['apikey'] ) ) {
+      $env = $e;
+      break;
+    }
+  }
+  echo "\n== {$type} (static list vs live API)\n";
+  if ( !$env ) {
+    echo "  skipped: no {$type} environment with an API key\n";
+    continue;
+  }
+  $headers = $type === 'openai'
+    ? [ 'Authorization' => 'Bearer ' . $env['apikey'] ]
+    : [ 'x-api-key' => $env['apikey'], 'anthropic-version' => '2023-06-01' ];
+  $res = wp_remote_get( $cfg['url'], [ 'headers' => $headers, 'timeout' => 30 ] );
+  if ( is_wp_error( $res ) || wp_remote_retrieve_response_code( $res ) !== 200 ) {
+    echo "  unavailable: could not read the live model list (not a zero)\n";
+    continue;
+  }
+  $listed = array_column( $cfg['list'], 'model' );
+  $missing = [];
+  foreach ( (array) ( json_decode( wp_remote_retrieve_body( $res ), true )['data'] ?? [] ) as $raw ) {
+    $id = $raw['id'] ?? '';
+    // Dated snapshots of a model we list by alias are not new models.
+    $undated = preg_replace( '/-\d{8}$|-\d{4}-\d{2}-\d{2}$/', '', $id );
+    if ( in_array( $id, $listed, true ) || ( $undated !== $id && in_array( $undated, $listed, true ) ) ) {
+      continue;
+    }
+    // New releases only: the lists also carry every legacy model we chose not to offer
+    // (gpt-3.5, gpt-4, o1, codex, dated snapshots), and a check full of known noise gets ignored.
+    $created = isset( $raw['created'] ) ? (int) $raw['created'] : strtotime( $raw['created_at'] ?? '' );
+    if ( !$created || $created < time() - 60 * DAY_IN_SECONDS || preg_match( '/-\d{4}-\d{2}-\d{2}$|-\d{8}$/', $id ) ) {
+      continue;
+    }
+    if ( $type === 'openai' ) {
+      // Chat models only: no audio, realtime, TTS, transcription, search, embeddings, images, codex.
+      if ( !preg_match( '/^(gpt-\d|o\d)/', $id ) || preg_match( '/audio|realtime|tts|transcribe|search|image|embedding|instruct|codex/', $id ) ) {
+        continue;
+      }
+    }
+    $missing[] = $id;
+  }
+  if ( empty( $missing ) ) {
+    echo "  no issues found\n";
+    continue;
+  }
+  sort( $missing );
+  $issues_total += count( $missing );
+  foreach ( $missing as $id ) {
+    echo "  ISSUE: provider offers {$id}, not in constants/models.php\n";
+  }
+}
+
 echo "\nTOTAL ISSUES: {$issues_total}\n";

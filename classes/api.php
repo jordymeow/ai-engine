@@ -959,7 +959,9 @@ class Meow_MWAI_API {
 
     // If not found or not a local URL, add it to the media library
     if ( empty( $attachmentId ) ) {
-      $attachmentId = $this->core->add_image_from_url( $url, null, null, null, null, null, $postId );
+      $filename = !empty( $params['filename'] ) ? $params['filename'] : null;
+      $ai_metadata = [ 'model' => $query->model, 'env_id' => $query->envId ];
+      $attachmentId = $this->core->add_image_from_url( $url, $filename, null, null, null, null, $postId, 'inherit', 'attachment', $ai_metadata );
       if ( empty( $attachmentId ) ) {
         throw new Exception( 'Could not add the image to the Media Library.' );
       }
@@ -998,6 +1000,17 @@ class Meow_MWAI_API {
     if ( empty( $params['envId'] ) && empty( $params['model'] ) ) {
       $ai_json_default_env = $mwai_core->get_option( 'ai_json_default_env' );
       $ai_json_default_model = $mwai_core->get_option( 'ai_json_default_model' );
+      // Untouched settings ship no JSON env but an OpenAI JSON model (gpt-5.6-luna), so a
+      // Claude or Gemini site sent that model to its own provider and got a 404 (Meow Apps →
+      // Health → Start Analysis, HS 3469426952). Without a JSON env, use the site's default
+      // env, and keep the JSON model only when that env is OpenAI (cheaper than the chat model).
+      if ( empty( $ai_json_default_env ) ) {
+        $ai_json_default_env = $mwai_core->get_option( 'ai_default_env' );
+        $defaultEnv = $mwai_core->get_ai_env( $ai_json_default_env );
+        if ( ( $defaultEnv['type'] ?? null ) !== 'openai' ) {
+          $ai_json_default_model = null;
+        }
+      }
       if ( !empty( $ai_json_default_env ) ) {
         $query->set_env_id( $ai_json_default_env );
       }
@@ -1015,13 +1028,14 @@ class Meow_MWAI_API {
     }
 
     $reply = $mwai_core->run_query( $query );
-    try {
-      $json = json_decode( $reply->result, true );
-      return $json;
-    }
-    catch ( Exception $e ) {
+    // Claude and Gemini wrap JSON in a ```json block even when asked for JSON, which
+    // json_decode() turned into a silent null for every caller.
+    $result = preg_replace( [ '/^\s*```(?:json)?\s*/i', '/\s*```\s*$/' ], '', (string) $reply->result );
+    $json = json_decode( $result, true );
+    if ( $json === null && json_last_error() !== JSON_ERROR_NONE ) {
       throw new Exception( 'The result is not a valid JSON.' );
     }
+    return $json;
   }
 
   /**

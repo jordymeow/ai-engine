@@ -457,7 +457,16 @@ class Meow_MWAI_Modules_Files {
         $file_array = [ 'name' => $unique_filename, 'tmp_name' => $path ];
       }
 
+      // media_handle_sideload() generates the attachment metadata itself, so an AI image
+      // is flagged on add_attachment, which fires before that (see add_image_from_url).
+      $flag_generated = function ( $attachment_id ) {
+        update_post_meta( $attachment_id, 'mwai_generated', 1 );
+      };
+      if ( $purpose === 'generated' ) {
+        add_action( 'add_attachment', $flag_generated );
+      }
       $id = media_handle_sideload( $file_array, 0 );
+      remove_action( 'add_attachment', $flag_generated );
       if ( is_wp_error( $id ) ) {
         throw new Exception( $id->get_error_message() );
       }

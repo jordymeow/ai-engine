@@ -157,7 +157,9 @@ class Meow_MWAI_Services_Image {
   */
   public function add_image_from_url( $url, $filename = null, $title = null, $description = null, $caption = null, $alt = null, $attachedPost = null, $post_status = 'inherit', $post_type = 'attachment', $ai_metadata = [] ) {
     $path_parts = pathinfo( parse_url( $url, PHP_URL_PATH ) );
-    $url_filename = $path_parts['basename'];
+    // A data: URL (Gemini returns those) has no file name: its "basename" is a slice of the
+    // base64 payload, which ended up as the attachment's file name.
+    $url_filename = strpos( $url, 'data:' ) === 0 ? '' : $path_parts['basename'];
     $file_type = wp_check_filetype( $url_filename, null );
     $allowed_types = get_allowed_mime_types();
 
@@ -166,8 +168,15 @@ class Meow_MWAI_Services_Image {
     if ( $file_type && $file_type['ext'] && in_array( $file_type['type'], $allowed_types ) ) {
       $extension = $file_type['ext'];
     }
+    elseif ( preg_match( '#^data:image/(png|jpe?g|webp|gif);#i', $url, $m ) ) {
+      $extension = strtolower( $m[1] ) === 'jpeg' ? 'jpg' : strtolower( $m[1] );
+    }
 
     if ( !empty( $filename ) ) {
+      // "red-fox-at-dawn" is a fine name to ask for; give it the image's own extension.
+      if ( pathinfo( $filename, PATHINFO_EXTENSION ) === '' ) {
+        $filename .= '.' . $extension;
+      }
       $custom_file_type = wp_check_filetype( $filename, null );
       if ( !$custom_file_type || !in_array( $custom_file_type['type'], $allowed_types ) ) {
         throw new Exception( 'Invalid custom file type.' );
@@ -239,14 +248,11 @@ class Meow_MWAI_Services_Image {
 
     // Set the attached file manually since we're not using wp_insert_attachment
     update_attached_file( $attach_id, $file );
-    require_once( ABSPATH . 'wp-admin/includes/image.php' );
-    $attach_data = wp_generate_attachment_metadata( $attach_id, $file );
-    wp_update_attachment_metadata( $attach_id, $attach_data );
-    if ( !is_null( $alt ) ) {
-      update_post_meta( $attach_id, '_wp_attachment_image_alt', $alt );
-    }
 
-    // Store AI-related metadata
+    // Store AI-related metadata BEFORE the metadata is generated: sites hook
+    // wp_generate_attachment_metadata (to convert AI images to AVIF, for example) and need
+    // mwai_generated to tell them apart from regular uploads at that moment.
+    update_post_meta( $attach_id, 'mwai_generated', 1 );
     if ( !empty( $ai_metadata['model'] ) ) {
       update_post_meta( $attach_id, 'mwai_model', sanitize_text_field( $ai_metadata['model'] ) );
     }
@@ -255,6 +261,13 @@ class Meow_MWAI_Services_Image {
     }
     if ( !empty( $ai_metadata['env_id'] ) ) {
       update_post_meta( $attach_id, 'mwai_env_id', sanitize_text_field( $ai_metadata['env_id'] ) );
+    }
+
+    require_once( ABSPATH . 'wp-admin/includes/image.php' );
+    $attach_data = wp_generate_attachment_metadata( $attach_id, $file );
+    wp_update_attachment_metadata( $attach_id, $attach_data );
+    if ( !is_null( $alt ) ) {
+      update_post_meta( $attach_id, '_wp_attachment_image_alt', $alt );
     }
 
     return $attach_id;

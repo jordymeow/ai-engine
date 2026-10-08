@@ -101,6 +101,20 @@ class Meow_MWAI_Rest {
         ] );
       }
 
+      // MCP switch for external setup tools (the Torii gateway's auto-setup, authenticated
+      // with an Application Password). Registered whether MCP is on or off, since turning
+      // it on is the point. Only module_mcp is written, never the rest of mwai_options.
+      register_rest_route( $this->namespace, '/mcp/enable', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_enable' ],
+      ] );
+      register_rest_route( $this->namespace, '/mcp/status', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_status' ],
+      ] );
+
       // Settings Endpoints
       register_rest_route( $this->namespace, '/settings/update', [
         'methods' => 'POST',
@@ -493,6 +507,31 @@ class Meow_MWAI_Rest {
     return $this->create_rest_response( [
       'success' => true,
       'options' => $this->core->get_all_options()
+    ], 200 );
+  }
+
+  public function rest_mcp_enable() {
+    // Raw read and write on purpose: $core->update_option() saves get_all_options(), which
+    // merges defaults and dynamic values (a freshly generated models_api_key, other plugins'
+    // keys) and writes all of them back. Setup tools must flip this one switch and nothing else.
+    $options = get_option( 'mwai_options', [] );
+    if ( !is_array( $options ) ) {
+      $options = [];
+    }
+    if ( empty( $options['module_mcp'] ) ) {
+      $options['module_mcp'] = true;
+      update_option( 'mwai_options', $options, false );
+      $this->core->get_all_options( true );
+    }
+    return $this->rest_mcp_status();
+  }
+
+  public function rest_mcp_status() {
+    return $this->create_rest_response( [
+      'success' => true,
+      'mcp' => (bool) $this->core->get_option( 'module_mcp' ),
+      'version' => MWAI_VERSION,
+      'mcp_url' => rest_url( 'mcp/v1/http' ),
     ], 200 );
   }
 

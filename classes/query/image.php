@@ -3,6 +3,8 @@
 class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
   public ?string $resolution = null;
   public ?string $quality = null;
+  // Gemini output size: '512px', '1K', '2K' or '4K' (Google rejects a lowercase 'k').
+  public ?string $imageSize = null;
   public ?string $style = null;
   public ?string $localDownload = 'uploads';
   public ?string $localDownloadExpiry = 'uploads';
@@ -28,7 +30,8 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
         'model' => $this->model,
         'feature' => $this->feature,
         'resolution' => $this->resolution,
-        'quality' => $this->quality
+        'quality' => $this->quality,
+        'imageSize' => $this->imageSize
       ],
 
       'system' => [
@@ -57,6 +60,22 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
 
   public function set_quality( ?string $quality ) {
     $this->quality = $quality !== null && $quality !== '' ? $quality : null;
+  }
+
+  public function set_image_size( ?string $size ) {
+    $size = strtoupper( trim( (string) $size ) );
+    if ( $size === '' ) {
+      $this->imageSize = null;
+      return;
+    }
+    if ( in_array( $size, [ '512', '512PX', '0.5K' ], true ) ) {
+      $this->imageSize = '512px';
+      return;
+    }
+    if ( !in_array( $size, [ '1K', '2K', '4K' ], true ) ) {
+      throw new Exception( "AI Engine: Invalid image size '{$size}'. Use 512px, 1K, 2K or 4K." );
+    }
+    $this->imageSize = $size;
   }
 
   public function set_style( string $style ) {
@@ -100,6 +119,9 @@ class Meow_MWAI_Query_Image extends Meow_MWAI_Query_Base {
     }
     if ( array_key_exists( 'quality', $params ) ) {
       $this->set_quality( $params['quality'] );
+    }
+    if ( !empty( $params['imageSize'] ) ) {
+      $this->set_image_size( $params['imageSize'] );
     }
     if ( !empty( $params['style'] ) ) {
       $this->set_style( $params['style'] );

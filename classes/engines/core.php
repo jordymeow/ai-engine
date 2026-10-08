@@ -706,6 +706,23 @@ class Meow_MWAI_Engines_Core {
     $this->currentQuery = $query;
   }
 
+  /**
+  * A stream is cut when it goes silent, not when it gets long. The total MWAI_TIMEOUT used to
+  * apply to streams too, so a long answer from a slow model (Claude Opus, reasoning models)
+  * died at exactly 5 minutes while still streaming ("cURL error 28 ... 300001 ms with 45203
+  * bytes received"). Providers send keep-alive pings, so a live stream is never silent for
+  * MWAI_TIMEOUT; a stuck one still stops then, and MWAI_STREAM_MAX_TIME caps the rest.
+  */
+  protected function apply_stream_timeouts( $handle ) {
+    $maxTime = defined( 'MWAI_STREAM_MAX_TIME' ) ? (int) MWAI_STREAM_MAX_TIME : HOUR_IN_SECONDS;
+    curl_setopt( $handle, CURLOPT_TIMEOUT, $maxTime );
+    curl_setopt( $handle, CURLOPT_LOW_SPEED_LIMIT, 1 );
+    curl_setopt( $handle, CURLOPT_LOW_SPEED_TIME, MWAI_TIMEOUT );
+    if ( function_exists( 'set_time_limit' ) ) {
+      @set_time_limit( $maxTime );
+    }
+  }
+
   public function stream_handler( $handle, $args, $url ) {
     // Streaming requests carry the provider API key in the Authorization header,
     // so they must verify certificates by default, exactly like the non-streaming
@@ -716,6 +733,8 @@ class Meow_MWAI_Engines_Core {
       curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, false );
       curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, false );
     }
+
+    $this->apply_stream_timeouts( $handle );
 
     curl_setopt( $handle, CURLOPT_WRITEFUNCTION, function ( $curl, $data ) use ( $url ) {
       $length = strlen( $data );
