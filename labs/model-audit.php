@@ -198,8 +198,11 @@ foreach ( $static as $type => $cfg ) {
       continue;
     }
     if ( $type === 'openai' ) {
-      // Chat models only: no audio, realtime, TTS, transcription, search, embeddings, images, codex.
-      if ( !preg_match( '/^(gpt-\d|o\d)/', $id ) || preg_match( '/audio|realtime|tts|transcribe|search|image|embedding|instruct|codex/', $id ) ) {
+      // Chat and voice models: no audio, TTS, transcription, search, embeddings, images, codex.
+      // Realtime models count (voice chatbots use them; 2.1 went unlisted for days), except
+      // translate and whisper, which AI Engine deliberately does not expose.
+      $isRealtime = preg_match( '/^gpt-realtime/', $id ) && !preg_match( '/translate|whisper/', $id );
+      if ( !$isRealtime && ( !preg_match( '/^(gpt-\d|o\d)/', $id ) || preg_match( '/audio|realtime|tts|transcribe|search|image|embedding|instruct|codex/', $id ) ) ) {
         continue;
       }
     }

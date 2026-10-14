@@ -17,6 +17,10 @@ class Meow_MWAI_Core {
   public $files = null;
   public $tasks = null;
   public $magicWand = null;
+  // When something was last pushed to the browser on a stream (see stream_keepalive in engines/core.php).
+  public $lastStreamPush = 0;
+  // Set when a stream was stopped because the visitor left, so the resulting curl abort is not logged as an error.
+  public $streamVisitorLeft = false;
   private $options = null;
   private $option_name = 'mwai_options';
   private $themes_option_name = 'mwai_themes';
@@ -38,6 +42,12 @@ class Meow_MWAI_Core {
   public $modelEnvironmentService = null;
 
   public function __construct() {
+    // Remembered once per site, before anything writes mwai_options: when AI Engine first ran
+    // here, or 0 if the site already had settings (an update, not a fresh install). Onboarding
+    // meant for new sites only (the MCP notice) checks it, so existing sites are never nagged.
+    if ( get_option( 'mwai_first_activated' ) === false ) {
+      add_option( 'mwai_first_activated', get_option( 'mwai_options' ) === false ? time() : 0 );
+    }
     Meow_MWAI_Logging::init( 'mwai_options', 'AI Engine' );
     $this->site_url = get_site_url();
     $this->is_rest = MeowKit_MWAI_Helpers::is_rest();
@@ -1155,6 +1165,7 @@ class Meow_MWAI_Core {
 
   #region Streaming
   public function stream_push( $data, $query = null ) {
+    $this->lastStreamPush = time();
     try {
       // Handle new Event objects
       if ( is_object( $data ) && method_exists( $data, 'to_array' ) ) {
@@ -2217,6 +2228,20 @@ class Meow_MWAI_Core {
     $options = $this->get_all_options( true );
     $options[$option] = $value;
     return $this->update_options( $options );
+  }
+
+  // Turns on the MCP module and nothing else: a raw read and write of the stored option, since
+  // update_option() saves get_all_options() (defaults, dynamic values) back with it.
+  public function enable_mcp_module() {
+    $options = get_option( $this->option_name, [] );
+    if ( !is_array( $options ) ) {
+      $options = [];
+    }
+    if ( empty( $options['module_mcp'] ) ) {
+      $options['module_mcp'] = true;
+      update_option( $this->option_name, $options, false );
+      $this->get_all_options( true );
+    }
   }
 
   public function get_option( $option, $default = null ) {

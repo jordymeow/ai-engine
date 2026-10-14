@@ -394,6 +394,20 @@ class Meow_MWAI_Modules_Files {
     $target = empty( $target ) ? $this->core->get_option( 'image_local_upload' ) : $target;
     $expiry = empty( $expiry ) ? $this->core->get_option( 'image_expires' ) : $expiry;
 
+    // Caller metadata may never use a key AI Engine sets itself. Through the Public API a
+    // Subscriber could point file_id at someone else's file with an expiry in the past, or
+    // set provider + file_id, and the cleanup task then deleted that file (Wordfence,
+    // CVE-2026-107745).
+    if ( is_array( $metadata ) ) {
+      $reserved = [ 'file_id', 'file_expires', 'provider', 'purpose', 'envid', 'assistant_id',
+        'assistant_storeid', 'assistant_storefileid', 'assistant_scope' ];
+      foreach ( array_keys( $metadata ) as $metaKey ) {
+        if ( !is_string( $metaKey ) || in_array( strtolower( $metaKey ), $reserved, true ) ) {
+          unset( $metadata[ $metaKey ] );
+        }
+      }
+    }
+
     $expires = ( $expiry === 'never' || empty( $expiry ) ) ? null : date( 'Y-m-d H:i:s', time() + intval( $expiry ) );
     $refId = $this->generate_refId();
     $url = null;
@@ -1075,11 +1089,18 @@ class Meow_MWAI_Modules_Files {
       ] );
 
       if ( !empty( $expired_posts ) ) {
+        // Each expired attachment deletes itself and nothing else. Resolving it through its
+        // _mwai_file_id let a forged value delete another file (CVE-2026-107745).
         $fileRefs = [];
         foreach ( $expired_posts as $post ) {
-          $fileRefs[] = get_post_meta( $post->ID, '_mwai_file_id', true );
+          $fileRefs[ $post->ID ] = get_post_meta( $post->ID, '_mwai_file_id', true );
         }
-        $this->delete_expired_files( $fileRefs );
+        $allowedRefs = apply_filters( 'mwai_files_delete', array_values( $fileRefs ) );
+        foreach ( $fileRefs as $postId => $refId ) {
+          if ( in_array( $refId, (array) $allowedRefs, true ) ) {
+            wp_delete_attachment( $postId, true );
+          }
+        }
 
         $deleted_attachments += count( $expired_posts );
         $last_id += count( $expired_posts );

@@ -1221,7 +1221,9 @@ class Meow_MWAI_Modules_Chatbot {
         $isRefusal = $e instanceof Meow_MWAI_RefusedException;
         $overLimit = $isRefusal && $e->reason === 'limits';
         if ( !$isRefusal && !current_user_can( 'manage_options' ) ) {
-          error_log( '[AI Engine Chatbot Error] ' . Meow_MWAI_Core::log_safe( $e->getMessage() ) . ' in ' . $e->getFile() . ':' . $e->getLine() );
+          if ( empty( $this->core->streamVisitorLeft ) ) {
+            error_log( '[AI Engine Chatbot Error] ' . Meow_MWAI_Core::log_safe( $e->getMessage() ) . ' in ' . $e->getFile() . ':' . $e->getLine() );
+          }
           $message = Meow_MWAI_Core::get_public_error_message( $e );
         }
         $this->core->stream_push( [

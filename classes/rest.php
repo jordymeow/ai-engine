@@ -511,18 +511,8 @@ class Meow_MWAI_Rest {
   }
 
   public function rest_mcp_enable() {
-    // Raw read and write on purpose: $core->update_option() saves get_all_options(), which
-    // merges defaults and dynamic values (a freshly generated models_api_key, other plugins'
-    // keys) and writes all of them back. Setup tools must flip this one switch and nothing else.
-    $options = get_option( 'mwai_options', [] );
-    if ( !is_array( $options ) ) {
-      $options = [];
-    }
-    if ( empty( $options['module_mcp'] ) ) {
-      $options['module_mcp'] = true;
-      update_option( 'mwai_options', $options, false );
-      $this->core->get_all_options( true );
-    }
+    // Setup tools must flip this one switch and nothing else (see enable_mcp_module).
+    $this->core->enable_mcp_module();
     return $this->rest_mcp_status();
   }
 

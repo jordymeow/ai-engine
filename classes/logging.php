@@ -118,6 +118,11 @@ class Meow_MWAI_Logging {
   * Internal log writer. Appends to file and/or error_log.
   */
   private static function add( $message = null, $icon = '', $error_log = false ) {
+    // A stream stopped on purpose because the visitor left ends in a curl abort; that is not an error.
+    global $mwai_core;
+    if ( !empty( $mwai_core->streamVisitorLeft ) && is_string( $message ) && strpos( $message, 'Callback aborted' ) !== false ) {
+      return;
+    }
     $date = date( 'Y-m-d H:i:s' );
     $message = is_string( $message ) ? strip_tags( $message ) : $message;
 

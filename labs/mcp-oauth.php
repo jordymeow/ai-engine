@@ -37,7 +37,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
   private const TOKEN_ROTATED = 2;
   public const ACCESS_TOKEN_TTL = 3600;       // 1 hour
   public const REFRESH_TOKEN_TTL = 2592000;   // 30 days
-  public const AUTH_CODE_TTL = 60;            // seconds
+  public const AUTH_CODE_TTL = 120;           // seconds
   public const NONCE_ACTION = 'mwai_mcp_oauth_consent';
 
   private $core;
@@ -553,7 +553,12 @@ class Meow_MWAI_Labs_MCP_OAuth {
       error_log( '[AI Engine MCP OAuth] Client asked for resource ' . $code_data['resource']
         . ', we serve ' . rest_url( $this->namespace . '/http' ) . '. Accepted anyway.' );
     }
-    set_transient( $this->auth_code_key( $code ), $code_data, self::AUTH_CODE_TTL );
+    // Stored as an option, not a transient: with a persistent object cache, WordPress keeps
+    // transients only in that cache, and a cache not shared by every PHP server (or one that
+    // evicts) lost the code between consent and token: "Authorization code is invalid or
+    // expired." seconds after approval (Torii, storeoh.com and tryonartsandcrafts.org, 2026-10).
+    $this->purge_expired_auth_codes();
+    add_option( $this->auth_code_key( $code ), [ 'data' => $code_data, 'expires' => time() + self::AUTH_CODE_TTL ], '', false );
 
     $params = [ 'code' => $code ];
     if ( $state !== '' ) {
@@ -570,6 +575,21 @@ class Meow_MWAI_Labs_MCP_OAuth {
 
   private function auth_code_key( $code ) {
     return 'mwai_mcp_oauth_code_' . hash( 'sha256', $code );
+  }
+
+  // Codes nobody redeemed (an abandoned consent) would otherwise stay in wp_options forever.
+  private function purge_expired_auth_codes() {
+    global $wpdb;
+    $names = $wpdb->get_col( $wpdb->prepare(
+      "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 50",
+      $wpdb->esc_like( 'mwai_mcp_oauth_code_' ) . '%'
+    ) );
+    foreach ( $names as $name ) {
+      $stored = get_option( $name );
+      if ( !is_array( $stored ) || ( $stored['expires'] ?? 0 ) < time() ) {
+        delete_option( $name );
+      }
+    }
   }
   #endregion
 
@@ -617,12 +637,13 @@ class Meow_MWAI_Labs_MCP_OAuth {
     }
 
     $key = $this->auth_code_key( $code );
-    $code_data = get_transient( $key );
-    if ( !is_array( $code_data ) ) {
+    $stored = get_option( $key );
+    // Single-use: whoever deletes the option owns the code, so two concurrent requests cannot
+    // both redeem it.
+    if ( !is_array( $stored ) || !delete_option( $key ) || ( $stored['expires'] ?? 0 ) < time() ) {
       return $this->oauth_error( 'invalid_grant', 'Authorization code is invalid or expired.', 400 );
     }
-    // Single-use: delete immediately to prevent replay.
-    delete_transient( $key );
+    $code_data = $stored['data'];
 
     if ( $code_data['redirect_uri'] !== $redirect_uri ) {
       return $this->oauth_error( 'invalid_grant', 'redirect_uri mismatch.', 400 );
@@ -1146,7 +1167,11 @@ class Meow_MWAI_Labs_MCP_OAuth {
     if ( $status !== 401 && $status !== 403 ) {
       return $response;
     }
-    $resource_metadata = rest_url( $this->namespace . '/.well-known/oauth-protected-resource' );
+    // The ?rest_route= form, not rest_url(): many nginx configs deny any path with a "/."
+    // segment (to hide dotfiles), so /wp-json/mcp/v1/.well-known/... answered 404 and ChatGPT
+    // and Claude could not sign in. A query string is never matched by those rules, and it
+    // also works when WordPress lives in a subfolder, unlike the host-root /.well-known path.
+    $resource_metadata = add_query_arg( 'rest_route', '/' . $this->namespace . '/.well-known/oauth-protected-resource', home_url( '/' ) );
     $response->header(
       'WWW-Authenticate',
       sprintf( 'Bearer realm="MCP", resource_metadata="%s"', $resource_metadata )

@@ -393,6 +393,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       'temperature' => $query->temperature,
       'stopSequences' => []
     ];
+    if ( $this->gemini_rejects_sampling( $query->model ) ) {
+      unset( $body['generationConfig']['temperature'] );
+    }
 
     // Add tools if available
     $hasTools = false;
@@ -426,8 +429,11 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       if ( !isset( $body['generationConfig']['thinkingConfig'] ) ) {
         $body['generationConfig']['thinkingConfig'] = [];
       }
-      // Use dynamic thinking by default (-1 lets the model decide)
-      $body['generationConfig']['thinkingConfig']['thinkingBudget'] = -1;
+      // Dynamic thinking (-1 lets the model decide). Gemini 3+ decides by default and
+      // upcoming models reject thinkingBudget, so it is only sent to older models.
+      if ( !$this->gemini_rejects_thinking_budget( $query->model ) ) {
+        $body['generationConfig']['thinkingConfig']['thinkingBudget'] = -1;
+      }
 
       // Always include thought summaries when thinking is enabled
       // This allows us to see thinking events in the UI

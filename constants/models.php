@@ -778,6 +778,72 @@ define( 'MWAI_OPENAI_MODELS', [
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
+                GPT Realtime 2.1
+                Newer GPT Realtime 2, with configurable reasoning effort. Added 2026-10-12.
+                https://developers.openai.com/api/docs/models/gpt-realtime-2.1
+                */
+  [
+    'model' => 'gpt-realtime-2.1',
+    'name' => 'GPT Realtime 2.1',
+    'family' => 'realtime',
+    'features' => ['core', 'realtime', 'functions'],
+    'price' => [
+      'text' => [
+        'in' => 4.00,
+        'cache' => 0.40,
+        'out' => 24.00,
+      ],
+      'audio' => [
+        'in' => 32.00,
+        'cache' => 0.40,
+        'out' => 64.00,
+      ],
+      'image' => [
+        'in' => 5.00,
+        'cache' => 0.50,
+      ]
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 4096,
+    'maxContextualTokens' => 128000,
+    'finetune' => false,
+    'tags' => ['core', 'realtime', 'functions', 'vision', 'mcp']
+  ],
+  /*
+                GPT Realtime 2.1 Mini
+                Cost-efficient GPT Realtime 2.1, the successor of GPT Realtime Mini. Added 2026-10-12.
+                https://developers.openai.com/api/docs/models/gpt-realtime-2.1-mini
+                */
+  [
+    'model' => 'gpt-realtime-2.1-mini',
+    'name' => 'GPT Realtime 2.1 Mini',
+    'family' => 'realtime',
+    'features' => ['core', 'realtime', 'functions'],
+    'price' => [
+      'text' => [
+        'in' => 0.60,
+        'cache' => 0.06,
+        'out' => 2.40,
+      ],
+      'audio' => [
+        'in' => 10.00,
+        'cache' => 0.30,
+        'out' => 20.00,
+      ],
+      'image' => [
+        'in' => 0.80,
+        'cache' => 0.08,
+      ]
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 4096,
+    'maxContextualTokens' => 128000,
+    'finetune' => false,
+    'tags' => ['core', 'realtime', 'functions', 'vision', 'mcp']
+  ],
+  /*
                 GPT Realtime 2
                 Voice model with GPT-5-class reasoning, stronger instruction following, and multilingual support.
                 https://platform.openai.com/docs/models/gpt-realtime-2
@@ -1428,7 +1494,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'price' => [
       'in' => 2.00,
       'out' => 10.00,
-      'cached' => 0.2,
+      'cached' => 0.1,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -1521,6 +1587,28 @@ define( 'MWAI_ANTHROPIC_MODELS', [
   // Claude Opus 4.1 was retired by Anthropic on 2026-08-05 (requests error) and removed
   // from this list on 2026-09-03. Sites still pointing at it get the usual unknown-model error.
   [
+    'model' => 'claude-haiku-5-5',
+    'name' => 'Claude Haiku 5.5',
+    'family' => 'claude-5',
+    'features' => ['completion'],
+    // Prices for prompts up to 100k tokens. Above that Anthropic bills $0.50/$2.50 (cached
+    // $0.05), which a single price cannot express, so long-context use is underestimated.
+    'price' => [
+      'in' => 0.10,
+      'out' => 0.50,
+      'cached' => 0.01,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1000000,
+    'finetune' => false,
+    // Added 2026-10-10. Sampling params, budget_tokens and assistant prefill return a 400;
+    // our engine sends none of them ('no-temperature' strips temperature).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tools' => ['code_interpreter', 'thinking', 'web_search']
+  ],
+  [
     'model' => 'claude-haiku-4-5-20251001',
     'name' => 'Claude Haiku 4.5 (2025/10/01)',
     'family' => 'claude-4',
@@ -1553,7 +1641,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     'maxCompletionTokens' => 64000,
     'maxContextualTokens' => 200000,
     'finetune' => false,
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
 ] );

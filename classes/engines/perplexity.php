@@ -132,47 +132,49 @@ class Meow_MWAI_Engines_Perplexity extends Meow_MWAI_Engines_ChatML {
   }
 
   /**
-   * Connection check for Perplexity API
-   * Tests the API key by listing async chat completions
+   * Connection check for Perplexity API.
+   * Perplexity retired Sonar's async Chat Completions on 2026-09-27, so the key is checked with
+   * GET /v1/models first. The old async list stays as a fallback in case /v1/models is ever
+   * unavailable on an account (written without a live key to test against).
    */
   public function connection_check() {
     try {
-      // Build the URL for async completions list endpoint
       $endpoint = apply_filters( 'mwai_perplexity_endpoint', 'https://api.perplexity.ai', $this->env );
-      $url = rtrim( $endpoint, '/' ) . '/async/chat/completions?limit=1';
-      
-      // Build headers with API key
       if ( empty( $this->apiKey ) ) {
         throw new Exception( 'No Perplexity API Key provided. Check your settings.' );
       }
-      
-      $headers = [
-        'Authorization' => 'Bearer ' . $this->apiKey,
-        'User-Agent' => 'AI Engine',
-      ];
-      
       $options = [
-        'headers' => $headers,
+        'headers' => [
+          'Authorization' => 'Bearer ' . $this->apiKey,
+          'User-Agent' => 'AI Engine',
+        ],
         'method' => 'GET',
         'timeout' => 10,
         'sslverify' => MWAI_SSL_VERIFY
       ];
-      
-      // Make the request
-      $response = wp_remote_get( $url, $options );
-      
-      if ( is_wp_error( $response ) ) {
-        throw new Exception( $response->get_error_message() );
+
+      $verified = false;
+      foreach ( [ '/v1/models', '/async/chat/completions?limit=1' ] as $path ) {
+        $response = wp_remote_get( rtrim( $endpoint, '/' ) . $path, $options );
+        if ( is_wp_error( $response ) ) {
+          throw new Exception( $response->get_error_message() );
+        }
+        $code = (int) wp_remote_retrieve_response_code( $response );
+        $data = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( $code === 200 && is_array( $data ) ) {
+          $verified = true;
+          break;
+        }
+        // A missing route means "try the next one"; anything else (a bad key, a quota) is the answer.
+        if ( !in_array( $code, [ 404, 405, 410 ], true ) ) {
+          $message = $data['error']['message'] ?? ( 'HTTP ' . $code );
+          throw new Exception( $message );
+        }
       }
-      
-      $body = wp_remote_retrieve_body( $response );
-      $data = json_decode( $body, true );
-      
-      // Check if response has expected structure
-      if ( !is_array( $data ) || !array_key_exists( 'requests', $data ) ) {
+      if ( !$verified ) {
         throw new Exception( 'Invalid response from Perplexity API' );
       }
-      
+
       // Get available models from our constants
       $models = $this->get_models();
       $modelNames = array_map( function( $model ) {

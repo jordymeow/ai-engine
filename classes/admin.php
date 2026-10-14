@@ -27,6 +27,9 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
         add_action( 'admin_menu', [ $this, 'app_menu' ] );
       }
 
+      add_action( 'admin_notices', [ $this, 'mcp_onboarding_notice' ] );
+      add_action( 'admin_post_mwai_mcp_onboarding', [ $this, 'mcp_onboarding_action' ] );
+
       if ( $can_access_features ) {
         add_action( 'admin_menu', [ $this, 'admin_menu' ] );
 
@@ -382,8 +385,11 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       strpos( $current_screen->id, 'meowapps' ) !== false && strpos( $_GET['page'] ?? '', 'mwai' ) !== false
     );
 
-    // Only add wp-edit-post on actual post/page editor screens, not on AI Engine admin pages
-    $is_post_editor = $current_screen && in_array( $current_screen->base, [ 'post', 'page' ] );
+    // Only add wp-edit-post on the block editor itself. On a Classic Editor screen it registers the
+    // core/edit-post store, and plugins that detect Gutenberg that way (HTML Editor Syntax
+    // Highlighter checks wp.data.select( 'core/edit-post' )) then skip the classic textarea.
+    $is_post_editor = $current_screen && in_array( $current_screen->base, [ 'post', 'page' ] )
+      && method_exists( $current_screen, 'is_block_editor' ) && $current_screen->is_block_editor();
     if ( $is_post_editor ) {
       $deps[] = 'wp-edit-post';
     }
@@ -497,6 +503,71 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
   public function is_registered() {
     return apply_filters( MWAI_PREFIX . '_meowapps_is_registered', false, MWAI_PREFIX );
   }
+
+  #region MCP onboarding notice
+  // A site installed by hand to connect ChatGPT or Claude (the Torii gateway sends people to
+  // Plugins → Add New when it cannot install AI Engine itself) still had to find Modules to turn
+  // on MCP. Fresh installs only (first week, see mwai_first_activated in core): existing sites
+  // with MCP off are never shown this.
+  private function mcp_onboarding_applies() {
+    if ( $this->core->get_option( 'module_mcp' ) || !$this->core->can_access_settings() ) {
+      return false;
+    }
+    if ( get_option( 'mwai_mcp_notice_dismissed' ) ) {
+      return false;
+    }
+    $first = (int) get_option( 'mwai_first_activated', 0 );
+    return $first > 0 && ( time() - $first ) < 7 * DAY_IN_SECONDS;
+  }
+
+  public function mcp_onboarding_notice() {
+    $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+    $onOurScreens = $screen && ( $screen->id === 'plugins' || strpos( $screen->id, 'mwai' ) !== false );
+    if ( !$onOurScreens ) {
+      return;
+    }
+    if ( isset( $_GET['mwai_mcp_enabled'] ) && $this->core->get_option( 'module_mcp' ) ) {
+      echo '<div class="notice notice-success is-dismissible"><p>'
+        . esc_html__( 'MCP is on. You can go back to ChatGPT or Claude and continue.', 'ai-engine' )
+        . '</p></div>';
+      return;
+    }
+    if ( !$this->mcp_onboarding_applies() ) {
+      return;
+    }
+    $action = esc_url( admin_url( 'admin-post.php' ) );
+    $nonce = wp_nonce_field( 'mwai_mcp_onboarding', '_wpnonce', true, false );
+    $back = '<input type="hidden" name="back" value="' . esc_attr( $screen->id === 'plugins' ? 'plugins' : 'settings' ) . '">';
+    echo '<div class="notice notice-info"><p><strong>'
+      . esc_html__( 'Connecting ChatGPT or Claude to this site?', 'ai-engine' ) . '</strong> '
+      . esc_html__( 'Turn on MCP to finish. You can turn it off any time in AI Engine → Modules.', 'ai-engine' )
+      . '</p><div style="display:flex;gap:8px;margin:0 0 10px;">'
+      . '<form method="post" action="' . $action . '" style="margin:0;">' . $nonce . $back
+      . '<input type="hidden" name="action" value="mwai_mcp_onboarding"><input type="hidden" name="do" value="enable">'
+      . '<button type="submit" class="button button-primary">' . esc_html__( 'Turn on MCP', 'ai-engine' ) . '</button></form>'
+      . '<form method="post" action="' . $action . '" style="margin:0;">' . $nonce . $back
+      . '<input type="hidden" name="action" value="mwai_mcp_onboarding"><input type="hidden" name="do" value="dismiss">'
+      . '<button type="submit" class="button">' . esc_html__( 'No thanks', 'ai-engine' ) . '</button></form>'
+      . '</div></div>';
+  }
+
+  public function mcp_onboarding_action() {
+    if ( !$this->core->can_access_settings() ) {
+      wp_die( esc_html__( 'Sorry, you are not allowed to do that.', 'ai-engine' ), 403 );
+    }
+    check_admin_referer( 'mwai_mcp_onboarding' );
+    $back = ( $_POST['back'] ?? '' ) === 'plugins' ? admin_url( 'plugins.php' ) : admin_url( 'admin.php?page=mwai_settings' );
+    if ( ( $_POST['do'] ?? '' ) === 'enable' ) {
+      $this->core->enable_mcp_module();
+      $back = add_query_arg( 'mwai_mcp_enabled', '1', $back );
+    }
+    else {
+      update_option( 'mwai_mcp_notice_dismissed', 1, false );
+    }
+    wp_safe_redirect( $back );
+    exit;
+  }
+  #endregion
 
   public function app_menu() {
     // The menu is only registered when can_access_settings() passed (see __construct).

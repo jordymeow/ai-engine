@@ -713,6 +713,29 @@ class Meow_MWAI_Engines_Core {
   * bytes received"). Providers send keep-alive pings, so a live stream is never silent for
   * MWAI_TIMEOUT; a stuck one still stops then, and MWAI_STREAM_MAX_TIME caps the rest.
   */
+  /**
+  * Google retires generation parameters (notice of 2026-10-07): sampling (temperature, top_p,
+  * top_k) has had no effect since Gemini 3.6 and upcoming models reject it with a 400, and
+  * thinking_budget is only remapped by Gemini 3 and rejected after. Aliases such as
+  * gemini-flash-latest point at the newest models, so they count as new. Not Gemini: null.
+  */
+  protected function gemini_version( $model ) {
+    if ( !is_string( $model ) || stripos( $model, 'gemini' ) === false ) {
+      return null;
+    }
+    return preg_match( '/gemini-(\d+(?:\.\d+)?)/i', $model, $m ) ? $m[1] : '99';
+  }
+
+  protected function gemini_rejects_sampling( $model ) {
+    $version = $this->gemini_version( $model );
+    return $version !== null && version_compare( $version, '3.6', '>=' );
+  }
+
+  protected function gemini_rejects_thinking_budget( $model ) {
+    $version = $this->gemini_version( $model );
+    return $version !== null && version_compare( $version, '3', '>=' );
+  }
+
   protected function apply_stream_timeouts( $handle ) {
     $maxTime = defined( 'MWAI_STREAM_MAX_TIME' ) ? (int) MWAI_STREAM_MAX_TIME : HOUR_IN_SECONDS;
     curl_setopt( $handle, CURLOPT_TIMEOUT, $maxTime );
@@ -721,6 +744,53 @@ class Meow_MWAI_Engines_Core {
     if ( function_exists( 'set_time_limit' ) ) {
       @set_time_limit( $maxTime );
     }
+    // curl calls this about once a second, even while the provider sends nothing.
+    $this->core->lastStreamPush = time();
+    curl_setopt( $handle, CURLOPT_NOPROGRESS, false );
+    curl_setopt( $handle, CURLOPT_XFERINFOFUNCTION, [ $this, 'stream_keepalive' ] );
+  }
+
+  /**
+  * While a tool runs (Code Interpreter, a long MCP call) or a model thinks, the provider may send
+  * nothing the browser sees for minutes, and Cloudflare (~100s) or a host proxy (~120s) cuts the
+  * idle connection: "error after 2 minutes" (Jake, HelpScout 3471419117). An SSE comment keeps it
+  * alive; browsers ignore it. Only on a real SSE response: anywhere else it would corrupt the body.
+  * When the visitor is gone, the provider call stops so the rest of the answer is not paid for,
+  * except in the Workspace, which recovers replies after a disconnect.
+  */
+  public function stream_keepalive( $handle, $dlTotal = 0, $dlNow = 0, $ulTotal = 0, $ulNow = 0 ) {
+    $isWorkspace = isset( $this->currentQuery->scope ) && $this->currentQuery->scope === 'workspace';
+    if ( !$isWorkspace && connection_aborted() ) {
+      if ( !$this->core->streamVisitorLeft ) {
+        $this->core->streamVisitorLeft = true;
+        Meow_MWAI_Logging::log( 'The visitor left during a streamed reply, so the provider call was stopped.' );
+      }
+      return 1;
+    }
+    $last = (int) ( $this->core->lastStreamPush ?? 0 );
+    $interval = (int) apply_filters( 'mwai_stream_keepalive_interval', 15 );
+    if ( time() - $last < max( 1, $interval ) || !$this->is_sse_response() ) {
+      return 0;
+    }
+    $this->core->lastStreamPush = time();
+    echo ": keepalive\n\n";
+    if ( ob_get_level() > 0 ) {
+      @ob_flush();
+    }
+    flush();
+    return 0;
+  }
+
+  private function is_sse_response() {
+    if ( !headers_sent() ) {
+      return false;
+    }
+    foreach ( headers_list() as $header ) {
+      if ( stripos( $header, 'content-type:' ) === 0 && stripos( $header, 'text/event-stream' ) !== false ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public function stream_handler( $handle, $args, $url ) {

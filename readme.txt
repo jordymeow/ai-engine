@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.4
+Stable tag: 3.8.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,8 @@ AI Engine turns your WordPress site into an intelligent MCP server. AI agents li
 
 **Direct and private.** AI apps connect straight to your site. There is no relay service in between, your credentials never leave WordPress, and the MCP server is free, with no monthly fee and no usage cap.
 
+Rather have it set up for you? [Connect with Meow Apps](https://connect.meowapps.com/?ref=wporg) adds your site to ChatGPT or Claude in a few clicks, through our gateway, which passes requests along without storing them.
+
 **What AI Agents Can Do:**
 
 * Create and edit posts
@@ -328,6 +330,27 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.5 (2026/10/14) =
+* Fix: Security: MCP no longer returns API keys or tokens when reading WordPress options.
+* Fix: Security: Pro MCP tools now refuse accounts that cannot manage the site instead of running as the first user, and they pause when the license lapses.
+* Fix: Security: Uploaded files can no longer carry metadata AI Engine uses internally, and the expired files cleanup only deletes the expired file itself.
+* Add: GPT Realtime 2.1 and GPT Realtime 2.1 Mini for voice chatbots.
+* Add: Claude Haiku 5.5.
+* Add: Notice on new sites to turn on the MCP module in one click.
+* Add: Warning in Settings and the chatbot editor when Knowledge has no embeddings model to search with.
+* Add: Optional comment_parent on the MCP wp_create_comment tool, to reply inside a comment thread.
+* Update: Playground presets are now a system prompt with parameters: picking one no longer fills the message box or resets the models being compared, the message box sits on top while the conversation is empty, and reply stats read plainly.
+* Update: The Knowledge Export button is now always visible under the table, instead of only in Expert Mode.
+* Update: AI Forms in chatbot mode now use the chatbot's functions and MCP servers.
+* Update: Gemini 3.6 and newer no longer receive the temperature setting, and Gemini 3 and newer no longer receive a thinking budget.
+* Update: The Perplexity connection check now uses the models endpoint, and shows Perplexity's own error when the key is wrong.
+* Update: Streamed replies stay connected through long silent phases such as Code Interpreter or slow tool calls, and stop calling the AI provider when the visitor leaves.
+* Fix: ChatGPT connections no longer fail with a missing resultType error when MCP requests use the 2026-07-28 format.
+* Fix: ChatGPT and Claude can now sign in to MCP on servers that block paths containing /.well-known/ under /wp-json/, like many nginx setups.
+* Fix: Connecting ChatGPT or Claude no longer fails with an expired code right after approval on sites with a persistent object cache.
+* Fix: Claude Sonnet 5.5 cache reads now cost $0.10, as Anthropic charges.
+* Fix: AI Engine no longer loads the block editor scripts on Classic Editor screens, which broke plugins like HTML Editor Syntax Highlighter.
 
 = 3.8.4 (2026/10/08) =
 * Fix: Security: A chatbot shortcode in a post can now only change the prompt, model or API key when its author can edit others' posts.

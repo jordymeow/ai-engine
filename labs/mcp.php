@@ -422,6 +422,28 @@ class Meow_MWAI_Labs_MCP {
       return $response;
     }
 
+    // MCP 2026-07-28 dropped the initialize handshake: each request carries its version in
+    // _meta. We only speak the earlier, initialize-based versions. Answering such a request
+    // anyway made ChatGPT treat us as a 2026-07-28 server and reject every result for missing
+    // "resultType". The spec wants a plain 400 from an older server (not the modern -32022
+    // error, which would mark us as modern), so the client falls back to initialize.
+    $modern_version = $data['params']['_meta']['io.modelcontextprotocol/protocolVersion'] ?? null;
+    if ( is_string( $modern_version ) && $method !== 'initialize' ) {
+      if ( $this->logging ) {
+        error_log( "[AI Engine MCP] Client sent a {$modern_version} request without initialize; answering 400 so it falls back." );
+      }
+      $response = new WP_REST_Response( [
+        'jsonrpc' => '2.0',
+        'id' => $id,
+        'error' => [
+          'code' => -32600,
+          'message' => 'This server uses the initialize handshake. Supported protocol versions: ' . implode( ', ', $this->supported_protocol_versions ) . '.',
+        ],
+      ], 400 );
+      $response->set_headers( [ 'Content-Type' => 'application/json' ] );
+      return $response;
+    }
+
     $session_header = $request->get_header( 'mcp-session-id' );
     $session_id = '';
     if ( !empty( $session_header ) ) {

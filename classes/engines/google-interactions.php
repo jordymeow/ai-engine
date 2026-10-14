@@ -252,7 +252,7 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
     }
 
     $generationConfig = [];
-    if ( $query->temperature !== null ) {
+    if ( $query->temperature !== null && !$this->gemini_rejects_sampling( $query->model ) ) {
       $generationConfig['temperature'] = $query->temperature;
     }
     if ( !empty( $query->maxTokens ) ) {

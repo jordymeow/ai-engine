@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.5
 
 ```javascript
 import Styled from 'styled-components';
@@ -53,7 +53,7 @@ const StyledWorkbench = Styled.div`
 
   .mwai-wb-preset-actions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     margin-top: 8px;
 
     button {
@@ -61,12 +61,14 @@ const StyledWorkbench = Styled.div`
       align-items: center;
       gap: 5px;
       height: 28px;
-      padding: 0 9px;
+      padding: 0 8px;
       border-radius: 8px;
       border: 1px solid var(--neko-gray-90);
       background: var(--neko-white);
       color: var(--neko-gray-30);
       font-size: 12px;
+      white-space: nowrap;
+      flex: none;
       cursor: pointer;
       &:hover:not(:disabled) { border-color: var(--neko-main-color); color: var(--neko-main-color); }
       &:disabled { opacity: 0.45; cursor: default; }
@@ -278,6 +280,9 @@ const StyledWorkbench = Styled.div`
     color: var(--neko-gray-50);
     font-variant-numeric: tabular-nums;
 
+    .mwai-meta-time { display: inline-flex; align-items: center; gap: 3px; }
+    span[title] { cursor: help; }
+
     button {
       border: 0;
       background: none;
@@ -299,7 +304,7 @@ const StyledWorkbench = Styled.div`
       border-radius: 50%;
       background: var(--neko-gray-70);
       animation: mwai-wb-dot 1s infinite ease-in-out;
-      &:nth-child(2) { animation-delay: 0.15s; }
+      &:nth-child(2) { animation-delay: 0.25s; }
       &:nth-child(3) { animation-delay: 0.3s; }
     }
   }
@@ -354,6 +359,13 @@ const StyledWorkbench = Styled.div`
     text-align: center;
     font-size: 11px;
     color: var(--neko-gray-50);
+  }
+
+  .mwai-wb-main.fresh {
+    .mwai-wb-composer { order: 1; margin: 0 0 6px; }
+    .mwai-wb-composer textarea { max-height: 480px; }
+    .mwai-wb-hint { order: 2; margin: 0 0 12px; }
+    .mwai-wb-lanes { order: 3; }
   }
 
   @media (max-width: 1100px) {

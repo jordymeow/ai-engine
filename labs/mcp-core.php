@@ -480,6 +480,41 @@ class Meow_MWAI_Labs_MCP_Core {
     return is_scalar( $key ) ? trim( (string) $key ) : '';
   }
 
+  // Secrets never leave the site through MCP: API keys, tokens and passwords are masked in
+  // wp_get_option results. Matched on the option name or on the array key holding the value
+  // ("token" but not "max_tokens"). An agent writing a masked value back would wipe the real
+  // secret, so wp_update_option refuses any value that still carries the mask.
+  public const SECRET_MASK = '••••';
+  public const SECRET_NAME = '/api_?key|secret|token(?!s)|passw|private_?key|licen[cs]e|serial|credential|oauth/i';
+
+  private function mask_secrets( $value, bool $secret = false ) {
+    if ( is_array( $value ) ) {
+      foreach ( $value as $k => $v ) {
+        $value[$k] = $this->mask_secrets( $v, $secret || ( is_string( $k ) && preg_match( self::SECRET_NAME, $k ) ) );
+      }
+      return $value;
+    }
+    if ( is_object( $value ) ) {
+      return $this->mask_secrets( get_object_vars( $value ), $secret );
+    }
+    if ( !$secret || !is_string( $value ) || $value === '' ) {
+      return $value;
+    }
+    return strlen( $value ) >= 12 ? self::SECRET_MASK . substr( $value, -4 ) : self::SECRET_MASK;
+  }
+
+  private function contains_mask( $value ): bool {
+    if ( is_array( $value ) ) {
+      foreach ( $value as $v ) {
+        if ( $this->contains_mask( $v ) ) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return is_string( $value ) && strpos( $value, self::SECRET_MASK ) !== false;
+  }
+
   // The option name exactly as stored, or null when there is no row. option_name is
   // case-insensitive in MySQL but WordPress caches options by exact name: writing
   // "Blogname" would update the "blogname" row and leave a persistent object cache stale.
@@ -600,7 +635,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_create_comment' => [
         'name' => 'wp_create_comment',
-        'description' => 'Insert a comment. Requires post_id and comment_content. Optional author, author_email, author_url.',
+        'description' => 'Insert a comment. Requires post_id and comment_content. Optional author, author_email, author_url, and comment_parent to reply inside an existing comment thread.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -610,6 +645,7 @@ class Meow_MWAI_Labs_MCP_Core {
             'comment_author_email' => [ 'type' => 'string' ],
             'comment_author_url' => [ 'type' => 'string' ],
             'comment_approved' => [ 'type' => 'string' ],
+            'comment_parent' => [ 'type' => 'integer', 'description' => 'Optional. ID of the comment to reply to (same post).' ],
           ],
           'required' => [ 'post_id', 'comment_content' ],
         ],
@@ -1530,6 +1566,15 @@ class Meow_MWAI_Labs_MCP_Core {
           'comment_author_url' => esc_url_raw( $a['comment_author_url'] ?? '' ),
           'comment_approved' => $a['comment_approved'] ?? 1,
         ];
+        if ( !empty( $a['comment_parent'] ) ) {
+          $parent = get_comment( intval( $a['comment_parent'] ) );
+          // Editor Notes are comments too, but they have their own reply path (wp_create_note).
+          if ( !$parent || (int) $parent->comment_post_ID !== $ins['comment_post_ID'] || $parent->comment_type === 'note' ) {
+            $r['error'] = [ 'code' => -32602, 'message' => 'comment_parent must be a comment on the same post' ];
+            break;
+          }
+          $ins['comment_parent'] = (int) $parent->comment_ID;
+        }
         $cid = wp_insert_comment( $ins );
         if ( is_wp_error( $cid ) ) {
           /** @var WP_Error $cid */
@@ -1713,7 +1758,8 @@ class Meow_MWAI_Labs_MCP_Core {
         else {
           $val = get_option( $opt_key );
         }
-        $this->add_result_text( $r, wp_json_encode( $val, JSON_PRETTY_PRINT ) );
+        $val = $this->mask_secrets( $val, (bool) preg_match( self::SECRET_NAME, $opt_key ) );
+        $this->add_result_text( $r, wp_json_encode( $val, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) );
         break;
 
       case 'wp_update_option':
@@ -1728,6 +1774,9 @@ class Meow_MWAI_Labs_MCP_Core {
           if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
             $value = $decoded;
           }
+        }
+        if ( $this->contains_mask( $value ) ) {
+          throw new Exception( 'This value contains secrets that MCP masks when reading options, so writing it would erase them. Change API keys and tokens in their own settings screen.' );
         }
         $opt_key = $this->raw_key( $a['key'] );
         // Write to the existing row under its stored spelling, never to the legacy name.
