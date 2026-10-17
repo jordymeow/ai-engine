@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.5
+Stable tag: 3.8.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -330,6 +330,16 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.6 (2026/10/17) =
+* Fix: Security: Editors can no longer change the title or excerpt of posts they are not allowed to edit (coupons, menus, templates) through the AI helpers, and the other helpers taking a post ID now check permissions too.
+* Fix: Hotfix: Chatbot replies no longer crash on servers with an older cURL, such as Xserver, because of a constant added in 3.8.5.
+* Add: The MCP screen's Claude step now opens Claude with this site's connector already filled in, so there is nothing to copy and paste.
+* Fix: Messages like "0" or an image alone no longer fail the reply when Knowledge is on.
+* Fix: Chatbot saves silently refused by the database now show an error.
+* Fix: A Max Height set without a unit is now treated as pixels.
+* Fix: AI Forms set to a specific environment with the Default model now work instead of failing with "Model not found".
+* Fix: Settings changed while a chatbot reply is running are no longer undone when that reply saves its usage stats, which could revert a refreshed model list.
 
 = 3.8.5 (2026/10/14) =
 * Fix: Security: MCP no longer returns API keys or tokens when reading WordPress options.

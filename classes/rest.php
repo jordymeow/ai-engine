@@ -982,6 +982,10 @@ class Meow_MWAI_Rest {
       $message = $this->retrieve_message( $params, true );
       $context = sanitize_text_field( $params['context'] );
       $postId = !empty( $params['postId'] ) ? intval( $params['postId'] ) : null;
+      // The generated image is attached to this post, so it must be one the user can edit.
+      if ( $postId && !current_user_can( 'edit_post', $postId ) ) {
+        $postId = null;
+      }
       if ( empty( $action ) || empty( $message ) ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Copilot needs an action and a prompt.' ], 500 );
       }
@@ -1013,6 +1017,16 @@ class Meow_MWAI_Rest {
     }
   }
 
+  // The route gates (can_access_features) only check the role. Every helper that takes an object
+  // id must also check that object: an Editor could rename WooCommerce coupons, navigation menus
+  // and templates through these routes, which core's REST API refuses (WPScan, 2026-10-15).
+  private function forbidden_post_response() {
+    return $this->create_rest_response( [
+      'success' => false,
+      'message' => __( 'Sorry, you are not allowed to edit this post.', 'ai-engine' ),
+    ], 403 );
+  }
+
   public function rest_helpers_update_title( $request ) {
     try {
       $params = $request->get_json_params();
@@ -1021,6 +1035,9 @@ class Meow_MWAI_Rest {
       $post = get_post( $postId );
       if ( !$post ) {
         throw new Exception( __( 'There is no post with this ID.', 'ai-engine' ) );
+      }
+      if ( !current_user_can( 'edit_post', $postId ) ) {
+        return $this->forbidden_post_response();
       }
       $post->post_title = $title;
       //$post->post_name = sanitize_title( $title );
@@ -1041,6 +1058,9 @@ class Meow_MWAI_Rest {
       $post = get_post( $postId );
       if ( !$post ) {
         throw new Exception( __( 'There is no post with this ID.', 'ai-engine' ) );
+      }
+      if ( !current_user_can( 'edit_post', $postId ) ) {
+        return $this->forbidden_post_response();
       }
       $post->post_excerpt = $excerpt;
       wp_update_post( $post );
@@ -1574,7 +1594,7 @@ class Meow_MWAI_Rest {
       $post = null;
       if ( !empty( $postId ) ) {
         $post = get_post( $postId );
-        if ( $post->post_status !== 'publish' && $post->post_status !== 'future'
+        if ( $post && $post->post_status !== 'publish' && $post->post_status !== 'future'
           && $post->post_status !== 'draft' && $post->post_status !== 'private' ) {
           $post = null;
         }
@@ -1590,6 +1610,9 @@ class Meow_MWAI_Rest {
       }
       if ( !$post ) {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'Post not found' ], 404 );
+      }
+      if ( !current_user_can( 'read_post', $post->ID ) ) {
+        return $this->forbidden_post_response();
       }
       $cleanPost = $this->core->get_post( $post );
       return $this->create_rest_response( [ 'success' => true, 'content' => $cleanPost['content'],
@@ -1630,6 +1653,9 @@ class Meow_MWAI_Rest {
       $postsWithContent = [];
 
       foreach ( $postIds as $postId ) {
+        if ( !current_user_can( 'read_post', $postId ) ) {
+          continue;
+        }
         $content = $this->core->get_post_content( $postId );
         if ( is_string( $content ) && trim( $content ) !== '' ) {
           $postsWithContent[] = $postId;
@@ -3028,6 +3054,9 @@ class Meow_MWAI_Rest {
 
       if ( empty( $attachment_id ) ) {
         throw new Exception( 'Attachment ID is required.' );
+      }
+      if ( !current_user_can( 'delete_post', $attachment_id ) ) {
+        return $this->forbidden_post_response();
       }
 
       $deleted = wp_delete_attachment( $attachment_id, true );

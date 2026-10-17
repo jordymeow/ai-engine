@@ -342,8 +342,8 @@ class Meow_MWAI_Core {
       throw new Exception( __( 'Invalid query object after filtering. The mwai_ai_query filter must return a valid query object.', 'ai-engine' ) );
     }
 
-    // Validate that embeddings queries have a non-empty message
-    if ( $query instanceof Meow_MWAI_Query_Embed && empty( $query->get_message() ) ) {
+    // Validate that embeddings queries have a non-empty message. Not empty(): it treats "0" as empty.
+    if ( $query instanceof Meow_MWAI_Query_Embed && trim( $query->get_message() ) === '' ) {
       throw new Exception( __( 'Embeddings query cannot have an empty message. Please check that the conversation context is properly extracted.', 'ai-engine' ) );
     }
 
@@ -1678,12 +1678,17 @@ class Meow_MWAI_Core {
       $chatbot['fileUploads'] = $fileUploadEnabled ? $maxFiles : 0;
       $chatbot['multiUpload'] = $fileUploadEnabled && $maxFiles > 1;
     }
-    if ( !update_option( $this->chatbots_option_name, $chatbots ) ) {
-      Meow_MWAI_Logging::warn( 'Could not update chatbots.' );
-      $chatbots = get_option( $this->chatbots_option_name, [] );
-      return $chatbots;
+    update_option( $this->chatbots_option_name, $chatbots );
+    // update_option() also returns false when nothing changed, so it can't tell us whether the
+    // save worked. Read the row back from the database instead: a wp_options table that isn't
+    // utf8mb4 refuses a chatbot with an emoji, and the admin used to show it as saved anyway.
+    $this->forget_cached_options( $this->chatbots_option_name );
+    $saved = get_option( $this->chatbots_option_name, [] );
+    if ( $saved != $chatbots ) {
+      Meow_MWAI_Logging::warn( 'The chatbots read back from the database differ from the ones just saved.' );
+      throw new Exception( __( 'The chatbots could not be saved: the database did not keep them as sent. This usually happens when a chatbot contains emojis and the wp_options table does not use the utf8mb4 charset.', 'ai-engine' ) );
     }
-    return $chatbots;
+    return $saved;
   }
 
   public function populate_dynamic_options( $options ) {
@@ -2064,6 +2069,9 @@ class Meow_MWAI_Core {
   }
 
   public function get_all_options( $force = false, $sanitize = false ) {
+    if ( $force ) {
+      $this->forget_cached_options();
+    }
     if ( $force || is_null( $this->options ) ) {
       $options = get_option( $this->option_name, [] );
       $init_mode = empty( $options );
@@ -2222,6 +2230,20 @@ class Meow_MWAI_Core {
     update_option( $this->option_name, $options, false );
     $options = $this->get_all_options( true, true );
     return $options;
+  }
+
+  // A forced read must come from the database. WordPress keeps an option in memory for the
+  // whole request, so a long request (a streaming reply, a Knowledge sync) re-read the copy it
+  // loaded when it started, then saved it back with its usage stats: any setting changed in the
+  // meantime was silently undone (a refreshed Gemini model list went from 33 back to 25).
+  private function forget_cached_options( $option_name = null ) {
+    $option_name = $option_name ?? $this->option_name;
+    wp_cache_delete( $option_name, 'options' );
+    $alloptions = wp_cache_get( 'alloptions', 'options' );
+    if ( is_array( $alloptions ) && isset( $alloptions[ $option_name ] ) ) {
+      unset( $alloptions[ $option_name ] );
+      wp_cache_set( 'alloptions', $alloptions, 'options' );
+    }
   }
 
   public function update_option( $option, $value ) {

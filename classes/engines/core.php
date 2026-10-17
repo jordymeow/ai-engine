@@ -747,7 +747,10 @@ class Meow_MWAI_Engines_Core {
     // curl calls this about once a second, even while the provider sends nothing.
     $this->core->lastStreamPush = time();
     curl_setopt( $handle, CURLOPT_NOPROGRESS, false );
-    curl_setopt( $handle, CURLOPT_XFERINFOFUNCTION, [ $this, 'stream_keepalive' ] );
+    // CURLOPT_XFERINFOFUNCTION needs cURL 7.32+. Older builds (cURL 7.29 on Xserver, CentOS 7)
+    // don't define it and every streamed reply fataled. PROGRESSFUNCTION gets the same arguments.
+    $progressOption = defined( 'CURLOPT_XFERINFOFUNCTION' ) ? CURLOPT_XFERINFOFUNCTION : CURLOPT_PROGRESSFUNCTION;
+    curl_setopt( $handle, $progressOption, [ $this, 'stream_keepalive' ] );
   }
 
   /**

@@ -1,5 +1,5 @@
-// Previous: 3.8.2
-// Current: 3.8.3
+// Previous: 3.8.3
+// Current: 3.8.6
 
 ```jsx
 // MCPConnectCard.js
@@ -22,7 +22,9 @@ const APPS = [
 
 const STEPS = {
   claude: [
-    { title: T.CLAUDE_ADD, link: 'https://claude.ai/settings/connectors', linkLabel: T.CLAUDE_ADD_LINK, detail: T.CLAUDE_ADD_DETAIL },
+    { title: T.CLAUDE_ADD, link: (url, name) => 'https://claude.ai/customize/connectors?modal=add-custom-connector'
+      + `&connectorName=${encodeURIComponent(name)}&connectorUrl=${encodeURIComponent(url)}`,
+    linkLabel: T.CLAUDE_ADD_LINK, detail: T.CLAUDE_ADD_DETAIL },
     { title: T.APPROVE, detail: T.CLAUDE_APPROVE_DETAIL },
   ],
   chatgpt: [
@@ -49,7 +51,7 @@ const VERDICTS = {
   unexpected_status: { title: T.V_STATUS_TITLE, summary: T.V_STATUS_SUMMARY },
 };
 
-const POLL_MS = 5500;
+const POLL_MS = 5000;
 const POLL_FOR_MS = 15 * 60 * 1000;
 
 const TEST_CACHE_KEY = 'mwai-mcp-self-test';
@@ -81,6 +83,7 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
 
   const host = (() => { try { return new URL(url).hostname.replace(/\./g, '-'); } catch (e) { return 'wordpress'; } })();
   const command = `claude mcp add --transport http ${host} ${url}`;
+  const connectorName = (() => { try { return `WordPress (${new URL(url).hostname})`; } catch (e) { return 'WordPress'; } })();
   const copyValue = app === 'claude-code' ? command : url;
 
   useEffect(() => {
@@ -97,11 +100,12 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    if (selfTest?.verdict || selfTest?.verdict !== 'error') {
+    if (selfTest?.verdict || selfTest.verdict !== 'error') {
       try {
         localStorage.setItem(TEST_CACHE_KEY, JSON.stringify({ at: Date.now(), result: selfTest }));
       }
       catch (e) {
+        // Private browsing: the check simply runs again next time.
       }
     }
   }, [selfTest]);
@@ -171,7 +175,7 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
       const ok = document.execCommand('copy');
       document.body.removeChild(area);
       if (!ok) {
-        return true;
+        return false;
       }
     }
     done(true);
@@ -181,6 +185,10 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
 
   const onCopy = async () => {
     copy(copyValue, setCopied);
+    startWatching();
+  };
+
+  const startWatching = async () => {
     setConnected(null);
     setTimedOut(false);
     const list = apps || await loadApps().catch(() => null);
@@ -312,7 +320,10 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
                     <div className="t">
                       {s.title}
                       {s.link && (
-                        <a href={s.link} target="_blank" rel="noreferrer">{s.linkLabel}<ExternalLink size={11} /></a>
+                        <a href={typeof s.link === 'function' ? s.link(url, connectorName) : s.link}
+                          target="_blank" rel="noreferrer" onClick={() => !watching && startWatching()}>
+                          {s.linkLabel}<ExternalLink size={11} />
+                        </a>
                       )}
                     </div>
                     {current && <div className="d">{s.detail}</div>}
