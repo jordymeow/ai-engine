@@ -1395,6 +1395,12 @@ class Meow_MWAI_Modules_Tasks {
       return true;
     }
 
+    // Once per version, bring existing tables up to date too. This used to run only when a table
+    // was missing, so a table created by an old version never got new columns: on sites that had
+    // Insights before 2.5.6, the logs table lacked 'feature' and every log write failed. dbDelta
+    // only adds what is missing, so running it on an up-to-date table changes nothing.
+    $this->create_db();
+
     // Check if tables exist
     $tasks_exists = $this->wpdb->get_var( "SHOW TABLES LIKE '$this->table_tasks'" );
     $logs_exists = $this->wpdb->get_var( "SHOW TABLES LIKE '$this->table_tasklogs'" );

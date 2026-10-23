@@ -458,6 +458,26 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
     return $maxTokens;
   }
 
+  // The system prompt, shared by the first request and its function-call follow-ups so both are
+  // byte-identical. Instructions are cached (static per chatbot), context is not (per query).
+  private function build_system_blocks( $instructions, $context ) {
+    $systemBlocks = [];
+    if ( !empty( $instructions ) ) {
+      $systemBlocks[] = [
+        'type' => 'text',
+        'text' => $instructions,
+        'cache_control' => [ 'type' => 'ephemeral' ]
+      ];
+    }
+    if ( !empty( $context ) ) {
+      $systemBlocks[] = [
+        'type' => 'text',
+        'text' => $this->core->frame_context( $context )
+      ];
+    }
+    return $systemBlocks;
+  }
+
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
     if ( $query instanceof Meow_MWAI_Query_Feedback ) {
       $body = [
@@ -471,14 +491,19 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         $body['temperature'] = $query->temperature;
       }
 
-      if ( !empty( $query->instructions ) ) {
-        $body['system'] = [
-          [
-            'type' => 'text',
-            'text' => $query->instructions,
-            'cache_control' => [ 'type' => 'ephemeral' ]
-          ]
-        ];
+      // Byte-identical to the first request's system prompt, Knowledge context included. The
+      // replayed thinking block is signed against it: with instructions only, Claude 5.5 orgs
+      // that enforce preserved thinking rejected the follow-up ("Invalid signature in thinking
+      // block") and the model also lost the Knowledge context while answering.
+      // Walk back to the first query: on a second function call in a row, originalQuery is the
+      // previous follow-up, which carries no context of its own.
+      $original = $query;
+      while ( $original instanceof Meow_MWAI_Query_Feedback && !empty( $original->originalQuery ) ) {
+        $original = $original->originalQuery;
+      }
+      $systemBlocks = $this->build_system_blocks( $query->instructions, $original->context ?? null );
+      if ( !empty( $systemBlocks ) ) {
+        $body['system'] = $systemBlocks;
       }
 
       // Build the messages. Include the full prior conversation history, otherwise
@@ -686,23 +711,7 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
         $body['stop'] = $query->stop;
       }
 
-      // Build system prompt with caching support.
-      // Instructions are cached (static per chatbot), context is not (varies per query).
-      $systemBlocks = [];
-      if ( !empty( $query->instructions ) ) {
-        $systemBlocks[] = [
-          'type' => 'text',
-          'text' => $query->instructions,
-          'cache_control' => [ 'type' => 'ephemeral' ]
-        ];
-      }
-      if ( !empty( $query->context ) ) {
-        $framedContext = $this->core->frame_context( $query->context );
-        $systemBlocks[] = [
-          'type' => 'text',
-          'text' => $framedContext
-        ];
-      }
+      $systemBlocks = $this->build_system_blocks( $query->instructions, $query->context ?? null );
       if ( !empty( $systemBlocks ) ) {
         $body['system'] = $systemBlocks;
       }

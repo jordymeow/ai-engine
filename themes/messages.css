@@ -229,6 +229,10 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
   height: 100%;
 }
 
+.mwai-chatbot-container.mwai-popup-container {
+  height: auto;
+}
+
 /*
   MESSAGES THEME: SPACING, INPUT, AND SAFE-AREA DOCS
 

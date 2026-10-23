@@ -1689,6 +1689,74 @@ define( 'MWAI_PERPLEXITY_MODELS', [
 // Models are fetched dynamically from the Mistral API
 define( 'MWAI_MISTRAL_MODELS', [] );
 
+// Sakana AI Models
+// Fetched dynamically from Sakana's /v1/models (ids only); this list is the fallback and
+// supplies the metadata. Fugu orchestrates several frontier models, Namazu is Sakana's own
+// model specialized for Japanese. Prices are pending from Sakana: no 'price' key, so
+// queries log "No price" instead of a wrong cost. Token limits are conservative guesses.
+define( 'MWAI_SAKANA_MODELS', [
+  [
+    'model' => 'fugu',
+    'name' => 'Fugu',
+    'family' => 'fugu',
+    'description' => 'Orchestrates several frontier models for balanced answers.',
+    'features' => [ 'completion', 'functions' ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
+  ],
+  [
+    'model' => 'fugu-max',
+    'name' => 'Fugu Max',
+    'family' => 'fugu',
+    'description' => 'Larger Fugu orchestration for harder tasks.',
+    'features' => [ 'completion', 'functions' ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
+  ],
+  [
+    'model' => 'fugu-ultra',
+    'name' => 'Fugu Ultra',
+    'family' => 'fugu',
+    'description' => 'The most thorough Fugu orchestration, for deep reasoning.',
+    'features' => [ 'completion', 'functions' ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
+  ],
+  [
+    'model' => 'fugu-cyber',
+    'name' => 'Fugu Cyber',
+    'family' => 'fugu',
+    'description' => 'A Fugu variant from Sakana AI.',
+    'features' => [ 'completion', 'functions' ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
+  ],
+  [
+    'model' => 'sakana-namazu',
+    'name' => 'Namazu',
+    'family' => 'namazu',
+    'description' => 'Sakana\'s own model, specialized for Japanese.',
+    'features' => [ 'completion', 'functions' ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 16384,
+    'maxContextualTokens' => 128000,
+    'tags' => [ 'core', 'chat', 'functions', 'vision', 'reasoning' ],
+  ],
+] );
+
 // xAI (Grok) Models
 // Models are fetched dynamically from the xAI API. The fallback list below mirrors the
 // chat-capable models that xAI publishes on https://docs.x.ai/docs/models, used only when

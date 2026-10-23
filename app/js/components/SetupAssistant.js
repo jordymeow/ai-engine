@@ -1,598 +1,143 @@
-// Previous: 3.7.8
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.7
 
 ```javascript
-// SetupAssistant.js
-
-const { useState, useCallback, useMemo } = wp.element;
+const { useMemo } = wp.element;
 import Styled from 'styled-components';
-import { NekoBlock, NekoTypo, NekoButton } from '@neko-ui';
-import { outboundUrl, VIBE_SITE, WORKSPACE_SITE } from '@app/helpers/outbound';
+import { NekoButton, NekoProgress, ProOnly } from '@neko-ui';
+import { Compass, Check } from 'lucide-react';
+import { outboundUrl } from '@app/helpers/outbound';
+import useSetupAssistant from '@app/helpers/useSetupAssistant';
+import { STOP_TITLES, getSetupStops } from '@app/helpers/setupAssistantContent';
+import { SetupStepAction, SetupStepHelp, SetupCompletionFeedback } from '@app/components/SetupAssistantCompanion';
+const { __, sprintf } = wp.i18n;
 
-const STORAGE_KEY = 'mwai_setup_assistant';
 const track = (url, content) => outboundUrl(url, 'setup', content);
-
-export const isSetupAssistantDismissed = () => {
-  try {
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    return !!s.dismissed;
-  }
-  catch (e) { return true; }
-};
-
-export const resetSetupAssistant = () => {
-  try { localStorage.removeItem(STORAGE_KEY); }
-  catch (e) { /* ignore */ }
-};
-
-const STEP_COLORS = {
-  default: '#e0e0e0',
-  green: '#48c7be',
-  orange: '#f0a030',
-  red: '#e05050',
-};
-
-const ProgressBar = Styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 16px 0 18px;
-  font-size: 12px;
-  color: #666;
-`;
-
-const ProgressTrack = Styled.div`
-  flex: 1;
-  height: 6px;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 3px;
-  overflow: hidden;
-`;
-
-const ProgressFill = Styled.div`
-  height: 100%;
-  background: linear-gradient(90deg, #48c7be, #2ea99f);
-  border-radius: 3px;
-  transition: width 0.4s ease;
-  width: ${props => props.$pct}%;
-`;
-
-const StyledStep = Styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 12px;
-  margin: 0 -12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  ${props => props.$collapsed && 'padding-top: 9px; padding-bottom: 9px;'}
-  border-radius: 6px;
-  transition: background 0.15s ease;
-
-  ${props => props.$isNext && `
-    background: rgba(72, 199, 190, 0.04);
-    box-shadow: inset 2px 0 0 #48c7be;
-  `}
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.015);
-  }
-
-  &:last-child {
-    border-bottom: none;
+const Panel = Styled.section`
+  min-width: 0; padding: 20px; border-radius: var(--neko-radius-md); background: var(--neko-white);
+  color: var(--neko-font-color); box-shadow: var(--neko-shadow-xs);
+  .tour-heading { display: flex; align-items: center; gap: 9px; }
+  .tour-heading svg { color: var(--neko-main-color); flex: none; }
+  h3 { margin: 0; font-size: var(--neko-h3-font-size); color: var(--neko-font-color); }
+  .tour-intro { margin: 7px 0 0; font-size: var(--neko-font-size); color: var(--neko-gray-50); line-height: 1.5; }
+  .tour-progress { display: flex; align-items: center; gap: 12px; margin: 15px 0 20px;
+    font-size: var(--neko-small-font-size); color: var(--neko-gray-50); }
+  .tour-progress > span { white-space: nowrap; }
+  .tour-progress .neko-progress { flex: 1; min-width: 0; }
+  .tour-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 22px; }
+  .tour-stops { margin: 0; padding: 0 18px 0 0; list-style: none; border-right: 1px solid var(--neko-gray-90); }
+  .tour-stops li { margin: 0 0 3px; }
+  .tour-stops button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px;
+    border: 0; border-radius: var(--neko-radius-sm); background: transparent; color: var(--neko-gray-50); text-align: left;
+    font: inherit; font-size: var(--neko-small-font-size); line-height: 1.4; cursor: pointer; }
+  .tour-stops button:hover { background: var(--neko-gray-95); color: var(--neko-font-color); }
+  .tour-stops button[aria-current="step"] { background: var(--neko-main-color-95); color: var(--neko-main-color); font-weight: 600; }
+  .tour-name { display: inline-flex; flex-direction: column; }
+  .tour-name::after { content: attr(data-label); font-weight: 600; height: 0; overflow: hidden;
+    visibility: hidden; user-select: none; pointer-events: none; }
+  .tour-marker { flex: none; display: grid; place-items: center; width: 19px; height: 19px;
+    border-radius: 50%; background: var(--neko-gray-95); font-size: var(--neko-small-font-size); }
+  .tour-marker.completed { background: var(--neko-accent-color-90); color: var(--neko-success); }
+  .tour-detail { min-width: 0; display: flex; flex-direction: column; }
+  .tour-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+    color: var(--neko-gray-50); font-size: var(--neko-small-font-size); }
+  h4 { margin: 0 0 16px; font-size: var(--neko-h2-font-size); line-height: 1.35; color: var(--neko-font-color); }
+  .tour-goal { padding: 13px 15px; border-radius: var(--neko-radius-sm);
+    background: var(--neko-main-color-95); border: 1px solid var(--neko-main-color-80); }
+  .tour-goal strong { display: block; color: var(--neko-main-color); font-size: var(--neko-small-font-size); margin-bottom: 5px; }
+  .tour-goal p { margin: 0; font-size: var(--neko-h5-font-size); line-height: 1.5; color: var(--neko-main-color-10); }
+  .tour-how { margin: 18px 0 8px; font-size: var(--neko-small-font-size); font-weight: 600; }
+  .tour-instructions { margin: 0; padding-left: 18px; color: var(--neko-gray-40); font-size: var(--neko-font-size); line-height: 1.6; }
+  .tour-instructions li { margin-bottom: 7px; padding-left: 3px; }
+  .tour-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
+  .tour-actions a { display: inline-flex; align-items: center; font-weight: 600; }
+  .tour-status { font-size: var(--neko-small-font-size); color: var(--neko-gray-50); }
+  details { margin-top: 15px; font-size: var(--neko-small-font-size); color: var(--neko-gray-50); line-height: 1.6; }
+  summary { cursor: pointer; color: var(--neko-gray-40); }
+  details p { margin: 3px 0 0; line-height: 1.45; }
+  details summary + p { margin-top: 6px; }
+  a { color: var(--neko-main-color); }
+  .tour-completion { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
+    margin-top: auto; padding-top: 22px; }
+  .tour-picker { display: none; align-items: center; gap: 8px; font-size: var(--neko-small-font-size); margin-bottom: 18px; }
+  .tour-picker select { min-width: 0; flex: 1; max-width: 100%; font: inherit;
+    min-height: var(--neko-control-height); background-color: var(--neko-input-background);
+    border: 1px solid var(--neko-input-border); border-radius: var(--neko-radius-sm); color: var(--neko-font-color); }
+  .tour-stops button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--neko-main-color); outline-offset: 3px; }
+  @media (max-width: 800px) {
+    padding: 16px;
+    .tour-layout { display: block; }
+    .tour-stops { display: none; }
+    .tour-picker { display: flex; }
   }
 `;
 
-const CelebrationBox = Styled.div`
-  margin: 14px 0 4px;
-  padding: 18px 22px;
-  background: linear-gradient(135deg, rgba(72, 199, 190, 0.12), rgba(13, 125, 242, 0.08));
-  border-radius: 10px;
-  border: 1px solid rgba(72, 199, 190, 0.25);
-  display: flex;
-  align-items: center;
-  gap: 14px;
+const SetupAssistant = ({ options, defaultModels, fastModels, hasAiEnvIssues, isRegistered, onExit }) => {
+  const { state, selectStep: goToStep, toggleComplete, undoComplete } = useSetupAssistant();
+  const activeStep = state.activeStep || 1;
+  const completed = state.completedSteps;
+  const isComplete = completed.includes(activeStep);
 
-  .emoji {
-    font-size: 28px;
-    line-height: 1;
-  }
+  const envIssues = useMemo(() => hasAiEnvIssues(options, defaultModels, fastModels, { includeFast: true }),
+    [options, defaultModels, fastModels, hasAiEnvIssues]);
+  const stops = getSetupStops({ options, isRegistered, envIssues });
+  const stop = stops[activeStep];
 
-  .text {
-    flex: 1;
-    font-size: 14px;
-    color: #1e1e1e;
-    line-height: 1.45;
-
-    b { display: block; font-size: 15px; margin-bottom: 2px; }
-  }
-`;
-
-const StepNumber = Styled.div`
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 13px;
-  flex-shrink: 0;
-  background: ${props => props.$color || STEP_COLORS.default};
-  color: ${props => props.$color && props.$color !== STEP_COLORS.default ? '#fff' : '#666'};
-  transition: all 0.2s ease;
-`;
-
-const StepContent = Styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const StepTitle = Styled.div`
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: ${props => props.$collapsed ? '0' : '4px'};
-  color: #1e1e1e;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: ${props => props.$clickable ? 'pointer' : 'default'};
-
-  ${props => props.$clickable && `
-    &:hover { color: #0d7df2; }
-    &:hover .step-chevron { color: #0d7df2; }
-    &:focus-visible {
-      outline: 2px solid #0d7df2;
-      outline-offset: 3px;
-      border-radius: 3px;
-    }
-  `}
-`;
-
-const ProBadge = Styled.span`
-  display: inline-block;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 4px;
-  letter-spacing: 0.3px;
-`;
-
-const StepDescription = Styled.div`
-  font-size: 13px;
-  color: #555;
-  line-height: 1.5;
-`;
-
-const ChoiceButtons = Styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-`;
-
-const ChoiceButton = Styled.button`
-  padding: 4px 14px;
-  border-radius: 4px;
-  border: 1px solid ${props => props.$active ? '#48c7be' : '#ccc'};
-  background: ${props => props.$active ? '#48c7be' : '#fff'};
-  color: ${props => props.$active ? '#fff' : '#333'};
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-
-  &:hover {
-    border-color: #48c7be;
-  }
-`;
-
-const SubChoice = Styled.div`
-  margin-top: 8px;
-  padding: 10px 14px;
-  background: rgba(72, 199, 190, 0.06);
-  border-radius: 6px;
-  border-left: 3px solid #48c7be;
-  font-size: 13px;
-  color: #555;
-  line-height: 1.55;
-
-  b { color: #1e1e1e; }
-`;
-
-const InfoBox = Styled.div`
-  margin-top: 8px;
-  padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 6px;
-  border-left: 3px solid #999;
-  font-size: 13px;
-  color: #555;
-  line-height: 1.6;
-
-  b { color: #1e1e1e; }
-  a { color: #0d7df2; }
-`;
-
-const ProNote = Styled.div`
-  margin-top: 6px;
-  font-size: 12px;
-  color: #888;
-  font-style: italic;
-`;
-
-const DoneSummary = Styled.span`
-  font-size: 13px;
-  font-weight: 400;
-  color: #777;
-`;
-
-const Chevron = Styled.span`
-  margin-left: auto;
-  font-size: 10px;
-  color: #aaa;
-  flex-shrink: 0;
-  transition: color 0.15s ease;
-`;
-
-const Step = ({ n, color, title, isNext, done, doneLabel, children }) => {
-  const [expanded, setExpanded] = useState(false);
-  const collapsed = done && !expanded;
-  const toggle = () => setExpanded(!expanded);
-  return (
-    <StyledStep $isNext={isNext} $collapsed={collapsed}>
-      <StepNumber $color={color}>{done ? '\u2713' : n}</StepNumber>
-      <StepContent>
-        <StepTitle $collapsed={collapsed} $clickable={done}
-          role={done ? 'button' : undefined}
-          tabIndex={done ? 0 : undefined}
-          aria-expanded={done ? !collapsed : undefined}
-          onClick={done ? toggle : undefined}
-          onKeyDown={done ? (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-          } : undefined}
-          title={done ? (collapsed ? 'Show the details' : 'Hide the details') : undefined}>
-          {title}
-          {collapsed && doneLabel && <DoneSummary>{doneLabel}</DoneSummary>}
-          {done && <Chevron className="step-chevron">{collapsed ? '\u25be' : '\u25b4'}</Chevron>}
-        </StepTitle>
-        {!collapsed && children}
-      </StepContent>
-    </StyledStep>
-  );
-};
-
-const getInitialState = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  }
-  catch (e) { /* ignore */ }
-  return { dismissed: false, steps: {} };
-};
-
-const switchToTab = (tabKey) => {
-  const url = new URL(window.location.href);
-  url.searchParams.set('nekoTab', tabKey);
-  window.location.href = url.toString();
-};
-
-const SetupAssistant = ({ options, defaultModels, fastModels, hasAiEnvIssues, isRegistered, updateOption, onDismiss }) => {
-  const [state, setState] = useState(getInitialState);
-
-  const persist = useCallback((next) => {
-    setState(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); }
-    catch (e) { /* ignore */ }
-  }, []);
-
-  const setChoice = useCallback((key, value) => {
-    persist({ ...state, steps: { ...state.steps, [key]: value } });
-  }, [state, persist]);
-
-  const dismiss = useCallback(() => {
-    persist({ ...state, dismissed: true });
-    if (onDismiss) onDismiss();
-  }, [state, persist, onDismiss]);
-
-  const envIssues = useMemo(() => hasAiEnvIssues(options, defaultModels, fastModels, { includeFast: true }), [options, defaultModels, fastModels, hasAiEnvIssues]);
-  const hasWorkingEnv = !envIssues;
-  const chatbotsEnabled = !!options?.module_chatbots;
-  const generatorContentEnabled = !!options?.module_generator_content;
-  const editorAssistantEnabled = !!options?.module_assistant;
-  const generatorImagesEnabled = !!options?.module_generator_images;
-  const knowledgeEnabled = !!options?.module_embeddings;
-  const mcpEnabled = !!options?.server_mcp?.enabled;
-  const workspaceEnabled = !!options?.module_workspace;
-
-  const infoColor = (choice) => {
-    if (!choice) return STEP_COLORS.default;
-    return choice == 'ok' ? STEP_COLORS.green : STEP_COLORS.orange;
-  };
-
-  const actionColor = (choice, isOn) => {
-    if (choice === 'info') return STEP_COLORS.orange;
-    if (choice === false || choice === 'no') return STEP_COLORS.green;
-    if (isOn) return STEP_COLORS.green;
-    if (!choice) return STEP_COLORS.default;
-    return STEP_COLORS.red;
-  };
-
-  const envColor = hasWorkingEnv ? STEP_COLORS.green : STEP_COLORS.red;
-
-  if (state.dismissed) {
-    return null;
-  }
-
-  const stepStatuses = [
-    hasWorkingEnv,
-    state.steps.modules === 'ok',
-    chatbotsEnabled,
-    state.steps.behavior === 'ok',
-    (generatorContentEnabled && editorAssistantEnabled || state.steps.content === 'no'),
-    (generatorImagesEnabled || state.steps.images === 'no'),
-    (knowledgeEnabled || state.steps.knowledge === 'no'),
-    state.steps.mcp === 'ok',
-    (workspaceEnabled || state.steps.workspace === 'no'),
-  ];
-  const greenSteps = stepStatuses.filter(Boolean).length;
-  const allDone = greenSteps >= 9;
-
-  const nextStepIndex = stepStatuses.findIndex(s => !s);
-  const isNext = (n) => nextStepIndex === n;
-
-  return (
-    <NekoBlock className="primary" title="Setup Assistant" action={
-      <NekoButton className="secondary" onClick={dismiss}
-        title="Dismiss the assistant. You can bring it back from Settings → Others → Maintenance.">
-        Dismiss
-      </NekoButton>
-    }>
-      <NekoTypo p style={{ marginTop: 0, marginBottom: 4 }}>
-        Welcome! Here's the fastest path through AI Engine. Each step is optional, so skip anything you don't need.
-      </NekoTypo>
-
-      <ProgressBar>
-        <b>{greenSteps} of 9 complete</b>
-        <ProgressTrack>
-          <ProgressFill $pct={Math.round((greenSteps / 9) * 100)} />
-        </ProgressTrack>
-      </ProgressBar>
-
-      {allDone && <CelebrationBox>
-        <div className="emoji" aria-hidden>🎉</div>
-        <div className="text">
-          <b>You're all set!</b>
-          AI Engine is ready to go. You can dismiss this assistant now; to bring it back later, go to Settings, Others, Maintenance, and click Show Setup Assistant.{' '}
-          <a href={track(VIBE_SITE, 'done-tour')} target="_blank" rel="noreferrer">See what people build with it ↗</a>{' '}
-          <a href={track(WORKSPACE_SITE, 'done-workspace')} target="_blank" rel="noreferrer">Get the free mobile app ↗</a>
+  return <Panel aria-labelledby="mwai-tour-heading">
+    <div className="tour-heading"><Compass size={20} aria-hidden="true" /><h3 id="mwai-tour-heading">{__('Explore AI Engine', 'ai-engine')}</h3></div>
+    <p className="tour-intro">{__('Ten small things to try. Follow your curiosity, skip around, and come back anytime.', 'ai-engine')}</p>
+    <div className="tour-progress">
+      <span>{sprintf(__('%1$d of %2$d completed', 'ai-engine'), completed.length, stops.length)}</span>
+      <NekoProgress value={completed.length} max={stops.length} role="progressbar" aria-label={__('Tour steps completed', 'ai-engine')}
+        aria-valuemin={0} aria-valuemax={stops.length} aria-valuenow={completed.length} />
+    </div>
+    <SetupCompletionFeedback state={state} onUndo={undoComplete} />
+    <div className="tour-layout">
+      <ol className="tour-stops" aria-label={__('Tour stops', 'ai-engine')}>
+        {STOP_TITLES.map((title, i) => <li key={title}>
+          <button type="button" aria-current={activeStep === i ? 'step' : undefined}
+            aria-label={`${i + 1}. ${title}${completed.includes(i + 1) ? __(', completed', 'ai-engine') : ''}`} onClick={() => goToStep(i + 1)}>
+            <span className={`tour-marker${completed.includes(i + 1) ? ' completed' : ''}`} aria-hidden="true">
+              {completed.includes(i + 1) ? <Check size={11} /> : i + 1}
+            </span><span className="tour-name" data-label={title}>{title}</span>
+          </button>
+        </li>)}
+      </ol>
+      <div className="tour-detail">
+        <label className="tour-picker">{__('Explore', 'ai-engine')}
+          <select aria-label={__('Tour stop', 'ai-engine')} value={activeStep} onChange={e => goToStep(Number(e.target.value))}>
+            {STOP_TITLES.map((title, i) => <option key={title} value={i + 1}>
+              {i + 1}. {title}{completed.includes(i + 1) ? ' ✓' : ''}
+            </option>)}
+          </select>
+        </label>
+        <div className="tour-kicker">{sprintf(__('Goal %1$d · %2$s', 'ai-engine'), activeStep, stop.area)}{stop.pro &&
+          <ProOnly href={track('https://meowapps.com/products/ai-engine-pro/', 'tour-knowledge')} rel="noopener noreferrer" />}</div>
+        <h4>{stop.title}</h4>
+        <div className="tour-goal"><strong>{__('A little goal', 'ai-engine')}</strong><p>{stop.goal}</p></div>
+        <p className="tour-how">{__('Give it a try', 'ai-engine')}</p>
+        <ol className="tour-instructions">{stop.how.filter(Boolean).map(line => <li key={line}>{line}</li>)}</ol>
+        <SetupStepHelp key={`help-${activeStep}`} help={stop.help} />
+        <div className="tour-actions">
+          <SetupStepAction action={stop.action} />
+          {stop.status && <span className="tour-status">{stop.status}</span>}
         </div>
-      </CelebrationBox>}
-
-      <Step n={1} color={envColor} title="Connect an AI Provider"
-        isNext={isNext(1)} done={stepStatuses[0]} doneLabel="Environment ready.">
-        <StepDescription>
-          AI Engine needs at least one AI environment: an API key from OpenAI, Anthropic, Google, or any compatible provider (Ollama, OpenRouter, Azure, xAI, etc.). Without one, nothing else works.
-          {!hasWorkingEnv && <>
-            {' '}Set one up in the <b>AI Environments</b> panel on the right.
-          </>}
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.env === 'info'} onClick={() => setChoice('env', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.env === 'info' && <InfoBox>
-          AI Engine is <b>Bring Your Own Key</b>: you pay the AI provider directly, not us. This keeps you in control of cost and data. The most common choice is <b>OpenAI</b> (best support, broadest model line-up), but <b>Anthropic Claude</b> is a great alternative and the free tier of <b>Google Gemini</b> is generous for testing. You can mix and match later, since different chatbots can use different environments.
-        </InfoBox>}
-      </Step>
-
-      <Step n={2} color={infoColor(state.steps.modules)} title="Pick the Modules You Need"
-        isNext={isNext(2)} done={stepStatuses[1]} doneLabel="Reviewed.">
-        <StepDescription>
-          AI Engine is modular: chatbots, content generators, knowledge bases, MCP, and more. Open the <b>Modules</b> tab and toggle on only what you'll use. The rest stays out of your way.
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.modules === 'ok'} onClick={() => { setChoice('modules', 'ok'); switchToTab('modules'); }}>
-            {state.steps.modules === 'ok' ? 'Got it ✓' : 'Open Modules'}
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.modules === 'info'} onClick={() => setChoice('modules', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.modules === 'info' && <InfoBox>
-          Modules are grouped by purpose: <b>Chatbots & Knowledge</b> (chatbots grounded in your own content), <b>MCP & Agents</b> (AI agents operating this site), <b>Content Creation</b> (writing assistance for authors), <b>Frontend Extras</b> (forms, search, cross-site), and <b>Tools & Insights</b> (analytics, moderation). Enabling a module reveals its dedicated tab and settings; disabling hides them. Some modules are <b>Pro</b>-only.
-        </InfoBox>}
-      </Step>
-
-      <Step n={3} color={actionColor(state.steps.chatbot, chatbotsEnabled)} title="Build Your First Chatbot"
-        isNext={isNext(3)} done={stepStatuses[2]} doneLabel="Chatbots enabled.">
-        <StepDescription>
-          Chatbots are the #1 reason people install AI Engine. They live as a popup, an inline widget, or a fullscreen page, and connect directly to the environment you set up in step 1.
-          {chatbotsEnabled && <>{' '}The Chatbots module is on; open the tab to create, embed, and test one.</>}
-          {!chatbotsEnabled && <>{' '}Enable the <b>Chatbots</b> module first (in the Modules tab).</>}
-        </StepDescription>
-        <ChoiceButtons>
-          {chatbotsEnabled && <ChoiceButton $active={state.steps.chatbot === 'ok'} onClick={() => { setChoice('chatbot', 'ok'); switchToTab('chatbots'); }}>
-            {state.steps.chatbot === 'ok' ? 'Got it ✓' : 'Open Chatbots'}
-          </ChoiceButton>}
-          {!chatbotsEnabled && <ChoiceButton onClick={() => { updateOption(true, 'module_chatbots'); setChoice('chatbot', 'enabled'); }}>
-            Enable Chatbots
-          </ChoiceButton>}
-          <ChoiceButton $active={state.steps.chatbot === 'info'} onClick={() => setChoice('chatbot', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.chatbot === 'info' && <InfoBox>
-          Every chatbot has a <b>Name</b>, an <b>Environment</b>, a <b>Model</b>, and an <b>Instructions</b> field (its system prompt, covered in the next step). You can give it a personality, restrict its topic, hand it function-calling tools, attach a knowledge base, or let it remember conversations. Start simple: one chatbot, one model, a single line of instructions. Iterate from there.
-        </InfoBox>}
-      </Step>
-
-      <Step n={4} color={infoColor(state.steps.behavior)} title="Tweak the Chatbot's Behavior"
-        isNext={isNext(4)} done={stepStatuses[3]} doneLabel="Reviewed.">
-        <StepDescription>
-          The <b>Instructions</b> field on a chatbot is its personality and rules. A few well-chosen sentences here change everything: tone, scope, how it handles off-topic questions. Don't ship the default.
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.behavior === 'ok'} onClick={() => setChoice('behavior', 'ok')}>
-            Got it
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.behavior === 'info'} onClick={() => setChoice('behavior', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.behavior === 'info' && <InfoBox>
-          A good instructions prompt usually has three parts: <b>(1) Identity</b> ("You are a friendly assistant for a bakery website."), <b>(2) Scope</b> ("Answer questions about our menu, hours, and orders. For anything else, ask the user to email us."), and <b>(3) Style</b> ("Be concise, warm, and avoid jargon."). Test by sending edge cases (off-topic questions, very long questions, hostile prompts) and refine. <b>Pro tip:</b> in the Pro version, you can attach a Knowledge base so the AI quotes from your real content instead of guessing.
-        </InfoBox>}
-      </Step>
-
-      <Step n={5} color={actionColor(state.steps.content, generatorContentEnabled || editorAssistantEnabled)} title="Write with AI Inside WordPress"
-        isNext={isNext(5)} done={stepStatuses[4]} doneLabel={generatorContentEnabled || editorAssistantEnabled ? 'Enabled.' : 'Skipped.'}>
-        <StepDescription>
-          Two complementary tools live in the post editor: the <b>Content Generator</b> (a separate screen for bulk drafts) and the <b>AI Editor Assistant</b> (a sidebar that rewrites, translates, and edits the post you have open).
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.content === 'yes'} onClick={() => {
-            updateOption(true, 'module_generator_content');
-            updateOption(true, 'module_assistant');
-            setChoice('content', 'yes');
-          }}>
-            Enable both
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.content === 'no'} onClick={() => {
-            updateOption(false, 'module_generator_content');
-            updateOption(false, 'module_assistant');
-            setChoice('content', 'no');
-          }}>
-            Not for me
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.content === 'info'} onClick={() => setChoice('content', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.content === 'yes' && (generatorContentEnabled || editorAssistantEnabled) && <SubChoice>
-          Enabled. Open any post in the editor: you'll see the AI Engine sidebar with quick actions, and a new <b>AI Engine → Content Generator</b> menu entry for bulk drafts.
-        </SubChoice>}
-        {state.steps.content === 'info' && <InfoBox>
-          The <b>Content Generator</b> is great for first drafts, batch translations, and product descriptions. The <b>Editor Assistant</b> sits in the post sidebar and acts on the post you have open: "make this paragraph shorter", "translate to Spanish", "rewrite in a friendlier tone". They share the same model and environment, so you only configure one thing. Both are <b>free</b>.
-        </InfoBox>}
-      </Step>
-
-      <Step n={6} color={actionColor(state.steps.images, generatorImagesEnabled)} title="Generate Images & Process Vision"
-        isNext={isNext(6)} done={stepStatuses[5]} doneLabel={generatorImagesEnabled ? 'Enabled.' : 'Skipped.'}>
-        <StepDescription>
-          The <b>Image Generator</b> creates featured images, illustrations, and product visuals from a text prompt. Vision-capable models can also describe images, draft alt text, and answer questions about uploads.
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.images === 'yes'} onClick={() => {
-            updateOption(true, 'module_generator_images');
-            setChoice('images', 'yes');
-          }}>
-            Enable
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.images === 'no'} onClick={() => {
-            updateOption(false, 'module_generator_images');
-            setChoice('images', 'no');
-          }}>
-            Not for me
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.images === 'info'} onClick={() => setChoice('images', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.images === 'yes' && generatorImagesEnabled && <SubChoice>
-          Enabled. Look for <b>AI Engine → Image Generator</b> in the menu. The default model is OpenAI's GPT Image, but you can switch in Settings.
-        </SubChoice>}
-        {state.steps.images === 'info' && <InfoBox>
-          Image generation pricing varies a lot by model and resolution. Start with the <b>auto</b> quality on GPT Image for the best price/quality balance, and bump to <b>high</b> only when you need it. Self-hosted options (Replicate, custom backends) work too, but they take more setup.
-        </InfoBox>}
-      </Step>
-
-      <Step n={7} color={actionColor(state.steps.knowledge, knowledgeEnabled)} title={<>Ground Answers in Your Content <ProBadge>Pro</ProBadge></>}
-        isNext={isNext(7)} done={stepStatuses[6]} doneLabel={knowledgeEnabled ? 'Enabled.' : 'Skipped.'}>
-        <StepDescription>
-          Embeddings let a chatbot quote from your posts, pages, and PDFs instead of guessing. This is what turns it from a generic assistant into a true expert on your site.
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.knowledge === 'yes'} disabled={!isRegistered} onClick={() => {
-            updateOption(true, 'module_embeddings');
-            setChoice('knowledge', 'yes');
-          }}>
-            {isRegistered ? 'Enable' : 'Available in Pro'}
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.knowledge === 'no'} onClick={() => {
-            updateOption(false, 'module_embeddings');
-            setChoice('knowledge', 'no');
-          }}>
-            Not for me
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.knowledge === 'info'} onClick={() => setChoice('knowledge', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {!isRegistered && <ProNote>Knowledge bases require AI Engine Pro.</ProNote>}
-        {state.steps.knowledge === 'yes' && knowledgeEnabled && <SubChoice>
-          Enabled. Open the <b>Knowledge</b> tab to create an index, point it at posts or upload PDFs, and then attach it to a chatbot.
-        </SubChoice>}
-        {state.steps.knowledge === 'info' && <InfoBox>
-          "Embeddings" turn each chunk of your content into a high-dimensional vector. When someone asks a question, AI Engine finds the most relevant chunks and feeds them to the model as context. The model then answers using <i>your</i> words. You can use OpenAI's vector store, Pinecone, Qdrant, or Chroma. Start with OpenAI for the simplest setup.{' '}
-          <a href={track('https://ai.thehiddendocs.com/knowledge/', 'knowledge-docs')} target="_blank" rel="noreferrer">Read the Knowledge docs ↗</a>
-        </InfoBox>}
-      </Step>
-
-      <Step n={8} color={infoColor(state.steps.mcp)} title="Let AI Agents Drive Your Site (MCP)"
-        isNext={isNext(8)} done={stepStatuses[7]} doneLabel="Reviewed.">
-        <StepDescription>
-          With MCP, you can connect <b>Claude Desktop</b>, <b>ChatGPT</b>, or <b>Claude Code</b> directly to this WordPress site. They can create posts, manage media, run reports, and edit settings, all through natural conversation, securely, with OAuth.
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.mcp === 'ok'} onClick={() => setChoice('mcp', 'ok')}>
-            Got it
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.mcp === 'info'} onClick={() => setChoice('mcp', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.mcp === 'info' && <InfoBox>
-          MCP (Model Context Protocol) is the new standard for exposing tools to AI agents. AI Engine ships an MCP server that lives at <code>/wp-json/mwai/v1/mcp</code>. Configuration lives under <b>Settings → MCP</b>: bearer token or OAuth, plus a tool catalog (create/edit posts, WooCommerce, media, etc.). Pro adds plugin and theme management tools.{' '}
-          <a href={track('https://meowapps.com/claude-wordpress-mcp/', 'mcp-walkthrough')} target="_blank" rel="noreferrer">Read the full walkthrough ↗</a>
-        </InfoBox>}
-      </Step>
-
-      <Step n={9} color={actionColor(state.steps.workspace, workspaceEnabled)} title="Chat With Every Model, Also on Your Phone (Workspace)"
-        isNext={isNext(9)} done={stepStatuses[8]} doneLabel={workspaceEnabled ? 'Enabled.' : 'Skipped.'}>
-        <StepDescription>
-          Workspace is a full-screen AI chat inside wp-admin: every model you configured, your own keys, conversation history and folders, image generation, and the MCP tools to work on the site itself. The free <b>Workspace for WordPress</b> apps bring it to iPhone and Android.
-        </StepDescription>
-        <ChoiceButtons>
-          <ChoiceButton $active={state.steps.workspace === 'yes'} onClick={() => {
-            updateOption(true, 'module_workspace');
-            setChoice('workspace', 'yes');
-          }}>
-            Enable
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.workspace === 'no'} onClick={() => {
-            updateOption(false, 'module_workspace');
-            setChoice('workspace', 'no');
-          }}>
-            Not for me
-          </ChoiceButton>
-          <ChoiceButton $active={state.steps.workspace === 'info'} onClick={() => setChoice('workspace', 'info')}>
-            Tell me more
-          </ChoiceButton>
-        </ChoiceButtons>
-        {state.steps.workspace === 'yes' && workspaceEnabled && <SubChoice>
-          Enabled. <b>Workspace</b> is now in the AI Engine menu and the admin bar. To use it on your phone, install the app and scan the QR code under <b>Settings → Workspace → Connect iOS or Android</b>.
-        </SubChoice>}
-        {state.steps.workspace === 'info' && <InfoBox>
-          Workspace runs on your own site with your own API keys, so there is no seat and no subscription: you pay your providers at their price. Conversations, folders and themes stay on your WordPress. The mobile app pairs with one QR scan and uses a revocable Application Password. Admins only for now; Knowledge, MCP Servers and Functions inside it are Pro.{' '}
-          <a href={track(WORKSPACE_SITE, 'workspace-site')} target="_blank" rel="noreferrer">See Workspace ↗</a>
-        </InfoBox>}
-      </Step>
-
-    </NekoBlock>
-  );
+        <details key={activeStep}>
+          <summary>{__('A little more to explore', 'ai-engine')}</summary>
+          <p>{stop.more}</p>
+          {stop.link && <p><a href={stop.link.href} target="_blank" rel="noopener noreferrer">{stop.link.label} ↗</a></p>}
+        </details>
+        <div className="tour-completion">
+          {completed.length >= stops.length && <NekoButton variant="primary" onClick={onExit}>{__('Back to dashboard', 'ai-engine')}</NekoButton>}
+          <NekoButton variant="secondary" aria-pressed={isComplete} onClick={toggleComplete}>
+            {isComplete && <Check size={13} style={{ marginRight: 8 }} aria-hidden="true" />}
+            {isComplete ? __('Mark as not done', 'ai-engine') : __('Mark as done', 'ai-engine')}
+          </NekoButton>
+        </div>
+      </div>
+    </div>
+  </Panel>;
 };
 
 export default SetupAssistant;

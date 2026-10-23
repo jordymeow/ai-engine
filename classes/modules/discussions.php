@@ -382,6 +382,7 @@ class Meow_MWAI_Modules_Discussions {
         return $this->create_rest_response( [ 'success' => false, 'message' => 'You need to be logged in.' ], 401 );
       }
 
+      $chatId = $this->resolve_chat_id( $chatId, isset( $params['botId'] ) ? sanitize_text_field( $params['botId'] ) : null );
       $chat = $this->wpdb->get_row(
         $this->wpdb->prepare( "SELECT * FROM $this->table_chats WHERE chatId = %s", $chatId )
       );
@@ -669,6 +670,25 @@ class Meow_MWAI_Modules_Discussions {
   }
 
   // Get latest discussion for the given parameter
+  // A chatId already filed under another chatbot is not this conversation. Browsers hit by the
+  // old discussions-list bug (fixed in 3.8.2) still send another bot's chatId, and the messages
+  // kept landing in that bot's discussion. This bot gets its own discussion under an id derived
+  // from both, stable for the whole conversation. Every path that finds a discussion by the
+  // client's chatId must go through here (replies, Stop, history), or it reaches the other bot's.
+  private function derive_chat_id( $chatId, $botId ) {
+    return substr( (string) $chatId, 0, 55 ) . '-' . substr( md5( (string) $botId ), 0, 8 );
+  }
+
+  public function resolve_chat_id( $chatId, $botId ) {
+    if ( empty( $chatId ) || empty( $botId ) ) {
+      return $chatId;
+    }
+    $owner = $this->wpdb->get_var(
+      $this->wpdb->prepare( "SELECT botId FROM $this->table_chats WHERE chatId = %s", $chatId )
+    );
+    return ( !empty( $owner ) && $owner !== $botId ) ? $this->derive_chat_id( $chatId, $botId ) : $chatId;
+  }
+
   public function get_discussion( $botId, $chatId ) {
     $this->check_db();
     $chat = $this->wpdb->get_row(
@@ -679,6 +699,16 @@ class Meow_MWAI_Modules_Discussions {
       ),
       ARRAY_A
     );
+    if ( !$chat && !empty( $botId ) && !empty( $chatId ) ) {
+      $chat = $this->wpdb->get_row(
+        $this->wpdb->prepare(
+          "SELECT * FROM $this->table_chats WHERE chatId = %s AND botId = %s",
+          $this->derive_chat_id( $chatId, $botId ),
+          $botId
+        ),
+        ARRAY_A
+      );
+    }
     if ( $chat ) {
       $chat['messages'] = json_decode( $chat['messages'] );
       return $chat;
@@ -778,6 +808,7 @@ class Meow_MWAI_Modules_Discussions {
     }
 
     $this->check_db();
+    $chatId = $this->resolve_chat_id( $chatId, $botId );
     $chat = $this->wpdb->get_row(
       $this->wpdb->prepare(
         "SELECT * FROM $this->table_chats WHERE chatId = %s",
@@ -1010,6 +1041,12 @@ class Meow_MWAI_Modules_Discussions {
       $this->db_check = true;
       return true;
     }
+
+    // Once per version, bring existing tables up to date too. This used to run only when a table
+    // was missing, so a table created by an old version never got new columns: on sites that had
+    // Insights before 2.5.6, the logs table lacked 'feature' and every log write failed. dbDelta
+    // only adds what is missing, so running it on an up-to-date table changes nothing.
+    $this->create_db();
 
     $this->db_check = !(
       strtolower( $this->wpdb->get_var( "SHOW TABLES LIKE '$this->table_chats'" ) )

@@ -22,7 +22,19 @@ class Meow_MWAI_API {
    * that should not be controlled by untrusted users
    */
   private function sanitize_rest_options( $options ) {
-    return Meow_MWAI_Core::sanitize_rest_params( $options );
+    $options = Meow_MWAI_Core::sanitize_rest_params( $options );
+    // Any logged-in user reaches the Public API by default, and an MCP server attached here
+    // runs with its stored token (the site's own MCP acts as an admin), so tools stay with
+    // administrators. The bearer token signs in as one, so it keeps them. Keys compared in
+    // canonical form, since inject_params() accepts snake_case too (CVE-2026-96561).
+    if ( !current_user_can( 'manage_options' ) ) {
+      foreach ( array_keys( $options ) as $key ) {
+        if ( in_array( strtolower( Meow_MWAI_Query_Base::canonical_key( (string) $key ) ), [ 'mcpservers', 'tools', 'functions' ], true ) ) {
+          unset( $options[$key] );
+        }
+      }
+    }
+    return $options;
   }
 
   public function rest_api_init() {
@@ -459,7 +471,7 @@ class Meow_MWAI_API {
       if ( empty( $message ) ) {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
-      $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( isset( $params['options'] ) ? $params['options'] : [] );
       $resolution = isset( $params['resolution'] ) ? $params['resolution'] : '';
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {
@@ -494,7 +506,7 @@ class Meow_MWAI_API {
         $message = isset( $params['prompt'] ) ? $params['prompt'] : '';
       }
       $mediaId = isset( $params['mediaId'] ) ? intval( $params['mediaId'] ) : 0;
-      $options = isset( $params['options'] ) ? $params['options'] : [];
+      $options = $this->sanitize_rest_options( isset( $params['options'] ) ? $params['options'] : [] );
       $resolution = isset( $params['resolution'] ) ? $params['resolution'] : '';
       $scope = isset( $params['scope'] ) ? $params['scope'] : 'public-api';
       if ( !empty( $scope ) ) {

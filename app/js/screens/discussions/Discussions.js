@@ -1,7 +1,7 @@
-// Previous: 3.6.9
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.7
 
-```javascript
+```jsx
 // React & Vendor Libs
 const { useMemo, useState, useEffect, useCallback } = wp.element;
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -244,7 +244,7 @@ const StyledMessage = ({ content, background, bubble, compact }) => {
       const regex = /!\[.*?\]\((.*?)\)/g;
       let newContent = markdownContent;
       let match;
-      while ((match = regex.exec(markdownContent)) != null) {
+      while ((match = regex.exec(markdownContent)) !== null) {
         const imageUrl = match[1];
         const isImageAvailable = await checkImageURL(imageUrl);
         if (cancelled) { return; }
@@ -535,7 +535,7 @@ const Discussions = () => {
           displayName = foundParent.name;
           overrideIcon = <NekoIcon icon="tools" height="14"
             style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="Overriden Bot" />;
-        } else if (chat.botId == 'mwai_workspace') {
+        } else if (chat.botId === 'mwai_workspace') {
           displayName = <><NekoIcon icon="message" height="14"
             style={{ position: 'relative', top: 2, marginRight: 2 }} tooltip="From the Workspace" />
             {i18n.COMMON.WORKSPACE}</>;
@@ -602,6 +602,7 @@ const Discussions = () => {
       id: currentDiscussion.id,
       chatId: currentDiscussion.chatId,
       botId: currentDiscussion.botId,
+      ip: currentDiscussion.ip,
       title: currentDiscussion.title,
       messages: messages,
       extra: extra,
@@ -706,7 +707,7 @@ const Discussions = () => {
           {metaChip('Messages', discussion.messages?.length ?? 0)}
         </div>
         {Array.isArray(discussion.messages) &&
-          discussion.messages.map((x, i) => <Message key={i} message={x} variant="bubble" />)}
+          discussion.messages.map((x, i) => <Message key={`${discussion.id}-${i}`} message={x} variant="bubble" />)}
       </NekoBlock>
     );
   }
@@ -828,6 +829,7 @@ const Discussions = () => {
           <InfoRow label="Thread" value={discussion?.extra?.threadId} mono />
           <InfoRow label="Chat ID" value={discussion?.chatId} mono />
           <InfoRow label="Session" value={discussion?.extra?.session} mono />
+          <InfoRow label="IP" value={discussion?.ip ?? discussion?.extra?.ip} mono />
           <InfoRow label="Started" value={shortTime(discussion?.created).full} />
           <InfoRow label="Updated" value={shortTime(discussion?.updated).full} />
           {discussion?.extra?.context && <ContextText text={discussion.extra.context} />}

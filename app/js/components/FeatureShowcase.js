@@ -1,7 +1,7 @@
-// Previous: 3.7.8
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.7
 
-```javascript
+```jsx
 // FeatureShowcase.js
 
 import Styled from 'styled-components';
@@ -10,6 +10,8 @@ import { outboundUrl, VIBE_SITE, WORKSPACE_SITE } from '@app/helpers/outbound';
 import {
   Bot, Sparkles, Smartphone
 } from 'lucide-react';
+
+const { __, sprintf } = wp.i18n;
 
 const STORAGE_KEY = 'mwai_feature_showcase';
 
@@ -34,30 +36,30 @@ const WAYS = [
   {
     id: 'chatbot',
     icon: Bot,
-    title: 'Chatbot',
-    sub: 'Chatbots',
+    title: __( 'Chatbot', 'ai-engine' ),
+    sub: __( 'Chatbots', 'ai-engine' ),
     option: 'module_chatbots',
-    text: 'Give your visitors someone to talk to. Drop it anywhere with a shortcode or a block, feed it your own content, and it answers from your pages instead of guessing.',
+    text: __( 'Give your visitors someone to talk to. Drop it anywhere with a shortcode or a block, feed it your own content, and it answers from your pages instead of guessing.', 'ai-engine' ),
     from: '#2563eb',
     to: '#0ea5e9',
   },
   {
     id: 'mcp',
     icon: Sparkles,
-    title: 'Vibecoding',
-    sub: 'MCP Server',
+    title: __( 'Vibecoding', 'ai-engine' ),
+    sub: __( 'MCP Server', 'ai-engine' ),
     option: 'module_mcp',
-    text: 'Hand the keys to Claude, Claude Code or ChatGPT and build your site by talking to it. Write posts, fix SEO, organise media. They sign in with WordPress, so there is no token to share.',
+    text: __( 'Hand the keys to Claude, Claude Code or ChatGPT and build your site by talking to it. Write posts, fix SEO, organise media. They sign in with WordPress, so there is no token to share.', 'ai-engine' ),
     from: '#7c3aed',
     to: '#c026d3',
   },
   {
     id: 'workspace',
     icon: Smartphone,
-    title: 'Workspace',
-    sub: 'Your alternative to AI apps',
+    title: __( 'Workspace', 'ai-engine' ),
+    sub: __( 'Your alternative to AI apps', 'ai-engine' ),
     option: 'module_workspace',
-    text: 'Your own AI client, running on your own site with your own keys. Full screen in wp-admin, and free iPhone and Android apps so your site comes with you. No seat, no subscription.',
+    text: __( 'Your own AI client, running on your own site with your own keys. Full screen in wp-admin, and free iPhone and Android apps so your site comes with you. No seat, no subscription.', 'ai-engine' ),
     from: '#0d9488',
     to: '#22c55e',
   },
@@ -199,6 +201,8 @@ const Links = Styled.div`
   }
 `;
 
+
+
 const Wrap = Styled.div`
   margin-bottom: 15px;
 `;
@@ -212,10 +216,10 @@ const FeatureShowcase = ({ options, onDismiss }) => {
 
   return (
     <Wrap>
-      <NekoBlock className="primary" title="What can AI Engine do?" action={
+      <NekoBlock className="primary" title={__( 'What can AI Engine do?', 'ai-engine' )} action={
         <NekoButton className="secondary" onClick={dismiss}
-          title="Dismiss this. You can bring it back from Settings → Others → Maintenance.">
-          Dismiss
+          title={__( 'Dismiss this. You can bring it back from Settings → Others → Maintenance.', 'ai-engine' )}>
+          {__( 'Dismiss', 'ai-engine' )}
         </NekoButton>
       }>
         <Cards>
@@ -230,9 +234,9 @@ const FeatureShowcase = ({ options, onDismiss }) => {
                 rel="noreferrer"
                 $from={w.from}
                 $to={w.to}
-                title={`${w.text} Learn more on the site.`}
+                title={sprintf( __( '%1$s Learn more on the site.', 'ai-engine' ), w.text )}
               >
-                <span className={`state ${isOn ? 'on' : 'off'}`}>{isOn ? 'On' : 'Off'}</span>
+                <span className={`state ${isOn ? 'on' : 'off'}`}>{isOn ? __( 'On', 'ai-engine' ) : __( 'Off', 'ai-engine' )}</span>
                 <span className="head">
                   <span className="icon-wrap"><Icon size={20} strokeWidth={2} /></span>
                   <span className="title">
@@ -246,9 +250,9 @@ const FeatureShowcase = ({ options, onDismiss }) => {
         </Cards>
 
         <Links>
-          <a href={track(SITE, 'footer-tour')} target="_blank" rel="noreferrer">Take the tour ↗</a>
-          <a href={track(`${SITE}/compare`, 'footer-compare')} target="_blank" rel="noreferrer">How it compares ↗</a>
-          <a href={track('https://ai.thehiddendocs.com/', 'footer-docs')} target="_blank" rel="noreferrer">Documentation ↗</a>
+          <a href={track(SITE, 'footer-tour')} target="_blank" rel="noreferrer">{__( 'Take the tour ↗', 'ai-engine' )}</a>
+          <a href={track(`${SITE}/compare`, 'footer-compare')} target="_blank" rel="noreferrer">{__( 'How it compares ↗', 'ai-engine' )}</a>
+          <a href={track('https://ai.thehiddendocs.com/', 'footer-docs')} target="_blank" rel="noreferrer">{__( 'Documentation ↗', 'ai-engine' )}</a>
         </Links>
       </NekoBlock>
     </Wrap>

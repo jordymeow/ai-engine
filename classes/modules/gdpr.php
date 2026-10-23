@@ -11,7 +11,16 @@ class Meow_MWAI_Modules_GDPR {
   public function chatbot_blocks( $blocks, $args ) {
     $gdpr_text = $this->core->get_option( 'chatbot_gdpr_text' ) ?: 'By using this chatbot, you agree to the recording and processing of your data by our website and the external services it might use (LLMs, vector databases, etc.).';
     $gdpr_button = $this->core->get_option( 'chatbot_gdpr_button' ) ?: '👍 I understand';
-    $gdpr_text = esc_html( $gdpr_text );
+    // Links to a privacy policy or terms are what people put here, so they must stay clickable.
+    // Only these few inline tags survive; everything else is stripped.
+    $gdpr_text = wp_kses( $gdpr_text, [
+      'a' => [ 'href' => [], 'target' => [], 'rel' => [] ],
+      'strong' => [],
+      'b' => [],
+      'em' => [],
+      'i' => [],
+      'br' => [],
+    ] );
     $gdpr_button = esc_html( $gdpr_button );
     if ( $args['step'] !== 'init' ) {
       return $blocks;

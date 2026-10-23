@@ -809,6 +809,32 @@ class Meow_MWAI_Modules_Workspace {
   */
   public const DOC_MOBILE_URL = 'https://meowapps.com/fix-mcp-wordpress-connection/#workspace-mobile';
 
+  /**
+  * How many phones are paired with Workspace on this site, across every user.
+  * Application Passwords live in one serialized user meta row per user, so the
+  * LIKE narrows it to the users who have a Workspace device at all.
+  */
+  public static function count_paired_devices() {
+    if ( !class_exists( 'WP_Application_Passwords' ) ) {
+      return 0;
+    }
+    global $wpdb;
+    $rows = $wpdb->get_col( $wpdb->prepare(
+      "SELECT meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s",
+      WP_Application_Passwords::USERMETA_KEY_APPLICATION_PASSWORDS,
+      '%' . $wpdb->esc_like( self::PAIR_APP_PREFIX ) . '%'
+    ) );
+    $count = 0;
+    foreach ( (array) $rows as $row ) {
+      foreach ( (array) maybe_unserialize( $row ) as $p ) {
+        if ( isset( $p['name'] ) && strpos( $p['name'], self::PAIR_APP_PREFIX ) === 0 ) {
+          $count++;
+        }
+      }
+    }
+    return $count;
+  }
+
   private function pairing_available( $user = null ) {
     if ( !class_exists( 'WP_Application_Passwords' ) || !function_exists( 'wp_is_application_passwords_available' ) ) {
       return false;

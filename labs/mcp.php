@@ -40,6 +40,8 @@ class Meow_MWAI_Labs_MCP {
   private $bearer_token = null;
   private $mcp_role = 'admin';
   private $tool_access_levels = [];
+  // Set when the OAuth grant was approved as Read-only: only 'read' tools are listed or run.
+  private $read_only_grant = false;
   // Placeholder for OAuth integration. Currently unused and kept for
   // future implementation once the security model is revised.
   private $oauth = null;
@@ -234,6 +236,7 @@ class Meow_MWAI_Labs_MCP {
           $auth_result = 'oauth';
           $this->auth_method = 'oauth';
           $this->limited_session = !user_can( $token_data['user_id'], 'manage_options' );
+          $this->read_only_grant = ( $token_data['scope'] ?? '' ) === Meow_MWAI_Labs_MCP_OAuth::SCOPE_READ;
           $this->auth_client_id = $token_data['client_id'] ?? null;
           $this->auth_client_name = $token_data['client_name'] ?? null;
           return true;
@@ -839,6 +842,18 @@ class Meow_MWAI_Labs_MCP {
     return $this->auth_method !== 'oauth' && $this->mcp_role !== 'admin';
   }
 
+  // A Read-only grant may only run tools labelled 'read'. mwai_vision is one, but its 'path'
+  // reads any file PHP can read, which is more than "look at the site".
+  private function read_only_refusal( string $tool, string $level, array $args ): ?string {
+    if ( $level !== 'read' ) {
+      return "This connection is read-only, so '{$tool}' is not available. Ask the site owner for full access if you need to make changes.";
+    }
+    if ( $tool === 'mwai_vision' && !empty( $args['path'] ) ) {
+      return 'This connection is read-only and cannot analyze server files; pass an image URL instead.';
+    }
+    return null;
+  }
+
   /**
   * Why a limited session may not run this call, or null when it may. Every check asks
   * WordPress what this user can do, so an Editor reaches exactly what the dashboard
@@ -886,8 +901,10 @@ class Meow_MWAI_Labs_MCP {
       }
     }
     elseif ( in_array( $tool, [ 'wp_create_post', 'wp_update_post' ], true ) ) {
-      // Both tools also take meta_input as a JSON string and decode it themselves.
-      $meta_input = $fields['meta_input'] ?? null;
+      // Both tools read meta_input from the top level only (never from fields), and also
+      // take it as a JSON string they decode themselves. Checking a merged copy let a
+      // decoy fields.meta_input hide the real one.
+      $meta_input = $args['meta_input'] ?? null;
       if ( is_string( $meta_input ) ) {
         $meta_input = json_decode( $meta_input, true );
       }
@@ -934,11 +951,14 @@ class Meow_MWAI_Labs_MCP {
         break;
 
       case 'wp_create_post':
-        $type = get_post_type_object( sanitize_key( $fields['post_type'] ?? 'post' ) );
+        // The tool reads post_type and post_status from the top level only, so check those:
+        // a decoy "fields" object once passed this check while the real values were written.
+        // sanitize_key() as the tool does, since WordPress lowercases "PUBLISH" to publish.
+        $type = get_post_type_object( sanitize_key( $args['post_type'] ?? 'post' ) );
         if ( !$type || !current_user_can( $type->cap->create_posts ) ) {
           return $cant . 'create this type of content.';
         }
-        if ( in_array( $fields['post_status'] ?? 'draft', [ 'publish', 'future', 'private' ], true )
+        if ( in_array( sanitize_key( $args['post_status'] ?? 'draft' ), [ 'publish', 'future', 'private' ], true )
           && !current_user_can( $type->cap->publish_posts ) ) {
           return $cant . 'publish this type of content.';
         }
@@ -948,16 +968,19 @@ class Meow_MWAI_Labs_MCP {
         if ( !$post_id || !current_user_can( 'edit_post', $post_id ) ) {
           return $cant . "edit post #{$post_id}.";
         }
-        if ( isset( $fields['post_type'] ) && $fields['post_type'] !== get_post_type( $post_id ) ) {
+        if ( isset( $fields['post_type'] ) && sanitize_key( $fields['post_type'] ) !== get_post_type( $post_id ) ) {
           return $cant . 'change the type of a post.';
         }
+        // WordPress runs sanitize_key() on the status before saving, so "TRASH" or "PUBLISH"
+        // would slip past an exact comparison and still take effect.
+        $status = sanitize_key( (string) ( $fields['post_status'] ?? '' ) );
         // The tool routes this status to wp_trash_post(), and deleting stays with
         // administrators, as the consent screen promises. Restoring from the trash is fine.
-        if ( ( $fields['post_status'] ?? '' ) === 'trash' ) {
+        if ( $status === 'trash' ) {
           return $cant . 'move posts to the trash. Deleting stays with administrators.';
         }
         // schedule_for switches the status to 'future' on its own, so it is publishing too.
-        $publishes = in_array( $fields['post_status'] ?? '', [ 'publish', 'future', 'private' ], true )
+        $publishes = in_array( $status, [ 'publish', 'future', 'private' ], true )
           || !empty( $args['schedule_for'] );
         if ( $publishes && !current_user_can( 'publish_post', $post_id ) ) {
           return $cant . "publish post #{$post_id}.";
@@ -1124,6 +1147,12 @@ class Meow_MWAI_Labs_MCP {
     if ( $this->limited_session ) {
       $filtered_tools = array_filter( $filtered_tools, function ( $tool ) {
         return in_array( $tool['name'] ?? '', self::LIMITED_SESSION_TOOLS, true );
+      } );
+    }
+    // A tool without a level counts as 'admin', so an unlabelled write never slips through.
+    if ( $this->read_only_grant ) {
+      $filtered_tools = array_filter( $filtered_tools, function ( $tool ) {
+        return ( $tool['accessLevel'] ?? 'admin' ) === 'read';
       } );
     }
 
@@ -1385,6 +1414,15 @@ class Meow_MWAI_Labs_MCP {
         $response = $this->rpc_error( $id, -32600, $error_msg );
         return $response;
       }
+      if ( $this->read_only_grant ) {
+        $refusal = $this->read_only_refusal( (string) $tool, $tool_level, is_array( $args ) ? $args : [] );
+        if ( $refusal !== null ) {
+          $status = 'denied';
+          $error_msg = $refusal;
+          $response = $this->rpc_error( $id, -32600, $error_msg );
+          return $response;
+        }
+      }
       if ( $this->limited_session ) {
         $refusal = $this->limited_session_refusal( (string) $tool, is_array( $args ) ? $args : [] );
         if ( $refusal !== null ) {
@@ -1528,6 +1566,7 @@ class Meow_MWAI_Labs_MCP {
       ] );
       if ( $status === 'success' && $tool !== 'mcp_ping' ) {
         $this->bring_review_notice_forward();
+        $this->remember_mcp_use();
       }
     }
   }
@@ -1540,6 +1579,14 @@ class Meow_MWAI_Labs_MCP {
     $soon = time() + 2 * DAY_IN_SECONDS;
     if ( empty( $date ) || ( $date > $soon && $date < time() + YEAR_IN_SECONDS ) ) {
       update_option( 'mwai_rating_date', $soon, false );
+    }
+  }
+  // The day MCP last did real work. Pro's update check reports whether that was within 30 days,
+  // the only way we can tell how many sites actually use MCP. Written once a day at most.
+  private function remember_mcp_use() {
+    $last = (int) get_option( 'mwai_mcp_last_used', 0 );
+    if ( time() - $last > DAY_IN_SECONDS ) {
+      update_option( 'mwai_mcp_last_used', time(), false );
     }
   }
   #endregion

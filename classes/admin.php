@@ -490,6 +490,7 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
         // Only when MCP is on: listing abilities runs every plugin's registration code.
         'abilities' => $this->core->get_option( 'module_mcp' ) ? Meow_MWAI_Labs_MCP_Abilities::summary() : null,
       ],
+      'dismissed_cards' => $this->core->get_dismissed_dashboard_cards(),
       // So the admin can render stored UTC timestamps in the site's timezone.
       'timezone' => [
         'string' => get_option( 'timezone_string' ),

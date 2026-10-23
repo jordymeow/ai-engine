@@ -95,6 +95,10 @@ class Meow_MWAI_Engines_Factory {
       $engine = new Meow_MWAI_Engines_XAI( $core, $env );
       return $engine;
     }
+    else if ( $env['type'] === 'sakana' ) {
+      $engine = new Meow_MWAI_Engines_Sakana( $core, $env );
+      return $engine;
+    }
     else if ( $env['type'] === 'custom' ) {
       $engine = new Meow_MWAI_Engines_Custom( $core, $env );
       return $engine;

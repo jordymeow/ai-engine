@@ -625,8 +625,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     return $this->add_prompt_cache_key( $body, $query );
   }
 
+  // mwai_openai_body lets a site add any parameter AI Engine doesn't set, on both the Responses
+  // and the Chat Completions paths (Azure goes through here too). Example: the chatbot's image
+  // tool runs with OpenAI's default quality unless the body asks for "high".
   protected function build_body( $query, $streamCallback = null, $extra = null ) {
-    return $this->add_prompt_cache_key( parent::build_body( $query, $streamCallback, $extra ), $query );
+    $body = $this->add_prompt_cache_key( parent::build_body( $query, $streamCallback, $extra ), $query );
+    // Chat requests only: embeddings, images and transcriptions share this builder, and a site
+    // adding a chat parameter there would make them fail with a 400.
+    return $query instanceof Meow_MWAI_Query_Text ? apply_filters( 'mwai_openai_body', $body, $query ) : $body;
   }
 
   /**
@@ -1899,7 +1905,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
     }
 
     $this->reset_stream();
-    $body = $this->build_responses_body( $query, $streamCallback );
+    $body = apply_filters( 'mwai_openai_body', $this->build_responses_body( $query, $streamCallback ), $query );
     $url = $this->build_responses_url();
     $headers = $this->build_headers( $query );
     $options = $this->build_options( $headers, $body );

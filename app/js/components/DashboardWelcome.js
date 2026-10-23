@@ -1,66 +1,75 @@
-// Previous: 3.7.8
-// Current: 3.7.9
+// Previous: 3.7.9
+// Current: 3.8.7
 
 // DashboardWelcome.js
 //
-// The first line of the Dashboard: a greeting and one sentence of status. No
-// buttons, no checklist. The Setup Assistant stays one quiet click away while
-// the site is not fully set up.
+// A greeting, a short status, and the switch between dashboard and tour mode.
 
 import Styled from 'styled-components';
+import { NekoButton } from '@neko-ui';
+import { Compass, ArrowLeft } from 'lucide-react';
+const { __ } = wp.i18n;
 
+// Same insets as the other tabs: the title sits 4px in from the cards, like a block title.
+// A 10px side margin here (and on the card grids) made the dashboard narrower than Modules.
 const Wrap = Styled.div`
-  margin: 4px 10px 18px;
-  color: #fff;
+  margin: 2px 4px 18px;
+  color: var(--neko-white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 
   .hello {
     margin: 0;
-    font-size: 22px;
+    font-size: var(--neko-h2-font-size);
     font-weight: 600;
-    letter-spacing: -0.01em;
-    line-height: 1.3;
+    line-height: 1.2;
   }
-  .hello span {
-    font-weight: 400;
+  /* Small and right under the greeting: the two lines belong together. */
+  .sub {
+    margin: 1px 0 0;
+    font-size: var(--neko-font-size);
+    line-height: 1.4;
     opacity: 0.85;
   }
-  .sub {
-    margin: 5px 0 0;
-    font-size: 13px;
-    opacity: 0.8;
+  .tour-toggle {
+    flex-shrink: 0;
   }
-  .sub a {
-    color: #fff;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    .tour-toggle { margin-left: auto; }
   }
 `;
 
 const greeting = () => {
   const h = new Date().getHours();
-  if (h < 5) return 'Good evening';
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 5) return __('Good evening', 'ai-engine');
+  if (h < 12) return __('Good morning', 'ai-engine');
+  if (h < 18) return __('Good afternoon', 'ai-engine');
+  return __('Good evening', 'ai-engine');
 };
 
-const DashboardWelcome = ({ options, envIssues, onShowAssistant }) => {
+const DashboardWelcome = ({ options, envIssues, tourActive, onToggleTour }) => {
   const envCount = (options?.ai_envs || []).length;
-  const modulesOn = Object.keys(options || {}).filter(k => k.startsWith('module_') && options[k] === true).length;
-  const pending = envCount === 0 || envIssues || !options?.module_chatbots;
 
-  let status = 'Everything is running.';
-  if (envCount === 0) status = 'Welcome. Let\'s connect your first AI provider.';
-  else if (envIssues) status = 'One provider needs a look.';
+  let status = __('Your default AI settings are configured.', 'ai-engine');
+  if (envCount === 0) status = __('Welcome. Let’s connect your first AI provider.', 'ai-engine');
+  else if (envIssues) status = __('Your AI settings need a look.', 'ai-engine');
+  else if (tourActive) status = __('Let’s see what your site can do.', 'ai-engine');
 
   return (
     <Wrap>
-      <p className="hello">{greeting()}. <span>{status}</span></p>
-      <p className="sub">
-        {envCount} {envCount === 1 ? 'provider' : 'providers'}, {modulesOn} {modulesOn === 1 ? 'module' : 'modules'} on.
-        {pending && <> <a onClick={onShowAssistant}>Setup steps</a></>}
-      </p>
+      <div>
+        <p className="hello">{greeting()}.</p>
+        <p className="sub">{status}</p>
+      </div>
+      <NekoButton variant="header" className="tour-toggle" aria-pressed={!!tourActive} onClick={onToggleTour}>
+        {tourActive ? <ArrowLeft size={16} style={{ marginRight: 8 }} aria-hidden="true" />
+          : <Compass size={16} style={{ marginRight: 8 }} aria-hidden="true" />}
+        {tourActive ? __('Back to dashboard', 'ai-engine') : __('Explore AI Engine', 'ai-engine')}
+      </NekoButton>
     </Wrap>
   );
 };

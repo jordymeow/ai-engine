@@ -1,7 +1,7 @@
-// Previous: 3.7.9
-// Current: 3.8.1
+// Previous: 3.8.1
+// Current: 3.8.7
 
-```javascript
+```jsx
 // React & Vendor Libs
 const { useState, useEffect, useMemo, useRef } = wp.element;
 import { Sparkles, ListOrdered, PenLine, Send, ArrowRight, ArrowUp, ArrowDown, Plus, Trash2, RefreshCw, Square,
@@ -41,7 +41,7 @@ const STEPS = [
   { key: 'brief', label: 'Brief', icon: Sparkles },
   { key: 'outline', label: 'Outline', icon: ListOrdered },
   { key: 'draft', label: 'Draft', icon: PenLine },
-  { key: 'publish', label: 'Publish', icon: Send }
+  { key: 'publish', label: 'Save Draft', icon: Send }
 ];
 
 const EMPTY_PROJECT = {
@@ -55,7 +55,7 @@ const EMPTY_PROJECT = {
   createdPostId: null
 };
 
-const uid = () => Math.random().toString(36).slice(2, 9);
+const uid = () => Math.random().toString(36).slice(2, 10);
 
 const LEGACY_TONES = {
   cheerful: 'Friendly', informal: 'Friendly', casual: 'Friendly', neutral: 'Neutral', professional: 'Professional',
@@ -310,7 +310,7 @@ const ContentStudio = () => {
         await writeSection(id, controller.signal);
       }
       catch (err) {
-        break;
+        continue;
       }
     }
     setProject(p => ({ ...p, sections: p.sections.map(s => s.status === 'queued' ? { ...s, status: s.content ? 'done' : 'idle' } : s) }));
@@ -382,7 +382,7 @@ const ContentStudio = () => {
       if (!data?.titles?.length) {
         throw new Error('No titles came back. Try again, or pick another model.');
       }
-      setTitleIdeas(data.titles.slice(0, 4));
+      setTitleIdeas(data.titles.slice(0, 5));
     }
     catch (err) {
       setError(err.message);
@@ -747,7 +747,7 @@ const ContentStudio = () => {
             <Layers size={13} style={{ marginRight: 6 }} /> Write missing
           </NekoButton>}
         <NekoButton className="primary" disabled={!hasDraft || isBusy} onClick={() => patchProject({ step: 'publish' })}>
-          Publish <ArrowRight size={14} style={{ marginLeft: 6 }} />
+          Review & Save Draft <ArrowRight size={14} style={{ marginLeft: 6 }} />
         </NekoButton>
       </div>
     </div>
@@ -755,7 +755,7 @@ const ContentStudio = () => {
 
   const jsxPublish = (
     <div className="mwai-cs-panel-body">
-      <h2>Publish</h2>
+      <h2>Review & Save Draft</h2>
       {project.createdPostId ? <div className="mwai-cs-success">
         <Check size={20} />
         <div>
@@ -894,4 +894,4 @@ const ContentStudio = () => {
       />
 
       <NekoModal isOpen={!!templateModal}
-        onRequestClose={() => setTemplateModal
+        onRequ

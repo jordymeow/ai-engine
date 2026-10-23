@@ -131,6 +131,12 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_settings_reset' ],
       ] );
+      // Per-admin dismissal of Dashboard cards (stored in user meta, never in mwai_options).
+      register_rest_route( $this->namespace, '/settings/dismiss_card', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_settings_dismiss_card' ],
+      ] );
       register_rest_route( $this->namespace, '/settings/chatbots', [
         'methods' => ['GET', 'POST'],
         'permission_callback' => [ $this->core, 'can_access_settings' ],
@@ -706,6 +712,16 @@ class Meow_MWAI_Rest {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
       return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
     }
+  }
+
+  public function rest_settings_dismiss_card( $request ) {
+    $params = $request->get_json_params();
+    $card = sanitize_key( $params['card'] ?? '' );
+    if ( empty( $card ) ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => 'Missing card.' ], 400 );
+    }
+    $dismissed = $this->core->dismiss_dashboard_card( $card );
+    return $this->create_rest_response( [ 'success' => true, 'dismissed' => $dismissed ], 200 );
   }
 
   public function rest_settings_reset() {

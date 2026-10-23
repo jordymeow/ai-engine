@@ -1,5 +1,5 @@
-// Previous: 3.7.5
-// Current: 3.7.6
+// Previous: 3.7.6
+// Current: 3.8.7
 
 // Every link from the plugin admin to our own sites carries UTM tags, so the
 // admin shows up as an acquisition channel in analytics instead of hiding in
@@ -31,8 +31,17 @@ const currentScreen = () => {
   return tab && tab !== page ? `${page}-${tab}` : page;
 };
 
+// The admin bundle loads on every wp-admin screen (for the blocks), so without this the
+// relay tagged links on other plugins' screens (SEO Engine, Media Cleaner, the Meow Apps
+// menu) as AI Engine traffic. Only our own screens and the editors count.
+const isOurScreen = () => {
+  const page = new URLSearchParams(window.location.search).get('page') || '';
+  if (page.startsWith('mwai_')) return true;
+  return /\/wp-admin\/(post|post-new|site-editor)\.php$/.test(window.location.pathname);
+};
+
 export const installOutboundRelay = () => {
-  if (typeof document === 'undefined' || window.mwaiOutboundRelay) return;
+  if (typeof document === 'undefined' || window.mwaiOutboundRelay || !isOurScreen()) return;
   window.mwaiOutboundRelay = true;
   document.addEventListener('click', (event) => {
     const anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;

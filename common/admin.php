@@ -203,6 +203,10 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         return $links;
       }
       $isIssue = $this->isPro && !$this->is_registered();
+      // A Pro buyer who installed the plugin but never typed a key is not an issue yet: the red
+      // "License Issue" made fresh buyers think the purchase was broken (wave 2 audit, 2026-10-21).
+      $neverActivated = $isIssue && empty( get_option( $this->prefix . '_pro_serial', '' ) )
+        && empty( get_option( $this->prefix . '_license', '' ) );
 
       // The licenser already knows WHY validation failed and stores it as
       // license['issue'] (licenser.php), but this badge used to render a flat
@@ -270,7 +274,7 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
           else {
             // Free plugin
             $new_links = [
-              'license' => sprintf( '<span>' . __( '<a target="_blank" href="https://meowapps.com">Get the <u>Pro Version</u></a>', $this->domain ), $this->prefix ) . '</span>',
+              'license' => '<span>' . sprintf( __( '<a target="_blank" href="%s">Get the <u>Pro Version</u></a>', $this->domain ), esc_url( $this->pro_url( 'plugins-list' ) ) ) . '</span>',
             ];
           }
         }
@@ -282,7 +286,8 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
             'license' =>
             $this->is_registered() ?
               ( '<span style="color: #a75bd6;">' . __( 'Pro Version', $this->domain ) . '</span>' ) :
-                  ( $isIssue ? ( '<span style="color: #ff3434;">' . esc_html( $issueLabel ) . '</span>' ) : ( sprintf( '<span>' . __( '<a target="_blank" href="https://meowapps.com">Get the <u>Pro Version</u></a>', $this->domain ), $this->prefix ) . '</span>' ) ),
+                  ( $neverActivated ? sprintf( '<a href="%s">%s</a>', esc_url( admin_url( 'admin.php?page=' . $this->prefix . '_settings' ) ), esc_html__( 'Activate your license', $this->domain ) ) :
+                  ( $isIssue ? ( '<span style="color: #ff3434;">' . esc_html( $issueLabel ) . '</span>' ) : ( '<span>' . sprintf( __( '<a target="_blank" href="%s">Get the <u>Pro Version</u></a>', $this->domain ), esc_url( $this->pro_url( 'plugins-list' ) ) ) . '</span>' ) ) ),
           ];
         }
         $links = array_merge( $new_links, $links );
@@ -432,6 +437,20 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
       return get_option( 'force_sslverify', false );
     }
 
+    /**
+     * Tagged link to the store, so a click on "Get the Pro Version" shows up in the sale's
+     * attribution (utm_* are saved on each order) instead of arriving as an anonymous visit.
+     */
+    public function pro_url( $medium ) {
+      $slug = basename( dirname( $this->mainfile ) );
+      $slug = preg_replace( '/-pro$/', '', $slug );
+      return add_query_arg( [
+        'utm_source'   => $slug,
+        'utm_medium'   => $medium,
+        'utm_campaign' => 'get-pro',
+      ], 'https://meowapps.com/' );
+    }
+
     public function nice_name_from_file( $file ) {
       $info = pathinfo( $file );
       if ( !empty( $info ) ) {
@@ -453,10 +472,18 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         delete_option( $this->prefix . '_license' );
         return;
       }
-      $html = '<div class="notice notice-error">';
+      // This notice was silently dead for a long time (no echo). Now that it prints, keep it to the
+      // plugins list and the plugin's own screens rather than every admin page.
+      $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+      $page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+      if ( !( ( $screen && $screen->id === 'plugins' ) || strpos( $page, $this->prefix ) === 0 ) ) {
+        return;
+      }
+      $html = '<div class="notice notice-warning">';
       $html .= sprintf(
-        __( '<p>It looks like you are using the free version of the plugin (<b>%s</b>) but a license for the Pro version was also found. The Pro version might have been replaced by the Free version during an update (might be caused by a temporarily issue). If it is the case, <b>please download it again</b> from the <a target="_blank" href="https://meowapps.com">Meow Store</a>. If you wish to continue using the free version and clear this message, click on this button.', $this->domain ),
-        $this->nice_name_from_file( $this->mainfile )
+        __( '<p>You are using the free version of <b>%1$s</b>, but a Pro license was found on this site. The Pro version was probably replaced by the free one during an update. <b>Download Pro again</b> from <a target="_blank" href="%2$s">your account at Meow Apps</a>: your license stays valid. If you prefer to keep the free version, click this button to clear this message.', $this->domain ),
+        $this->nice_name_from_file( $this->mainfile ),
+        esc_url( 'https://meowapps.com/account/' )
       );
       $html .= '<p>
                                                                                                                                                   <form method="post" action="">
@@ -466,7 +493,11 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
                                                                                                                                                     </form>
                                                                                                                                                     </p>';
       $html .= '</div>';
-      wp_kses_post( $html );
+      echo wp_kses( $html, [
+        'div' => [ 'class' => [] ], 'p' => [], 'b' => [], 'a' => [ 'href' => [], 'target' => [] ],
+        'form' => [ 'method' => [], 'action' => [] ],
+        'input' => [ 'type' => [], 'name' => [], 'value' => [], 'id' => [], 'class' => [] ],
+      ] );
     }
 
     public function admin_menu_start() {

@@ -1394,7 +1394,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
         // Use regular content if available, otherwise fall back to thinking/reasoning
         $finalContent = $this->streamContent;
-        if ( empty( $finalContent ) && !empty( $this->streamThinking ) ) {
+        // Not when Max Tokens ran out mid-thought: the reasoning is not an answer, and showing it
+        // as one read like a broken reply. The truncated notice explains it instead.
+        if ( empty( $finalContent ) && !empty( $this->streamThinking ) && $this->streamFinishReason !== 'length' ) {
           // Use thinking content as fallback when there's no regular content
           // This happens with Ollama when it returns only reasoning/thinking
           // Wrap in asterisks to show as italics in markdown

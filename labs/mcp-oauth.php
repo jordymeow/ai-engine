@@ -18,6 +18,11 @@ if ( !defined( 'ABSPATH' ) ) {
  */
 class Meow_MWAI_Labs_MCP_OAuth {
   public const DB_VERSION = '1.0.0';
+  // The access level chosen on the consent screen, stored in each token row's scope and
+  // carried through every refresh. Anything other than SCOPE_READ means full access, so
+  // grants made before the choice existed keep working as they did.
+  public const SCOPE_FULL = 'mcp';
+  public const SCOPE_READ = 'mcp:read';
   /**
   * States of the `revoked` column on a token row.
   *
@@ -135,7 +140,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
   }
 
   private function protected_resource_metadata() {
-    $issuer = rest_url( $this->namespace );
+    $issuer = $this->issuer();
     return [
       'resource' => rest_url( $this->namespace . '/http' ),
       'authorization_servers' => [ $issuer ],
@@ -145,8 +150,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
     ];
   }
 
+  // One definition for the issuer: the metadata and the iss sent back after consent must match
+  // exactly (RFC 9207), or strict clients refuse the connection.
+  private function issuer() {
+    return rest_url( $this->namespace );
+  }
+
   private function authorization_server_metadata() {
-    $issuer = rest_url( $this->namespace );
+    $issuer = $this->issuer();
     return [
       'issuer' => $issuer,
       'authorization_endpoint' => rest_url( $this->namespace . '/oauth/authorize' ),
@@ -157,6 +168,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
       'grant_types_supported' => [ 'authorization_code', 'refresh_token' ],
       'token_endpoint_auth_methods_supported' => [ 'none', 'client_secret_basic', 'client_secret_post' ],
       'code_challenge_methods_supported' => [ 'S256' ],
+      'authorization_response_iss_parameter_supported' => true,
       'scopes_supported' => [ 'mcp' ],
     ];
   }
@@ -296,6 +308,15 @@ class Meow_MWAI_Labs_MCP_OAuth {
     register_rest_route( $this->namespace, '/oauth/apps/(?P<id>\d+)', [
       'methods' => 'DELETE',
       'callback' => [ $this, 'handle_apps_revoke' ],
+      'permission_callback' => function () {
+        return current_user_can( 'manage_options' );
+      },
+    ] );
+
+    // Admin-only: switch a grant between Full access and Read-only
+    register_rest_route( $this->namespace, '/oauth/apps/(?P<id>\d+)/access', [
+      'methods' => 'POST',
+      'callback' => [ $this, 'handle_apps_access' ],
       'permission_callback' => function () {
         return current_user_can( 'manage_options' );
       },
@@ -519,7 +540,8 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $state = (string) ( $request->get_param( 'state' ) ?? '' );
     $code_challenge = (string) $request->get_param( 'code_challenge' );
     $code_challenge_method = (string) $request->get_param( 'code_challenge_method' );
-    $scope = (string) ( $request->get_param( 'scope' ) ?? 'mcp' );
+    // Built from the consent screen's choice, never from what the client asked for.
+    $scope = $request->get_param( 'access' ) === 'read' ? self::SCOPE_READ : self::SCOPE_FULL;
     $action = (string) ( $request->get_param( 'action' ) ?? 'deny' );
 
     $client = $this->get_client( $client_id );
@@ -533,6 +555,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
       if ( $state !== '' ) {
         $params['state'] = $state;
       }
+      $params['iss'] = $this->issuer();
       wp_redirect( $this->append_params( $redirect_uri, $params ) );
       exit;
     }
@@ -564,6 +587,9 @@ class Meow_MWAI_Labs_MCP_OAuth {
     if ( $state !== '' ) {
       $params['state'] = $state;
     }
+    // RFC 9207: say which server answered, so a client connected to several sites (Torii) can
+    // check the code came back from the one it sent the user to, and refuse a mix-up.
+    $params['iss'] = $this->issuer();
 
     if ( $this->logging ) {
       error_log( '[AI Engine MCP OAuth] Authorized user ' . get_current_user_id() . ' for client ' . $client_id );
@@ -666,6 +692,11 @@ class Meow_MWAI_Labs_MCP_OAuth {
       return $this->oauth_error( 'invalid_grant', 'PKCE verification failed.', 400 );
     }
 
+    // A reconnect with the same client starts a new chain next to the old one, which stays able
+    // to refresh: give the whole grant the level just approved, so an old full-access chain can't
+    // outlive it. Clients that register again on each reconnect get a new client_id, so their
+    // older connection keeps its own level and shows separately in Connected Apps.
+    $this->set_grant_scope( $client->client_id, (int) $code_data['user_id'], (string) $code_data['scope'] );
     return $this->issue_token_pair( $client->client_id, (int) $code_data['user_id'], (string) $code_data['scope'] );
   }
 
@@ -869,11 +900,20 @@ class Meow_MWAI_Labs_MCP_OAuth {
     global $wpdb;
     $hash = hash( 'sha256', $token );
     $row = $wpdb->get_row( $wpdb->prepare(
-      "SELECT client_id, user_id FROM {$this->table_tokens} WHERE access_token_hash = %s OR refresh_token_hash = %s LIMIT 1",
+      "SELECT id, client_id, user_id, revoked FROM {$this->table_tokens} WHERE access_token_hash = %s OR refresh_token_hash = %s LIMIT 1",
       $hash,
       $hash
     ) );
-    if ( $row ) {
+    // A client tidying up after a refresh revokes the token it just replaced. That token is
+    // already rotated, so retire only its row: revoking the whole grant also killed the pair
+    // the client had just received, and the connection died a few days later (Frank Werner,
+    // 2026-10). Only a live token ends every session of the grant. An already revoked row is
+    // left alone: the old access and refresh tokens share one row, so a client revoking both
+    // (or retrying) hit it a second time and killed the new pair after all.
+    if ( $row && (int) $row->revoked === self::TOKEN_ROTATED ) {
+      $wpdb->update( $this->table_tokens, [ 'revoked' => self::TOKEN_REVOKED ], [ 'id' => $row->id ] );
+    }
+    else if ( $row && (int) $row->revoked === 0 ) {
       $this->revoke_grant( $row->client_id, (int) $row->user_id );
     }
     return new WP_REST_Response( null, 200 );
@@ -983,7 +1023,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
   public function handle_apps_list() {
     global $wpdb;
     $rows = $wpdb->get_results( $wpdb->prepare(
-      "SELECT t.id, t.client_id, t.user_id, t.created, t.last_used, t.access_expires, t.refresh_expires, t.revoked,
+      "SELECT t.id, t.client_id, t.user_id, t.scope, t.created, t.last_used, t.access_expires, t.refresh_expires, t.revoked,
               c.client_name
        FROM {$this->table_tokens} t
        LEFT JOIN {$this->table_clients} c ON c.client_id = t.client_id
@@ -1011,6 +1051,9 @@ class Meow_MWAI_Labs_MCP_OAuth {
       $access = 'none';
       if ( $user && $this->user_can_authorize( $user->ID ) ) {
         $access = user_can( $user, 'manage_options' ) ? 'full' : 'content';
+        if ( $r->scope === self::SCOPE_READ ) {
+          $access = 'readonly';
+        }
       }
       $out[] = [
         'id' => (int) $r->id,
@@ -1020,6 +1063,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
         'user_login' => $user ? $user->user_login : 'deleted',
         'user_display' => $user ? $user->display_name : 'Deleted user',
         'access' => $access,
+        'read_only' => $r->scope === self::SCOPE_READ,
         'created' => $r->created,
         'last_used' => $r->last_used,
         'access_expires' => $r->access_expires,
@@ -1027,6 +1071,23 @@ class Meow_MWAI_Labs_MCP_OAuth {
       ];
     }
     return new WP_REST_Response( [ 'apps' => $out ], 200 );
+  }
+
+  // An admin may make any connection read-only, but may only give full access back to their
+  // own: raising someone else's grant would hand their account powers they did not approve.
+  public function handle_apps_access( WP_REST_Request $request ) {
+    $id = (int) $request->get_param( 'id' );
+    $readOnly = rest_sanitize_boolean( $request->get_param( 'read_only' ) );
+    global $wpdb;
+    $row = $id > 0 ? $wpdb->get_row( $wpdb->prepare( "SELECT client_id, user_id FROM {$this->table_tokens} WHERE id = %d", $id ) ) : null;
+    if ( !$row ) {
+      return new WP_REST_Response( [ 'error' => 'Invalid id.' ], 400 );
+    }
+    if ( !$readOnly && (int) $row->user_id !== get_current_user_id() ) {
+      return new WP_REST_Response( [ 'error' => 'Only the person who approved this connection can give it full access again.' ], 403 );
+    }
+    $this->set_grant_scope( $row->client_id, (int) $row->user_id, $readOnly ? self::SCOPE_READ : self::SCOPE_FULL );
+    return new WP_REST_Response( [ 'read_only' => $readOnly ], 200 );
   }
 
   public function handle_apps_revoke( WP_REST_Request $request ) {
@@ -1090,6 +1151,17 @@ class Meow_MWAI_Labs_MCP_OAuth {
       $cutoff,
       self::TOKEN_REVOKED,
       $cutoff
+    ) );
+  }
+
+  /** Set the access level of every row of a grant (one client, one user), rotated ones included. */
+  private function set_grant_scope( $client_id, $user_id, $scope ) {
+    global $wpdb;
+    $wpdb->query( $wpdb->prepare(
+      "UPDATE {$this->table_tokens} SET scope = %s WHERE client_id = %s AND user_id = %d",
+      $scope,
+      $client_id,
+      $user_id
     ) );
   }
 
@@ -1187,10 +1259,16 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $site_name = get_bloginfo( 'name' );
     $client_name = $client->client_name ?: 'Unnamed MCP Client';
     $role_label = $this->describe_user_role( $user );
+    $destination = $this->describe_redirect( $params['redirect_uri'] );
+    $impersonated = $this->impersonated_brand( $client_name, $params['redirect_uri'] );
 
     status_header( 200 );
     nocache_headers();
     header( 'Content-Type: text/html; charset=utf-8' );
+    // Anyone can register an app (that is how Claude and ChatGPT connect), so the one thing that
+    // stands between an attacker and an admin token is a deliberate click on Approve. Framed in
+    // an invisible iframe on another site, that click could be stolen (Wordfence CVE-2026-110732).
+    $this->send_no_framing_headers();
 
     $hidden_fields = [
       'client_id' => $params['client_id'],
@@ -1211,10 +1289,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
 
     echo '<h1>Authorize this app</h1>';
     echo '<p class="mwai-oauth-app"><strong>' . esc_html( $client_name ) . '</strong> wants to connect to <strong>' . esc_html( $site_name ) . '</strong>.</p>';
+    if ( $impersonated ) {
+      echo '<p class="mwai-oauth-warning"><strong>Careful: this app calls itself ' . esc_html( $impersonated ) . ', but it does not send you back to ' . esc_html( $impersonated ) . '.</strong> Someone may be trying to get access to your site. Only approve if you are connecting it yourself, right now, and you know this address.</p>';
+    }
 
     echo '<div class="mwai-oauth-meta">';
     echo '<div><span class="mwai-oauth-label">Signed in as</span><span class="mwai-oauth-value">' . esc_html( $user->display_name ) . ' (' . esc_html( $user->user_login ) . ')</span></div>';
-    echo '<div><span class="mwai-oauth-label">Permissions</span><span class="mwai-oauth-value">' . esc_html( $role_label ) . '</span></div>';
+    echo '<div><span class="mwai-oauth-label">Role</span><span class="mwai-oauth-value">' . esc_html( $role_label ) . '</span></div>';
+    echo '<div><span class="mwai-oauth-label">Sends you to</span><span class="mwai-oauth-value">' . esc_html( $destination ) . '</span></div>';
     echo '</div>';
 
     if ( user_can( $user, 'manage_options' ) ) {
@@ -1228,6 +1310,10 @@ class Meow_MWAI_Labs_MCP_OAuth {
     foreach ( $hidden_fields as $name => $value ) {
       echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '">';
     }
+    echo '<fieldset class="mwai-oauth-access"><legend>Access</legend>';
+    echo '<label><input type="radio" name="access" value="full" checked><span><strong>Full access</strong>The app can read, create, edit and delete, within what your account can do.</span></label>';
+    echo '<label><input type="radio" name="access" value="read"><span><strong>Read-only</strong>The app can look at your site, but cannot change anything.</span></label>';
+    echo '</fieldset>';
     echo '<div class="mwai-oauth-buttons">';
     echo '<button type="submit" name="action" value="approve" class="mwai-oauth-approve">Approve</button>';
     echo '<button type="submit" name="action" value="deny" class="mwai-oauth-deny">Deny</button>';
@@ -1241,6 +1327,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
     status_header( 400 );
     nocache_headers();
     header( 'Content-Type: text/html; charset=utf-8' );
+    $this->send_no_framing_headers();
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">';
     echo '<title>Authorization error</title>';
     echo $this->consent_styles();
@@ -1250,13 +1337,66 @@ class Meow_MWAI_Labs_MCP_OAuth {
     echo '</main></body></html>';
   }
 
+  private function send_no_framing_headers() {
+    header( 'X-Frame-Options: DENY' );
+    header( "Content-Security-Policy: frame-ancestors 'none'" );
+  }
+
+  /** Where the approval sends the browser, as the admin should read it: a host, or the app's scheme. */
+  private function describe_redirect( $redirect_uri ) {
+    $parts = wp_parse_url( (string) $redirect_uri );
+    if ( !empty( $parts['host'] ) ) {
+      return $parts['host'];
+    }
+    return !empty( $parts['scheme'] ) ? $parts['scheme'] . '://' : (string) $redirect_uri;
+  }
+
+  /**
+  * The brand an app name claims (Claude, ChatGPT...) when its redirect does not belong to that
+  * brand, or null. Names are free text at registration, so "Claude" alone proves nothing.
+  * Loopback addresses count as genuine: Claude Code, Cursor and other local clients use them.
+  */
+  private function impersonated_brand( $client_name, $redirect_uri ) {
+    $brands = [
+      'Claude' => [ 'claude', 'anthropic' ],
+      'ChatGPT' => [ 'chatgpt', 'openai' ],
+    ];
+    $domains = [
+      'Claude' => [ 'claude.ai', 'claude.com', 'anthropic.com' ],
+      'ChatGPT' => [ 'chatgpt.com', 'openai.com' ],
+    ];
+    $host = strtolower( (string) wp_parse_url( (string) $redirect_uri, PHP_URL_HOST ) );
+    if ( $host === '' || in_array( $host, [ 'localhost', '127.0.0.1', '[::1]', '::1' ], true ) ) {
+      return null;
+    }
+    // Torii, our own gateway, connects Claude and ChatGPT on the user's behalf.
+    if ( $host === 'connect.meowapps.com' || substr( $host, -15 ) === '.meowapps.com' ) {
+      return null;
+    }
+    $name = strtolower( (string) $client_name );
+    foreach ( $brands as $brand => $words ) {
+      foreach ( $words as $word ) {
+        if ( strpos( $name, $word ) === false ) {
+          continue;
+        }
+        foreach ( $domains[ $brand ] as $domain ) {
+          if ( $host === $domain || substr( $host, -strlen( '.' . $domain ) ) === '.' . $domain ) {
+            return null;
+          }
+        }
+        return $brand;
+      }
+    }
+    return null;
+  }
+
   private function describe_user_role( $user ) {
     if ( !$user || empty( $user->roles ) ) {
       return 'No role';
     }
     $role = $user->roles[0];
     $names = [
-      'administrator' => 'Administrator (full access)',
+      'administrator' => 'Administrator',
       'editor' => 'Editor (content only)',
       'author' => 'Author',
       'contributor' => 'Contributor',
@@ -1275,7 +1415,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
       .mwai-oauth-meta > div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; font-size: 14px; }
       .mwai-oauth-label { color: #6b7280; }
       .mwai-oauth-value { color: #1d2330; font-weight: 500; text-align: right; }
+      .mwai-oauth-warning { font-size: 13px; line-height: 1.5; color: #8a1c1c; background: #fdecec; border: 1px solid #f3b4b4; border-radius: 8px; padding: 12px 14px; margin: 0 0 20px; }
       .mwai-oauth-note { font-size: 13px; color: #6b7280; line-height: 1.5; margin: 0 0 24px; }
+      .mwai-oauth-access { border: 0; padding: 0; margin: 0 0 20px; }
+      .mwai-oauth-access legend { font-size: 13px; color: #6b7280; padding: 0; margin-bottom: 8px; }
+      .mwai-oauth-access label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid #e3e6ea; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: #6b7280; line-height: 1.4; }
+      .mwai-oauth-access label:has(input:checked) { border-color: #2271b1; background: #f3f8fc; }
+      .mwai-oauth-access input { margin-top: 2px; }
+      .mwai-oauth-access strong { display: block; color: #1d2330; font-size: 14px; margin-bottom: 2px; }
       .mwai-oauth-buttons { display: flex; gap: 10px; }
       .mwai-oauth-buttons button { flex: 1; padding: 11px 14px; border-radius: 8px; border: 1px solid transparent; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s; }
       .mwai-oauth-approve { background: #2271b1; color: #fff; }

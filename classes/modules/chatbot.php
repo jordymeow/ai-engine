@@ -886,7 +886,7 @@ class Meow_MWAI_Modules_Chatbot {
           && $query->historyStrategy !== 'internal'
           && $this->core->responseIdManager->is_stateful_conversation_id( $query->previousResponseId );
         if ( $mode !== 'assistant' && !$serverSideHistory ) {
-          $chatId = $this->core->fix_chat_id( $query, $params );
+          $chatId = $this->files_chat_id( $query, $params );
           $env = $this->core->get_ai_env( $query->envId );
           foreach ( $this->core->files->get_chat_files( $chatId ) as $earlierFile ) {
             $refId = $earlierFile['refId'];
@@ -999,7 +999,7 @@ class Meow_MWAI_Modules_Chatbot {
               $this->core->files->update_purpose( $fileId, 'analysis' );
               $this->core->files->add_metadata( $fileId, 'query_envId', $query->envId );
               $this->core->files->add_metadata( $fileId, 'query_session', $query->session );
-              $this->core->files->add_metadata( $fileId, 'query_chatId', $this->core->fix_chat_id( $query, $params ) );
+              $this->core->files->add_metadata( $fileId, 'query_chatId', $this->files_chat_id( $query, $params ) );
             }
           }
         }
@@ -1422,17 +1422,49 @@ class Meow_MWAI_Modules_Chatbot {
   // custom_id and shared by every visitor of that id. Inside post content, only authors who
   // can edit others' posts may set them: otherwise a Contributor previewing a draft with the
   // same custom_id took over a live chatbot (Patchstack, dzaku, 2026-10). Widgets, templates
-  // and theme code are written by admins, so they are not restricted.
+  // and theme code are written by admins, so they are not restricted on a normal page load.
+  // AJAX and REST calls are different: there the shortcode text can come from the request itself
+  // (core's parse-embed runs do_shortcode() on what a Contributor posts, outside the_content), so
+  // with no post being rendered the caller must be allowed to post unfiltered HTML (Patchstack,
+  // Ahmad Naseem, 2026-10). Requiring a capability on page loads too would break custom chatbots
+  // in widgets and templates, since anonymous visits are what save their parameters.
   private function can_override_server_params() {
     $postId = end( $this->renderingPosts );
     if ( empty( $postId ) ) {
-      return true;
+      $isRequestDriven = wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST );
+      return !$isRequestDriven || current_user_can( 'unfiltered_html' );
     }
     $post = get_post( $postId );
     if ( !$post ) {
       return true;
     }
     return user_can( (int) $post->post_author, 'edit_others_posts' );
+  }
+
+  // Outside post content (widgets, templates, theme code) a shortcode may create a custom
+  // chatbot's settings, or refresh them unchanged, but replacing settings that are already live
+  // takes someone who can post unfiltered HTML. The custom_id is public, so otherwise any path
+  // that renders a low-privilege user's text outside the_content (a theme running shortcodes in
+  // excerpts or custom fields) could swap a live chatbot's prompt, model and API key (Patchstack,
+  // 2026-10). An admin's own widget change applies as soon as they view the page, or within 24h.
+  private function may_store_custom_params( $customId, $serverParams ) {
+    if ( !empty( end( $this->renderingPosts ) ) || current_user_can( 'unfiltered_html' ) ) {
+      return true;
+    }
+    $existing = get_transient( 'mwai_custom_chatbot_' . $customId );
+    return $existing === false || $existing == $serverParams;
+  }
+
+  // The chat id that files of this conversation are filed under. It follows the discussion: when
+  // the client sends a chat id that belongs to another chatbot, this conversation lives under its
+  // own derived id, and so must its files, or one bot re-attached the other bot's uploads.
+  private function files_chat_id( $query, $params ) {
+    $chatId = $this->core->fix_chat_id( $query, $params );
+    if ( empty( $this->core->discussions ) ) {
+      return $chatId;
+    }
+    $botId = !empty( $params['customId'] ) ? $params['customId'] : ( $params['botId'] ?? null );
+    return $this->core->discussions->resolve_chat_id( $chatId, $botId );
   }
 
   public function chat_shortcode( $atts ) {
@@ -1630,7 +1662,9 @@ class Meow_MWAI_Modules_Chatbot {
         $customId = md5( json_encode( $serverParams ) );
         $frontSystem['customId'] = $customId;
       }
-      set_transient( 'mwai_custom_chatbot_' . $customId, $serverParams, 60 * 60 * 24 );
+      if ( $this->may_store_custom_params( $customId, $serverParams ) ) {
+        set_transient( 'mwai_custom_chatbot_' . $customId, $serverParams, 60 * 60 * 24 );
+      }
     }
 
     // Retrieve the actions, shortcuts, and blocks we want to inject at the beginning
@@ -1664,7 +1698,8 @@ class Meow_MWAI_Modules_Chatbot {
       $this->renderedPopups[] = $customId ? "custom_id={$customId}" : "id={$botId}";
     }
 
-    return "<div class='mwai-chatbot-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
+    $containerClass = !empty( $frontParams['window'] ) ? 'mwai-chatbot-container mwai-popup-container' : 'mwai-chatbot-container';
+    return "<div class='{$containerClass}' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
   }
 
   public function chatbot_discussions( $atts ) {

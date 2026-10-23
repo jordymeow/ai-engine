@@ -389,8 +389,11 @@ class Meow_MWAI_Core {
 
   // Clean the text perfectly, resolve shortcodes, etc, etc.
   public function clean_text( $rawText = '' ) {
-    $text = html_entity_decode( $rawText );
-    $text = wp_strip_all_tags( $text );
+    // Tags first, entities second. Decoding first turned an escaped "&lt;48 dB" into "<48 dB",
+    // which the tag stripper took for a tag and deleted with everything after it, so a post
+    // lost the rest of its content in Knowledge and Content-Aware (Nicolas Drouet, 2026-10).
+    $text = wp_strip_all_tags( $rawText );
+    $text = html_entity_decode( $text );
     $text = preg_replace( '/[\r\n]+/', "\n", $text );
     $text = preg_replace( '/\n+/', "\n", $text );
     $text = preg_replace( '/\t+/', "\t", $text );
@@ -1145,9 +1148,16 @@ class Meow_MWAI_Core {
     }
     $maxTokens = $reply->query->maxTokens ?? null;
     Meow_MWAI_Logging::warn( "The reply was cut: it reached Max Tokens ({$maxTokens})." );
-    $notice = $context === 'chatbot'
-      ? __( 'This answer was cut short because it reached its length limit. Just ask me to continue.', 'ai-engine' )
-      : __( 'This answer was cut short because it reached its length limit.', 'ai-engine' );
+    // A thinking model can spend the whole limit reasoning and never start the answer.
+    $noAnswer = trim( (string) ( $reply->result ?? '' ) ) === '';
+    if ( $noAnswer ) {
+      $notice = __( 'The AI used its whole length limit thinking and could not answer yet. Please try again.', 'ai-engine' );
+    }
+    else {
+      $notice = $context === 'chatbot'
+        ? __( 'This answer was cut short because it reached its length limit. Just ask me to continue.', 'ai-engine' )
+        : __( 'This answer was cut short because it reached its length limit.', 'ai-engine' );
+    }
     if ( current_user_can( 'manage_options' ) && $maxTokens ) {
       // translators: %d is the Max Tokens value of the chatbot or form.
       $notice .= ' ' . sprintf( __( 'Admins: raise Max Tokens (currently %d) in its settings.', 'ai-engine' ), $maxTokens );
@@ -1292,6 +1302,15 @@ class Meow_MWAI_Core {
     foreach ( $chatbots as &$chatbot ) {
       if ( $chatbot['botId'] === 'default' ) {
         $hasDefault = true;
+      }
+      // New chatbots open in a macOS frame (3.8.7). Chatbots saved before these keys existed
+      // got the standard frame from the defaults below, so pin it first: an update must never
+      // restyle a chatbot that is already live. Do the same for themeId if its default changes.
+      foreach ( [ 'containerType' => 'standard', 'headerType' => 'standard' ] as $key => $legacy ) {
+        if ( !isset( $chatbot[$key] ) ) {
+          $chatbot[$key] = $legacy;
+          $hasChanges = true;
+        }
       }
       foreach ( $defaults as $key => $value ) {
         // Use default value if not set.
@@ -1738,17 +1757,20 @@ class Meow_MWAI_Core {
     // Engine Example: [ 'name' => 'Ollama', 'type' => 'ollama', inputs => ['apikey', 'endpoint'], models => [] ]
     $engines = MWAI_ENGINES;
 
-    // OVHcloud is integrated but not yet promoted publicly (pending the OVHcloud
-    // partnership). It only appears as a selectable provider when Dev Mode is on,
-    // so production sites never see it until we decide to ship it.
-    if ( $this->get_option( 'dev_mode' ) ) {
-      $engines[] = [
-        'name' => 'OVHcloud',
-        'type' => 'ovh',
-        'inputs' => [ 'apikey', 'dynamicModels' ],
-        'internal' => true,
-        'models' => [],
-      ];
+    // Partner providers stay hidden until the partnership is live (see is_partner_provider_enabled()).
+    // A site that already has an environment of that type keeps seeing it, so saved data (or an
+    // environment a host provisioned for its customer) still works.
+    $envTypes = array_column( $options['ai_envs'] ?? [], 'type' );
+    foreach ( [ 'ovh' => 'OVHcloud', 'sakana' => 'Sakana AI' ] as $type => $name ) {
+      if ( $this->is_partner_provider_enabled( $type ) || in_array( $type, $envTypes, true ) ) {
+        $engines[] = [
+          'name' => $name,
+          'type' => $type,
+          'inputs' => [ 'apikey', 'dynamicModels' ],
+          'internal' => true,
+          'models' => [],
+        ];
+      }
     }
 
     $options['ai_engines'] = apply_filters( 'mwai_engines', $engines );
@@ -1783,6 +1805,12 @@ class Meow_MWAI_Core {
         $engine['models'] = apply_filters(
           'mwai_xai_models',
           Meow_MWAI_Engines_XAI::get_models_static()
+        );
+      }
+      else if ( $engine['type'] === 'sakana' ) {
+        $engine['models'] = apply_filters(
+          'mwai_sakana_models',
+          Meow_MWAI_Engines_Sakana::get_models_static()
         );
       }
       else {
@@ -2264,6 +2292,34 @@ class Meow_MWAI_Core {
       update_option( $this->option_name, $options, false );
       $this->get_all_options( true );
     }
+  }
+
+  // Dashboard cards an admin closed for good, per user.
+  public function get_dismissed_dashboard_cards( $user_id = null ) {
+    $dismissed = get_user_meta( $user_id ?: get_current_user_id(), 'mwai_dismissed_cards', true );
+    return is_array( $dismissed ) ? array_values( $dismissed ) : [];
+  }
+
+  public function dismiss_dashboard_card( $card, $user_id = null ) {
+    $user_id = $user_id ?: get_current_user_id();
+    $dismissed = $this->get_dismissed_dashboard_cards( $user_id );
+    if ( !in_array( $card, $dismissed, true ) ) {
+      $dismissed[] = $card;
+      update_user_meta( $user_id, 'mwai_dismissed_cards', $dismissed );
+    }
+    return $dismissed;
+  }
+
+  /**
+   * Sakana AI is offered as a provider only once the partnership is confirmed. Turn it on
+   * with define( 'MWAI_SAKANA', true ) in wp-config.php or the mwai_sakana_enabled filter.
+   */
+  // Turned on with define( 'MWAI_OVH', true ) or define( 'MWAI_SAKANA', true ) in wp-config.php,
+  // or the mwai_ovh_enabled / mwai_sakana_enabled filter. Dev Mode used to reveal OVHcloud, but
+  // any user can switch Dev Mode on, so it was not really hidden.
+  public function is_partner_provider_enabled( $type ) {
+    $constant = 'MWAI_' . strtoupper( $type );
+    return (bool) apply_filters( "mwai_{$type}_enabled", defined( $constant ) && constant( $constant ) );
   }
 
   public function get_option( $option, $default = null ) {

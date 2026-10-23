@@ -39,8 +39,8 @@ define( 'MWAI_CHATBOT_DEFAULT_PARAMS', [
   'localMemory' => true,
   'multiUpload' => false,
   // UI Builder Parameters
-  'containerType' => 'standard',
-  'headerType' => 'standard',
+  'containerType' => 'osx',
+  'headerType' => 'osx',
   'messagesType' => 'standard',
   'inputType' => 'standard',
   'footerType' => 'standard',

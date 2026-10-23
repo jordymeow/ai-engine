@@ -447,6 +447,24 @@ class Meow_MWAI_Labs_MCP_Core {
    * repeats. The $context array is forwarded to mwai_mcp_post_changed so handlers can
    * coalesce or defer purges across requests on their own (e.g. flush at end of batch).
    */
+  // Without force, a delete must land in the trash, where it can be restored. WordPress's own
+  // wp_delete_post() only trashes posts and pages: products, events and other custom types, media
+  // when MEDIA_TRASH is off, anything already in the trash, and every type when EMPTY_TRASH_DAYS is
+  // 0 were destroyed for good, while the tools promised the trash (Torii audit, 2026-10). Returns
+  // why the item cannot go to the trash, or null when it can.
+  private function trash_refusal( string $what, string $status, bool $isMedia = false ): ?string {
+    if ( $status === 'trash' ) {
+      return "This {$what} is already in the trash. Deleting it again would be permanent: ask the user first, and only then call again with force: true.";
+    }
+    if ( !EMPTY_TRASH_DAYS ) {
+      return "This site has no trash (EMPTY_TRASH_DAYS is 0), so deleting this {$what} would be permanent. Ask the user first, and only then call again with force: true.";
+    }
+    if ( $isMedia && !MEDIA_TRASH ) {
+      return 'Media cannot go to the trash on this site (MEDIA_TRASH is off, the WordPress default), so deleting would remove the file for good. Ask the user first, and only then call again with force: true.';
+    }
+    return null;
+  }
+
   private function bust_post_cache( int $post_id, array $context = [] ): void {
     if ( $post_id <= 0 ) {
       return;
@@ -673,7 +691,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_delete_comment' => [
         'name' => 'wp_delete_comment',
-        'description' => 'Delete a comment. `force` true bypasses trash.',
+        'description' => 'Move a comment to the trash. With force: true, delete it permanently (irreversible).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -913,7 +931,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_delete_post' => [
         'name' => 'wp_delete_post',
-        'description' => 'Delete, trash, or remove a post, page, or any custom post type by ID. Without force, the post is moved to trash (can be restored). With force: true, the post is permanently destroyed (bypasses trash, irreversible). Works for posts, pages, products, events, attachments, or any registered CPT.',
+        'description' => 'Delete, trash, or remove a post, page, or any custom post type by ID. Without force, it is moved to the trash (can be restored), or refused when it cannot be (already in the trash, or the site has no trash). With force: true, it is permanently destroyed (irreversible). Works for posts, pages, products, events, attachments, or any registered CPT.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -1225,7 +1243,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_delete_media' => [
         'name' => 'wp_delete_media',
-        'description' => 'Delete/trash an attachment.',
+        'description' => 'Move an attachment to the trash. Most sites have no media trash (MEDIA_TRASH is off by default), so without force this is usually refused: then ask the user before calling again with force: true, which deletes the item and its files permanently (irreversible).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -1728,9 +1746,35 @@ class Meow_MWAI_Labs_MCP_Core {
           $r['error'] = [ 'code' => -32602, 'message' => 'comment_ID required' ];
           break;
         }
-        $done = wp_delete_comment( intval( $a['comment_ID'] ), !empty( $a['force'] ) );
+        $comment_id = intval( $a['comment_ID'] );
+        $comment = get_comment( $comment_id );
+        if ( !$comment ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Comment not found' ];
+          break;
+        }
+        if ( empty( $a['force'] ) ) {
+          // Spam has no trash of its own: deleting it is permanent, like the trash.
+          $isSpam = $comment->comment_approved === 'spam';
+          $status = ( $isSpam || $comment->comment_approved === 'trash' ) ? 'trash' : (string) $comment->comment_approved;
+          $refusal = $isSpam
+            ? 'This comment is marked as spam, so deleting it would be permanent. Ask the user first, and only then call again with force: true.'
+            : $this->trash_refusal( 'comment', $status );
+          if ( $refusal ) {
+            $r['error'] = [ 'code' => -32602, 'message' => $refusal ];
+            break;
+          }
+          $done = wp_trash_comment( $comment_id );
+          if ( $done ) {
+            $this->add_result_text( $r, 'Comment #' . $comment_id . ' moved to the trash' );
+          }
+          else {
+            $r['error'] = [ 'code' => -32603, 'message' => 'Deletion failed' ];
+          }
+          break;
+        }
+        $done = wp_delete_comment( $comment_id, true );
         if ( $done ) {
-          $this->add_result_text( $r, 'Comment #' . $a['comment_ID'] . ' deleted' );
+          $this->add_result_text( $r, 'Comment #' . $comment_id . ' permanently deleted' );
         }
         else {
           $r['error'] = [ 'code' => -32603, 'message' => 'Deletion failed' ];
@@ -2383,10 +2427,23 @@ class Meow_MWAI_Labs_MCP_Core {
           break;
         }
         $delete_id = intval( $a['ID'] );
-        $del = wp_delete_post( $delete_id, !empty( $a['force'] ) );
+        $delete_post = get_post( $delete_id );
+        if ( !$delete_post ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post not found' ];
+          break;
+        }
+        $force = !empty( $a['force'] );
+        if ( !$force ) {
+          $refusal = $this->trash_refusal( 'item', $delete_post->post_status, $delete_post->post_type === 'attachment' );
+          if ( $refusal ) {
+            $r['error'] = [ 'code' => -32602, 'message' => $refusal ];
+            break;
+          }
+        }
+        $del = $force ? wp_delete_post( $delete_id, true ) : wp_trash_post( $delete_id );
         if ( $del ) {
           $this->bust_post_cache( $delete_id, [ 'tool' => 'wp_delete_post' ] );
-          $this->add_result_text( $r, 'Post #' . $a['ID'] . ' deleted' );
+          $this->add_result_text( $r, 'Post #' . $delete_id . ( $force ? ' permanently deleted' : ' moved to the trash' ) );
         }
         else {
           $r['error'] = [ 'code' => -32603, 'message' => 'Deletion failed' ];
@@ -2832,9 +2889,23 @@ class Meow_MWAI_Labs_MCP_Core {
           $r['error'] = [ 'code' => -32602, 'message' => 'ID required' ];
           break;
         }
-        $d = wp_delete_post( intval( $a['ID'] ), !empty( $a['force'] ) );
+        $media_id = intval( $a['ID'] );
+        $media = get_post( $media_id );
+        if ( !$media || $media->post_type !== 'attachment' ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Media not found' ];
+          break;
+        }
+        $force = !empty( $a['force'] );
+        if ( !$force ) {
+          $refusal = $this->trash_refusal( 'media', $media->post_status, true );
+          if ( $refusal ) {
+            $r['error'] = [ 'code' => -32602, 'message' => $refusal ];
+            break;
+          }
+        }
+        $d = $force ? wp_delete_attachment( $media_id, true ) : wp_trash_post( $media_id );
         if ( $d ) {
-          $this->add_result_text( $r, 'Media #' . $a['ID'] . ' deleted' );
+          $this->add_result_text( $r, 'Media #' . $media_id . ( $force ? ' permanently deleted' : ' moved to the trash' ) );
         }
         else {
           $r['error'] = [ 'code' => -32603, 'message' => 'Deletion failed' ];

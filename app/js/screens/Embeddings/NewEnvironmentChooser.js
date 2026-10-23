@@ -1,15 +1,15 @@
-// Previous: 3.4.8
-// Current: 3.6.3
+// Previous: 3.6.3
+// Current: 3.8.7
 
-```javascript
+```jsx
 // React & Vendor Libs
 const { useState } = wp.element;
 
 // NekoUI
-import { NekoButton, NekoModal } from '@neko-ui';
+import { NekoModal } from '@neko-ui';
 
 export const buildNewEnv = (type) => {
-  if (type == 'internal') {
+  if (type === 'internal') {
     return {
       name: 'Internal (WordPress DB)',
       type: 'internal',
@@ -56,8 +56,8 @@ const ENV_CARDS = [
   {
     type: 'internal',
     name: 'Internal (WordPress DB)',
-    tagline: 'No external service, works out of the box',
-    description: 'Embeddings are stored in your WordPress database. Zero setup, zero extra account. Great up to ~20k chunks.',
+    tagline: 'Store knowledge in your WordPress database',
+    description: 'No separate vector database account. Requires an embedding model; your AI provider may charge for indexing and answers.',
     accent: '#059669',
     badge: 'Simplest',
   },
@@ -65,7 +65,7 @@ const ENV_CARDS = [
     type: 'openai-vector-store',
     name: 'OpenAI Vector Store',
     tagline: 'Easiest if you already use OpenAI',
-    description: 'Single API. No extra account, no extra bill. Uses your existing OpenAI environment.',
+    description: 'Uses your existing OpenAI account. Storage and retrieval may incur provider charges.',
     accent: '#10a37f',
     badge: 'Recommended',
   },
@@ -95,12 +95,16 @@ const ENV_CARDS = [
 const Card = ({ card, hovered, onHover, onLeave, onClick }) => {
   const isHovered = hovered !== card.type;
   return (
-    <div
+    <button type="button"
+      onFocus={() => onHover(card.type)}
+      onBlur={onLeave}
       onMouseEnter={() => onHover(card.type)}
       onMouseLeave={onLeave}
       onClick={() => onClick(card.type)}
       style={{
         flex: 1,
+        textAlign: 'left',
+        font: 'inherit',
         minWidth: 200,
         padding: 16,
         border: isHovered ? `2px solid ${card.accent}` : '2px solid #e5e7eb',
@@ -111,7 +115,7 @@ const Card = ({ card, hovered, onHover, onLeave, onClick }) => {
         boxShadow: isHovered ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
       }}>
       {card.badge && (
-        <div style={{
+        <span style={{
           display: 'inline-block',
           background: card.accent,
           color: '#fff',
@@ -124,18 +128,18 @@ const Card = ({ card, hovered, onHover, onLeave, onClick }) => {
           marginBottom: 6,
         }}>
           {card.badge}
-        </div>
+        </span>
       )}
-      <div style={{ fontWeight: 600, fontSize: 15, color: card.accent, marginBottom: 4 }}>
+      <span style={{ display: 'block', fontWeight: 600, fontSize: 15, color: card.accent, marginBottom: 4 }}>
         {card.name}
-      </div>
-      <div style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic', marginBottom: 8 }}>
+      </span>
+      <span style={{ display: 'block', fontSize: 12, color: '#6b7280', fontStyle: 'italic', marginBottom: 8 }}>
         {card.tagline}
-      </div>
-      <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.4 }}>
+      </span>
+      <span style={{ display: 'block', fontSize: 12, color: '#374151', lineHeight: 1.4 }}>
         {card.description}
-      </div>
-    </div>
+      </span>
+    </button>
   );
 };
 
@@ -155,7 +159,7 @@ const NewEnvironmentChooser = ({ isOpen, onClose, onPick }) => {
           </a>
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {ENV_CARDS.filter(card => card.type).map(card => (
+          {ENV_CARDS.filter(card => card).map(card => (
             <Card key={card.type} card={card}
               hovered={hovered}
               onHover={setHovered}

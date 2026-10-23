@@ -1,7 +1,7 @@
-// Previous: 3.7.9
-// Current: 3.8.1
+// Previous: 3.8.1
+// Current: 3.8.7
 
-```javascript
+```jsx
 // React & Vendor Libs
 const { useState, useEffect, useCallback, useRef } = wp.element;
 
@@ -46,6 +46,9 @@ export default function useChatSession(options) {
 
   const saveMessages = useCallback((messages) => {
     if (!localStorageKey) {
+      return;
+    }
+    if ((messages ?? []).some(msg => typeof msg?.id === 'string' && msg.id.startsWith('preview-'))) {
       return;
     }
     localStorage.setItem(localStorageKey, nekoStringify({
@@ -420,7 +423,8 @@ export default function useChatSession(options) {
       session: sessionId,
       chatId: chatId,
       contextId: contextId,
-      messages: currentMessages.filter(msg => msg.role !== 'error' && !msg.isError),
+      messages: currentMessages.filter(msg => msg.role !== 'error' && !msg.isError
+        && !(typeof msg.id === 'string' && msg.id.startsWith('preview-'))),
       newMessage: shortcutId ? '' : textQuery,
       newFileId: multiUpload ? null : currentFile?.uploadedId,
       newFileIds: multiUpload ? currentFiles.map(f => f.uploadedId).filter(id => id) : null,
@@ -616,7 +620,7 @@ export default function useChatSession(options) {
       if (chatbotInputRef?.current?.focusInput) {
         setTimeout(() => {
           chatbotInputRef.current.focusInput();
-        }, 100);
+        }, 300);
       }
     }
   }, [lastFailedQuery, setInputText, chatbotInputRef]);

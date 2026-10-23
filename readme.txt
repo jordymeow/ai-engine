@@ -1,11 +1,11 @@
-=== AI Engine - The Chatbot, AI Framework & MCP for WordPress ===
+=== AI Engine – MCP Server & AI Chatbot for WordPress, with Claude, ChatGPT & Gemini ===
 Contributors: TigrouMeow
-Tags: ai, chatbot, mcp, ai agent, openai
+Tags: ai, chatbot, mcp, claude, chatgpt
 Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.6
+Stable tag: 3.8.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,6 +14,8 @@ The AI chatbot, AI agent and MCP server for WordPress. Connect OpenAI, Claude, G
 == Description ==
 
 **AI Engine connects WordPress with AI models.** One install, stable connectors for every major AI provider: OpenAI, Anthropic, Google, Mistral, and more. Build intelligent chatbots, generate content, create AI forms, and automate tasks. All from your WordPress dashboard.
+
+https://www.youtube.com/watch?v=KDTcI7jjdPA
 
 Take the tour at [vibewithwp.ai](https://vibewithwp.ai/): what AI Engine does, how the MCP server works, and how it compares to the alternatives. Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more information, check the official website of [AI Engine](https://meowapps.com/ai-engine/).
 
@@ -113,10 +115,9 @@ Create, refine, and visualize content with AI assistance.
 * Generate content from scratch
 * Multi-block support in the WordPress editor
 
-**Image & Video Tools:**
+**Image Tools:**
 
 * Create images from text prompts
-* Generate videos with AI (Sora)
 * Edit existing images with AI
 * Vision AI for image analysis
 * Automatic alt text generation
@@ -176,6 +177,8 @@ Extend WordPress with AI capabilities.
 == MCP (Model Context Protocol) ==
 
 AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT, Claude, Claude Code, and OpenClaw can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
+
+**More than 130 tools, over 200 with the Meow Apps family.** Posts, pages, media, comments, users, taxonomies, block patterns, editor notes, image generation and vision come free. Pro adds plugins, themes, database, WooCommerce, Polylang and WPML. SEO Engine, Code Engine and Social Engine plug in their own, and any WordPress Ability can join. You choose which sets are on, so each AI only carries what it needs.
 
 **Direct and private.** AI apps connect straight to your site. There is no relay service in between, your credentials never leave WordPress, and the MCP server is free, with no monthly fee and no usage cap.
 
@@ -250,7 +253,7 @@ Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire
 You may have heard of MCP Adapter, built by the WordPress team primarily for their WordPress.com hosting service. It's essentially a thin layer on top of the REST API. AI Engine takes a different approach: its MCP tools are specifically crafted for AI agents, with rich context, smart defaults, and practical actions that go far beyond what a generic REST API wrapper can offer. And it works on any WordPress installation, regardless of your hosting provider. AI Engine also exposes its REST API as MCP tools if you want that, but the dedicated tools are where the real power is.
 
 **Privacy First**
-IP hashing, GDPR tools, secure file handling, and session-based tracking. You control your data.
+IP hashing, GDPR tools, secure file handling, and session-based tracking. You control your data. The free version sends nothing to us; the Pro version's update check also says whether MCP was used in the last 30 days (a simple yes or no, nothing about what it did) and how many phones are paired with Workspace (a number only).
 
 **Constantly Evolving**
 Weekly updates based on real user feedback. We listen, we improve.
@@ -307,11 +310,11 @@ MCP (Model Context Protocol) exposes WordPress tools to AI agents. [Learn how to
 
 = Does AI Engine work with WordPress AI (the AI plugin, Connectors and providers)? =
 
-Yes, but you don't need it. AI Engine already does everything WordPress AI offers, and more: it connects to every major provider, and adds chatbots, AI Forms, embeddings, a dedicated MCP server with more than fifty tools, and usage insights. That's why we don't recommend installing the WordPress AI plugin alongside it. If you already use it, that's fine: we make sure both play nicely together. On the Connectors page, choose to let AI Engine manage your providers: the API keys you already saved there are reused, both screens stay in sync, and the AI features of WordPress run through AI Engine, so their usage shows up in its Insights.
+Yes, but you don't need it. AI Engine already does everything WordPress AI offers, and more: it connects to every major provider, and adds chatbots, AI Forms, embeddings, a dedicated MCP server with more than 130 tools, and usage insights. That's why we don't recommend installing the WordPress AI plugin alongside it. If you already use it, that's fine: we make sure both play nicely together. On the Connectors page, choose to let AI Engine manage your providers: the API keys you already saved there are reused, both screens stay in sync, and the AI features of WordPress run through AI Engine, so their usage shows up in its Insights.
 
 = Do I need the MCP Adapter plugin? =
 
-No. AI Engine has its own MCP server, with more than fifty tools, OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and Settings → MCP → Abilities lets AI Engine's own server expose those abilities too.
+No. AI Engine has its own MCP server, with more than 130 tools (over 200 with SEO Engine, Code Engine and Social Engine), OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and Settings → MCP → Abilities lets AI Engine's own server expose those abilities too.
 
 = Can I restrict the chatbot to answer only from my site content? =
 
@@ -331,8 +334,52 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
+= 3.8.7 (2026/10/23) =
+* Fix: Security: Voice chatbots now only run functions attached to their own chatbot.
+* Fix: Security: Editors on MCP can no longer publish other content types or file references through a decoy fields object, and Public API tools and MCP servers stay restricted to administrators.
+* Fix: Security: Cross-Site requests are now matched on their real REST route, so other REST calls can no longer skip the nonce check by mimicking its URL.
+* Fix: Security: Contributors can no longer take over a live chatbot through WordPress' embed preview, and outside post content a shortcode can no longer replace a live chatbot's prompt, model or API key.
+* Fix: Security: The Gemini file upload now verifies TLS.
+* Fix: Security: The MCP sign-in page can no longer be framed by another site, shows where the app sends you, and warns when an app calls itself Claude or ChatGPT without being it.
+* Add: Explore AI Engine, a ten-goal tour from the dashboard that follows you as a slim bar onto each screen, with Knowledge guidance in the chatbot settings.
+* Add: Workspace mobile app on the dashboard, with QR code, store links and a status line once a phone is paired.
+* Add: Sakana AI (Fugu and Namazu) as a native provider, hidden until switched on with MWAI_SAKANA.
+* Add: Read-only access for Claude and ChatGPT MCP connections, with a switch per connection in Connected Apps.
+* Add: Clean Up button in Knowledge for rows of deleted environments and orphans.
+* Add: The mwai_openai_body filter, to set any OpenAI parameter AI Engine leaves to the defaults, like high quality for the chatbot's image tool.
+* Update: Redesigned the dashboard with a Your AI card for models and providers, a This week chart compared with last week, shuffleable idea tiles and per-company AI visibility bars.
+* Update: Glass now takes its colors from the lights you pick for the visitor's bubbles, the launcher and the accent, and the theme editor preview opens with a sample conversation that is never saved or sent to the AI.
+* Update: New popup chatbots now open in the macOS frame and header, while existing chatbots keep the frame they already have.
+* Update: The MCP screen now shows how many tools each set brings and how many AI Engine has in all.
+* Update: MCP deletes without force now always go to the trash (products, events, media and comments too) or refuse clearly, and deletes that would be permanent ask the AI to check with the user first.
+* Update: The Settings screen, dashboard cards and feature showcase are now translatable, and Knowledge, Privacy First and Content Studio wording is clearer.
+* Update: Every Pro link in the admin now points to the AI Engine page and is tagged, Pro-locked buttons open it instead of doing nothing, and Pro chatbot modes show their Pro pill for free users.
+* Update: The License tab was redesigned, with an Activate your license link for Pro buyers who have not entered a key yet.
+* Update: The Pro update check now reports whether MCP was used in the last 30 days and how many phones are paired.
+* Update: The chatbot preview in the admin now keeps its own history, and the dashboard uses the same spacing as the other tabs.
+* Fix: Insights logs work again on sites whose logs table predates 2.5.6, since tables now get their missing columns on update.
+* Fix: Chatbots and forms no longer stay blank when one of their settings contains entity text like &quot;.
+* Fix: Posts containing an escaped "<" (like "<48 dB") no longer lose everything after it in Knowledge and Content-Aware.
+* Fix: AI Forms in chatbot mode now use the chatbot's own Max Tokens, model and temperature instead of hidden form values that cut replies at 4096 tokens.
+* Fix: Messages, uploads, stopping a reply and loading a conversation now follow the right chatbot's discussion when a chat id belongs to another chatbot.
+* Fix: Claude no longer rejects the answer after a function call when Knowledge is on (Invalid signature in thinking block).
+* Fix: When a thinking model spends its whole Max Tokens reasoning, the reply now says so instead of showing the raw reasoning as the answer.
+* Fix: Knowledge no longer retries rows of deleted environments, and large OpenAI Vector Stores sync page by page instead of timing out.
+* Fix: MCP connections no longer drop when a client revokes the token it just replaced after a refresh, and sign-in responses say which site answered.
+* Fix: Links in the GDPR consent text are now clickable instead of shown as raw text.
+* Fix: The site-wide popup chatbot no longer leaves a screen of blank space at the bottom of the page on themes that give the body a height.
+* Fix: The user's IP is shown again under their name in Discussions and Insights for logged-in users, and in the discussion details.
+* Fix: Chatbot names with & no longer show &amp;.
+* Fix: Admin screens no longer load blank, and the header now shows the Free and Pro tiles.
+* Fix: Links on other plugins' screens are no longer tagged as AI Engine traffic.
+* Fix: OVHcloud and Sakana AI now follow one rule: hidden until switched on with MWAI_OVH or MWAI_SAKANA, and always shown where an environment of that type exists.
+* 🎵 Discuss with others about Ai Engine on [the Discord](https://discord.gg/bHDGh38).
+* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
+* 🥰 If you want to help us, check our [Patreon](https://www.patreon.com/meowapps). Thank you!
+* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
+
 = 3.8.6 (2026/10/17) =
-* Fix: Security: Editors can no longer change the title or excerpt of posts they are not allowed to edit (coupons, menus, templates) through the AI helpers, and the other helpers taking a post ID now check permissions too.
+* Fix: Security: Editors can no longer change the title or excerpt of posts they are not allowed to edit (coupons, menus, templates) through the AI helpers, and the other helpers taking a post ID now check permissions too (reported by Anatoly Gorbounov, x1will, via WPScan).
 * Fix: Hotfix: Chatbot replies no longer crash on servers with an older cURL, such as Xserver, because of a constant added in 3.8.5.
 * Add: The MCP screen's Claude step now opens Claude with this site's connector already filled in, so there is nothing to copy and paste.
 * Fix: Messages like "0" or an image alone no longer fail the reply when Knowledge is on.
