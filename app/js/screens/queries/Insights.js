@@ -1,5 +1,5 @@
-// Previous: 3.7.9
-// Current: 3.8.3
+// Previous: 3.8.3
+// Current: 3.8.8
 
 ```jsx
 // React & Vendor Libs
@@ -167,7 +167,7 @@ const getLocalSettings = () => {
   try {
     const parsedSettings = JSON.parse(localSettingsJSON);
     return { 
-      isSidebarCollapsed: parsedSettings?.isSidebarCollapsed || false
+      isSidebarCollapsed: parsedSettings?.isSidebarCollapsed ?? true
     };
   }
   catch (e) {
@@ -192,7 +192,7 @@ const retrieveLogsMeta = async (logId, metaKeys) => {
 };
 
 const asText = (value) => {
-  if (value == null) { return ''; }
+  if (value === null || value === undefined) { return ''; }
   if (typeof value === 'string') { return value; }
   try { return JSON.stringify(value, null, 2); }
   catch (e) { return String(value); }
@@ -301,7 +301,7 @@ const McpDetails = ({ log, meta, loading }) => {
       </div>}
       {!loading && !argRows.length && !resultText && (
         <div style={{ color: '#787c82', fontSize: 12, marginTop: 10 }}>
-          Arguments and results are not captured. Turn on "Include arguments & results" in Settings → MCP → Logging.
+          Arguments and results are not captured. Turn on "Include arguments & results" in the MCP tab (Logging).
         </div>
       )}
     </div>
@@ -410,7 +410,7 @@ const Insights = ({ options, updateOption, busy }) => {
     const providersSeen = new Set();
     const days = activityByModel.map((dayData, idx) => {
       const d = new Date();
-      d.setDate(d.getDate() - (len - 1 - idx));
+      d.setDate(d.getDate() - (len - idx));
       const byProvider = {};
       let total = 0;
       Object.entries(dayData || {}).forEach(([modelId, count]) => {
@@ -644,7 +644,7 @@ const Insights = ({ options, updateOption, busy }) => {
                   {!isFetchingMeta && (!meta || !meta['mcp_args']) && (
                     <NekoEmpty icon="file-text"
                       title="Not captured"
-                      subtitle="Enable 'Include arguments & results' under Settings → MCP → Logging to store tool arguments." />
+                      subtitle="Enable 'Include arguments & results' in the MCP tab (Logging) to store tool arguments." />
                   )}
                   {!isFetchingMeta && meta && meta['mcp_args'] && (
                     <JsonViewer
@@ -667,7 +667,7 @@ const Insights = ({ options, updateOption, busy }) => {
                   {!isFetchingMeta && (!meta || !meta['mcp_result']) && (
                     <NekoEmpty icon="file-text"
                       title="Not captured"
-                      subtitle="Enable 'Include arguments & results' under Settings → MCP → Logging to store tool results." />
+                      subtitle="Enable 'Include arguments & results' in the MCP tab (Logging) to store tool results." />
                   )}
                   {!isFetchingMeta && meta && meta['mcp_result'] && (
                     <JsonViewer

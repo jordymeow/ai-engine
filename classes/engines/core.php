@@ -784,10 +784,10 @@ class Meow_MWAI_Engines_Core {
     return 0;
   }
 
+  // headers_list() includes headers queued but not sent yet. Requiring headers_sent() meant a
+  // stream silent from its first second (reasoning, Code Interpreter) never got a keepalive,
+  // so nginx cut it at 120 s: the SSE headers only go out with the first byte.
   private function is_sse_response() {
-    if ( !headers_sent() ) {
-      return false;
-    }
     foreach ( headers_list() as $header ) {
       if ( stripos( $header, 'content-type:' ) === 0 && stripos( $header, 'text/event-stream' ) !== false ) {
         return true;

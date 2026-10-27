@@ -854,13 +854,32 @@ class Meow_MWAI_Labs_MCP_OAuth {
     return $response;
   }
 
+  // The Authorization header as the client sent it. Apache often keeps it out of $_SERVER unless
+  // the .htaccess passes it on (the classic SetEnvIf line), so WordPress sees nothing and every
+  // OAuth call fails right after a sign-in that looked fine ("Action discovery failed" in
+  // ChatGPT). apache_request_headers() usually still has it.
+  public static function authorization_header( WP_REST_Request $request ): string {
+    $header = (string) $request->get_header( 'authorization' );
+    if ( $header !== '' ) {
+      return $header;
+    }
+    if ( function_exists( 'apache_request_headers' ) ) {
+      foreach ( (array) apache_request_headers() as $name => $value ) {
+        if ( strcasecmp( (string) $name, 'Authorization' ) === 0 ) {
+          return (string) $value;
+        }
+      }
+    }
+    return (string) ( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '' );
+  }
+
   private function authenticate_client_if_required( $client, WP_REST_Request $request ) {
     if ( $client->token_endpoint_auth_method === 'none' ) {
       return true;
     }
     $provided_secret = '';
     if ( $client->token_endpoint_auth_method === 'client_secret_basic' ) {
-      $auth = $request->get_header( 'authorization' );
+      $auth = self::authorization_header( $request );
       if ( $auth && preg_match( '#^Basic\s+(.+)$#i', $auth, $m ) ) {
         $decoded = base64_decode( $m[1], true );
         if ( $decoded && strpos( $decoded, ':' ) !== false ) {
@@ -1311,8 +1330,9 @@ class Meow_MWAI_Labs_MCP_OAuth {
       echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '">';
     }
     echo '<fieldset class="mwai-oauth-access"><legend>Access</legend>';
-    echo '<label><input type="radio" name="access" value="full" checked><span><strong>Full access</strong>The app can read, create, edit and delete, within what your account can do.</span></label>';
-    echo '<label><input type="radio" name="access" value="read"><span><strong>Read-only</strong>The app can look at your site, but cannot change anything.</span></label>';
+    $readFirst = (bool) $this->core->get_option( 'mcp_default_readonly' );
+    echo '<label><input type="radio" name="access" value="full"' . ( $readFirst ? '' : ' checked' ) . '><span><strong>Full access</strong>The app can read, create, edit and delete, within what your account can do.</span></label>';
+    echo '<label><input type="radio" name="access" value="read"' . ( $readFirst ? ' checked' : '' ) . '><span><strong>Read-only</strong>The app can look at your site, but cannot change anything.</span></label>';
     echo '</fieldset>';
     echo '<div class="mwai-oauth-buttons">';
     echo '<button type="submit" name="action" value="approve" class="mwai-oauth-approve">Approve</button>';

@@ -414,6 +414,17 @@
   color: var(--accent); background: var(--accent-soft);
   padding: 3px 9px; border-radius: 20px;
 }
+#mwai-workspace .mwai-ws-bot-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500;
+  color: var(--accent); background: var(--accent-soft); padding: 3px 4px 3px 10px; border-radius: 20px;
+}
+#mwai-workspace .mwai-ws-bot-chip button {
+  border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px;
+}
+#mwai-workspace .mwai-ws-section-label {
+  font-size: 11px; text-transform: uppercase; opacity: 0.6; margin: 4px 12px 6px; font-weight: 600;
+}
+#mwai-workspace .mwai-ws-bots { flex: 1; min-height: 0; overflow-y: auto; }
 #mwai-workspace .mwai-ws-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
 #mwai-workspace .mwai-ws-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }

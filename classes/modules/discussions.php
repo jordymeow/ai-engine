@@ -841,6 +841,10 @@ class Meow_MWAI_Modules_Discussions {
       'session' => $query->session,
       'model' => $query->model,
     ];
+    // The Workspace chatbot a conversation was started with, so reopening it keeps that bot.
+    if ( !empty( $params['wsBot'] ) && is_string( $params['wsBot'] ) ) {
+      $chatExtra['wsBot'] = sanitize_text_field( $params['wsBot'] );
+    }
     if ( isset( $query->temperature ) ) {
       $chatExtra['temperature'] = $query->temperature;
     }
@@ -994,6 +998,13 @@ class Meow_MWAI_Modules_Discussions {
     // 2. Prepare data for DB
     $userIp = $this->core->get_ip_address();
     $userId = $this->core->get_user_id();
+
+    // Same ownership guard as chatbot_reply(): the voice chatbot calls this from a public
+    // route, and without it a chatId was enough to replace another user's discussion and
+    // take it over.
+    if ( $chat && (int) $chat['userId'] !== 0 && (int) $chat['userId'] !== (int) $userId ) {
+      return false;
+    }
     $now = date( 'Y-m-d H:i:s' );
 
     $data = [

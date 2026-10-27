@@ -1,5 +1,5 @@
-// Previous: 3.2.7
-// Current: 3.3.3
+// Previous: 3.3.3
+// Current: 3.8.8
 
 /* eslint-disable no-undef */
 import { checkIntegrity } from '@common/integrity-checker';
@@ -32,8 +32,10 @@ const updateRestNonce = (newNonce) => {
 };
 
 
+const versionInfo = mwai.version_info || null;
+
 // Function to get current rest nonce
 const getRestNonce = () => restNonce;
 
 export { prefix, domain, apiUrl, restUrl, pluginUrl, userData, isPro, stream,
-  isRegistered, restNonce, session, options, themes, chatbots, fallbackModels, integrations, updateRestNonce, getRestNonce };
+  isRegistered, versionInfo, restNonce, session, options, themes, chatbots, fallbackModels, integrations, updateRestNonce, getRestNonce };

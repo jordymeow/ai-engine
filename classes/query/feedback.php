@@ -52,6 +52,27 @@ class Meow_MWAI_Query_Feedback extends Meow_MWAI_Query_Text implements JsonSeria
     if ( !empty( $query->instructions ) ) {
       $this->set_instructions( $query->instructions );
     }
+    // Built-in tools, MCP servers and reasoning too: Claude signs its thinking against the
+    // whole request, so a follow-up without them failed with "Invalid signature in thinking
+    // block", and every provider lost web search or MCP after the first function call.
+    if ( !empty( $query->tools ) ) {
+      $this->set_tools( $query->tools );
+    }
+    if ( !empty( $query->mcpServers ) ) {
+      $this->set_mcp_servers( $query->mcpServers );
+    }
+    if ( !empty( $query->reasoning ) ) {
+      $this->set_reasoning( $query->reasoning );
+    }
+    if ( !empty( $query->verbosity ) ) {
+      $this->set_verbosity( $query->verbosity );
+    }
+    // The Knowledge context too: without it every engine that rebuilds the request from the
+    // messages (Chat Completions and compatibles, Google) answered after a function call
+    // without the context, and the model made up what it could not find.
+    if ( !empty( $query->context ) ) {
+      $this->set_context( $query->context );
+    }
 
     // Build the complete conversation history including the assistant's function call
     if ( !empty( $query->messages ) ) {

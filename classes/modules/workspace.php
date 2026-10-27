@@ -273,6 +273,7 @@ class Meow_MWAI_Modules_Workspace {
       'prefs' => $this->get_prefs(),
       'envs' => $this->build_envs(),
       'embeddings_envs' => $this->build_embeddings_envs(),
+      'chatbots' => $this->build_chatbots(),
       'mcp_envs' => $this->build_mcp_envs(),
       'functions' => $this->build_functions(),
       'wp_tools' => $this->build_wp_tools(),
@@ -288,6 +289,30 @@ class Meow_MWAI_Modules_Workspace {
       'upsell_url' => 'https://meowapps.com/ai-engine/',
       'settings_url' => admin_url( 'admin.php?page=mwai_settings' ),
     ];
+  }
+
+  /**
+   * The site's own chatbots, to chat with in the Workspace (their instructions and Knowledge
+   * apply; the conversation stays a Workspace one). Chat mode only: Assistant, Realtime,
+   * Images and Prompt bots don't fit a chat window.
+   */
+  private function build_chatbots() {
+    $out = [];
+    foreach ( (array) $this->core->get_chatbots() as $bot ) {
+      $botId = (string) ( $bot['botId'] ?? '' );
+      $mode = $bot['mode'] ?? 'chat';
+      if ( $botId === '' || strpos( $botId, 'mwai_' ) === 0 || ( $mode && $mode !== 'chat' ) ) {
+        continue;
+      }
+      $out[] = [
+        'botId' => $botId,
+        'name' => (string) ( $bot['name'] ?? $botId ),
+        'envId' => $bot['envId'] ?? null,
+        'model' => $bot['model'] ?? null,
+        'knowledge' => !empty( $bot['embeddingsEnvId'] ),
+      ];
+    }
+    return $out;
   }
 
   private function build_embeddings_envs() {
@@ -425,6 +450,17 @@ class Meow_MWAI_Modules_Workspace {
       return $chatbot;
     }
     $instructions = 'You are a capable, direct assistant. Format your answers in Markdown.';
+    // A conversation started with one of the site's chatbots runs on its instructions and,
+    // unless the composer picks another, its Knowledge. Requested by a Discord user who
+    // wanted his Cross-Site bots on the Workspace apps (2026-10-24).
+    $wsBot = null;
+    $wsBotId = sanitize_text_field( (string) ( $params['wsBot'] ?? '' ) );
+    if ( $wsBotId !== '' && strpos( $wsBotId, 'mwai_' ) !== 0 ) {
+      $wsBot = $this->core->get_chatbot( $wsBotId );
+      if ( is_array( $wsBot ) && !empty( $wsBot['instructions'] ) ) {
+        $instructions = $wsBot['instructions'];
+      }
+    }
     // "This WordPress" mode: remember the requested categories for this
     // request (chatbot_query attaches the tools) and tell the AI where it is.
     $wpTools = $params['wpTools'] ?? null;
@@ -473,9 +509,9 @@ class Meow_MWAI_Modules_Workspace {
       'functions' => [],
       'mcpServers' => [],
       'tools' => [],
-      'embeddingsEnvId' => '',
-      'embeddingsIndex' => '',
-      'embeddingsNamespace' => '',
+      'embeddingsEnvId' => is_array( $wsBot ) ? ( $wsBot['embeddingsEnvId'] ?? '' ) : '',
+      'embeddingsIndex' => is_array( $wsBot ) ? ( $wsBot['embeddingsIndex'] ?? '' ) : '',
+      'embeddingsNamespace' => is_array( $wsBot ) ? ( $wsBot['embeddingsNamespace'] ?? '' ) : '',
     ] );
   }
 

@@ -363,8 +363,12 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
     // render targets (mwai-admin-settings, etc.) simply don't exist.
     $current_screen = get_current_screen();
 
-    $physical_file = MWAI_PATH . '/app/index.js';
-    $cache_buster = file_exists( $physical_file ) ? filemtime( $physical_file ) : MWAI_VERSION;
+    // vendor.js (NekoUI) can change without index.js, so the version follows the newer of the
+    // two; with index.js alone, a NekoUI-only rebuild stayed cached in browsers.
+    $mtimes = array_filter( array_map( function ( $file ) {
+      return file_exists( MWAI_PATH . $file ) ? filemtime( MWAI_PATH . $file ) : 0;
+    }, [ '/app/index.js', '/app/vendor.js' ] ) );
+    $cache_buster = $mtimes ? max( $mtimes ) : MWAI_VERSION;
 
     // Cache override: Force cache refresh when ?mwai_cache=1 is in URL
     if ( isset( $_GET['mwai_cache'] ) ) {
@@ -466,6 +470,9 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       'domain' => MWAI_DOMAIN,
       'is_pro' => class_exists( 'MeowPro_MWAI_Core' ),
       'is_registered' => !!$this->is_registered(),
+      // Installed vs latest version for the header line, from common/premium/renewal.php (Pro only;
+      // the filter has no callback on the free plugin, so this stays null there).
+      'version_info' => apply_filters( 'mwai_meowapps_version_info', null ),
       'build_ref' => $build_ref,
       'rest_nonce' => wp_create_nonce( 'wp_rest' ),
       'session' => $this->core->get_session_id(),

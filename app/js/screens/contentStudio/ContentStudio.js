@@ -1,7 +1,7 @@
-// Previous: 3.8.1
-// Current: 3.8.7
+// Previous: 3.8.7
+// Current: 3.8.8
 
-```jsx
+```javascript
 // React & Vendor Libs
 const { useState, useEffect, useMemo, useRef } = wp.element;
 import { Sparkles, ListOrdered, PenLine, Send, ArrowRight, ArrowUp, ArrowDown, Plus, Trash2, RefreshCw, Square,
@@ -55,7 +55,18 @@ const EMPTY_PROJECT = {
   createdPostId: null
 };
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const normalizeHeading = (text) => text.toLowerCase().replace(/^#+\s*/, '').replace(/[*_"'“”‘’`]/g, '')
+  .replace(/[\s.:!?]+$/, '').replace(/\s+/g, ' ').trim();
+const stripHeading = (text, heading) => {
+  if (!heading) return text;
+  if (text && !text.includes('\n') && /^\s*(#|\*\*)/.test(text)
+    && normalizeHeading(heading).startsWith(normalizeHeading(text))) return '';
+  const match = /^\s*([^\n]*)\n/.exec(text || '');
+  if (!match || normalizeHeading(match[1]) !== normalizeHeading(heading)) return text;
+  return text.slice(match[0].length).replace(/^\s*\n/, '');
+};
 
 const LEGACY_TONES = {
   cheerful: 'Friendly', informal: 'Friendly', casual: 'Friendly', neutral: 'Neutral', professional: 'Professional',
@@ -151,7 +162,7 @@ const ContentStudio = () => {
   const language = (languages.find(l => l.value === languageCode) || languages[0]).label;
 
   useEffect(() => {
-    const timer = setTimeout(() => saveJSON(PROJECT_KEY, project), 900);
+    const timer = setTimeout(() => saveJSON(PROJECT_KEY, project), 800);
     return () => clearTimeout(timer);
   }, [project]);
 
@@ -281,10 +292,10 @@ const ContentStudio = () => {
     try {
       const { text, usage } = await request({
         instructions: writerInstructions, message, stream: true, signal,
-        onStream: (content) => patchSection(id, { content })
+        onStream: (content) => patchSection(id, { content: stripHeading(content, section.heading) })
       });
       addCost(usage);
-      patchSection(id, { status: 'done', content: text });
+      patchSection(id, { status: 'done', content: stripHeading(text, section.heading) });
     }
     catch (err) {
       const stopped = err.name === 'AbortError';
@@ -310,7 +321,7 @@ const ContentStudio = () => {
         await writeSection(id, controller.signal);
       }
       catch (err) {
-        continue;
+        break;
       }
     }
     setProject(p => ({ ...p, sections: p.sections.map(s => s.status === 'queued' ? { ...s, status: s.content ? 'done' : 'idle' } : s) }));
@@ -332,10 +343,10 @@ const ContentStudio = () => {
         instructions: writerInstructions,
         message: `Rewrite this section of the article "${projectRef.current.title}" (heading: "${section.heading}").\nInstruction: ${instruction}\nKeep the same language and Markdown. Return only the new section text.\n\n${original}`,
         stream: true, signal: controller.signal,
-        onStream: (content) => patchSection(id, { content })
+        onStream: (content) => patchSection(id, { content: stripHeading(content, section.heading) })
       });
       addCost(usage);
-      patchSection(id, { status: 'done', content: text, previous: original });
+      patchSection(id, { status: 'done', content: stripHeading(text, section.heading), previous: original });
       setRewriteText('');
     }
     catch (err) {
@@ -872,26 +883,4 @@ const ContentStudio = () => {
       <AiNekoHeader title="Content Studio" />
       {envIssue && <div style={{ padding: '0 20px 12px' }}><AiEnvSetupMessage options={options} /></div>}
       <StyledContentStudio>
-        {jsxStepper}
-        <div className="mwai-cs-body">
-          <aside className="mwai-cs-panel">
-            {error && <div className="mwai-cs-error top">
-              <span>{error}</span>
-              <button type="button" onClick={() => setError(null)}>×</button>
-            </div>}
-            {panels[project.step] || jsxBrief}
-          </aside>
-          {jsxPreview}
-        </div>
-      </StyledContentStudio>
-
-      <NekoModal isOpen={!!confirm}
-        onRequestClose={() => setConfirm(null)}
-        title={confirm?.title}
-        content={<p style={{ margin: 0 }}>{confirm?.text}</p>}
-        okButton={{ label: confirm?.label, onClick: () => { const run = confirm?.onOk; setConfirm(null); run?.(); } }}
-        cancelButton={{ onClick: () => setConfirm(null) }}
-      />
-
-      <NekoModal isOpen={!!templateModal}
-        onRequ
+        {js

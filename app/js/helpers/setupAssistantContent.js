@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 3.8.7
+// Previous: 3.8.7
+// Current: 3.8.8
 
 ```javascript
 import { outboundUrl, WORKSPACE_SITE } from '@app/helpers/outbound';
@@ -192,11 +192,11 @@ export const getSetupStops = ({ options, isRegistered, envIssues = false }) => {
       goal: __( 'Let Claude or ChatGPT read and write on your site, safely.', 'ai-engine' ),
       how: [
         turnOn(mcp, __( 'Turn on MCP in Modules first.', 'ai-engine' )),
-        __( 'In the MCP settings, use the Claude link: it opens Claude with your site already filled in. ChatGPT works too.', 'ai-engine' ),
+        __( 'In the MCP tab, click Connect and pick Claude or ChatGPT. Follow the steps: it takes a minute.', 'ai-engine' ),
         __( 'When you approve, choose Read-only to start. Then ask: “List my latest drafts.”', 'ai-engine' ),
       ],
-      action: featureAction(mcp, __( 'Open MCP settings', 'ai-engine' ), settingsUrl('settings', 'mcp')),
-      more: __( 'Switch to Full access once you trust it, to let it write posts, upload media and more. You can change or revoke any connection in the same place.', 'ai-engine' ),
+      action: featureAction(mcp, __( 'Open the MCP tab', 'ai-engine' ), settingsUrl('mcp')),
+      more: __( 'Switch to Full access once you trust it, to let it write posts, upload media and more. You can change or revoke any connection in the MCP tab, under Connections.', 'ai-engine' ),
       help: { title: __( 'Claude can’t connect?', 'ai-engine' ), tips: [
         __( 'Your site needs HTTPS, and some hosts block the connection. The troubleshooting guide explains what to check.', 'ai-engine' ),
         __( 'Tools missing? Reconnect the site in Claude to refresh them.', 'ai-engine' ),

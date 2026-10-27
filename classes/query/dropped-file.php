@@ -7,6 +7,7 @@ class Meow_MWAI_Query_DroppedFile {
   private $purpose; // 'analysis' or 'generated'
   private $mimeType; // 'image/jpeg' or any other mime type
   private $fileId; // The ID of the file in the database
+  private $readFromDisk = true; // Local uploads URLs are read from disk unless http_only() is called
   public $originalPath; // The original file path (for files loaded from disk)
 
   /**
@@ -67,6 +68,14 @@ class Meow_MWAI_Query_DroppedFile {
     // Store the original path for filename extraction
     $droppedFile->originalPath = $path;
     return $droppedFile;
+  }
+
+  // Fetch a local uploads URL over HTTP instead of reading it from disk, so the web server's
+  // protections (.htaccess on WooCommerce downloads, form uploads, backups) still apply.
+  // For URLs that come from someone who is not an administrator.
+  public function http_only() {
+    $this->readFromDisk = false;
+    return $this;
   }
 
   public static function from_refId( $refId, $purpose, $mimeType = null ) {
@@ -146,7 +155,7 @@ class Meow_MWAI_Query_DroppedFile {
       // For internal URLs, try to read from disk first (more efficient)
       $site_host = wp_parse_url( get_site_url(), PHP_URL_HOST );
       $url_host = wp_parse_url( $this->data, PHP_URL_HOST );
-      if ( $site_host === $url_host ) {
+      if ( $this->readFromDisk && $site_host === $url_host ) {
         $upload_dir = wp_upload_dir();
         // Normalize protocols for comparison (http vs https)
         $normalized_url = preg_replace( '/^https?:/', '', $this->data );

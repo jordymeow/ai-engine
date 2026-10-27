@@ -899,6 +899,20 @@ class Meow_MWAI_Modules_Files {
       }
     }
 
+    // Guests can upload wherever a chatbot or form is shown, so cap them per visitor per hour,
+    // or a script could fill the disk. 0 through the filter lifts the cap.
+    if ( !is_user_logged_in() ) {
+      $limit = (int) apply_filters( 'mwai_guest_uploads_per_hour', 20 );
+      if ( $limit > 0 ) {
+        $key = 'mwai_guest_uploads_' . md5( $this->core->get_ip_address( true ) . '|' . floor( time() / HOUR_IN_SECONDS ) );
+        $count = (int) get_transient( $key );
+        if ( $count >= $limit ) {
+          return new WP_REST_Response( [ 'success' => false, 'message' => 'Too many uploads. Please try again later.' ], 429 );
+        }
+        set_transient( $key, $count + 1, HOUR_IN_SECONDS );
+      }
+    }
+
     try {
       $refId = $this->upload_file( $file['tmp_name'], $file['name'], $purpose, $metadata, $envId );
       $url = $this->get_url( $refId );

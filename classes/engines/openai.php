@@ -311,15 +311,8 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             ]
           ];
 
-          // Add context if present
-          if ( !empty( $query->context ) ) {
-            $framedContext = $this->core->frame_context( $query->context );
-            // Prepend context as a separate input_text in the same message
-            array_unshift( $body['input'][0]['content'], [
-              'type' => 'input_text',
-              'text' => $framedContext . "\n\n"
-            ] );
-          }
+          // No context here: the stored response behind previous_response_id already holds
+          // the first request's input, Knowledge context included. Adding it again doubled it.
         }
       }
       else {
@@ -2799,13 +2792,14 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       $metadata = [
         'source' => 'code_interpreter',
         'container_id' => $containerId,
-        'file_id' => $fileId
       ];
 
       $refId = $this->core->files->upload_file( $tmpFile, $filename, $purpose, $metadata, $query->envId );
 
       // Update the file's refId to match the OpenAI file ID
       $internalFileId = $this->core->files->get_id_from_refId( $refId );
+      // upload_file() drops reserved keys like file_id, so it is written directly.
+      $this->core->files->add_metadata( $internalFileId, 'file_id', $fileId );
       $this->core->files->update_refId( $internalFileId, $fileId );
 
       // Get the public URL

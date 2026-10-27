@@ -155,26 +155,40 @@ class Meow_MWAI_Services_Session {
     return wp_doing_cron() ? 'wp-cron' : 'N/A';
   }
 
+  // Cloudflare's published ranges (cloudflare.com/ips), checked 2026-10-23.
+  private const CLOUDFLARE_RANGES = [
+    '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18',
+    '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17',
+    '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+    '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32',
+    '2a06:98c0::/29', '2c0f:f248::/32',
+  ];
+
   public function get_ip_address( $force = false ) {
-    // Get the actual IP address
-    $ip_keys = [ 'HTTP_CF_CONNECTING_IP', 'HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR',
-      'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_X_REAL_IP', 'HTTP_FORWARDED_FOR',
-      'HTTP_FORWARDED', 'REMOTE_ADDR' ];
-    $actual_ip = null;
-    foreach ( $ip_keys as $key ) {
-      if ( array_key_exists( $key, $_SERVER ) === true ) {
-        $ips = explode( ',', $_SERVER[$key] );
-        foreach ( $ips as $ip ) {
-          $ip = trim( $ip );
-          if ( $this->validate_ip( $ip ) ) {
-            $actual_ip = $ip;
-            break 2;
-          }
+    // Forwarded headers are only believed when the request comes from a proxy: a private
+    // address (local proxy, load balancer, Cloudflare Tunnel), Cloudflare, or a proxy added
+    // with the mwai_trusted_proxies filter. Before, anyone could send X-Forwarded-For
+    // and get a fresh IP, and with it fresh guest limits.
+    $remote = isset( $_SERVER['REMOTE_ADDR'] ) ? trim( $_SERVER['REMOTE_ADDR'] ) : '';
+    $actual_ip = $remote;
+    if ( $this->is_trusted_proxy( $remote ) ) {
+      $forwarded = [];
+      foreach ( [ 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP' ] as $key ) {
+        if ( !empty( $_SERVER[ $key ] ) ) {
+          // Proxies append, so the closest untrusted address (from the right) is the client.
+          $forwarded = array_reverse( array_map( 'trim', explode( ',', $_SERVER[ $key ] ) ) );
+          break;
+        }
+      }
+      foreach ( $forwarded as $ip ) {
+        if ( $this->validate_ip( $ip ) && !$this->is_trusted_proxy( $ip ) ) {
+          $actual_ip = $ip;
+          break;
         }
       }
     }
-    if ( !$actual_ip ) {
-      $actual_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
+    if ( empty( $actual_ip ) ) {
+      $actual_ip = '127.0.0.1';
     }
 
     // If privacy_first is enabled and not forced, return hashed IP
@@ -251,6 +265,42 @@ class Meow_MWAI_Services_Session {
   }
 
   // Private helper methods
+  private function is_trusted_proxy( $ip ) {
+    if ( empty( $ip ) || filter_var( $ip, FILTER_VALIDATE_IP ) === false ) {
+      return false;
+    }
+    if ( !$this->validate_ip( $ip ) ) {
+      return true; // Private or reserved: the request came through something local.
+    }
+    $ranges = apply_filters( 'mwai_trusted_proxies', self::CLOUDFLARE_RANGES );
+    foreach ( (array) $ranges as $range ) {
+      if ( $this->ip_in_range( $ip, $range ) ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private function ip_in_range( $ip, $range ) {
+    [ $subnet, $bits ] = array_pad( explode( '/', (string) $range, 2 ), 2, null );
+    $ipBin = @inet_pton( $ip );
+    $subnetBin = @inet_pton( $subnet );
+    if ( $ipBin === false || $subnetBin === false || strlen( $ipBin ) !== strlen( $subnetBin ) ) {
+      return false;
+    }
+    $bits = $bits === null ? strlen( $ipBin ) * 8 : (int) $bits;
+    $bytes = intdiv( $bits, 8 );
+    if ( substr( $ipBin, 0, $bytes ) !== substr( $subnetBin, 0, $bytes ) ) {
+      return false;
+    }
+    $rest = $bits % 8;
+    if ( $rest === 0 ) {
+      return true;
+    }
+    $mask = ( 0xFF << ( 8 - $rest ) ) & 0xFF;
+    return ( ord( $ipBin[ $bytes ] ) & $mask ) === ( ord( $subnetBin[ $bytes ] ) & $mask );
+  }
+
   private function validate_ip( $ip ) {
     if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) === false ) {
       return false;

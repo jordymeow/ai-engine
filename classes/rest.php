@@ -116,6 +116,16 @@ class Meow_MWAI_Rest {
       ] );
 
       // Settings Endpoints
+      register_rest_route( $this->namespace, '/settings/backups', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_settings_backups' ],
+      ] );
+      register_rest_route( $this->namespace, '/settings/backups/restore', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_settings_backups_restore' ],
+      ] );
       register_rest_route( $this->namespace, '/settings/update', [
         'methods' => 'POST',
         'permission_callback' => [ $this->core, 'can_access_settings' ],
@@ -253,6 +263,18 @@ class Meow_MWAI_Rest {
         'methods' => 'POST',
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_mcp_self_test' ],
+      ] );
+      register_rest_route( $this->namespace, '/mcp/usage', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_usage' ],
+      ] );
+      // Public on purpose: the self-test calls it without cookies to see whether the host passes
+      // the Authorization header on. It only answers two booleans for a one-time token.
+      register_rest_route( $this->namespace, '/mcp/auth_echo', [
+        'methods' => 'POST',
+        'permission_callback' => '__return_true',
+        'callback' => [ $this, 'rest_mcp_auth_echo' ],
       ] );
       register_rest_route( $this->namespace, '/system/mcp_logs/top_tools', [
         'methods' => 'POST',
@@ -437,15 +459,15 @@ class Meow_MWAI_Rest {
         'callback' => [ $this, 'rest_openai_finetunes_cancel' ],
       ] );
 
-      // Logging Endpoints
+      // Logging Endpoints (admins only: the logs can hold request dumps and MCP tokens)
       register_rest_route( $this->namespace, '/get_logs', [
         'methods' => 'GET',
-        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_get_logs' ]
       ] );
       register_rest_route( $this->namespace, '/clear_logs', [
         'methods' => 'GET',
-        'permission_callback' => [ $this->core, 'can_access_features' ],
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_clear_logs' ]
       ] );
 
@@ -702,8 +724,14 @@ class Meow_MWAI_Rest {
   public function rest_settings_update( $request ) {
     try {
       $params = $request->get_json_params();
-      $value = $params['options'];
-      $options = $this->core->update_options( $value );
+      // The settings screen sends only what changed ('changes'); 'options' (the whole set)
+      // stays for anything else that still posts it.
+      if ( isset( $params['changes'] ) && is_array( $params['changes'] ) ) {
+        $options = $this->core->patch_options( $params['changes'] );
+      }
+      else {
+        $options = $this->core->update_options( $params['options'] );
+      }
       $success = !!$options;
       $message = __( $success ? 'OK' : 'Could not update options.', 'ai-engine' );
       return $this->create_rest_response( [ 'success' => $success, 'message' => $message, 'options' => $options ], 200 );
@@ -712,6 +740,18 @@ class Meow_MWAI_Rest {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
       return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
     }
+  }
+
+  public function rest_settings_backups() {
+    return $this->create_rest_response( [ 'success' => true, 'backups' => $this->core->settingsBackups->list() ], 200 );
+  }
+
+  public function rest_settings_backups_restore( $request ) {
+    $id = (int) ( $request->get_json_params()['id'] ?? 0 );
+    if ( !$id || !$this->core->settingsBackups->restore( $id ) ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => 'This backup could not be restored.' ], 400 );
+    }
+    return $this->create_rest_response( [ 'success' => true, 'options' => $this->core->get_all_options( true ) ], 200 );
   }
 
   public function rest_settings_dismiss_card( $request ) {
@@ -2082,6 +2122,12 @@ class Meow_MWAI_Rest {
     }
   }
 
+  public function rest_mcp_usage( $request ) {
+    require_once MWAI_PATH . '/labs/mcp-usage.php';
+    $days = (int) ( $request->get_param( 'days' ) ?: 7 );
+    return $this->create_rest_response( [ 'success' => true, 'usage' => Meow_MWAI_Labs_MCP_Usage::summary( $days ), 'recent' => Meow_MWAI_Labs_MCP_Usage::recent() ], 200 );
+  }
+
   /**
    * Loopback test that mimics the way Anthropic's claude.ai connector reaches
    * the site, so admins can detect a hosting-layer block without waiting until
@@ -2097,6 +2143,22 @@ class Meow_MWAI_Rest {
    *    itself answers them identically: any python-only difference in
    *    status or content type is the firewall talking.
    */
+  public function rest_mcp_auth_echo( $request ) {
+    $token = get_transient( 'mwai_mcp_auth_echo' );
+    if ( empty( $token ) ) {
+      return new WP_REST_Response( [ 'success' => false ], 404 );
+    }
+    require_once MWAI_PATH . '/labs/mcp-oauth.php';
+    $expected = 'Bearer ' . $token;
+    $native = (string) $request->get_header( 'authorization' );
+    $any = Meow_MWAI_Labs_MCP_OAuth::authorization_header( $request );
+    return new WP_REST_Response( [
+      'success' => true,
+      'native' => hash_equals( $expected, $native ),
+      'fallback' => hash_equals( $expected, $any ),
+    ], 200 );
+  }
+
   public function rest_mcp_self_test( $request ) {
     try {
       $resource_url = rest_url( 'mcp/v1/http' );
@@ -2190,6 +2252,23 @@ class Meow_MWAI_Rest {
       $wellknown_htaccess = ABSPATH . '.well-known/.htaccess';
       if ( @is_dir( ABSPATH . '.well-known' ) && @is_file( $wellknown_htaccess ) ) {
         $nested_htaccess = $wellknown_htaccess;
+      }
+
+      // Stage 4: does the Authorization header reach WordPress? Many Apache hosts drop it unless
+      // the .htaccess passes it on, and then every OAuth client signs in fine and fails on its
+      // first real call ("Action discovery failed" in ChatGPT).
+      $auth_echo = null;
+      $auth_token = wp_generate_password( 32, false );
+      set_transient( 'mwai_mcp_auth_echo', $auth_token, MINUTE_IN_SECONDS );
+      $auth_response = wp_remote_post( rest_url( $this->namespace . '/mcp/auth_echo' ), [
+        'timeout' => 10,
+        'sslverify' => apply_filters( 'mwai_mcp_self_test_sslverify', true ),
+        'user-agent' => 'AI-Engine-Self-Test/1.0',
+        'headers' => [ 'Authorization' => 'Bearer ' . $auth_token ],
+      ] );
+      delete_transient( 'mwai_mcp_auth_echo' );
+      if ( !is_wp_error( $auth_response ) && (int) wp_remote_retrieve_response_code( $auth_response ) === 200 ) {
+        $auth_echo = json_decode( wp_remote_retrieve_body( $auth_response ), true );
       }
 
       $is_json = function ( $probe ) {
@@ -2288,6 +2367,26 @@ class Meow_MWAI_Rest {
           . 'Connect your client using exactly that spelling, otherwise it is told the server lives somewhere else and may refuse without explaining why.';
       }
 
+      if ( is_array( $auth_echo ) && empty( $auth_echo['native'] ) ) {
+        $htaccess_line = 'SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1';
+        if ( !empty( $auth_echo['fallback'] ) ) {
+          $message .= ' Your server keeps the Authorization header away from WordPress. AI Engine reads it another way, so connections work, '
+            . 'but adding this line at the top of your .htaccess makes it reliable: ' . $htaccess_line;
+        }
+        else {
+          $auth_message = 'Your server removes the Authorization header before WordPress sees it, so an AI client can sign in but every call after that fails '
+            . '("Action discovery failed" in ChatGPT, "Couldn\'t connect" in Claude). Fix: on Apache, add this line at the top of your .htaccess: '
+            . $htaccess_line . '. On nginx or another server, ask your host to pass the Authorization header to PHP.';
+          if ( $verdict === 'ok' ) {
+            $verdict = 'auth_header_stripped';
+            $message = $auth_message;
+          }
+          else {
+            $message .= ' ' . $auth_message;
+          }
+        }
+      }
+
       // Reported on top of whatever else is wrong, because it is a separate blocker with a
       // separate fix: a site can have perfect discovery and still refuse the connector.
       if ( $ai_blocked ) {
@@ -2317,6 +2416,7 @@ class Meow_MWAI_Rest {
         'ai_probe' => $ai_probe,
         'nested_htaccess' => $nested_htaccess,
         'cache_probe' => $cache_probe,
+        'auth_echo' => $auth_echo,
       ], 200 );
     }
     catch ( Exception $e ) {

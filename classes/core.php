@@ -40,6 +40,7 @@ class Meow_MWAI_Core {
   public $imageService = null;
   public $usageStatsService = null;
   public $modelEnvironmentService = null;
+  public $settingsBackups = null;
 
   public function __construct() {
     // Remembered once per site, before anything writes mwai_options: when AI Engine first ran
@@ -84,6 +85,7 @@ class Meow_MWAI_Core {
     $this->imageService = new Meow_MWAI_Services_Image( $this );
     $this->usageStatsService = new Meow_MWAI_Services_UsageStats( $this );
     $this->modelEnvironmentService = new Meow_MWAI_Services_ModelEnvironment( $this );
+    $this->settingsBackups = new Meow_MWAI_Services_SettingsBackups();
 
     // Start session early if needed for REST requests
     if ( $this->is_rest && $this->sessionService->can_start_session() ) {
@@ -2103,10 +2105,16 @@ class Meow_MWAI_Core {
     if ( $force || is_null( $this->options ) ) {
       $options = get_option( $this->option_name, [] );
       $init_mode = empty( $options );
+      $stored_mcp = is_array( $options ) && isset( $options['module_mcp'] );
       foreach ( MWAI_OPTIONS as $key => $value ) {
         if ( !isset( $options[$key] ) ) {
           $options[$key] = $value;
         }
+      }
+      // MCP is on by default for new installs only (3.8.8). A site that already had options but
+      // never stored this key had it off: an update must never open the MCP endpoint by itself.
+      if ( !$init_mode && !$stored_mcp ) {
+        $options['module_mcp'] = false;
       }
       $options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
       $options['default_limits'] = MWAI_LIMITS;
@@ -2252,12 +2260,31 @@ class Meow_MWAI_Core {
   }
 
   public function update_options( $options ) {
+    // The state before the day's first change is kept, so any save can be undone (Maintenance).
+    if ( $this->settingsBackups ) {
+      $this->settingsBackups->maybe_snapshot( 'before-change' );
+    }
     // update_option returns false both when update fails AND when value is unchanged
     // We just attempt the update and always return the current options
     // The frontend will see if the values actually changed
     update_option( $this->option_name, $options, false );
     $options = $this->get_all_options( true, true );
     return $options;
+  }
+
+  // Saves only the keys that changed, merged into a fresh read of what is stored. The full save
+  // posted every option in one request (300 KB and more with long prompts), and some hosts
+  // (mod_security, united-domains) answered a bare 400 before WordPress saw it, so nothing could
+  // be saved, MCP could not even be turned on. Reading fresh also keeps a change made elsewhere
+  // in the meantime instead of overwriting it with this tab's older copy.
+  public function patch_options( array $changes ) {
+    $this->forget_cached_options();
+    $stored = get_option( $this->option_name, [] );
+    $stored = is_array( $stored ) ? $stored : [];
+    foreach ( $changes as $key => $value ) {
+      $stored[ $key ] = $value;
+    }
+    return $this->update_options( $stored );
   }
 
   // A forced read must come from the database. WordPress keeps an option in memory for the

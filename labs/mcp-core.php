@@ -88,6 +88,14 @@ class Meow_MWAI_Labs_MCP_Core {
     // \uXXXX form Gutenberg uses for < and > in Rank Math FAQ etc.) and corrupt it.
     return trim( serialize_blocks( $this->strip_block_attrs( parse_blocks( $v ) ) ) );
   }
+  // One key, an array of keys or a comma-separated list, sanitized. A single key stays a
+  // string so WP_Query keeps its usual behaviour.
+  private function key_list( $value ) {
+    $items = is_array( $value ) ? $value : explode( ',', (string) $value );
+    $keys = array_values( array_filter( array_map( 'sanitize_key', array_filter( $items, 'is_scalar' ) ) ) );
+    return count( $keys ) > 1 ? $keys : ( $keys[0] ?? '' );
+  }
+
   private function post_excerpt( WP_Post $p ): string {
     if ( $this->is_protected_for_viewer( $p ) ) {
       return '';
@@ -824,19 +832,21 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Posts -------- */
       'wp_get_posts' => [
         'name' => 'wp_get_posts',
-        'description' => 'Retrieve posts (fields: ID, title, status, excerpt, link). No full content. **If no limit is supplied it returns 10 posts by default.** `paged` is ignored if `offset` is used. Filter by author with `author` (user ID) or `author_name` (user slug).',
+        'description' => 'Retrieve posts (fields: ID, post_title, post_status, post_excerpt, permalink). No full content. **If no limit is supplied it returns 10 posts by default.** `paged` is ignored if `offset` is used. Filter by author with `author` (user ID) or `author_name` (user slug).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
-            'post_type' => [ 'type' => 'string' ],
-            'post_status' => [ 'type' => 'string' ],
+            // No type on these two: models often send an array, and a client that validates the
+            // arguments rejected those calls before they ever reached the site.
+            'post_type' => [ 'description' => 'Post type, default post. Several: an array or a comma-separated list, or any.' ],
+            'post_status' => [ 'description' => 'Status, default publish. Several: an array or a comma-separated list, or any.' ],
             'search' => [ 'type' => 'string' ],
             'author' => [ 'type' => 'integer', 'description' => 'Filter by author user ID.' ],
             'author_name' => [ 'type' => 'string', 'description' => 'Filter by author user slug (nicename). Ignored if author is set.' ],
             'author__not_in' => [ 'type' => 'array', 'items' => [ 'type' => 'integer' ], 'description' => 'Exclude posts by these author user IDs.' ],
             'after' => [ 'type' => 'string' ],
             'before' => [ 'type' => 'string' ],
-            'limit' => [ 'type' => 'integer' ],
+            'limit' => [ 'type' => 'integer', 'description' => 'Number of posts, 1 to 500 (default 10). -1 for as many as possible.' ],
             'offset' => [ 'type' => 'integer' ],
             'paged' => [ 'type' => 'integer' ],
           ],
@@ -1151,16 +1161,17 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_add_post_terms' => [
         'name' => 'wp_add_post_terms',
-        'description' => 'Attach or replace terms for a post. Set "append=true" to ADD terms to existing ones, or "append=false" (default) to REPLACE all terms. Use for categories, tags, or WooCommerce attributes (pa_color, pa_size, etc.).',
+        'description' => 'Add, replace or remove terms on a post (categories, tags, WooCommerce attributes like pa_color). By default "terms" are ADDED to the existing ones; "append=false" REPLACES them all ("terms": [] with "append=false" clears the taxonomy). "remove" takes term IDs off. Returns the terms the post ends up with.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
             'ID' => [ 'type' => 'integer' ],
-            'taxonomy' => [ 'type' => 'string' ],
+            'taxonomy' => [ 'type' => 'string', 'description' => 'Default: category.' ],
             'terms' => [ 'type' => 'array', 'items' => [ 'type' => 'integer' ] ],
-            'append' => [ 'type' => 'boolean' ],
+            'append' => [ 'type' => 'boolean', 'description' => 'Default: true (add). false replaces all terms.' ],
+            'remove' => [ 'type' => 'array', 'items' => [ 'type' => 'integer' ], 'description' => 'Term IDs to take off the post.' ],
           ],
-          'required' => [ 'ID', 'terms' ],
+          'required' => [ 'ID' ],
         ],
         'accessLevel' => 'write',
       ],
@@ -1387,7 +1398,7 @@ class Meow_MWAI_Labs_MCP_Core {
   #endregion
 
   #region Callback
-  public function handle_call( $prev, string $tool, array $args, ?int $id ) {
+  public function handle_call( $prev, string $tool, array $args, int|string|null $id ) {
     // Security check is already done in the MCP auth layer
     // If we reach here, the user is authorized to use MCP
     if ( !empty( $prev ) || !isset( $this->tools()[ $tool ] ) ) {
@@ -1398,7 +1409,7 @@ class Meow_MWAI_Labs_MCP_Core {
   #endregion
 
   #region Dispatcher
-  private function dispatch( string $tool, array $a, ?int $id ): array {
+  private function dispatch( string $tool, array $a, int|string|null $id ): array {
     $r = [ 'jsonrpc' => '2.0', 'id' => $id ];
 
     // Accept common aliases for the primary record id. The post tools use the
@@ -1837,7 +1848,9 @@ class Meow_MWAI_Labs_MCP_Core {
         /* ===== Counts ===== */
       case 'wp_count_posts':
         $pt = sanitize_key( $a['post_type'] ?? 'post' );
-        $obj = wp_count_posts( $pt );
+        // wp_count_posts() returns strings for statuses that have rows and 0 for the others,
+        // so the same field changed type between statuses. Numbers throughout.
+        $obj = array_map( 'intval', (array) wp_count_posts( $pt ) );
         $this->add_result_text( $r, wp_json_encode( $obj, JSON_PRETTY_PRINT ) );
         break;
 
@@ -1894,11 +1907,14 @@ class Meow_MWAI_Labs_MCP_Core {
 
         /* ===== Posts: list ===== */
       case 'wp_get_posts':
+        // "all", -1 or 0 used to clamp to a single post, so the model concluded the site had one.
+        $limit = $a['limit'] ?? 10;
+        $limit = is_numeric( $limit ) && (int) $limit > 0 ? (int) $limit : 500;
         $q = [
-          'post_type' => sanitize_key( $a['post_type'] ?? 'post' ),
-          'post_status' => sanitize_key( $a['post_status'] ?? 'publish' ),
-          's' => sanitize_text_field( $a['search'] ?? '' ),
-          'posts_per_page' => max( 1, min( 500, intval( $a['limit'] ?? 10 ) ) ),
+          'post_type' => $this->key_list( $a['post_type'] ?? 'post' ) ?: 'post',
+          'post_status' => $this->key_list( $a['post_status'] ?? 'publish' ) ?: 'publish',
+          's' => sanitize_text_field( is_scalar( $a['search'] ?? '' ) ? ( $a['search'] ?? '' ) : '' ),
+          'posts_per_page' => min( 500, $limit ),
         ];
         if ( isset( $a['offset'] ) ) {
           $q['offset'] = max( 0, intval( $a['offset'] ) );
@@ -1906,11 +1922,12 @@ class Meow_MWAI_Labs_MCP_Core {
         if ( isset( $a['paged'] ) ) {
           $q['paged'] = max( 1, intval( $a['paged'] ) );
         }
-        if ( isset( $a['author'] ) ) {
+        if ( isset( $a['author'] ) && is_numeric( $a['author'] ) ) {
           $q['author'] = intval( $a['author'] );
         }
-        elseif ( $a['author_name'] ?? '' ) {
-          $q['author_name'] = sanitize_title( $a['author_name'] );
+        elseif ( $a['author_name'] ?? ( is_string( $a['author'] ?? null ) ? $a['author'] : '' ) ) {
+          // A slug sent as author (a common slip) used to be ignored silently.
+          $q['author_name'] = sanitize_title( $a['author_name'] ?? $a['author'] );
         }
         if ( !empty( $a['author__not_in'] ) && is_array( $a['author__not_in'] ) ) {
           $q['author__not_in'] = array_map( 'intval', $a['author__not_in'] );
@@ -2588,13 +2605,27 @@ class Meow_MWAI_Labs_MCP_Core {
         }
         $post_id = intval( $a['post_id'] );
         $media_id = isset( $a['media_id'] ) ? intval( $a['media_id'] ) : 0;
+        // Say why it fails: an assistant told only "failed" retries or gives up blindly.
+        if ( !get_post( $post_id ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => "Post #$post_id not found" ];
+          break;
+        }
+        if ( $media_id && !wp_attachment_is_image( $media_id ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => "Media #$media_id not found, or not an image" ];
+          break;
+        }
         if ( $media_id ) {
+          // set_post_thumbnail() returns false when the image is already the featured one.
+          if ( (int) get_post_thumbnail_id( $post_id ) === $media_id && wp_attachment_is_image( $media_id ) ) {
+            $this->add_result_text( $r, 'Featured image already set on post #' . $post_id );
+            break;
+          }
           $done = set_post_thumbnail( $post_id, $media_id );
           if ( $done ) {
             $this->add_result_text( $r, 'Featured image set on post #' . $post_id );
           }
           else {
-            $r['error'] = [ 'code' => -32603, 'message' => 'Failed to set thumbnail' ];
+            $r['error'] = [ 'code' => -32603, 'message' => "Could not set media #$media_id as the featured image of post #$post_id (this post type may not support featured images)" ];
           }
         }
         else {
@@ -2708,24 +2739,41 @@ class Meow_MWAI_Labs_MCP_Core {
         break;
 
       case 'wp_add_post_terms':
-        if ( empty( $a['ID'] ) || empty( $a['terms'] ) ) {
-          $r['error'] = [ 'code' => -32602, 'message' => 'ID & terms required' ];
-          break;
-        }
-        $terms = $a['terms'];
+        $terms = $a['terms'] ?? null;
         // Handle JSON strings (some MCP clients send arrays as JSON strings)
         if ( is_string( $terms ) ) {
           $terms = json_decode( $terms, true ) ?? [];
         }
-        $tax = sanitize_key( $a['taxonomy'] ?? 'category' );
+        $remove = $a['remove'] ?? [];
+        if ( is_string( $remove ) ) {
+          $remove = json_decode( $remove, true ) ?? [];
+        }
         $append = !isset( $a['append'] ) || $a['append'];
-        $set = wp_set_post_terms( intval( $a['ID'] ), $terms, $tax, $append );
-        if ( is_wp_error( $set ) ) {
-          $r['error'] = [ 'code' => $set->get_error_code(), 'message' => $set->get_error_message() ];
+        // An empty list is only meaningful as a replace: it clears the taxonomy.
+        $hasTerms = is_array( $terms ) && ( $terms || !$append );
+        if ( empty( $a['ID'] ) || ( !$hasTerms && empty( $remove ) ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'ID required, with terms (or terms: [] and append: false to clear) or remove' ];
+          break;
         }
-        else {
-          $this->add_result_text( $r, 'Terms set for post #' . $a['ID'] );
+        $post_id = intval( $a['ID'] );
+        $tax = sanitize_key( $a['taxonomy'] ?? 'category' );
+        if ( $hasTerms ) {
+          $set = wp_set_post_terms( $post_id, $terms, $tax, $append );
+          if ( is_wp_error( $set ) ) {
+            $r['error'] = [ 'code' => $set->get_error_code(), 'message' => $set->get_error_message() ];
+            break;
+          }
         }
+        if ( !empty( $remove ) ) {
+          $removed = wp_remove_object_terms( $post_id, array_map( 'intval', (array) $remove ), $tax );
+          if ( is_wp_error( $removed ) ) {
+            $r['error'] = [ 'code' => $removed->get_error_code(), 'message' => $removed->get_error_message() ];
+            break;
+          }
+        }
+        $now = wp_get_post_terms( $post_id, $tax, [ 'fields' => 'id=>name' ] );
+        $list = is_wp_error( $now ) ? [] : array_map( fn( $id, $name ) => "$name (#$id)", array_keys( $now ), $now );
+        $this->add_result_text( $r, "Post #$post_id $tax: " . ( $list ? implode( ', ', $list ) : 'none' ) );
         break;
 
         /* ===== Media: list ===== */

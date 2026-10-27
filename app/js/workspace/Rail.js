@@ -1,5 +1,5 @@
-// Previous: none
-// Current: 3.6.3
+// Previous: 3.6.3
+// Current: 3.8.8
 
 // The icon rail on the far left: always visible, even when the panel is
 // collapsed. Clicking the active item toggles the panel; clicking another
@@ -37,7 +37,7 @@ const Rail = ({ activePanel, collapsed, onSelect, onNewChat }) => {
       </button>
       <RailItem label="Chats" icon="chats" active={isOn('chats')} onClick={() => onSelect('chats')} />
       <RailItem label="Prompts" icon="prompts" active={isOn('prompts')} onClick={() => onSelect('prompts')} />
-      <RailItem label="Agents" icon="agents" soon active={isOn('agents')} onClick={() => onSelect('agents')} />
+      <RailItem label="Chatbots" icon="agents" active={isOn('agents')} onClick={() => onSelect('agents')} />
       <div className="mwai-ws-rail-flex" />
       <RailItem label="Settings" icon="settings" active={isOn('settings')} onClick={() => onSelect('settings')} />
       <a className="mwai-ws-rail-item" href={WS.admin_url || '/wp-admin/'} title="Back to WordPress Admin">

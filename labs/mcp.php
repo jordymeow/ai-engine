@@ -40,6 +40,15 @@ class Meow_MWAI_Labs_MCP {
   private $bearer_token = null;
   private $mcp_role = 'admin';
   private $tool_access_levels = [];
+  // Tools that can change the site, for the MCP tab's "changes" (see is_write_call()).
+  private $tool_writes = [];
+  // Tools with an "action" argument (list, get, update…): whether a call writes depends on it.
+  private $tool_mixed = [];
+  private $tool_levels_raw = [];
+  // A level other than 'read' says who may call a tool, not that it writes: 'admin' guards
+  // reads too (wp_get_users, wp_get_option, a theme's AI generator). So a change also needs a
+  // write verb in the name, or in the "action" argument of a tool that does several things.
+  private const WRITE_VERBS = '/(^|_)(create|update|delete|set|add|remove|upload|write|alter|edit|publish|insert|move|trash|import|replace|assign|activate|deactivate|install|uninstall|switch|translate|link|send|schedule|restore|duplicate|approve|reply|mark|copy|rename|mkdir|put|cancel|refund|resolve|merge|subscribe|unsubscribe|revoke|enable|disable|reset|clear|purge|save|sync|empty|close)(_|$)/i';
   // Set when the OAuth grant was approved as Read-only: only 'read' tools are listed or run.
   private $read_only_grant = false;
   // Placeholder for OAuth integration. Currently unused and kept for
@@ -89,6 +98,8 @@ class Meow_MWAI_Labs_MCP {
     // strict redirect_uri matching, PKCE S256, and refresh-token rotation.
     require_once __DIR__ . '/mcp-oauth.php';
     $this->oauth = new Meow_MWAI_Labs_MCP_OAuth( $core, $this );
+    require_once __DIR__ . '/mcp-usage.php';
+    new Meow_MWAI_Labs_MCP_Usage( $this );
 
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
   }
@@ -202,7 +213,7 @@ class Meow_MWAI_Labs_MCP {
       return $allow;
     }
 
-    $hdr = $request->get_header( 'authorization' );
+    $hdr = Meow_MWAI_Labs_MCP_OAuth::authorization_header( $request );
 
     // If no authorization header but bearer token is configured, deny access
     if ( !$hdr && !empty( $this->bearer_token ) ) {
@@ -1092,6 +1103,21 @@ class Meow_MWAI_Labs_MCP {
   #endregion
 
   #region Tools Definitions
+  public function is_write_call( string $tool, $args = null ): bool {
+    if ( empty( $this->tool_access_levels ) ) {
+      $this->get_tools_list();
+    }
+    if ( empty( $this->tool_writes[ $tool ] ) ) {
+      return false;
+    }
+    if ( !empty( $this->tool_mixed[ $tool ] ) ) {
+      // Without the arguments (a backfill from logs), an "action" tool cannot be told apart.
+      $action = is_array( $args ) ? (string) ( $args['action'] ?? '' ) : '';
+      return $action !== '' && (bool) preg_match( self::WRITE_VERBS, $action );
+    }
+    return ( $this->tool_levels_raw[ $tool ] ?? null ) === 'write' || (bool) preg_match( self::WRITE_VERBS, $tool );
+  }
+
   private function get_tools_list() {
     $base_tools = [
       [
@@ -1125,6 +1151,12 @@ class Meow_MWAI_Labs_MCP {
     foreach ( $filtered_tools as $tool ) {
       if ( isset( $tool['name'] ) ) {
         $this->tool_access_levels[ $tool['name'] ] = $tool['accessLevel'] ?? 'admin';
+        $this->tool_writes[ $tool['name'] ] = isset( $tool['accessLevel'] ) && $tool['accessLevel'] !== 'read'
+          && empty( ( (array) ( $tool['annotations'] ?? [] ) )['readOnlyHint'] );
+        $this->tool_levels_raw[ $tool['name'] ] = $tool['accessLevel'] ?? null;
+        // Schemas without arguments use an empty object for properties (JSON "{}"), not an array.
+        $props = $tool['inputSchema']['properties'] ?? [];
+        $this->tool_mixed[ $tool['name'] ] = is_array( $props ) ? isset( $props['action'] ) : isset( $props->action );
       }
     }
 
@@ -1398,6 +1430,7 @@ class Meow_MWAI_Labs_MCP {
     $response = null;
     $status = 'error';
     $error_msg = null;
+    $tool_level = null;
     $this->arm_fatal_net( $tool, $id );
     try {
       // Ensure tool access levels are populated (each HTTP request starts fresh)
@@ -1563,6 +1596,8 @@ class Meow_MWAI_Labs_MCP {
         'auth_method' => $this->auth_method,
         'request_id' => $id,
         'user_id' => get_current_user_id(),
+        'access_level' => $tool_level,
+        'writes' => $this->is_write_call( (string) $tool, $args ),
       ] );
       if ( $status === 'success' && $tool !== 'mcp_ping' ) {
         $this->bring_review_notice_forward();

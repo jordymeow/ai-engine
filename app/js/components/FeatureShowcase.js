@@ -1,5 +1,5 @@
-// Previous: 3.7.9
-// Current: 3.8.7
+// Previous: 3.8.7
+// Current: 3.8.8
 
 ```jsx
 // FeatureShowcase.js
@@ -252,7 +252,7 @@ const FeatureShowcase = ({ options, onDismiss }) => {
         <Links>
           <a href={track(SITE, 'footer-tour')} target="_blank" rel="noreferrer">{__( 'Take the tour ↗', 'ai-engine' )}</a>
           <a href={track(`${SITE}/compare`, 'footer-compare')} target="_blank" rel="noreferrer">{__( 'How it compares ↗', 'ai-engine' )}</a>
-          <a href={track('https://ai.thehiddendocs.com/', 'footer-docs')} target="_blank" rel="noreferrer">{__( 'Documentation ↗', 'ai-engine' )}</a>
+          <a href={track('https://meowapps.com/ai-engine/tutorial/', 'footer-tutorial')} target="_blank" rel="noreferrer">{__( 'Getting started ↗', 'ai-engine' )}</a>
         </Links>
       </NekoBlock>
     </Wrap>

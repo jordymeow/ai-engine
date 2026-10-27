@@ -775,6 +775,16 @@ class Meow_MWAI_API {
   *
   * @return string The result of the AI query.
   */
+  // A URL sent to the REST API by a non-admin is fetched over HTTP, never read from disk:
+  // otherwise any file under uploads, protected or not, could be sent to the AI.
+  private function dropped_file_from_url( $url ) {
+    $file = Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis' );
+    if ( defined( 'REST_REQUEST' ) && REST_REQUEST && !current_user_can( 'manage_options' ) ) {
+      $file->http_only();
+    }
+    return $file;
+  }
+
   public function simpleVisionQuery( $message, $url, $path = null, $params = [] ) {
     global $mwai_core;
     $ai_vision_default_env = $this->core->get_option( 'ai_vision_default_env' );
@@ -794,7 +804,7 @@ class Meow_MWAI_API {
       $query->image_remote_upload = $params['image_remote_upload'];
     }
     if ( !empty( $url ) ) {
-      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis' ) );
+      $query->add_file( $this->dropped_file_from_url( $url ) );
     }
     else if ( !empty( $path ) ) {
       $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'analysis' ) );
@@ -1186,7 +1196,7 @@ class Meow_MWAI_API {
     $query->inject_params( $params );
 
     if ( !empty( $url ) ) {
-      $query->add_file( Meow_MWAI_Query_DroppedFile::from_url( $url, 'analysis' ) );
+      $query->add_file( $this->dropped_file_from_url( $url ) );
     }
     else if ( !empty( $path ) ) {
       $query->add_file( Meow_MWAI_Query_DroppedFile::from_path( $path, 'analysis' ) );

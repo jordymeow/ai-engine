@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.7
+Stable tag: 3.8.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,9 +13,11 @@ The AI chatbot, AI agent and MCP server for WordPress. Connect OpenAI, Claude, G
 
 == Description ==
 
+**Free MCP server: Claude and ChatGPT connect with no account, no cap and no API key.**
+
 **AI Engine connects WordPress with AI models.** One install, stable connectors for every major AI provider: OpenAI, Anthropic, Google, Mistral, and more. Build intelligent chatbots, generate content, create AI forms, and automate tasks. All from your WordPress dashboard.
 
-https://www.youtube.com/watch?v=KDTcI7jjdPA
+https://www.youtube.com/watch?v=CBsXit0W4Ro
 
 Take the tour at [vibewithwp.ai](https://vibewithwp.ai/): what AI Engine does, how the MCP server works, and how it compares to the alternatives. Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more information, check the official website of [AI Engine](https://meowapps.com/ai-engine/).
 
@@ -28,6 +30,8 @@ For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [R
 There is also a Workspace: a full-screen AI chat inside wp-admin, with every model you configured, and free apps for [iPhone](https://apps.apple.com/app/workspace-for-wordpress/id6794717714) and [Android](https://play.google.com/store/apps/details?id=com.meowapps.workspace) so you can keep working on your site from your phone. Details on [workspace.press](https://workspace.press/).
 
 Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://meowapps.com/openclaw-wordpress-mcp/) through MCP, giving AI direct access to your site. Desktop clients can connect via OAuth: users just paste the MCP URL, sign in to WordPress, and approve. No shared token to manage. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
+
+https://www.youtube.com/watch?v=qg75Y3PDBpc
 
 You'll be having a blast before you've explored everything. You'll probably spot bits of AI Engine in plenty of other AI plugins, code and UI alike. Flattering, really... or fishy? 🤣 But only AI Engine keeps pushing forward with real care for its community, a drive toward perfection, and the patience to get the details right.
 
@@ -276,6 +280,12 @@ AI Engine is a plugin that helps you to connect your websites to AI services. Yo
 
 The developer of AI Engine and related parties are not responsible for any issues or losses caused by using the plugin or AI-generated content. You should talk to a legal expert and follow the laws and regulations of your country. AI Engine does only store data on your own server, and it is your responsibility to keep it safe. AI Engine's full disclaimer is [here](https://meowapps.com/ai-engine/disclaimer/).
 
+== External services ==
+
+AI Engine connects to the AI services you configure (OpenAI, Anthropic, Google and others) with your own API keys, only to run the features you use. See the Disclaimer above for their terms.
+
+When you connect an AI assistant in the MCP tab, the connection card can offer an optional "Keep me posted on Meow Apps news" box. Only if you tick it and click Subscribe, your email address is sent to meowapps.com (Meow Apps' newsletter, double opt-in, one-click unsubscribe). Nothing is sent otherwise. See the [Meow Apps privacy policy](https://meowapps.com/privacy-policy/).
+
 == Compatibility ==
 
 Please be aware that there may be conflicts with certain caching or performance plugins, such as SiteGround Optimizer and Ninja Firewall. To prevent any issues, ensure that AI Engine is excluded from these plugins.
@@ -308,13 +318,17 @@ AI models support many languages, but quality varies. There's no definitive list
 
 MCP (Model Context Protocol) exposes WordPress tools to AI agents. [Learn how to enable the MCP endpoint](https://ai.thehiddendocs.com/mcp/), choose which tools to expose, and secure them. You can manage posts, comments, users, media, and more. Administrators get full access, and you can also let Editors connect with their own account for content only.
 
+= Is the MCP server free? Do I need an API key or my own server? =
+
+Yes. The MCP server is part of this free plugin, with no account and no daily cap. There is no extra server to host: Claude and ChatGPT connect to your WordPress site with OAuth and use the plan you already have, so no API key is needed. [The facts, side by side with another MCP plugin](https://meowapps.com/ai-engine-vs-wpvibe/).
+
 = Does AI Engine work with WordPress AI (the AI plugin, Connectors and providers)? =
 
 Yes, but you don't need it. AI Engine already does everything WordPress AI offers, and more: it connects to every major provider, and adds chatbots, AI Forms, embeddings, a dedicated MCP server with more than 130 tools, and usage insights. That's why we don't recommend installing the WordPress AI plugin alongside it. If you already use it, that's fine: we make sure both play nicely together. On the Connectors page, choose to let AI Engine manage your providers: the API keys you already saved there are reused, both screens stay in sync, and the AI features of WordPress run through AI Engine, so their usage shows up in its Insights.
 
 = Do I need the MCP Adapter plugin? =
 
-No. AI Engine has its own MCP server, with more than 130 tools (over 200 with SEO Engine, Code Engine and Social Engine), OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and Settings → MCP → Abilities lets AI Engine's own server expose those abilities too.
+No. AI Engine has its own MCP server, with more than 130 tools (over 200 with SEO Engine, Code Engine and Social Engine), OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and the Abilities option in the MCP tab lets AI Engine's own server expose those abilities too.
 
 = Can I restrict the chatbot to answer only from my site content? =
 
@@ -333,6 +347,35 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.8 (2026/10/27) =
+* Fix: Security: Shop Managers can no longer edit administrator accounts through MCP, and the plugin and theme file tools now follow DISALLOW_FILE_EDIT.
+* Fix: Security: Forms and the Public API can no longer read protected uploads, the Google voice chatbot no longer exposes its API key, voice chats cannot replace someone else's conversation, and only admins can read the logs.
+* Fix: Security: Guests can no longer reset their usage limits with a fake IP header, while proxies and Cloudflare are still recognized.
+* Fix: Security: Chatbot replies now drop embedded frames and forms, and guest uploads are capped at 20 per hour.
+* Add: MCP tab showing the week's activity, recent changes with links to each WordPress diff, connections, access and tools.
+* Add: Settings backups with a restore in Maintenance, and settings now save only what changed.
+* Add: Chatbots panel in Workspace to chat with the site's own chatbots, using their instructions, model and Knowledge.
+* Add: Gemini 4 models such as gemini-4-argon now get vision, PDF, web search, Google Maps and thinking, as features follow the version number.
+* Add: Keepalives for streams that stay silent from the start, so nginx no longer cuts them at 120 seconds.
+* Add: The header shows the installed version and, when a newer one is out, how to update or renew.
+* Update: The MCP connect card guides you through Claude's directory first, confirms when your assistant reaches the site, points ChatGPT users to the official AI Engine app with Developer mode as the direct option, says the connector stores no password and none of your content, and offers an optional, unticked Meow Apps news signup.
+* Update: MCP stays off on updated sites that never stored the setting, only new installs get it on by default.
+* Update: The MCP Connection Test warns when the host strips the Authorization header and gives the .htaccess line, and AI Engine reads that header from Apache when WordPress cannot see it.
+* Update: The MCP post list accepts several post types or statuses at once, returns everything when asked for all posts, understands an author given by name, and the post count and post list tools return clearer data.
+* Update: In the Knowledge tab, creating an environment moved into the environment dropdown and Create New became Add Manually.
+* Update: New Meow Apps dashboard, from the latest shared common code.
+* Update: The admin now works on tablets, with the header, columns and Chatbots toolbar no longer breaking.
+* Update: The header lights the button of the screen you are on.
+* Update: Various labels and links, including the Dashboard footer now pointing to the Getting started guide and the Discussions setting pointing to the Discussions tab.
+* Fix: Chatbots keep web search, MCP servers and their reasoning settings after calling a function, which also stops Claude's "Invalid signature in thinking block" error.
+* Fix: Chatbots keep their Knowledge context after calling a function on every provider, including Google, OpenRouter and other compatible providers.
+* Fix: Syncing a large OpenAI Vector Store no longer times out, each step stops after about 25 seconds and the next one continues from there.
+* Fix: The chatbot preview in the Chatbots tab shows the conversations held before 3.8.7 again instead of starting empty.
+* Fix: Content Studio no longer shows each section heading twice when the model repeats it.
+* Fix: MCP tools now accept text request ids as the JSON-RPC spec allows.
+* Fix: Re-setting a featured image through MCP no longer fails, terms can be removed, and featured image errors say why.
+* Fix: Admin scripts refresh when only the UI library changes instead of staying cached.
 
 = 3.8.7 (2026/10/23) =
 * Fix: Security: Voice chatbots now only run functions attached to their own chatbot.
@@ -475,148 +518,5 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 * Fix: Chatbots with streaming disabled no longer slide the window up when a reply starts, which hid the Glass header and could make the page jump.
 * Fix: Add-ons now keep their own visitor params as sent; only denied keys are matched by their canonical name and only messages is folded into one key.
 
-= 3.8.1 (2026/09/24) =
-* Fix: Security: visitors could override a chatbot's or form's model, instructions or environment with renamed parameters. Fixed, and the Advisor widget now escapes its output.
-* Add: Glass, a new chatbot theme with colored light under frosted glass, a dark and a light mode, and a mode that follows the visitor's device.
-* Update: Every chatbot theme was polished: proper headings, lists and tables in replies, an empty state that introduces the bot, message actions beside the bubble, and a message field that keeps its height on every WordPress theme.
-* Update: Timeless and Messages have refreshed defaults (larger text, rounder corners, a white pane), and Messages drops its bubble tails. Customized themes keep their own values.
-* Update: Redesigned the dashboard's AI Visibility card, with visits, score and the top AI companies from SEO Engine, and an example you can hide when it is not installed.
-* Add: Templates in the Content Studio, shared with the classic generator.
-* Add: Every text the chatbot says on its own can be translated or changed with the mwai_chatbot_texts filter, plus a new Empty State Hint parameter.
-* Update: Pictures sent by visitors appear as a photo card, and message actions can be reached with the keyboard.
-* Update: The mwai_image MCP tool accepts an aspect ratio, and images requested without a size are now square instead of 21:9 on Gemini.
-* Update: Workspace now tells you when your site refuses a rename, a delete or a save, instead of failing silently.
-* Update: Deleting or resetting a chatbot, a theme or a template now asks first.
-* Fix: Embeddings were skipped on pages made with a page builder (Breakdance, Oxygen, Bricks...).
-* Fix: Models of a Custom (OpenAI-compatible) environment could not receive images.
-* Fix: The discussions list with several lists on one page, empty discussions, and its menu while scrolling.
-* Fix: The admin crashed when a chatbot's ID was changed, and a crash in one settings tab no longer locks the whole screen.
-* Fix: Stopped or edited Workspace replies no longer come back duplicated.
-* Fix: A streamed reply was rebuilt when it finished, reloading its images.
-* Fix: Dev Tools no longer polls the server every second while open.
-
-= 3.8.0 (2026/09/18) =
-* Add: Models API Pro module, so coding agents and OpenAI-compatible apps can use your site's AI models with one key, with usage tracked in Insights.
-* Add: Editor Access for MCP, letting Editors connect with their own account and work on content only.
-* Update: Rebuilt the Images, Playground and Content screens as studios, with image versions and brush edits, side-by-side model comparison, a guided brief-to-draft flow and shared presets.
-* Update: Knowledge sync now reports why posts were skipped instead of only the count.
-* Update: Excluded notes, archives and the Brewfile from the released package.
-* Add: Paste a file into the chatbot to upload it, and hover the reply timer to stop a response in progress.
-* Fix: Daily, weekly and monthly limits in Absolute mode no longer trip early.
-* Fix: Image, media and post creation routes now check permissions before acting.
-* Fix: Listing chatbots no longer fatals on the free plugin when a chatbot uses functions.
-
-= 3.7.8 (2026/09/13) =
-* Add: Redesigned Dashboard with a providers bento, weekly usage card, daily ideas and an AI visibility card, plus a slimmed Modules tab.
-* Add: MCP tools to install and update plugins and themes from the WordPress.org directory.
-* Add: GPT Image 2.5 Sunburst and Flare with the new quality levels.
-* Fix: Workspace module no longer switches itself off on sites without a Pro licence.
-* Fix: OpenAI Vector Store no longer retrieves knowledge twice on the default environment, now passes Max Results to file_search, and repairs old vectors tables missing columns.
-* Fix: Uploaded files stay in context on later turns with Claude and other stateless providers.
-* Update: The transcription and image edit API endpoints now check the caller can read the supplied attachment.
-* Update: Smart Search returns embedded pages and custom post types instead of only posts, and the debug info shows the min score and number of posts found.
-
-= 3.7.7 (2026/09/08) =
-* Add: Local Memory now stores the shortcuts and blocks of the last reply, so they persist after a reload.
-* Fix: Pairing failures that consumed the token now ask the user to generate a new code.
-* Fix: Connection test no longer always reports success.
-* Fix: Gemini no longer offers Live-only models as chatbots.
-* Fix: Function calling on Google's Standard API.
-* Fix: AI Copilot no longer stretches paragraphs to the full editor width.
-* Update: Workspace is now described as available on both iOS and Android in the readme and admin.
-
-= 3.7.6 (2026/09/05) =
-* Add: Support for GPT-6 Astra, including its max reasoning level.
-* Fix: Temperature is no longer sent to models that reject it.
-* Update: The reasoning dropdown now only shows levels supported by the selected model.
-
-= 3.7.5 (2026/09/03) =
-* Add: Claude Fable 5.1 to the Anthropic models.
-* Fix: Anthropic now caps max_tokens to the model's limit instead of returning a 400 error.
-* Fix: Provider errors with a flat body (such as Mistral) and any 4xx/5xx status now show the actual error message.
-* Update: Removed the Assistants module following OpenAI's shutdown.
-* Update: Transcription now uses gpt-transcribe, and Opus 4.1 has been removed.
-* Update: Built-in tools that can't be used with Chat Completions are now reported in the logs instead of being dropped silently.
-
-= 3.7.4 (2026/09/01) =
-* Fix: Sending a message after a client-side JS function call no longer fails with an invalid_request_error.
-* Fix: MCP OAuth login redirects are no longer cached by page caches and served to the wrong visitor.
-* Fix: Plugin file tools no longer report a refusal as a missing directory.
-* Update: The "Done!" placeholder for client-side function calls is now translatable and filterable.
-
-= 3.7.3 (2026/08/26) =
-* Fix: Chatbots using the default environment and model are no longer excluded from the function calling list.
-* Fix: Vision now detects image types from the file contents instead of the extension, so images served through a CDN work.
-* Fix: Magic Wand can read the selected text again in the iframed block editor of WordPress 7.1, re-enabling Suggest Synonyms.
-* Update: Completed steps in the Setup Assistant now collapse to a single line.
-
-= 3.7.2 (2026/08/20) =
-* Fix: Editor Assistant endpoints accepted a nonce any visitor could generate, allowing anyone to run AI queries on the site's provider account (reported by Abdullah Kareem via WPScan).
-* Fix: A crafted URL could escape the uploads folder and send any server-readable file to the AI provider (reported by Jashid Sany via WPScan).
-* Fix: Editor Assistant now works for admin-equivalent accounts whose role isn't literally administrator.
-* Fix: Embeddings sharing the same reference no longer stay stuck, and a single unprocessable vector no longer blocks the maintenance queue.
-* Fix: A temperature of 0 is no longer treated as unset and stripped from the request.
-* Fix: Image-only replies from GPT-5 models no longer show "medium" as the answer text.
-* Update: Claude Sonnet 5 pricing ($2/$10 is now permanent), dashboard wording, and tested with WordPress 7.1.
-* 🎵 Discuss with others about Ai Engine on [the Discord](https://discord.gg/bHDGh38).
-* 🌴 Keep us motivated with [a little review here](https://wordpress.org/support/plugin/ai-engine/reviews/). Thank you!
-* 🥰 If you want to help us, check our [Patreon](https://www.patreon.com/meowapps). Thank you!
-* 🚀 [Click here](https://trello.com/b/8U9SdiMy/ai-engine-feature-requests) to vote for the features you want the most.
-
-= 3.7.1 (2026/08/14) =
-* Add: WPML support in the MCP server, mirroring the Polylang tools.
-* Add: SEO section in the Modules tab, with robots.txt access for AI crawlers and live stats when SEO Engine is installed.
-* Update: MCP self-test now detects AI-crawler blocking, nested .htaccess files and www mismatches, and logs every OAuth authorize refusal.
-* Update: Internal errors are now hidden behind a filterable public message, and AI Forms no longer show provider errors to visitors.
-* Update: Shared dashboard synced with the new Board and the AI site analysis.
-* Fix: The mwai_mcp_mutate hook now fires on deletions, so cache purges hooked to it run.
-
-= 3.7.0 (2026/08/03) =
-* Fix: Qdrant collections were always created with 1536 dimensions regardless of the embedding model, and default dimensions are now read from the right place.
-* Update: Embedding dimensions are no longer locked for OpenAI-compatible models, as that size is only a guess.
-* Fix: The MCP access level no longer restricts OAuth connections, and the setting is no longer hidden behind the bearer token.
-* Fix: MCP connections no longer drop at random when the client refreshes its access token.
-* Update: Credited Revanth Hari Narayana Matte (via WPScan) for reporting the security issues fixed in 3.6.4 and 3.6.6.
-
-= 3.6.9 (2026/08/01) =
-* Fix: Crash when clicking quickly through discussions, and slow image checks writing into the wrong message.
-* Fix: MCP token refresh being rejected on servers that pass Basic credentials to PHP instead of forwarding the header.
-* Fix: Stored chat messages could run scripts when an admin opened a discussion.
-
-= 3.6.8 (2026/08/01) =
-* Fix: Workspace mobile app connection on servers that don't expose the Authorization header, with clearer pairing errors.
-* Fix: A Context Max Length of zero no longer empties posts, which blocked embeddings sync and blanked chatbot context.
-* Update: Transcription now defaults to gpt-4o-mini-transcribe instead of whisper-1.
-* Update: The mobile connection warning links to the troubleshooting page instead of showing the htaccess snippet.
-* Add: Logging on the MCP OAuth token endpoint for failing refreshes.
-
-= 3.6.7 (2026/07/31) =
-* Add: Workspace is officially launched on [iOS](https://apps.apple.com/app/workspace-for-wordpress/id6794717714). 
-* Update: OpenAI pricing for GPT-5.6 Terra and Luna following the July 30 cut, and corrected o3 which was priced 7.5x too high.
-* Update: Removed the leftover mcp.js relay and its documentation, and corrected the MCP header comment that still mentioned SSE and OAuth.
-* Add: getDiscussion() to the PHP API, to read a stored discussion without using $mwai_core.
-
-= 3.6.6 (2026/07/30) =
-* Update: Minimum PHP version is now 8.1, declared in the plugin header so WordPress blocks activation on older versions.
-* Fix: Push All no longer exhausts the memory limit on large sites; post content is now checked in chunks.
-* Fix: Long Japanese and Chinese posts no longer produce empty content, which left their embeddings stale.
-* Fix: Hardened the REST endpoints against client-supplied file paths and API keys, corrected the MCP OAuth route match and guest session cookie, and stopped the chatbot key reaching Editors.
-* Fix: The mwai_mcp_callback filter now receives five arguments from both the Workspace and the MCP endpoint.
-* Add: CSV and JSON export for the Query and MCP logs, honouring the active filters and sort.
-* Fix: Chatbot input is no longer hidden behind the mobile keyboard in fullscreen, and shortcuts are now chips that don't inherit the site's button styles.
-
-= 3.6.5 (2026/07/28) =
-* Add: Elapsed time counter on the AI Forms submit button, matching the chatbot.
-* Add: Note in the Sync panel that the Sync filters are shared by all environments.
-* Fix: Three security issues reported by WPScan (key disclosure to editors, guessable guest sessions, audio transcription file read).
-* Fix: Streaming requests now respect MWAI_SSL_VERIFY and verify TLS certificates (reported by Mohammed Abd Alrahman).
-* Fix: Recurring tasks no longer stay parked after repeated failures, so discussions and logs cleanups run again.
-* Fix: Administrator-equivalent accounts (custom roles with manage_options) are no longer refused at the MCP OAuth consent screen.
-* Fix: A custom JavaScript filter that crashes no longer breaks the chatbot, and raw JavaScript errors are no longer shown to visitors.
-* Fix: The embeddings environment Type field no longer shows "Select" for the Internal (WordPress DB) environment.
-* Fix: The Web Search button now appears in the Workspace composer when pinned.
-* Update: Push All now respects the Sync category and language filters, so it no longer seeds posts Sync would not maintain.
-* Update: Workspace is now available to everyone; Knowledge, MCP Servers and Functions stay Pro.
-* Update: Removed the unused module_addons and module_blocks option defaults.
-
 For older releases, see [changelog.txt](https://plugins.svn.wordpress.org/ai-engine/trunk/changelog.txt).
+

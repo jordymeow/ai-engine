@@ -380,9 +380,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
   protected function build_body( $query, $streamCallback = null ) {
     $body = [];
 
-    // Gemini 3 models don't support multiple candidates
+    // Gemini 3 and later don't support multiple candidates
     $candidateCount = $query->maxResults;
-    if ( preg_match( '/gemini-3/', $query->model ) && $candidateCount > 1 ) {
+    if ( version_compare( $this->gemini_version( $query->model ) ?? '0', '3', '>=' ) && $candidateCount > 1 ) {
       $candidateCount = 1;
     }
 
@@ -1216,20 +1216,28 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           $model['name'] = preg_replace( '/\((beta|alpha|preview)\)/i', '', $model['name'] );
         }
 
-        // Vision capabilities - all 3.x, 2.5, 2.0, and 1.5 models support vision and files
-        if ( preg_match( '/gemini-(3|2\.5|2\.0|1\.5|omni)|nano-banana/', $model_id ) ) {
+        // Capabilities follow the version number, never a list of known versions: the old
+        // gemini-(3|2.5|...) patterns gave gemini-4-argon no vision, files, search or thinking.
+        // Aliases without a number (gemini-flash-latest) count as the newest.
+        $version = $this->gemini_version( $model_id ) ?? '0';
+        $atLeast = function ( $v ) use ( $version ) {
+          return version_compare( $version, $v, '>=' );
+        };
+
+        // Vision and files (PDFs, documents): Gemini 1.5 and later
+        if ( $atLeast( '1.5' ) || strpos( $model_id, 'nano-banana' ) !== false ) {
           $tags[] = 'vision';
           $tags[] = 'files'; // All vision models support PDFs/documents
           $features[] = 'vision';
         }
 
-        // Web search capabilities - Gemini 3.x, 2.5, and 1.5 Pro models
-        if ( preg_match( '/gemini-(3|2\.5|1\.5-pro|omni)/', $model_id ) ) {
+        // Web search: Gemini 2.5 and later, plus 1.5 Pro
+        if ( $atLeast( '2.5' ) || strpos( $model_id, 'gemini-1.5-pro' ) !== false ) {
           $tools[] = 'web_search';
         }
 
-        // Google Maps grounding - Gemini 3.x and 2.5 models
-        if ( preg_match( '/gemini-(3|2\.5|omni)/', $model_id ) ) {
+        // Google Maps grounding: Gemini 2.5 and later
+        if ( $atLeast( '2.5' ) ) {
           $tools[] = 'google_maps';
         }
 
@@ -1278,8 +1286,8 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
           }
         }
 
-        // Thinking capabilities for Gemini 2.5 models
-        if ( preg_match( '/gemini-(2\.5|3)/', $model_id ) && !in_array( 'embedding', $tags ) ) {
+        // Thinking: Gemini 2.5 and later
+        if ( $atLeast( '2.5' ) && !in_array( 'embedding', $tags ) ) {
           $tools[] = 'thinking';
           $tags[] = 'thinking';
         }
@@ -1701,9 +1709,9 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
       call_user_func( $streamCallback, $event );
     }
 
-    // Gemini 3 models don't support multiple candidates
+    // Gemini 3 and later don't support multiple candidates
     $candidateCount = $query->maxResults;
-    if ( preg_match( '/gemini-3/', $query->model ) && $candidateCount > 1 ) {
+    if ( version_compare( $this->gemini_version( $query->model ) ?? '0', '3', '>=' ) && $candidateCount > 1 ) {
       $candidateCount = 1;
     }
 

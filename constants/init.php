@@ -145,7 +145,7 @@ define( 'MWAI_OPTIONS', [
   'module_transcription' => false,
   'module_advisor' => false,
   'module_orchestration' => false,
-  'module_mcp' => false,
+  'module_mcp' => true,
   'module_models_api' => false,
   // Pro modules switched off while the licence was missing, switched back on once it is valid again.
   'pro_modules_paused' => [],
@@ -244,6 +244,7 @@ define( 'MWAI_OPTIONS', [
   'mcp_abilities' => false,
   'mcp_role' => 'admin',
   'mcp_oauth_editors' => false,
+  'mcp_default_readonly' => false,
   'mcp_log_calls' => true,
   'mcp_log_payloads' => false,
   'queries_debug_mode' => false,
