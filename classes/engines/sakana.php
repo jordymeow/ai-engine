@@ -1,6 +1,13 @@
 <?php
 
 class Meow_MWAI_Engines_Sakana extends Meow_MWAI_Engines_ChatML {
+  // Fugu Ultra reports its orchestration steps apart from prompt/completion tokens; Sakana bills
+  // them at the same rates (total_tokens already includes them). Kept until usage is recorded.
+  private $orchestrationIn = 0;
+  private $orchestrationOut = 0;
+  // The request's own context size, which decides Fugu Ultra's long-context rate.
+  private $contextTokens = 0;
+
   public function __construct( $core, $env ) {
     parent::__construct( $core, $env );
   }
@@ -18,7 +25,12 @@ class Meow_MWAI_Engines_Sakana extends Meow_MWAI_Engines_ChatML {
     // Prefer the models synced from /v1/models, fall back to the static list.
     $dynamic = $this->core->get_engine_models( 'sakana' );
     if ( !empty( $dynamic ) ) {
-      return $dynamic;
+      // The synced list stores the metadata of the day it was fetched: prices, contexts and
+      // descriptions always come from the current static definitions.
+      return array_map( function ( $model ) {
+        $static = $this->find_static_model( $model['model'] ?? '' );
+        return $static ? array_merge( $static, [ 'model' => $model['model'], 'name' => $model['name'] ?? $static['name'] ] ) : $model;
+      }, $dynamic );
     }
     return apply_filters( 'mwai_sakana_models', MWAI_SAKANA_MODELS );
   }
@@ -62,7 +74,22 @@ class Meow_MWAI_Engines_Sakana extends Meow_MWAI_Engines_ChatML {
     return $body;
   }
 
+  protected function finalize_choices( $choices, $responseData, $query ) {
+    $this->remember_usage( $responseData['usage'] ?? [] );
+    return parent::finalize_choices( $choices, $responseData, $query );
+  }
+
+  private function remember_usage( $usage ) {
+    if ( !is_array( $usage ) || !isset( $usage['prompt_tokens'] ) ) {
+      return;
+    }
+    $this->orchestrationIn = (int) ( $usage['orchestration_input_tokens'] ?? 0 );
+    $this->orchestrationOut = (int) ( $usage['orchestration_output_tokens'] ?? 0 );
+    $this->contextTokens = (int) $usage['prompt_tokens'];
+  }
+
   protected function stream_data_handler( $json ) {
+    $this->remember_usage( $json['usage'] ?? [] );
     // Namazu streams its thinking as reasoning_content (DeepSeek style); ChatML reads 'reasoning'.
     if ( isset( $json['choices'][0]['delta']['reasoning_content'] ) ) {
       $json['choices'][0]['delta']['reasoning'] = $json['choices'][0]['delta']['reasoning_content'];
@@ -72,6 +99,11 @@ class Meow_MWAI_Engines_Sakana extends Meow_MWAI_Engines_ChatML {
   }
 
   public function handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens, $returned_price = null ) {
+    if ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
+      $returned_in_tokens += $this->orchestrationIn;
+      $returned_out_tokens += $this->orchestrationOut;
+    }
+    $this->orchestrationIn = $this->orchestrationOut = 0;
     parent::handle_tokens_usage( $reply, $query, $returned_model, $returned_in_tokens, $returned_out_tokens, $returned_price );
     // Sakana reports real usage, also when streaming (stream_options above).
     if ( !is_null( $returned_in_tokens ) && !is_null( $returned_out_tokens ) ) {
@@ -80,16 +112,31 @@ class Meow_MWAI_Engines_Sakana extends Meow_MWAI_Engines_ChatML {
   }
 
   /**
-   * Sakana has not published prices yet, so the models carry none. Return null
+   * Sakana returns no cost, only usage, so the price comes from its published rates. Plain Fugu
+   * bills at the rate of whichever model it picked, which the API does not say: no price there
    * (logged as "No price") rather than a made-up cost or a misleading $0.
    */
   public function get_price( Meow_MWAI_Query_Base $query, Meow_MWAI_Reply $reply ) {
+    $definition = null;
     foreach ( $this->get_models() as $model ) {
       if ( $model['model'] === $query->model ) {
-        return isset( $model['price'] ) ? parent::get_price( $query, $reply ) : null;
+        $definition = $model;
+        break;
       }
     }
-    return null;
+    if ( empty( $definition['price'] ) || !is_a( $query, 'Meow_MWAI_Query_Text' ) ) {
+      return null;
+    }
+    $price = $definition['price'];
+    $long = $definition['priceLongContext'] ?? null;
+    if ( $long && $this->contextTokens > $long['threshold'] ) {
+      $price = $long;
+    }
+    $in = (int) $reply->get_in_tokens( $query );
+    $out = (int) $reply->get_out_tokens();
+    $cached = min( max( 0, (int) $reply->get_cached_tokens() ), $in );
+    $unit = $definition['unit'] ?? 1 / 1000000;
+    return ( ( $in - $cached ) * $price['in'] + $cached * ( $price['cached'] ?? $price['in'] ) + $out * $price['out'] ) * $unit;
   }
 
   /**

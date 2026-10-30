@@ -356,7 +356,9 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
 
     // 2. Retrieve the full list of chat models
     $url = 'https://openrouter.ai/api/v1/models';
-    $response = wp_remote_get( $url );
+    // The list is ~800 KB: WordPress's default 5 s timeout cuts it short on slow hosts, which then
+    // showed a working connection test with no models at all.
+    $response = wp_remote_get( $url, [ 'timeout' => 30 ] );
     if ( is_wp_error( $response ) ) {
       throw new Exception( 'AI Engine: ' . $response->get_error_message() );
     }
@@ -372,7 +374,7 @@ class Meow_MWAI_Engines_OpenRouter extends Meow_MWAI_Engines_ChatML {
 
     // 3. Retrieve embedding models
     $embeddingsUrl = 'https://openrouter.ai/api/v1/embeddings/models';
-    $embeddingsResponse = wp_remote_get( $embeddingsUrl );
+    $embeddingsResponse = wp_remote_get( $embeddingsUrl, [ 'timeout' => 30 ] );
     if ( !is_wp_error( $embeddingsResponse ) ) {
       $embeddingsBody = json_decode( $embeddingsResponse['body'], true );
       if ( isset( $embeddingsBody['data'] ) && is_array( $embeddingsBody['data'] ) ) {

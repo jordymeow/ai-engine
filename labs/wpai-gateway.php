@@ -25,68 +25,6 @@ class Meow_MWAI_Labs_WPAI_Gateway {
     // land last and stick.
     add_action( 'init', [ $this, 'register' ], 25 );
 
-    // Tiny test endpoint for developers to verify end-to-end dispatch without
-    // wiring up ChatKit. Hit `admin-ajax.php?action=mwai_wpai_gateway_test`.
-    add_action( 'wp_ajax_mwai_wpai_gateway_test', [ $this, 'ajax_test' ] );
-  }
-
-  public function ajax_test(): void {
-    if ( ! current_user_can( 'manage_options' ) ) {
-      wp_send_json_error( [ 'message' => 'forbidden' ], 403 );
-    }
-    $message = isset( $_REQUEST['message'] ) ? wp_unslash( $_REQUEST['message'] ) : 'Say hi in one word.';
-    $model   = isset( $_REQUEST['model'] )   ? sanitize_text_field( wp_unslash( $_REQUEST['model'] ) ) : '';
-    try {
-      $registry = \WordPress\AiClient\AiClient::defaultRegistry();
-      $provider_id = isset( $_REQUEST['provider'] ) ? sanitize_key( wp_unslash( $_REQUEST['provider'] ) ) : '';
-      if ( ! $provider_id ) {
-        foreach ( self::ADAPTERS as $id => $_cls ) {
-          if ( $registry->hasProvider( $id ) && $registry->isProviderConfigured( $id ) ) {
-            $provider_id = $id;
-            break;
-          }
-        }
-      }
-      if ( ! $provider_id ) {
-        wp_send_json_error( [ 'message' => 'no configured AI Engine adapter found; enable the Connectors takeover' ], 500 );
-      }
-      $provider = $registry->getProviderClassName( $provider_id );
-      if ( ! $model ) {
-        $models = $provider::modelMetadataDirectory()->listModelMetadata();
-        if ( empty( $models ) ) {
-          wp_send_json_error( [ 'message' => 'no models exposed by ' . $provider_id ], 500 );
-        }
-        $model = $models[0]->getId();
-      }
-      $modelInstance = $provider::model( $model );
-      $user = new \WordPress\AiClient\Messages\DTO\UserMessage( [
-        new \WordPress\AiClient\Messages\DTO\MessagePart( $message ),
-      ] );
-      $result = $modelInstance->generateTextResult( [ $user ] );
-      $text = '';
-      foreach ( $result->getCandidates() as $c ) {
-        foreach ( $c->getMessage()->getParts() as $p ) {
-          if ( $p->getType()->isText() ) {
-            $text .= $p->getText();
-          }
-        }
-      }
-      wp_send_json_success( [
-        'model'   => $model,
-        'reply'   => $text,
-        'tokens'  => [
-          'prompt'     => $result->getTokenUsage()->getPromptTokens(),
-          'completion' => $result->getTokenUsage()->getCompletionTokens(),
-          'total'      => $result->getTokenUsage()->getTotalTokens(),
-        ],
-      ] );
-    }
-    catch ( \Throwable $e ) {
-      wp_send_json_error( [
-        'message' => $e->getMessage(),
-        'file'    => $e->getFile() . ':' . $e->getLine(),
-      ], 500 );
-    }
   }
 
   /** Mapping from AiClient provider id → AI Engine adapter class. */

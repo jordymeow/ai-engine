@@ -195,8 +195,10 @@ class Meow_MWAI_Services_MessageBuilder {
           ];
         }
         else {
-          // For non-images (PDFs, documents), use file_id reference
-          $fileId = $file->get_refId();
+          // For non-images (PDFs, documents), use file_id reference. Only an id OpenAI gave us
+          // (provider_file_id): our own refId sent here made OpenAI answer "Expected an ID that
+          // begins with 'file'".
+          $fileId = $file->get_type() === 'provider_file_id' ? $file->get_refId() : null;
 
           if ( !$fileId ) {
             // File should have been uploaded by the engine before message building

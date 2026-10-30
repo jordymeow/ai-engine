@@ -202,19 +202,28 @@ class Meow_MWAI_Labs_MCP_Usage {
 
   // WordPress's own before/after view, for edits that touch the content. Only when a revision
   // was saved at that moment: a fields-only change makes none, and an older one would mislead.
-  private static function diff_url( WP_Post $post, string $tool, int $time ): ?string {
+  // 'restore' opens the revision from BEFORE the change, where WordPress offers "Restore This
+  // Revision" (restoring the newest one would change nothing: it is the AI's edit itself).
+  // Nothing is offered once the post was edited again afterwards.
+  private static function revision_links( WP_Post $post, string $tool, int $time ): array {
+    $none = [ 'diff' => null, 'restore' => null ];
     if ( !preg_match( '/^(wp_update_post|wp_alter_post|wp_write_blocks|wc_update_product|wc_alter_product)$/', $tool ) ) {
-      return null;
+      return $none;
     }
     if ( !post_type_supports( $post->post_type, 'revisions' ) ) {
-      return null;
+      return $none;
     }
-    $revisions = wp_get_post_revisions( $post->ID, [ 'numberposts' => 1 ] );
-    $revision = reset( $revisions );
-    if ( !$revision || abs( strtotime( $revision->post_date_gmt . ' UTC' ) - $time ) > 5 * MINUTE_IN_SECONDS ) {
-      return null;
+    $revisions = array_values( array_filter( wp_get_post_revisions( $post->ID, [ 'numberposts' => 5 ] ),
+      function ( $revision ) { return !wp_is_post_autosave( $revision ); } ) );
+    $latest = $revisions[0] ?? null;
+    if ( !$latest || abs( strtotime( $latest->post_date_gmt . ' UTC' ) - $time ) > 5 * MINUTE_IN_SECONDS ) {
+      return $none;
     }
-    return admin_url( 'revision.php?revision=' . $revision->ID );
+    $before = $revisions[1] ?? null;
+    return [
+      'diff' => admin_url( 'revision.php?revision=' . $latest->ID ),
+      'restore' => $before && current_user_can( 'edit_post', $post->ID ) ? admin_url( 'revision.php?revision=' . $before->ID ) : null,
+    ];
   }
 
   private static function same_change( array $row, string $tool, string $client, int $id, string $title ): bool {
@@ -228,6 +237,7 @@ class Meow_MWAI_Labs_MCP_Usage {
     foreach ( is_array( $recent ) ? $recent : [] as $item ) {
       $id = (int) ( $item['id'] ?? 0 );
       $post = $id ? get_post( $id ) : null;
+      $links = $post ? self::revision_links( $post, (string) ( $item['tool'] ?? '' ), (int) ( $item['time'] ?? 0 ) ) : [ 'diff' => null, 'restore' => null ];
       $row = [
         'time' => (int) ( $item['time'] ?? 0 ),
         'tool' => (string) ( $item['tool'] ?? '' ),
@@ -238,7 +248,8 @@ class Meow_MWAI_Labs_MCP_Usage {
         'taxonomy' => (string) ( $item['taxonomy'] ?? '' ),
         'removed' => !empty( $item['removed'] ),
         'editUrl' => $post ? get_edit_post_link( $id, 'raw' ) : null,
-        'diffUrl' => $post ? self::diff_url( $post, (string) ( $item['tool'] ?? '' ), (int) ( $item['time'] ?? 0 ) ) : null,
+        'diffUrl' => $links['diff'],
+        'restoreUrl' => $links['restore'],
         'thumb' => $post ? ( get_the_post_thumbnail_url( $id, 'thumbnail' ) ?: ( $post->post_type === 'attachment' && wp_attachment_is_image( $id ) ? wp_get_attachment_image_url( $id, 'thumbnail' ) : null ) ) : null,
       ];
       // Rows from before the merge above: fold consecutive repeats here too.

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.8
+Stable tag: 3.8.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,12 +76,8 @@ The app is free, the plugin is free, and there is no markup on anything: you pay
 
 **Features:**
 
-* Every provider in one thread, switchable per conversation
-* Conversation history, folders, pins, and full-text search
-* Prompt library, image generation, and web search
-* Site actions through MCP, with approval before any change
+* History, folders, pins, full-text search and a prompt library
 * Attach files and save generated images to the Media Library
-* Themes that sync across your devices through your WordPress account
 * Requires iOS 17 or newer, or Android 8 or newer
 
 == 🤖 Chatbots ==
@@ -186,6 +182,8 @@ AI Engine turns your WordPress site into an intelligent MCP server. AI agents li
 
 **Direct and private.** AI apps connect straight to your site. There is no relay service in between, your credentials never leave WordPress, and the MCP server is free, with no monthly fee and no usage cap.
 
+**See and undo every change.** The MCP tab lists what each assistant changed on your site, with a link to WordPress's before/after view and a one-click way back to the version before the edit.
+
 Rather have it set up for you? [Connect with Meow Apps](https://connect.meowapps.com/?ref=wporg) adds your site to ChatGPT or Claude in a few clicks, through our gateway, which passes requests along without storing them.
 
 **What AI Agents Can Do:**
@@ -201,22 +199,7 @@ Rather have it set up for you? [Connect with Meow Apps](https://connect.meowapps
 * Manage WooCommerce products, orders, inventory, and customers
 * Handle Polylang and WPML translations
 
-**Setup Guides:**
-
-* [General MCP Overview](https://ai.thehiddendocs.com/mcp/)
-* [MCP with ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/)
-* [MCP with Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/)
-* [MCP with Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/)
-
-**Plugin Integration:**
-
-Other plugins add their features to the MCP system:
-
-* [SEO Engine](https://wordpress.org/plugins/seo-engine/) - Let AI analyze and optimize your content, fix SEO issues, and manage meta data
-* [Social Engine](https://wordpress.org/plugins/social-engine/) - AI can schedule posts, manage social media, and create social content
-* [Code Engine](https://wordpress.org/plugins/code-engine/) - Give AI access to code snippets and custom functions
-
-Plugins that register their features with the WordPress Abilities API, such as Easy Digital Downloads, can join too: turn on Abilities in the MCP settings and they become MCP tools, each one keeping its own permission checks.
+Setup guides for [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/) and [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/) are in the [MCP documentation](https://ai.thehiddendocs.com/mcp/).
 
 AI Engine can also connect to external MCP servers, extending your chatbots with tools and services beyond WordPress.
 
@@ -226,7 +209,7 @@ AI Engine's MCP tools are curated and permission-aware on purpose. They do not r
 
 Each person connects with their own WordPress account, so every action shows up under their name. Administrators get full access. Editors can connect too once you turn on Editor Access, limited to the content they can already edit in WordPress: settings, users, plugins, themes and deleting stay with administrators.
 
-Some people have asked us to match tools like Novamira and give an AI agent full, unrestricted control of WordPress through arbitrary PHP execution. We will not add that to the official AI Engine plugin, because it is genuinely unsafe: it effectively turns your site into remote code execution. If you specifically want that Novamira-style power on a development or staging site, we made an optional companion plugin, [AI Engine YOLO](https://github.com/jordymeow/ai-engine-yolo), which brings the same unrestricted PHP execution and file access to AI Engine's MCP server. It is dangerous by design, switches itself off on production, and is offered on GitHub only. Please never run it on a live site.
+Arbitrary PHP execution, as some tools offer, will never be part of AI Engine: it turns your site into remote code execution. For a development site only, the companion [AI Engine YOLO](https://github.com/jordymeow/ai-engine-yolo) adds it, switches itself off on production, and lives on GitHub only.
 
 == Pro Features ==
 
@@ -248,13 +231,13 @@ Some people have asked us to match tools like Novamira and give an AI agent full
 Built specifically for WordPress with seamless integration. No clunky interfaces, just native WordPress experience.
 
 **Flexible & Powerful**
-Built-in connectors for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) connector for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you. Google (Gemini) runs on the new Interactions API by default, bringing stateful conversations, streaming with a live event log, function calling, and built-in Google Search and Google Maps grounding, with the classic API kept as a one-click fallback.
+Built-in connectors for OpenAI, Anthropic, Google, xAI (Grok), Mistral, Perplexity, OpenRouter, Replicate, Azure (OpenAI), plus a Custom (OpenAI-compatible) connector for Ollama, LM Studio, vLLM, llama.cpp, LocalAI, or any self-hosted server. Use the models that work best for you.
 
 **Developer Friendly**
 Clean APIs, extensive hooks, and MCP support. Build custom AI features or entire SaaS applications on WordPress.
 
 **Real MCP, for Real WordPress**
-You may have heard of MCP Adapter, built by the WordPress team primarily for their WordPress.com hosting service. It's essentially a thin layer on top of the REST API. AI Engine takes a different approach: its MCP tools are specifically crafted for AI agents, with rich context, smart defaults, and practical actions that go far beyond what a generic REST API wrapper can offer. And it works on any WordPress installation, regardless of your hosting provider. AI Engine also exposes its REST API as MCP tools if you want that, but the dedicated tools are where the real power is.
+Generic MCP adapters wrap the REST API. AI Engine's tools are crafted for AI agents, with rich context, smart defaults and practical actions, on any WordPress host. The REST API can be exposed as tools too, if you want it.
 
 **Privacy First**
 IP hashing, GDPR tools, secure file handling, and session-based tracking. You control your data. The free version sends nothing to us; the Pro version's update check also says whether MCP was used in the last 30 days (a simple yes or no, nothing about what it did) and how many phones are paired with Workspace (a number only).
@@ -347,6 +330,15 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.8.9 (2026/10/30) =
+* Add: GPT-6.1 Terra model.
+* Add: Restore link in Recent Changes, which opens the version from before an AI edit.
+* Update: Connect card now offers a choice between a direct connection (recommended) and the Meow Apps relay, with labels under each choice explaining what it brings, and the address to copy now sits in the Copy step.
+* Update: Connect card opens on the direct connection for Claude and ChatGPT, with the directory and the ChatGPT app one click away.
+* Update: Image Studio's edit link now only accepts a media ID.
+* Fix: Chatbot now explains why a file could not be sent to OpenAI, instead of showing OpenAI's "Expected an ID that begins with file" error.
+* Fix: OpenRouter model list now waits up to 30 seconds to load, for slow hosts.
 
 = 3.8.8 (2026/10/27) =
 * Fix: Security: Shop Managers can no longer edit administrator accounts through MCP, and the plugin and theme file tools now follow DISALLOW_FILE_EDIT.

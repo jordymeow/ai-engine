@@ -2923,8 +2923,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           }
         }
         catch ( Exception $e ) {
-          error_log( '[AI Engine] Failed to upload file to OpenAI Files API: ' . $e->getMessage() );
-          // Keep the original file - MessageBuilder will skip it
+          // Say why, instead of going on: the reply then failed with OpenAI's confusing "Expected an
+          // ID that begins with 'file'" (our own id was sent), or answered without the document.
+          throw new Exception( sprintf( 'The file %s could not be sent to OpenAI: %s', $file->get_filename(), $e->getMessage() ) );
+        }
+        if ( empty( $fileId ) ) {
+          throw new Exception( sprintf( 'The file %s could not be sent to OpenAI: no file id came back.', $file->get_filename() ) );
         }
       }
     }

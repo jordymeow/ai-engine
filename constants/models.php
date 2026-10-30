@@ -70,6 +70,33 @@ define( 'MWAI_OPENAI_MODELS', [
     ]
   ],
   /*
+    GPT-6.1 Terra
+    Fast, efficient tier for visual reasoning, computer use and writing, added 2026-10-28.
+    https://developers.openai.com/api/docs/models/gpt-6.1-terra
+    */
+  [
+    'model' => 'gpt-6.1-terra',
+    'name' => 'GPT-6.1 Terra',
+    'family' => 'gpt-6',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 1.00,
+      'out' => 5.00,
+      'cached' => 0.05,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    // Same tags as GPT-6.1 Sol: 'responses' for tool calling, 'no-temperature' for gpt-6 ids.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature'],
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
+    'params' => [
+      'reasoning' => ['none', 'low', 'medium', 'high', 'xhigh', 'max']
+    ]
+  ],
+  /*
     GPT-6 Sol
     Mid tier of the GPT-6 family, for coding and agentic work, added 2026-10-01.
     https://developers.openai.com/api/docs/models/gpt-6-sol
@@ -1691,68 +1718,75 @@ define( 'MWAI_MISTRAL_MODELS', [] );
 
 // Sakana AI Models
 // Fetched dynamically from Sakana's /v1/models (ids only); this list is the fallback and
-// supplies the metadata. Fugu orchestrates several frontier models, Namazu is Sakana's own
-// model specialized for Japanese. Prices are pending from Sakana: no 'price' key, so
-// queries log "No price" instead of a wrong cost. Token limits are conservative guesses.
+// supplies the metadata. Wording and figures from Sakana (Ken Nakamura, 2026-10-22 and 10-26).
+// Plain Fugu (and Fugu Cyber) bill at the rate of whichever model Fugu picked, which the API
+// does not reveal yet: they carry no price, so the cost shows as unknown rather than wrong.
+// Fugu's max output is not published: 16,384 is our cap, not Sakana's.
 define( 'MWAI_SAKANA_MODELS', [
   [
     'model' => 'fugu',
     'name' => 'Fugu',
     'family' => 'fugu',
-    'description' => 'Orchestrates several frontier models for balanced answers.',
+    'description' => 'Sakana Fugu: A multi-agent system that orchestrates several frontier models autonomously.',
     'features' => [ 'completion', 'functions' ],
     'type' => 'token',
     'unit' => 1 / 1000000,
     'maxCompletionTokens' => 16384,
-    'maxContextualTokens' => 128000,
+    'maxContextualTokens' => 1000000,
     'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
   ],
   [
     'model' => 'fugu-max',
     'name' => 'Fugu Max',
     'family' => 'fugu',
-    'description' => 'Larger Fugu orchestration for harder tasks.',
+    'description' => 'Sakana Fugu: A multi-agent system that orchestrates several frontier models autonomously.',
     'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 2.00, 'out' => 6.00, 'cached' => 0.25 ],
     'type' => 'token',
     'unit' => 1 / 1000000,
     'maxCompletionTokens' => 16384,
-    'maxContextualTokens' => 128000,
+    'maxContextualTokens' => 1000000,
     'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
   ],
   [
     'model' => 'fugu-ultra',
     'name' => 'Fugu Ultra',
     'family' => 'fugu',
-    'description' => 'The most thorough Fugu orchestration, for deep reasoning.',
+    'description' => 'Sakana Fugu: A multi-agent system that orchestrates several frontier models autonomously.',
     'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 5.00, 'out' => 30.00, 'cached' => 0.50 ],
+    // Above 272K tokens of context, Sakana bills Fugu Ultra at the higher rate.
+    'priceLongContext' => [ 'threshold' => 272000, 'in' => 10.00, 'out' => 45.00, 'cached' => 1.00 ],
     'type' => 'token',
     'unit' => 1 / 1000000,
     'maxCompletionTokens' => 16384,
-    'maxContextualTokens' => 128000,
+    'maxContextualTokens' => 1000000,
     'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
   ],
   [
     'model' => 'fugu-cyber',
     'name' => 'Fugu Cyber',
     'family' => 'fugu',
-    'description' => 'A Fugu variant from Sakana AI.',
+    'description' => 'Sakana Fugu: A multi-agent system that orchestrates several frontier models autonomously.',
     'features' => [ 'completion', 'functions' ],
     'type' => 'token',
     'unit' => 1 / 1000000,
     'maxCompletionTokens' => 16384,
-    'maxContextualTokens' => 128000,
+    'maxContextualTokens' => 1000000,
     'tags' => [ 'core', 'chat', 'functions', 'reasoning' ],
   ],
   [
     'model' => 'sakana-namazu',
     'name' => 'Namazu',
     'family' => 'namazu',
-    'description' => 'Sakana\'s own model, specialized for Japanese.',
+    'description' => 'Sakana Namazu: A model specialized for Japanese, with built-in web search and code execution.',
     'features' => [ 'completion', 'functions' ],
+    'price' => [ 'in' => 0.95, 'out' => 4.00, 'cached' => 0.15 ],
+    // 65,536 is Sakana's default max output, and it includes Namazu's thinking.
     'type' => 'token',
     'unit' => 1 / 1000000,
-    'maxCompletionTokens' => 16384,
-    'maxContextualTokens' => 128000,
+    'maxCompletionTokens' => 65536,
+    'maxContextualTokens' => 256000,
     'tags' => [ 'core', 'chat', 'functions', 'vision', 'reasoning' ],
   ],
 ] );
